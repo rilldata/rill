@@ -2,10 +2,10 @@ package observability
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/querytrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
@@ -13,10 +13,9 @@ import (
 
 var _ oteltrace.SpanProcessor = (*QueryLogSpanProcessor)(nil)
 
-// QueryLogSpanProcessor is a trace.SpanProcessor that captures sql.conn.query spans
-// (created by otelsql) and routes them to request-scoped query trace collectors.
+// QueryLogSpanProcessor is a trace.SpanProcessor that captures spans and routes them to request-scoped query trace collectors.
 type QueryLogSpanProcessor struct {
-	collectors sync.Map // spanID (trace.SpanID) → *querytrace.Collector
+	collectors sync.Map // spanID (trace.SpanID) → *Collector
 }
 
 // NewQueryLogSpanProcessor creates a new QueryLogSpanProcessor.
@@ -25,59 +24,50 @@ func NewQueryLogSpanProcessor() *QueryLogSpanProcessor {
 }
 
 // OnStart extracts the collector from the parent context and stores it keyed by spanID.
-// It also enriches the span with queue duration from the query origin context.
 func (p *QueryLogSpanProcessor) OnStart(parent context.Context, s oteltrace.ReadWriteSpan) {
-	if s.Name() != "sql.conn.query" {
-		return
-	}
-
-	collector, ok := querytrace.FromContext(parent)
+	collector, ok := CollectorFromContext(parent)
 	if !ok {
 		return
 	}
 
 	p.collectors.Store(s.SpanContext().SpanID(), collector)
-
-	// Enrich span with queue duration from context (set by OLAP drivers after connection acquisition)
-	queueDurationMs, ok := queueDurationFromContext(parent)
-	if ok && queueDurationMs > 0 {
-		s.SetAttributes(attribute.Int64("queue_duration_ms", queueDurationMs))
-	}
 }
 
-// OnEnd processes completed spans, extracting query data and recording it to the collector.
+// OnEnd processes completed spans, building a generic Span proto and recording it to the collector.
 func (p *QueryLogSpanProcessor) OnEnd(s oteltrace.ReadOnlySpan) {
-	if s.Name() != "sql.conn.query" {
-		return
-	}
-
 	spanID := s.SpanContext().SpanID()
 	val, ok := p.collectors.LoadAndDelete(spanID)
 	if !ok {
 		return
 	}
-	collector := val.(*querytrace.Collector)
+	collector := val.(*Collector)
 
-	var sql, errMsg string
-	var queueDurationMs int64
+	// Build attributes map from span attributes
+	attrs := make(map[string]string)
 	for _, attr := range s.Attributes() {
-		switch string(attr.Key) {
-		case "db.statement":
-			sql = attr.Value.AsString()
-		case "queue_duration_ms":
-			queueDurationMs = attr.Value.AsInt64()
-		}
+		attrs[string(attr.Key)] = attributeValueToString(attr.Value)
 	}
 
+	// Determine parent span ID
+	parentSpanID := ""
+	if s.Parent().HasSpanID() {
+		parentSpanID = s.Parent().SpanID().String()
+	}
+
+	// Build error info
 	failed := s.Status().Code == codes.Error
+	var errMsg string
 	if failed {
 		errMsg = s.Status().Description
 	}
 
-	collector.Record(&runtimev1.QueryTrace{
-		Sql:             sql,
+	collector.Record(&runtimev1.Span{
+		Name:            s.Name(),
+		SpanId:          spanID.String(),
+		ParentSpanId:    parentSpanID,
+		StartTimeUnixMs: s.StartTime().UnixMilli(),
 		DurationMs:      s.EndTime().Sub(s.StartTime()).Milliseconds(),
-		QueueDurationMs: queueDurationMs,
+		Attributes:      attrs,
 		Failed:          failed,
 		Error:           errMsg,
 	})
@@ -93,15 +83,18 @@ func (p *QueryLogSpanProcessor) ForceFlush(ctx context.Context) error {
 	return nil
 }
 
-type queueDurationKey struct{}
-
-// WithQueueDuration stores the queue duration (time spent waiting for a connection) in the context.
-func WithQueueDuration(ctx context.Context, queueDurationMs int64) context.Context {
-	return context.WithValue(ctx, queueDurationKey{}, queueDurationMs)
-}
-
-// queueDurationFromContext extracts the queue duration from the context.
-func queueDurationFromContext(ctx context.Context) (int64, bool) {
-	queueDurationMs, ok := ctx.Value(queueDurationKey{}).(int64)
-	return queueDurationMs, ok
+// attributeValueToString converts an OTel attribute value to its string representation.
+func attributeValueToString(v attribute.Value) string {
+	switch v.Type() {
+	case attribute.STRING:
+		return v.AsString()
+	case attribute.BOOL:
+		return fmt.Sprintf("%t", v.AsBool())
+	case attribute.INT64:
+		return fmt.Sprintf("%d", v.AsInt64())
+	case attribute.FLOAT64:
+		return fmt.Sprintf("%g", v.AsFloat64())
+	default:
+		return v.Emit()
+	}
 }

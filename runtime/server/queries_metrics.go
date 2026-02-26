@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"github.com/rilldata/rill/runtime/pkg/querytrace"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -24,6 +23,27 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// withTraceDetails attaches collected trace spans as gRPC error details so that
+// traces are available even when a request fails.
+func withTraceDetails(err error, collector *observability.Collector) error {
+	if collector == nil {
+		return err
+	}
+	td := collector.ToProto()
+	if td == nil {
+		return err
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		st = status.New(codes.Unknown, err.Error())
+	}
+	detailed, detailErr := st.WithDetails(td)
+	if detailErr != nil {
+		return err
+	}
+	return detailed.Err()
+}
 
 // MetricsViewAggregation implements QueryService.
 func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.MetricsViewAggregationRequest) (*runtimev1.MetricsViewAggregationResponse, error) {
@@ -78,17 +98,17 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		FillMissing:         req.FillMissing,
 		Rows:                req.Rows,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -136,17 +156,17 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Filter:          req.Filter,
 		SecurityClaims:  claims,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -208,17 +228,17 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Filter:              req.Filter,
 		SecurityClaims:      claims,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -259,17 +279,17 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -305,17 +325,17 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -366,17 +386,17 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		Filter:             req.Filter,
 		TimeDimension:      req.TimeDimension,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -431,17 +451,17 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 		MetricsViewName: req.MetricsViewName,
 		SecurityClaims:  claims,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -476,17 +496,17 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		Limit:           &limit,
 		SecurityClaims:  claims,
 	}
-	var collector *querytrace.Collector
+	var collector *observability.Collector
 	if req.Trace {
-		collector = &querytrace.Collector{}
-		ctx = querytrace.WithCollector(ctx, collector)
+		collector = &observability.Collector{}
+		ctx = observability.WithCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, withTraceDetails(err, collector)
 	}
 	if collector != nil {
-		q.Result.Traces = collector.ToProto()
+		q.Result.Trace = collector.ToProto()
 	}
 	return q.Result, nil
 }

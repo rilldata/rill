@@ -2,13 +2,18 @@ package pinot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/pinot")
 
 var _ drivers.OLAPStore = &connection{}
 
@@ -53,6 +58,16 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, rows.Close()
 	}
 
+	// Start a span covering connection acquisition + SQL execution
+	ctx, span := tracer.Start(ctx, "olap.query")
+	var outErr error
+	defer func() {
+		cancelled := errors.Is(outErr, context.Canceled)
+		failed := outErr != nil
+		span.SetAttributes(attribute.Bool("cancelled", cancelled), attribute.Bool("failed", failed))
+		span.End()
+	}()
+
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
@@ -68,6 +83,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		if cancelFunc != nil {
 			cancelFunc()
 		}
+		outErr = err
 		return nil, err
 	}
 
@@ -77,6 +93,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		if cancelFunc != nil {
 			cancelFunc()
 		}
+		outErr = err
 		return nil, err
 	}
 

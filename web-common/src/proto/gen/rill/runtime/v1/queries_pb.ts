@@ -933,65 +933,127 @@ export class QueryResult extends Message<QueryResult> {
 }
 
 /**
- * QueryTrace contains information about a single SQL query executed during a request.
+ * Span represents a single OTel span captured during a request.
  *
- * @generated from message rill.runtime.v1.QueryTrace
+ * @generated from message rill.runtime.v1.Span
  */
-export class QueryTrace extends Message<QueryTrace> {
+export class Span extends Message<Span> {
   /**
-   * @generated from field: string sql = 1;
+   * @generated from field: string name = 1;
    */
-  sql = "";
+  name = "";
 
   /**
-   * @generated from field: int64 duration_ms = 2;
+   * @generated from field: string span_id = 2;
+   */
+  spanId = "";
+
+  /**
+   * empty for root
+   *
+   * @generated from field: string parent_span_id = 3;
+   */
+  parentSpanId = "";
+
+  /**
+   * absolute timestamp
+   *
+   * @generated from field: int64 start_time_unix_ms = 4;
+   */
+  startTimeUnixMs = protoInt64.zero;
+
+  /**
+   * @generated from field: int64 duration_ms = 5;
    */
   durationMs = protoInt64.zero;
 
   /**
-   * @generated from field: int64 queue_duration_ms = 3;
+   * @generated from field: map<string, string> attributes = 6;
    */
-  queueDurationMs = protoInt64.zero;
+  attributes: { [key: string]: string } = {};
 
   /**
-   * @generated from field: bool failed = 4;
+   * @generated from field: bool failed = 7;
    */
   failed = false;
 
   /**
-   * @generated from field: string error = 5;
+   * @generated from field: string error = 8;
    */
   error = "";
 
-  constructor(data?: PartialMessage<QueryTrace>) {
+  constructor(data?: PartialMessage<Span>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.QueryTrace";
+  static readonly typeName = "rill.runtime.v1.Span";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 3, name: "queue_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "failed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "span_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "parent_span_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "start_time_unix_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 5, name: "duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "failed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryTrace {
-    return new QueryTrace().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Span {
+    return new Span().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryTrace {
-    return new QueryTrace().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Span {
+    return new Span().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryTrace {
-    return new QueryTrace().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Span {
+    return new Span().fromJsonString(jsonString, options);
   }
 
-  static equals(a: QueryTrace | PlainMessage<QueryTrace> | undefined, b: QueryTrace | PlainMessage<QueryTrace> | undefined): boolean {
-    return proto3.util.equals(QueryTrace, a, b);
+  static equals(a: Span | PlainMessage<Span> | undefined, b: Span | PlainMessage<Span> | undefined): boolean {
+    return proto3.util.equals(Span, a, b);
+  }
+}
+
+/**
+ * Trace contains trace spans captured during request execution.
+ * Used both in successful responses and as gRPC error details when trace=true and the request fails.
+ *
+ * @generated from message rill.runtime.v1.Trace
+ */
+export class Trace extends Message<Trace> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.Span spans = 1;
+   */
+  spans: Span[] = [];
+
+  constructor(data?: PartialMessage<Trace>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Trace";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spans", kind: "message", T: Span, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Trace {
+    return new Trace().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Trace {
+    return new Trace().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Trace {
+    return new Trace().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Trace | PlainMessage<Trace> | undefined, b: Trace | PlainMessage<Trace> | undefined): boolean {
+    return proto3.util.equals(Trace, a, b);
   }
 }
 
@@ -1150,7 +1212,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   rows = false;
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 23;
    */
@@ -1225,11 +1287,11 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
   data: Struct[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 3;
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewAggregationResponse>) {
     super();
@@ -1241,7 +1303,7 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
-    { no: 3, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationResponse {
@@ -1867,7 +1929,7 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
   filter?: MetricsViewFilter;
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 17;
    */
@@ -1935,11 +1997,11 @@ export class MetricsViewToplistResponse extends Message<MetricsViewToplistRespon
   data: Struct[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 3;
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewToplistResponse>) {
     super();
@@ -1951,7 +2013,7 @@ export class MetricsViewToplistResponse extends Message<MetricsViewToplistRespon
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
-    { no: 3, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewToplistResponse {
@@ -2103,7 +2165,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   filter?: MetricsViewFilter;
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 19;
    */
@@ -2169,11 +2231,11 @@ export class MetricsViewComparisonResponse extends Message<MetricsViewComparison
   rows: MetricsViewComparisonRow[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 2;
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewComparisonResponse>) {
     super();
@@ -2184,7 +2246,7 @@ export class MetricsViewComparisonResponse extends Message<MetricsViewComparison
   static readonly typeName = "rill.runtime.v1.MetricsViewComparisonResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "rows", kind: "message", T: MetricsViewComparisonRow, repeated: true },
-    { no: 2, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonResponse {
@@ -2623,7 +2685,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   timeDimension = "";
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 16;
    */
@@ -2690,11 +2752,11 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
   data: TimeSeriesValue[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 3;
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewTimeSeriesResponse>) {
     super();
@@ -2706,7 +2768,7 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: TimeSeriesValue, repeated: true },
-    { no: 3, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesResponse {
@@ -2793,7 +2855,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   timeDimension = "";
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 13;
    */
@@ -2856,11 +2918,11 @@ export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse
   data?: Struct;
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 3;
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewTotalsResponse>) {
     super();
@@ -2872,7 +2934,7 @@ export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: Struct },
-    { no: 3, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTotalsResponse {
@@ -2982,7 +3044,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   timeDimension = "";
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 14;
    */
@@ -3048,11 +3110,11 @@ export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
   data: Struct[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 3;
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewRowsResponse>) {
     super();
@@ -3064,7 +3126,7 @@ export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
-    { no: 3, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsResponse {
@@ -3352,7 +3414,7 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
   timeDimension = "";
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 5;
    */
@@ -3402,11 +3464,11 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   timeRangeSummary?: TimeRangeSummary;
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 2;
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewTimeRangeResponse>) {
     super();
@@ -3417,7 +3479,7 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range_summary", kind: "message", T: TimeRangeSummary },
-    { no: 2, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangeResponse {
@@ -3457,7 +3519,7 @@ export class MetricsViewSchemaRequest extends Message<MetricsViewSchemaRequest> 
   priority = 0;
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 4;
    */
@@ -3504,11 +3566,11 @@ export class MetricsViewSchemaResponse extends Message<MetricsViewSchemaResponse
   schema?: StructType;
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 2;
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewSchemaResponse>) {
     super();
@@ -3519,7 +3581,7 @@ export class MetricsViewSchemaResponse extends Message<MetricsViewSchemaResponse
   static readonly typeName = "rill.runtime.v1.MetricsViewSchemaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
-    { no: 2, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSchemaResponse {
@@ -3597,7 +3659,7 @@ export class MetricsViewSearchRequest extends Message<MetricsViewSearchRequest> 
   priority = 0;
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 10;
    */
@@ -3650,11 +3712,11 @@ export class MetricsViewSearchResponse extends Message<MetricsViewSearchResponse
   results: MetricsViewSearchResponse_SearchResult[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 2;
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewSearchResponse>) {
     super();
@@ -3665,7 +3727,7 @@ export class MetricsViewSearchResponse extends Message<MetricsViewSearchResponse
   static readonly typeName = "rill.runtime.v1.MetricsViewSearchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "results", kind: "message", T: MetricsViewSearchResponse_SearchResult, repeated: true },
-    { no: 2, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSearchResponse {
@@ -3778,7 +3840,7 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
   executionTime?: Timestamp;
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 8;
    */
@@ -3846,11 +3908,11 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
   timeRanges: TimeRange[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 4;
+   * @generated from field: rill.runtime.v1.Trace trace = 4;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewTimeRangesResponse>) {
     super();
@@ -3863,7 +3925,7 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
     { no: 1, name: "full_time_range", kind: "message", T: TimeRangeSummary },
     { no: 3, name: "resolved_time_ranges", kind: "message", T: ResolvedTimeRange, repeated: true },
     { no: 2, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
-    { no: 4, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 4, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesResponse {
@@ -4020,7 +4082,7 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
   offset = protoInt64.zero;
 
   /**
-   * Optional. If true, the response will include traces of SQL queries executed.
+   * Optional. If true, the response will include traces of spans captured during execution.
    *
    * @generated from field: bool trace = 10;
    */
@@ -4073,11 +4135,11 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
   rows: MetricsViewAnnotationsResponse_Annotation[] = [];
 
   /**
-   * Traces of SQL queries executed. Only populated if trace was set to true in the request.
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
-   * @generated from field: repeated rill.runtime.v1.QueryTrace traces = 2;
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
    */
-  traces: QueryTrace[] = [];
+  trace?: Trace;
 
   constructor(data?: PartialMessage<MetricsViewAnnotationsResponse>) {
     super();
@@ -4088,7 +4150,7 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
   static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "rows", kind: "message", T: MetricsViewAnnotationsResponse_Annotation, repeated: true },
-    { no: 2, name: "traces", kind: "message", T: QueryTrace, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse {
