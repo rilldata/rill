@@ -529,7 +529,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 			TimeZone:            "",
 			UseDisplayNames:     false,
 			Rows:                false,
-			QueryLimit: &metricsview.QueryLimits{
+			QueryLimits: &metricsview.QueryLimits{
 				RequireTimeRange: false,
 				MaxTimeRangeDays: 0, // not enforced
 			},
@@ -674,7 +674,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 		TimeZone:            "",
 		UseDisplayNames:     false,
 		Rows:                false,
-		QueryLimit: &metricsview.QueryLimits{
+		QueryLimits: &metricsview.QueryLimits{
 			RequireTimeRange: false,
 			MaxTimeRangeDays: 0, // not enforced
 		},

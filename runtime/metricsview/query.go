@@ -29,7 +29,7 @@ type Query struct {
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
 
-	QueryLimit *QueryLimits `json:"-" mapstructure:"query_limits"`
+	QueryLimits *QueryLimits `json:"-" mapstructure:"query_limits"`
 }
 
 type Dimension struct {
