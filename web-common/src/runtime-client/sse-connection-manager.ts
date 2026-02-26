@@ -45,6 +45,7 @@ export class SSEConnectionManager {
     method?: "GET" | "POST";
     body?: Record<string, unknown>;
     headers?: Record<string, string>;
+    getJwt?: () => string | undefined;
   };
 
   private readonly events = new EventEmitter<SSEConnectionManagerEvents>();
@@ -228,6 +229,7 @@ export class SSEConnectionManager {
       method?: "GET" | "POST";
       body?: Record<string, unknown>;
       headers?: Record<string, string>;
+      getJwt?: () => string | undefined;
     } = {},
   ): void {
     this.url = url;
@@ -235,7 +237,7 @@ export class SSEConnectionManager {
 
     this.status.set(ConnectionStatus.CONNECTING);
 
-    void this.client.start(url);
+    void this.client.start(url, options);
 
     if (this.params?.autoCloseTimeouts) {
       this.scheduleAutoClose();

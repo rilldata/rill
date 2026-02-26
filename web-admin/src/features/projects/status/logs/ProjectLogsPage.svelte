@@ -108,7 +108,9 @@
       logsConnection.on("open", handleOpen),
     ];
 
-    logsConnection.start(url);
+    logsConnection.start(url, {
+      getJwt: () => runtimeClient.getJwt(),
+    });
   });
 
   onDestroy(() => {
@@ -157,7 +159,9 @@
 
     connectionError = null;
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
-    logsConnection.start(url);
+    logsConnection.start(url, {
+      getJwt: () => runtimeClient.getJwt(),
+    });
   }
 
   function getLevelClass(level: V1LogLevel | undefined): string {
