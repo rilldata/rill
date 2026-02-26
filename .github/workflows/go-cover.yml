@@ -1,14 +1,8 @@
 on:
-  push:
-    branches:
-      - main
-      - cover
-    paths:
-      - ".github/workflows/go-cover.yml"
-      - "**.go"
-      - "go.mod"
-      - "**/testdata/**"
-name: Test Go code with coverage
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+name: Go tests with coverage and race detector
 jobs:
   test:
     runs-on:
@@ -16,6 +10,18 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v4
+    - name: Login to GCR
+      uses: docker/login-action@v3
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.RILL_BINARY_SA }}
+    - name: Restore DuckDB extensions
+      id: restore-duckdb-extensions
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.duckdb/extensions
+        key: ${{ runner.os }}-cache-duckdb-extensions
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
@@ -25,8 +31,9 @@ jobs:
         # Build list of packages to include in coverage, excluding generated code in 'proto/gen'
         PACKAGES=$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$//' | sed -e 's/github.com\/rilldata\/rill/./g')
         # Run tests with coverage output
-        go test ./... -timeout 30m -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
+        go test ./... -timeout 60m -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
       env:
+        RILL_RUNTIME_TEST_MODE: expensive
         RILL_RUNTIME_DRUID_TEST_DSN: ${{ secrets.RILL_RUNTIME_DRUID_TEST_DSN }}
         RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON }}
         RILL_RUNTIME_SNOWFLAKE_TEST_DSN: ${{ secrets.RILL_RUNTIME_SNOWFLAKE_TEST_DSN }}
@@ -41,9 +48,30 @@ jobs:
         RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY: ${{ secrets.RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY }}
         RILL_RUNTIME_MOTHERDUCK_TEST_PATH: ${{ secrets.RILL_RUNTIME_MOTHERDUCK_TEST_PATH }}
         RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN: ${{ secrets.RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN }}
+        RILL_ADMIN_TEST_GITHUB_APP_ID: ${{ secrets.RILL_ADMIN_TEST_GITHUB_APP_ID }}
+        RILL_ADMIN_TEST_GITHUB_APP_PRIVATE_KEY: ${{ secrets.RILL_ADMIN_TEST_GITHUB_APP_PRIVATE_KEY }}
+        RILL_ADMIN_TEST_GITHUB_MANAGED_ACCOUNT: ${{ secrets.RILL_ADMIN_TEST_GITHUB_MANAGED_ACCOUNT }}
+        RILL_RUNTIME_OPENAI_TEST_API_KEY: ${{ secrets.RILL_RUNTIME_OPENAI_TEST_API_KEY }}
+        RILL_RUNTIME_GEMINI_TEST_API_KEY: ${{ secrets.RILL_RUNTIME_GEMINI_TEST_API_KEY }}
+    - name: Save DuckDB extensions
+      uses: actions/cache/save@v5
+      with:
+        path: ~/.duckdb/extensions
+        key: ${{ steps.restore-duckdb-extensions.outputs.cache-primary-key }}
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.out
         flags: go
+    - name: Notify Slack
+      uses: ravsamhq/notify-slack-action@v2
+      if: always()
+      with:
+        status: ${{ job.status }}
+        notification_title: "{workflow} has {status_message}"
+        message_format: "{emoji} *{workflow}*"
+        footer: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+        notify_when: failure
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEAM_PLATFORM }}

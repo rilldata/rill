@@ -98,6 +98,62 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+// Note: table.Database is not used; in Postgres, the database is determined by the connection.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	schema := table.DatabaseSchema
+	if schema == "" {
+		if err := db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schema); err != nil {
+			return err
+		}
+	}
+
+	if table.View {
+		// For views: use pg_get_viewdef
+		var ddl string
+		q := `
+			SELECT 'CREATE VIEW ' || quote_ident(n.nspname) || '.' || quote_ident(c.relname) || ' AS ' || pg_get_viewdef(c.oid, true)
+			FROM pg_class c
+			JOIN pg_namespace n ON n.oid = c.relnamespace
+			WHERE n.nspname = $1 AND c.relname = $2 AND c.relkind IN ('v', 'm')
+		`
+		err = db.QueryRowContext(ctx, q, schema, table.Name).Scan(&ddl)
+		if err != nil {
+			return err
+		}
+		table.DDL = ddl
+		return nil
+	}
+
+	// Postgres does not have a built-in way to get the DDL for a table, so we reconstruct a basic CREATE TABLE statement from the available metadata (won't include indexes, constraints, etc.).
+	q := `
+		SELECT
+			'CREATE TABLE ' || quote_ident(n.nspname) || '.' || quote_ident(c.relname) || ' (' ||
+			string_agg(
+				quote_ident(a.attname) || ' ' || format_type(a.atttypid, a.atttypmod) ||
+				CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END,
+				', ' ORDER BY a.attnum
+			) || ')'
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_attribute a ON a.attrelid = c.oid
+		WHERE n.nspname = $1 AND c.relname = $2 AND a.attnum > 0 AND NOT a.attisdropped
+		GROUP BY n.nspname, c.relname
+	`
+	var ddl string
+	err = db.QueryRowContext(ctx, q, schema, table.Name).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
+}
+
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)

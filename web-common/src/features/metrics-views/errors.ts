@@ -79,25 +79,3 @@ export function mapParseErrorToLine(
   }
   return runtimeErrorToLine(error.message, yaml);
 }
-
-// TODO: double check error
-export function mapParseErrorsToLines(
-  errors: Array<V1ParseError>,
-  yaml: string,
-): LineStatus[] {
-  if (!errors) return [];
-  return errors
-    .map((error) => {
-      if (error.startLocation) {
-        // if line is provided, no need to parse
-        // TODO: check if we need to strip anything
-        return <LineStatus>{
-          line: error.startLocation.line,
-          message: error.message,
-          level: "error",
-        };
-      }
-      return runtimeErrorToLine(error.message, yaml);
-    })
-    .filter((error) => error.message !== ConfigErrors.Malformed);
-}

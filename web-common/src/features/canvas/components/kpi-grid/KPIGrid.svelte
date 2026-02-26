@@ -2,7 +2,7 @@
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import type { KPIGridComponent } from ".";
   import ComponentHeader from "../../ComponentHeader.svelte";
-  import { getMinWidth, type KPISpec } from "../kpi";
+  import { getMinWidth, getOptimalColumns, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
   import { validateKPIGridSchema } from "./selector";
 
@@ -39,6 +39,10 @@
 
   $: minWidth = getMinWidth(sparkline);
 
+  let containerWidth = 0;
+
+  $: optimalColumns = getOptimalColumns(kpis.length, containerWidth, minWidth);
+
   $: ({ title, description, show_description_as_tooltip } = kpiGridProperties);
 </script>
 
@@ -51,11 +55,14 @@
 />
 
 {#if schema.isValid}
-  <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>
+  <div
+    class="h-fit p-0 grow relative"
+    class:!p-0={kpis.length === 1}
+    bind:clientWidth={containerWidth}
+  >
     <span class="border-overlay" />
     <div
-      style:grid-template-columns="repeat(auto-fit, minmax(min({minWidth}px,
-      100%), 1fr))"
+      style:grid-template-columns="repeat({optimalColumns}, minmax(0, 1fr))"
       class="grid-wrapper gap-px overflow-hidden size-full"
     >
       {#each kpis as kpi, i (i)}

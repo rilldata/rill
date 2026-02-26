@@ -2,13 +2,14 @@
   import { afterNavigate } from "$app/navigation";
   import type { EditorView } from "@codemirror/view";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
+  import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
+  import { generatingCanvas } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
-  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
@@ -44,9 +45,8 @@
     resourceName,
     inferredResourceKind,
     path,
-    remoteContent,
     getResource,
-    getAllErrors,
+    getParseError,
   } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
@@ -62,12 +62,9 @@
       ? [customYAMLwithJSONandSQL]
       : getExtensionsForFile(path);
 
-  $: allErrorsQuery = getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
-
-  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
-
-  $: mainError = errors?.at(0);
+  // Parse error for the editor banner
+  $: parseErrorQuery = getParseError(queryClient, instanceId);
+  $: parseError = $parseErrorQuery;
 
   onMount(() => {
     expandDirectory(path);
@@ -93,7 +90,9 @@
 
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
-    {#if workspace}
+    {#if $generatingCanvas}
+      <GeneratingMessage title="Generating your Canvas dashboard..." />
+    {:else if workspace}
       <svelte:component this={workspace} {fileArtifact} />
     {:else}
       <WorkspaceContainer inspector={false}>
@@ -104,7 +103,7 @@
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer slot="body" error={mainError}>
+        <WorkspaceEditorContainer slot="body" error={parseError?.message}>
           <Editor
             {fileArtifact}
             {extensions}

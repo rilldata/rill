@@ -1,9 +1,10 @@
-import type {
-  ChartDataQuery,
-  ChartDomainValues,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataQuery,
+  type ChartDomainValues,
+  type ChartFieldsMap,
+  type ChartSortDirection,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
@@ -40,7 +41,7 @@ export type CircularChartDefaultOptions = {
 };
 
 const DEFAULT_COLOR_LIMIT = 20;
-const DEFAULT_SORT = "-measure" as ChartSortDirection;
+const DEFAULT_SORT = ChartSortType.MEASURE_DESC as ChartSortDirection;
 
 export class CircularChartProvider {
   private spec: Readable<CircularChartSpec>;
@@ -237,15 +238,15 @@ export class CircularChartProvider {
     let desc: boolean = false;
 
     switch (sort) {
-      case "color":
-      case "-color":
+      case ChartSortType.COLOR_ASC:
+      case ChartSortType.COLOR_DESC:
         field = config.color.field;
-        desc = sort === "-color";
+        desc = sort === ChartSortType.COLOR_DESC;
         break;
-      case "measure":
-      case "-measure":
+      case ChartSortType.MEASURE_ASC:
+      case ChartSortType.MEASURE_DESC:
         field = config.measure?.field;
-        desc = sort === "-measure";
+        desc = sort === ChartSortType.MEASURE_DESC;
         break;
       default:
         return undefined;

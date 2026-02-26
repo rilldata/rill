@@ -1,8 +1,9 @@
-import type {
-  ChartDataQuery,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataQuery,
+  type ChartFieldsMap,
+  type ChartSortDirection,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -44,7 +45,7 @@ export type FunnelChartDefaultOptions = {
 };
 
 const DEFAULT_STAGE_LIMIT = 15;
-const DEFAULT_SORT = "-y" as ChartSortDirection;
+const DEFAULT_SORT = ChartSortType.Y_DESC as ChartSortDirection;
 
 export class FunnelChartProvider {
   private spec: Readable<FunnelChartSpec>;
@@ -113,7 +114,7 @@ export class FunnelChartProvider {
       if (typeof sort === "string" && config.measure?.field) {
         stageSort = {
           name: config.measure.field,
-          desc: sort !== "y",
+          desc: sort !== ChartSortType.Y_ASC,
         };
       }
     }

@@ -3,7 +3,7 @@ import type {
   V1ConnectorDriver,
   V1Source,
 } from "@rilldata/web-common/runtime-client";
-import { makeDotEnvConnectorKey } from "../connectors/code-utils";
+import { makeEnvVarKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 import { getConnectorSchema } from "./modal/connector-schemas";
 import {
@@ -29,6 +29,7 @@ export function compileSourceYAML(
     stringKeys?: string[];
     connectorInstanceName?: string;
     originalDriverName?: string;
+    existingEnvBlob?: string;
   },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
@@ -67,10 +68,12 @@ export function compileSourceYAML(
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         // For source files, we include secret properties
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeEnvVarKey(
           connector.name as string,
           key,
-        )} }}"`;
+          opts?.existingEnvBlob,
+          schema ?? undefined,
+        )} }}"`; // uses standard Go template syntax
       }
 
       if (key === "sql") {
@@ -113,7 +116,7 @@ export function compileLocalFileSourceYAML(path: string) {
   return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
-function buildDuckDbQuery(
+export function buildDuckDbQuery(
   path: string | undefined,
   options?: { defaultToJson?: boolean },
 ): string {
