@@ -22,7 +22,6 @@
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Save } from "lucide-svelte";
   import type { Readable } from "svelte/store";
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
@@ -42,8 +41,6 @@
   export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
-
-  const runtimeClient = useRuntimeClient();
 
   let contextMenuOpen = false;
   let resourceName: Readable<V1ResourceName | undefined>;
