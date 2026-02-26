@@ -11,26 +11,24 @@ type MapTheme = { primary: Color; secondary: Color };
 /**
  * Mapping of Vega/D3 scheme names to d3-scale-chromatic interpolators.
  */
-const schemeInterpolators: Record<
-  string,
-  ((t: number) => string) | undefined
-> = {
-  tealblues: d3sc.interpolateGnBu,
-  viridis: d3sc.interpolateViridis,
-  magma: d3sc.interpolateMagma,
-  inferno: d3sc.interpolateInferno,
-  plasma: d3sc.interpolatePlasma,
-  cividis: d3sc.interpolateCividis,
-  blues: d3sc.interpolateBlues,
-  teals: d3sc.interpolateGnBu,
-  greens: d3sc.interpolateGreens,
-  greys: d3sc.interpolateGreys,
-  oranges: d3sc.interpolateOranges,
-  purples: d3sc.interpolatePurples,
-  reds: d3sc.interpolateReds,
-  turbo: d3sc.interpolateTurbo,
-  spectral: d3sc.interpolateSpectral,
-};
+const schemeInterpolators: Record<string, ((t: number) => string) | undefined> =
+  {
+    tealblues: d3sc.interpolateGnBu,
+    viridis: d3sc.interpolateViridis,
+    magma: d3sc.interpolateMagma,
+    inferno: d3sc.interpolateInferno,
+    plasma: d3sc.interpolatePlasma,
+    cividis: d3sc.interpolateCividis,
+    blues: d3sc.interpolateBlues,
+    teals: d3sc.interpolateGnBu,
+    greens: d3sc.interpolateGreens,
+    greys: d3sc.interpolateGreys,
+    oranges: d3sc.interpolateOranges,
+    purples: d3sc.interpolatePurples,
+    reds: d3sc.interpolateReds,
+    turbo: d3sc.interpolateTurbo,
+    spectral: d3sc.interpolateSpectral,
+  };
 
 /**
  * Resolves a theme color reference ("primary"/"secondary") or hex to a hex string.

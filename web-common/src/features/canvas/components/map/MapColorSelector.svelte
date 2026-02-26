@@ -25,13 +25,10 @@
   $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);
 
   // 0 = One color, 1 = By measure
-  $: selected =
-    typeof colorConfig === "object" && colorConfig !== null ? 1 : 0;
+  $: selected = typeof colorConfig === "object" && colorConfig !== null ? 1 : 0;
 
   $: currentColorRange =
-    typeof colorConfig === "object"
-      ? colorConfig.colorRange
-      : undefined;
+    typeof colorConfig === "object" ? colorConfig.colorRange : undefined;
 
   $: currentMeasure =
     typeof colorConfig === "object" ? colorConfig.measure : undefined;
@@ -57,10 +54,7 @@
     onChange({ measure, colorRange: range });
   }
 
-  function handleColorRangeChange(
-    _property: string,
-    value: ColorRangeMapping,
-  ) {
+  function handleColorRangeChange(_property: string, value: ColorRangeMapping) {
     onChange({
       measure: currentMeasure ?? "",
       colorRange: value,

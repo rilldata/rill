@@ -47,10 +47,7 @@ export function transformToGeoJSON(
       ) {
         const [lat, lon] = geoValue as [number, number];
         geometry = { type: "Point", coordinates: [lon, lat] };
-      } else if (
-        Array.isArray(geoValue[0]) &&
-        Array.isArray(geoValue[0][0])
-      ) {
+      } else if (Array.isArray(geoValue[0]) && Array.isArray(geoValue[0][0])) {
         const coordinates = (geoValue as number[][][]).map((ring) =>
           ring.map(([lat, lon]) => [lon, lat]),
         );
@@ -79,10 +76,7 @@ export function transformToGeoJSON(
 
 // ── Bounds calculation ──────────────────────────────────────────
 
-function extendBoundsWithCoord(
-  bounds: mapboxgl.LngLatBounds,
-  coord: number[],
-) {
+function extendBoundsWithCoord(bounds: mapboxgl.LngLatBounds, coord: number[]) {
   const [lng, lat] = coord;
   if (
     typeof lng === "number" &&
@@ -161,9 +155,7 @@ export function detectPolygonMode(
         return false;
       }
     }
-    return (
-      Array.isArray(v) && Array.isArray(v[0]) && Array.isArray(v[0][0])
-    );
+    return Array.isArray(v) && Array.isArray(v[0]) && Array.isArray(v[0][0]);
   });
 }
 

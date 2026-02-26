@@ -60,7 +60,9 @@ export function useMetricFieldData(
       if (type.includes("dimension")) {
         const filteredDimensions = geoOnly
           ? dimensions.filter(
-              (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_GEOSPATIAL,
+              (d) =>
+                d.type ===
+                MetricsViewSpecDimensionType.DIMENSION_TYPE_GEOSPATIAL,
             )
           : dimensions;
         items = items.concat(
