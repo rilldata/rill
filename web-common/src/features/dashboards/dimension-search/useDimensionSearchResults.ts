@@ -35,8 +35,8 @@ export function useDimensionSearchResults(
         search: searchText,
         limit: 100,
         timeRange: {
-          start: timeRangeSummary.min,
-          end: timeRangeSummary.max,
+          start: timeRangeSummary.min as any,
+          end: timeRangeSummary.max as any,
         },
       }),
     ),
@@ -53,11 +53,7 @@ export function useDimensionSearchResults(
       searchResults.forEach((searchResult, index) => {
         if (searchResult.error) {
           results.errors.push(
-            new Error(
-              searchResult.error.response?.data?.message ??
-                searchResult.error.message ??
-                "Unknown error",
-            ),
+            new Error(searchResult.error.message ?? "Unknown error"),
           );
         } else if (searchResult.data?.results) {
           searchResult.data.results.forEach((dr) => {

@@ -55,7 +55,7 @@
 <div class="flex flex-col gap-y-3">
   <FormSection title="Filters">
     <FiltersForm
-      instanceId={runtimeClient.instanceId}
+      client={runtimeClient}
       {filters}
       {timeControls}
       maxWidth={750}

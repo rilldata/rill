@@ -22,8 +22,10 @@
   $: projectParserQuery = createRuntimeServiceGetResource(
     instanceId,
     {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     },
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );

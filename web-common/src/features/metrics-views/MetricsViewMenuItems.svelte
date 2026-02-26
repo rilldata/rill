@@ -29,7 +29,7 @@
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: ({ instanceId } = runtimeClient);
-  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
 
   /**

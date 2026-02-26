@@ -21,7 +21,7 @@
   const runtimeClient = useRuntimeClient();
   $: ({ instanceId } = runtimeClient);
 
-  $: exploreQuery = useExplore(instanceId, exploreName);
+  $: exploreQuery = useExplore(runtimeClient, exploreName);
   $: exploreFilePath = $exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";
   $: metricsViewFilePath =
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";

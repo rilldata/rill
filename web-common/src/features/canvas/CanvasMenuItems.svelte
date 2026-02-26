@@ -1,12 +1,9 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch } from "lucide-svelte";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
-
-  const client = useRuntimeClient();
 
   export let filePath: string;
 
@@ -14,9 +11,7 @@
 
   const queryClient = useQueryClient();
 
-  $: ({ instanceId } = client);
-
-  $: canvasQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: canvasQuery = fileArtifact.getResource(queryClient);
   $: canvasResource = $canvasQuery.data;
 
   function viewGraph() {

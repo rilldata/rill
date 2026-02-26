@@ -12,7 +12,6 @@
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
-  import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import {
@@ -27,7 +26,7 @@
   const runtimeClient = useRuntimeClient();
 
   let fileArtifact: FileArtifact;
-  let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
+  let sourceQuery: CreateQueryResult<V1Resource, Error>;
 
   $: sourceName = extractFileName(sourcePath ?? "");
 

@@ -83,7 +83,7 @@
       ? props.exploreName
       : getAlertDashboardName(props.alertSpec);
 
-  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
+  $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
@@ -98,7 +98,7 @@
   $: exploreState =
     props.mode === "create"
       ? useExploreState(props.exploreName)
-      : unwrapQueryData(useAlertDashboardState(instanceId, props.alertSpec));
+      : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
   $: mutation =
     props.mode === "create"

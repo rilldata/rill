@@ -1,5 +1,6 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
+  import { isHTTPError } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
@@ -37,7 +38,8 @@
     <span class="message pl-6">Loading tables...</span>
   {:else if error && queryEnabled}
     <span class="message pl-6"
-      >Error: {error.message || error.response?.data?.message}</span
+      >Error: {error.message ||
+        (isHTTPError(error) ? error.response.data.message : "")}</span
     >
   {:else if data}
     {#if data.length === 0}

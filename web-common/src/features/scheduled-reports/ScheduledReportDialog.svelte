@@ -82,7 +82,7 @@
       ? props.exploreName
       : getDashboardNameFromReport(props.reportSpec);
 
-  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
+  $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
@@ -271,8 +271,10 @@
       if (props.mode === "edit") {
         await queryClient.invalidateQueries({
           queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-            "name.name": reportName,
-            "name.kind": ResourceKind.Report,
+            name: {
+              name: reportName,
+              kind: ResourceKind.Report,
+            },
           }),
         });
       }

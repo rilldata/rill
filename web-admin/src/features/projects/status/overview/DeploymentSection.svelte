@@ -43,7 +43,7 @@
   $: lastUpdated = $githubLastSynced.data ?? $dashboardsLastUpdated;
 
   // Runtime
-  $: runtimeVersionQuery = useRuntimeVersion();
+  $: runtimeVersionQuery = useRuntimeVersion(runtimeClient);
   $: version = $runtimeVersionQuery.data?.version ?? "";
 
   // Connectors — sensitive: true is needed to read projectConnectors (OLAP/AI connector types)

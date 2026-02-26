@@ -16,7 +16,7 @@
   const runtimeClient = useRuntimeClient();
 
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpec = useExploreValidSpec(runtimeClient.instanceId, exploreName);
+  $: exploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
 </script>

@@ -3,13 +3,13 @@ import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { derived, type Readable } from "svelte/store";
 import {
-  createQueryServiceResolveCanvas,
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
   type V1CanvasSpec,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
@@ -89,9 +89,8 @@ export function getInlineChatContextMetadata(
 
       const canvasQueries = canvasResources.map((r) =>
         createQueryServiceResolveCanvas(
-          instanceId,
-          r.meta?.name?.name ?? "",
-          {},
+          client,
+          { canvas: r.meta?.name?.name ?? "" },
           undefined,
           queryClient,
         ),

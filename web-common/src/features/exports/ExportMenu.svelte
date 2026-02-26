@@ -47,18 +47,15 @@
   }) {
     const { format, includeHeader = false } = options;
     const result = await $exportDash.mutateAsync({
-      instanceId: runtimeClient.instanceId,
-      data: {
-        query: exportQuery,
-        format,
-        includeHeader,
-        // Include metadata for CSV/XLSX exports in Cloud context.
-        ...(includeHeader &&
-          $adminServer && {
-            originDashboard: { name: exploreName, kind: ResourceKind.Explore },
-            origin_url: window.location.href,
-          }),
-      },
+      query: exportQuery as any,
+      format: format as any,
+      includeHeader,
+      // Include metadata for CSV/XLSX exports in Cloud context.
+      ...(includeHeader &&
+        $adminServer && {
+          originDashboard: { name: exploreName, kind: ResourceKind.Explore },
+          originUrl: window.location.href,
+        }),
     });
     const downloadUrl = `${runtimeClient.host}${result.downloadUrlPath}`;
     window.open(downloadUrl, "_self");

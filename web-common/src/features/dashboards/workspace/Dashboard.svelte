@@ -1,6 +1,7 @@
 <script lang="ts">
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { isHTTPError } from "@rilldata/web-common/lib/errors";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -78,7 +79,7 @@
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the explore
-  $: exploreQuery = useExploreValidSpec(instanceId, exploreName);
+  $: exploreQuery = useExploreValidSpec(client, exploreName);
 
   $: ({ data, error: exploreError } = $exploreQuery);
 
@@ -87,7 +88,9 @@
   $: hasTimeSeries = !!data?.metricsView?.timeDimension;
 
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && exploreError?.response?.status === 404;
+    $selectedMockUserStore &&
+    isHTTPError(exploreError) &&
+    exploreError.response.status === 404;
 
   $: hidePivot = isEmbedded && exploreSpec?.embedsHidePivot;
 
@@ -166,7 +169,9 @@
     {#if mockUserHasNoAccess}
       <!-- Additional safeguard for mock users without dashboard access. -->
       <ErrorPage
-        statusCode={exploreError?.response?.status}
+        statusCode={isHTTPError(exploreError)
+          ? exploreError.response.status
+          : undefined}
         header="This user can't access this dashboard"
         body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
       />

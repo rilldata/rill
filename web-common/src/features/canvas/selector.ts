@@ -3,14 +3,13 @@ import {
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  createQueryServiceResolveCanvas,
-  type RpcStatus,
   type V1CanvasSpec,
   type V1MetricsView,
   type V1ResolveCanvasResponse,
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
@@ -23,10 +22,10 @@ import type {
  * 3. The first available metrics view
  */
 export function useDefaultMetrics(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName?: string,
 ) {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) => {
+  return useFilteredResources(client, ResourceKind.MetricsView, (data) => {
     const validMetricsViews = data?.resources?.filter(
       (res) => !!res.metricsView?.state?.validSpec,
     );
@@ -87,21 +86,16 @@ export interface CanvasResponse {
 }
 
 export function useCanvas(
-  instanceId: string,
+  client: RuntimeClient,
   canvasName: string,
   queryOptions?: Partial<
-    CreateQueryOptions<
-      V1ResolveCanvasResponse,
-      ErrorType<RpcStatus>,
-      CanvasResponse
-    >
+    CreateQueryOptions<V1ResolveCanvasResponse, Error, CanvasResponse>
   >,
   queryClient?: QueryClient,
-): CreateQueryResult<CanvasResponse, ErrorType<RpcStatus>> {
+): CreateQueryResult<CanvasResponse, Error> {
   return createQueryServiceResolveCanvas(
-    instanceId,
-    canvasName,
-    {},
+    client,
+    { canvas: canvasName },
     {
       query: {
         select: (data) => {
@@ -121,7 +115,7 @@ export function useCanvas(
           };
         },
 
-        enabled: !!canvasName && !!instanceId,
+        enabled: !!canvasName && !!client.instanceId,
         ...queryOptions,
       },
     },

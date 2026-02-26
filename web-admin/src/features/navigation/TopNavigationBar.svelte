@@ -251,9 +251,11 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: exploreQuery = useExplore(instanceId, dashboard, {
-    enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
-  });
+  $: exploreQuery = runtimeClient
+    ? useExplore(runtimeClient, dashboard, {
+        enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
+      })
+    : _noopQuery;
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
   $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;

@@ -18,29 +18,18 @@ export function isRuntimeQuery(query: Query): boolean {
 
 export function isGetResourceMetricsViewQuery(query: Query): boolean {
   const key = query.queryKey;
-  // New format: ["RuntimeService", "getResource", instanceId, { "name.kind": ... }]
+  // Format: ["RuntimeService", "getResource", instanceId, { name: { kind, name } }]
   if (key[0] === "RuntimeService" && key[1] === "getResource") {
     const request = key[3];
+    if (typeof request !== "object" || request === null) return false;
+    const name = (request as Record<string, unknown>).name;
     return (
-      typeof request === "object" &&
-      request !== null &&
-      (request as Record<string, unknown>)["name.kind"] ===
-        ResourceKind.MetricsView
+      typeof name === "object" &&
+      name !== null &&
+      (name as Record<string, unknown>).kind === ResourceKind.MetricsView
     );
   }
-  // Old format
-  const [apiPath, queryParams] = key;
-  if (
-    typeof apiPath !== "string" ||
-    typeof queryParams !== "object" ||
-    queryParams === null
-  )
-    return false;
-  return (
-    apiPath.startsWith("/v1/instances/") &&
-    (queryParams as Record<string, unknown>)["name.kind"] ===
-      ResourceKind.MetricsView
-  );
+  return false;
 }
 
 export enum QueryRequestType {

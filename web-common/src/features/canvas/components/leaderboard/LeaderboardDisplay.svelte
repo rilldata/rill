@@ -176,7 +176,6 @@
               leaderboardShowContextForAllMeasures
               timeControlsReady
               slice={numRows}
-              {instanceId}
               visible={$visible}
               {isValidPercentOfTotal}
               {metricsViewName}
@@ -199,7 +198,7 @@
               allowExpandTable={false}
               allowDimensionComparison={false}
               selectedValues={selectedDimensionValues(
-                instanceId,
+                runtimeClient,
                 [metricsViewName],
                 whereFilter,
                 dimension.name,

@@ -85,7 +85,7 @@
             on:click={async () => {
               if (resource?.meta?.name?.name)
                 await createCanvasDashboardFromMetricsView(
-                  instanceId,
+                  runtimeClient,
                   resource.meta.name.name,
                 );
             }}

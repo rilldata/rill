@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { isHTTPError } from "@rilldata/web-common/lib/errors";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
@@ -46,7 +47,10 @@
   $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
   $: exploreSpec = $validSpecResp.data?.explore;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+  $: dashboardDoesNotExist =
+    $validSpecResp.isError &&
+    isHTTPError($validSpecResp.error) &&
+    $validSpecResp.error.response.status === 404;
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
     instanceId,

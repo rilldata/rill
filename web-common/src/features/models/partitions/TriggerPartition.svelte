@@ -53,10 +53,9 @@
     // Poll for updates since partition execution happens asynchronously
     const invalidate = () =>
       queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
-          instanceId,
-          modelName,
-        ),
+        queryKey: getRuntimeServiceGetModelPartitionsQueryKey(instanceId, {
+          model: modelName,
+        }),
       });
 
     await invalidate();

@@ -27,7 +27,7 @@
   $: status = $statusStore;
 
   onMount(() => {
-    void fileArtifacts.init(runtimeClient, queryClient, instanceId);
+    void fileArtifacts.init(runtimeClient, queryClient);
 
     return () => fileAndResourceWatcher.close(true);
   });

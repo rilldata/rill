@@ -83,7 +83,12 @@
 
     try {
       const promises = metricsViewNames.map((mvName) =>
-        deriveInterval(timeRange.expression || "", mvName, timeZone),
+        deriveInterval(
+          timeRange.expression || "",
+          runtimeClient,
+          mvName,
+          timeZone,
+        ),
       );
 
       const intervals = await Promise.all(promises);
