@@ -9,7 +9,10 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
-  import { createRuntimeServicePushEnv } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetInstance,
+    createRuntimeServicePushEnv,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 
@@ -17,7 +20,8 @@
   export let isProjectLinked = false;
   export let onSuccess: (() => void) | undefined = undefined;
 
-  let selectedEnvironment: "dev" | "prod" | "both" = "both";
+  $: instanceQuery = createRuntimeServiceGetInstance($runtime.instanceId);
+  $: environment = $instanceQuery.data?.instance?.environment ?? "";
 
   const pushEnvMutation = createRuntimeServicePushEnv();
 
@@ -28,10 +32,7 @@
     try {
       const result = await $pushEnvMutation.mutateAsync({
         instanceId: $runtime.instanceId,
-        data: {
-          environment:
-            selectedEnvironment === "both" ? "" : selectedEnvironment,
-        },
+        data: {},
       });
 
       const addedCount = result.addedCount ?? 0;
@@ -65,46 +66,10 @@
     <DialogHeader>
       <DialogTitle>Push Environment Variables</DialogTitle>
       <DialogDescription>
-        Merge your local .env variables with cloud. Existing cloud variables
-        will be updated with your local values.
+        Merge your local .env files with cloud for {environment || "all"} environment{environment === "" ? "s" : ""}. Existing
+        cloud variables will be updated with your local values.
       </DialogDescription>
     </DialogHeader>
-
-    <div class="flex flex-col gap-y-2">
-      <span class="text-sm font-medium text-fg-primary">Environment</span>
-      <div class="flex gap-x-2">
-        <button
-          type="button"
-          class="px-3 py-1.5 text-sm rounded-md border transition-colors {selectedEnvironment ===
-          'dev'
-            ? 'bg-primary-100 border-primary-500 text-primary-600'
-            : 'bg-surface border text-fg-secondary hover:bg-surface-hover'}"
-          on:click={() => (selectedEnvironment = "dev")}
-        >
-          Development
-        </button>
-        <button
-          type="button"
-          class="px-3 py-1.5 text-sm rounded-md border transition-colors {selectedEnvironment ===
-          'prod'
-            ? 'bg-primary-100 border-primary-500 text-primary-600'
-            : 'bg-surface border text-fg-secondary hover:bg-surface-hover'}"
-          on:click={() => (selectedEnvironment = "prod")}
-        >
-          Production
-        </button>
-        <button
-          type="button"
-          class="px-3 py-1.5 text-sm rounded-md border transition-colors {selectedEnvironment ===
-          'both'
-            ? 'bg-primary-100 border-primary-500 text-primary-600'
-            : 'bg-surface border text-fg-secondary hover:bg-surface-hover'}"
-          on:click={() => (selectedEnvironment = "both")}
-        >
-          Both
-        </button>
-      </div>
-    </div>
 
     {#if !isProjectLinked}
       <p class="text-sm text-fg-muted">

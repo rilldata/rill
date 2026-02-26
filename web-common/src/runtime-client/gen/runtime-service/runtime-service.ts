@@ -55,8 +55,7 @@ import type {
   RuntimeServiceListGitCommitsParams,
   RuntimeServiceListInstancesParams,
   RuntimeServiceListResourcesParams,
-  RuntimeServicePullEnvBody,
-  RuntimeServicePushEnvBody,
+  RuntimeServicePullEnvBodyBody,
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceReloadConfigBody,
@@ -1943,14 +1942,14 @@ export function createRuntimeServiceListNotifierConnectors<
  */
 export const runtimeServicePullEnv = (
   instanceId: string,
-  runtimeServicePullEnvBody: RuntimeServicePullEnvBody,
+  runtimeServicePullEnvBodyBody: RuntimeServicePullEnvBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1PullEnvResponse>({
     url: `/v1/instances/${instanceId}/env/pull`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: runtimeServicePullEnvBody,
+    data: runtimeServicePullEnvBodyBody,
     signal,
   });
 };
@@ -1962,13 +1961,13 @@ export const getRuntimeServicePullEnvMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServicePullEnv>>,
     TError,
-    { instanceId: string; data: RuntimeServicePullEnvBody },
+    { instanceId: string; data: RuntimeServicePullEnvBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof runtimeServicePullEnv>>,
   TError,
-  { instanceId: string; data: RuntimeServicePullEnvBody },
+  { instanceId: string; data: RuntimeServicePullEnvBodyBody },
   TContext
 > => {
   const mutationKey = ["runtimeServicePullEnv"];
@@ -1982,7 +1981,7 @@ export const getRuntimeServicePullEnvMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServicePullEnv>>,
-    { instanceId: string; data: RuntimeServicePullEnvBody }
+    { instanceId: string; data: RuntimeServicePullEnvBodyBody }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1995,7 +1994,7 @@ export const getRuntimeServicePullEnvMutationOptions = <
 export type RuntimeServicePullEnvMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServicePullEnv>>
 >;
-export type RuntimeServicePullEnvMutationBody = RuntimeServicePullEnvBody;
+export type RuntimeServicePullEnvMutationBody = RuntimeServicePullEnvBodyBody;
 export type RuntimeServicePullEnvMutationError = ErrorType<RpcStatus>;
 
 /**
@@ -2009,7 +2008,7 @@ export const createRuntimeServicePullEnv = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof runtimeServicePullEnv>>,
       TError,
-      { instanceId: string; data: RuntimeServicePullEnvBody },
+      { instanceId: string; data: RuntimeServicePullEnvBodyBody },
       TContext
     >;
   },
@@ -2017,7 +2016,7 @@ export const createRuntimeServicePullEnv = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServicePullEnv>>,
   TError,
-  { instanceId: string; data: RuntimeServicePullEnvBody },
+  { instanceId: string; data: RuntimeServicePullEnvBodyBody },
   TContext
 > => {
   const mutationOptions = getRuntimeServicePullEnvMutationOptions(options);
@@ -2029,14 +2028,14 @@ export const createRuntimeServicePullEnv = <
  */
 export const runtimeServicePushEnv = (
   instanceId: string,
-  runtimeServicePushEnvBody: RuntimeServicePushEnvBody,
+  runtimeServicePullEnvBodyBody: RuntimeServicePullEnvBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1PushEnvResponse>({
     url: `/v1/instances/${instanceId}/env/push`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: runtimeServicePushEnvBody,
+    data: runtimeServicePullEnvBodyBody,
     signal,
   });
 };
@@ -2048,13 +2047,13 @@ export const getRuntimeServicePushEnvMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServicePushEnv>>,
     TError,
-    { instanceId: string; data: RuntimeServicePushEnvBody },
+    { instanceId: string; data: RuntimeServicePullEnvBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof runtimeServicePushEnv>>,
   TError,
-  { instanceId: string; data: RuntimeServicePushEnvBody },
+  { instanceId: string; data: RuntimeServicePullEnvBodyBody },
   TContext
 > => {
   const mutationKey = ["runtimeServicePushEnv"];
@@ -2068,7 +2067,7 @@ export const getRuntimeServicePushEnvMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServicePushEnv>>,
-    { instanceId: string; data: RuntimeServicePushEnvBody }
+    { instanceId: string; data: RuntimeServicePullEnvBodyBody }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -2081,7 +2080,7 @@ export const getRuntimeServicePushEnvMutationOptions = <
 export type RuntimeServicePushEnvMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServicePushEnv>>
 >;
-export type RuntimeServicePushEnvMutationBody = RuntimeServicePushEnvBody;
+export type RuntimeServicePushEnvMutationBody = RuntimeServicePullEnvBodyBody;
 export type RuntimeServicePushEnvMutationError = ErrorType<RpcStatus>;
 
 /**
@@ -2095,7 +2094,7 @@ export const createRuntimeServicePushEnv = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof runtimeServicePushEnv>>,
       TError,
-      { instanceId: string; data: RuntimeServicePushEnvBody },
+      { instanceId: string; data: RuntimeServicePullEnvBodyBody },
       TContext
     >;
   },
@@ -2103,7 +2102,7 @@ export const createRuntimeServicePushEnv = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServicePushEnv>>,
   TError,
-  { instanceId: string; data: RuntimeServicePushEnvBody },
+  { instanceId: string; data: RuntimeServicePullEnvBodyBody },
   TContext
 > => {
   const mutationOptions = getRuntimeServicePushEnvMutationOptions(options);

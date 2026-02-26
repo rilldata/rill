@@ -71,23 +71,45 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		return err
 	}
 	res, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-		Org:         ch.Org,
-		Project:     projectName,
-		Environment: environment,
+		Org:                ch.Org,
+		Project:            projectName,
+		Environment:        environment,
+		ForAllEnvironments: environment == "",
 	})
 	if err != nil {
 		return err
 	}
 
-	resVars := make(map[string]string, len(res.Variables))
+	// new vars from the cloud
+	perEnvVars := make(map[string]map[string]string)
 	for _, v := range res.Variables {
-		resVars[v.Name] = v.Value
+		vars, ok := perEnvVars[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnvVars[v.Environment] = vars
+		}
+		vars[v.Name] = v.Value
 	}
 
-	dotEnv := p.GetDotEnv()
+	// existing vars from the .env files in the project
+	dotEnv := p.GetDotEnvPerEnvironment()
 
-	// If the variables match any existing .env file, do nothing
-	if maps.Equal(resVars, dotEnv) && warnForNoVars {
+	// If variables for every environment are exactly the same as what's in the .env file, skip writing and warn the user
+	equal := true
+	for env, resVars := range perEnvVars {
+		if !maps.Equal(resVars, dotEnv[env]) {
+			equal = false
+			break
+		}
+	}
+	for env, vars := range dotEnv {
+		if !maps.Equal(vars, perEnvVars[env]) {
+			equal = false
+			break
+		}
+	}
+
+	if equal && warnForNoVars {
 		if len(res.Variables) == 0 {
 			ch.Printf("No cloud credentials found for project %q.\n", projectName)
 		} else {
@@ -97,23 +119,31 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	}
 
 	// Merge the current .env file with pulled variables
-	vars := make(map[string]string)
-	maps.Copy(vars, dotEnv)
-	maps.Copy(vars, resVars)
-	err = godotenv.Write(vars, filepath.Join(projectPath, ".env"))
-	if err != nil {
-		return err
-	}
+	for env, resVars := range perEnvVars {
+		vars := make(map[string]string)
+		existing := dotEnv[env]
+		maps.Copy(vars, existing)
+		maps.Copy(vars, resVars)
+		var path string
+		if env == "" {
+			path = ".env"
+		} else {
+			path = fmt.Sprintf(".%s.env", env)
+		}
+		err = godotenv.Write(vars, filepath.Join(projectPath, path))
+		if err != nil {
+			return err
+		}
+		ch.Printf("Updated %q file with cloud credentials from project %q.\n", path, projectName)
 
-	// Add to gitignore if necessary
-	changed, err := cmdutil.EnsureGitignoreHasDotenv(ctx, repo)
-	if err != nil {
-		return err
+		// Add to gitignore if necessary
+		changed, err := cmdutil.EnsureGitignoreHasDotenv(ctx, repo, path)
+		if err != nil {
+			return err
+		}
+		if changed {
+			ch.Printf("Added %q to .gitignore.\n", path)
+		}
 	}
-	if changed {
-		ch.Printf("Added .env to .gitignore.\n")
-	}
-
-	ch.Printf("Updated .env file with cloud credentials from project %q.\n", projectName)
 	return nil
 }

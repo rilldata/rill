@@ -782,10 +782,6 @@ paths:
           required: true
           schema:
             type: object
-            properties:
-              environment:
-                type: string
-                description: 'Environment to pull from: "dev" or "prod". Defaults to "dev".'
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/env/push:
@@ -811,10 +807,6 @@ paths:
           required: true
           schema:
             type: object
-            properties:
-              environment:
-                type: string
-                description: 'Environment to push to: "dev", "prod", or empty for both.'
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files:
@@ -7066,7 +7058,7 @@ definitions:
         title: Number of variables pulled from cloud
       modified:
         type: boolean
-        title: Whether the .env file was modified
+        title: Whether the .env file(s) were modified
   v1PushEnvResponse:
     type: object
     properties:

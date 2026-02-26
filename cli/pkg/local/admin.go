@@ -81,7 +81,7 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 }
 
 // GetProjectVariables implements drivers.AdminService.
-func (l *localAdminService) GetProjectVariables(ctx context.Context, environment string) (map[string]string, error) {
+func (l *localAdminService) GetProjectVariables(ctx context.Context, environment string) (map[string]map[string]string, error) {
 	if l.ch.AdminToken() == "" {
 		return nil, drivers.ErrNotAuthenticated
 	}
@@ -106,12 +106,17 @@ func (l *localAdminService) GetProjectVariables(ctx context.Context, environment
 		return nil, err
 	}
 
-	vars := make(map[string]string, len(resp.Variables))
+	perEnv := make(map[string]map[string]string)
 	for _, v := range resp.Variables {
+		vars, ok := perEnv[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnv[v.Environment] = vars
+		}
 		vars[v.Name] = v.Value
 	}
 
-	return vars, nil
+	return perEnv, nil
 }
 
 // UpdateProjectVariables implements drivers.AdminService.

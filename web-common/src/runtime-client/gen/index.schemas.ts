@@ -2628,6 +2628,8 @@ export interface V1WatchResourcesResponse {
   resource?: V1Resource;
 }
 
+export type RuntimeServicePullEnvBodyBody = { [key: string]: unknown };
+
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
@@ -2741,16 +2743,6 @@ export type ConnectorServiceListObjectsParams = {
   delimiter?: string;
   pageSize?: number;
   pageToken?: string;
-};
-
-export type RuntimeServicePullEnvBody = {
-  /** Environment to pull from: "dev" or "prod". Defaults to "dev". */
-  environment?: string;
-};
-
-export type RuntimeServicePushEnvBody = {
-  /** Environment to push to: "dev", "prod", or empty for both. */
-  environment?: string;
 };
 
 export type RuntimeServiceListFilesParams = {

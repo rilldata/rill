@@ -16168,8 +16168,6 @@ func (m *PullEnvRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Environment
-
 	if len(errors) > 0 {
 		return PullEnvRequestMultiError(errors)
 	}
@@ -16386,8 +16384,6 @@ func (m *PushEnvRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
-
-	// no validation rules for Environment
 
 	if len(errors) > 0 {
 		return PushEnvRequestMultiError(errors)

@@ -64,66 +64,95 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to get project variables: %w", err)
 			}
 
-			// Merge the current .env file with the cloud variables
-			vars := make(map[string]string)
+			// new vars from the cloud
+			perEnvVars := make(map[string]map[string]string)
 			for _, v := range res.Variables {
+				vars, ok := perEnvVars[v.Environment]
+				if !ok {
+					vars = make(map[string]string)
+					perEnvVars[v.Environment] = vars
+				}
 				vars[v.Name] = v.Value
 			}
-			added := 0
-			changed := 0
-			changedVars := make(map[string]string)
-			for k, v := range p.GetDotEnv() {
-				if _, ok := vars[k]; !ok {
-					added++
-					changedVars[k] = v
-				} else if vars[k] != v {
-					changed++
-					changedVars[k] = v
+
+			// Fetch the local variables
+			current := p.GetDotEnvPerEnvironment()
+
+			// Merge the current .env file with the cloud variables
+			for env, local := range current {
+				if env != "" && env != environment {
+					ch.Printf("Skipping environment %q since it doesn't match the specified environment filter %q.\n", env, environment)
+					continue
 				}
-				vars[k] = v
-			}
+				cloud, conf := perEnvVars[env]
+				if !conf {
+					cloud = make(map[string]string)
+				}
+				var added, changed int
+				for k, v := range local {
+					if _, ok := cloud[k]; !ok {
+						added++
+					} else if cloud[k] != v {
+						changed++
+					}
+					cloud[k] = v
+				}
+				// no changes
+				if added+changed == 0 {
+					if len(local) == 0 && len(cloud) == 0 && env != "" {
+						// Avoid printing any messages for non default environments since most projects won't have them
+						continue
+					}
+					ch.Printf("Environment %q: There are no new or changed variables in your local file.\n", envForPrint(env))
+					continue
+				}
+				if added > 0 || changed > 0 {
+					ch.Printf("Environment %q: %d new and %d changed variable(s) found in local file.\n", envForPrint(env), added, changed)
+				}
+				confirmed := true
+				if ch.Interactive {
+					confirmed, err = cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+					if err != nil {
+						return fmt.Errorf("failed to prompt for confirmation: %w", err)
+					}
+				}
+				if !confirmed {
+					continue
+				}
 
-			// If there were no changes, exit early
-			if added+changed == 0 {
-				ch.Print("There are no new or changed variables in your local .env file.\n")
-				return nil
-			}
+				// Write the merged variables back to the cloud project
+				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
+					Org:         ch.Org,
+					Project:     projectName,
+					Environment: env,
+					Variables:   cloud,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to update project variables: %w", err)
+				}
 
-			// Always prompt for confirmation when there are changes
-			message := fmt.Sprintf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
-			ch.Print(message)
-
-			for k, v := range changedVars {
-				ch.Printf("  %s=%s\n", k, v)
+				var envFile string
+				if env == "" {
+					envFile = ".env"
+				} else {
+					envFile = fmt.Sprintf(".%s.env", env)
+				}
+				ch.Printf("Environment %q: Updated cloud env for project %q with variables from %q.\n", env, projectName, filepath.Join(projectPath, envFile))
 			}
-
-			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-			if err != nil {
-				return fmt.Errorf("failed to prompt for confirmation: %w", err)
-			}
-			if !ok {
-				return nil
-			}
-
-			// Write the merged variables back to the cloud project
-			_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
-				Org:         ch.Org,
-				Project:     projectName,
-				Environment: environment,
-				Variables:   vars,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to update project variables: %w", err)
-			}
-
-			ch.Printf("Updated cloud env for project %q with variables from %q.\n", projectName, filepath.Join(projectPath, ".env"))
 			return nil
 		},
 	}
 
 	pushCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	pushCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
-	pushCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
+	pushCmd.Flags().StringVar(&environment, "environment", "dev", "Optional environment to resolve for (options: dev, prod)")
 
 	return pushCmd
+}
+
+func envForPrint(env string) string {
+	if env == "" {
+		return "default"
+	}
+	return env
 }

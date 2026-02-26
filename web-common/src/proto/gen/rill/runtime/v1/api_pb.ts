@@ -6576,13 +6576,6 @@ export class PullEnvRequest extends Message$1<PullEnvRequest> {
    */
   instanceId = "";
 
-  /**
-   * Environment to pull from: "dev" or "prod". Defaults to "dev".
-   *
-   * @generated from field: string environment = 2;
-   */
-  environment = "";
-
   constructor(data?: PartialMessage<PullEnvRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6592,7 +6585,6 @@ export class PullEnvRequest extends Message$1<PullEnvRequest> {
   static readonly typeName = "rill.runtime.v1.PullEnvRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullEnvRequest {
@@ -6624,7 +6616,7 @@ export class PullEnvResponse extends Message$1<PullEnvResponse> {
   variablesCount = 0;
 
   /**
-   * Whether the .env file was modified
+   * Whether the .env file(s) were modified
    *
    * @generated from field: bool modified = 2;
    */
@@ -6668,13 +6660,6 @@ export class PushEnvRequest extends Message$1<PushEnvRequest> {
    */
   instanceId = "";
 
-  /**
-   * Environment to push to: "dev", "prod", or empty for both.
-   *
-   * @generated from field: string environment = 2;
-   */
-  environment = "";
-
   constructor(data?: PartialMessage<PushEnvRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6684,7 +6669,6 @@ export class PushEnvRequest extends Message$1<PushEnvRequest> {
   static readonly typeName = "rill.runtime.v1.PushEnvRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushEnvRequest {

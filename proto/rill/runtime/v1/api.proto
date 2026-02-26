@@ -1395,21 +1395,17 @@ message GitPushResponse {}
 
 message PullEnvRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Environment to pull from: "dev" or "prod". Defaults to "dev".
-  string environment = 2;
 }
 
 message PullEnvResponse {
   // Number of variables pulled from cloud
   int32 variables_count = 1;
-  // Whether the .env file was modified
+  // Whether the .env file(s) were modified
   bool modified = 2;
 }
 
 message PushEnvRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Environment to push to: "dev", "prod", or empty for both.
-  string environment = 2;
 }
 
 message PushEnvResponse {

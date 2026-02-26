@@ -43,55 +43,78 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 	}
 	defer release()
 
-	environment := req.Environment
-	if environment == "" {
-		environment = "dev"
-	}
-
-	// Fetch cloud variables
-	cloudVars, err := admin.GetProjectVariables(ctx, environment)
+	// Fetch cloud variables for all environments
+	cloudPerEnv, err := admin.GetProjectVariables(ctx, inst.Environment)
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)
 	}
 
-	// Parse local .env
+	// Parse local .env files
 	// Instance's project_variables contains variables from both rill.yaml and .env so can't be used here
 	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
 
-	localDotEnv := p.GetDotEnv()
+	localPerEnv := p.GetDotEnvPerEnvironment()
 
-	// Check if variables are already up to date
-	if maps.Equal(cloudVars, localDotEnv) {
+	// Check if all environments are already up to date
+	equal := true
+	for env, cloudVars := range cloudPerEnv {
+		if !maps.Equal(cloudVars, localPerEnv[env]) {
+			equal = false
+			break
+		}
+	}
+	if equal {
+		for env, localVars := range localPerEnv {
+			if !maps.Equal(localVars, cloudPerEnv[env]) {
+				equal = false
+				break
+			}
+		}
+	}
+
+	totalCount := int32(0)
+	for _, vars := range cloudPerEnv {
+		totalCount += int32(len(vars))
+	}
+
+	if equal {
 		return &runtimev1.PullEnvResponse{
-			VariablesCount: int32(len(cloudVars)),
+			VariablesCount: totalCount,
 			Modified:       false,
 		}, nil
 	}
 
-	// Merge: start with local, overlay cloud
-	mergedVars := make(map[string]string)
-	maps.Copy(mergedVars, localDotEnv)
-	maps.Copy(mergedVars, cloudVars)
-
-	// Write merged variables to .env file
+	// Write merged variables per environment
 	root, err := repo.Root(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get repo root: %w", err)
 	}
-	envPath := filepath.Join(root, ".env")
-	err = godotenv.Write(mergedVars, envPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to write .env file: %w", err)
+
+	for env, cloudVars := range cloudPerEnv {
+		merged := make(map[string]string)
+		maps.Copy(merged, localPerEnv[env])
+		maps.Copy(merged, cloudVars)
+
+		var envFileName string
+		if env == "" {
+			envFileName = ".env"
+		} else {
+			envFileName = fmt.Sprintf(".%s.env", env)
+		}
+
+		err = godotenv.Write(merged, filepath.Join(root, envFileName))
+		if err != nil {
+			return nil, fmt.Errorf("failed to write %s: %w", envFileName, err)
+		}
+
+		_, _ = cmdutil.EnsureGitignoreHasDotenv(ctx, repo, envFileName)
 	}
 
-	// Ensure .env is in .gitignore
-	_, _ = cmdutil.EnsureGitignoreHasDotenv(ctx, repo)
-
 	return &runtimev1.PullEnvResponse{
-		VariablesCount: int32(len(cloudVars)),
+		VariablesCount: totalCount,
 		Modified:       true,
 	}, nil
 }
@@ -123,51 +146,49 @@ func (s *Server) PushEnv(ctx context.Context, req *runtimev1.PushEnvRequest) (*r
 	}
 	defer release()
 
-	// Parse local .env
+	// Parse local .env files
 	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
 
-	localDotEnv := p.GetDotEnv()
+	localPerEnv := p.GetDotEnvPerEnvironment()
 
-	// Fetch existing cloud variables
-	cloudVars, err := admin.GetProjectVariables(ctx, req.Environment)
+	// Fetch existing cloud variables for all environments
+	cloudPerEnv, err := admin.GetProjectVariables(ctx, inst.Environment)
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)
 	}
 
-	// Merge: start with cloud, overlay local
-	mergedVars := make(map[string]string)
-	for k, v := range cloudVars {
-		mergedVars[k] = v
-	}
+	var addedCount, changedCount int32
 
-	addedCount := int32(0)
-	changedCount := int32(0)
+	for env, local := range localPerEnv {
+		cloud := cloudPerEnv[env]
 
-	for k, v := range localDotEnv {
-		if _, exists := cloudVars[k]; !exists {
-			addedCount++
-			mergedVars[k] = v
-		} else if cloudVars[k] != v {
-			changedCount++
-			mergedVars[k] = v
+		// Merge: start with cloud, overlay local; track what changed
+		merged := make(map[string]string)
+		maps.Copy(merged, cloud)
+		var added, changed int32
+		for k, v := range local {
+			if _, exists := cloud[k]; !exists {
+				added++
+			} else if cloud[k] != v {
+				changed++
+			}
+			merged[k] = v
 		}
-	}
 
-	// No changes
-	if addedCount == 0 && changedCount == 0 {
-		return &runtimev1.PushEnvResponse{
-			AddedCount:   0,
-			ChangedCount: 0,
-		}, nil
-	}
+		if added == 0 && changed == 0 {
+			continue
+		}
 
-	// Update cloud variables
-	err = admin.UpdateProjectVariables(ctx, req.Environment, mergedVars)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update project variables: %w", err)
+		err = admin.UpdateProjectVariables(ctx, env, merged)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update project variables for environment %q: %w", env, err)
+		}
+
+		addedCount += added
+		changedCount += changed
 	}
 
 	return &runtimev1.PushEnvResponse{

@@ -303,6 +303,7 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
 		InstanceId:         inst.ID,
+		Environment:        inst.Environment,
 		ProjectDisplayName: inst.ProjectDisplayName,
 		CreatedOn:          timestamppb.New(inst.CreatedOn),
 		UpdatedOn:          timestamppb.New(inst.UpdatedOn),

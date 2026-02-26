@@ -153,7 +153,7 @@ func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, er
 	return res, nil
 }
 
-func (h *Handle) GetProjectVariables(ctx context.Context, environment string) (map[string]string, error) {
+func (h *Handle) GetProjectVariables(ctx context.Context, environment string) (map[string]map[string]string, error) {
 	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
 		Id: h.config.ProjectID,
 	})
@@ -170,12 +170,17 @@ func (h *Handle) GetProjectVariables(ctx context.Context, environment string) (m
 		return nil, err
 	}
 
-	vars := make(map[string]string, len(resp.Variables))
+	perEnv := make(map[string]map[string]string)
 	for _, v := range resp.Variables {
+		vars, ok := perEnv[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnv[v.Environment] = vars
+		}
 		vars[v.Name] = v.Value
 	}
 
-	return vars, nil
+	return perEnv, nil
 }
 
 func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {

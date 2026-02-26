@@ -14,7 +14,7 @@ type AdminService interface {
 	ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error)
 	GetDeploymentConfig(ctx context.Context) (*DeploymentConfig, error)
 	ListDeployments(ctx context.Context) ([]*Deployment, error)
-	GetProjectVariables(ctx context.Context, environment string) (map[string]string, error)
+	GetProjectVariables(ctx context.Context, environment string) (map[string]map[string]string, error)
 	UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error
 }
 

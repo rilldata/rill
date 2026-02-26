@@ -14,6 +14,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 // Built-in parser limits
@@ -302,24 +303,46 @@ func (p *Parser) TrackedPathsInDir(dir string) []string {
 	return paths
 }
 
-// GetDotEnv returns all the project's environment variables
+// GetDotEnv returns all the project's environment variables.
+// Base .env files are applied first; named variants (e.g. .dev.env) are applied second and take precedence.
 func (p *Parser) GetDotEnv() map[string]string {
 	env := make(map[string]string)
+	envs := p.GetDotEnvPerEnvironment()
 
-	paths := make([]string, 0, len(p.DotEnv))
-	for path := range p.DotEnv {
-		paths = append(paths, path)
+	// Get the base envs first
+	if v, ok := envs[""]; ok {
+		maps.Copy(env, v)
 	}
-	slices.Sort(paths)
 
-	for _, path := range paths {
-		envMap := p.DotEnv[path]
-		for k, v := range envMap {
-			env[k] = v
-		}
+	// Then overlay the environment-specific envs on top
+	if v, ok := envs[p.Environment]; ok {
+		maps.Copy(env, v)
 	}
 
 	return env
+}
+
+// GetDotEnvPerEnvironment returns a map of environment to the variables defined in the corresponding .env file.
+func (p *Parser) GetDotEnvPerEnvironment() map[string]map[string]string {
+	perEnv := make(map[string]map[string]string)
+
+	// sort paths so deeper paths win over shallower ones
+	paths := slices.Sorted(maps.Keys(p.DotEnv))
+
+	for _, path := range paths {
+		ext := fileutil.FullExt(path)
+		var envName string
+		if ext != ".env" {
+			envName = strings.TrimSuffix(strings.TrimPrefix(ext, "."), ".env")
+		}
+		vars, ok := perEnv[envName]
+		if !ok {
+			vars = make(map[string]string)
+			perEnv[envName] = vars
+		}
+		maps.Copy(vars, p.DotEnv[path])
+	}
+	return perEnv
 }
 
 // reload resets the parser's state and then parses the entire project.
@@ -1063,9 +1086,11 @@ func pathIsRillYAML(path string) bool {
 	return path == "/rill.yaml" || path == "/rill.yml"
 }
 
-// pathIsDotEnv returns true if the path is a .env file (in any directory)
+// pathIsDotEnv returns true if the path is a .env file (in any directory).
+// It matches both the base .env file and named variants like .cloud.env or .local.env.
 func pathIsDotEnv(path string) bool {
-	return strings.HasSuffix(path, "/.env")
+	ext := fileutil.FullExt(path)
+	return strings.HasSuffix(ext, ".env")
 }
 
 // pathIsIgnored returns true if the path should be ignored by the parser.
