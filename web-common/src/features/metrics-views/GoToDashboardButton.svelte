@@ -10,14 +10,17 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
-  import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
+  import {
+    createCanvasDashboardFromMetricsView,
+    createCanvasDashboardFromMetricsViewWithAgent,
+  } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import NavigateOrDropdown from "./NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
 
   const runtimeClient = useRuntimeClient();
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
 
   $: ({ instanceId } = runtimeClient);
   $: dashboardsQuery = useGetExploresForMetricsView(
@@ -34,11 +37,20 @@
         type="secondary"
         disabled={!resource}
         onClick={async () => {
-          if (resource?.meta?.name?.name)
-            await createCanvasDashboardFromMetricsView(
-              runtimeClient,
-              resource.meta.name.name,
-            );
+          if (resource?.meta?.name?.name) {
+            // Use developer agent if enabled, otherwise fall back to RPC
+            if ($developerChat) {
+              createCanvasDashboardFromMetricsViewWithAgent(
+                runtimeClient,
+                resource.meta.name.name,
+              );
+            } else {
+              await createCanvasDashboardFromMetricsView(
+                runtimeClient,
+                resource.meta.name.name,
+              );
+            }
+          }
         }}
       >
         Generate Canvas Dashboard{$ai ? " with AI" : ""}
@@ -83,11 +95,20 @@
         {#if $generateCanvas}
           <DropdownMenu.Item
             on:click={async () => {
-              if (resource?.meta?.name?.name)
-                await createCanvasDashboardFromMetricsView(
-                  runtimeClient,
-                  resource.meta.name.name,
-                );
+              if (resource?.meta?.name?.name) {
+                // Use developer agent if enabled, otherwise fall back to RPC
+                if ($developerChat) {
+                  createCanvasDashboardFromMetricsViewWithAgent(
+                    runtimeClient,
+                    resource.meta.name.name,
+                  );
+                } else {
+                  await createCanvasDashboardFromMetricsView(
+                    runtimeClient,
+                    resource.meta.name.name,
+                  );
+                }
+              }
             }}
           >
             <Add />

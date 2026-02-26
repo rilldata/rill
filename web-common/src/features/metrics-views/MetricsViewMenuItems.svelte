@@ -18,11 +18,14 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { GitBranch, WandIcon } from "lucide-svelte";
-  import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
+  import {
+    createCanvasDashboardFromMetricsView,
+    createCanvasDashboardFromMetricsViewWithAgent,
+  } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
 
   const runtimeClient = useRuntimeClient();
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
 
   export let filePath: string;
 
@@ -75,7 +78,18 @@
 
   async function handleCreateCanvasDashboard() {
     if (!metricsViewName) return;
-    await createCanvasDashboardFromMetricsView(runtimeClient, metricsViewName);
+    // Use developer agent if enabled, otherwise fall back to RPC
+    if ($developerChat) {
+      createCanvasDashboardFromMetricsViewWithAgent(
+        runtimeClient,
+        metricsViewName,
+      );
+    } else {
+      await createCanvasDashboardFromMetricsView(
+        runtimeClient,
+        metricsViewName,
+      );
+    }
   }
 </script>
 

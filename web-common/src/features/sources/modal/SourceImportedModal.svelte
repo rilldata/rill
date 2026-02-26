@@ -15,11 +15,12 @@
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import {
+    createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewFromTableUIAction,
     useCreateMetricsViewWithCanvasAndExploreUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
 
   export let sourcePath: string | null;
 
@@ -81,7 +82,19 @@
     // for type narrowing and just in case.
     if (createDashboardFromTable === null) return;
     close();
-    await createDashboardFromTable();
+
+    // Use developer agent if enabled and generateCanvas is on, otherwise fall back to RPC
+    if ($generateCanvas && $developerChat) {
+      await createCanvasDashboardFromTableWithAgent(
+        runtimeClient,
+        sinkConnector as string,
+        "",
+        "",
+        sourceName,
+      );
+    } else {
+      await createDashboardFromTable();
+    }
   }
 </script>
 
