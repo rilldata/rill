@@ -257,7 +257,13 @@
       </InspectorHeaderGrid>
 
       <hr />
-      <References refs={resourceRefs} modelHasError={hasErrors} />
+      <References
+        refs={resourceRefs}
+        modelHasError={hasErrors}
+        {connector}
+        {database}
+        {databaseSchema}
+      />
       <hr />
 
       <div>

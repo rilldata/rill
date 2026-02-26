@@ -17,3 +17,12 @@ export function useRuntimeClient(): RuntimeClient {
   }
   return client;
 }
+
+/**
+ * Like useRuntimeClient(), but returns null instead of throwing
+ * when no RuntimeProvider ancestor exists. Useful for components
+ * that render both inside and outside a runtime context (e.g. navigation bars).
+ */
+export function tryUseRuntimeClient(): RuntimeClient | null {
+  return getContext<RuntimeClient | undefined>(RUNTIME_CONTEXT_KEY) ?? null;
+}

@@ -9,6 +9,7 @@ export function useDashboardPolicyCheck(instanceId: string, filePath: string) {
     },
     {
       query: {
+        enabled: !!filePath,
         select: (data) => {
           if (!data.blob) return false;
           const yamlObj = parse(data.blob);

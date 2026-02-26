@@ -14,7 +14,8 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { tryUseRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { readable } from "svelte/store";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
@@ -56,8 +57,9 @@
     dashboardChat,
     stickyDashboardState,
   } = featureFlags;
+  const runtimeClient = tryUseRuntimeClient();
 
-  $: ({ instanceId } = $runtime);
+  $: instanceId = runtimeClient?.instanceId ?? "";
 
   // These can be undefined
   $: ({
@@ -138,10 +140,18 @@
     },
   );
 
-  $: visualizationsQuery = useDashboards(instanceId);
-
-  $: alertsQuery = useAlerts(instanceId, onAlertPage);
-  $: reportsQuery = useReports(instanceId, onReportPage);
+  // These queries only run when inside a RuntimeProvider (project pages).
+  // On org-level pages runtimeClient is null; use a no-op store so $-subscriptions don't crash.
+  const _noopQuery = readable({ data: undefined }) as any;
+  $: visualizationsQuery = runtimeClient
+    ? useDashboards(runtimeClient)
+    : _noopQuery;
+  $: alertsQuery = runtimeClient
+    ? useAlerts(runtimeClient, onAlertPage)
+    : _noopQuery;
+  $: reportsQuery = runtimeClient
+    ? useReports(runtimeClient, onReportPage)
+    : _noopQuery;
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];

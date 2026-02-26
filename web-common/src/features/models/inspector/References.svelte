@@ -17,6 +17,9 @@
 
   export let refs: V1ResourceName[];
   export let modelHasError: boolean;
+  export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
 
   const client = useRuntimeClient();
 
@@ -39,6 +42,9 @@
     refs.map((ref) => {
       return createQueryServiceTableCardinality(client, {
         tableName: ref.name as string,
+        connector,
+        database,
+        databaseSchema,
       });
     }),
     (refs) => refs.map((ref) => Number(ref.data?.cardinality ?? 0)),
