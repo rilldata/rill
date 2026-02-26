@@ -1,4 +1,3 @@
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import {
   type V1GetAIMessageResponse,
   type V1Message,

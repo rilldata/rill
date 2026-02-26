@@ -55,7 +55,7 @@
   <ReconcilingSpinner />
 {:else if rowsError || columnsError}
   <WorkspaceError
-    message={`Error loading table: ${rowsError?.response.data?.message || columnsError?.response.data?.message}`}
+    message={`Error loading table: ${(rowsError ?? columnsError)?.message ?? "Unknown error"}`}
   />
 {:else if rows && columns}
   <PreviewTable {rows} columnNames={columns} name={table} />

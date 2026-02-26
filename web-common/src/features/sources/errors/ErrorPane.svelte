@@ -9,8 +9,6 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   // Parse Source YAML client-side
   $: sourceFromYaml = useSourceFromYaml(runtimeClient, filePath);
 

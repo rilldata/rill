@@ -17,8 +17,6 @@ export async function generateSampleData(
   initializeProject: boolean,
   userPrompt: string,
 ) {
-  const agentPrompt = `Generate a new model with fresh data for the following user prompt: ${userPrompt}`;
-
   try {
     if (initializeProject) {
       overlay.set({

@@ -31,8 +31,6 @@
 
   export let mode: string;
 
-  $: ({ instanceId } = runtimeClient);
-
   $: ({
     params: { name: dashboardName },
     route,

@@ -28,7 +28,8 @@
 
   // Prefetch tools metadata for tool call display names
   const listToolsQueryOptionsStore = getRuntimeServiceListToolsQueryOptions(
-    runtimeClient.instanceId,
+    runtimeClient,
+    {},
   );
   const listToolsQuery = createQuery(listToolsQueryOptionsStore);
   $: tools = $listToolsQuery.data?.tools;

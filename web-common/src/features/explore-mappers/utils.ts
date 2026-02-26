@@ -22,7 +22,6 @@ import {
   getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   queryServiceMetricsViewAggregation,
-  type QueryServiceMetricsViewAggregationBody,
   queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
   type V1ExploreSpec,

@@ -49,8 +49,6 @@ export function getInlineChatContextMetadata(
     queryClient,
   );
 
-  const instanceId = client.instanceId;
-
   return derived(
     [metricsViewsQuery, canvasResourcesQuery],
     ([metricsViewsResp, canvasResourcesResp], set) => {

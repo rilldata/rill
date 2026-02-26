@@ -1,5 +1,5 @@
 import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
-import type { RpcStatus, V1Message } from "@rilldata/web-common/runtime-client";
+import type { V1Message } from "@rilldata/web-common/runtime-client";
 import {
   getMetricsViewAndExploreSpecsQueryOptions,
   type MetricsViewAndExploreSpecs,

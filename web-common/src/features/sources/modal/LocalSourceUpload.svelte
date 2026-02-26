@@ -20,8 +20,6 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   const unpackEmptyProject =
     createRuntimeServiceUnpackEmptyMutation(runtimeClient);
 

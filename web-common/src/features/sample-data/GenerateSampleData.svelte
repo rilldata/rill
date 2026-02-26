@@ -17,7 +17,6 @@
   const runtimeClient = useRuntimeClient();
   const initializeProject = type === "init";
 
-  $: ({ instanceId } = runtimeClient);
   const { developerChat } = featureFlags;
 
   const FORM_ID = "generate-sample-data-form";

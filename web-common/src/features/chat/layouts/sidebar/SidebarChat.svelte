@@ -18,7 +18,6 @@
   export let config: ChatConfig;
 
   const runtimeClient = useRuntimeClient();
-  $: instanceId = runtimeClient.instanceId;
 
   // Initialize conversation manager with browser storage for conversation management
   $: conversationManager = getConversationManager(runtimeClient, {

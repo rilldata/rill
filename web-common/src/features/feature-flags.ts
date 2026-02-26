@@ -2,7 +2,6 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { writable } from "svelte/store";
 import {
   createRuntimeServiceGetInstance,
-  getRuntimeServiceGetInstanceQueryKey,
   type V1GetInstanceResponse,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";

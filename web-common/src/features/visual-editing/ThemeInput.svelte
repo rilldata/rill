@@ -32,8 +32,6 @@
 
   let lastPresetTheme: string | undefined = undefined;
 
-  $: ({ instanceId } = runtimeClient);
-
   $: isPresetMode = theme === undefined || typeof theme === "string";
   $: embeddedTheme = typeof theme === "object" ? theme : undefined;
 

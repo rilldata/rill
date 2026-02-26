@@ -18,8 +18,6 @@
   export let databaseSchema: string;
   export let table: string;
 
-  $: ({ instanceId } = runtimeClient);
-
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ remoteContent } = fileArtifact);
   $: parseError = fileArtifact.getParseError(queryClient);
@@ -32,8 +30,8 @@
   $: resourceReconcileError = resourceData?.meta?.reconcileError;
 
   $: tableQuery = createConnectorServiceOLAPGetTable(
+    runtimeClient,
     {
-      instanceId,
       connector,
       database,
       databaseSchema,
