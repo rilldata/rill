@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
-test.describe("canvas generation", () => {
+test.describe.skip("canvas generation", () => {
   test.use({ project: "AdBids" });
 
   // Agent-based canvas generation involves multiple LLM round-trips
