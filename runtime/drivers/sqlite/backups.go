@@ -29,6 +29,9 @@ var (
 	// Max time a backup may run for.
 	backupMaxDuration = 10 * time.Minute
 
+	// Max AI message content size.
+	backupMaxAIMessageSizeBytes = 10 * 1024 // 10 KB
+
 	// Queries to backup as Parquet.
 	// Each will be exported to {output_dir}/{key}.parquet.
 	parquetBackupQueries = map[string]string{
@@ -173,9 +176,9 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 		return fmt.Errorf("failed to rewrite snapshot for analytics: %w", err)
 	}
 
-	// Open an in-memory DuckDB handle with 1 CPU and 256MB memory limit.
+	// Open an in-memory DuckDB handle with 1 CPU and 512MB memory limit.
 	// We'll use this to create Parquet files for the tables in the SQLite database.
-	duckdb, err := sqlx.Open("duckdb", "?threads=1&memory_limit=256MB")
+	duckdb, err := sqlx.Open("duckdb", "?threads=1&memory_limit=512MB")
 	if err != nil {
 		return fmt.Errorf("failed to open DuckDB: %w", err)
 	}
@@ -225,7 +228,9 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 
 // rewriteSnapshotForAnalytics rewrites the snapshot database to prepare it for analytics exports to Parquet.
 // This is done after the snapshot.db file has been backed up, so it does not affect the backup file itself.
-// Specifically, we do this to convert catalog resources from protobuf to JSON format to make them easy to query in downstream analytics.
+// It performs two rewrites:
+// 1. Converts catalog resources from protobuf to JSON format to make them easy to query in downstream analytics.
+// 2. Truncates AI message contents that exceed 10 KB to reduce backup size.
 func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPath string) error {
 	// Open the snapshot database.
 	snapshotDB, err := sqlx.Open("sqlite", snapshotPath)
@@ -262,6 +267,18 @@ func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPa
 		if err != nil {
 			return fmt.Errorf("failed to update catalog resource with JSON data: %w", err)
 		}
+	}
+
+	// Truncate AI message contents that exceed 10 KB.
+	_, err = snapshotDB.ExecContext(ctx, `
+		UPDATE ai_messages SET content = CASE
+			WHEN content_type = 'json' THEN '{"truncated":true}'
+			ELSE '<truncated>'
+		END
+		WHERE LENGTH(content) > ?
+	`, backupMaxAIMessageSizeBytes)
+	if err != nil {
+		return fmt.Errorf("failed to truncate AI messages: %w", err)
 	}
 
 	return nil
