@@ -1,4 +1,9 @@
 # This should be used for docs also
+#
+# Header accumulation: Netlify accumulates headers from all matching rules.
+# Same-name headers from more specific paths override the broader path's value.
+# The embed and share routes only need to override Content-Security-Policy;
+# all other headers are inherited from the default "/*" rule.
 
 # Default headers for main application (strict CSP)
 [[headers]]
@@ -24,7 +29,7 @@
     Cross-Origin-Resource-Policy = "cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
-# Embed routes
+# Embed routes - only override CSP to allow framing from any HTTPS origin
 [[headers]]
   for = "/-/embed/*"
   [headers.values]
@@ -40,15 +45,8 @@
       connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
-    Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
-    Referrer-Policy = "no-referrer"
-    X-Content-Type-Options = "nosniff"
-    Cross-Origin-Embedder-Policy = "credentialless"
-    Cross-Origin-Opener-Policy = "unsafe-none"
-    Cross-Origin-Resource-Policy = "cross-origin"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
-# Public share routes
+# Public share routes - only override CSP to allow framing from any HTTPS origin
 [[headers]]
   for = "/*/-/share/*"
   [headers.values]
@@ -64,11 +62,3 @@
       connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
-    Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
-    Referrer-Policy = "no-referrer"
-    X-Content-Type-Options = "nosniff"
-    Cross-Origin-Embedder-Policy = "credentialless"
-    Cross-Origin-Opener-Policy = "unsafe-none"
-    Cross-Origin-Resource-Policy = "cross-origin"
-    X-Frame-Options = "allow-from *"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
