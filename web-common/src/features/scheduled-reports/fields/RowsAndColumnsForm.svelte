@@ -8,7 +8,6 @@
   export let rows: string[];
   export let columns: string[];
   export let columnErrors: ValidationErrors<ReportValues>["columns"];
-  export let instanceId: string;
   export let exploreName: string;
 
   const runtimeClient = useRuntimeClient();

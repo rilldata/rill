@@ -51,12 +51,7 @@
 
 <div class="flex flex-col gap-y-3">
   <FormSection title="Filters">
-    <FiltersForm
-      instanceId={runtimeClient.instanceId}
-      {filters}
-      {timeControls}
-      maxWidth={750}
-    />
+    <FiltersForm {filters} {timeControls} maxWidth={750} />
   </FormSection>
   <FormSection
     description="Select the measures you want to monitor."

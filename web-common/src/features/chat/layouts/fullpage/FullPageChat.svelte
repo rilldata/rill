@@ -80,7 +80,6 @@
       <div class="chat-header">
         <ShareChatPopover
           conversationId={currentConversation.id}
-          {instanceId}
           {organization}
           {project}
         />

@@ -26,7 +26,6 @@
   $: ({ project } = data);
 
   const runtimeClient = useRuntimeClient();
-  $: ({ instanceId } = runtimeClient);
   $: ({
     organization: orgName,
     project: projectName,
@@ -78,7 +77,7 @@
 
   $: bookmarkExploreStateQuery = getHomeBookmarkExploreState(
     project?.id,
-    instanceId,
+    runtimeClient,
     metricsViewName,
     exploreName,
   );

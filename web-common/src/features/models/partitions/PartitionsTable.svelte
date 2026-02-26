@@ -13,8 +13,11 @@
   import {
     type V1ModelPartition,
     type V1Resource,
-    createRuntimeServiceGetModelPartitionsInfinite,
+    type V1GetModelPartitionsResponse,
+    runtimeServiceGetModelPartitions,
+    getRuntimeServiceGetModelPartitionsQueryKey,
   } from "../../../runtime-client";
+  import { createInfiniteQuery } from "@tanstack/svelte-query";
 
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import DataCell from "./DataCell.svelte";
@@ -28,7 +31,6 @@
   const runtimeClient = useRuntimeClient();
 
   $: modelName = resource?.meta?.name?.name as string;
-  $: ({ instanceId } = runtimeClient);
 
   // ==========================
   // Infinite Query
@@ -37,25 +39,30 @@
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
   };
-  $: query = createRuntimeServiceGetModelPartitionsInfinite(
-    instanceId,
-    modelName,
-    {
-      ...baseParams,
+  $: query = createInfiniteQuery<V1GetModelPartitionsResponse>({
+    queryKey: [
+      ...getRuntimeServiceGetModelPartitionsQueryKey(runtimeClient.instanceId, {
+        model: modelName,
+        ...baseParams,
+      }),
+      "infinite",
+    ],
+    queryFn: ({ pageParam }) =>
+      runtimeServiceGetModelPartitions(runtimeClient, {
+        model: modelName,
+        ...baseParams,
+        pageToken: pageParam as string | undefined,
+      }),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.nextPageToken !== "") {
+        return lastPage.nextPageToken;
+      }
+      return undefined;
     },
-    {
-      query: {
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
-        },
-        enabled: !!modelName,
-        refetchOnMount: true,
-      },
-    },
-  );
+    enabled: !!modelName,
+    refetchOnMount: true,
+  });
   $: ({ error } = $query);
 
   // ==========================
@@ -251,7 +258,7 @@
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
               <span class="text-red-500 font-semibold"
-                >Error: {error.response.data.message}</span
+                >Error: {error.message}</span
               >
             </td>
           </tr>

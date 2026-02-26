@@ -44,8 +44,7 @@
         queryKey: getRuntimeServiceGetResourceQueryKey(
           runtimeClient.instanceId,
           {
-            "name.name": report,
-            "name.kind": ResourceKind.Report,
+            name: { name: report, kind: ResourceKind.Report },
           },
         ),
       });

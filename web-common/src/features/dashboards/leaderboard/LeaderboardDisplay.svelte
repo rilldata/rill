@@ -44,7 +44,6 @@
   } = StateManagers;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   let parentElement: HTMLDivElement;
 
@@ -87,7 +86,6 @@
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
-              {instanceId}
               {tableWidth}
               {timeRange}
               {dimensionColumnWidth}

@@ -7,7 +7,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import {
-    createQueryServiceExport,
+    createQueryServiceExportMutation,
     V1ExportFormat,
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
@@ -38,7 +38,7 @@
     scheduledReportQuery = getQuery(true);
   }
 
-  const exportDash = createQueryServiceExport();
+  const exportDash = createQueryServiceExportMutation(runtimeClient);
   const { reports, adminServer, exportHeader } = featureFlags;
 
   async function handleExport(options: {

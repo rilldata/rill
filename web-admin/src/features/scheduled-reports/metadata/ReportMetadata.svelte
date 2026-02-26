@@ -87,7 +87,7 @@
       forceOpenPivot: true,
     },
     {
-      instanceId: runtimeClient.instanceId,
+      client: runtimeClient,
       organization,
       project,
     },

@@ -95,7 +95,7 @@
       exploreProtoState: alertSpec?.annotations?.web_open_state,
     },
     {
-      instanceId: runtimeClient.instanceId,
+      client: runtimeClient,
       organization,
       project,
     },

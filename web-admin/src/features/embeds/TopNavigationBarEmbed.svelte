@@ -13,7 +13,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  export let instanceId: string;
   export let activeResource: V1ResourceName;
   export let navigationEnabled: boolean = true;
 

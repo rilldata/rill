@@ -5,7 +5,7 @@
   import { Button } from "../../../components/button";
   import {
     V1ReconcileStatus,
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceGetModelPartitionsQueryKey,
     type V1Resource,
   } from "../../../runtime-client";
@@ -15,7 +15,8 @@
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   export let partitionKey: string;
   export let resource: V1Resource | undefined = undefined;
@@ -39,15 +40,12 @@
     }
 
     await $triggerMutation.mutateAsync({
-      instanceId,
-      data: {
-        models: [
-          {
-            model: modelName,
-            partitions: [partitionKey],
-          },
-        ],
-      },
+      models: [
+        {
+          model: modelName,
+          partitions: [partitionKey],
+        },
+      ],
     });
 
     // Poll for updates since partition execution happens asynchronously

@@ -31,7 +31,6 @@
 
   const runtimeClient = useRuntimeClient();
 
-  export let instanceId: string;
   export let filters: Filters;
   export let timeControls: TimeControls;
   export let readOnly = false;

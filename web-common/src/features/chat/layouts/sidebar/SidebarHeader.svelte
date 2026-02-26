@@ -5,7 +5,6 @@
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1Conversation } from "../../../../runtime-client";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
@@ -16,8 +15,6 @@
 
   const { adminServer } = featureFlags;
 
-  const runtimeClient = useRuntimeClient();
-  $: instanceId = runtimeClient.instanceId;
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
@@ -55,7 +52,6 @@
     {#if $adminServer}
       <ShareChatPopover
         conversationId={currentConversationDto?.id}
-        {instanceId}
         {organization}
         {project}
         disabled={!currentConversationDto?.id}

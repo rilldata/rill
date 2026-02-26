@@ -126,19 +126,13 @@
 
     <div class="flex flex-col gap-y-3">
       <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm
-        instanceId={runtimeClient.instanceId}
-        {filters}
-        {timeControls}
-        side="top"
-      />
+      <FiltersForm {filters} {timeControls} side="top" />
     </div>
 
     <RowsAndColumnsForm
       bind:rows={$data["rows"]}
       bind:columns={$data["columns"]}
       columnErrors={$errors["columns"]}
-      instanceId={runtimeClient.instanceId}
       {exploreName}
     />
 
