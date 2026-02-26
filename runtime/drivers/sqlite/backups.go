@@ -270,6 +270,7 @@ func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPa
 	}
 
 	// Truncate AI message contents that exceed 10 KB.
+	// NOTE: The runtime/ai package now errors on large messages, so this is just to handle previously added large messages.
 	_, err = snapshotDB.ExecContext(ctx, `
 		UPDATE ai_messages SET content = CASE
 			WHEN content_type = 'json' THEN '{"truncated":true}'
