@@ -29,7 +29,7 @@ var (
 	// Max time a backup may run for.
 	backupMaxDuration = 10 * time.Minute
 
-	// Max AI message content size.
+	// Max AI message content size for backups.
 	backupMaxAIMessageSizeBytes = 10 * 1024 // 10 KB
 
 	// Queries to backup as Parquet.

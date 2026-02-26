@@ -3,8 +3,10 @@ package sqlite
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -64,13 +66,47 @@ func TestBackup(t *testing.T) {
 		ID: "a",
 	}))
 	require.NoError(t, catalog.InsertAIMessage(t.Context(), &drivers.AIMessage{
-		ID:        "a",
-		SessionID: "a",
+		ID:          "a",
+		SessionID:   "a",
+		ContentType: "text",
+		Content:     "small message",
+	}))
+	require.NoError(t, catalog.InsertAIMessage(t.Context(), &drivers.AIMessage{
+		ID:          "b",
+		SessionID:   "a",
+		Index:       1,
+		ContentType: "text",
+		Content:     strings.Repeat("x", backupMaxAIMessageSizeBytes+1),
+	}))
+	require.NoError(t, catalog.InsertAIMessage(t.Context(), &drivers.AIMessage{
+		ID:          "c",
+		SessionID:   "a",
+		Index:       2,
+		ContentType: "json",
+		Content:     `{"data":"` + strings.Repeat("y", backupMaxAIMessageSizeBytes) + `"}`,
 	}))
 
 	// Run a backup
 	err = h.(*connection).backup(t.Context(), bucket)
 	require.NoError(t, err)
+
+	// Verify that oversized messages were truncated in the Parquet export.
+	// The rewrite happens after the snapshot.db upload, so we read the Parquet file via DuckDB.
+	duckdb, err := sqlx.Open("duckdb", "")
+	require.NoError(t, err)
+	defer duckdb.Close()
+
+	type msg struct {
+		ID      string `db:"id"`
+		Content string `db:"content"`
+	}
+	var msgs []msg
+	parquetPath := filepath.Join(bucketDir, "ai_messages.parquet")
+	require.NoError(t, duckdb.SelectContext(t.Context(), &msgs, fmt.Sprintf(`SELECT id, content FROM read_parquet('%s') ORDER BY id`, parquetPath)))
+	require.Len(t, msgs, 3)
+	require.Equal(t, "small message", msgs[0].Content)      // "a": unchanged
+	require.Equal(t, "<truncated>", msgs[1].Content)         // "b": text truncated
+	require.Equal(t, `{"truncated":true}`, msgs[2].Content)  // "c": JSON truncated
 
 	// Check it created the expected files
 	expected := []string{
