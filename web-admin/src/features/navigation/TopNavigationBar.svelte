@@ -14,7 +14,8 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { tryUseRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { runtimeClientStore } from "@rilldata/web-common/runtime-client/v2";
+  import RuntimeContextBridge from "@rilldata/web-common/runtime-client/v2/RuntimeContextBridge.svelte";
   import { readable } from "svelte/store";
   import {
     createAdminServiceGetCurrentUser,
@@ -57,7 +58,10 @@
     dashboardChat,
     stickyDashboardState,
   } = featureFlags;
-  const runtimeClient = tryUseRuntimeClient();
+  // TopNavigationBar renders in the root layout, ABOVE RuntimeProvider.
+  // Subscribe to the global store so we reactively get the client when
+  // RuntimeProvider mounts on project pages.
+  $: runtimeClient = $runtimeClientStore;
 
   $: instanceId = runtimeClient?.instanceId ?? "";
 
@@ -304,46 +308,52 @@
         {manageOrgMembers}
       />
     {/if}
-    {#if onMetricsExplorerPage && isDashboardValid}
-      {#if exploreSpec}
-        {#key dashboard}
-          <StateManagersProvider
-            metricsViewName={exploreSpec.metricsView}
-            exploreName={dashboard}
-            let:ready
-          >
-            <LastRefreshedDate {dashboard} />
-            {#if $dimensionSearch && ready}
-              <GlobalDimensionSearch />
+    {#if runtimeClient}
+      {#key runtimeClient}
+        <RuntimeContextBridge client={runtimeClient}>
+          {#if onMetricsExplorerPage && isDashboardValid}
+            {#if exploreSpec}
+              {#key dashboard}
+                <StateManagersProvider
+                  metricsViewName={exploreSpec.metricsView}
+                  exploreName={dashboard}
+                  let:ready
+                >
+                  <LastRefreshedDate {dashboard} />
+                  {#if $dimensionSearch && ready}
+                    <GlobalDimensionSearch />
+                  {/if}
+                  {#if $dashboardChat && !onPublicURLPage}
+                    <ChatToggle />
+                  {/if}
+                  {#if hasUserAccess}
+                    <ExploreBookmarks
+                      {organization}
+                      {project}
+                      metricsViewName={exploreSpec.metricsView}
+                      exploreName={dashboard}
+                    />
+                    {#if $alertsFlag}
+                      <CreateAlert />
+                    {/if}
+                    <ShareDashboardPopover
+                      createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+                    />
+                  {/if}
+                </StateManagersProvider>
+              {/key}
             {/if}
+          {/if}
+
+          {#if onCanvasDashboardPage && hasUserAccess}
             {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle />
             {/if}
-            {#if hasUserAccess}
-              <ExploreBookmarks
-                {organization}
-                {project}
-                metricsViewName={exploreSpec.metricsView}
-                exploreName={dashboard}
-              />
-              {#if $alertsFlag}
-                <CreateAlert />
-              {/if}
-              <ShareDashboardPopover
-                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
-              />
-            {/if}
-          </StateManagersProvider>
-        {/key}
-      {/if}
-    {/if}
-
-    {#if onCanvasDashboardPage && hasUserAccess}
-      {#if $dashboardChat && !onPublicURLPage}
-        <ChatToggle />
-      {/if}
-      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-      <ShareDashboardPopover createMagicAuthTokens={false} />
+            <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+            <ShareDashboardPopover createMagicAuthTokens={false} />
+          {/if}
+        </RuntimeContextBridge>
+      {/key}
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

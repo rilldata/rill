@@ -1,7 +1,18 @@
 import { getContext } from "svelte";
+import { writable } from "svelte/store";
 import type { RuntimeClient } from "./runtime-client";
 
 export const RUNTIME_CONTEXT_KEY = Symbol("runtime-client");
+
+/**
+ * Module-level store that mirrors the active RuntimeClient.
+ * Set by RuntimeProvider on mount, cleared on destroy.
+ *
+ * Used by components that render OUTSIDE RuntimeProvider's subtree
+ * (e.g. TopNavigationBar in the root layout) but need reactive
+ * access to the current RuntimeClient.
+ */
+export const runtimeClientStore = writable<RuntimeClient | null>(null);
 
 /**
  * Returns the RuntimeClient set by the nearest ancestor RuntimeProvider.
