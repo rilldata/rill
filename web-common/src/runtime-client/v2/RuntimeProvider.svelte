@@ -32,6 +32,4 @@
   });
 </script>
 
-{#if client}
-  <slot />
-{/if}
+<slot />

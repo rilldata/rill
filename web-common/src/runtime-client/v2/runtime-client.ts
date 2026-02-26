@@ -34,6 +34,18 @@ export class RuntimeClient {
     jwt?: string;
     authContext?: AuthContext;
   }) {
+    if (typeof opts.host !== "string") {
+      throw new Error(
+        "RuntimeClient requires host to be a string. " +
+          "An empty string is valid (same-origin for local dev).",
+      );
+    }
+    if (!opts.instanceId) {
+      throw new Error(
+        "RuntimeClient requires a non-empty instanceId. " +
+          "The caller should not mount RuntimeProvider until instanceId is available.",
+      );
+    }
     this.host = opts.host;
     this.instanceId = opts.instanceId;
     this.currentJwt = opts.jwt;
