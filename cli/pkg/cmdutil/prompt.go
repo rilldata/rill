@@ -28,6 +28,32 @@ func SelectPrompt(msg string, options []string, def string) (string, error) {
 	return result, nil
 }
 
+// SelectPromptWithDescriptions is like SelectPrompt but shows a description next to each option.
+// The descriptions slice must be the same length as options.
+func SelectPromptWithDescriptions(msg string, options, descriptions []string, def string) (string, error) {
+	if len(options) != len(descriptions) {
+		return "", fmt.Errorf("options and descriptions must be the same length")
+	}
+
+	prompt := &survey.Select{
+		Message: msg,
+		Options: options,
+		Description: func(value string, index int) string {
+			return descriptions[index]
+		},
+	}
+
+	if slices.Contains(options, def) {
+		prompt.Default = def
+	}
+
+	result := ""
+	if err := survey.AskOne(prompt, &result); err != nil {
+		return "", fmt.Errorf("prompt failed: %w", err)
+	}
+	return result, nil
+}
+
 func ConfirmPrompt(msg, help string, def bool) (bool, error) {
 	prompt := &survey.Confirm{
 		Message: msg,

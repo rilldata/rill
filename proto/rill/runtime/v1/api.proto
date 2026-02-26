@@ -297,6 +297,13 @@ service RuntimeService {
     };
   }
 
+  // GetAIMessage returns a message in a conversaion.
+  rpc GetAIMessage(GetAIMessageRequest) returns (GetAIMessageResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/messages/{message_id}"
+    };
+  }
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -1222,6 +1229,18 @@ message CompleteStreamingRequest {
 message CompleteStreamingResponse {
   string conversation_id = 1;
   Message message = 2;
+}
+
+// Request message for RuntimeService.GetAIMessage
+message GetAIMessageRequest {
+  string instance_id = 1;
+  string conversation_id = 2;
+  string message_id = 3;
+}
+
+// Response message for RuntimeService.GetAIMessage
+message GetAIMessageResponse {
+  Message message = 1;
 }
 
 // **********

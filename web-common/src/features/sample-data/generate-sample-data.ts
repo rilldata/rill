@@ -16,8 +16,6 @@ export async function generateSampleData(
   instanceId: string,
   userPrompt: string,
 ) {
-  const agentPrompt = `Generate a new model with fresh data for the following user prompt: ${userPrompt}`;
-
   try {
     if (initializeProject) {
       overlay.set({
@@ -54,7 +52,7 @@ export async function generateSampleData(
     const conversation = get(conversationManager.getCurrentConversation());
     conversation.cancelStream();
 
-    sidebarActions.startChat(agentPrompt);
+    sidebarActions.startChat(userPrompt);
     // Wait for the stream to start async through the sidebar action.
     await waitUntil(() => get(conversation.isStreaming));
 

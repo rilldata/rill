@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { onMount, onDestroy } from "svelte";
   import {
     SSEConnectionManager,
@@ -7,10 +8,14 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { V1LogLevel, type V1Log } from "@rilldata/web-common/runtime-client";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "../url-filter-sync";
 
   const MAX_LOGS = 500;
   const REPLAY_LIMIT = 100;
@@ -28,8 +33,27 @@
   let logsContainer: HTMLDivElement;
   let connectionError: string | null = null;
   let filterDropdownOpen = false;
-  let searchText = "";
-  let selectedLevels: string[] = [];
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
+  let mounted = false;
+
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "level", type: "array" },
+  ]);
+  filterSync.init($page.url);
+
+  // Sync URL → local state on external navigation (back/forward)
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    searchText = parseStringParam($page.url.searchParams.get("q"));
+    selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
+  }
+
+  // Sync filter state → URL
+  $: if (mounted) {
+    filterSync.syncToUrl({ q: searchText, level: selectedLevels });
+  }
 
   const logsConnection = new SSEConnectionManager({
     maxRetryAttempts: 5,
@@ -72,6 +96,7 @@
   let unsubs: (() => void)[] = [];
 
   onMount(() => {
+    mounted = true;
     const { host, instanceId } = $runtime;
     if (!host || !instanceId) return;
 
@@ -213,19 +238,29 @@
     </div>
   </div>
 
-  <div class="flex items-center gap-x-3">
+  <div class="flex flex-row gap-x-4 min-h-9">
+    <Search
+      bind:value={searchText}
+      placeholder="Search"
+      large
+      autofocus={false}
+      showBorderOnFocus={false}
+    />
+
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {selectedLevelLabel}
-            {#if filterDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {selectedLevelLabel}
+        </span>
+        {#if filterDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableLevels as level}
@@ -247,16 +282,6 @@
         Clear filters
       </button>
     {/if}
-
-    <div class="flex-1" />
-
-    <div class="w-64">
-      <Search
-        bind:value={searchText}
-        placeholder="Search logs..."
-        autofocus={false}
-      />
-    </div>
   </div>
 
   <div class="logs-container" bind:this={logsContainer}>

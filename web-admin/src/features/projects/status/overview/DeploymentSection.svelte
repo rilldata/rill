@@ -14,7 +14,9 @@
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
+  import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
+  import OverviewCard from "./OverviewCard.svelte";
 
   export let organization: string;
   export let project: string;
@@ -49,6 +51,13 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+  // Repo — only shown when the user connected their own GitHub
+  $: githubUrl = projectData?.gitRemote
+    ? getGitUrlFromRemote(projectData.gitRemote)
+    : "";
+  $: isGithubConnected =
+    !!projectData?.gitRemote && !projectData?.managedGitId && !!githubUrl;
+
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
@@ -57,16 +66,14 @@
   );
 </script>
 
-<section class="section">
-  <div class="section-header">
-    <h3 class="section-title">Deployment</h3>
-    <ProjectClone
-      {organization}
-      {project}
-      gitRemote={projectData?.gitRemote}
-      managedGitId={projectData?.managedGitId}
-    />
-  </div>
+<OverviewCard title="Deployment">
+  <ProjectClone
+    slot="header-right"
+    {organization}
+    {project}
+    gitRemote={projectData?.gitRemote}
+    managedGitId={projectData?.managedGitId}
+  />
 
   <div class="info-grid">
     <div class="info-row">
@@ -84,10 +91,26 @@
       </span>
     </div>
 
-    {#if primaryBranch}
+    {#if isGithubConnected}
+      <div class="info-row">
+        <span class="info-label">Repo</span>
+        <span class="info-value">
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="repo-link"
+          >
+            {githubUrl.replace("https://github.com/", "")}
+          </a>
+        </span>
+      </div>
+    {/if}
+
+    {#if isGithubConnected && primaryBranch}
       <div class="info-row">
         <span class="info-label">Branch</span>
-        <span class="info-value font-mono text-xs">{primaryBranch}</span>
+        <span class="info-value">{primaryBranch}</span>
       </div>
     {/if}
 
@@ -109,7 +132,7 @@
     {#if version}
       <div class="info-row">
         <span class="info-label">Runtime</span>
-        <span class="info-value font-mono text-xs">{version}</span>
+        <span class="info-value">{version}</span>
       </div>
     {/if}
 
@@ -138,18 +161,9 @@
       </span>
     </div>
   </div>
-</section>
+</OverviewCard>
 
 <style lang="postcss">
-  .section {
-    @apply border border-border rounded-lg p-5;
-  }
-  .section-header {
-    @apply flex items-center justify-between mb-4;
-  }
-  .section-title {
-    @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
-  }
   .info-grid {
     @apply flex flex-col;
   }
@@ -167,5 +181,11 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
+  }
+  .repo-link {
+    @apply text-primary-500 text-sm;
+  }
+  .repo-link:hover {
+    @apply underline;
   }
 </style>

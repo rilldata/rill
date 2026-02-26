@@ -59,6 +59,9 @@ export const load = async ({
       return;
     }
 
+    case "/[organization]/[project]/-/ai/[conversationId]/message/[messageId]/-/open":
+      return;
+
     default: {
       throw new Error(`Unknown chat route: ${route.id}`);
     }

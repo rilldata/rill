@@ -7,6 +7,7 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -148,17 +149,29 @@
   };
 
   $: visualizationPaths = {
-    options: visualizations.reduce((map, resource) => {
-      const name = resource.meta.name.name;
-      const isMetricsExplorer = !!resource?.explore;
-      return map.set(name.toLowerCase(), {
-        label:
-          (isMetricsExplorer
-            ? resource?.explore?.spec?.displayName
-            : resource?.canvas?.spec?.displayName) || name,
-        section: isMetricsExplorer ? "explore" : "canvas",
-      });
-    }, new Map<string, PathOption>()),
+    options: [...visualizations]
+      .sort((a, b) => {
+        const aIsCanvas = !!a?.canvas;
+        const bIsCanvas = !!b?.canvas;
+        if (aIsCanvas !== bIsCanvas) return aIsCanvas ? -1 : 1;
+        const aName = a.meta.name.name;
+        const bName = b.meta.name.name;
+        return aName.localeCompare(bName);
+      })
+      .reduce((map, resource) => {
+        const name = resource.meta.name.name;
+        const isMetricsExplorer = !!resource?.explore;
+        return map.set(name.toLowerCase(), {
+          label:
+            (isMetricsExplorer
+              ? resource?.explore?.spec?.displayName
+              : resource?.canvas?.spec?.displayName) || name,
+          section: isMetricsExplorer ? "explore" : "canvas",
+          resourceKind: isMetricsExplorer
+            ? ResourceKind.Explore
+            : ResourceKind.Canvas,
+        });
+      }, new Map<string, PathOption>()),
     carryOverSearchParams: $stickyDashboardState,
   };
 
