@@ -34,6 +34,7 @@ export enum ResourceKind {
   Canvas = "rill.runtime.v1.Canvas",
   API = "rill.runtime.v1.API",
   RefreshTrigger = "rill.runtime.v1.RefreshTrigger",
+  Migration = "rill.runtime.v1.Migration",
 }
 
 export function displayResourceKind(kind: ResourceKind | undefined) {
@@ -100,7 +101,9 @@ export function resourceKindStyleName(kind: ResourceKind | undefined) {
 
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
-  ResourceKind.ProjectParser | ResourceKind.RefreshTrigger
+  | ResourceKind.ProjectParser
+  | ResourceKind.RefreshTrigger
+  | ResourceKind.Migration
 >;
 
 export const SingletonProjectParserName = "parser";
@@ -316,6 +319,11 @@ export async function fetchResources(
   return resp.resources ?? [];
 }
 
+export type MetricsViewAndExploreSpecs = {
+  metricsViewSpecsMap: Map<string, V1MetricsViewSpec>;
+  exploreSpecsMap: Map<string, V1ExploreSpec>;
+  exploreForMetricViewsMap: Map<string, string>;
+};
 export function getMetricsViewAndExploreSpecsQueryOptions() {
   return derived(runtime, ({ instanceId }) =>
     getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
@@ -344,7 +352,7 @@ export function getMetricsViewAndExploreSpecsQueryOptions() {
             metricsViewSpecsMap,
             exploreSpecsMap,
             exploreForMetricViewsMap,
-          };
+          } satisfies MetricsViewAndExploreSpecs;
         },
       },
     }),

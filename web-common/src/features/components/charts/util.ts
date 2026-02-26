@@ -1,21 +1,22 @@
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import type {
-  ChartDataResult,
-  ChartDomainValues,
-  ChartSortDirection,
-  ChartSpec,
-  ChartType,
-  ColorMapping,
-  FieldConfig,
-} from "./types";
 import { getChroma } from "../../themes/theme-utils";
-import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
+import {
+  ChartSortType,
+  type ChartDataResult,
+  type ChartDomainValues,
+  type ChartSortDirection,
+  type ChartSpec,
+  type ChartType,
+  type ColorMapping,
+  type FieldConfig,
+} from "./types";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -326,7 +327,12 @@ export function colorToVariableReference(
 export function sanitizeSortFieldForVega(sort: ChartSortDirection | undefined) {
   if (!sort) return undefined;
 
-  if (sort === "measure" || sort === "-measure") {
+  if (
+    sort === ChartSortType.MEASURE_ASC ||
+    sort === ChartSortType.MEASURE_DESC ||
+    sort === ChartSortType.Y_DELTA_ASC ||
+    sort === ChartSortType.Y_DELTA_DESC
+  ) {
     return undefined;
   }
   return sort;

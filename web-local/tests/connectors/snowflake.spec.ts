@@ -40,8 +40,6 @@ test.describe("Snowflake connector", () => {
       .getByRole("textbox");
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: snowflake");
-    await expect(codeEditor).toContainText(
-      'dsn: "{{ .env.connector.snowflake.dsn }}"',
-    );
+    await expect(codeEditor).toContainText('dsn: "{{ .env.SNOWFLAKE_DSN }}"');
   });
 });

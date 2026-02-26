@@ -24,6 +24,7 @@
   export let rowHeight = 46;
   export let containerHeight = 400;
   export let overscan = 1;
+  export let tableId: string | undefined = undefined;
 
   let containerElement: HTMLDivElement;
   let sorting: SortingState = [];
@@ -104,10 +105,13 @@
   $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
 
   $: dynamicContainerHeight =
-    rows.length <= 10 ? rowHeight * rows.length : containerHeight;
+    rows.length === 0
+      ? 120
+      : Math.min(rows.length * rowHeight, containerHeight);
 </script>
 
 <div
+  id={tableId}
   class="flex flex-col border rounded-sm overflow-hidden"
   style:--grid-template-columns={columnLayout}
 >

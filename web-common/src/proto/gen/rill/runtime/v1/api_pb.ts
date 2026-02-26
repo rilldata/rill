@@ -4652,6 +4652,72 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
 }
 
 /**
+ * Context for prompts handled by the feedback_agent.
+ * When provided, the agent records feedback and, for negative sentiment, runs attribution.
+ *
+ * @generated from message rill.runtime.v1.FeedbackAgentContext
+ */
+export class FeedbackAgentContext extends Message$1<FeedbackAgentContext> {
+  /**
+   * The ID of the message being rated.
+   *
+   * @generated from field: string target_message_id = 1;
+   */
+  targetMessageId = "";
+
+  /**
+   * Sentiment: "positive" or "negative".
+   *
+   * @generated from field: string sentiment = 2;
+   */
+  sentiment = "";
+
+  /**
+   * Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".
+   *
+   * @generated from field: repeated string categories = 3;
+   */
+  categories: string[] = [];
+
+  /**
+   * Optional free-text comment.
+   *
+   * @generated from field: string comment = 4;
+   */
+  comment = "";
+
+  constructor(data?: PartialMessage<FeedbackAgentContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.FeedbackAgentContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "target_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "sentiment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "categories", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "comment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined, b: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined): boolean {
+    return proto3.util.equals(FeedbackAgentContext, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.ListConversations
  *
  * @generated from message rill.runtime.v1.ListConversationsRequest
@@ -5138,6 +5204,14 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   developerAgentContext?: DeveloperAgentContext;
 
+  /**
+   * Optional context for prompts handled by the feedback_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.FeedbackAgentContext feedback_agent_context = 13;
+   */
+  feedbackAgentContext?: FeedbackAgentContext;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5152,6 +5226,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
+    { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -5267,6 +5342,14 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   developerAgentContext?: DeveloperAgentContext;
 
+  /**
+   * Optional context for prompts handled by the feedback_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.FeedbackAgentContext feedback_agent_context = 13;
+   */
+  feedbackAgentContext?: FeedbackAgentContext;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5281,6 +5364,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
+    { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {
@@ -5342,6 +5426,96 @@ export class CompleteStreamingResponse extends Message$1<CompleteStreamingRespon
 
   static equals(a: CompleteStreamingResponse | PlainMessage<CompleteStreamingResponse> | undefined, b: CompleteStreamingResponse | PlainMessage<CompleteStreamingResponse> | undefined): boolean {
     return proto3.util.equals(CompleteStreamingResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GetAIMessage
+ *
+ * @generated from message rill.runtime.v1.GetAIMessageRequest
+ */
+export class GetAIMessageRequest extends Message$1<GetAIMessageRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: string message_id = 3;
+   */
+  messageId = "";
+
+  constructor(data?: PartialMessage<GetAIMessageRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMessageRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMessageRequest | PlainMessage<GetAIMessageRequest> | undefined, b: GetAIMessageRequest | PlainMessage<GetAIMessageRequest> | undefined): boolean {
+    return proto3.util.equals(GetAIMessageRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GetAIMessage
+ *
+ * @generated from message rill.runtime.v1.GetAIMessageResponse
+ */
+export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Message message = 1;
+   */
+  message?: Message;
+
+  constructor(data?: PartialMessage<GetAIMessageResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMessageResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "message", kind: "message", T: Message },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined, b: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined): boolean {
+    return proto3.util.equals(GetAIMessageResponse, a, b);
   }
 }
 

@@ -27,6 +27,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**MySQL**](#mysql) - MySQL databases
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
 - [**SQLite**](#sqlite) - SQLite databases
+- [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
 ### _Object Storage_
 - [**Azure**](#azure) - Azure Blob Storage
@@ -36,6 +37,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### Service Integrations
 - [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+- [**Gemini**](#gemini) - Gemini connector for chat with your own API key
 - [**Slack**](#slack) - Slack data
 
 ### _Other_
@@ -43,7 +45,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Salesforce**](#salesforce) - Salesforce data
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{ .env.KEY_NAME }}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
 :::
 
 
@@ -121,16 +123,16 @@ _[boolean]_ - Allow the Athena client to access host environment configurations 
 # Example: Athena connector configuration
 type: connector # Must be `connector` (required)
 driver: athena # Must be `athena` _(required)_
-aws_access_key_id: "myawsaccesskey" # AWS Access Key ID for authentication  
-aws_secret_access_key: "myawssecretkey" # AWS Secret Access Key for authentication  
-aws_access_token: "mytemporarytoken" # AWS session token for temporary credentials  
-role_arn: "arn:aws:iam::123456789012:role/MyRole" # ARN of the IAM role to assume  
-role_session_name: "MySession" # Session name for STS AssumeRole  
-external_id: "MyExternalID" # External ID for cross-account access  
-workgroup: "primary" # Athena workgroup (defaults to 'primary')  
-output_location: "s3://my-bucket/athena-output/" # S3 URI for query results  
-aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')  
-allow_host_access: true # Allow host environment access _(default: true)_            
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}" # AWS Access Key ID for authentication
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Key for authentication
+aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # AWS session token for temporary credentials
+role_arn: "arn:aws:iam::123456789012:role/MyRole" # ARN of the IAM role to assume
+role_session_name: "MySession" # Session name for STS AssumeRole
+external_id: "MyExternalID" # External ID for cross-account access
+workgroup: "primary" # Athena workgroup (defaults to 'primary')
+output_location: "s3://my-bucket/athena-output/" # S3 URI for query results
+aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')
+allow_host_access: true # Allow host environment access _(default: true)_
 ```
 
 ## Azure
@@ -172,7 +174,7 @@ _[boolean]_ - Allow access to host environment configuration
 type: connector # Must be `connector` (required)
 driver: azure # Must be `azure` _(required)_
 azure_storage_account: "mystorageaccount" # Azure storage account name   _(required)_
-azure_storage_key: "credentialstring" # Azure storage access key   _(required)_
+azure_storage_key: "{{ .env.AZURE_STORAGE_KEY }}" # Azure storage access key   _(required)_
 ```
 
 ## BigQuery
@@ -205,8 +207,8 @@ _[boolean]_ - Enable the BigQuery client to use credentials from the host enviro
 # Example: BigQuery connector configuration
 type: connector # Must be `connector` (required)
 driver: bigquery # Must be `bigquery` _(required)_
-google_application_credentials: "credentialjsonstring" # Google Cloud service account JSON  
-project_id: "my-project-id" # Google Cloud project ID  
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}" # Google Cloud service account JSON
+project_id: "my-project-id" # Google Cloud project ID
 allow_host_access: true # Allow host environment access _(default: true)_
 ```
 
@@ -300,15 +302,15 @@ _[string]_ - Maximum time for a connection to read data
 # Example: ClickHouse connector configuration
 type: connector # Must be `connector` (required)
 driver: clickhouse # Must be `clickhouse` _(required)_
-managed: false # Provision the connector using the default provisioner  
-mode: "readwrite" # Enable model creation and table mutations  
-username: "myusername" # Username for authentication  
-password: "mypassword" # Password for authentication  
-host: "localhost" # Hostname of the ClickHouse server  
-port: 9000 # Port number of the ClickHouse server  
-database: "mydatabase" # Name of the ClickHouse database  
-ssl: true # Enable SSL for secure connection  
-cluster: "mycluster" # Cluster name  
+managed: false # Provision the connector using the default provisioner
+mode: "readwrite" # Enable model creation and table mutations
+username: "myusername" # Username for authentication
+password: "{{ .env.CLICKHOUSE_PASSWORD }}" # Password for authentication
+host: "localhost" # Hostname of the ClickHouse server
+port: 9000 # Port number of the ClickHouse server
+database: "mydatabase" # Name of the ClickHouse database
+ssl: true # Enable SSL for secure connection
+cluster: "mycluster" # Cluster name
 ```
 
 ## Druid
@@ -357,11 +359,11 @@ _[boolean]_ - Skip checking Druid version compatibility
 # Example: Druid connector configuration
 type: connector # Must be `connector` (required)
 driver: druid # Must be `druid` _(required)_
-username: "myusername" # Username for authentication  
-password: "mypassword" # Password for authentication  
-host: "localhost" # Hostname of the Druid coordinator or broker  
-port: 8082 # Port number of the Druid service  
-ssl: true # Enable SSL for secure connection  
+username: "myusername" # Username for authentication
+password: "{{ .env.DRUID_PASSWORD }}" # Password for authentication
+host: "localhost" # Hostname of the Druid coordinator or broker
+port: 8082 # Port number of the Druid service
+ssl: true # Enable SSL for secure connection
 ```
 
 ## DuckDB
@@ -500,7 +502,7 @@ _[boolean]_ - Allow access to host environment configuration
 # Example: GCS connector configuration
 type: connector # Must be `connector` (required)
 driver: gcs # Must be `gcs` _(required)_
-google_application_credentials: "credentialjsonstring" # Google Cloud credentials JSON string   
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}" # Google Cloud credentials JSON string
 ```
 
 ## HTTPS
@@ -526,7 +528,7 @@ Example: `https://example.com/`, ` https://example.com/path/` ,`https://example.
 type: connector # Must be `connector` (required)
 driver: https # Must be `https` _(required)_
 headers:
-    "Authorization": "Bearer my-token" # HTTP headers to include in the request
+    "Authorization": 'Bearer {{ .env.HTTPS_TOKEN }}' # HTTP headers to include in the request
 ```
 
 ## MotherDuck
@@ -563,9 +565,9 @@ _[string, array]_ - List of connector names for which temporary secrets should b
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
-token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
-path: "md:my_database" # Path to your MD database  
-schema_name: "my_schema" # Define your schema if not main, uses main by default  
+token: "{{ .env.MOTHERDUCK_TOKEN }}" # Set the MotherDuck token from your .env file _(required)_
+path: "md:my_database" # Path to your MD database
+schema_name: "my_schema" # Define your schema if not main, uses main by default
 ```
 
 ## MySQL
@@ -622,7 +624,7 @@ host: localhost
 port: 3306
 database: mydb
 user: user
-password: p@ss
+password: "{{ .env.MYSQL_PASSWORD }}"
 ssl-mode: preferred
 ```
 
@@ -630,7 +632,7 @@ ssl-mode: preferred
 # Example: MySQL connector configured using dsn
 type: connector
 driver: mysql
-dsn: mysql://user:p%40ss@localhost:3306/mydb?ssl-mode=preferred # '@' in password is encoded as %40
+dsn: "{{ .env.MYSQL_DSN }}" # Define DSN in .env file
 ```
 
 ## OpenAI
@@ -663,11 +665,11 @@ _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required
 # Example: OpenAI connector configuration
 type: connector # Must be `connector` (required)
 driver: openai # Must be `openai` _(required)_
-api_key: "my-api-key" # API key for connecting to OpenAI  
-model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
-base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
-api_type: "openai" # The type of OpenAI API to use  
-api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
+api_key: "{{ .env.OPENAI_API_KEY }}" # API key for connecting to OpenAI
+model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')
+base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
+api_type: "openai" # The type of OpenAI API to use
+api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
 ```
 
 ## Claude
@@ -702,6 +704,52 @@ type: connector
 driver: claude
 api_key: "{{ .env.claude_api_key }}"
 model: claude-opus-4-5
+```
+
+## Gemini
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "gemini" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to Gemini _(required)_
+
+### `model`
+
+_[string]_ - The Gemini model to use (e.g., 'gemini-2.5-pro-preview-05-06') 
+
+### `include_thoughts`
+
+_[boolean]_ - Whether to include thinking/reasoning in the response 
+
+### `thinking_level`
+
+_[string]_ - Level of 'thinking' for the model's response (e.g., 'MINIMAL', 'LOW', 'MEDIUM', 'HIGH'). Default is 'LOW'. 
+
+### `max_output_tokens`
+
+_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (0.0-2.0) 
+
+### `top_p`
+
+_[number]_ - Nucleus sampling parameter 
+
+### `top_k`
+
+_[number]_ - Top-K sampling parameter 
+
+```yaml
+# Example: Gemini connector configuration
+type: connector
+driver: gemini
+api_key: "{{ .env.gemini_api_key }}"
+model: gemini-2.5-pro-preview-05-06
 ```
 
 ## Pinot
@@ -758,14 +806,14 @@ _[integer]_ - Query timeout in milliseconds
 # Example: Pinot connector configuration
 type: connector # Must be `connector` (required)
 driver: pinot # Must be `pinot` _(required)_
-username: "myusername" # Username for authentication  
-password: "mypassword" # Password for authentication  
-broker_host: "localhost" # Hostname of the Pinot broker  
-broker_port: 9000 # Port number for the Pinot broker  
-controller_host: "localhost" # Hostname of the Pinot controller  
-controller_port: 9000 # Port number for the Pinot controller  
-ssl: true # Enable SSL connection to Pinot  
-log_queries: true # Log raw SQL queries executed through Pinot  
+username: "myusername" # Username for authentication
+password: "{{ .env.PINOT_PASSWORD }}" # Password for authentication
+broker_host: "localhost" # Hostname of the Pinot broker
+broker_port: 9000 # Port number for the Pinot broker
+controller_host: "localhost" # Hostname of the Pinot controller
+controller_port: 9000 # Port number for the Pinot controller
+ssl: true # Enable SSL connection to Pinot
+log_queries: true # Log raw SQL queries executed through Pinot
 max_open_conns: 100 # Maximum number of open connections to the Pinot database
 timeout_ms: 30000 # Query timeout in milliseconds
 ```
@@ -815,7 +863,7 @@ driver: starrocks # Must be `starrocks` _(required)_
 host: "starrocks-fe.example.com" # Hostname of the StarRocks FE server  
 port: 9030 # MySQL protocol port of StarRocks FE  
 username: "analyst" # Username for authentication  
-password: "{{ .env.connector.starrocks.password }}" # Password for authentication  
+password: "{{ .env.STARROCKS_PASSWORD }}" # Password for authentication  
 catalog: "default_catalog" # StarRocks catalog name  
 database: "my_database" # StarRocks database name  
 ssl: false # Enable SSL/TLS encryption
@@ -889,22 +937,76 @@ host: localhost
 port: 5432
 dbname: mydatabase
 user: myusername
-password: mypassword
+password: "{{ .env.POSTGRES_PASSWORD }}"
 sslmode: prefer
 ```
 
 ```yaml
-# Example: Postgres connector configured using dsn key=value format
+# Example: Postgres connector configured using dsn
 type: connector
 driver: postgres
-dsn: user=myusername password='my pass\'word' host=localhost port=5432 dbname=mydatabase sslmode=prefer # password is "my pass'word": space is quoted, single quote escaped with \'
+dsn: "{{ .env.POSTGRES_DSN }}" # Define DSN in .env file
+```
+
+## Supabase
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `postgres` _(required)_
+
+### `dsn`
+
+_[string]_ - **Data Source Name (DSN)** for the Supabase connection, provided in
+[PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+Supabase uses PostgreSQL under the hood, so all PostgreSQL connection formats are supported.
+
+URI format example:
+```text
+postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+```
+ 
+
+### `host`
+
+_[string]_ - Hostname of the Supabase database (e.g. aws-0-us-east-1.pooler.supabase.com) 
+
+### `port`
+
+_[string]_ - Port number for the Supabase database 
+
+### `dbname`
+
+_[string]_ - Name of the Supabase database 
+
+### `user`
+
+_[string]_ - Username for authentication (e.g. postgres.[your-project-ref]) 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `sslmode`
+
+_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
+
+```yaml
+# Example: Supabase connector configured using individual properties
+type: connector
+driver: postgres
+host: aws-0-us-east-1.pooler.supabase.com
+port: 5432
+dbname: postgres
+user: "postgres.[your-project-ref]"
+password: "{{ .env.SUPABASE_PASSWORD }}"
+sslmode: require
 ```
 
 ```yaml
-# Example: Postgres connector configured using dsn URI format
+# Example: Supabase connector configured using dsn
 type: connector
 driver: postgres
-dsn: postgres://myusername:p%40ss@localhost:5432/mydatabase?sslmode=prefer # '@' in password: p@ss is encoded as %40
+dsn: "{{ .env.SUPABASE_DSN }}" # Define DSN in .env file
 ```
 
 ## Redshift
@@ -945,12 +1047,12 @@ _[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Re
 # Example: Redshift connector configuration
 type: connector # Must be `connector` (required)
 driver: redshift # Must be `redshift` _(required)_
-aws_access_key_id: "my-access-key-id" # AWS Access Key ID used for authenticating with Redshift.  
-aws_secret_access_key: "my-secret-access-key" # AWS Secret Access Key used for authenticating with Redshift.  
-aws_access_token: "my-access-token" # AWS Session Token for temporary credentials (optional).  
-region: "us-east-1" # AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').  
-database: "mydatabase" # Name of the Redshift database to query.  
-workgroup: "my-workgroup" # Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.  
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}" # AWS Access Key ID used for authenticating with Redshift.
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Key used for authenticating with Redshift.
+aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # AWS Session Token for temporary credentials (optional).
+region: "us-east-1" # AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').
+database: "mydatabase" # Name of the Redshift database to query.
+workgroup: "my-workgroup" # Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.
 cluster_identifier: "my-cluster-identifier" # Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
 ```
 
@@ -1008,11 +1110,11 @@ _[boolean]_ - Allow access to host environment configuration
 # Example: S3 connector configuration
 type: connector # Must be `connector` (required)
 driver: s3 # Must be `s3` _(required)_
-aws_access_key_id: "my-access-key-id" # AWS Access Key ID used for authentication  
-aws_secret_access_key: "my-secret-access-key" # AWS Secret Access Key used for authentication  
-aws_access_token: "my-access-token" # Optional AWS session token for temporary credentials  
-endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage  
-region: "us-east-1" # AWS region of the S3 bucket  
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}" # AWS Access Key ID used for authentication
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Key used for authentication
+aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # Optional AWS session token for temporary credentials
+endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage
+region: "us-east-1" # AWS region of the S3 bucket
 ```
 
 ## Salesforce
@@ -1045,9 +1147,10 @@ _[string]_ - Client ID used for Salesforce OAuth authentication _(required)_
 # Example: Salesforce connector configuration
 type: connector # Must be `connector` (required)
 driver: salesforce # Must be `salesforce` _(required)_
-username: "myusername" # Salesforce account username  
-password: "mypassword" # Salesforce account password (secret)  
-endpoint: "https://login.salesforce.com" # Salesforce API endpoint URL  
+username: "myusername" # Salesforce account username
+password: "{{ .env.SALESFORCE_PASSWORD }}" # Salesforce account password (secret)
+key: "{{ .env.SALESFORCE_KEY }}" # Authentication key for Salesforce (secret)
+endpoint: "https://login.salesforce.com" # Salesforce API endpoint URL
 client_id: "my-client-id" # Client ID used for Salesforce OAuth authentication
 ```
 
@@ -1065,7 +1168,7 @@ _[string]_ - Bot token used for authenticating Slack API requests _(required)_
 # Example: Slack connector configuration
 type: connector # Must be `connector` (required)
 driver: slack # Must be `slack` _(required)_
-bot_token: "xoxb-my-bot-token" # Bot token used for authenticating Slack API requests
+bot_token: "{{ .env.SLACK_BOT_TOKEN }}" # Bot token used for authenticating Slack API requests
 ```
 
 ## Snowflake
@@ -1148,7 +1251,7 @@ type: connector
 driver: snowflake
 account: my_account_identifier
 user: my_user
-privateKey: '{{ .env.SNOWFLAKE_PRIVATE_KEY }}' # define SNOWFLAKE_PRIVATE_KEY in .env file
+privateKey: "{{ .env.SNOWFLAKE_PRIVATE_KEY }}" # define SNOWFLAKE_PRIVATE_KEY in .env file
 database: my_db
 schema: my_schema
 warehouse: my_wh
@@ -1160,7 +1263,7 @@ parallel_fetch_limit: 2
 # Example: Snowflake connector advance configuration
 type: connector
 driver: snowflake
-dsn: '{{ .env.SNOWFLAKE_DSN }}' # define SNOWFLAKE_DSN in .env file like SNOWFLAKE_DSN='my_username@my_account/my_db/my_schema?warehouse=my_wh&role=my_role&authenticator=SNOWFLAKE_JWT&privateKey=my_private_key'
+dsn: "{{ .env.SNOWFLAKE_DSN }}" # define SNOWFLAKE_DSN in .env file
 parallel_fetch_limit: 2
 ```
 

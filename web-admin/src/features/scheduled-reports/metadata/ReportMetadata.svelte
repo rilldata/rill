@@ -63,11 +63,20 @@
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
 
+  $: queryName =
+    (reportSpec?.resolverProperties?.query_name as string | undefined) ??
+    reportSpec?.queryName ??
+    "";
+  $: queryArgsJson =
+    (reportSpec?.resolverProperties?.query_args_json as string | undefined) ??
+    reportSpec?.queryArgsJson ??
+    "";
+
   $: exploreUrl = getMappedExploreUrl(
     {
       exploreName: $exploreName.data,
-      queryName: reportSpec?.queryName,
-      queryArgsJson: reportSpec?.queryArgsJson,
+      queryName,
+      queryArgsJson,
     },
     {
       exploreProtoState: reportSpec?.annotations?.web_open_state,

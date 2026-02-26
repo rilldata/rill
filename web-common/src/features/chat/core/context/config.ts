@@ -90,8 +90,6 @@ export const InlineContextConfig: Record<
         end: end ?? start,
       });
     },
-    getTooltip: (ctx, meta) =>
-      `For ${InlineContextConfig[InlineContextType.MetricsView].getLabel(ctx, meta)}`,
   },
 
   [InlineContextType.Measure]: {

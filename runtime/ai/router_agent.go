@@ -29,6 +29,7 @@ type RouterAgentArgs struct {
 	Agent              string              `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
 	AnalystAgentArgs   *AnalystAgentArgs   `json:"analyst_agent_args,omitempty" jsonschema:"Optional arguments to pass to the analyst agent if the selected agent is analyst_agent."`
 	DeveloperAgentArgs *DeveloperAgentArgs `json:"developer_agent_args,omitempty" jsonschema:"Optional arguments to pass to the developer agent if the selected agent is developer_agent."`
+	FeedbackAgentArgs  *FeedbackAgentArgs  `json:"feedback_agent_args,omitempty" jsonschema:"Optional arguments to pass to the feedback agent if the selected agent is feedback_agent."`
 	SkipHandoff        bool                `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
@@ -73,9 +74,10 @@ func (t *RouterAgent) CheckAccess(ctx context.Context) (bool, error) {
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
-	// Handle title
 	s := GetSession(ctx)
-	if s.Title() == "" {
+
+	// Handle title
+	if s.Title() == "" && args.Prompt != "" {
 		err := s.UpdateTitle(ctx, promptToTitle(args.Prompt))
 		if err != nil {
 			return nil, err
@@ -95,15 +97,12 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		return nil, ctx.Err()
 	}
 
-	// Find agent to invoke
+	// Find agent/tool to invoke
 	switch {
 	// Specific agent requested
 	case args.Agent != "":
-		// Check it exists
-		found := slices.ContainsFunc(candidates, func(agent *CompiledTool) bool {
-			return agent.Name == args.Agent
-		})
-		if !found {
+		// Validate the agent exists (but don't require it to be in the LLM routing candidates)
+		if _, ok := s.Tool(args.Agent); !ok {
 			return nil, fmt.Errorf("agent %q not found", args.Agent)
 		}
 	// No candidates available
@@ -188,6 +187,19 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			return nil, err
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
+
+	case FeedbackAgentName:
+		var res *FeedbackAgentResult
+		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
+			Role: RoleUser,
+			Tool: FeedbackAgentName,
+			Out:  &res,
+			Args: args.FeedbackAgentArgs,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &RouterAgentResult{Response: res.Response, Agent: FeedbackAgentName}, nil
 	}
 
 	return nil, fmt.Errorf("agent %q not implemented", args.Agent)

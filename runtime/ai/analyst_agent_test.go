@@ -1,6 +1,8 @@
 package ai_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -71,6 +73,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: "openai",
 		Files:       files,
+		FrontendURL: "https://ui.rilldata.com/-/dashboards/bids_metrics",
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
@@ -86,7 +89,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 		calls := s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
 		require.Len(t, calls, 1)
 
-		// It should make two sub-calls: get_metrics_view
+		// It should make one sub-call, get_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
 			Prompt: "Tell me about the auction metrics (but don't query the data)",
 		})
@@ -95,7 +98,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Len(t, calls, 1)
 		require.Equal(t, ai.GetMetricsViewName, calls[0].Tool)
 
-		// It should make two sub-calls: get_metrics_view
+		// It should make one sub-call, get_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
 			Prompt: "Now tell me about the other dataset (but don't query the data)",
 		})
@@ -106,7 +109,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should remember the previous turns and only make one sub-call: query_metrics_view_summary and query_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
-			Prompt: "Tell me which non-US country has the most auctions",
+			Prompt: "Tell me which non-US country has the most auctions. Make the minimal number of tool calls necessary to answer.",
 		})
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
@@ -120,7 +123,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should make three sub-calls: query_metrics_view_summary, get_metrics_view, query_metrics_view
 		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
-			Prompt:    "Tell me which app_site_name has the most impressions",
+			Prompt:    "Tell me which app_site_name has the most impressions. When calling tools, you must only make one call total to the `query_metrics_view` tool.",
 			Explore:   "bids_metrics",
 			TimeStart: parseTestTime(t, "2023-09-11T00:00:00Z"),
 			TimeEnd:   parseTestTime(t, "2023-09-14T00:00:00Z"),
@@ -150,12 +153,19 @@ func TestAnalystOpenRTB(t *testing.T) {
 		// Assert that the time range is sent using the context
 		require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
 		require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
-		// Assert that the filter is sent using the context
-		require.NotNil(t, qry.Where)
-		require.NotNil(t, qry.Where.Condition)
-		require.Len(t, qry.Where.Condition.Expressions, 2)
-		require.Equal(t, "device_os", qry.Where.Condition.Expressions[0].Name)
-		require.Equal(t, "Android", qry.Where.Condition.Expressions[1].Value)
+		// Assert that the filter is sent using the context.
+		// Checking using the SQL representation since the LLM's use of nesting in the expression is unstable.
+		exprSQL, err := metricsview.ExpressionToSQL(qry.Where)
+		require.NoError(t, err)
+		require.Equal(t, "device_os = 'Android'", strings.Trim(exprSQL, "()"))
+
+		rawRes, err := s.UnmarshalMessageContent(res.Result)
+		require.NoError(t, err)
+		var agentRes ai.AnalystAgentResult
+		err = mapstructureutil.WeakDecode(rawRes, &agentRes)
+		require.NoError(t, err)
+		expectedCitationUrl := fmt.Sprintf(`https://ui.rilldata.com/-/dashboards/bids_metrics/-/ai/%s/message/%s/-/open`, s.ID(), calls[2].ID)
+		require.Contains(t, agentRes.Response, expectedCitationUrl)
 	})
 
 	t.Run("CanvasContext", func(t *testing.T) {
@@ -163,7 +173,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should make three sub-calls: query_metrics_view_summary, get_metrics_view, query_metrics_view
 		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
-			Prompt:          "Tell me which advertiser_name has the highest overall_spend",
+			Prompt:          "Tell me which advertiser_name has the highest overall_spend. Make the minimal number of tool calls necessary to answer.",
 			Canvas:          "bids_canvas",
 			CanvasComponent: "bids_canvas--component-2-0",
 			TimeStart:       parseTestTime(t, "2023-09-11T00:00:00Z"),
@@ -197,22 +207,14 @@ func TestAnalystOpenRTB(t *testing.T) {
 		// Assert that the time range is sent using the context
 		require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
 		require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
+
 		// Assert that the filter is sent using the context
+		// Checking using the SQL representation since the LLM's use of nesting in the expression is unstable.
 		require.NotNil(t, qry.Where)
-		require.NotNil(t, qry.Where.Condition)
-		require.Len(t, qry.Where.Condition.Expressions, 2)
-
-		auctionTypeCond := qry.Where.Condition.Expressions[0]
-		appOrSiteCond := qry.Where.Condition.Expressions[1]
-		if auctionTypeCond.Condition.Expressions[0].Name != "auction_type" {
-			auctionTypeCond = qry.Where.Condition.Expressions[1]
-			appOrSiteCond = qry.Where.Condition.Expressions[0]
-		}
-
-		require.Equal(t, "auction_type", auctionTypeCond.Condition.Expressions[0].Name)
-		require.Equal(t, "First Price", auctionTypeCond.Condition.Expressions[1].Value)
-		require.Equal(t, "app_or_site", appOrSiteCond.Condition.Expressions[0].Name)
-		require.Equal(t, "App", appOrSiteCond.Condition.Expressions[1].Value)
+		exprSQL, err := metricsview.ExpressionToSQL(qry.Where)
+		require.NoError(t, err)
+		require.Contains(t, exprSQL, "auction_type = 'First Price'")
+		require.Contains(t, exprSQL, "app_or_site = 'App'")
 	})
 }
 

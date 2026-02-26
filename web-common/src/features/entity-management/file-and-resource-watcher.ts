@@ -28,7 +28,7 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
-import { sourceImportedPath } from "../sources/sources-store";
+import { sourceIngestionTracker } from "../sources/sources-store";
 import { isLeafResource } from "./dag-utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { SSEConnectionManager } from "@rilldata/web-common/runtime-client/sse-connection-manager";
@@ -364,17 +364,16 @@ export class FileAndResourceWatcher {
             if (!connectorName || !tableName) return;
 
             // If it's a new source, show the "Source imported successfully" modal
-            const isSourceModel =
-              res.resource.meta?.filePaths?.[0]?.startsWith("/sources/");
+            const filePath = res.resource.meta?.filePaths?.[0];
             const isNewSource =
               res.name.kind === ResourceKind.Model &&
-              isSourceModel &&
+              filePath !== undefined &&
+              sourceIngestionTracker.isPending(filePath) &&
               res.resource.meta.specVersion === "1" && // First file version
               res.resource.meta.stateVersion === "2" && // First ingest is complete
               (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew
             if (isNewSource) {
-              const filePath = res.resource?.meta?.filePaths?.[0] as string;
-              sourceImportedPath.set(filePath);
+              sourceIngestionTracker.trackIngested(filePath);
             }
 
             // Invalidate the model partitions query
