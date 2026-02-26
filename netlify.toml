@@ -13,7 +13,7 @@
       frame-ancestors 'self'; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https: wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://us.posthog.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
@@ -38,7 +38,7 @@
       frame-ancestors https:; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https: wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://us.posthog.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
@@ -63,7 +63,7 @@
       frame-ancestors https:; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https: wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://us.posthog.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
