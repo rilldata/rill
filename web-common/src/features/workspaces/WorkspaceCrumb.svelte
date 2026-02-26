@@ -10,8 +10,11 @@
     type UserFacingResourceKinds,
   } from "../entity-management/resource-selectors";
   import { builderActions } from "bits-ui";
+  import { goto } from "$app/navigation";
+  import { resourceShorthandMapping } from "../entity-management/resource-icon-mapping";
   import { GitBranch } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { ALLOWED_FOR_GRAPH } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
@@ -29,8 +32,17 @@
   export let downstream = false;
   export let upstream = false;
   export let filePath: string = "";
-  export let graphSupported = false;
-  export let openGraph: (() => void) | null = null;
+  $: graphSupported = resourceKind
+    ? ALLOWED_FOR_GRAPH.has(resourceKind)
+    : false;
+
+  function openGraph() {
+    const name = selectedResource?.meta?.name?.name;
+    const kind = selectedResource?.meta?.name?.kind as ResourceKind | undefined;
+    if (!name || !kind) return;
+    const shortKind = resourceShorthandMapping[kind];
+    goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${name}`)}`);
+  }
 
   let open = false;
 
@@ -154,7 +166,7 @@
         {/if}
       </DropdownMenu.Root>
     </div>
-    {#if current && graphSupported && openGraph}
+    {#if current && graphSupported}
       <Button
         type="tertiary"
         square

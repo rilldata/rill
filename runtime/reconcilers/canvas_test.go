@@ -60,11 +60,19 @@ rows:
 	require.NotNil(t, mv1.GetMetricsView().State.ValidSpec)
 	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
 	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
-	require.Len(t, c1.Meta.Refs, 2)
-	for _, componentName := range c1.Meta.Refs {
-		r := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, componentName.Name)
+	require.Len(t, c1.Meta.Refs, 3) // 2 components + 1 MetricsView (mv1)
+	var foundMvRef bool
+	for _, ref := range c1.Meta.Refs {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			require.Equal(t, "mv1", ref.Name)
+			foundMvRef = true
+			continue
+		}
+		require.Equal(t, runtime.ResourceKindComponent, ref.Kind)
+		r := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, ref.Name)
 		require.NotNil(t, r.GetComponent().State.ValidSpec)
 	}
+	require.True(t, foundMvRef, "expected a MetricsView ref for mv1")
 
 	// Fix everything
 	testruntime.PutFiles(t, rt, id, map[string]string{"m1.sql": `SELECT 'foo' as foo, 1 as x`})
@@ -92,10 +100,16 @@ rows:
 	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
 	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
 	require.NotEmpty(t, c1.Meta.ReconcileError)
-	require.Len(t, c1.Meta.Refs, 2)
+	require.Len(t, c1.Meta.Refs, 4) // 2 components + 2 MetricsView (doesnt_exist + mv1)
 	var valid, invalid int
-	for _, componentName := range c1.Meta.Refs {
-		r := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, componentName.Name)
+	mvRefNames := make(map[string]bool)
+	for _, ref := range c1.Meta.Refs {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			mvRefNames[ref.Name] = true
+			continue
+		}
+		require.Equal(t, runtime.ResourceKindComponent, ref.Kind)
+		r := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, ref.Name)
 		if r.GetComponent().State.ValidSpec == nil {
 			invalid++
 		} else {
@@ -104,6 +118,8 @@ rows:
 	}
 	require.Equal(t, 1, valid)
 	require.Equal(t, 1, invalid)
+	require.True(t, mvRefNames["mv1"], "expected MetricsView ref for mv1")
+	require.True(t, mvRefNames["doesnt_exist"], "expected MetricsView ref for doesnt_exist")
 }
 
 func TestCanvasValidateMetricsViewTimeConsistency(t *testing.T) {
@@ -280,7 +296,17 @@ rows:
 		c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
 		require.NotNil(t, c1.GetCanvas().State.DataRefreshedOn)
 
-		comp1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, c1.Meta.Refs[0].Name)
+		// Find the component ref (canvas refs now include MetricsView refs too)
+		var compRefName string
+		for _, ref := range c1.Meta.Refs {
+			if ref.Kind == runtime.ResourceKindComponent {
+				compRefName = ref.Name
+				break
+			}
+		}
+		require.NotEmpty(t, compRefName)
+
+		comp1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, compRefName)
 		require.NotNil(t, comp1.GetComponent().State.DataRefreshedOn)
 
 		mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")

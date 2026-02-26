@@ -25,6 +25,11 @@
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import Tag from "../components/tag/Tag.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { GitBranch } from "lucide-svelte";
+  import { goto } from "$app/navigation";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
@@ -118,6 +123,17 @@
         onConfirm={submitTitleChange}
         showIndicator={unsavedFileCount > 0}
       />
+      <Tooltip distance={8}>
+        <Button
+          type="tertiary"
+          square
+          onClick={() => goto("/graph")}
+          label="Open project graph"
+        >
+          <GitBranch size="14px" aria-hidden="true" />
+        </Button>
+        <TooltipContent slot="tooltip-content">Project graph</TooltipContent>
+      </Tooltip>
     {/if}
   {/if}
 

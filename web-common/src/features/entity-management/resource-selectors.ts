@@ -46,7 +46,7 @@ export function displayResourceKind(kind: ResourceKind | undefined) {
     case ResourceKind.Report:
       return "report";
     case ResourceKind.Source:
-      return "source";
+      return "source model";
     case ResourceKind.Connector:
       return "connector";
     case ResourceKind.Model:
@@ -114,9 +114,20 @@ export function prettyResourceKind(kind: string) {
 }
 
 /**
+ * Check if a model has any dependencies on other models.
+ * A model is a "root" model (Source Model) if it has no model refs.
+ */
+function hasModelDependencies(res: V1Resource): boolean {
+  const refs = res.meta?.refs ?? [];
+  return refs.some((ref) => ref.kind === ResourceKind.Model);
+}
+
+/**
  * Coerce resource kind to match UI representation.
- * Models that are defined-as-source are displayed as Sources in the sidebar and graph.
- * This ensures consistent representation across the application.
+ * Source Models are displayed as Sources in the sidebar and graph:
+ * 1. Actual Source resources (legacy)
+ * 2. Models with definedAsSource: true (legacy converted sources)
+ * 3. Models with no model dependencies (root models in the DAG)
  *
  * @param res - The resource to check
  * @returns The coerced ResourceKind, or undefined if the resource has no kind
@@ -125,17 +136,24 @@ export function prettyResourceKind(kind: string) {
  * // A model that is defined-as-source
  * coerceResourceKind(modelResource) // Returns ResourceKind.Source
  *
- * // A normal model
+ * // A root model with no model dependencies
+ * coerceResourceKind(rootModel) // Returns ResourceKind.Source
+ *
+ * // A normal model that depends on other models
  * coerceResourceKind(normalModel) // Returns ResourceKind.Model
  */
 export function coerceResourceKind(res: V1Resource): ResourceKind | undefined {
   const raw = res.meta?.name?.kind as ResourceKind | undefined;
   if (raw === ResourceKind.Model) {
-    // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
+    // Legacy: model defined-as-source with matching result table
     const name = res.meta?.name?.name;
     const resultTable = res.model?.state?.resultTable;
     const definedAsSource = res.model?.spec?.definedAsSource;
     if (name && resultTable === name && definedAsSource === true) {
+      return ResourceKind.Source;
+    }
+    // New: root models with no model dependencies are Source Models
+    if (!hasModelDependencies(res)) {
       return ResourceKind.Source;
     }
   }

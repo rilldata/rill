@@ -47,7 +47,7 @@ export const resourceShorthandMapping = {
   [ResourceKind.Model]: "model",
   [ResourceKind.MetricsView]: "metrics",
   [ResourceKind.Explore]: "explore",
-  [ResourceKind.API]: "API",
+  [ResourceKind.API]: "api",
   [ResourceKind.Component]: "component",
   [ResourceKind.Canvas]: "canvas",
   [ResourceKind.Theme]: "theme",

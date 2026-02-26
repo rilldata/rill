@@ -675,7 +675,7 @@ describe("seed-utils", () => {
 
     it("should use coerceKind function for kind determination", () => {
       const customCoerceKind = (res: V1Resource) => {
-        // Simulate coercing models to sources
+        // Simulate coercing models to sources (e.g., for defined-as-source models)
         const kind = res.meta?.name?.kind as ResourceKind;
         if (kind === ResourceKind.Model && res.meta?.name?.name === "special") {
           return ResourceKind.Source;
@@ -737,16 +737,17 @@ describe("seed-utils", () => {
   });
 
   describe("ALLOWED_FOR_GRAPH", () => {
-    it("should include Connector, Source, Model, MetricsView, and Explore", () => {
+    it("should include Connector, Source, Model, MetricsView, Explore, and Canvas", () => {
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Connector)).toBe(true);
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Source)).toBe(true);
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Model)).toBe(true);
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.MetricsView)).toBe(true);
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Explore)).toBe(true);
+      expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Canvas)).toBe(true);
     });
 
-    it("should have exactly 5 kinds", () => {
-      expect(ALLOWED_FOR_GRAPH.size).toBe(5);
+    it("should have exactly 6 kinds", () => {
+      expect(ALLOWED_FOR_GRAPH.size).toBe(6);
     });
   });
 

@@ -26,8 +26,6 @@
   export let titleLabel: string | null = null;
   export let titleErrorCount: number | null = null;
   export let anchorError: boolean = false;
-  // Preselect specific nodes by id on initial render (e.g., the seeded anchor)
-  export let preselectNodeIds: string[] | undefined = undefined;
   // Emphasize particular nodes (e.g., the root/seed node for this graph)
   export let rootNodeIds: string[] | undefined = undefined;
   // Unique flow id to isolate multiple SvelteFlow instances
@@ -42,8 +40,8 @@
   export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
-  export let overlay = false;
   export let onExpand: () => void = () => {};
+  export let showNodeActions = true;
 
   let hasNodes = false;
   const nodesStore = writable<Node<ResourceNodeData>[]>([]);
@@ -180,6 +178,16 @@
     });
   }
 
+  // Handle pane click (background) to deselect all nodes
+  function handlePaneClick() {
+    nodesStore.update((nds) =>
+      nds.map((n) => ({
+        ...n,
+        selected: false,
+      })),
+    );
+  }
+
   // Reactively compute highlighted edges tracing strictly upstream and downstream
   // from the selected node(s). We explore both directions only at the start node(s):
   // upstream explores only incoming edges (sources) and continues going up;
@@ -187,9 +195,8 @@
   $: (function updateHighlightedEdges() {
     const nodes = $nodesStore as Node<ResourceNodeData>[];
     const edges = $edgesStore as Edge[];
-    const selectedIds = new Set(
-      nodes.filter((n) => n.selected).map((n) => n.id),
-    );
+    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedIds = new Set(selectedNodes.map((n) => n.id));
 
     // No selection: apply default styling and clear highlights
     if (!selectedIds.size) {
@@ -241,7 +248,7 @@
     const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
       (node) => ({
         ...node,
-        data: { ...node.data, isRoot: rootSet.has(node.id) },
+        data: { ...node.data, isRoot: rootSet.has(node.id), showNodeActions },
       }),
     );
     nodesStore.set(nodesWithRoots);
@@ -274,40 +281,29 @@
       });
     }
   }
-
-  // Apply preselection for seeded anchors (runs when preselectNodeIds or nodes change)
-  $: (function applyPreselection() {
-    const ids = new Set(preselectNodeIds ?? []);
-    // Always set selected based on current ids; if empty, clear selection
-    nodesStore.update((nds) =>
-      nds.map((n) => ({ ...n, selected: ids.has(n.id) })),
-    );
-  })();
 </script>
 
 <section class="graph-instance">
-  {#if titleLabel != null}
-    <h2 class="graph-title">
-      <span class:text-red-600={anchorError}>{titleLabel}</span>
-      {#if titleErrorCount && titleErrorCount > 0}
-        <span class="text-red-600">
-          {" "}
-          • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
-        </span>
-      {/if}
-    </h2>
-  {:else if title}
-    <h2 class="graph-title">{title}</h2>
-  {/if}
-
   {#if hasNodes}
     <div
       class="graph-container"
-      class:overlay
       class:h-full={fillParent}
+      class:no-border={fillParent}
       bind:this={containerEl}
       style:height={containerInlineHeight}
     >
+      {#if titleLabel != null}
+        <div class="graph-watermark">
+          <span class:text-red-600={anchorError}>{titleLabel}</span>
+          {#if titleErrorCount && titleErrorCount > 0}
+            <span class="text-red-600">
+              • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
+            </span>
+          {/if}
+        </div>
+      {:else if title}
+        <div class="graph-watermark">{title}</div>
+      {/if}
       {#if enableExpand}
         <button
           class="expand-btn"
@@ -343,6 +339,7 @@
           selectionOnDrag
           onlyRenderVisibleElements={false}
           defaultEdgeOptions={edgeOptions}
+          on:paneclick={handlePaneClick}
         >
           <Background gap={24} />
           {#if showControls}
@@ -360,23 +357,19 @@
 
 <style lang="postcss">
   .graph-instance {
-    @apply flex h-full flex-col gap-y-3;
-  }
-
-  .graph-title {
-    @apply text-sm font-semibold text-fg-primary;
+    @apply flex h-full flex-col;
   }
 
   .graph-container {
     @apply relative w-full overflow-hidden rounded-lg border;
   }
 
-  .state {
-    @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-fg-muted;
+  .graph-container.no-border {
+    @apply border-0 rounded-none;
   }
 
-  .overlay {
-    @apply border-none rounded-t-none;
+  .state {
+    @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-fg-muted;
   }
 
   .expand-btn {
@@ -386,5 +379,15 @@
 
   .expand-btn:hover {
     @apply bg-surface-muted text-fg-primary;
+  }
+
+  .graph-watermark {
+    @apply absolute bottom-3 right-3 z-10 pointer-events-none;
+    @apply text-xs font-semibold leading-tight text-fg-secondary opacity-70;
+  }
+
+  /* Override xyflow pane background to match app theme - scoped to this component */
+  .graph-container :global(.svelte-flow .svelte-flow__pane) {
+    background-color: var(--surface-background, #ffffff);
   }
 </style>

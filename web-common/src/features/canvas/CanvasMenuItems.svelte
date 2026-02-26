@@ -4,7 +4,9 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch } from "lucide-svelte";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
+  import { goto } from "$app/navigation";
+  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { type ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   export let filePath: string;
 
@@ -18,17 +20,15 @@
   $: canvasResource = $canvasQuery.data;
 
   function viewGraph() {
-    if (!canvasResource) {
-      console.warn(
-        "[CanvasMenuItems] Cannot open resource graph: resource unavailable.",
-      );
-      return;
-    }
-    openResourceGraphQuickView(canvasResource);
+    const name = canvasResource?.meta?.name?.name;
+    const kind = canvasResource?.meta?.name?.kind as ResourceKind | undefined;
+    if (!name || !kind) return;
+    const shortKind = resourceShorthandMapping[kind];
+    goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${name}`)}`);
   }
 </script>
 
 <NavigationMenuItem on:click={viewGraph}>
   <GitBranch slot="icon" size="14px" />
-  View DAG graph
+  View Resource Graph
 </NavigationMenuItem>
