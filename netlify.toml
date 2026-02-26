@@ -13,7 +13,7 @@
       frame-ancestors 'self'; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://us.posthog.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
@@ -22,7 +22,6 @@
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
-    X-Frame-Options = "SAMEORIGIN"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
 # Embed routes
@@ -38,7 +37,7 @@
       frame-ancestors https:; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://us.posthog.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
@@ -47,7 +46,6 @@
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
-    X-Frame-Options = "ALLOWALL"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
 # Public share routes
@@ -63,7 +61,7 @@
       frame-ancestors https:; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://us.posthog.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
@@ -72,5 +70,4 @@
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
-    X-Frame-Options = "ALLOWALL"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
