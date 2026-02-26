@@ -18,6 +18,10 @@
   export let host: string;
   export let instanceId: string;
 
+  // Set client synchronously so children can access it during initial render.
+  // init() (in onMount) handles the async resource prefetch.
+  fileArtifacts.setClient(runtimeClient);
+
   $: fileAndResourceWatcher.setRuntimeClient(runtimeClient);
   $: fileAndResourceWatcher.setInstanceId(instanceId);
 

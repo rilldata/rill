@@ -39,6 +39,14 @@ export class FileArtifacts {
   readonly unsavedFiles = new UnsavedFilesStore();
   private client!: RuntimeClient;
 
+  /**
+   * Must be called synchronously (in the script block, not onMount)
+   * so that child components can access the client during initial render.
+   */
+  setClient(client: RuntimeClient) {
+    this.client = client;
+  }
+
   async init(client: RuntimeClient, queryClient: QueryClient) {
     this.client = client;
     const resources = await fetchResources(queryClient, client);
