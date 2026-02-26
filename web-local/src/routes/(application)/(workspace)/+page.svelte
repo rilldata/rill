@@ -1,6 +1,5 @@
 <script lang="ts">
   import OnboardingWorkspace from "@rilldata/web-common/features/onboarding/OnboardingWorkspace.svelte";
-  import WelcomeScreen from "@rilldata/web-common/features/welcome/WelcomeScreen.svelte";
   import type { LayoutData } from "../$types";
   import GeneratingSampleDataMessage from "@rilldata/web-common/features/sample-data/GeneratingSampleDataMessage.svelte";
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
@@ -21,8 +20,6 @@
       {:else}
         <OnboardingWorkspace />
       {/if}
-    {:else}
-      <WelcomeScreen />
     {/if}
   </div>
   <DeveloperChat />

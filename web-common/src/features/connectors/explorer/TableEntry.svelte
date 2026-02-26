@@ -30,7 +30,23 @@
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
 
-  const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
+  const {
+    allowContextMenu,
+    allowNavigateToTable,
+    allowShowSchema,
+    selectedTableStore,
+  } = store;
+  $: ({
+    connector: selectedConnector,
+    database: selectedDatabase,
+    schema: selectedSchema,
+    table: selectedTable,
+  } = $selectedTableStore);
+  $: isSelected =
+    selectedConnector === connector &&
+    selectedDatabase === database &&
+    selectedSchema === databaseSchema &&
+    selectedTable === table;
 
   $: ({ instanceId: runtimeInstanceId } = $runtime);
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
@@ -52,7 +68,7 @@
     makeTablePreviewHref(driver, connector, database, databaseSchema, table) ||
     undefined;
 
-  $: open = href ? $page.url.pathname === href : false;
+  $: open = isSelected || (href ? $page.url.pathname === href : false);
 
   // Allow navigation when a preview href is available
   $: element = allowNavigateToTable && href ? "a" : "button";
@@ -65,6 +81,7 @@
   >
     {#if allowShowSchema}
       <button
+        type="button"
         on:click={() => {
           store.toggleItem(connector, database, databaseSchema, table);
         }}
@@ -81,6 +98,7 @@
       this={element}
       class="clickable-text"
       {...allowNavigateToTable && href ? { href } : {}}
+      {...element === "button" ? { type: "button" } : {}}
       role="menuitem"
       tabindex="0"
       on:click={() => {

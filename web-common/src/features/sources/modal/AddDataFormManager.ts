@@ -177,7 +177,7 @@ export class AddDataFormManager {
   }
 
   handleSkip(): void {
-    const stepState = get(connectorStepStore) as ConnectorStepState;
+    const stepState = get(connectorStepStore);
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
     setConnectorConfig({});
     setConnectorInstanceName(null);
@@ -185,7 +185,7 @@ export class AddDataFormManager {
   }
 
   handleBack(onBack: () => void): void {
-    const stepState = get(connectorStepStore) as ConnectorStepState;
+    const stepState = get(connectorStepStore);
     if (this.isMultiStepConnector && stepState.step === "source") {
       setStep("connector");
     } else if (this.hasExplorerStep && stepState.step === "explorer") {
@@ -244,20 +244,19 @@ export class AddDataFormManager {
     return "Test and Add data";
   }
 
-  makeOnUpdate(args: {
+  makeOnUpdate({
+    onClose,
+    queryClient,
+    getSelectedAuthMethod,
+    setParamsError,
+    setShowSaveAnyway,
+  }: {
     onClose: () => void;
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
     setShowSaveAnyway?: (value: boolean) => void;
   }) {
-    const {
-      onClose,
-      queryClient,
-      getSelectedAuthMethod,
-      setParamsError,
-      setShowSaveAnyway,
-    } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
@@ -271,7 +270,7 @@ export class AddDataFormManager {
       cancel?: () => void;
     }) => {
       const values = event.form.data;
-      const stepState = get(connectorStepStore) as ConnectorStepState;
+      const stepState = get(connectorStepStore);
       const isOnSourceOrExplorerStep =
         stepState.step === "source" || stepState.step === "explorer";
       const isOnConnectorStep = stepState.step === "connector";
@@ -500,7 +499,13 @@ export class AddDataFormManager {
    * Compute YAML preview for the current form state.
    * Schema conditionals handle connector-specific requirements.
    */
-  computeYamlPreview(ctx: {
+  computeYamlPreview({
+    stepState,
+    isMultiStepConnector,
+    isConnectorForm,
+    formValues,
+    existingEnvBlob,
+  }: {
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
@@ -508,13 +513,6 @@ export class AddDataFormManager {
     existingEnvBlob?: string;
   }): string {
     const connector = this.connector;
-    const {
-      stepState,
-      isMultiStepConnector,
-      isConnectorForm,
-      formValues,
-      existingEnvBlob,
-    } = ctx;
 
     const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
