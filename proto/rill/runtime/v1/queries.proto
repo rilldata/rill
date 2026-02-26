@@ -409,20 +409,18 @@ message QueryResult {
   }
 }
 
-// Span represents a single OTel span captured during a request.
+// Span corresponds to a single OTel span captured during a request.
 message Span {
   string name = 1;
   string span_id = 2;
-  string parent_span_id = 3;     // empty for root
-  int64 start_time_unix_ms = 4;  // absolute timestamp
+  string parent_span_id = 3;
+  int64 start_time_unix_ms = 4;
   int64 duration_ms = 5;
+  // span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
   map<string, string> attributes = 6;
-  bool failed = 7;
-  string error = 8;
 }
 
-// Trace contains trace spans captured during request execution.
-// Used both in successful responses and as gRPC error details when trace=true and the request fails.
+// Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
 message Trace {
   repeated Span spans = 1;
 }

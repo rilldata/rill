@@ -2444,10 +2444,13 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+/**
+ * span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
+ */
 export type V1SpanAttributes = { [key: string]: string };
 
 /**
- * Span represents a single OTel span captured during a request.
+ * Span corresponds to a single OTel span captured during a request.
  */
 export interface V1Span {
   name?: string;
@@ -2455,9 +2458,8 @@ export interface V1Span {
   parentSpanId?: string;
   startTimeUnixMs?: string;
   durationMs?: string;
+  /** span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc. */
   attributes?: V1SpanAttributes;
-  failed?: boolean;
-  error?: string;
 }
 
 export interface V1StringListValue {
@@ -2638,8 +2640,7 @@ export interface V1TopK {
 }
 
 /**
- * Trace contains trace spans captured during request execution.
-Used both in successful responses and as gRPC error details when trace=true and the request fails.
+ * Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
  */
 export interface V1Trace {
   spans?: V1Span[];

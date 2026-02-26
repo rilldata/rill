@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +38,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	if c.logQueries {
 		fields := []zap.Field{
 			zap.String("sql", stmt.Query),
@@ -58,13 +60,19 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, rows.Close()
 	}
 
-	// Start a span covering connection acquisition + SQL execution
-	ctx, span := tracer.Start(ctx, "olap.query")
-	var outErr error
+	// Start a span covering connection acquisition and query execution
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("olap", "pinot")))
+
+	start := time.Now()
 	defer func() {
+		totalLatency := time.Since(start).Milliseconds()
 		cancelled := errors.Is(outErr, context.Canceled)
 		failed := outErr != nil
-		span.SetAttributes(attribute.Bool("cancelled", cancelled), attribute.Bool("failed", failed))
+		span.SetAttributes(
+			attribute.Int64("total_latency_ms", totalLatency),
+			attribute.Bool("cancelled", cancelled),
+			attribute.Bool("failed", failed),
+		)
 		span.End()
 	}()
 
@@ -83,7 +91,6 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-		outErr = err
 		return nil, err
 	}
 
@@ -93,19 +100,18 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-		outErr = err
 		return nil, err
 	}
 
-	r := &drivers.Result{Rows: rows, Schema: schema}
-	r.SetCleanupFunc(func() error {
+	res = &drivers.Result{Rows: rows, Schema: schema}
+	res.SetCleanupFunc(func() error {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
 		return nil
 	})
 
-	return r, nil
+	return res, nil
 }
 
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {

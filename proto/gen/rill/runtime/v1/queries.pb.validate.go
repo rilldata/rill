@@ -2976,10 +2976,6 @@ func (m *Span) validate(all bool) error {
 
 	// no validation rules for Attributes
 
-	// no validation rules for Failed
-
-	// no validation rules for Error
-
 	if len(errors) > 0 {
 		return SpanMultiError(errors)
 	}

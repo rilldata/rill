@@ -7714,11 +7714,9 @@ definitions:
         type: string
       parentSpanId:
         type: string
-        title: empty for root
       startTimeUnixMs:
         type: string
         format: int64
-        title: absolute timestamp
       durationMs:
         type: string
         format: int64
@@ -7726,11 +7724,8 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      failed:
-        type: boolean
-      error:
-        type: string
-    description: Span represents a single OTel span captured during a request.
+        description: span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
+    description: Span corresponds to a single OTel span captured during a request.
   v1StringListValue:
     type: object
     properties:
@@ -8047,9 +8042,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Span'
-    description: |-
-      Trace contains trace spans captured during request execution.
-      Used both in successful responses and as gRPC error details when trace=true and the request fails.
+    description: Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

@@ -933,7 +933,7 @@ export class QueryResult extends Message<QueryResult> {
 }
 
 /**
- * Span represents a single OTel span captured during a request.
+ * Span corresponds to a single OTel span captured during a request.
  *
  * @generated from message rill.runtime.v1.Span
  */
@@ -949,15 +949,11 @@ export class Span extends Message<Span> {
   spanId = "";
 
   /**
-   * empty for root
-   *
    * @generated from field: string parent_span_id = 3;
    */
   parentSpanId = "";
 
   /**
-   * absolute timestamp
-   *
    * @generated from field: int64 start_time_unix_ms = 4;
    */
   startTimeUnixMs = protoInt64.zero;
@@ -968,19 +964,11 @@ export class Span extends Message<Span> {
   durationMs = protoInt64.zero;
 
   /**
+   * span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
+   *
    * @generated from field: map<string, string> attributes = 6;
    */
   attributes: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: bool failed = 7;
-   */
-  failed = false;
-
-  /**
-   * @generated from field: string error = 8;
-   */
-  error = "";
 
   constructor(data?: PartialMessage<Span>) {
     super();
@@ -996,8 +984,6 @@ export class Span extends Message<Span> {
     { no: 4, name: "start_time_unix_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 7, name: "failed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Span {
@@ -1018,8 +1004,7 @@ export class Span extends Message<Span> {
 }
 
 /**
- * Trace contains trace spans captured during request execution.
- * Used both in successful responses and as gRPC error details when trace=true and the request fails.
+ * Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
  *
  * @generated from message rill.runtime.v1.Trace
  */

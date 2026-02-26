@@ -97,9 +97,10 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		otel.SetMeterProvider(meterProvider)
 	}
 
-	// Initialize query log span processor.
-	// Registered on the global TracerProvider to capture sql.conn.query spans created by otelsql.
-	queryLogProcessor := NewQueryLogSpanProcessor()
+	var queryLogProcessor trace.SpanProcessor
+	if opts.ServiceName != "admin-server" { // just an optimization to avoid initializing the query log span processor for the admin server, which doesn't execute queries and thus doesn't need it
+		queryLogProcessor = NewQueryLogSpanProcessor()
+	}
 
 	// Create global traces exporter
 	var tracerProvider *trace.TracerProvider
@@ -114,9 +115,11 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		tracerProvider = trace.NewTracerProvider(
 			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithResource(res),
-			trace.WithSpanProcessor(queryLogProcessor),
 			trace.WithSpanProcessor(bsp),
 		)
+		if queryLogProcessor != nil {
+			tracerProvider.RegisterSpanProcessor(queryLogProcessor)
+		}
 	case FileBasedExporter:
 		exp, err := NewFileExporter()
 		if err != nil {
@@ -126,17 +129,20 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		tracerProvider = trace.NewTracerProvider(
 			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithResource(res),
-			trace.WithSpanProcessor(queryLogProcessor),
 			trace.WithSpanProcessor(bsp),
 		)
+		if queryLogProcessor != nil {
+			tracerProvider.RegisterSpanProcessor(queryLogProcessor)
+		}
 	case NoopExporter:
-		// Create a TracerProvider with just the query log processor so that
-		// otelsql spans are captured for query logs even without a downstream exporter.
-		tracerProvider = trace.NewTracerProvider(
-			trace.WithSampler(trace.AlwaysSample()),
-			trace.WithResource(res),
-			trace.WithSpanProcessor(queryLogProcessor),
-		)
+		if queryLogProcessor != nil {
+			// create a TracerProvider with just the query log processor so that spans are captured for query even without a downstream exporter.
+			tracerProvider = trace.NewTracerProvider(
+				trace.WithSampler(trace.AlwaysSample()),
+				trace.WithResource(res),
+				trace.WithSpanProcessor(queryLogProcessor),
+			)
+		}
 	default:
 		panic(fmt.Errorf("unexpected traces exporter %q", opts.TracesExporter))
 	}

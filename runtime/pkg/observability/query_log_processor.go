@@ -7,15 +7,15 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 var _ oteltrace.SpanProcessor = (*QueryLogSpanProcessor)(nil)
 
 // QueryLogSpanProcessor is a trace.SpanProcessor that captures spans and routes them to request-scoped query trace collectors.
+// This only works when a collector is present in the parent context, which is only set when req.trace is set on runtimev1 query requests.
 type QueryLogSpanProcessor struct {
-	collectors sync.Map // spanID (trace.SpanID) → *Collector
+	collectors sync.Map // spanID (trace.SpanID) → *Collector since multiple threads be calling onStart/onEnd concurrently thus use of sync.map
 }
 
 // NewQueryLogSpanProcessor creates a new QueryLogSpanProcessor.
@@ -54,13 +54,6 @@ func (p *QueryLogSpanProcessor) OnEnd(s oteltrace.ReadOnlySpan) {
 		parentSpanID = s.Parent().SpanID().String()
 	}
 
-	// Build error info
-	failed := s.Status().Code == codes.Error
-	var errMsg string
-	if failed {
-		errMsg = s.Status().Description
-	}
-
 	collector.Record(&runtimev1.Span{
 		Name:            s.Name(),
 		SpanId:          spanID.String(),
@@ -68,8 +61,6 @@ func (p *QueryLogSpanProcessor) OnEnd(s oteltrace.ReadOnlySpan) {
 		StartTimeUnixMs: s.StartTime().UnixMilli(),
 		DurationMs:      s.EndTime().Sub(s.StartTime()).Milliseconds(),
 		Attributes:      attrs,
-		Failed:          failed,
-		Error:           errMsg,
 	})
 }
 

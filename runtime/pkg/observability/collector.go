@@ -17,7 +17,7 @@ func (c *Collector) Record(e *runtimev1.Span) {
 	c.entries = append(c.entries, e)
 }
 
-// ToProto returns the collected traces as a TraceDetails proto.
+// ToProto returns the collected traces as Trace proto.
 func (c *Collector) ToProto() *runtimev1.Trace {
 	if len(c.entries) == 0 {
 		return nil

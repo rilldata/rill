@@ -24,27 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// withTraceDetails attaches collected trace spans as gRPC error details so that
-// traces are available even when a request fails.
-func withTraceDetails(err error, collector *observability.Collector) error {
-	if collector == nil {
-		return err
-	}
-	td := collector.ToProto()
-	if td == nil {
-		return err
-	}
-	st, ok := status.FromError(err)
-	if !ok {
-		st = status.New(codes.Unknown, err.Error())
-	}
-	detailed, detailErr := st.WithDetails(td)
-	if detailErr != nil {
-		return err
-	}
-	return detailed.Err()
-}
-
 // MetricsViewAggregation implements QueryService.
 func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.MetricsViewAggregationRequest) (*runtimev1.MetricsViewAggregationResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -105,7 +84,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -163,7 +142,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -235,7 +214,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -286,7 +265,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -332,7 +311,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -393,7 +372,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -458,7 +437,7 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -503,7 +482,7 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, withTraceDetails(err, collector)
+		return nil, withTrace(err, collector)
 	}
 	if collector != nil {
 		q.Result.Trace = collector.ToProto()
@@ -806,6 +785,27 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, mv.State, nil
+}
+
+// withTrace attaches collected trace spans as gRPC error details so that
+// traces are available even when a request fails.
+func withTrace(err error, collector *observability.Collector) error {
+	if collector == nil {
+		return err
+	}
+	t := collector.ToProto()
+	if t == nil {
+		return err
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		st = status.New(codes.Unknown, err.Error())
+	}
+	detailed, detailErr := st.WithDetails(t)
+	if detailErr != nil {
+		return err
+	}
+	return detailed.Err()
 }
 
 func valOrNullTime(v time.Time) *timestamppb.Timestamp {

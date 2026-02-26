@@ -173,7 +173,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	// Start a span covering connection acquisition + SQL execution to capture total latency and queue latency.
-	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("instance_id", c.instanceID)))
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("olap", "clickhouse"), attribute.String("instance_id", c.instanceID)))
 
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time
@@ -210,7 +210,16 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		}
 
 		// Set attributes and end the span after all metrics are recorded.
-		span.SetAttributes(attribute.Int64("queue_duration_ms", queueLatency), attribute.Bool("cancelled", cancelled), attribute.Bool("failed", failed))
+		spanAttrs := []attribute.KeyValue{
+			attribute.Int64("queue_latency_ms", queueLatency),
+			attribute.Int64("total_latency_ms", totalLatency),
+			attribute.Bool("cancelled", cancelled),
+			attribute.Bool("failed", failed),
+		}
+		if acquired {
+			spanAttrs = append(spanAttrs, attribute.Int64("query_latency_ms", totalLatency-queueLatency))
+		}
+		span.SetAttributes(spanAttrs...)
 		span.End()
 	}()
 
