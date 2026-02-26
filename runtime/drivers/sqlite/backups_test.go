@@ -105,8 +105,8 @@ func TestBackup(t *testing.T) {
 	require.NoError(t, duckdb.SelectContext(t.Context(), &msgs, fmt.Sprintf(`SELECT id, content FROM read_parquet('%s') ORDER BY id`, parquetPath)))
 	require.Len(t, msgs, 3)
 	require.Equal(t, "small message", msgs[0].Content)      // "a": unchanged
-	require.Equal(t, "<truncated>", msgs[1].Content)         // "b": text truncated
-	require.Equal(t, `{"truncated":true}`, msgs[2].Content)  // "c": JSON truncated
+	require.Equal(t, "<truncated>", msgs[1].Content)        // "b": text truncated
+	require.Equal(t, `{"truncated":true}`, msgs[2].Content) // "c": JSON truncated
 
 	// Check it created the expected files
 	expected := []string{
