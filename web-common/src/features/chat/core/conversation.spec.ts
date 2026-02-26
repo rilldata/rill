@@ -143,9 +143,8 @@ describe("Conversation", () => {
 
       // Assert: fork API called correctly
       expect(runtimeServiceForkConversation).toHaveBeenCalledWith(
-        INSTANCE_ID,
-        ORIGINAL_CONVERSATION_ID,
-        {},
+        mockRuntimeClient,
+        { conversationId: ORIGINAL_CONVERSATION_ID },
       );
 
       // Assert: cache updated with forked conversation

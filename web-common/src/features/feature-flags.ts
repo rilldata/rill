@@ -6,7 +6,7 @@ import {
   type V1GetInstanceResponse,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";
-import { runtime } from "../runtime-client/runtime-store";
+import type { RuntimeClient } from "../runtime-client/v2";
 
 class FeatureFlag {
   private _internal = false;
@@ -67,29 +67,28 @@ class FeatureFlags {
   generateCanvas = new FeatureFlag("user", false);
   stickyDashboardState = new FeatureFlag("user", false);
 
+  private flagsUnsub?: () => void;
+
   constructor() {
     this.ready = new Promise<void>((resolve) => {
       this._resolveReady = resolve;
     });
+  }
 
-    // Responsively update flags based on rill.yaml
-    // BRIDGE (temporary): subscribes to runtime store; will be replaced by
-    // RuntimeProvider calling setRuntimeClient() once per-runtime scoping lands
-    runtime.subscribe((runtime) => {
-      if (!runtime?.instanceId) return;
+  setRuntimeClient(client: RuntimeClient) {
+    this.flagsUnsub?.();
 
-      createRuntimeServiceGetInstance(
-        runtime.instanceId,
-        undefined,
-        {
-          query: {
-            select: (data) => data?.instance?.featureFlags,
-          },
+    this.flagsUnsub = createRuntimeServiceGetInstance(
+      client.instanceId,
+      undefined,
+      {
+        query: {
+          select: (data) => data?.instance?.featureFlags,
         },
-        queryClient,
-      ).subscribe((features) => {
-        if (features.data) this.updateFlags(features.data);
-      });
+      },
+      queryClient,
+    ).subscribe((features) => {
+      if (features.data) this.updateFlags(features.data);
     });
   }
 

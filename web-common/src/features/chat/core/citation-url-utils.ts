@@ -10,34 +10,32 @@ import {
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
 import { error } from "@sveltejs/kit";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-import httpClient from "@rilldata/web-common/runtime-client/http-client.ts";
+
+interface RuntimeInfo {
+  host: string;
+  instanceId: string;
+  jwt?: { token: string } | undefined;
+}
 
 export async function fetchMessage(
-  runtime: Runtime,
+  runtime: RuntimeInfo,
   conversationId: string,
   messageId: string,
 ) {
   try {
-    const toolCallResp = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetAIMessageQueryKey(
-        runtime.instanceId,
-        conversationId,
-        messageId,
-      ),
-      queryFn: ({ signal }) =>
-        httpClient<V1GetAIMessageResponse>({
-          url: `/v1/instances/${runtime.instanceId}/ai/conversations/${conversationId}/messages/${messageId}`,
-          method: "GET",
-          baseUrl: runtime.host,
-          headers: runtime.jwt
-            ? {
-                Authorization: `Bearer ${runtime.jwt?.token}`,
-              }
-            : undefined,
-          signal,
-        }),
-    });
+    const headers: Record<string, string> = {};
+    if (runtime.jwt) {
+      headers["Authorization"] = `Bearer ${runtime.jwt.token}`;
+    }
+    const resp = await fetch(
+      `${runtime.host}/v1/instances/${runtime.instanceId}/ai/conversations/${conversationId}/messages/${messageId}`,
+      { headers },
+    );
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      throw { response: { status: resp.status, data } };
+    }
+    const toolCallResp = (await resp.json()) as V1GetAIMessageResponse;
 
     // 200 response should always have a message.
     return toolCallResp.message!;

@@ -473,11 +473,9 @@ export class Conversation {
   private async forkConversation(): Promise<string> {
     const originalConversationId = this.conversationId;
 
-    const response = await runtimeServiceForkConversation(
-      this.instanceId,
-      this.conversationId,
-      {},
-    );
+    const response = await runtimeServiceForkConversation(this.client, {
+      conversationId: this.conversationId,
+    });
 
     if (!response.conversationId) {
       throw new Error("Fork response missing conversation ID");
