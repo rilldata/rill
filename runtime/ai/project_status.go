@@ -3,8 +3,10 @@ package ai
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -17,10 +19,13 @@ type ProjectStatus struct {
 var _ Tool[*ProjectStatusArgs, *ProjectStatusResult] = (*ProjectStatus)(nil)
 
 type ProjectStatusArgs struct {
-	WhereError bool   `json:"where_error,omitempty" jsonschema:"Optional flag to only return resources that have reconcile errors."`
-	Kind       string `json:"kind,omitempty" jsonschema:"Optional filter to only return resources of the specified kind."`
-	Name       string `json:"name,omitempty" jsonschema:"Optional filter to only return the resource with the specified name."`
-	Path       string `json:"path,omitempty" jsonschema:"Optional filter to only return resources declared in the specified file path."`
+	WhereError                  bool   `json:"where_error,omitempty" jsonschema:"Optional flag to only return resources that have reconcile errors."`
+	Kind                        string `json:"kind,omitempty" jsonschema:"Optional filter to only return resources of the specified kind."`
+	Name                        string `json:"name,omitempty" jsonschema:"Optional filter to only return the resource with the specified name."`
+	Path                        string `json:"path,omitempty" jsonschema:"Optional filter to only return resources declared in the specified file path."`
+	WaitUntilIdle               bool   `json:"wait_until_idle,omitempty" jsonschema:"If true, waits until all resources have finished reconciling before returning the status."`
+	WaitUntilIdleTimeoutSeconds int    `json:"wait_until_idle_timeout_seconds,omitempty" jsonschema:"Timeout in seconds for wait_until_idle. Defaults to 60. Only override if you anticipate large workloads."`
+	TailLogs                    int    `json:"tail_logs,omitempty" jsonschema:"Number of recent log entries to include in the response. Defaults to 100."`
 }
 
 type ProjectStatusResult struct {
@@ -28,13 +33,14 @@ type ProjectStatusResult struct {
 	Env                  []string         `json:"env,omitempty" jsonschema:"List of environment variable names present in the project. Their values are omitted for security."`
 	Resources            []map[string]any `json:"resources" jsonschema:"List of resources and their status."`
 	ParseErrors          []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files."`
+	Logs                 []map[string]any `json:"logs,omitempty" jsonschema:"Recent log entries for the instance, ordered oldest to newest."`
 }
 
 func (t *ProjectStatus) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        ProjectStatusName,
 		Title:       "Get project status",
-		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors.",
+		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors and recent logs. Can optionally wait until all resources have finished reconciling before returning.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting project status...",
 			"openai/toolInvocation/invoked":  "Got project status",
@@ -52,6 +58,22 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
 	if err != nil {
 		return nil, err
+	}
+
+	// Wait until all resources are idle if requested
+	if args.WaitUntilIdle {
+		timeoutSeconds := args.WaitUntilIdleTimeoutSeconds
+		if timeoutSeconds <= 0 {
+			timeoutSeconds = 60
+		}
+		waitCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+		err := ctrl.WaitUntilIdle(waitCtx, false)
+		cancel()
+		// If the parent context was cancelled, propagate the error.
+		// If only the wait timed out, proceed to return the current status.
+		if err != nil && ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 	}
 
 	// List resources with optional filtering by kind and path
@@ -129,10 +151,34 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 		varNames = append(varNames, k)
 	}
 
+	// Get recent logs
+	tailLogs := args.TailLogs
+	if tailLogs <= 0 {
+		tailLogs = 100
+	}
+	logBuffer, err := t.Runtime.InstanceLogs(ctx, s.InstanceID())
+	if err != nil {
+		return nil, err
+	}
+	logEntries := logBuffer.GetLogs(true, tailLogs, runtimev1.LogLevel_LOG_LEVEL_DEBUG)
+	logs := make([]map[string]any, 0, len(logEntries))
+	for _, entry := range logEntries {
+		l := map[string]any{
+			"level":   strings.TrimPrefix(entry.Level.String(), "LOG_LEVEL_"),
+			"time":    entry.Time.AsTime().Format(time.RFC3339),
+			"message": entry.Message,
+		}
+		if entry.JsonPayload != "" {
+			l["json_payload"] = entry.JsonPayload
+		}
+		logs = append(logs, l)
+	}
+
 	return &ProjectStatusResult{
 		DefaultOLAPConnector: instance.ResolveOLAPConnector(),
 		Env:                  varNames,
 		Resources:            resources,
 		ParseErrors:          parseErrors,
+		Logs:                 logs,
 	}, nil
 }
