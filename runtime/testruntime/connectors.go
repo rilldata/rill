@@ -16,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
@@ -80,6 +81,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		return map[string]string{"dsn": dsn}
 	},
 	"motherduck": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		path := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_PATH")
 		require.NotEmpty(t, path)

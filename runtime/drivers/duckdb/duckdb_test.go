@@ -2,9 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -177,47 +174,6 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT * FROM a"})
 	require.NoError(t, err)
-
-	err = handle.Close()
-	require.NoError(t, err)
-}
-
-func TestDirectoryAccess(t *testing.T) {
-	tempDir := t.TempDir()
-	st := storage.MustNew(tempDir, nil).WithPrefix("default")
-
-	handle, err := Driver{}.Open("default", map[string]any{"allow_host_access": false}, st, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-
-	olap, ok := handle.AsOLAP("")
-	require.True(t, ok)
-
-	// Create a file in the temp directory to test directory access
-	subTemp, err := st.RandomTempDir("test*")
-	require.NoError(t, err)
-	// write a CSV file to the subTemp directory
-	path := filepath.Join(subTemp, "test.csv")
-	csvFile, err := os.Create(path)
-	require.NoError(t, err)
-	_, err = csvFile.WriteString("id,country\n1,IND\n2,USA\n")
-	require.NoError(t, err)
-	require.NoError(t, csvFile.Close())
-
-	err = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE test AS SELECT * FROM read_csv_auto(%s)", safeSQLString(path))})
-	require.NoError(t, err)
-
-	// Create a file in another directory to test no directory access
-	otherTemp := t.TempDir()
-	otherPath := filepath.Join(otherTemp, "test.csv")
-	otherCSVFile, err := os.Create(otherPath)
-	require.NoError(t, err)
-	_, err = otherCSVFile.WriteString("id,country\n1,IND\n2,USA\n")
-	require.NoError(t, err)
-	require.NoError(t, otherCSVFile.Close())
-
-	err = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE other_test AS SELECT * FROM read_csv_auto(%s)", safeSQLString(otherPath))})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "file system operations are disabled by configuration")
 
 	err = handle.Close()
 	require.NoError(t, err)

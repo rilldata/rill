@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -559,28 +558,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
 			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
 		)
-		// Find the instance dir for the data dir
-		// other drivers always write to a path which is a subdirectory of the instance directory
-		tempDir, err := c.storage.TempDir()
-		if err != nil {
-			return err
-		}
-		if strings.Contains(tempDir, c.instanceID) {
-			for tempDir != "" && tempDir != string(filepath.Separator) && tempDir != "." {
-				if filepath.Base(tempDir) == c.instanceID {
-					break
-				}
-				tempDir = filepath.Dir(tempDir)
-			}
-			dbInitQueries = append(dbInitQueries, fmt.Sprintf(`SET allowed_directories=[%s, %s, %s, 'http://', 'https://']`,
-				safeSQLString(extensionDir+string(filepath.Separator)),
-				safeSQLString(dataDir+string(filepath.Separator)),
-				safeSQLString(tempDir+string(filepath.Separator)),
-			),
-				"SET enable_external_access=false")
-		} else {
-			c.logger.Warn("duckdb: instanceID not found in temp dir path, can't disable `enable_external_access`")
-		}
 	}
 
 	// Add init SQL if provided
