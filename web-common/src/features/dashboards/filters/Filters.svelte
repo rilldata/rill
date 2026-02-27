@@ -21,7 +21,7 @@
     V1TimeGrain,
     type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -224,7 +224,7 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     metricsExplorerStore.setTimeDimension($exploreName, column);
@@ -292,7 +292,7 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     const { interval, grain } = await deriveInterval(

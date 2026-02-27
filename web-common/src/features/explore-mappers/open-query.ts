@@ -7,12 +7,14 @@ import {
   getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  queryServiceMetricsViewTimeRange,
+  runtimeServiceGetExplore,
+  runtimeServiceListResources,
   type V1ExploreSpec,
-  type V1GetExploreResponse,
-  type V1ListResourcesResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { error, redirect } from "@sveltejs/kit";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
@@ -20,44 +22,14 @@ import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/feat
 import { createLinkError } from "@rilldata/web-common/features/explore-mappers/explore-validation.ts";
 import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types.ts";
 
-interface RuntimeInfo {
-  host: string;
-  instanceId: string;
-  jwt?: { token: string } | undefined;
-}
-
-async function runtimeFetch<T>(
-  runtime: RuntimeInfo,
-  path: string,
-  opts?: { method?: string; body?: unknown; signal?: AbortSignal },
-): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (runtime.jwt) {
-    headers["Authorization"] = `Bearer ${runtime.jwt.token}`;
-  }
-  const resp = await fetch(`${runtime.host}${path}`, {
-    method: opts?.method ?? "GET",
-    headers,
-    ...(opts?.body !== undefined ? { body: JSON.stringify(opts.body) } : {}),
-    signal: opts?.signal,
-  });
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => ({}));
-    throw { response: { status: resp.status, data } };
-  }
-  return (await resp.json()) as T;
-}
-
 export async function openQuery({
   query,
   organization,
   project,
-  runtime,
+  client,
 }: {
   query: MetricsResolverQuery;
-  runtime: RuntimeInfo;
+  client: RuntimeClient;
   organization?: string;
   project?: string;
 }) {
@@ -72,12 +44,12 @@ export async function openQuery({
 
     // Find an explore dashboard that uses this metrics view
     const exploreName = await findExploreForMetricsView(
-      runtime,
+      client,
       metricsViewName,
     );
 
     const { metricsViewSpec, exploreSpec } = await getExploreSpecs(
-      runtime,
+      client,
       exploreName,
     );
 
@@ -90,7 +62,7 @@ export async function openQuery({
 
     // Generate the final explore URL
     exploreURL = await generateExploreLink(
-      runtime,
+      client,
       exploreState,
       metricsViewSpec,
       exploreSpec,
@@ -118,19 +90,17 @@ export async function openQuery({
  * TODO: try to find an explore that has as many measures/dimensions in the query
  */
 async function findExploreForMetricsView(
-  runtime: RuntimeInfo,
+  client: RuntimeClient,
   metricsViewName: string,
 ): Promise<string> {
+  const request = { kind: ResourceKind.Explore };
   const exploreResources = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceListResourcesQueryKey(runtime.instanceId, {
-      kind: ResourceKind.Explore,
-    }),
+    queryKey: getRuntimeServiceListResourcesQueryKey(
+      client.instanceId,
+      request,
+    ),
     queryFn: ({ signal }) =>
-      runtimeFetch<V1ListResourcesResponse>(
-        runtime,
-        `/v1/instances/${runtime.instanceId}/resources?kind=${ResourceKind.Explore}`,
-        { signal },
-      ),
+      runtimeServiceListResources(client, request, { signal }),
   });
 
   if (exploreResources.resources) {
@@ -146,17 +116,12 @@ async function findExploreForMetricsView(
   );
 }
 
-async function getExploreSpecs(runtime: RuntimeInfo, exploreName: string) {
+async function getExploreSpecs(client: RuntimeClient, exploreName: string) {
+  const request = { name: exploreName };
   const getExploreResponse = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetExploreQueryKey(runtime.instanceId, {
-      name: exploreName,
-    }),
+    queryKey: getRuntimeServiceGetExploreQueryKey(client.instanceId, request),
     queryFn: ({ signal }) =>
-      runtimeFetch<V1GetExploreResponse>(
-        runtime,
-        `/v1/instances/${runtime.instanceId}/resources/explore?name=${encodeURIComponent(exploreName)}`,
-        { signal },
-      ),
+      runtimeServiceGetExplore(client, request, { signal }),
   });
   const exploreResource = getExploreResponse.explore;
   const metricsViewResource = getExploreResponse.metricsView;
@@ -179,7 +144,7 @@ async function getExploreSpecs(runtime: RuntimeInfo, exploreName: string) {
  * Generates the explore page URL with proper search parameters
  */
 async function generateExploreLink(
-  runtime: RuntimeInfo,
+  client: RuntimeClient,
   exploreState: Partial<ExploreState>,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
@@ -193,17 +158,14 @@ async function generateExploreLink(
     const metricsViewName = exploreSpec.metricsView;
     let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined;
     if (metricsViewSpec.timeDimension && metricsViewName) {
+      const request = { metricsViewName };
       fullTimeRange = await queryClient.fetchQuery({
-        queryFn: ({ signal }) =>
-          runtimeFetch<V1MetricsViewTimeRangeResponse>(
-            runtime,
-            `/v1/instances/${runtime.instanceId}/queries/metrics-views/${encodeURIComponent(metricsViewName)}/time-range-summary`,
-            { method: "POST", body: {}, signal },
-          ),
         queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-          runtime.instanceId,
-          { metricsViewName },
+          client.instanceId,
+          request,
         ),
+        queryFn: ({ signal }) =>
+          queryServiceMetricsViewTimeRange(client, request, { signal }),
         staleTime: Infinity,
         gcTime: Infinity,
       });

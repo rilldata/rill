@@ -1,24 +1,24 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { isHTTPError } from "@rilldata/web-common/lib/errors";
-import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client/query-options";
+import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
+import { ConnectError } from "@connectrpc/connect";
+import { createRuntimeClientFromLayout } from "@rilldata/web-admin/lib/runtime-client-utils";
 
 export async function load({ params, parent }) {
   const { runtime } = await parent();
+  const client = createRuntimeClientFromLayout(runtime);
 
   const alertData = await queryClient
     .fetchQuery(
-      getRuntimeServiceGetResourceQueryOptions(runtime, {
-        "name.kind": ResourceKind.Alert,
-        "name.name": params.alert,
+      getRuntimeServiceGetResourceQueryOptions(client, {
+        name: { kind: ResourceKind.Alert, name: params.alert },
       }),
     )
     .catch((e) => {
-      if (!isHTTPError(e)) {
-        throw error(500, "Error fetching alert");
-      }
-      throw error(e.response.status, e.response.data.message);
+      const ce = ConnectError.from(e);
+      throw error(connectCodeToHTTPStatus(ce.code), ce.rawMessage);
     });
 
   return {

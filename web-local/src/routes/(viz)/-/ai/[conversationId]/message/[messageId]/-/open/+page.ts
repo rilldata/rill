@@ -10,6 +10,6 @@ export async function load({ parent }) {
 
   await openQuery({
     query,
-    runtime: { host: client.host, instanceId: client.instanceId },
+    client,
   });
 }

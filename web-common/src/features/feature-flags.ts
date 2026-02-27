@@ -2,7 +2,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { writable } from "svelte/store";
 import {
   createRuntimeServiceGetInstance,
-  type V1GetInstanceResponse,
+  runtimeServiceGetInstance,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";
 import type { RuntimeClient } from "../runtime-client/v2";
@@ -126,24 +126,13 @@ class FeatureFlags {
 
 export const featureFlags = new FeatureFlags();
 
-interface RuntimeInfo {
-  host: string;
-  instanceId: string;
-  jwt?: { token: string } | undefined;
-}
-
-export async function getFeatureFlags(runtime: RuntimeInfo) {
-  const resp = await fetch(
-    `${runtime.host}/v1/instances/${runtime.instanceId}`,
-    {
-      headers: runtime.jwt
-        ? { Authorization: `Bearer ${runtime.jwt.token}` }
-        : {},
-    },
-  );
-  if (!resp.ok) {
+export async function getFeatureFlags(
+  client: RuntimeClient,
+): Promise<V1InstanceFeatureFlags> {
+  try {
+    const data = await runtimeServiceGetInstance(client, {});
+    return data.instance?.featureFlags ?? {};
+  } catch {
     return {};
   }
-  const data = (await resp.json()) as V1GetInstanceResponse;
-  return data.instance?.featureFlags ?? {};
 }
