@@ -11,9 +11,9 @@
 
 <TabsPrimitive.Trigger
   class={cn(
-    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium text-gray-500 transition-all",
+    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium text-fg-secondary transition-all",
     "pb-2 rounded-none border-b-2 border-transparent",
-    "data-[state=active]:border-primary-500 data-[state=active]:text-gray-900",
+    "data-[state=active]:border-primary-500 data-[state=active]:text-fg-primary",
     "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
     "disabled:pointer-events-none disabled:opacity-50",
     className,

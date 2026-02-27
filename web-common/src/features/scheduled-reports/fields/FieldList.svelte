@@ -132,7 +132,7 @@
           label={`Add ${label} fields`}
           active={open}
           builders={[builder]}
-          class="w-[34px] ml-2 border border-dashed border-slate-300"
+          class="w-[34px] ml-2 border border-dashed border-gray-300"
           compact
           rounded
         >

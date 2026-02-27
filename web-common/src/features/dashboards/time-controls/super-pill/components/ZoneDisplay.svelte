@@ -28,7 +28,7 @@
   </div>
 
   <span
-    class="self-end text-slate-500 rounded-sm line-clamp-1 w-fit flex-none text-[11px]"
+    class="self-end text-fg-secondary rounded-sm line-clamp-1 w-fit flex-none text-[11px]"
   >
     {offset}
   </span>

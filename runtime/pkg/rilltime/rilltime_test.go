@@ -29,6 +29,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		// Current complete second
 		{"1s as of watermark/s+1s", "2025-05-13T06:32:36Z", "2025-05-13T06:32:37Z", timeutil.TimeGrainMillisecond, 1, 1},
 		{"-1s to ref as of watermark/s+1s", "2025-05-13T06:32:36Z", "2025-05-13T06:32:37Z", timeutil.TimeGrainMillisecond, 1, 1},
+		{"PT1S", "2025-05-13T06:32:36Z", "2025-05-13T06:32:37Z", timeutil.TimeGrainMillisecond, 1, 1},
 		{"sTD as of watermark/s+1s", "2025-05-13T06:32:37Z", "2025-05-13T06:32:37Z", timeutil.TimeGrainMillisecond, 1, 1},
 
 		// Previous complete minute
@@ -43,6 +44,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		// Current complete minute
 		{"1m as of watermark/m+1m", "2025-05-13T06:32:00Z", "2025-05-13T06:33:00Z", timeutil.TimeGrainSecond, 1, 1},
 		{"-1m to ref as of watermark/m+1m", "2025-05-13T06:32:00Z", "2025-05-13T06:33:00Z", timeutil.TimeGrainSecond, 1, 1},
+		{"PT1M", "2025-05-13T06:32:00Z", "2025-05-13T06:33:00Z", timeutil.TimeGrainSecond, 1, 1},
 		{"mTD as of watermark/m+1m", "2025-05-13T06:33:00Z", "2025-05-13T06:33:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 
 		// Previous complete hour
@@ -57,6 +59,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		// Current complete hour
 		{"1h as of watermark/h+1h", "2025-05-13T06:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainMinute, 1, 1},
 		{"-1h to ref as of watermark/h+1h", "2025-05-13T06:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainMinute, 1, 1},
+		{"PT1H", "2025-05-13T06:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainMinute, 1, 1},
 		{"hTD as of watermark/h+1h", "2025-05-13T07:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 
 		// Previous complete day
@@ -71,6 +74,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		// Current complete day
 		{"1D as of watermark/D+1D", "2025-05-13T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"-1D to ref as of watermark/D+1D", "2025-05-13T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"P1D", "2025-05-13T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"DTD as of watermark/D+1D", "2025-05-14T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 
 		// Previous complete week
@@ -85,6 +89,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		// Current complete week
 		{"1W as of watermark/W+1W", "2025-05-12T00:00:00Z", "2025-05-19T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"-1W to ref as of watermark/W+1W", "2025-05-12T00:00:00Z", "2025-05-19T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"P1W", "2025-05-12T00:00:00Z", "2025-05-19T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"WTD as of watermark/W+1W", "2025-05-19T00:00:00Z", "2025-05-19T00:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 
 		// Previous complete month
@@ -99,6 +104,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		// Current complete month
 		{"1M as of watermark/M+1M", "2025-05-01T00:00:00Z", "2025-06-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"-1M to ref as of watermark/M+1M", "2025-05-01T00:00:00Z", "2025-06-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"P1M", "2025-05-01T00:00:00Z", "2025-06-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"MTD as of watermark/M+1M", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 
 		// Previous complete quarter
@@ -127,6 +133,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		// Current complete year
 		{"1Y as of watermark/Y+1Y", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 		{"-1Y to ref as of watermark/Y+1Y", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+		{"P1Y", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 		{"YTD as of watermark/Y+1Y", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 	}
 
@@ -234,6 +241,15 @@ func TestEval_OrdinalVariations(t *testing.T) {
 	testCases := []testCase{
 		{"W1", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"W1 as of -2M", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+
+		// Ordinals with lower order truncation
+		{"M2 as of watermark/D", "2025-02-01T00:00:00Z", "2025-03-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"M7 as of watermark/D", "2025-07-01T00:00:00Z", "2025-08-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"D4 as of watermark/H", "2025-05-04T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+
+		// Ordinals with higher order truncation
+		{"D6 as of watermark/M", "2025-05-06T00:00:00Z", "2025-05-07T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"D6 as of watermark/W", "2025-05-17T00:00:00Z", "2025-05-18T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 
 		// Ordinal chaining variations
 		{"s57 of m4 of H2 of D4 as of -1M", "2025-04-04T01:03:56Z", "2025-04-04T01:03:57Z", timeutil.TimeGrainMillisecond, 1, 1},
@@ -406,11 +422,11 @@ func Test_TimeNewYorkTimezone(t *testing.T) {
 
 func TestEval_BackwardsCompatibility(t *testing.T) {
 	testCases := []testCase{
-		{"rill-TD", "2025-05-13T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainHour, 1, 1},
-		{"rill-WTD", "2025-05-12T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainHour, 1, 1},
-		{"rill-MTD", "2025-05-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
-		{"rill-QTD", "2025-04-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
-		{"rill-YTD", "2025-01-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainMonth, 1, 1},
+		{"rill-TD", "2025-05-13T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"rill-WTD", "2025-05-12T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"rill-MTD", "2025-05-01T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"rill-QTD", "2025-04-01T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"rill-YTD", "2025-01-01T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 
 		{"rill-PDC", "2025-05-12T00:00:00Z", "2025-05-13T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"rill-PWC", "2025-05-05T00:00:00Z", "2025-05-12T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
@@ -421,6 +437,7 @@ func TestEval_BackwardsCompatibility(t *testing.T) {
 		// `inf` => `earliest to latest+1s`
 		{"inf", "2020-01-01T00:32:36Z", "2025-05-14T06:32:37Z", timeutil.TimeGrainUnspecified, 1, 1},
 		{"P2DT10H", "2025-05-10T21:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"P1Y2M3W4DT10H15M", "2024-02-17T20:18:00Z", "2025-05-13T06:33:00Z", timeutil.TimeGrainMinute, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
@@ -459,6 +476,46 @@ func TestEval_Misc(t *testing.T) {
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
+}
+
+func TestParseISO(t *testing.T) {
+	testCases := []struct {
+		title            string
+		duration, offset string
+		roundToGrain     timeutil.TimeGrain
+
+		start, end string
+		grain      timeutil.TimeGrain
+	}{
+		{"With duration, no offset or round to grain", "P7D", "", timeutil.TimeGrainUnspecified, "2025-05-06T06:32:36Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration and offset no round to grain", "P7D", "P2D", timeutil.TimeGrainUnspecified, "2025-05-04T06:32:36Z", "2025-05-11T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration, offset and round to grain", "P7D", "P2D", timeutil.TimeGrainDay, "2025-05-04T00:00:00Z", "2025-05-11T00:00:00Z", timeutil.TimeGrainUnspecified},
+		{"With DAX duration, offset and round to grain", "rill-PW", "P2D", timeutil.TimeGrainDay, "2025-05-03T00:00:00Z", "2025-05-10T00:00:00Z", timeutil.TimeGrainUnspecified},
+	}
+
+	nowTm := parseTestTime(t, now)
+	minTimeTm := parseTestTime(t, minTime)
+	maxTimeTm := parseTestTime(t, maxTime)
+	watermarkTm := parseTestTime(t, watermark)
+
+	for _, testCase := range testCases {
+		t.Run(testCase.title, func(t *testing.T) {
+			rt, err := ParseLegacy(testCase.duration, testCase.offset, testCase.roundToGrain, ParseOptions{})
+			require.NoError(t, err)
+
+			start, end, grain := rt.Eval(EvalOptions{
+				Now:       nowTm,
+				MinTime:   minTimeTm,
+				MaxTime:   maxTimeTm,
+				Watermark: watermarkTm,
+			})
+			require.Equal(t, parseTestTime(t, testCase.start), start)
+			require.Equal(t, parseTestTime(t, testCase.end), end)
+			if testCase.grain != timeutil.TimeGrainUnspecified {
+				require.Equal(t, testCase.grain, grain)
+			}
+		})
+	}
 }
 
 func TestEval_SyntaxErrors(t *testing.T) {

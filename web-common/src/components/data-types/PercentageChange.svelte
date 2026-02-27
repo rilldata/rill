@@ -6,7 +6,7 @@
   export let isNull = false;
   export let inTable = false;
   export let showPosSign = false;
-  export let color = "!text-gray-500";
+  export let color = "!text-fg-secondary";
   export let customStyle = "";
   export let value:
     | string
@@ -66,7 +66,6 @@
   }
 </script>
 
-<!-- FIXME: !color to override the .ui-copy class -->
 <Base
   {isNull}
   {color}
@@ -77,9 +76,9 @@
 >
   <slot name="value">
     {#if isNoData}
-      <span class="text-gray-400">-</span>
+      <span class="text-fg-secondary">-</span>
     {:else if value !== null && assembled}
-      <span class:text-red-500={diffIsNegative}>
+      <span class:text-destructive={diffIsNegative}>
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
           >%</span
         >

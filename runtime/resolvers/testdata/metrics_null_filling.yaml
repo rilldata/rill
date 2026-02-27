@@ -160,6 +160,33 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 4
         time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_clickhouse_quarter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__quarter
+          compute:
+            time_floor:
+              dimension: time
+              grain: quarter
+      measures:
+        - name: count
+        - name: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__quarter
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: 1
+        sum: 4
+        time__quarter: "2024-01-01T00:00:00Z"
   - name: null_filling_coalesce_computed_time_same_name_as_alias_clickhouse
     resolver: metrics
     properties:

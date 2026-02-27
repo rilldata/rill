@@ -282,6 +282,13 @@ func serveSSEUntilClose(w http.ResponseWriter, events chan *sseEvent) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
+	// Send an initial SSE comment to force proxies to forward the response.
+	// Without body bytes, reverse proxies (Codespaces, Cloudflare, nginx) buffer the
+	// response indefinitely, preventing the client from detecting the connection is open.
+	// SSE comments (lines starting with ':') are no-ops per the spec.
+	fmt.Fprint(w, ":ok\n\n")
+	flusher.Flush()
+
 	// Consume events from channel and write to response (the loop ends when the channel is closed)
 	for ev := range events {
 		// Skip empty events

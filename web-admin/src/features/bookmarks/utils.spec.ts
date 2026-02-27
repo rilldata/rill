@@ -164,6 +164,7 @@ describe("getBookmarkData and parseBookmarks", () => {
     // Generate the bookmark url from the default explore state + modified partial explore state
     const curUrlParams = convertPartialExploreStateToUrlParams(
       AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
       fullExploreState,
       getTimeControlState(
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,

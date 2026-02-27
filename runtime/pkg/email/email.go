@@ -43,6 +43,7 @@ type ScheduledReport struct {
 	DownloadLink    string
 	EditLink        string
 	UnsubscribeLink string
+	Summary         string // For AI reports
 }
 
 type scheduledReportData struct {
@@ -53,6 +54,7 @@ type scheduledReportData struct {
 	DownloadLink     template.URL
 	EditLink         template.URL
 	UnsubscribeLink  template.URL
+	Summary          string // For AI reports
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
@@ -65,6 +67,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
 		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
+		Summary:          opts.Summary,
 	}
 
 	// Build subject
@@ -522,7 +525,7 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Subscription for %s has now ended. Org is hibernated", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/other/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
+Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
 <br /><br />
 If you’d like to reactivate your subscription and regain access, you can easily do so at any time by renewing your subscription from here:
 `, opts.OrgName)),
@@ -629,7 +632,7 @@ func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Trial plan grace period for %s has ended. Org is now hibernated", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-<b>%s</b> and its projects are now <a href="https://docs.rilldata.com/other/FAQ#what-is-project-hibernation">hibernating</a>.
+<b>%s</b> and its projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>.
 <br /><br />
 Reactivate your org by upgrading to the Team Plan today!
 `, opts.OrgName)),

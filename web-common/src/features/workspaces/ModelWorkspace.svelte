@@ -104,7 +104,7 @@
   >
     <svelte:fragment slot="workspace-controls">
       <p
-        class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
+        class="text-fg-muted line-clamp-1 mr-2 text-[11px]"
         transition:fade={{ duration: 200 }}
       >
         {#if refreshedOn}
@@ -150,7 +150,7 @@
           {#if allErrors.length > 0}
             <div
               transition:slide={{ duration: 200 }}
-              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] bg-gray-100 flex flex-col gap-2"
+              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-fg-primary w-full shrink-0 max-h-[60%] bg-gray-100 flex flex-col gap-2"
             >
               {#each allErrors as error (error.message)}
                 <div>

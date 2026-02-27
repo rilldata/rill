@@ -61,11 +61,11 @@
             x={value}
             ry={rowHeight / 2}
             buffer={6}
-            colorClass="ui-copy-muted"
+            colorClass="text-fg-muted"
           >
             <tspan>
-              <tspan class="font-semibold ui-copy-muted">{label}</tspan>
-              <tspan class="ui-copy-disabled"
+              <tspan class="font-semibold text-fg-muted">{label}</tspan>
+              <tspan class="text-fg-disabled"
                 >{format ? format(value) : value}</tspan
               >
             </tspan>

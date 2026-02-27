@@ -98,7 +98,7 @@
   <ComponentError error={error.message} />
 {:else if hasNoData}
   <div
-    class="flex w-full h-full p-2 text-xl ui-copy-disabled items-center justify-center"
+    class="flex w-full h-full p-2 text-xl text-fg-disabled items-center justify-center"
   >
     No Data to Display
   </div>

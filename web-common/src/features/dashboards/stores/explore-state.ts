@@ -126,6 +126,11 @@ export interface ExploreState {
   selectedTimezone: string;
 
   /**
+   * user selected time column, should default to undefined if no other value is set
+   */
+  selectedTimeDimension: string | undefined;
+
+  /**
    * flag to show/hide time comparison based on user preference.
    * This controls whether a time comparison is shown in e.g.
    * the line charts and bignums.

@@ -54,9 +54,9 @@
     </div>
   {/if}
   <div class="flex flex-col text-left">
-    <span class="text-sm font-medium text-gray-900 flex flex-row gap-x-1">
+    <span class="text-sm font-medium text-fg-primary flex flex-row gap-x-1">
       {name}
-      <span class="text-gray-500 font-normal">
+      <span class="text-fg-secondary font-normal">
         {isCurrentUser ? "(You)" : ""}
       </span>
       {#if showGuestChip || role === OrgUserRoles.Guest}
@@ -66,13 +66,13 @@
       {/if}
     </span>
     {#if pendingAcceptance || email}
-      <span class="text-xs text-gray-500">
+      <span class="text-xs text-fg-secondary">
         {pendingAcceptance ? "Pending invitation" : email}
       </span>
     {/if}
     <div class="flex flex-row items-center gap-x-1">
       {#if count && count > 0}
-        <span class="text-xs text-gray-500">
+        <span class="text-xs text-fg-secondary">
           {count} user{count > 1 ? "s" : ""}
         </span>
       {/if}

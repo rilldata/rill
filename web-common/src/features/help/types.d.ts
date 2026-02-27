@@ -5,6 +5,7 @@ interface Window {
       email: string;
       name: string;
       avatar_url: string;
+      email_hash?: string;
     };
   };
   Pylon: any;

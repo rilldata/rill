@@ -6,7 +6,7 @@
     getIsOrgOnTrial,
     getPlanUpgradeUrl,
   } from "@rilldata/web-common/features/organization/utils.ts";
-  import { getDeployLandingPage } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import { getDeployingPageUrl } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { GithubRepoNoAccessError } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { getLocalGitRepoStatus } from "@rilldata/web-common/features/project/selectors.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
@@ -90,7 +90,7 @@
     if (!resp.frontendUrl) return;
 
     // projectUrl: https://ui.rilldata.com/<org>/<project>
-    const projectInviteUrl = getDeployLandingPage(resp.frontendUrl);
+    const projectInviteUrl = getDeployingPageUrl(resp.frontendUrl, true);
     window.open(projectInviteUrl, "_self");
   }
 

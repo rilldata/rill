@@ -68,7 +68,7 @@
             options={legendOptions}
             value={fieldConfig?.legendOrientation ||
               chartFieldInput?.defaultLegendOrientation}
-            on:change={(e) => onChange("legendOrientation", e.detail)}
+            onChange={(value) => onChange("legendOrientation", value)}
           />
         </div>
       {/if}

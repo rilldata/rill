@@ -1,23 +1,4 @@
-export type ClickHouseConnectorType =
-  | "rill-managed"
-  | "self-hosted"
-  | "clickhouse-cloud";
-
-export const CONNECTOR_TYPE_OPTIONS: {
-  value: ClickHouseConnectorType;
-  label: string;
-}[] = [
-  { value: "rill-managed", label: "Rill-managed ClickHouse" },
-  { value: "self-hosted", label: "Self-hosted ClickHouse" },
-  { value: "clickhouse-cloud", label: "ClickHouse Cloud" },
-];
-
-export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
-  { value: "parameters", label: "Enter parameters" },
-  { value: "dsn", label: "Enter connection string" },
-];
-
-export type GCSAuthMethod = "credentials" | "hmac";
+export type GCSAuthMethod = "public" | "credentials" | "hmac";
 
 export const GCS_AUTH_OPTIONS: {
   value: GCSAuthMethod;
@@ -37,6 +18,65 @@ export const GCS_AUTH_OPTIONS: {
     description:
       "Use HMAC access key and secret for S3-compatible authentication.",
   },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable buckets without credentials.",
+  },
+];
+
+export type S3AuthMethod = "access_keys" | "public";
+
+export const S3_AUTH_OPTIONS: {
+  value: S3AuthMethod;
+  label: string;
+  description: string;
+  hint?: string;
+}[] = [
+  {
+    value: "access_keys",
+    label: "Access keys",
+    description: "Use AWS access key ID and secret access key.",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable buckets without credentials.",
+  },
+];
+
+export type AzureAuthMethod =
+  | "account_key"
+  | "sas_token"
+  | "connection_string"
+  | "public";
+
+export const AZURE_AUTH_OPTIONS: {
+  value: AzureAuthMethod;
+  label: string;
+  description: string;
+  hint?: string;
+}[] = [
+  {
+    value: "connection_string",
+    label: "Connection String",
+    description: "Alternative for cloud deployment",
+  },
+  {
+    value: "account_key",
+    label: "Storage Account Key",
+    description: "Recommended for cloud deployment",
+  },
+  {
+    value: "sas_token",
+    label: "Shared Access Signature (SAS) Token",
+    description: "Most secure, fine-grained control",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable blobs without credentials.",
+  },
 ];
 
 // pre-defined order for sources
@@ -52,6 +92,7 @@ export const SOURCES = [
   "salesforce",
   "snowflake",
   "sqlite",
+  "supabase",
   "https",
   "local_file",
 ];
@@ -62,17 +103,7 @@ export const OLAP_ENGINES = [
   "duckdb",
   "druid",
   "pinot",
+  "starrocks",
 ];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
-
-// Connectors that support multi-step forms (connector -> source)
-export const MULTI_STEP_CONNECTORS = ["gcs"];
-
-export const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
-export const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
-export const TALL_FORM_CONNECTORS = new Set([
-  "clickhouse",
-  "snowflake",
-  "salesforce",
-]);

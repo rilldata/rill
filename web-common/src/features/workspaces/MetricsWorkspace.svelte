@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -17,7 +18,6 @@
   } from "../connectors/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
-  import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualMetrics from "./VisualMetrics.svelte";
 
   export let fileArtifact: FileArtifact;
@@ -36,8 +36,6 @@
 
   $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: ({ data: resource } = $resourceQuery);
 
@@ -58,6 +56,23 @@
     ? $isModelingSupportedForConnector.data
     : $isModelingSupportedForDefaultOlapDriver.data;
 
+  $: selectedView = workspace.view;
+
+  // Parse error for the editor gutter and banner
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseError = $parseErrorQuery;
+
+  // Reconcile error resolved to root cause for the banner
+  $: reconcileError = resource?.meta?.reconcileError;
+  $: rootCauseQuery = createRootCauseErrorQuery(
+    instanceId,
+    resource,
+    reconcileError,
+  );
+  $: rootCauseReconcileError = reconcileError
+    ? ($rootCauseQuery?.data ?? reconcileError)
+    : undefined;
+
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
@@ -67,10 +82,6 @@
     );
     if (newRoute) await goto(newRoute);
   }
-
-  $: selectedView = workspace.view;
-
-  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
 <WorkspaceContainer inspector={$selectedView === "code" && isModelingSupported}>
@@ -89,7 +100,7 @@
       {#if isOldMetricsView}
         <PreviewButton
           href="/explore/{metricsViewName}"
-          disabled={errors.length > 0}
+          disabled={!!parseError || !!reconcileError}
         />
       {:else}
         <GoToDashboardButton {resource} />
@@ -101,15 +112,16 @@
     {#if $selectedView === "code"}
       <MetricsEditor
         bind:autoSave={$autoSave}
+        {rootCauseReconcileError}
         {fileArtifact}
         {filePath}
-        {errors}
+        {parseError}
         {metricsViewName}
       />
     {:else}
       {#key fileArtifact}
         <VisualMetrics
-          {errors}
+          {parseError}
           {fileArtifact}
           switchView={() => {
             $selectedView = "code";

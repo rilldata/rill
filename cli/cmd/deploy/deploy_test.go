@@ -77,7 +77,8 @@ func TestManagedDeploy(t *testing.T) {
 
 // This test require gh cli to be installed on the system.
 // Alternatively a personal access token can be set via RILL_TEST_GH_TOKEN environment variable.
-func TestGithubDeploy(t *testing.T) {
+// TODO: Set personal acccess token for CI/CD tests.
+func NoCICDTestGithubDeploy(t *testing.T) {
 	testmode.Expensive(t)
 	personalAccessToken := getGithubAuthToken(t)
 	// github client

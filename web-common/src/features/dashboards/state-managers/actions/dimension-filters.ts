@@ -11,14 +11,14 @@ import {
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
+import { get } from "svelte/store";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 import type { DashboardMutables } from "./types";
-import { get } from "svelte/store";
 
 export function toggleDimensionValueSelection(
   { dashboard }: DashboardMutables,
   dimensionName: string,
-  dimensionValue: string,
+  dimensionValue: string | null,
   keepPillVisible?: boolean,
   /**
    * This marks the value as being exclusive. All other selected values will be unselected.
@@ -37,7 +37,7 @@ export function toggleDimensionValueSelection(
 export function toggleMultipleDimensionValueSelections(
   { dashboard }: DashboardMutables,
   dimensionName: string,
-  dimensionValues: string[],
+  dimensionValues: (string | null)[],
   keepPillVisible?: boolean,
   isExclusiveFilter?: boolean,
 ) {
@@ -271,7 +271,7 @@ export function setFilters(
 
 export function toggleDimensionFilterValue(
   expr: V1Expression,
-  dimensionValue: string,
+  dimensionValue: string | null,
   isExclusiveFilter: boolean,
 ) {
   if (!expr.cond?.exprs) return -1;

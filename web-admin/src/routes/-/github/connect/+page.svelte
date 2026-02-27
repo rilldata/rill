@@ -20,7 +20,7 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <Github className="w-10 h-10 text-gray-900" />
+    <Github className="w-10 h-10 text-fg-primary" />
     <CtaHeader>Connect to GitHub</CtaHeader>
     <CtaMessage>
       Rill projects deploy continuously when you push changes to GitHub.

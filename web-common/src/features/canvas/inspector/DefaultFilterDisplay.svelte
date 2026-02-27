@@ -30,7 +30,7 @@
 
 <div class="flex-col flex h-full">
   <div class="page-param">
-    <p class="text-muted-foreground mb-4">
+    <p class="text-fg-secondary mb-4">
       The filters listed below are saved as your default view and will
       automatically apply each time you open this dashboard in Rill Cloud.
     </p>

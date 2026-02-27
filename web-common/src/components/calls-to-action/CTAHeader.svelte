@@ -11,6 +11,6 @@
   }
 </script>
 
-<h1 class="{getVariantClass(variant)} text-gray-800 text-center">
+<h1 class="{getVariantClass(variant)} text-fg-primary text-center">
   <slot />
 </h1>

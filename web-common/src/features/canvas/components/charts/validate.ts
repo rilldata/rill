@@ -41,7 +41,7 @@ export function validateChartSchema(
       if (timeDimensions.length > 0 && timeDimension !== timeDimensions[0]) {
         return {
           isValid: false,
-          error: `Invalid time dimension ${timeDimension} selected`,
+          error: `Invalid time dimension ${timeDimension} in metrics view ${metrics_view}`,
         };
       }
 
@@ -50,7 +50,7 @@ export function validateChartSchema(
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
         return {
           isValid: false,
-          error: `Invalid measure ${invalidMeasures} selected`,
+          error: `Invalid measure ${invalidMeasures} in metrics view ${metrics_view}`,
         };
       }
 
@@ -62,7 +62,7 @@ export function validateChartSchema(
 
         return {
           isValid: false,
-          error: `Invalid dimension(s) ${invalidDimensions} selected`,
+          error: `Invalid dimension(s) ${invalidDimensions} in metrics view ${metrics_view}`,
         };
       }
       return {

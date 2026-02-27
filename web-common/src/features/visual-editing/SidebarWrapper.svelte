@@ -5,7 +5,7 @@
 </script>
 
 <div
-  class="size-full bg-surface flex-none flex flex-col select-none rounded-[2px] w-full"
+  class="size-full bg-surface-background flex-none flex flex-col select-none rounded-[2px] w-full"
 >
   <div class={type}>
     <h1 class:pb-2={type == "secondary" && !$$slots.header}>{title}</h1>
@@ -31,7 +31,6 @@
   .secondary {
     @apply flex flex-col gap-y-1;
     @apply text-sm font-semibold;
-    @apply bg-slate-50;
     @apply px-5 pt-2;
   }
 </style>

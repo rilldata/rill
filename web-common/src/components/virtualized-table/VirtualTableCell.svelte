@@ -16,17 +16,11 @@
     | undefined;
 
   function handleMouseOver() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 
   function handleFocus() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 </script>
 
@@ -45,6 +39,7 @@
     class:!text-left={type === "VARCHAR" || type === "CODE_STRING"}
   >
     <FormattedDataType
+      color="!text-fg-secondary"
       truncate
       {type}
       value={finalValue}

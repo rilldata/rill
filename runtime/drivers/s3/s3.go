@@ -23,17 +23,25 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Amazon S3",
 	Description: "Connect to AWS S3 Storage.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "aws_access_key_id",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_access_key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS access key ID",
+			Description: "AWS access key ID for explicit credentials",
+			Placeholder: "Enter your AWS access key ID",
+			Secret:      true,
+			Required:    true,
 		},
 		{
-			Key:    "aws_secret_access_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_secret_access_key",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS secret access key",
+			Description: "AWS secret access key for explicit credentials",
+			Placeholder: "Enter your AWS secret access key",
+			Secret:      true,
+			Required:    true,
 		},
 		{
 			Key:         "region",
@@ -253,12 +261,17 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	if opts.OutputHandle == c {
+		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
+			return &olapToSelfExecutor{c, olap}, nil
+		}
+	}
 	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return c, true
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return c, nil
 }
 
 // AsFileStore implements drivers.Connection.

@@ -1,7 +1,6 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 
 const ShallowMergeOneLevelDeepKeys = new Set<keyof ExploreState>([
-  "selectedTimeRange",
   "selectedComparisonTimeRange",
   "tdd",
   "pivot",

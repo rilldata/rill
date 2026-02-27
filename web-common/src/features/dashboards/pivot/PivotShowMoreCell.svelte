@@ -8,12 +8,17 @@
   export let row: Row<PivotDataRow>;
   export let value: string;
   export let assembled = true;
+  export let hasNestedDimensions = false;
+
+  $: needsSpacer = row.depth >= 1 || hasNestedDimensions;
 </script>
 
 <div class="show-more-cell" style:padding-left="{row?.depth * 14}px">
-  <Spacer size="16px" />
+  {#if needsSpacer}
+    <Spacer size="16px" />
+  {/if}
   <Tooltip distance={8} location="right">
-    <span class={assembled ? "ui-copy" : "ui-copy-inactive"}>
+    <span class={assembled ? "text-fg-primary" : "text-fg-disabled"}>
       Show more ...
     </span>
     <TooltipContent slot="tooltip-content">

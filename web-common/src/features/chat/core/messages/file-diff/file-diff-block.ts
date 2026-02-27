@@ -6,9 +6,10 @@ import { MessageContentType } from "../../types";
 // =============================================================================
 
 /** Arguments for the write_file tool call */
-interface WriteFileCallData {
+export interface WriteFileCallData {
   path: string;
   contents: string;
+  remove: boolean;
 }
 
 /** Result from the write_file tool */

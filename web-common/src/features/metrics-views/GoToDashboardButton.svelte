@@ -10,15 +10,16 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
-  import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
-  import { ResourceKind } from "../entity-management/resource-selectors";
-  import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
+  import {
+    createCanvasDashboardFromMetricsView,
+    createCanvasDashboardFromMetricsViewWithAgent,
+  } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import NavigateOrDropdown from "./NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
 
-  const { generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: dashboardsQuery = useGetExploresForMetricsView(
@@ -35,14 +36,23 @@
         type="secondary"
         disabled={!resource}
         onClick={async () => {
-          if (resource?.meta?.name?.name)
-            await createCanvasDashboardFromMetricsView(
-              instanceId,
-              resource.meta.name.name,
-            );
+          if (resource?.meta?.name?.name) {
+            // Use developer agent if enabled, otherwise fall back to RPC
+            if ($developerChat) {
+              createCanvasDashboardFromMetricsViewWithAgent(
+                instanceId,
+                resource.meta.name.name,
+              );
+            } else {
+              await createCanvasDashboardFromMetricsView(
+                instanceId,
+                resource.meta.name.name,
+              );
+            }
+          }
         }}
       >
-        Create Canvas dashboard
+        Generate Canvas Dashboard{$ai ? " with AI" : ""}
       </Button>
     {/if}
     <Button
@@ -53,7 +63,7 @@
           await createAndPreviewExplore(queryClient, instanceId, resource);
       }}
     >
-      Create Explore dashboard
+      Generate Explore Dashboard{$ai ? " with AI" : ""}
     </Button>
   </div>
 {:else}
@@ -70,7 +80,7 @@
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
             <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
-              <ExploreIcon color={resourceColorMapping[ResourceKind.Explore]} />
+              <ExploreIcon />
               {label}
             </DropdownMenu.Item>
           {/if}
@@ -79,15 +89,24 @@
         {#if $generateCanvas}
           <DropdownMenu.Item
             on:click={async () => {
-              if (resource?.meta?.name?.name)
-                await createCanvasDashboardFromMetricsView(
-                  instanceId,
-                  resource.meta.name.name,
-                );
+              if (resource?.meta?.name?.name) {
+                // Use developer agent if enabled, otherwise fall back to RPC
+                if ($developerChat) {
+                  createCanvasDashboardFromMetricsViewWithAgent(
+                    instanceId,
+                    resource.meta.name.name,
+                  );
+                } else {
+                  await createCanvasDashboardFromMetricsView(
+                    instanceId,
+                    resource.meta.name.name,
+                  );
+                }
+              }
             }}
           >
             <Add />
-            Create Canvas dashboard
+            Generate Canvas Dashboard{$ai ? " with AI" : ""}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Item
@@ -97,7 +116,7 @@
           }}
         >
           <Add />
-          Create Explore dashboard
+          Generate Explore Dashboard{$ai ? " with AI" : ""}
         </DropdownMenu.Item>
       </DropdownMenu.Group>
     </DropdownMenu.Content>

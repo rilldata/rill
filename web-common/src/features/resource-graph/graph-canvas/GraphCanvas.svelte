@@ -32,6 +32,18 @@
   export let rootNodeIds: string[] | undefined = undefined;
   // Unique flow id to isolate multiple SvelteFlow instances
   export let flowId: string | undefined = undefined;
+  // Props and events for expansion control
+  export let showControls = false;
+  // Controls bar: toggle visibility of the lock/interactive button
+  export let showLock = true;
+  export let enableExpand = true;
+  export let fillParent = false;
+  // Fit view configuration - allows customization of how the graph is centered and zoomed
+  export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
+  export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
+  export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
+  export let overlay = false;
+  export let onExpand: () => void = () => {};
 
   let hasNodes = false;
   const nodesStore = writable<Node<ResourceNodeData>[]>([]);
@@ -67,18 +79,6 @@
     ro = null;
   });
 
-  // Props and events for expansion control
-  export let showControls = false;
-  // Controls bar: toggle visibility of the lock/interactive button
-  export let showLock = true;
-  export let enableExpand = true;
-  export let fillParent = false;
-  // Fit view configuration - allows customization of how the graph is centered and zoomed
-  export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
-  export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
-  export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
-  import { createEventDispatcher } from "svelte";
-  const dispatch = createEventDispatcher<{ expand: void }>();
   // Tie Svelte Flow theme to the app theme
   import { themeControl } from "../../themes/theme-control";
   // Derive Svelte Flow color mode from global theme
@@ -288,9 +288,9 @@
 <section class="graph-instance">
   {#if titleLabel != null}
     <h2 class="graph-title">
-      <span class={anchorError ? "text-red-600" : ""}>{titleLabel}</span>
+      <span class:text-red-600={anchorError}>{titleLabel}</span>
       {#if titleErrorCount && titleErrorCount > 0}
-        <span class={anchorError ? "text-red-600" : "text-red-600"}>
+        <span class="text-red-600">
           {" "}
           • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
         </span>
@@ -302,16 +302,18 @@
 
   {#if hasNodes}
     <div
-      class={"graph-container " + (fillParent ? "h-full" : "")}
+      class="graph-container"
+      class:overlay
+      class:h-full={fillParent}
       bind:this={containerEl}
-      style={`height:${containerInlineHeight}`}
+      style:height={containerInlineHeight}
     >
       {#if enableExpand}
         <button
           class="expand-btn"
           aria-label="Expand graph"
           title="Expand"
-          on:click={() => dispatch("expand")}
+          on:click={() => onExpand()}
         >
           ⤢
         </button>
@@ -362,28 +364,27 @@
   }
 
   .graph-title {
-    @apply text-sm font-semibold text-foreground;
+    @apply text-sm font-semibold text-fg-primary;
   }
 
   .graph-container {
     @apply relative w-full overflow-hidden rounded-lg border;
-    border-color: var(--border, #e5e7eb);
-    background-color: var(--surface, #ffffff);
   }
 
   .state {
-    @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm;
-    border-color: var(--border, #e5e7eb);
-    background-color: var(--surface, #ffffff);
-    color: var(--muted-foreground, #6b7280);
+    @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-fg-muted;
+  }
+
+  .overlay {
+    @apply border-none rounded-t-none;
   }
 
   .expand-btn {
-    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface text-sm text-muted-foreground;
+    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface-subtle text-sm text-fg-secondary;
     line-height: 1.25rem;
   }
 
   .expand-btn:hover {
-    @apply bg-muted text-foreground;
+    @apply bg-surface-muted text-fg-primary;
   }
 </style>

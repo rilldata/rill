@@ -31,18 +31,20 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 		return nil, err
 	}
 
-	recipientURLs := make(map[string]drivers.ReportURLs, len(res.RecipientUrls))
-	for k, v := range res.RecipientUrls {
-		recipientURLs[k] = drivers.ReportURLs{
+	delivery := make(map[string]drivers.ReportDelivery, len(res.DeliveryMeta))
+	for k, v := range res.DeliveryMeta {
+		delivery[k] = drivers.ReportDelivery{
 			OpenURL:        v.OpenUrl,
 			ExportURL:      v.ExportUrl,
 			EditURL:        v.EditUrl,
 			UnsubscribeURL: v.UnsubscribeUrl,
+			UserID:         v.UserId,
+			UserAttrs:      v.UserAttrs.AsMap(),
 		}
 	}
 
 	return &drivers.ReportMetadata{
-		RecipientURLs: recipientURLs,
+		ReportDelivery: delivery,
 	}, nil
 }
 
@@ -115,10 +117,38 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 	}
 
 	return &drivers.DeploymentConfig{
-		Variables:   res.Variables,
-		Annotations: res.Annotations,
-		FrontendURL: res.FrontendUrl,
-		UpdatedOn:   res.UpdatedOn.AsTime(),
-		UsesArchive: res.UsesArchive,
+		Variables:             res.Variables,
+		Annotations:           res.Annotations,
+		FrontendURL:           res.FrontendUrl,
+		UpdatedOn:             res.UpdatedOn.AsTime(),
+		UsesArchive:           res.UsesArchive,
+		DuckdbConnectorConfig: res.DuckdbConnectorConfig.AsMap(),
 	}, nil
+}
+
+func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, error) {
+	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: h.config.ProjectID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.admin.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
+		Org:     projectResp.Project.OrgName,
+		Project: projectResp.Project.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*drivers.Deployment, 0, len(resp.Deployments))
+	for _, d := range resp.Deployments {
+		res = append(res, &drivers.Deployment{
+			Branch:   d.Branch,
+			Editable: d.Editable,
+		})
+	}
+
+	return res, nil
 }

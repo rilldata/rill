@@ -5,7 +5,7 @@
 </script>
 
 <a class:selected href={link}>
-  <span class="text-slate-900">{label}</span>
+  <span class="text-fg-primary">{label}</span>
 </a>
 
 <style lang="postcss">
@@ -16,10 +16,10 @@
   }
 
   .selected {
-    @apply bg-slate-100;
+    @apply bg-surface-active;
   }
 
   a:hover {
-    @apply bg-slate-50;
+    @apply bg-surface-hover;
   }
 </style>

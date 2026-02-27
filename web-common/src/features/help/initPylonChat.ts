@@ -7,10 +7,12 @@ export type UserLike = {
   email: string;
   displayName: string;
   photoUrl: string;
+  pylonEmailHash?: string;
 };
 
 /**
  * Function implementation is copied from: https://docs.usepylon.com/chat/setup
+ * Identity verification: https://docs.usepylon.com/pylon-docs/chat-widget/identity-verification
  */
 export function initPylonChat(user: UserLike) {
   window.pylon = {
@@ -19,6 +21,7 @@ export function initPylonChat(user: UserLike) {
       email: user.email,
       name: user.displayName,
       avatar_url: user.photoUrl,
+      email_hash: user.pylonEmailHash,
     },
   };
 }

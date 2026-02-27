@@ -6,7 +6,7 @@
 </script>
 
 <div
-  class="grid justify-items-end text-gray-500 text-right pl-1 pr-4"
+  class="grid justify-items-end text-fg-secondary text-right pl-1 pr-4"
   class:bg-red-50={level === "error" && !active}
   class:bg-red-100={level === "error" && active}
   class:text-red-600={level === "error" && !active}

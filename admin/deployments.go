@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -272,11 +271,11 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 
-	duckdbConfig, err := structpb.NewStruct(map[string]any{
-		"cpu":                 strconv.Itoa(cfg.CPU),
-		"memory_limit_gb":     strconv.Itoa(cfg.MemoryGB),
-		"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
-	})
+	duckdbConfig, err := cfg.DuckdbConfig().AsMap()
+	if err != nil {
+		return err
+	}
+	duckdbConfigPb, err := structpb.NewStruct(duckdbConfig)
 	if err != nil {
 		return err
 	}
@@ -291,7 +290,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		{
 			Name:   "duckdb",
 			Type:   "duckdb",
-			Config: duckdbConfig,
+			Config: duckdbConfigPb,
 		},
 	}
 
@@ -395,7 +394,7 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	}
 
 	// Find the runtime provisioned for this deployment
-	pr, ok, err := s.findProvisionedRuntimeResource(ctx, d.ID)
+	pr, ok, err := s.FindProvisionedRuntimeResource(ctx, d.ID)
 	if err != nil {
 		return err
 	}
@@ -557,6 +556,17 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 	}
 }
 
+func (s *Service) FindProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
+	pr, err := s.DB.FindProvisionerResourceByTypeAndName(ctx, deploymentID, string(provisioner.ResourceTypeRuntime), "")
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	return pr, true, nil
+}
+
 type DeploymentAnnotations struct {
 	orgID              string
 	orgName            string
@@ -636,17 +646,6 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 	}
 
 	return pr, nil
-}
-
-func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
-	pr, err := s.DB.FindProvisionerResourceByTypeAndName(ctx, deploymentID, string(provisioner.ResourceTypeRuntime), "")
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, false, nil
-		}
-		return nil, false, err
-	}
-	return pr, true, nil
 }
 
 func (s *Service) resolveRillVersion() string {

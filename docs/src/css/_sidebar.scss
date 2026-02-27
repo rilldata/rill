@@ -67,6 +67,15 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   padding-bottom: 0 !important;
 }
 
+// Make level-1 links (single pages without children) look like category headers
+li.theme-doc-sidebar-item-link-level-1 > .menu__link {
+  font-weight: 700;
+  font-size: var(--default-font);
+}
+li.theme-doc-sidebar-item-link-level-1:not(:first-of-type) {
+  margin-top: var(--space-3);
+}
+
 .theme-doc-sidebar-item-link-level-1,
 .theme-doc-sidebar-item-category-level-1 {
   padding-left: 0.5rem;

@@ -3,6 +3,8 @@
     <default>
       <!-- enable CH to parse ISO-formatted timestamps -->
       <date_time_input_format replace="replace">best_effort</date_time_input_format>
+      <!-- enable CH to parse string typed date times in zulu format when casted to DateTime or Timestamp -->
+      <cast_string_to_date_time_mode replace="replace">best_effort</cast_string_to_date_time_mode>
     </default>
   </profiles>
 

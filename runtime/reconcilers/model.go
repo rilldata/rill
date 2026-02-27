@@ -111,9 +111,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 		defer release()
 
-		m, ok := conn.AsModelManager(r.C.InstanceID)
-		if !ok {
-			return runtime.ReconcileResult{Err: fmt.Errorf("connector %q does not support model management", model.State.ResultConnector)}
+		m, err := conn.AsModelManager(r.C.InstanceID)
+		if err != nil {
+			if errors.Is(err, drivers.ErrNotImplemented) {
+				return runtime.ReconcileResult{Err: fmt.Errorf("connector %q does not support model management", model.State.ResultConnector)}
+			}
+			return runtime.ReconcileResult{Err: fmt.Errorf("connector %q: %w", model.State.ResultConnector, err)}
 		}
 		prevManager = m
 
@@ -1357,7 +1360,7 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	var defaultAttempts uint32 = 3
 	var defaultDelay uint32 = 5
 	defaultExponentialBackoff := true
-	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
+	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*", ".*Connection refused.*"}
 
 	retryAttempts := mdl.Spec.RetryAttempts
 	if retryAttempts == nil {
@@ -1515,10 +1518,10 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 			return nil, nil, err
 		}
 
-		finalResultManager, ok := opts.OutputHandle.AsModelManager(r.C.InstanceID)
-		if !ok {
+		finalResultManager, err := opts.OutputHandle.AsModelManager(r.C.InstanceID)
+		if err != nil {
 			release()
-			return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
+			return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results: %w", mdl.Spec.OutputConnector, err)
 		}
 
 		return &wrappedModelExecutor{
@@ -1546,10 +1549,10 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	}
 
 	// Acquire the stage result manager
-	stageResultManager, ok := stageOpts.OutputHandle.AsModelManager(r.C.InstanceID)
-	if !ok {
+	stageResultManager, err := stageOpts.OutputHandle.AsModelManager(r.C.InstanceID)
+	if err != nil {
 		stageRelease()
-		return nil, nil, fmt.Errorf("staging connector %q is not capable of managing model results", mdl.Spec.StageConnector)
+		return nil, nil, fmt.Errorf("staging connector %q is not capable of managing model results: %w", mdl.Spec.StageConnector, err)
 	}
 
 	// Acquire the final executor
@@ -1570,11 +1573,11 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	}
 
 	// Acquire the final result manager
-	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
-	if !ok {
+	finalResultManager, err := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
+	if err != nil {
 		stageRelease()
 		finalRelease()
-		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
+		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results: %w", mdl.Spec.OutputConnector, err)
 	}
 
 	// Wrap the executors

@@ -3,12 +3,16 @@ package runtime
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // configReloader handles reloading instance configurations from admin service
@@ -82,6 +86,35 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		restartController = true
 	}
 	inst.Annotations = cfg.Annotations
+
+	// Create a new connectors slice to avoid modifying cached objects
+	newConnectors := make([]*runtimev1.Connector, 0, len(inst.Connectors))
+	for _, connector := range inst.Connectors {
+		if connector.Type == "duckdb" {
+			currentDuckdbConfig := connector.Config.AsMap()
+			updatedDuckdbConfig := cfg.DuckdbConnectorConfig
+			connectorConfigChanged := !maps.Equal(currentDuckdbConfig, updatedDuckdbConfig)
+			if connectorConfigChanged {
+				duckdbConfig, err := structpb.NewStruct(updatedDuckdbConfig)
+				if err != nil {
+					return err
+				}
+				// Create a new Connector with updated config
+				connector = &runtimev1.Connector{
+					Type:                connector.Type,
+					Name:                connector.Name,
+					Config:              duckdbConfig,
+					TemplatedProperties: connector.TemplatedProperties,
+					Provision:           connector.Provision,
+					ProvisionArgs:       connector.ProvisionArgs,
+				}
+				restartController = true
+			}
+		}
+		newConnectors = append(newConnectors, connector)
+	}
+	inst.Connectors = newConnectors
+
 	inst.FrontendURL = cfg.FrontendURL
 
 	// Force the repo to refresh its handshake if the deployment has changed
@@ -93,7 +126,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		}
 		defer release()
 
-		err = repo.Pull(ctx, false, true)
+		err = repo.Pull(ctx, &drivers.PullOptions{ForceHandshake: true})
 		if err != nil {
 			r.rt.Logger.Error("ReloadConfig: failed to pull repo", zap.String("instance_id", inst.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
@@ -102,6 +135,17 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		r.updatedOn[instanceID] = cfg.UpdatedOn
 		// changes in archive asset IDs are correctly propogated via repo connection reopen only
 		restartController = restartController || cfg.UsesArchive
+		if !restartController {
+			// retrigger parser to pick up changes
+			ctrl, err := r.rt.Controller(ctx, instanceID)
+			if err != nil {
+				return err
+			}
+			err = ctrl.Reconcile(ctx, GlobalProjectParserName)
+			if err != nil {
+				return fmt.Errorf("failed to trigger parser: %w", err)
+			}
+		}
 	}
 
 	err = r.rt.EditInstance(ctx, inst, restartController)

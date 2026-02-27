@@ -26,6 +26,28 @@ export const allDimensions = ({
   );
 };
 
+export const timeDimensions = ({
+  validMetricsView,
+  validExplore,
+}: Pick<
+  DashboardDataSources,
+  "validMetricsView" | "validExplore"
+>): MetricsViewSpecDimension[] => {
+  if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
+
+  return validMetricsView.dimensions
+    .filter(
+      (d) =>
+        validExplore.dimensions?.includes(d.name!) &&
+        d.type === "DIMENSION_TYPE_TIME",
+    )
+    .sort(
+      (a, b) =>
+        validExplore.dimensions!.indexOf(a.name!) -
+        validExplore.dimensions!.indexOf(b.name!),
+    );
+};
+
 export const visibleDimensions = ({
   validMetricsView,
   validExplore,
@@ -88,6 +110,11 @@ export const dimensionSelectors = {
    * Gets all dimensions for the dashboard, or undefined if there are none.
    */
   allDimensions,
+
+  /**
+   * Time dimensions for the dashboard
+   */
+  timeDimensions,
 
   /**
    * Gets all visible dimensions in the dashboard.

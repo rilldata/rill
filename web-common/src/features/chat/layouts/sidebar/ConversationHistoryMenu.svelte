@@ -1,5 +1,6 @@
 <script lang="ts">
   import { HistoryIcon } from "lucide-svelte";
+  import IconButton from "../../../../components/button/IconButton.svelte";
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
   import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
@@ -13,11 +14,13 @@
   export let onSelect: (conversation: V1Conversation) => void;
 
   let currentConversationIdSnapshot: string | undefined = currentConversationId;
+  let isOpen = false;
 
   $: groupedConversations = groupConversationsByDate(conversations);
 
-  function handleOpenChange(isOpen: boolean) {
-    if (isOpen) {
+  function handleOpenChange(open: boolean) {
+    isOpen = open;
+    if (open) {
       // Using this snapshot prevents the "Current chat" label from jumping during selection
       currentConversationIdSnapshot = currentConversationId;
     }
@@ -25,16 +28,18 @@
 </script>
 
 <DropdownMenu.Root onOpenChange={handleOpenChange}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <button
-      use:builder.action
-      {...builder}
-      aria-label="Show conversations"
-      class="grid place-items-center text-gray-500 hover:bg-gray-200 w-6 h-6"
-      style="font-size: 18px;"
+  <DropdownMenu.Trigger>
+    <IconButton
+      ariaLabel="Conversation history"
+      bgGray
+      active={isOpen}
+      disableTooltip={isOpen}
     >
-      <HistoryIcon size="1em" />
-    </button>
+      <HistoryIcon size="16px" class="text-fg-muted" />
+      <svelte:fragment slot="tooltip-content"
+        >Conversation history</svelte:fragment
+      >
+    </IconButton>
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content
@@ -42,14 +47,14 @@
     align="end"
   >
     {#if conversations.length === 0}
-      <div class="px-3 py-4 text-center text-gray-500 text-sm">
+      <div class="px-3 py-4 text-center text-fg-secondary text-sm">
         No conversations yet.
       </div>
     {:else}
       {#each GROUP_ORDER as groupKey}
         {#if groupedConversations[groupKey] && groupedConversations[groupKey].length > 0}
           <DropdownMenu.Group>
-            <DropdownMenu.Label class="px-1 text-xs text-gray-500">
+            <DropdownMenu.Label class="px-1 text-xs text-fg-secondary">
               {groupKey}
             </DropdownMenu.Label>
             {#each groupedConversations[groupKey] as conv}

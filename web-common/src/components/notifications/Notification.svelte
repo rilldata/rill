@@ -34,7 +34,7 @@
   <div class="main-section">
     <div class="message-container" class:font-medium={detail}>
       {#if type === "success"}
-        <Check size="18px" className="text-gray-800" />
+        <Check size="18px" className="text-fg-inverse" />
       {:else if type === "loading"}
         <LoadingSpinner size="18px" />
       {:else if type == "error"}
@@ -71,12 +71,12 @@
 
 <style lang="postcss">
   * {
-    @apply border-gray-600;
+    /* @apply border-gray-600; */
   }
 
   aside {
     @apply absolute w-fit z-[100] flex flex-col text-sm;
-    @apply bg-gray-800 text-gray-200 p-0 rounded-md shadow-lg;
+    @apply bg-tooltip text-fg-inverse p-0 rounded-md shadow-lg;
   }
 
   .main-section {

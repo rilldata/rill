@@ -36,7 +36,28 @@ const rowGroupBufferSize = int64(datasize.MB) * 64
 const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 
 // Regex to parse BigQuery SELECT ALL statement: SELECT * FROM `project_id.dataset.table`
-var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?[a-zA-Z0-9_.-]+`?)\\s*$")
+var selectQueryRegex = regexp.MustCompile(
+	`(?is)^\s*` +
+		// optional leading comments with -- or # or /*
+		`(?:` +
+		`(?:--[^\n]*|#[^\n]*|/\*.*?\*/)\s*` +
+		`)*` +
+
+		// SELECT * FROM
+		`SELECT\s+\*\s+FROM\s+` +
+
+		// table identifier
+		`(` +
+		"`[a-zA-Z0-9_.-]+`|" +
+		`[a-zA-Z0-9_.-]+` +
+		`)` +
+
+		// optional whitespace, semicolon, trailing comments
+		`\s*;?\s*` +
+		`(?:` +
+		`(?:--[^\n]*|#[^\n]*|/\*.*?\*/)\s*` +
+		`)*$`,
+)
 
 var _ drivers.Warehouse = &Connection{}
 

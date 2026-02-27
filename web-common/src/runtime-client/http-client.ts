@@ -30,7 +30,7 @@ export const httpClient = async <T>(
 
   // Set JWT
   let jwt = get(runtime).jwt;
-  if (jwt && jwt.token) {
+  if (jwt && jwt.token && !interceptedConfig.headers?.["Authorization"]) {
     jwt = await maybeWaitForFreshJWT(jwt);
     interceptedConfig.headers = {
       ...interceptedConfig.headers,
@@ -48,6 +48,10 @@ const CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL = 50; // Interval to recheck JWT fres
  * If the JWT has expired, or is close to expiring, wait for a fresh one.
  */
 async function maybeWaitForFreshJWT(jwt: JWT): Promise<JWT> {
+  // Embeds communicate directly with the runtime and have no admin server connection to refresh tokens.
+  // The backend issues embed JWTs with a 24h TTL, so skip the client-side expiry check.
+  if (jwt.authContext === "embed") return jwt;
+
   // This is the approximate time at which the JWT will expire. We could parse the JWT to get the exact
   // expiration time, but it's better to treat tokens as opaque.
   let jwtExpiresAt = jwt.receivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;

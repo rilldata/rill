@@ -12,6 +12,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -856,6 +858,15 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 
+	// Find the runtime provisioned for this deployment
+	pr, ok, err := s.admin.FindProvisionedRuntimeResource(ctx, depl.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+	}
+
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
@@ -881,6 +892,21 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 	resp.Variables = vars
+
+	// parsing duckdb connector config
+	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
+	}
+	configStruct, err := rCfg.DuckdbConfig().AsMap()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to decode DuckDB connector config: %v", err)
+	}
+	configStructPb, err := structpb.NewStruct(configStruct)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
+	}
+	resp.DuckdbConnectorConfig = configStructPb
 
 	annotations := s.admin.NewDeploymentAnnotations(org, proj)
 	resp.Annotations = annotations.ToMap()
@@ -929,7 +955,7 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
 func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, bool, []database.ResourceName, error) {
-	attr, userID, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
+	attr, userID, _, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
 	if err != nil {
 		return nil, false, nil, err
 	}
@@ -947,17 +973,21 @@ func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context
 	return attr, restrictResources, resources, nil
 }
 
-// getAttributesForUser returns a map of attributes for a given user and project and the userID.
+// getAttributesForUser returns
+//  1. map of attributes for a given user and project and
+//  2. userID
+//  3. whether the user has read access to prod deployment
+//
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
-func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, string, error) {
+func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, string, bool, error) {
 	if userID == "" && userEmail == "" {
-		return nil, "", errors.New("must provide either userID or userEmail")
+		return nil, "", false, errors.New("must provide either userID or userEmail")
 	}
 
 	if userEmail != "" {
 		if userID != "" {
-			return nil, "", errors.New("must provide either userID or userEmail, not both")
+			return nil, "", false, errors.New("must provide either userID or userEmail, not both")
 		}
 
 		user, err := s.admin.DB.FindUserByEmail(ctx, userEmail)
@@ -970,9 +1000,9 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 					"email":  userEmail,
 					"domain": userEmail[strings.LastIndex(userEmail, "@")+1:],
 					"admin":  false,
-				}, "", nil
+				}, "", false, nil
 			}
-			return nil, "", err
+			return nil, "", false, err
 		}
 
 		userID = user.ID
@@ -980,18 +1010,18 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 
 	forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, userID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 
 	forProjPerms, err := s.admin.ProjectPermissionsForUser(ctx, projID, userID, forOrgPerms)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 
 	attr, err := s.jwtAttributesForUser(ctx, userID, orgID, forProjPerms)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 
-	return attr, userID, nil
+	return attr, userID, forProjPerms.ReadProd, nil
 }

@@ -91,7 +91,9 @@
   })();
 </script>
 
-<div class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface">
+<div
+  class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface-card"
+>
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#if needsTemplating && $resolveQuery?.isError}
       <div class="markdown-error">
@@ -107,7 +109,7 @@
 
 <style lang="postcss">
   :global(.canvas-markdown) {
-    @apply text-gray-900;
+    @apply text-fg-primary;
   }
   :global(.canvas-markdown h1) {
     font-size: 24px;
@@ -141,13 +143,13 @@
     @apply w-full border-collapse my-4;
   }
   :global(.canvas-markdown th) {
-    @apply bg-gray-50 border px-4 py-2 text-left text-sm font-medium;
+    @apply bg-surface-background border px-4 py-2 text-left text-sm font-medium;
   }
   :global(.canvas-markdown td) {
     @apply border px-4 py-2 text-sm;
   }
   :global(.canvas-markdown tr:nth-child(even)) {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
   :global(.canvas-markdown tr:hover) {
     @apply bg-gray-100;
@@ -165,7 +167,7 @@
     @apply text-sm my-1;
   }
   :global(.canvas-markdown blockquote) {
-    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-gray-600;
+    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-fg-secondary;
   }
   :global(.canvas-markdown code) {
     @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;

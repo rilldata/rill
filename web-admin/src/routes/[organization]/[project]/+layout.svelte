@@ -27,6 +27,7 @@
 </script>
 
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     V1DeploymentStatus,
@@ -55,6 +56,9 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -62,6 +66,28 @@
     url: { pathname },
     params: { organization, project, token },
   } = $page);
+
+  // Initialize view-as store for this project scope (loads from sessionStorage)
+  $: if (organization && project) {
+    viewAsUserStore.initForProject(organization, project);
+  }
+
+  // Clear view-as state when navigating to a different project
+  onNavigate(({ from, to }) => {
+    const changedProject =
+      !from ||
+      !to ||
+      from.params?.organization !== to.params?.organization ||
+      from.params?.project !== to.params?.project;
+    if (changedProject) {
+      viewAsUserStore.clear();
+    }
+  });
+
+  // Clear view-as state when unmounting (e.g., navigating to org page)
+  onDestroy(() => {
+    viewAsUserStore.clear();
+  });
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -120,13 +146,54 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
+  /**
+   * When "View As" is active, fetch the project using the mocked user's JWT.
+   * This returns the impersonated user's `projectPermissions` from the server.
+   */
+  $: mockedUserProjectQuery = createAdminServiceGetProjectWithBearerToken(
+    organization,
+    project,
+    mockedUserDeploymentCredentials?.accessToken ?? "",
+    undefined,
+    {
+      query: {
+        enabled: !!mockedUserDeploymentCredentials?.accessToken,
+      },
+    },
+  );
+
   $: ({ data: projectData, error: projectError } = $projectQuery);
+
+  /**
+   * Compute effective project permissions.
+   * When "View As" is active, use the impersonated user's permissions (from server).
+   * Otherwise, use the actual user's permissions.
+   */
+  $: effectiveProjectPermissions =
+    mockedUserId && $mockedUserProjectQuery.data?.projectPermissions
+      ? $mockedUserProjectQuery.data.projectPermissions
+      : projectData?.projectPermissions;
+
+  $: deploymentStatus = projectData?.deployment?.status;
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
   $: isProjectAvailable =
-    projectData?.deployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
-    projectData?.deployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+
+  // Refetch list resource query when project query stops fetching.
+  // This needs to happen when deployment status changes from updating to running after a redeploy.
+  let prevDeploymentStatus: V1DeploymentStatus =
+    V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
+  $: if (prevDeploymentStatus !== deploymentStatus) {
+    prevDeploymentStatus = deploymentStatus;
+    if (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING) {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          projectData.deployment.runtimeInstanceId,
+        ),
+      });
+    }
+  }
 
   $: error = projectError as HTTPError;
 
@@ -150,9 +217,9 @@
   }
 </script>
 
-{#if onProjectPage && projectData?.deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+{#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
-    projectPermissions={projectData.projectPermissions}
+    projectPermissions={effectiveProjectPermissions}
     {organization}
     {pathname}
     {project}
@@ -169,9 +236,9 @@
   {#if !projectData.deployment}
     <!-- No deployment = the project is "hibernating" -->
     <RedeployProjectCta {organization} {project} />
-  {:else if projectData.deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
     <ProjectBuilding />
-  {:else if projectData.deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
+  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
     <ErrorPage
       statusCode={500}
       header="Deployment Error"

@@ -4,9 +4,11 @@
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
+  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -15,6 +17,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
+    createAdminServiceGetDeploymentCredentials,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
     type V1Organization,
@@ -43,11 +46,16 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
-  export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
+  export let organizationLogoUrl: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
-  const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
+  const {
+    alerts: alertsFlag,
+    dimensionSearch,
+    dashboardChat,
+    stickyDashboardState,
+  } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -64,8 +72,46 @@
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
 
+  // When "View As" is active, fetch deployment credentials for the mocked user.
+  // TanStack Query deduplicates by query key, so if the project layout already
+  // ran this query, we get instant cache hits with zero extra network calls.
+  $: mockedUserId = $viewAsUserStore?.id;
+
+  $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
+    organization,
+    project,
+    { userId: mockedUserId },
+    {
+      query: {
+        enabled: !!mockedUserId && !!organization && !!project,
+      },
+    },
+  );
+
+  $: mockedProjectQuery = createAdminServiceGetProjectWithBearerToken(
+    organization,
+    project,
+    $mockedCredentialsQuery.data?.accessToken ?? "",
+    undefined,
+    {
+      query: {
+        enabled: !!$mockedCredentialsQuery.data?.accessToken,
+      },
+    },
+  );
+
+  // Use effective permissions when "View As" is active (from server)
+  // Otherwise fall back to the props passed from the root layout
+  $: effectiveManageProjectMembers =
+    $mockedProjectQuery.data?.projectPermissions?.manageProjectMembers ??
+    manageProjectMembers;
+  $: effectiveCreateMagicAuthTokens =
+    $mockedProjectQuery.data?.projectPermissions?.createMagicAuthTokens ??
+    createMagicAuthTokens;
+
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
+  $: logoUrl = organizationLogoUrl;
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
@@ -103,11 +149,9 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: organizationPaths = createOrgPaths(
-    organizations,
-    organization,
-    planDisplayName,
-  );
+  $: organizationPaths = {
+    options: createOrgPaths(organizations, organization, planDisplayName),
+  };
 
   function createOrgPaths(
     organizations: V1Organization[],
@@ -135,39 +179,60 @@
     return pathMap;
   }
 
-  $: projectPaths = projects.reduce(
-    (map, { name }) =>
-      map.set(name.toLowerCase(), { label: name, preloadData: false }),
-    new Map<string, PathOption>(),
-  );
+  $: projectPaths = {
+    options: projects.reduce(
+      (map, { name }) =>
+        map.set(name.toLowerCase(), { label: name, preloadData: false }),
+      new Map<string, PathOption>(),
+    ),
+  };
 
-  $: visualizationPaths = visualizations.reduce((map, resource) => {
-    const name = resource.meta.name.name;
-    const isMetricsExplorer = !!resource?.explore;
-    return map.set(name.toLowerCase(), {
-      label:
-        (isMetricsExplorer
-          ? resource?.explore?.spec?.displayName
-          : resource?.canvas?.spec?.displayName) || name,
-      section: isMetricsExplorer ? "explore" : "canvas",
-    });
-  }, new Map<string, PathOption>());
+  $: visualizationPaths = {
+    options: [...visualizations]
+      .sort((a, b) => {
+        const aIsCanvas = !!a?.canvas;
+        const bIsCanvas = !!b?.canvas;
+        if (aIsCanvas !== bIsCanvas) return aIsCanvas ? -1 : 1;
+        const aName = a.meta.name.name;
+        const bName = b.meta.name.name;
+        return aName.localeCompare(bName);
+      })
+      .reduce((map, resource) => {
+        const name = resource.meta.name.name;
+        const isMetricsExplorer = !!resource?.explore;
+        return map.set(name.toLowerCase(), {
+          label:
+            (isMetricsExplorer
+              ? resource?.explore?.spec?.displayName
+              : resource?.canvas?.spec?.displayName) || name,
+          section: isMetricsExplorer ? "explore" : "canvas",
+          resourceKind: isMetricsExplorer
+            ? ResourceKind.Explore
+            : ResourceKind.Canvas,
+        });
+      }, new Map<string, PathOption>()),
+    carryOverSearchParams: $stickyDashboardState,
+  };
 
-  $: alertPaths = alerts.reduce((map, alert) => {
-    const name = alert.meta.name.name;
-    return map.set(name.toLowerCase(), {
-      label: alert.alert.spec.displayName || name,
-      section: "-/alerts",
-    });
-  }, new Map<string, PathOption>());
+  $: alertPaths = {
+    options: alerts.reduce((map, alert) => {
+      const name = alert.meta.name.name;
+      return map.set(name.toLowerCase(), {
+        label: alert.alert.spec.displayName || name,
+        section: "-/alerts",
+      });
+    }, new Map<string, PathOption>()),
+  };
 
-  $: reportPaths = reports.reduce((map, report) => {
-    const name = report.meta.name.name;
-    return map.set(name.toLowerCase(), {
-      label: report.report.spec.displayName || name,
-      section: "-/reports",
-    });
-  }, new Map<string, PathOption>());
+  $: reportPaths = {
+    options: reports.reduce((map, report) => {
+      const name = report.meta.name.name;
+      return map.set(name.toLowerCase(), {
+        label: report.report.spec.displayName || name,
+        section: "-/reports",
+      });
+    }, new Map<string, PathOption>()),
+  };
 
   $: pathParts = [
     organizationPaths,
@@ -191,18 +256,16 @@
 </script>
 
 <div
-  class="flex items-center w-full pr-4 pl-2 py-1"
+  class="flex items-center w-full pr-4 pl-2 py-1 bg-surface-base"
   class:border-b={!onProjectPage && !onOrgPage}
 >
   <!-- Left side -->
   <a
     href={rillLogoHref}
-    class="grid place-content-center rounded {organizationLogoUrl
-      ? 'pl-2 pr-2'
-      : 'p-2'}"
+    class="grid place-content-center rounded {logoUrl ? 'pl-2 pr-2' : 'p-2'}"
   >
-    {#if organizationLogoUrl}
-      <img src={organizationLogoUrl} alt="logo" class="h-7" />
+    {#if logoUrl}
+      <img src={logoUrl} alt="logo" class="h-7" />
     {:else}
       <Rill />
     {/if}
@@ -219,8 +282,8 @@
       <ViewAsUserChip />
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
-    <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
-    {#if onProjectPage && manageProjectMembers}
+    <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
+    {#if onProjectPage && effectiveManageProjectMembers}
       <ShareProjectPopover
         {organization}
         {project}
@@ -235,12 +298,13 @@
           <StateManagersProvider
             metricsViewName={exploreSpec.metricsView}
             exploreName={dashboard}
+            let:ready
           >
             <LastRefreshedDate {dashboard} />
-            {#if $dimensionSearch}
+            {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat}
+            {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle />
             {/if}
             {#if hasUserAccess}
@@ -253,7 +317,9 @@
               {#if $alertsFlag}
                 <CreateAlert />
               {/if}
-              <ShareDashboardPopover {createMagicAuthTokens} />
+              <ShareDashboardPopover
+                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+              />
             {/if}
           </StateManagersProvider>
         {/key}
@@ -261,6 +327,9 @@
     {/if}
 
     {#if onCanvasDashboardPage && hasUserAccess}
+      {#if $dashboardChat && !onPublicURLPage}
+        <ChatToggle />
+      {/if}
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}

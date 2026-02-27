@@ -138,7 +138,7 @@ type Handle interface {
 	// AsModelManager returns a ModelManager for managing model results produced by a ModelExecutor.
 	// This is different from the ModelExecutor since sometimes, the model's input connector executes and writes the model result to the output connector.
 	// But managing the result lifecycle is easier to do directly using the output connector.
-	AsModelManager(instanceID string) (ModelManager, bool)
+	AsModelManager(instanceID string) (ModelManager, error)
 
 	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
 	// Examples: email notifier, slack notifier.

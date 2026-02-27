@@ -55,7 +55,10 @@
         {selectedItems.size} of {allItems.size}
       {/if}
 
-      <CaretDownIcon size="12px" className="!fill-gray-600 ml-auto flex-none" />
+      <CaretDownIcon
+        size="12px"
+        className="text-fg-secondary ml-auto flex-none"
+      />
     </button>
   </DropdownMenu.Trigger>
 
@@ -98,12 +101,12 @@
         </DropdownMenu.CheckboxItem>
       {:else}
         {#if searchValue}
-          <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
+          <div class="text-fg-secondary text-center p-2 w-full">no results</div>
         {/if}
       {/each}
     </div>
 
-    <footer>
+    <footer class="bg-popover-footer rounded-b-sm">
       {#if excludable}
         <Button
           onClick={() => {
@@ -127,7 +130,7 @@
             setItems(Array.from(allItems), excludeMode);
           }
         }}
-        type="plain"
+        type="tertiary"
       >
         {#if selectedItems.size === allItems.size}
           Deselect all
@@ -142,9 +145,9 @@
 <style lang="postcss">
   .dropdown-trigger {
     @apply flex items-center;
-    @apply px-3 gap-x-2 h-8 max-w-full;
+    @apply px-3 gap-x-2 h-8 max-w-full text-fg-primary;
     @apply text-sm;
-    @apply border-gray-300 border rounded-[2px];
+    @apply border rounded-[2px];
     @apply break-all overflow-hidden;
   }
 
@@ -158,8 +161,7 @@
   footer {
     @apply mt-1;
     height: 42px;
-    @apply border-t border-slate-300;
-    @apply bg-slate-100;
+    @apply border-t;
     @apply flex flex-row flex-none items-center justify-end;
     @apply gap-x-2 p-2 px-3.5;
   }

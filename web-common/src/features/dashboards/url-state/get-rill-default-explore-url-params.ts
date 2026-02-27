@@ -37,6 +37,7 @@ export function getRillDefaultExploreUrlParams(
   );
   return convertPartialExploreStateToUrlParams(
     exploreSpec,
+    metricsViewSpec,
     rillDefaultExploreState,
     timeControlState,
   );

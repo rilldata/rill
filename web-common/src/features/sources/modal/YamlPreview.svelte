@@ -1,6 +1,6 @@
 <script lang="ts">
-  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import { Copy } from "lucide-svelte";
 
   export let title: string;
   export let yaml: string;
@@ -26,11 +26,11 @@
       {#if copied}
         <Check size="16px" />
       {:else}
-        <CopyIcon size="16px" />
+        <Copy size="16px" />
       {/if}
     </button>
     <pre
-      class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yaml}</pre>
+      class="bg-surface-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yaml}</pre>
   </div>
   <slot />
   <!-- support need help, errors etc -->

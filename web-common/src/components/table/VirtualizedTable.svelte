@@ -24,6 +24,7 @@
   export let rowHeight = 46;
   export let containerHeight = 400;
   export let overscan = 1;
+  export let tableId: string | undefined = undefined;
 
   let containerElement: HTMLDivElement;
   let sorting: SortingState = [];
@@ -104,22 +105,25 @@
   $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
 
   $: dynamicContainerHeight =
-    rows.length <= 10 ? rowHeight * rows.length : containerHeight;
+    rows.length === 0
+      ? 120
+      : Math.min(rows.length * rowHeight, containerHeight);
 </script>
 
 <div
+  id={tableId}
   class="flex flex-col border rounded-sm overflow-hidden"
   style:--grid-template-columns={columnLayout}
 >
   {#each headers as headerGroup (headerGroup.id)}
-    <div class="row sticky top-0 z-30 bg-surface">
+    <div class="row sticky top-0 z-30 bg-surface-subtle">
       {#each headerGroup.headers as header (header.id)}
         <svelte:element
           this={header.column.getCanSort() ? "button" : "div"}
           role="columnheader"
           tabindex="0"
           class="pl-{header.column.columnDef.meta?.marginLeft ||
-            '4'} py-2 font-semibold text-gray-500 text-left flex flex-row items-center gap-x-1 truncate text-sm"
+            '4'} py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm"
           on:click={header.column.getToggleSortingHandler()}
         >
           {#if !header.isPlaceholder}
@@ -155,14 +159,14 @@
         {#if emptyIcon}
           <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
         {/if}
-        <span class="text-gray-600 font-semibold text-sm">{emptyText}</span>
+        <span class="text-fg-secondary font-semibold text-sm">{emptyText}</span>
       </div>
     {:else}
       <div
         class="relative w-full"
         style="height: {$virtualizer.getTotalSize()}px;"
       >
-        {#each virtualRows as virtualRow}
+        {#each virtualRows as virtualRow, i (i)}
           {@const row = rows[virtualRow.index]}
           <div
             class="row {rowPadding} absolute top-0 left-0 w-full"
@@ -190,7 +194,7 @@
 
 <style lang="postcss">
   * {
-    @apply border-slate-200;
+    @apply border-gray-200;
   }
 
   .row {

@@ -78,14 +78,14 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     <RillLogoSquareNegative size="84px" />
-    <h1 class="text-xl font-normal text-gray-800">Authorize Rill CLI</h1>
-    <p class="text-base text-gray-500 text-center">
+    <h1 class="text-xl font-normal text-fg-primary">Authorize Rill CLI</h1>
+    <p class="text-base text-fg-secondary text-center">
       You are authenticating into Rill as <span
-        class="font-medium text-gray-600">{user.email}</span
+        class="font-medium text-fg-secondary">{user.email}</span
       >.<br />Please confirm this is the code displayed in the Rill CLI.
     </p>
     <div
-      class="px-2 py-1 rounded-sm text-4xl tracking-widest bg-gray-100 text-gray-700 mb-5 font-mono"
+      class="px-2 py-1 rounded-sm text-4xl tracking-widest bg-gray-100 text-fg-primary mb-5 font-mono"
     >
       {userCode}
     </div>

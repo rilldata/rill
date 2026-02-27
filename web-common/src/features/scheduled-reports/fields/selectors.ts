@@ -6,6 +6,7 @@ import {
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { derived } from "svelte/store";
 
@@ -60,7 +61,7 @@ export function getFieldsForExplore(instanceId: string, exploreName: string) {
       allowedTimeGrains.forEach((grain) => {
         const id = `${metricsViewSpec.timeDimension}_rill_${grain}`;
         displayMap[id] = {
-          label: `Time ${TIME_GRAIN[grain].label}`,
+          label: `Time ${V1TimeGrainToDateTimeUnit[grain]}`,
           type: "time",
         };
         allowedRows.push(id);

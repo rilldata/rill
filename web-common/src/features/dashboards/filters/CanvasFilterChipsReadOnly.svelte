@@ -16,6 +16,7 @@
 
 <div
   class:flex-col={col}
+  class:flex-wrap={!col}
   class="flex gap-y-2 gap-x-2 w-full flex-none"
   aria-label="Readonly Filter Chips"
 >

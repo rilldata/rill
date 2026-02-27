@@ -38,6 +38,20 @@ const ChartsJSONSchema = `{
             }
           }
         },
+        "comparison_time_range": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string",
+              "description": "Start time for the comparison time range."
+            },
+            "end": {
+              "type": "string",
+              "description": "End time for the comparison time range."
+            }
+          },
+          "description": "Optional comparison time range for period-over-period comparison. Only supported for cartesian chart types (bar_chart, line_chart, stacked_bar, stacked_bar_normalized)."
+        },
         "where": {
           "$ref": "#/$defs/Expression",
           "description": "Optional expression for filtering the underlying data before aggregation."

@@ -31,33 +31,33 @@ type Query struct {
 }
 
 type Dimension struct {
-	Name    string            `json:"name" mapstructure:"name"`
-	Compute *DimensionCompute `json:"compute" mapstructure:"compute"`
+	Name    string            `json:"name,omitempty" mapstructure:"name"`
+	Compute *DimensionCompute `json:"compute,omitempty" mapstructure:"compute"`
 }
 
 type DimensionCompute struct {
-	TimeFloor *DimensionComputeTimeFloor `json:"time_floor" mapstructure:"time_floor"`
+	TimeFloor *DimensionComputeTimeFloor `json:"time_floor,omitempty" mapstructure:"time_floor"`
 }
 
 type DimensionComputeTimeFloor struct {
-	Dimension string    `json:"dimension" mapstructure:"dimension"`
-	Grain     TimeGrain `json:"grain" mapstructure:"grain"`
+	Dimension string    `json:"dimension,omitempty" mapstructure:"dimension"`
+	Grain     TimeGrain `json:"grain,omitempty" mapstructure:"grain"`
 }
 
 type Measure struct {
-	Name    string          `json:"name" mapstructure:"name"`
-	Compute *MeasureCompute `json:"compute" mapstructure:"compute"`
+	Name    string          `json:"name,omitempty" mapstructure:"name"`
+	Compute *MeasureCompute `json:"compute,omitempty" mapstructure:"compute"`
 }
 
 type MeasureCompute struct {
-	Count           bool                           `json:"count" mapstructure:"count"`
-	CountDistinct   *MeasureComputeCountDistinct   `json:"count_distinct" mapstructure:"count_distinct"`
-	ComparisonValue *MeasureComputeComparisonValue `json:"comparison_value" mapstructure:"comparison_value"`
-	ComparisonDelta *MeasureComputeComparisonDelta `json:"comparison_delta" mapstructure:"comparison_delta"`
-	ComparisonRatio *MeasureComputeComparisonRatio `json:"comparison_ratio" mapstructure:"comparison_ratio"`
-	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total" mapstructure:"percent_of_total"`
-	URI             *MeasureComputeURI             `json:"uri" mapstructure:"uri"`
-	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time" mapstructure:"comparison_time"`
+	Count           bool                           `json:"count,omitempty" mapstructure:"count"`
+	CountDistinct   *MeasureComputeCountDistinct   `json:"count_distinct,omitempty" mapstructure:"count_distinct"`
+	ComparisonValue *MeasureComputeComparisonValue `json:"comparison_value,omitempty" mapstructure:"comparison_value"`
+	ComparisonDelta *MeasureComputeComparisonDelta `json:"comparison_delta,omitempty" mapstructure:"comparison_delta"`
+	ComparisonRatio *MeasureComputeComparisonRatio `json:"comparison_ratio,omitempty" mapstructure:"comparison_ratio"`
+	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total,omitempty" mapstructure:"percent_of_total"`
+	URI             *MeasureComputeURI             `json:"uri,omitempty" mapstructure:"uri"`
+	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time,omitempty" mapstructure:"comparison_time"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {
@@ -221,10 +221,10 @@ func (tr *TimeRange) AsMap() (map[string]any, error) {
 }
 
 type Expression struct {
-	Name      string     `json:"name" mapstructure:"name"`
-	Value     any        `json:"val" mapstructure:"val"`
-	Condition *Condition `json:"cond" mapstructure:"cond"`
-	Subquery  *Subquery  `json:"subquery" mapstructure:"subquery"`
+	Name      string     `json:"name,omitempty" mapstructure:"name"`
+	Value     any        `json:"val,omitempty" mapstructure:"val"`
+	Condition *Condition `json:"cond,omitempty" mapstructure:"cond"`
+	Subquery  *Subquery  `json:"subquery,omitempty" mapstructure:"subquery"`
 }
 
 func (e *Expression) AsMap() (map[string]any, error) {
@@ -244,15 +244,15 @@ func (e *Expression) AsMap() (map[string]any, error) {
 }
 
 type Condition struct {
-	Operator    Operator      `json:"op" mapstructure:"op"`
-	Expressions []*Expression `json:"exprs" mapstructure:"exprs"`
+	Operator    Operator      `json:"op,omitempty" mapstructure:"op"`
+	Expressions []*Expression `json:"exprs,omitempty" mapstructure:"exprs"`
 }
 
 type Subquery struct {
-	Dimension Dimension   `json:"dimension" mapstructure:"dimension"`
-	Measures  []Measure   `json:"measures" mapstructure:"measures"`
-	Where     *Expression `json:"where" mapstructure:"where"`
-	Having    *Expression `json:"having" mapstructure:"having"`
+	Dimension Dimension   `json:"dimension,omitempty" mapstructure:"dimension"`
+	Measures  []Measure   `json:"measures,omitempty" mapstructure:"measures"`
+	Where     *Expression `json:"where,omitempty" mapstructure:"where"`
+	Having    *Expression `json:"having,omitempty" mapstructure:"having"`
 }
 
 type Operator string
@@ -271,11 +271,12 @@ const (
 	OperatorNilike      Operator = "nilike"
 	OperatorOr          Operator = "or"
 	OperatorAnd         Operator = "and"
+	OperatorCast        Operator = "cast"
 )
 
 func (o Operator) Valid() bool {
 	switch o {
-	case OperatorEq, OperatorNeq, OperatorLt, OperatorLte, OperatorGt, OperatorGte, OperatorIn, OperatorNin, OperatorIlike, OperatorNilike, OperatorOr, OperatorAnd:
+	case OperatorEq, OperatorNeq, OperatorLt, OperatorLte, OperatorGt, OperatorGte, OperatorIn, OperatorNin, OperatorIlike, OperatorNilike, OperatorOr, OperatorAnd, OperatorCast:
 		return true
 	}
 	return false
@@ -777,7 +778,7 @@ const QueryJSONSchema = `
         },
         "expression": {
           "type": "string",
-          "description": "Time range expression"
+          "description": "Time range expression. If specifying this no other TimeRange fields should be set."
         },
         "iso_duration": {
           "type": "string",

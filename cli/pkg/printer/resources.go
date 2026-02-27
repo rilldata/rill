@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -748,6 +749,21 @@ func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
 	for _, d := range deployments {
 		res = append(res, toDeploymentRow(d))
 	}
+	slices.SortFunc(res, func(a, b *deployment) int {
+		// group by environment
+		if a.Environment < b.Environment {
+			return -1
+		} else if a.Environment > b.Environment {
+			return 1
+		}
+		// sort by branch if environment is same
+		if a.Branch < b.Branch {
+			return -1
+		} else if a.Branch > b.Branch {
+			return 1
+		}
+		return 0
+	})
 	return res
 }
 
@@ -757,8 +773,8 @@ func toDeploymentRow(d *adminv1.Deployment) *deployment {
 		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
 	}
 	return &deployment{
-		Environment: d.Environment,
 		Branch:      d.Branch,
+		Environment: d.Environment,
 		Status:      status,
 	}
 }
@@ -787,8 +803,8 @@ func formatDeploymentStatus(status adminv1.DeploymentStatus) string {
 }
 
 type deployment struct {
-	Environment string `header:"environment" json:"environment"`
 	Branch      string `header:"branch" json:"branch"`
+	Environment string `header:"environment" json:"environment"`
 	Status      string `header:"status" json:"status"`
 }
 

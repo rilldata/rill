@@ -1,4 +1,4 @@
-position: 4
+position: 50
 label: CLI Reference
-collapsible: true
-collapsed: true
+collapsible: false
+collapsed: false

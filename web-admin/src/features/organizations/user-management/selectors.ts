@@ -103,6 +103,26 @@ export function getOrgUserMembers({
   );
 }
 
+export function getOrgAdminMembers(organization: string) {
+  return createAdminServiceListOrganizationMemberUsersInfinite(
+    organization,
+    {
+      pageSize: INFINITE_PAGE_SIZE,
+      role: OrgUserRoles.Admin,
+    },
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+      },
+    },
+  );
+}
+
 export function getOrgUserInvites(organization: string) {
   return createAdminServiceListOrganizationInvitesInfinite(
     organization,

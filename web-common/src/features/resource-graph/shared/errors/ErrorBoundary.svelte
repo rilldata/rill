@@ -188,7 +188,7 @@
   }
 
   .btn-secondary {
-    @apply rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700;
+    @apply rounded-md border border-red-300 bg-surface-background px-4 py-2 text-sm font-medium text-red-700;
   }
 
   .btn-secondary:hover {

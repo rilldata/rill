@@ -69,7 +69,7 @@
 
   <AlertDialog bind:open slot="action">
     <AlertDialogTrigger asChild let:builder>
-      <Button builders={[builder]} type="secondary" gray>Cancel plan</Button>
+      <Button builders={[builder]} type="tertiary">Cancel plan</Button>
     </AlertDialogTrigger>
     <AlertDialogContent>
       <AlertDialogHeader>

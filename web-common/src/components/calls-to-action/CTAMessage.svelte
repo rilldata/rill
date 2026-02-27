@@ -1,3 +1,3 @@
-<p class="text-base text-gray-500 text-center">
+<p class="text-base text-fg-secondary text-center">
   <slot />
 </p>

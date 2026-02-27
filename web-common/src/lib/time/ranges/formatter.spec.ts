@@ -1,5 +1,8 @@
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  formatDateTimeByGrain,
+  prettyFormatTimeRange,
+} from "@rilldata/web-common/lib/time/ranges/formatter.ts";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, Interval } from "luxon";
 import { describe, expect, it } from "vitest";
 
@@ -368,5 +371,98 @@ describe("prettyFormatTimeRange", () => {
         });
       },
     );
+  });
+});
+
+describe("formatDateTimeByGrain", () => {
+  const testDate = DateTime.fromISO("2025-09-15T14:30:45.000Z").setZone("UTC");
+
+  it("returns 'Invalid date' for invalid DateTime", () => {
+    const invalid = DateTime.invalid("test");
+    expect(formatDateTimeByGrain(invalid, V1TimeGrain.TIME_GRAIN_DAY)).toBe(
+      "Invalid date",
+    );
+  });
+
+  it("formats year grain with only year", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_YEAR);
+    expect(result).toBe("2025");
+  });
+
+  it("formats quarter grain with month and year", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_QUARTER,
+    );
+    expect(result).toBe("Sep 2025");
+  });
+
+  it("formats month grain with month and year", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_MONTH,
+    );
+    expect(result).toBe("Sep 2025");
+  });
+
+  it("formats week grain with day, month, and year", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_WEEK);
+    expect(result).toBe("Sep 15, 2025");
+  });
+
+  it("formats day grain with day, month, and year", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_DAY);
+    expect(result).toBe("Sep 15, 2025");
+  });
+
+  // Tests with AM/PM use toMatch with \s? because toLocaleString() may insert
+  // a narrow no-break space (U+202F) or regular space before AM/PM depending
+  // on the environment (Node version, ICU data, locale settings).
+  it("formats hour grain with time", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_HOUR);
+    expect(result).toMatch(/Sep 15, 2025, 2\s?PM/);
+  });
+
+  it("formats minute grain with minutes", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+    expect(result).toMatch(/Sep 15, 2025, 2:30\s?PM/);
+  });
+
+  it("formats second grain with seconds", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_SECOND,
+    );
+    expect(result).toMatch(/Sep 15, 2025, 2:30:45\s?PM/);
+  });
+
+  it("handles TIME_GRAIN_UNSPECIFIED with minimal precision (year only)", () => {
+    // When grain is unspecified, show minimal precision to avoid displaying
+    // excessive detail that may not be meaningful
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+    );
+    expect(result).toBe("2025");
+  });
+
+  it("handles TIME_GRAIN_MILLISECOND with full precision", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_MILLISECOND,
+    );
+    expect(result).toMatch(/Sep 15, 2025, 2:30:45\s?PM/);
+  });
+
+  it("respects timezone", () => {
+    const nyDate = DateTime.fromISO("2025-09-15T14:30:45.000Z").setZone(
+      "America/New_York",
+    );
+    const result = formatDateTimeByGrain(nyDate, V1TimeGrain.TIME_GRAIN_MINUTE);
+    // 14:30 UTC = 10:30 AM in New York (during daylight saving time)
+    expect(result).toMatch(/Sep 15, 2025, 10:30\s?AM/);
   });
 });

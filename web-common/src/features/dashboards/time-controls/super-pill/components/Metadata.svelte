@@ -11,7 +11,7 @@
 </script>
 
 <div
-  class="bg-surface size-fit p-2 flex flex-col gap-y-1.5 border rounded-md shadow-md"
+  class="bg-popover text-popover-foreground border size-fit p-2 flex flex-col gap-y-1.5 rounded-md shadow-md"
 >
   {#if timeStart}
     <div class="flex justify-between gap-x-3">

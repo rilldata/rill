@@ -55,7 +55,7 @@
     y: currentPointIsNull ? lastAvailableCurrentY : y,
     yOverride: currentPointIsNull,
     yOverrideLabel: "no current data",
-    yOverrideStyleClass: "fill-gray-500 italic",
+    yOverrideStyleClass: "fill-fg-secondary italic",
     key: "main",
     label:
       showComparison &&
@@ -68,11 +68,11 @@
         : "",
     pointColor: "var(--color-theme-700)",
     valueStyleClass: "font-semibold",
-    valueColorClass: "fill-gray-600",
+    valueColorClass: "fill-fg-secondary",
     labelColorClass:
       !comparisonIsPositive && showComparison
         ? "fill-red-500"
-        : "fill-gray-600",
+        : "fill-fg-secondary",
   };
 
   $: comparisonPoint =
@@ -82,13 +82,13 @@
           y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
           yOverride: comparisonPointIsNull,
           yOverrideLabel: "no comparison data",
-          yOverrideStyleClass: "fill-gray-500 italic",
+          yOverrideStyleClass: "fill-fg-secondary italic",
           label: "prev.",
           key: "comparison",
           valueStyleClass: "font-normal",
           pointColor: "var(--color-theme-300)",
-          valueColorClass: "fill-gray-500",
-          labelColorClass: "fill-gray-500",
+          valueColorClass: "fill-fg-secondary",
+          labelColorClass: "fill-fg-secondary",
         }
       : undefined;
 
@@ -146,7 +146,7 @@
                 x2={xArrow + dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="var(--surface)"
+                stroke="var(--surface-background)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -155,7 +155,7 @@
                 x2={xArrow - dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="var(--surface)"
+                stroke="var(--surface-background)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -166,7 +166,7 @@
               x2={xArrow}
               y1={output.y + yBuffer}
               y2={output.dy - yBuffer}
-              stroke="var(--surface)"
+              stroke="var(--surface-background)"
               stroke-width={strokeWidth + 3}
               stroke-linecap="round"
             />

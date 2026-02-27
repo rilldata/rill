@@ -7,12 +7,14 @@
 >
   <div class="flex flex-col justify-center items-center">
     <div class="relative">
-      <AlertCircleOutline className="text-slate-300 w-12 h-12" />
+      <AlertCircleOutline className="text-gray-300 w-12 h-12" />
     </div>
   </div>
   <div
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
-    <div class="text-gray-600 font-semibold">This alert has not run yet</div>
+    <div class="text-fg-secondary font-semibold">
+      This alert has not run yet
+    </div>
   </div>
 </div>

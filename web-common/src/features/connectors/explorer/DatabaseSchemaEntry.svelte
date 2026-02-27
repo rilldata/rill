@@ -69,7 +69,7 @@
     on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
-      className="transform transition-transform text-gray-400 {expanded
+      className="transform transition-transform text-fg-secondary {expanded
         ? 'rotate-0'
         : '-rotate-90'}"
       size="14px"
@@ -78,9 +78,9 @@
       When there are only two organizational levels,the API returns "databaseSchema -> table". 
       However, in these cases, we should use a Database icon (not a Folder icon) to represent the organizational structure. -->
     {#if !database}
-      <Database size="14px" class="shrink-0 text-gray-400" />
+      <Database size="14px" class="shrink-0 text-fg-secondary" />
     {:else}
-      <Folder size="14px" class="shrink-0 text-gray-400" />
+      <Folder size="14px" class="shrink-0 text-fg-secondary" />
     {/if}
     <span class="truncate">
       {databaseSchema}
@@ -137,12 +137,12 @@
         >
           {#if error}
             <span class="error">Failed to load more tables.</span>
-            <Button type="plain" small onClick={() => fetchNextPage()}>
+            <Button type="tertiary" small onClick={() => fetchNextPage()}>
               Retry
             </Button>
           {:else}
             <Button
-              type="plain"
+              type="tertiary"
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}
@@ -171,12 +171,12 @@
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   .message {
     @apply pr-3.5 py-2; /* left-padding is set dynamically above */
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 
   .load-more {

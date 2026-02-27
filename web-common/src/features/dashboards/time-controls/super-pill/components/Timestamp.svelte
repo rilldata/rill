@@ -54,7 +54,7 @@
     sideOffset={16}
   >
     <div
-      class="flex flex-col gap-y-1 items-center flex-none bg-gray-700 dark:bg-gray-900 shadow-md text-surface rounded p-2 pt-1 pb-1"
+      class="flex flex-col gap-y-1 items-center flex-none shadow-md text-surface rounded p-2 pt-1 pb-1"
     >
       {#if showDate}
         {#if humanReadableTimeOffset.length}

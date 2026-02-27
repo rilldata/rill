@@ -19,7 +19,7 @@
   export let fieldConfig: FieldConfig;
   export let canvasName: string;
 
-  export let onChange: (updatedConfig: FieldConfig) => void;
+  export let onChange: (updatedConfig: FieldConfig | undefined) => void;
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -33,6 +33,7 @@
   $: multiMetricSelector = chartFieldInput?.multiFieldSelector;
   $: colorMapConfig = chartFieldInput?.colorMappingSelector;
   $: colorRangeConfig = chartFieldInput?.colorRangeSelector;
+  $: isRemovable = chartFieldInput?.isRemovable ?? false;
 
   $: isDimension = chartFieldInput?.type === "dimension";
   $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length;
@@ -153,6 +154,8 @@
         includeTime={!chartFieldInput?.hideTimeDimension}
         excludedValues={chartFieldInput?.excludedValues}
         selectedItem={fieldConfig?.field}
+        {isRemovable}
+        onRemove={() => onChange(undefined)}
         onSelect={async (field) => {
           updateFieldConfig(field);
         }}

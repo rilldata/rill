@@ -37,13 +37,13 @@
   button {
     @apply h-full aspect-square;
     @apply flex justify-center items-center;
-    @apply text-gray-500;
+    @apply text-fg-secondary;
     @apply transition-transform duration-100;
     width: 0px;
   }
 
   button:hover,
   button:focus {
-    @apply outline-none bg-slate-300;
+    @apply outline-none bg-surface-active;
   }
 </style>
