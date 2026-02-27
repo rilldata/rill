@@ -9,6 +9,9 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillmysql "github.com/rilldata/rill/runtime/drivers/mysql"
 	"github.com/rilldata/rill/runtime/drivers/postgres"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 type sqlStoreToSelfInputProps struct {
@@ -49,8 +52,12 @@ func (e *sqlStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 
 func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &sqlStoreToSelfInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)

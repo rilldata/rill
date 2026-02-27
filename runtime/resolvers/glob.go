@@ -113,9 +113,11 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	}
 
 	props := &globProps{}
-	if err := mapstructureutil.WeakDecode(propsMap, props); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(propsMap, props)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "glob", unused)
 
 	props.Path = strings.TrimSpace(props.Path)
 

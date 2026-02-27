@@ -69,7 +69,8 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		Args: map[string]any{
 			"priority": args.Priority,
 		},
-		Claims:    opts.Claims,
-		ForExport: opts.ForExport,
+		Claims:                 opts.Claims,
+		ForExport:              opts.ForExport,
+		SkipPropertyValidation: true,
 	})
 }

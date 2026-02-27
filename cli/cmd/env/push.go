@@ -8,6 +8,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 func PushCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -34,7 +35,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get repo for project path: %w", err)
 			}
-			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
+			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb", zap.NewNop())
 			if err != nil {
 				return fmt.Errorf("failed to parse project: %w", err)
 			}

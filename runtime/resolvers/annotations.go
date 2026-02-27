@@ -29,9 +29,11 @@ type metricsAnnotationsResolver struct {
 
 func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	qry := &metricsview.AnnotationsQuery{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, qry); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.Properties, qry)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "metrics_annotations", unused)
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
 	if err != nil {

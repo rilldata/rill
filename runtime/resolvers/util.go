@@ -10,6 +10,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 // normalizeRefs sorts and deduplicates the given refs.
@@ -58,4 +60,17 @@ func cacheKeyForMetricsView(ctx context.Context, r *runtime.Runtime, instanceID,
 		return nil, false, errors.New("`metrics_cache_key`: expected a column key of type string in result")
 	}
 	return []byte(res), true, nil
+}
+
+// logUnusedProperties logs a warning if any unsupported properties were found during decoding.
+// It is a no-op if unused is empty or opts.SkipPropertyValidation is true.
+func logUnusedProperties(ctx context.Context, opts *runtime.ResolverOptions, resolverName string, unused []string) {
+	if len(unused) == 0 || opts.SkipPropertyValidation {
+		return
+	}
+	logger, err := opts.Runtime.InstanceLogger(ctx, opts.InstanceID)
+	if err != nil {
+		return
+	}
+	logger.Warn("Undefined fields in resolver properties. Will be ignored", zap.String("resolver", resolverName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 }
