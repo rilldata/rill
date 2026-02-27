@@ -17,6 +17,7 @@
   import type { ChartDataPoint } from "./types";
 
   const THROTTLE_MS = 16;
+  const MIN_WIDTH_FOR_DYNAMIC_LABEL = 200;
 
   export let primaryData: V1TimeSeriesValue[];
   export let secondaryData: V1TimeSeriesValue[] = [];
@@ -241,11 +242,14 @@
         {@const interval = getHoveredInterval(hoveredPoints[0].originalDate)}
         {@const comparisonPoint =
           hasComparison && hoveredPoints[1] ? hoveredPoints[1] : null}
+        {@const useDynamicPosition = width >= MIN_WIDTH_FOR_DYNAMIC_LABEL}
         {#if interval.isValid}
           <span
             class="absolute flex whitespace-nowrap gap-x-1"
-            style:transform="translateX(-{percentage}%)"
-            style:left="{percentage}%"
+            style:transform="translateX(-{useDynamicPosition
+              ? percentage
+              : 50}%)"
+            style:left="{useDynamicPosition ? percentage : 50}%"
           >
             <RangeDisplay {interval} {timeGrain} />
             {#if comparisonPoint}
