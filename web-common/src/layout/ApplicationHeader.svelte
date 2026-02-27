@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
@@ -22,14 +23,13 @@
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
-  import { fileArtifacts } from "../features/entity-management/file-artifacts";
-  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import Tag from "../components/tag/Tag.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { GitBranch } from "lucide-svelte";
   import { goto } from "$app/navigation";
+  import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
@@ -145,7 +145,7 @@
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {:else if showDeveloperChat}
-      <ChatToggle beta />
+      <ChatToggle />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

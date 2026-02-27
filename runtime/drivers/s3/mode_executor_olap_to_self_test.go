@@ -123,7 +123,7 @@ type: model
 sql: SELECT number FROM numbers(16)
 output:
   connector: s3
-  path: gs://integration-test.rilldata.com/export_test
+  path: s3://integration-test.rilldata.com/export_test
 `,
 		},
 	})

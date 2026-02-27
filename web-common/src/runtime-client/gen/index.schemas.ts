@@ -1088,6 +1088,10 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
+export interface V1GetAIMessageResponse {
+  message?: V1Message;
+}
+
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
@@ -2185,6 +2189,8 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export type V1ReportSpecResolverProperties = { [key: string]: unknown };
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -2192,6 +2198,8 @@ export interface V1ReportSpec {
   trigger?: boolean;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
+  resolver?: string;
+  resolverProperties?: V1ReportSpecResolverProperties;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -2723,8 +2731,15 @@ export type ConnectorServiceListBucketsParams = {
 };
 
 export type ConnectorServiceListObjectsParams = {
+  /**
+   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
+   */
   path?: string;
   delimiter?: string;
+  /**
+   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
+   */
+  glob?: string;
   pageSize?: number;
   pageToken?: string;
 };

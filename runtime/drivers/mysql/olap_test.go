@@ -380,13 +380,13 @@ func testScan(t *testing.T, olap drivers.OLAPStore) {
 			args:  nil,
 			scanFunc: func(rows drivers.Rows) error {
 				var booleanCol int8
-				var bitCol string
+				var bitCol []byte
 
 				require.True(t, rows.Next())
 				err := rows.Scan(&booleanCol, &bitCol)
 				require.NoError(t, err)
 				require.Equal(t, int8(1), booleanCol)
-				require.Equal(t, "1", bitCol)
+				require.Equal(t, []byte{1}, bitCol)
 				return nil
 			},
 		},

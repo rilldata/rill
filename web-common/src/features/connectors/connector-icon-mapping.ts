@@ -17,6 +17,7 @@ import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte"
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
+import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -38,6 +39,7 @@ export const connectorIconMapping = {
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
+  supabase: SupabaseIcon,
 };
 
 export const connectorLabelMapping = {

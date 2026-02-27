@@ -23,12 +23,22 @@
     exploreName,
   } = data);
 
+  $: reportSpec = reportResource?.report?.spec;
+  $: queryName =
+    (reportSpec?.resolverProperties?.query_name as string | undefined) ??
+    reportSpec?.queryName ??
+    "";
+  $: queryArgsJson =
+    (reportSpec?.resolverProperties?.query_args_json as string | undefined) ??
+    reportSpec?.queryArgsJson ??
+    "";
+
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
   $: dashboardStateForReport = mapQueryToDashboard(
     {
       exploreName,
-      queryName: reportResource?.report?.spec?.queryName,
-      queryArgsJson: reportResource?.report?.spec?.queryArgsJson,
+      queryName,
+      queryArgsJson,
       executionTime,
     },
     {
