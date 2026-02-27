@@ -7,6 +7,7 @@ import {
   runtimeServiceListFiles,
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
 import { getLocalRuntimeClient } from "../lib/local-runtime-config";
 import { Settings } from "luxon";
@@ -17,6 +18,10 @@ export async function load({ url, depends, untrack }) {
   depends("init");
 
   const client = getLocalRuntimeClient();
+
+  // Set the client on fileArtifacts early so child page load functions
+  // (e.g., files/[...file]/+page.ts) can access it before components render.
+  fileArtifacts.setClient(client);
 
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
