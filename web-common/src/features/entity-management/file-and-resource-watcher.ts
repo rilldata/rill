@@ -152,8 +152,18 @@ export class FileAndResourceWatcher {
   private invalidateAll() {
     // Invalidate all runtime queries on reconnect
     return queryClient.invalidateQueries({
-      predicate: (query) =>
-        query.queryHash.includes(`v1/instances/${this.instanceId}`),
+      predicate: (query) => {
+        const key = query.queryKey;
+        if (key.length >= 3 && key[2] === this.instanceId) {
+          const svc = key[0];
+          return (
+            svc === "QueryService" ||
+            svc === "RuntimeService" ||
+            svc === "ConnectorService"
+          );
+        }
+        return false;
+      },
     });
   }
 

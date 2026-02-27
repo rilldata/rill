@@ -6,6 +6,7 @@ import {
   type V1GetResourceResponse,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
+import { isNotFoundError } from "../../lib/errors";
 import {
   createRuntimeServiceGetInstance,
   getRuntimeServiceGetResourceQueryKey,
@@ -35,7 +36,7 @@ function createModelingSupportQueryOptions(
         });
       } catch (error) {
         // Handle legacy DuckDB projects where no explicit connector resource exists
-        if (connectorName === "duckdb" && error?.response?.status === 404) {
+        if (connectorName === "duckdb" && isNotFoundError(error)) {
           // Return a synthetic DuckDB connector
           return {
             resource: {

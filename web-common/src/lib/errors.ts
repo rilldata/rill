@@ -24,6 +24,27 @@ export function isHTTPError(error: unknown): error is HTTPError {
 }
 
 /**
+ * Returns true if the error is a ConnectRPC NotFound error (code 5).
+ * Works for any error shape: ConnectError, Axios/REST, or plain objects.
+ */
+export function isNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  // ConnectError: { code: 5 }
+  if (e.code === 5) return true;
+  // Axios/REST: { response: { status: 404 } } or { status: 404 }
+  if (e.status === 404) return true;
+  const resp = e.response;
+  if (
+    resp &&
+    typeof resp === "object" &&
+    (resp as Record<string, unknown>).status === 404
+  )
+    return true;
+  return false;
+}
+
+/**
  * Maps a ConnectRPC error code to an HTTP status code.
  * See https://connectrpc.com/docs/protocol#error-codes
  */

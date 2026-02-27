@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { isNotFoundError } from "@rilldata/web-common/lib/errors";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
@@ -78,7 +79,7 @@ export async function waitForResourceReconciliation(
       continue;
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
-      if (error?.status === 404 || error?.response?.status === 404) {
+      if (isNotFoundError(error)) {
         if (attempt >= 3) {
           // After 6 seconds, assume reconcile failure
           throw new Error(
@@ -168,7 +169,7 @@ export async function renameFileArtifact(
     }
   } catch (err) {
     eventBus.emit("notification", {
-      message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+      message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.rawMessage ?? err.response?.data?.message ?? err.message)}`,
     });
   }
 }
@@ -212,7 +213,7 @@ export async function deleteFileArtifact(
     client.requestQueue.removeByName(name);
   } catch (err) {
     eventBus.emit("notification", {
-      message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+      message: `Failed to delete ${name}: ${extractMessage(err.rawMessage ?? err.response?.data?.message ?? err.message)}`,
     });
   }
 }
