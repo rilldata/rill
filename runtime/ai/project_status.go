@@ -25,7 +25,7 @@ type ProjectStatusArgs struct {
 	Path                        string `json:"path,omitempty" jsonschema:"Optional filter to only return resources declared in the specified file path."`
 	WaitUntilIdle               bool   `json:"wait_until_idle,omitempty" jsonschema:"If true, waits until all resources have finished reconciling before returning the status."`
 	WaitUntilIdleTimeoutSeconds int    `json:"wait_until_idle_timeout_seconds,omitempty" jsonschema:"Timeout in seconds for wait_until_idle. Defaults to 60. Only override if you anticipate large workloads."`
-	TailLogs                    int    `json:"tail_logs,omitempty" jsonschema:"Number of recent log entries to include in the response. Defaults to 100."`
+	TailLogs                    int    `json:"tail_logs,omitempty" jsonschema:"Number of recent log entries to include in the response. Defaults to 0."`
 }
 
 type ProjectStatusResult struct {
@@ -33,14 +33,14 @@ type ProjectStatusResult struct {
 	Env                  []string         `json:"env,omitempty" jsonschema:"List of environment variable names present in the project. Their values are omitted for security."`
 	Resources            []map[string]any `json:"resources" jsonschema:"List of resources and their status."`
 	ParseErrors          []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files."`
-	Logs                 []map[string]any `json:"logs,omitempty" jsonschema:"Recent log entries for the instance, ordered oldest to newest."`
+	Logs                 []map[string]any `json:"logs,omitempty" jsonschema:"Log entries based on the tail_logs parameter, ordered oldest to newest."`
 }
 
 func (t *ProjectStatus) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        ProjectStatusName,
 		Title:       "Get project status",
-		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors and recent logs. Can optionally wait until all resources have finished reconciling before returning.",
+		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors and optionally recent logs. Can optionally wait until all resources have finished reconciling before returning.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting project status...",
 			"openai/toolInvocation/invoked":  "Got project status",
@@ -64,7 +64,7 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 	if args.WaitUntilIdle {
 		timeoutSeconds := args.WaitUntilIdleTimeoutSeconds
 		if timeoutSeconds <= 0 {
-			timeoutSeconds = 60
+			timeoutSeconds = 60 // NOTE: If you change this default, also update the jsonschema.
 		}
 		waitCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
 		err := ctrl.WaitUntilIdle(waitCtx, false)
@@ -152,26 +152,25 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 	}
 
 	// Get recent logs
-	tailLogs := args.TailLogs
-	if tailLogs <= 0 {
-		tailLogs = 100
-	}
-	logBuffer, err := t.Runtime.InstanceLogs(ctx, s.InstanceID())
-	if err != nil {
-		return nil, err
-	}
-	logEntries := logBuffer.GetLogs(true, tailLogs, runtimev1.LogLevel_LOG_LEVEL_DEBUG)
-	logs := make([]map[string]any, 0, len(logEntries))
-	for _, entry := range logEntries {
-		l := map[string]any{
-			"level":   strings.TrimPrefix(entry.Level.String(), "LOG_LEVEL_"),
-			"time":    entry.Time.AsTime().Format(time.RFC3339),
-			"message": entry.Message,
+	var logs []map[string]any
+	if args.TailLogs > 0 {
+		logBuffer, err := t.Runtime.InstanceLogs(ctx, s.InstanceID())
+		if err != nil {
+			return nil, err
 		}
-		if entry.JsonPayload != "" {
-			l["json_payload"] = entry.JsonPayload
+		entries := logBuffer.GetLogs(true, args.TailLogs, runtimev1.LogLevel_LOG_LEVEL_DEBUG)
+		logs = make([]map[string]any, 0, len(entries))
+		for _, entry := range entries {
+			l := map[string]any{
+				"level":   strings.TrimPrefix(entry.Level.String(), "LOG_LEVEL_"),
+				"time":    entry.Time.AsTime().Format(time.RFC3339Nano),
+				"message": entry.Message,
+			}
+			if entry.JsonPayload != "" {
+				l["json_payload"] = entry.JsonPayload
+			}
+			logs = append(logs, l)
 		}
-		logs = append(logs, l)
 	}
 
 	return &ProjectStatusResult{
