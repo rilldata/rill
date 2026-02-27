@@ -4,7 +4,7 @@
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
-  import { InfoIcon } from "lucide-svelte";
+  import { InfoIcon, X } from "lucide-svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -43,6 +43,8 @@
   export let enableSearch = false;
   export let lockable = false;
   export let forcedTriggerStyle = "";
+  /** When true, shows an X button to clear the selection back to empty */
+  export let clearable = false;
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
@@ -53,7 +55,14 @@
     lg: "",
   };
 
-  $: selected = options.find((option) => option.value === value);
+  $: selected =
+    value !== "" && value != null
+      ? options.find((option) => option.value === value)
+      : undefined;
+  // bits-ui Select.Root caches the selected item internally and won't
+  // reflect an external reset to "" unless the component remounts.
+  // Incrementing this key via {#key selectKey} forces a remount on clear.
+  let selectKey = 0;
   $: filteredOptions = enableSearch
     ? options.filter((option) =>
         option.label.toLowerCase().includes(searchText.toLowerCase()),
@@ -90,113 +99,128 @@
     </label>
   {/if}
 
-  <Select.Root
-    bind:open
-    {disabled}
-    {selected}
-    onSelectedChange={(newSelection) => {
-      if (!newSelection) return;
-      value = newSelection.value;
-      onChange(newSelection.value);
-    }}
-    onOpenChange={(isOpen) => {
-      if (!isOpen) {
-        searchText = "";
-      }
-    }}
-    items={options}
-  >
-    <Select.Trigger
-      {id}
+  {#key selectKey}
+    <Select.Root
+      bind:open
       {disabled}
-      {lockable}
-      {lockTooltip}
-      bind:el={selectElement}
-      class="bg-input flex px-3 gap-x-2 max-w-full {HeightBySize[
-        size
-      ]} {width && `w-[${width}px]`} {minWidth &&
-        `min-w-[${minWidth}px]`} {ringFocus &&
-        'focus:ring-2 focus:ring-primary-100'} {truncate
-        ? 'break-all overflow-hidden'
-        : ''} {forcedTriggerStyle}"
-      aria-label={label || ariaLabel}
+      {selected}
+      onSelectedChange={(newSelection) => {
+        if (!newSelection) return;
+        value = newSelection.value;
+        onChange(newSelection.value);
+      }}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          searchText = "";
+        }
+      }}
+      items={options}
     >
-      <Select.Value
-        {placeholder}
-        class="text-[{fontSize}px] {!selected
-          ? 'text-fg-secondary'
-          : 'text-fg-primary'} w-full  text-left"
-      />
-    </Select.Trigger>
-
-    <Select.Content
-      {sameWidth}
-      align="start"
-      class="max-h-80 overflow-y-auto {dropdownWidth ? dropdownWidth : ''}"
-      strategy="fixed"
-    >
-      {#if enableSearch}
-        <div class="px-2 py-1.5">
-          <Search bind:value={searchText} showBorderOnFocus={false} />
-        </div>
-      {/if}
-      {#if optionsLoading}
-        <div class="flex flex-row items-center ml-5 h-10 w-full">
-          <div class="m-auto w-10">
-            <Spinner size="18px" status={EntityStatus.Running} />
-          </div>
-        </div>
-      {:else}
-        {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
-          <Select.Item
-            {value}
-            {label}
-            {description}
-            {disabled}
-            class="text-[{fontSize}px] gap-x-2 items-start"
-          >
-            {#if tooltip}
-              <Tooltip.Root portal="body">
-                <Tooltip.Trigger class="select-tooltip cursor-default">
-                  {#if icon}
-                    <svelte:component this={icon} size="16px" />
-                  {:else if type}
-                    <DataTypeIcon {type} />
-                  {/if}
-                  {label ?? value}
-                </Tooltip.Trigger>
-                <Tooltip.Content side="right" sideOffset={8}>
-                  {tooltip}
-                </Tooltip.Content>
-              </Tooltip.Root>
-            {:else}
-              {#if icon}
-                <svelte:component this={icon} size="16px" />
-              {:else if type}
-                <DataTypeIcon {type} />
-              {/if}
-              {label ?? value}
-            {/if}
-          </Select.Item>
-        {:else}
-          <div class="px-2.5 py-1.5 text-fg-secondary">No results found</div>
-        {/each}
-        {#if onAddNew}
-          <SelectSeparator />
-          <Select.Item
-            value="__rill_add_option__"
-            on:click={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              open = false;
-              onAddNew();
+      <Select.Trigger
+        {id}
+        {disabled}
+        {lockable}
+        {lockTooltip}
+        bind:el={selectElement}
+        class="bg-input flex px-3 gap-x-2 max-w-full {HeightBySize[
+          size
+        ]} {width && `w-[${width}px]`} {minWidth &&
+          `min-w-[${minWidth}px]`} {ringFocus &&
+          'focus:ring-2 focus:ring-primary-100'} {truncate
+          ? 'break-all overflow-hidden'
+          : ''} {forcedTriggerStyle}"
+        aria-label={label || ariaLabel}
+      >
+        <Select.Value
+          {placeholder}
+          class="text-[{fontSize}px] {!selected
+            ? 'text-fg-secondary'
+            : 'text-fg-primary'} w-full  text-left"
+        />
+        {#if clearable && value}
+          <button
+            class="flex items-center justify-center size-4 rounded-full text-fg-tertiary hover:text-fg-primary hover:bg-surface-hover transition-colors shrink-0"
+            on:click|stopPropagation|preventDefault={() => {
+              value = "";
+              onChange("");
+              selectKey++;
             }}
-            class="text-[{fontSize}px]"
+            aria-label="Clear selection"
           >
-            {addNewLabel ?? "+ Add"}
-          </Select.Item>
+            <X size="10px" strokeWidth={2.5} />
+          </button>
         {/if}
-      {/if}
-    </Select.Content>
-  </Select.Root>
+      </Select.Trigger>
+
+      <Select.Content
+        {sameWidth}
+        align="start"
+        class="max-h-80 overflow-y-auto {dropdownWidth ? dropdownWidth : ''}"
+        strategy="fixed"
+      >
+        {#if enableSearch}
+          <div class="px-2 py-1.5">
+            <Search bind:value={searchText} showBorderOnFocus={false} />
+          </div>
+        {/if}
+        {#if optionsLoading}
+          <div class="flex flex-row items-center ml-5 h-10 w-full">
+            <div class="m-auto w-10">
+              <Spinner size="18px" status={EntityStatus.Running} />
+            </div>
+          </div>
+        {:else}
+          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
+            <Select.Item
+              {value}
+              {label}
+              {description}
+              {disabled}
+              class="text-[{fontSize}px] gap-x-2 items-start"
+            >
+              {#if tooltip}
+                <Tooltip.Root portal="body">
+                  <Tooltip.Trigger class="select-tooltip cursor-default">
+                    {#if icon}
+                      <svelte:component this={icon} size="16px" />
+                    {:else if type}
+                      <DataTypeIcon {type} />
+                    {/if}
+                    {label ?? value}
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="right" sideOffset={8}>
+                    {tooltip}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {:else}
+                {#if icon}
+                  <svelte:component this={icon} size="16px" />
+                {:else if type}
+                  <DataTypeIcon {type} />
+                {/if}
+                {label ?? value}
+              {/if}
+            </Select.Item>
+          {:else}
+            <div class="px-2.5 py-1.5 text-fg-secondary">No results found</div>
+          {/each}
+          {#if onAddNew}
+            <SelectSeparator />
+            <Select.Item
+              value="__rill_add_option__"
+              on:click={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                open = false;
+                onAddNew();
+              }}
+              class="text-[{fontSize}px]"
+            >
+              {addNewLabel ?? "+ Add"}
+            </Select.Item>
+          {/if}
+        {/if}
+      </Select.Content>
+    </Select.Root>
+  {/key}
 </div>
