@@ -90,21 +90,22 @@ export function compileSourceYAML(
     })
     .join("\n");
 
+  // Use connector instance name if provided, otherwise fall back to driver name
+  const connectorName = opts?.connectorInstanceName || connector.name;
+  const driverName = opts?.originalDriverName || connector.name || "duckdb";
+
+  const limitClause =
+    driverName === "oracle" ? "FETCH FIRST 10000 ROWS ONLY" : "limit 10000";
   const devSection =
-    connector.implementsWarehouse &&
+    (connector.implementsWarehouse || connector.implementsSqlStore) &&
     connector.name !== "redshift" &&
     typeof formValues.sql === "string" &&
     formValues.sql.trim()
       ? `\n\ndev:\n  ${formatSqlBlock(
-          `${trimSqlForDev(formValues.sql)} limit 10000`,
+          `${trimSqlForDev(formValues.sql)} ${limitClause}`,
           "    ",
         )}`
       : "";
-
-  // Use connector instance name if provided, otherwise fall back to driver name
-  const connectorName = opts?.connectorInstanceName || connector.name;
-
-  const driverName = opts?.originalDriverName || connector.name || "duckdb";
   return (
     `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +

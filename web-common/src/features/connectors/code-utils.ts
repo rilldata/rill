@@ -576,8 +576,10 @@ export async function createYamlModelFromTable(
 
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
+  const limitClause =
+    driverName === "oracle" ? "FETCH FIRST 10000 ROWS ONLY" : "limit 10000";
   const devSection = shouldIncludeDevSection
-    ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
+    ? `\n\ndev:\n  sql: ${selectStatement} ${limitClause}`
     : "";
 
   const yamlContent = yamlModelTemplate(driverName)
@@ -666,7 +668,10 @@ export async function createSqlModelFromTable(
   )
     ? `select * from "${sufficientlyQualifiedTableName}"`
     : `select * from ${sufficientlyQualifiedTableName}`;
-  const devLimit = "{{ if dev }} limit 100000 {{ end}}";
+  const devLimit =
+    driverName === "oracle"
+      ? "{{ if dev }} FETCH FIRST 100000 ROWS ONLY {{ end}}"
+      : "{{ if dev }} limit 100000 {{ end}}";
 
   let modelSQL = `${topComments}\n`;
 
