@@ -3,8 +3,11 @@ import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.s
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
+import ApacheIcebergIcon from "../../components/icons/connectors/ApacheIcebergIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
+import GoogleCloudStorageIcon from "../../components/icons/connectors/GoogleCloudStorageIcon.svelte";
+import MicrosoftAzureBlobStorageIcon from "../../components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
@@ -17,12 +20,15 @@ import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte"
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
+  azure: MicrosoftAzureBlobStorageIcon,
   bigquery: GoogleBigQueryIcon,
   clickhouse: ClickHouseIcon,
   clickhousecloud: ClickHouseCloudIcon,
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
+  gcs: GoogleCloudStorageIcon,
+  iceberg: ApacheIcebergIcon,
   mysql: MySqlIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,

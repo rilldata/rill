@@ -27,6 +27,8 @@
     isVisibleForValues,
   } from "../../templates/schema-utils";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
@@ -101,6 +103,26 @@
   let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
+
+  // For Iceberg: check which cloud storage connectors exist and disable unavailable options
+  $: disabledOptions = (() => {
+    if (schemaName !== "iceberg") return {};
+    const existingConnectors = new Set(
+      fileArtifacts.getNamesForKind(ResourceKind.Connector),
+    );
+    const disabled: Record<string, string> = {};
+    const connectorMap: Record<string, string> = {
+      gcs: "GCS",
+      s3: "S3",
+      azure: "Azure",
+    };
+    for (const [key, label] of Object.entries(connectorMap)) {
+      if (!existingConnectors.has(key)) {
+        disabled[key] = `Create a ${label} connector first`;
+      }
+    }
+    return disabled;
+  })();
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
@@ -318,6 +340,7 @@
             {onStringInputChange}
             {handleFileUpload}
             iconMap={ICONS}
+            {disabledOptions}
           />
         </AddDataFormSection>
       {:else}

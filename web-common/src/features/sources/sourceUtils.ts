@@ -269,6 +269,54 @@ export function maybeRewriteToDuckDb(
       delete formValues.table;
 
       break;
+    case "iceberg": {
+      connectorCopy.name = "duckdb";
+
+      // Determine which path field has a value
+      const icebergPath = (formValues.gcs_path ||
+        formValues.s3_path ||
+        formValues.azure_path ||
+        formValues.local_path) as string;
+      const storageType = formValues.storage_type as string;
+
+      // Set create_secrets_from_connectors for cloud storage backends
+      if (storageType && storageType !== "local") {
+        formValues.create_secrets_from_connectors = storageType;
+      }
+
+      // Build iceberg_scan parameter list
+      const scanParams: string[] = [];
+
+      const allowMovedPaths = formValues.allow_moved_paths;
+      if (allowMovedPaths !== undefined && allowMovedPaths !== "") {
+        scanParams.push(`allow_moved_paths = ${allowMovedPaths}`);
+      }
+
+      const icebergVersion = formValues.version as string;
+      if (icebergVersion?.trim()) {
+        scanParams.push(`version = '${icebergVersion.trim()}'`);
+      }
+
+      const paramsStr = scanParams.length
+        ? `,\n  ${scanParams.join(",\n  ")}`
+        : "";
+
+      formValues.sql = `SELECT *\nFROM iceberg_scan('${icebergPath}'${paramsStr})`;
+
+      // Clean up intermediate fields
+      delete formValues.storage_type;
+      delete formValues.gcs_path;
+      delete formValues.s3_path;
+      delete formValues.azure_path;
+      delete formValues.local_path;
+      delete formValues.gcs_info;
+      delete formValues.s3_info;
+      delete formValues.azure_info;
+      delete formValues.allow_moved_paths;
+      delete formValues.version;
+
+      break;
+    }
   }
 
   return [connectorCopy, formValues];
