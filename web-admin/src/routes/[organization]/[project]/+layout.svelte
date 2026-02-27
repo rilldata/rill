@@ -261,15 +261,19 @@
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if isProjectAvailable}
-    {#key `${effectiveHost}::${effectiveInstanceId}`}
-      <RuntimeProvider
-        host={effectiveHost}
-        instanceId={effectiveInstanceId}
-        jwt={effectiveJwt}
-        {authContext}
-      >
-        <slot />
-      </RuntimeProvider>
-    {/key}
+    {#if effectiveHost != null && effectiveInstanceId}
+      {#key `${effectiveHost}::${effectiveInstanceId}`}
+        <RuntimeProvider
+          host={effectiveHost}
+          instanceId={effectiveInstanceId}
+          jwt={effectiveJwt}
+          {authContext}
+        >
+          <slot />
+        </RuntimeProvider>
+      {/key}
+    {:else}
+      <ProjectBuilding />
+    {/if}
   {/if}
 {/if}
