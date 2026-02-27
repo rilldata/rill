@@ -12,7 +12,7 @@
   }[];
 </script>
 
-<div class="nav-items" style:min-width={minWidth}>
+<div class="nav-sidebar" style:min-width={minWidth}>
   <!-- if hasPermission is not provided, it will be undefined -->
   {#each navItems as { label, route, hasPermission = true } (route)}
     {#if hasPermission}
@@ -26,7 +26,15 @@
 </div>
 
 <style lang="postcss">
-  .nav-items {
-    @apply flex flex-col gap-y-2;
+  .nav-sidebar {
+    @apply flex flex-col gap-y-2 shrink-0;
+  }
+
+  @media (min-width: 768px) {
+    .nav-sidebar {
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+    }
   }
 </style>

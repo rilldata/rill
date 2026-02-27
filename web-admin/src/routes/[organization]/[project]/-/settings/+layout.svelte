@@ -39,7 +39,7 @@
 </script>
 
 <ContentContainer title="Project settings" maxWidth={1100}>
-  <div class="container flex-col md:flex-row">
+  <div class="settings-layout">
     <LeftNav
       {basePage}
       baseRoute="/[organization]/[project]/-/settings"
@@ -53,7 +53,13 @@
 </ContentContainer>
 
 <style lang="postcss">
-  .container {
-    @apply flex pt-6 gap-6 max-w-full overflow-hidden;
+  .settings-layout {
+    @apply flex flex-col pt-6 gap-6 max-w-full;
+  }
+
+  @media (min-width: 768px) {
+    .settings-layout {
+      @apply flex-row items-start;
+    }
   }
 </style>
