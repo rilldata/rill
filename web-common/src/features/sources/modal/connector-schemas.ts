@@ -157,6 +157,8 @@ export const SKIP_LINK_EXCLUDED_CONNECTORS = ["salesforce", "sqlite"];
 /**
  * Determine if the skip link should be shown for a connector.
  * The skip link allows users to skip connector setup and go directly to import.
+ * Only shown for connectors where handleSkip() can actually advance the step
+ * (i.e., multi-step connectors or connectors with an explorer step).
  *
  * @param step - Current form step ("connector", "source", or "explorer")
  * @param connectorName - Name of the connector (e.g., "postgres", "s3")
@@ -169,12 +171,18 @@ export function shouldShowSkipLink(
   connectorInstanceName: string | null,
   implementsOlap: boolean | undefined,
 ): boolean {
-  return (
-    step === "connector" &&
-    !connectorInstanceName &&
-    !implementsOlap &&
-    !SKIP_LINK_EXCLUDED_CONNECTORS.includes(connectorName ?? "")
-  );
+  if (
+    step !== "connector" ||
+    connectorInstanceName ||
+    implementsOlap ||
+    SKIP_LINK_EXCLUDED_CONNECTORS.includes(connectorName ?? "")
+  ) {
+    return false;
+  }
+
+  // Only show skip link if handleSkip() can actually advance the step
+  const schema = getConnectorSchema(connectorName ?? "");
+  return isMultiStepConnector(schema) || hasExplorerStep(schema);
 }
 
 /**

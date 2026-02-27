@@ -262,33 +262,46 @@ export async function updateDotEnvWithSecrets(
   opts?: {
     secretKeys?: string[];
     schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    // Pre-read .env blob to use instead of reading from disk.
+    // Use this when a concurrent operation (e.g. Test and Connect) may have
+    // already modified .env; passing the original blob avoids generating
+    // duplicate suffixed env var names.
+    preReadBlob?: string;
   },
 ): Promise<{ newBlob: string; originalBlob: string }> {
-  const instanceId = get(runtime).instanceId;
-
-  // Invalidate the cache to ensure we get fresh .env content
-  // This prevents overwriting credentials added by a previous step
-  await queryClient.invalidateQueries({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-  });
-
-  // Get the existing .env file with fresh data
   let blob: string;
   let originalBlob: string;
-  try {
-    const file = await queryClient.fetchQuery({
+
+  if (opts?.preReadBlob !== undefined) {
+    blob = opts.preReadBlob;
+    originalBlob = opts.preReadBlob;
+  } else {
+    const instanceId = get(runtime).instanceId;
+
+    // Invalidate the cache to ensure we get fresh .env content
+    // This prevents overwriting credentials added by a previous step
+    await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
     });
-    blob = file.blob || "";
-    originalBlob = blob; // Keep original for conflict detection
-  } catch (error) {
-    // Handle the case where the .env file does not exist
-    if (error?.response?.data?.message?.includes("no such file")) {
-      blob = "";
-      originalBlob = "";
-    } else {
-      throw error;
+
+    // Get the existing .env file with fresh data
+    try {
+      const file = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+          path: ".env",
+        }),
+        queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+      });
+      blob = file.blob || "";
+      originalBlob = blob; // Keep original for conflict detection
+    } catch (error) {
+      // Handle the case where the .env file does not exist
+      if (error?.response?.data?.message?.includes("no such file")) {
+        blob = "";
+        originalBlob = "";
+      } else {
+        throw error;
+      }
     }
   }
 

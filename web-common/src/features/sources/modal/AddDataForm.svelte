@@ -215,6 +215,7 @@
     const result = await formManager.saveConnector({
       queryClient,
       values: $form,
+      existingEnvBlob: existingEnvBlob ?? undefined,
     });
     if (result.ok) {
       // Use quiet close — saveConnectorAnyway already navigated via goto().
@@ -236,12 +237,14 @@
     formValues: $form,
     existingEnvBlob: existingEnvBlob ?? "",
   });
-  // Show Save button for connector forms on the connector step (not for public auth which skips connection test)
+  // Show Save button for connector forms on the connector step (not for public auth which skips connection test).
+  // Intentionally not disabled when fields are empty: Save persists whatever the user has entered so far,
+  // even partial credentials, so they can finish configuring later in the YAML editor.
   $: shouldShowSaveButton =
     isConnectorForm &&
     stepState.step === "connector" &&
     activeAuthMethod !== "public";
-  $: saveLoading = submitting && saving;
+  $: saveLoading = saving;
 
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
@@ -343,7 +346,7 @@
         {/if}
 
         <Button
-          disabled={submitting || isSubmitDisabled}
+          disabled={submitting || isSubmitDisabled || saving}
           loading={submitting}
           loadingCopy={primaryLoadingCopy}
           form={formId}

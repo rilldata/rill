@@ -583,8 +583,9 @@ export class AddDataFormManager {
   async saveConnector(args: {
     queryClient: QueryClient;
     values: FormData;
+    existingEnvBlob?: string;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values } = args;
+    const { queryClient, values, existingEnvBlob } = args;
     const schema = getConnectorSchema(this.schemaName);
     const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
@@ -595,6 +596,7 @@ export class AddDataFormManager {
         this.connector,
         processedValues,
         true,
+        existingEnvBlob,
       );
       return { ok: true } as const;
     } catch (e) {

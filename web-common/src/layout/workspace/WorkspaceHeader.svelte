@@ -15,7 +15,6 @@
   import { workspaces } from "./workspace-stores";
   import ConnectorRefreshButton from "@rilldata/web-common/features/connectors/ConnectorRefreshButton.svelte";
   import ConnectorAddModelButton from "@rilldata/web-common/features/connectors/ConnectorAddModelButton.svelte";
-  import { OLAP_ENGINES } from "@rilldata/web-common/features/sources/modal/constants";
 
   export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
@@ -42,13 +41,6 @@
   $: isConnector =
     resourceKind === ResourceKind.Connector ||
     (filePath && filePath.startsWith("/connectors/"));
-
-  // Check if it's an OLAP connector (exclude these from showing connector buttons)
-  $: driverName = resource?.connector?.spec?.driver;
-  $: isOlapConnector = driverName ? OLAP_ENGINES.includes(driverName) : false;
-
-  // Only show connector buttons for non-OLAP connectors
-  $: shouldShowConnectorButtons = isConnector && !isOlapConnector;
 </script>
 
 <header bind:clientWidth={width}>
@@ -88,7 +80,7 @@
       {#if isConnector}
         <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
       {/if}
-      {#if shouldShowConnectorButtons}
+      {#if isConnector}
         <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
       {/if}
 

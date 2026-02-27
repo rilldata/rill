@@ -139,6 +139,7 @@ async function saveConnectorAnyway(
   formValues: AddDataFormValues,
   newConnectorName: string,
   instanceId?: string,
+  existingEnvBlob?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
   const schema = getConnectorSchema(connector.name ?? "");
@@ -161,11 +162,14 @@ async function saveConnectorAnyway(
   // Mark to avoid rollback by concurrent submissions
   savedAnywayPaths.add(newConnectorFilePath);
 
-  // Update .env file with secrets (keep ordering consistent with Test and Connect)
+  // Update .env file with secrets (keep ordering consistent with Test and Connect).
+  // When existingEnvBlob is provided (e.g. Save overriding an in-flight Test and Connect),
+  // use it as the baseline so env var names stay consistent and don't get _1 suffixes.
   const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
     await updateDotEnvWithSecrets(queryClient, connector, formValues, {
       secretKeys: schemaSecretKeys,
       schema: schema ?? undefined,
+      preReadBlob: existingEnvBlob,
     });
 
   await runtimeServicePutFile(resolvedInstanceId, {
@@ -210,6 +214,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
+  existingEnvBlob?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -246,15 +251,17 @@ export async function submitAddConnectorForm(
       // Use the same connector name from the ongoing operation
       const newConnectorName = existingSubmission.connectorName;
 
-      // Proceed immediately with Save Anyway logic
-      // Use the pre-computed env blobs from the concurrent Test and Connect operation
-      // to ensure consistent variable naming (e.g., GOOGLE_APPLICATION_CREDENTIALS not _2)
+      // Proceed immediately with Save Anyway logic.
+      // Pass existingEnvBlob so env var names stay consistent with what T&C used;
+      // without it, re-reading .env (which T&C already modified) would generate
+      // duplicate suffixed env var names.
       await saveConnectorAnyway(
         queryClient,
         connector,
         formValues,
         newConnectorName,
         instanceId,
+        existingEnvBlob,
       );
       return newConnectorName;
     }
@@ -307,6 +314,7 @@ export async function submitAddConnectorForm(
           formValues,
           newConnectorName,
           instanceId,
+          existingEnvBlob,
         );
         return newConnectorName;
       }

@@ -121,6 +121,8 @@
   function goToConnectorForm(connectorInfo: ConnectorInfo) {
     // Reset multi-step state (auth selection, connector config) when switching connectors.
     resetConnectorStep();
+    // Clear pending resolution so the reactive block doesn't fight with this navigation.
+    pendingConnectorName = null;
 
     const state = {
       step: 2,
@@ -140,6 +142,9 @@
   }
 
   function back() {
+    // Clear pending resolution so the reactive block doesn't fight with back navigation.
+    pendingConnectorName = null;
+
     // Try to go back in browser history
     if (window.history.length > 1) {
       window.history.back();
