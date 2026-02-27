@@ -7,6 +7,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Embed migrations directory in the binary
@@ -16,6 +17,9 @@ var migrationsFS embed.FS
 
 // Name of the table that tracks migrations.
 var migrationVersionTable = "runtime_migration_version"
+
+// TTL for AI sessions; sessions with no messages newer than this are deleted on startup.
+var aiSessionTTL = 90 * 24 * time.Hour // 3 months
 
 // Migrate implements drivers.Connection.
 // Migrate for SQLite may not be safe for concurrent use.
@@ -71,6 +75,14 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 			return err
 		}
 	}
+
+	// Apply TTL to AI sessions: delete sessions with no messages newer than aiSessionTTL.
+	// Messages are deleted explicitly before sessions to avoid reliance on ON DELETE CASCADE.
+	err = c.deleteExpiredAISessions(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete expired AI sessions: %w", err)
+	}
+
 	return nil
 }
 
@@ -132,4 +144,33 @@ func (c *connection) MigrationStatus(_ context.Context) (current, desired int, e
 
 func migrationFilenameToVersion(name string) (int, error) {
 	return strconv.Atoi(strings.TrimSuffix(name, ".sql"))
+}
+
+// deleteExpiredAISessions deletes AI sessions that have no messages newer than aiSessionTTL.
+// Messages are deleted explicitly before the sessions to avoid reliance on ON DELETE CASCADE.
+func (c *connection) deleteExpiredAISessions(ctx context.Context) error {
+	cutoff := time.Now().UTC().Add(-aiSessionTTL)
+
+	// Identify expired sessions: those older than the cutoff with no messages newer than the cutoff.
+	expiredSessionsQuery := `
+		SELECT id FROM ai_sessions
+		WHERE ai_sessions.created_on < ?
+		  AND NOT EXISTS (
+			SELECT 1 FROM ai_messages
+			WHERE ai_messages.session_id = ai_sessions.id
+			  AND ai_messages.created_on >= ?
+		)
+	`
+
+	// Delete messages first, then sessions.
+	_, err := c.db.ExecContext(ctx, fmt.Sprintf(`DELETE FROM ai_messages WHERE session_id IN (%s)`, expiredSessionsQuery), cutoff, cutoff)
+	if err != nil {
+		return fmt.Errorf("failed to delete expired AI messages: %w", err)
+	}
+	_, err = c.db.ExecContext(ctx, fmt.Sprintf(`DELETE FROM ai_sessions WHERE id IN (%s)`, expiredSessionsQuery), cutoff, cutoff)
+	if err != nil {
+		return fmt.Errorf("failed to delete expired AI sessions: %w", err)
+	}
+
+	return nil
 }

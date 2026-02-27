@@ -28,6 +28,8 @@ type Query struct {
 	TimeZone            string      `json:"time_zone" mapstructure:"time_zone"`
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
+
+	QueryLimits *QueryLimits `json:"query_limits,omitempty" mapstructure:"query_limits"`
 }
 
 type Dimension struct {
@@ -58,6 +60,12 @@ type MeasureCompute struct {
 	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total,omitempty" mapstructure:"percent_of_total"`
 	URI             *MeasureComputeURI             `json:"uri,omitempty" mapstructure:"uri"`
 	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time,omitempty" mapstructure:"comparison_time"`
+}
+
+// QueryLimits represents limits that should be applied to a query, such as requiring a time range or limiting the maximum time range for interactive queries. These are not part of the Query json itself because they are not intrinsic to the query, but rather are constraints that may be applied to the query before execution.
+type QueryLimits struct {
+	RequireTimeRange bool  `json:"require_time_range,omitempty" mapstructure:"require_time_range"`
+	MaxTimeRangeDays int64 `json:"max_time_range_days,omitempty" mapstructure:"max_time_range_days"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {
@@ -765,6 +773,7 @@ const QueryJSONSchema = `
     },
     "TimeRange": {
       "type": "object",
+      "description": "Time range for filtering the query. Prefer using absolute 'start' and 'end' parameters if available. Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields other than 'time_dimension' is set as its not supported.",
       "properties": {
         "start": {
           "type": "string",
@@ -782,11 +791,11 @@ const QueryJSONSchema = `
         },
         "iso_duration": {
           "type": "string",
-          "description": "ISO 8601 duration"
+          "description": "ISO 8601 duration, supported but deprecated in favor of 'expression' field."
         },
         "iso_offset": {
           "type": "string",
-          "description": "ISO 8601 offset"
+          "description": "ISO 8601 offset, supported but deprecated in favor of 'expression' field."
         },
         "round_to_grain": {
           "$ref": "#/$defs/TimeGrain",

@@ -203,13 +203,12 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 	if commitMsg == "" {
 		commitMsg = "Auto committed by Rill"
 	}
-	_, err = wt.Commit(commitMsg, &git.CommitOptions{Author: author, AllowEmptyCommits: true})
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{Author: author, AllowEmptyCommits: false})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
 		}
-		// empty commit - nothing to cmmit
-		return nil
+		// still trigger push
 	}
 
 	// set remote and push the changes

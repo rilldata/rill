@@ -119,6 +119,10 @@ type InstanceConfig struct {
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
 	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
 	AIMaxQueryLimit int64 `mapstructure:"rill.ai.max_query_limit"`
+	// AIRequireTimeRange indicates whether to require a time range on AI tool queries. If true, AI tool queries must include a time range filter, and if the query does not include a time range filter, the query will be rejected. Default is true.
+	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
+	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
+	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -183,6 +187,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
+		AIRequireTimeRange:                   true,
 	}
 
 	// Resolve variables

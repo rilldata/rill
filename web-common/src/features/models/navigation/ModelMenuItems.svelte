@@ -21,11 +21,12 @@
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import {
+    createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewFromTableUIAction,
     useCreateMetricsViewWithCanvasUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
   const queryClient = useQueryClient();
 
   export let filePath: string;
@@ -112,6 +113,21 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
+
+  async function onGenerateCanvasDashboard() {
+    // Use developer agent if enabled, otherwise fall back to RPC
+    if ($developerChat) {
+      await createCanvasDashboardFromTableWithAgent(
+        instanceId,
+        connector as string,
+        "",
+        "",
+        tableName,
+      );
+    } else {
+      await createCanvasDashboardFromTable();
+    }
+  }
 </script>
 
 <NavigationMenuItem on:click={viewGraph}>
@@ -148,7 +164,7 @@
 {#if $generateCanvas}
   <NavigationMenuItem
     disabled={disableCreateDashboard}
-    on:click={createCanvasDashboardFromTable}
+    on:click={onGenerateCanvasDashboard}
   >
     <CanvasIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
