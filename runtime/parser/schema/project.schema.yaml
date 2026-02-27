@@ -64,6 +64,7 @@ definitions:
       - [**MySQL**](#mysql) - MySQL databases
       - [**PostgreSQL**](#postgres) - PostgreSQL databases
       - [**SQLite**](#sqlite) - SQLite databases
+      - [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
       ### _Object Storage_
       - [**Azure**](#azure) - Azure Blob Storage
@@ -900,6 +901,57 @@ definitions:
           required:
             - driver
         - type: object
+          title: Supabase
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `postgres`
+            dsn:
+              type: string
+              description: |
+                **Data Source Name (DSN)** for the Supabase connection, provided in
+                [PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+                Supabase uses PostgreSQL under the hood, so all PostgreSQL connection formats are supported.
+
+                URI format example:
+                ```text
+                postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+                ```
+            host:
+              type: string
+              description: Hostname of the Supabase database (e.g. aws-0-us-east-1.pooler.supabase.com)
+            port:
+              type: string
+              description: Port number for the Supabase database
+            dbname:
+              type: string
+              description: Name of the Supabase database
+            user:
+              type: string
+              description: Username for authentication (e.g. postgres.[your-project-ref])
+            password:
+              type: string
+              description: Password for authentication
+            sslmode:
+              type: string
+              description: "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+          examples:
+            - # Example: Supabase connector configured using individual properties
+              type: connector
+              driver: postgres
+              host: aws-0-us-east-1.pooler.supabase.com
+              port: 5432
+              dbname: postgres
+              user: "postgres.[your-project-ref]"
+              password: "{{ .env.SUPABASE_PASSWORD }}"
+              sslmode: require
+            - # Example: Supabase connector configured using dsn
+              type: connector
+              driver: postgres
+              dsn: "{{ .env.SUPABASE_DSN }}"  # Define DSN in .env file
+          required:
+            - driver
+        - type: object
           title: Redshift
           properties:
             driver:
@@ -1191,6 +1243,7 @@ definitions:
               - athena
               - redshift
               - postgres
+              - supabase
               - sqlite
               - snowflake
               - bigquery

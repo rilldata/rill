@@ -22,11 +22,11 @@ type ResetAllDeploymentsWorker struct {
 func (w *ResetAllDeploymentsWorker) Work(ctx context.Context, job *river.Job[ResetAllDeploymentsArgs]) error {
 	// Iterate over batches of projects to redeploy
 	limit := 100
-	afterName := ""
+	afterID := ""
 	stop := false
 	for !stop {
 		// Get batch and update iterator variables
-		projs, err := w.admin.DB.FindProjects(ctx, afterName, limit)
+		projs, err := w.admin.DB.FindProjects(ctx, afterID, limit)
 		if err != nil {
 			return err
 		}
@@ -34,7 +34,7 @@ func (w *ResetAllDeploymentsWorker) Work(ctx context.Context, job *river.Job[Res
 			stop = true
 		}
 		if len(projs) != 0 {
-			afterName = projs[len(projs)-1].Name
+			afterID = projs[len(projs)-1].ID
 		}
 
 		// Process batch

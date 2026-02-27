@@ -10,13 +10,16 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
-  import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
+  import {
+    createCanvasDashboardFromMetricsView,
+    createCanvasDashboardFromMetricsViewWithAgent,
+  } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import NavigateOrDropdown from "./NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: dashboardsQuery = useGetExploresForMetricsView(
@@ -33,11 +36,20 @@
         type="secondary"
         disabled={!resource}
         onClick={async () => {
-          if (resource?.meta?.name?.name)
-            await createCanvasDashboardFromMetricsView(
-              instanceId,
-              resource.meta.name.name,
-            );
+          if (resource?.meta?.name?.name) {
+            // Use developer agent if enabled, otherwise fall back to RPC
+            if ($developerChat) {
+              createCanvasDashboardFromMetricsViewWithAgent(
+                instanceId,
+                resource.meta.name.name,
+              );
+            } else {
+              await createCanvasDashboardFromMetricsView(
+                instanceId,
+                resource.meta.name.name,
+              );
+            }
+          }
         }}
       >
         Generate Canvas Dashboard{$ai ? " with AI" : ""}
@@ -77,11 +89,20 @@
         {#if $generateCanvas}
           <DropdownMenu.Item
             on:click={async () => {
-              if (resource?.meta?.name?.name)
-                await createCanvasDashboardFromMetricsView(
-                  instanceId,
-                  resource.meta.name.name,
-                );
+              if (resource?.meta?.name?.name) {
+                // Use developer agent if enabled, otherwise fall back to RPC
+                if ($developerChat) {
+                  createCanvasDashboardFromMetricsViewWithAgent(
+                    instanceId,
+                    resource.meta.name.name,
+                  );
+                } else {
+                  await createCanvasDashboardFromMetricsView(
+                    instanceId,
+                    resource.meta.name.name,
+                  );
+                }
+              }
             }}
           >
             <Add />

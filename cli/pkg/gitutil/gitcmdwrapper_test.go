@@ -221,6 +221,15 @@ func TestGitPull(t *testing.T) {
 	require.Empty(t, output, "unexpected output from GitPull with remote changes")
 }
 
+func TestRunGitPush_NoNewCommits(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+	branch := getCurrentBranch(t, tempDir)
+
+	// Push with no new commits; remote is already up to date — should not error.
+	err := RunGitPush(context.Background(), tempDir, "origin", branch)
+	require.NoError(t, err, "RunGitPush should not fail when there are no new commits")
+}
+
 func TestInferGitRepoRoot_InRepoRoot(t *testing.T) {
 	tempDir, _ := setupTestRepository(t)
 

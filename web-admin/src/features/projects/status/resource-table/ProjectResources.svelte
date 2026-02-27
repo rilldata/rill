@@ -1,13 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createRuntimeServiceCreateTrigger,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -25,78 +22,52 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
+  import { filterResources } from "./utils";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "../url-filter-sync";
   import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  // Reactively track URL search params (updates on back/forward navigation)
-  $: kindParam = $page.url.searchParams.get("kind");
-  $: statusParam = $page.url.searchParams.get("status");
-  $: qParam = $page.url.searchParams.get("q");
+  const filterSync = createUrlFilterSync([
+    { key: "kind", type: "array" },
+    { key: "status", type: "array" },
+    { key: "q", type: "string" },
+  ]);
+  filterSync.init($page.url);
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
-  let searchText = $page.url.searchParams.get("q") ?? "";
-  let selectedTypes: string[] = (() => {
-    const k = $page.url.searchParams.get("kind");
-    return k ? k.split(",").filter(Boolean) : [];
-  })();
-  let selectedStatuses: string[] = (() => {
-    const s = $page.url.searchParams.get("status");
-    return s ? s.split(",").filter(Boolean) : [];
-  })();
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+  let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
   let mounted = false;
-  let lastSyncedSearch = $page.url.search;
 
   // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && $page.url.search !== lastSyncedSearch) {
-    lastSyncedSearch = $page.url.search;
-    selectedTypes = kindParam ? kindParam.split(",").filter(Boolean) : [];
-    selectedStatuses = statusParam
-      ? statusParam.split(",").filter(Boolean)
-      : [];
-    searchText = qParam ?? "";
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
-  // Sync filter state to URL params
+  // Sync filter state → URL
   $: if (mounted) {
-    syncFiltersToUrl(selectedTypes, selectedStatuses, searchText);
+    filterSync.syncToUrl({
+      kind: selectedTypes,
+      status: selectedStatuses,
+      q: searchText,
+    });
   }
 
   onMount(() => {
     mounted = true;
   });
-
-  function syncFiltersToUrl(
-    types: string[],
-    statuses: string[],
-    search: string,
-  ) {
-    const url = new URL($page.url);
-    if (types.length > 0) {
-      url.searchParams.set("kind", types.join(","));
-    } else {
-      url.searchParams.delete("kind");
-    }
-    if (statuses.length > 0) {
-      url.searchParams.set("status", statuses.join(","));
-    } else {
-      url.searchParams.delete("status");
-    }
-    if (search) {
-      url.searchParams.set("q", search);
-    } else {
-      url.searchParams.delete("q");
-    }
-    lastSyncedSearch = url.search;
-    void goto(url.pathname + url.search, {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
-    });
-  }
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
@@ -149,39 +120,6 @@
     selectedStatuses,
   );
 
-  function getResourceStatus(r: V1Resource): string {
-    if (r.meta?.reconcileError) return "error";
-    const status = r.meta?.reconcileStatus;
-    if (
-      status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING
-    )
-      return "warn";
-    return "ok";
-  }
-
-  function filterResources(
-    resources: V1Resource[] | undefined,
-    types: string[],
-    search: string,
-    statuses: string[],
-  ): V1Resource[] {
-    if (!resources) return [];
-
-    return resources.filter((r) => {
-      const kind = r.meta?.name?.kind;
-      const name = r.meta?.name?.name ?? "";
-
-      const matchesType = types.length === 0 || types.includes(kind ?? "");
-      const matchesSearch =
-        !search || name.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus =
-        statuses.length === 0 || statuses.includes(getResourceStatus(r));
-
-      return matchesType && matchesSearch && matchesStatus;
-    });
-  }
-
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
       selectedTypes = selectedTypes.filter((t) => t !== type);
@@ -222,23 +160,24 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Resources</h2>
-  </div>
+  <h2 class="text-lg font-medium">Resources</h2>
 
   <!-- Search, Filter, and Action Controls -->
-  <div class="flex flex-row gap-x-4">
-    <Search
-      bind:value={searchText}
-      placeholder="Search"
-      large
-      autofocus={false}
-      showBorderOnFocus={false}
-    />
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
 
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >
@@ -274,7 +213,7 @@
 
     <DropdownMenu.Root bind:open={statusDropdownOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >
@@ -311,22 +250,24 @@
 
     {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
       <button
-        class="text-sm text-primary-500 hover:text-primary-600"
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         on:click={clearFilters}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
 
     <Button
       type="secondary"
       large
+      class="shrink-0 whitespace-nowrap"
       onClick={() => {
         isConfirmDialogOpen = true;
       }}
       disabled={isRefreshButtonDisabled}
     >
-      Refresh all sources and models
+      <span class="hidden lg:inline">Refresh all sources and models</span>
+      <span class="lg:hidden">Refresh all</span>
     </Button>
   </div>
 

@@ -13,7 +13,8 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   posthog.init(POSTHOG_API_KEY, {
-    api_host: "https://us.i.posthog.com", // TODO: use a reverse proxy https://posthog.com/docs/advanced/proxy
+    api_host: "/ph",
+    ui_host: "https://us.posthog.com",
     session_recording: {
       maskAllInputs: true,
       maskTextSelector: "*",

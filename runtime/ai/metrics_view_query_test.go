@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/ai"
@@ -29,6 +30,9 @@ explore:
 `,
 		},
 		FrontendURL: "https://ui.rilldata.com/test-org/test-project",
+		Variables: map[string]string{
+			"rill.ai.require_time_range": "false",
+		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
@@ -37,7 +41,7 @@ explore:
 
 	// Query the metrics view and check it returns a valid OpenURL
 	var res *ai.QueryMetricsViewResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
+	toolRes, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
 		"metrics_view": "test_metrics",
 		"dimensions":   []map[string]any{{"name": "country"}},
 		"measures":     []map[string]any{{"name": "total_revenue"}},
@@ -45,8 +49,7 @@ explore:
 	require.NoError(t, err)
 	require.NotEmpty(t, res.Schema)
 	require.NotEmpty(t, res.Data)
-	require.Contains(t, res.OpenURL, "https://ui.rilldata.com/test-org/test-project")
-	require.Contains(t, res.OpenURL, "/-/open-query?query=")
+	require.Equal(t, res.OpenURL, fmt.Sprintf("https://ui.rilldata.com/test-org/test-project/-/ai/%s/message/%s/-/open", s.ID(), toolRes.Call.ID))
 }
 
 func TestMetricsViewQueryLimit(t *testing.T) {
@@ -68,6 +71,7 @@ explore:
 		Variables: map[string]string{
 			"rill.ai.default_query_limit": "3",
 			"rill.ai.max_query_limit":     "5",
+			"rill.ai.require_time_range":  "false",
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
@@ -147,6 +151,9 @@ explore:
 cache:
   enabled: false
 `,
+		},
+		Variables: map[string]string{
+			"rill.ai.require_time_range": "false",
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)

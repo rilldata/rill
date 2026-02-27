@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -72,6 +73,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: "openai",
 		Files:       files,
+		FrontendURL: "https://ui.rilldata.com/-/dashboards/bids_metrics",
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
@@ -156,6 +158,14 @@ func TestAnalystOpenRTB(t *testing.T) {
 		exprSQL, err := metricsview.ExpressionToSQL(qry.Where)
 		require.NoError(t, err)
 		require.Equal(t, "device_os = 'Android'", strings.Trim(exprSQL, "()"))
+
+		rawRes, err := s.UnmarshalMessageContent(res.Result)
+		require.NoError(t, err)
+		var agentRes ai.AnalystAgentResult
+		err = mapstructureutil.WeakDecode(rawRes, &agentRes)
+		require.NoError(t, err)
+		expectedCitationUrl := fmt.Sprintf(`https://ui.rilldata.com/-/dashboards/bids_metrics/-/ai/%s/message/%s/-/open`, s.ID(), calls[2].ID)
+		require.Contains(t, agentRes.Response, expectedCitationUrl)
 	})
 
 	t.Run("CanvasContext", func(t *testing.T) {

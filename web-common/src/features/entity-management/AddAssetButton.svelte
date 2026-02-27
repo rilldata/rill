@@ -274,7 +274,7 @@
             on:click={() => (generateDataDialog = true)}
           >
             <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
-            using AI (beta)
+            using AI
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Separator />

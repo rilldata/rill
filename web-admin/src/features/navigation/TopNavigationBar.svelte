@@ -4,6 +4,7 @@
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
+  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
@@ -16,6 +17,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
+    createAdminServiceGetDeploymentCredentials,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
     type V1Organization,
@@ -69,6 +71,43 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
+
+  // When "View As" is active, fetch deployment credentials for the mocked user.
+  // TanStack Query deduplicates by query key, so if the project layout already
+  // ran this query, we get instant cache hits with zero extra network calls.
+  $: mockedUserId = $viewAsUserStore?.id;
+
+  $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
+    organization,
+    project,
+    { userId: mockedUserId },
+    {
+      query: {
+        enabled: !!mockedUserId && !!organization && !!project,
+      },
+    },
+  );
+
+  $: mockedProjectQuery = createAdminServiceGetProjectWithBearerToken(
+    organization,
+    project,
+    $mockedCredentialsQuery.data?.accessToken ?? "",
+    undefined,
+    {
+      query: {
+        enabled: !!$mockedCredentialsQuery.data?.accessToken,
+      },
+    },
+  );
+
+  // Use effective permissions when "View As" is active (from server)
+  // Otherwise fall back to the props passed from the root layout
+  $: effectiveManageProjectMembers =
+    $mockedProjectQuery.data?.projectPermissions?.manageProjectMembers ??
+    manageProjectMembers;
+  $: effectiveCreateMagicAuthTokens =
+    $mockedProjectQuery.data?.projectPermissions?.createMagicAuthTokens ??
+    createMagicAuthTokens;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -244,7 +283,7 @@
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
     <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
-    {#if onProjectPage && manageProjectMembers}
+    {#if onProjectPage && effectiveManageProjectMembers}
       <ShareProjectPopover
         {organization}
         {project}
@@ -278,7 +317,9 @@
               {#if $alertsFlag}
                 <CreateAlert />
               {/if}
-              <ShareDashboardPopover {createMagicAuthTokens} />
+              <ShareDashboardPopover
+                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+              />
             {/if}
           </StateManagersProvider>
         {/key}

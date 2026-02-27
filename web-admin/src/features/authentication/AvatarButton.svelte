@@ -42,7 +42,7 @@
     />
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
-    {#if params.organization && params.project && params.dashboard}
+    {#if params.organization && params.project}
       <ProjectAccessControls
         organization={params.organization}
         project={params.project}
@@ -71,16 +71,18 @@
           </DropdownMenu.Sub>
         </svelte:fragment>
       </ProjectAccessControls>
-      <DropdownMenu.Item
-        href={`/${params.organization}/${params.project}/-/alerts`}
-      >
-        Alerts
-      </DropdownMenu.Item>
-      <DropdownMenu.Item
-        href={`/${params.organization}/${params.project}/-/reports`}
-      >
-        Reports
-      </DropdownMenu.Item>
+      {#if params.dashboard}
+        <DropdownMenu.Item
+          href={`/${params.organization}/${params.project}/-/alerts`}
+        >
+          Alerts
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          href={`/${params.organization}/${params.project}/-/reports`}
+        >
+          Reports
+        </DropdownMenu.Item>
+      {/if}
     {/if}
 
     <ThemeToggle />

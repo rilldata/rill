@@ -1,0 +1,185 @@
+import type {
+  V1OlapTableInfo,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
+
+/**
+ * Filters out temporary tables (e.g., __rill_tmp_ prefixed tables)
+ */
+export function filterTemporaryTables(
+  tables: V1OlapTableInfo[] | undefined,
+): V1OlapTableInfo[] {
+  return (
+    tables?.filter(
+      (t): t is V1OlapTableInfo =>
+        !!t.name && !t.name.startsWith("__rill_tmp_"),
+    ) ?? []
+  );
+}
+
+/**
+ * Determines whether a table is likely a view based on its metadata.
+ * Uses the view flag from OLAPGetTable, falling back to size heuristics.
+ *
+ * Returns `undefined` when neither signal is available (e.g., data still loading),
+ * so callers can distinguish "not yet known" from a definitive classification.
+ */
+export function isLikelyView(
+  viewFlag: boolean | undefined,
+  physicalSizeBytes: string | number | undefined,
+): boolean | undefined {
+  if (viewFlag !== undefined) return viewFlag;
+  if (physicalSizeBytes === undefined) return undefined;
+  return (
+    physicalSizeBytes === "-1" ||
+    physicalSizeBytes === 0 ||
+    physicalSizeBytes === "0" ||
+    !physicalSizeBytes
+  );
+}
+
+/**
+ * Parses a size value (string or number) to a number for sorting.
+ * Returns -1 for invalid/missing values.
+ */
+export function parseSizeForSorting(size: string | number | undefined): number {
+  if (size === undefined || size === null || size === "" || size === "-1") {
+    return -1;
+  }
+  if (typeof size === "number") return size;
+  const parsed = parseInt(size, 10);
+  return isNaN(parsed) ? -1 : parsed;
+}
+
+/**
+ * Compares two size values for ascending sort order.
+ * TanStack Table handles direction via sortDescFirst.
+ */
+export function compareSizes(
+  sizeA: string | number | undefined,
+  sizeB: string | number | undefined,
+): number {
+  const numA = parseSizeForSorting(sizeA);
+  const numB = parseSizeForSorting(sizeB);
+  return numA - numB;
+}
+
+// ============================================
+// Model Size Utils
+// ============================================
+
+/**
+ * Formats a byte size for display. Returns "-" for invalid values.
+ */
+export function formatModelSize(bytes: string | number | undefined): string {
+  if (bytes === undefined || bytes === null || bytes === "-1") return "-";
+
+  let numBytes: number;
+  if (typeof bytes === "number") {
+    numBytes = bytes;
+  } else {
+    numBytes = parseInt(bytes, 10);
+  }
+
+  if (isNaN(numBytes) || numBytes < 0) return "-";
+  return formatMemorySize(numBytes);
+}
+
+// ============================================
+// Model Actions Utils
+// ============================================
+
+/**
+ * Checks if a model resource is partitioned.
+ */
+export function isModelPartitioned(resource: V1Resource | undefined): boolean {
+  return !!resource?.model?.spec?.partitionsResolver;
+}
+
+/**
+ * Checks if a model resource is incremental.
+ */
+export function isModelIncremental(resource: V1Resource | undefined): boolean {
+  return !!resource?.model?.spec?.incremental;
+}
+
+/**
+ * Checks if a model resource has errored partitions.
+ */
+export function hasModelErroredPartitions(
+  resource: V1Resource | undefined,
+): boolean {
+  return (
+    !!resource?.model?.state?.partitionsModelId &&
+    !!resource?.model?.state?.partitionsHaveErrors
+  );
+}
+
+// ============================================
+// Model Partitions Filter Utils
+// ============================================
+
+export type PartitionFilterType = "all" | "errors" | "pending";
+
+/**
+ * Returns whether to filter by errored partitions based on filter selection.
+ */
+export function shouldFilterByErrored(filter: PartitionFilterType): boolean {
+  return filter === "errors";
+}
+
+/**
+ * Returns whether to filter by pending partitions based on filter selection.
+ */
+export function shouldFilterByPending(filter: PartitionFilterType): boolean {
+  return filter === "pending";
+}
+
+// ============================================
+// Table Splitting and Filtering Utils
+// ============================================
+
+/**
+ * Splits OLAP tables into model-backed and external (unmanaged) tables.
+ * A table is model-backed if the modelResources map contains an entry
+ * for its lowercase name.
+ */
+export function splitTablesByModel(
+  tables: V1OlapTableInfo[],
+  modelResources: Map<string, V1Resource>,
+): { modelTables: V1OlapTableInfo[]; externalTables: V1OlapTableInfo[] } {
+  const modelTables: V1OlapTableInfo[] = [];
+  const externalTables: V1OlapTableInfo[] = [];
+
+  for (const table of tables) {
+    const key = (table.name ?? "").toLowerCase();
+    if (modelResources.has(key)) {
+      modelTables.push(table);
+    } else {
+      externalTables.push(table);
+    }
+  }
+
+  return { modelTables, externalTables };
+}
+
+/**
+ * Filters OLAP tables by type (table vs view).
+ * Search is handled server-side via the API's searchPattern parameter.
+ * Tables with indeterminate type (isLikelyView returns undefined) are included
+ * in both "table" and "view" filters to avoid hiding them during loading.
+ */
+export function applyTableFilters(
+  tables: V1OlapTableInfo[],
+  type: "all" | "table" | "view",
+  viewMap: Map<string, boolean>,
+): V1OlapTableInfo[] {
+  if (type === "all") return tables;
+  return tables.filter((t) => {
+    const name = t.name ?? "";
+    const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
+    if (likelyView === undefined) return true;
+    return (type === "view" && likelyView) || (type === "table" && !likelyView);
+  });
+}
