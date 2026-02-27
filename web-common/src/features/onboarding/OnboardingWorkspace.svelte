@@ -64,7 +64,9 @@
       <div class="mx-auto">
         <ImportData />
       </div>
-      <Button type="primary" onClick={addSourceModal.open}>+ Add Data</Button>
+      <Button type="primary" onClick={() => addSourceModal.open()}
+        >+ Add Data</Button
+      >
     </div>
 
     <div class="my-auto text-gray-400 text-base">or</div>
