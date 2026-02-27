@@ -9,8 +9,12 @@
   import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
   import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getConnectorSchema } from "../sources/modal/connector-schemas";
+  import {
+    getBackendConnectorName,
+    getConnectorSchema,
+  } from "../sources/modal/connector-schemas";
   import { saveAiConnector } from "../sources/modal/submitAddDataForm";
+  import { ExternalLinkIcon } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
 
   export let open = false;
@@ -37,6 +41,9 @@
   $: apiKeyProp = schema?.properties?.api_key;
   $: modelProp = schema?.properties?.model;
   $: selectedOption = providerOptions.find((o) => o.value === schemaName);
+  $: docsUrl = schemaName
+    ? `https://docs.rilldata.com/developers/build/connectors/services/${getBackendConnectorName(schemaName)}`
+    : "";
 
   // Reset form fields when dialog opens
   $: if (open) {
@@ -70,7 +77,20 @@
 
     <div class="flex flex-col gap-y-3">
       <div class="flex flex-col gap-y-2">
-        <span class="text-sm font-medium">Provider</span>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium">Provider</span>
+          {#if docsUrl}
+            <a
+              href={docsUrl}
+              rel="noreferrer noopener"
+              target="_blank"
+              class="inline-flex items-center gap-1 text-sm text-primary-500 hover:text-primary-600 hover:underline"
+            >
+              View documentation
+              <ExternalLinkIcon size="14px" />
+            </a>
+          {/if}
+        </div>
         <SelectPrimitive.Root
           selected={{ value: schemaName }}
           onSelectedChange={(s) => {
@@ -125,7 +145,6 @@
         optional
         bind:value={model}
       />
-
       {#if error}
         <p class="text-sm text-red-500">{error}</p>
       {/if}
