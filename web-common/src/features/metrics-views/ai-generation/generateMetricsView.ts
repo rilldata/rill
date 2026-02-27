@@ -9,6 +9,7 @@ import {
 import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
@@ -172,7 +173,7 @@ export function useCreateMetricsViewFromTableUIAction(
         message:
           `Failed to create ${createExplore ? "a dashboard" : "metrics"} for ` +
           tableName,
-        detail: err.response?.data?.message ?? err.message,
+        detail: extractErrorMessage(err),
       });
     }
 
@@ -250,7 +251,7 @@ export async function createDashboardFromTableInMetricsEditor(
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create a dashboard for " + tableName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
   }
 
@@ -698,7 +699,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
     } catch (err) {
       eventBus.emit("notification", {
         message: "Failed to create Canvas dashboard for " + tableName,
-        detail: err.response?.data?.message ?? err.message,
+        detail: extractErrorMessage(err),
       });
     }
 
@@ -841,7 +842,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
     } catch (err) {
       eventBus.emit("notification", {
         message: "Failed to create dashboards for " + tableName,
-        detail: err.response?.data?.message ?? err.message,
+        detail: extractErrorMessage(err),
       });
 
       // If we have an explore path but canvas failed, navigate to explore

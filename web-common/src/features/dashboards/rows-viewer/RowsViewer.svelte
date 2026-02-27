@@ -8,6 +8,7 @@
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { isErrorCode } from "@rilldata/web-common/lib/errors";
   import { writable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";
@@ -49,11 +50,7 @@
   );
 
   // If too much date is requested, limit the query to 1000 rows
-  $: if (
-    // @ts-ignore
-    $tableQuery?.error?.response?.data?.code === 8 &&
-    $limit > FALLBACK_SAMPLE_SIZE
-  ) {
+  $: if (isErrorCode($tableQuery?.error, 8) && $limit > FALLBACK_SAMPLE_SIZE) {
     // SK: Have to set the limit on the next tick or the tableQuery does not update. Not sure why, seems like a svelte-query issue.
     setTimeout(() => {
       limit.set(FALLBACK_SAMPLE_SIZE);

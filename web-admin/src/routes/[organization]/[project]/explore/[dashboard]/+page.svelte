@@ -15,7 +15,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
-  import { isHTTPError } from "@rilldata/web-common/lib/errors";
+  import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
@@ -44,10 +44,7 @@
   });
 
   $: isDashboardNotFound =
-    !$explore.data &&
-    $explore.isError &&
-    isHTTPError($explore.error) &&
-    $explore.error.response.status === 404;
+    !$explore.data && $explore.isError && isNotFoundError($explore.error);
   $: exploreTitle =
     $explore.data?.explore?.explore?.state?.validSpec?.displayName;
   $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;

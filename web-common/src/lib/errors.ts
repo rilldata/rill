@@ -45,6 +45,74 @@ export function isNotFoundError(error: unknown): boolean {
 }
 
 /**
+ * Extracts a human-readable error message from any error shape.
+ * Handles ConnectError (rawMessage), HTTPError (response.data.message),
+ * and plain Error (message).
+ */
+export function extractErrorMessage(error: unknown): string {
+  if (!error || typeof error !== "object")
+    return String(error ?? "Unknown error");
+  const e = error as Record<string, unknown>;
+  // ConnectRPC error
+  if (typeof e.rawMessage === "string" && e.rawMessage) return e.rawMessage;
+  // HTTPError (Axios/REST)
+  const resp = e.response;
+  if (resp && typeof resp === "object") {
+    const data = (resp as Record<string, unknown>).data;
+    if (data && typeof data === "object") {
+      const msg = (data as Record<string, unknown>).message;
+      if (typeof msg === "string" && msg) return msg;
+    }
+  }
+  // Plain Error
+  if (typeof e.message === "string" && e.message) return e.message;
+  return "Unknown error";
+}
+
+/**
+ * Extracts an HTTP status code from any error shape.
+ * Handles ConnectError (gRPC code → HTTP mapping), HTTPError (response.status),
+ * and plain objects (status).
+ */
+export function extractErrorStatusCode(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const e = error as Record<string, unknown>;
+  // ConnectRPC error (gRPC codes 0–16)
+  if (typeof e.code === "number" && e.code >= 0 && e.code <= 16) {
+    return connectCodeToHTTPStatus(e.code);
+  }
+  // Direct status property
+  if (typeof e.status === "number") return e.status;
+  // HTTPError (Axios/REST)
+  const resp = e.response;
+  if (resp && typeof resp === "object") {
+    const status = (resp as Record<string, unknown>).status;
+    if (typeof status === "number") return status;
+  }
+  return undefined;
+}
+
+/**
+ * Returns true if the error has the given ConnectRPC/gRPC code.
+ * Also checks Axios-style response.data.code for backwards compatibility.
+ */
+export function isErrorCode(error: unknown, code: number): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  // ConnectRPC error
+  if (e.code === code) return true;
+  // Axios/REST: response.data.code
+  const resp = e.response;
+  if (resp && typeof resp === "object") {
+    const data = (resp as Record<string, unknown>).data;
+    if (data && typeof data === "object") {
+      if ((data as Record<string, unknown>).code === code) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Maps a ConnectRPC error code to an HTTP status code.
  * See https://connectrpc.com/docs/protocol#error-codes
  */

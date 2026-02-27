@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { isHTTPError } from "@rilldata/web-common/lib/errors";
+  import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import EditAlert from "@rilldata/web-admin/features/alerts/EditAlert.svelte";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
@@ -51,9 +51,7 @@
   $: metricsViewName = exploreSpec?.metricsView;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
   $: dashboardDoesNotExist =
-    $validSpecResp.isError &&
-    isHTTPError($validSpecResp.error) &&
-    $validSpecResp.error.response.status === 404;
+    $validSpecResp.isError && isNotFoundError($validSpecResp.error);
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
     runtimeClient,

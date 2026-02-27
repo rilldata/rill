@@ -5,6 +5,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { MarkdownCanvasComponent } from "./";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import {
     getPositionClasses,
     hasTemplatingSyntax,
@@ -88,12 +89,7 @@
     const error = $resolveQuery?.error;
     if (!error) return "Failed to resolve template.";
 
-    const err = error as any;
-    return (
-      err?.response?.data?.message ??
-      err?.message ??
-      "Failed to resolve template."
-    );
+    return extractErrorMessage(error);
   })();
 </script>
 

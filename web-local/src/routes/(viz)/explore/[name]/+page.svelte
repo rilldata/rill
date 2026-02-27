@@ -12,7 +12,10 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import { isHTTPError } from "@rilldata/web-common/lib/errors";
+  import {
+    extractErrorStatusCode,
+    isNotFoundError,
+  } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -56,9 +59,7 @@
       (error) => filePaths.includes(error.filePath as string),
     );
   $: mockUserHasNoAccess =
-    $selectedMockUserStore &&
-    isHTTPError($exploreQuery.error) &&
-    $exploreQuery.error.response.status === 404;
+    $selectedMockUserStore && isNotFoundError($exploreQuery.error);
 
   onNavigate(({ from, to }) => {
     const changedDashboard =
@@ -76,9 +77,7 @@
 
 {#if measures.length === 0 && $selectedMockUserStore !== null}
   <ErrorPage
-    statusCode={isHTTPError($exploreQuery.error)
-      ? $exploreQuery.error.response.status
-      : undefined}
+    statusCode={extractErrorStatusCode($exploreQuery.error)}
     header="Error fetching dashboard"
     body="No measures available"
   />
@@ -90,9 +89,7 @@
   />
 {:else if mockUserHasNoAccess}
   <ErrorPage
-    statusCode={isHTTPError($exploreQuery.error)
-      ? $exploreQuery.error.response.status
-      : undefined}
+    statusCode={extractErrorStatusCode($exploreQuery.error)}
     header="This user can't access this dashboard"
     body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
   />

@@ -8,6 +8,7 @@ import {
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   getName,
@@ -286,7 +287,7 @@ export async function updateDotEnvWithSecrets(
     originalBlob = blob; // Keep original for conflict detection
   } catch (error) {
     // Handle the case where the .env file does not exist
-    if (error?.response?.data?.message?.includes("no such file")) {
+    if (extractErrorMessage(error).includes("no such file")) {
       blob = "";
       originalBlob = "";
     } else {

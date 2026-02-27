@@ -7,7 +7,7 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import { createRuntimeServiceShareConversationMutation } from "@rilldata/web-common/runtime-client";
-  import { isHTTPError } from "@rilldata/web-common/lib/errors";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Check, Link, Share } from "lucide-svelte";
 
@@ -55,9 +55,7 @@
       }, COPIED_FEEDBACK_DURATION_MS);
     } catch (error) {
       console.error("[ShareChatPopover] Share failed:", error);
-      shareError = isHTTPError(error)
-        ? error.response.data.message
-        : "Failed to create share link";
+      shareError = extractErrorMessage(error);
     } finally {
       isSharing = false;
     }

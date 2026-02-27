@@ -25,7 +25,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import type { HTTPError } from "../../../lib/errors";
+import { extractErrorMessage } from "../../../lib/errors";
 import type {
   FeedbackCategory,
   FeedbackSentiment,
@@ -152,11 +152,10 @@ export class Conversation {
    * Get a reactive store for conversation query errors
    */
   public getConversationQueryError(): Readable<string | null> {
-    return derived(
-      this.getConversationQuery(),
-      ($getConversationQuery) =>
-        ($getConversationQuery.error as HTTPError)?.response?.data?.message ??
-        null,
+    return derived(this.getConversationQuery(), ($getConversationQuery) =>
+      $getConversationQuery.error
+        ? extractErrorMessage($getConversationQuery.error)
+        : null,
     );
   }
 

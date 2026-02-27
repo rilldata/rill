@@ -25,7 +25,6 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
   import "@rilldata/web-common/app.css";
@@ -34,10 +33,8 @@
 
   const { deploy } = featureFlags;
 
-  queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
-    query: Query,
-  ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
+    errorEventHandler?.requestErrorEventHandler(error, query);
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
-  import { isHTTPError } from "../../../lib/errors";
+  import { extractErrorMessage } from "../../../lib/errors";
   import { useGetTable } from "../selectors";
   import { useRuntimeClient } from "../../../runtime-client/v2";
 
@@ -44,9 +44,7 @@
     <div
       class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
     >
-      Error loading schema: {isHTTPError(error)
-        ? error.response.data.message
-        : error?.message}
+      Error loading schema: {extractErrorMessage(error)}
     </div>
   {:else if isLoading}
     <div

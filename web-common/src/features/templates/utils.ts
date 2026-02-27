@@ -1,9 +1,9 @@
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/lib/errors";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 
 export const isMeasureValid = (
-  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, HTTPError>,
+  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, Error>,
   measureName: string,
 ): boolean => {
   return (
@@ -14,7 +14,7 @@ export const isMeasureValid = (
 };
 
 export const isDimensionValid = (
-  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, HTTPError>,
+  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, Error>,
   dimensionName: string,
 ): boolean => {
   return (
@@ -25,14 +25,12 @@ export const isDimensionValid = (
 };
 
 export const validateMetricsView = (
-  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, HTTPError>,
+  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, Error>,
 ) => {
   if (metricsSpecQueryResult.isError) {
-    const errorMsg = metricsSpecQueryResult.error?.response?.data?.message;
-
     return {
       isValid: false,
-      error: `Error: ${errorMsg}`,
+      error: `Error: ${extractErrorMessage(metricsSpecQueryResult.error)}`,
     };
   }
   return {
@@ -42,7 +40,7 @@ export const validateMetricsView = (
 };
 
 export const validateMeasures = (
-  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, HTTPError>,
+  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, Error>,
   measureNames: string[],
 ): { isValid: boolean; invalidMeasures: string[] } => {
   const invalidMeasures = measureNames?.filter(
@@ -55,7 +53,7 @@ export const validateMeasures = (
 };
 
 export const validateDimensions = (
-  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, HTTPError>,
+  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, Error>,
   dimensionNames: string[],
 ): { isValid: boolean; invalidDimensions: string[] } => {
   const invalidDimensions = dimensionNames.filter(

@@ -2,7 +2,7 @@
   import { Database } from "lucide-svelte";
   import { slide } from "svelte/transition";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { isHTTPError } from "../../../lib/errors";
+  import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
@@ -52,10 +52,7 @@
   <ol transition:slide={{ duration }}>
     {#if expanded}
       {#if error}
-        <span class="message"
-          >Error: {error.message ||
-            (isHTTPError(error) ? error.response.data.message : "")}</span
-        >
+        <span class="message">Error: {extractErrorMessage(error)}</span>
       {:else if isLoading}
         <span class="message">Loading schemas...</span>
       {:else if data}

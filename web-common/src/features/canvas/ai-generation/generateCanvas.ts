@@ -5,6 +5,7 @@ import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sideb
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -145,7 +146,7 @@ export async function createCanvasDashboardFromMetricsView(
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create Canvas dashboard for " + metricsViewName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
   } finally {
     // Always clean up the overlay
@@ -263,7 +264,7 @@ export async function createCanvasDashboardFromTableWithAgent(
 
     eventBus.emit("notification", {
       message: "Failed to create Metrics View for " + tableName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
   }
 }
@@ -315,7 +316,7 @@ export async function createCanvasDashboardWithoutNavigation(
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create Canvas dashboard for " + metricsViewName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
     return null;
   }

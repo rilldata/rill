@@ -15,7 +15,10 @@
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { HTTPError } from "@rilldata/web-common/lib/errors";
+  import {
+    extractErrorMessage,
+    extractErrorStatusCode,
+  } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
 
@@ -58,12 +61,12 @@
     | undefined;
   $: if (dataLoader) ({ initExploreState } = dataLoader);
 
-  let error: HTTPError | null;
+  let error: Error | null;
   let isLoading: boolean;
   $: if (initExploreState) {
     ({ isLoading, error } = $initExploreState as {
       isLoading: boolean;
-      error: HTTPError | null;
+      error: Error | null;
     });
   }
 
@@ -108,9 +111,9 @@
   <DashboardLoading {isLoading} />
 {:else if error}
   <ErrorPage
-    statusCode={error.response?.status}
+    statusCode={extractErrorStatusCode(error)}
     header="Failed to load dashboard"
-    detail={error.response?.data?.message ?? error.message}
+    detail={extractErrorMessage(error)}
   />
 {:else if $exploreStore}
   <slot />

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isHTTPError } from "@rilldata/web-common/lib/errors";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import SimpleMessage from "../../layout/inspector/SimpleMessage.svelte";
@@ -63,11 +63,7 @@
       <ReconcilingSpinner />
     </div>
   {:else if resourceError}
-    <SimpleMessage
-      message="Error: {isHTTPError(resourceError)
-        ? resourceError.response.data.message
-        : resourceError?.message}"
-    />
+    <SimpleMessage message="Error: {extractErrorMessage(resourceError)}" />
   {:else if resourceReconcileError}
     <!-- The editor will show actual validation errors -->
     <SimpleMessage message="Fix the errors in the file to continue." />
@@ -76,11 +72,7 @@
       <ReconcilingSpinner />
     </div>
   {:else if tableError}
-    <SimpleMessage
-      message="Error: {isHTTPError(tableError)
-        ? tableError.response.data.message
-        : tableError?.message}"
-    />
+    <SimpleMessage message="Error: {extractErrorMessage(tableError)}" />
   {:else}
     <TableInspector {connector} {database} {databaseSchema} {table} />
   {/if}

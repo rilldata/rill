@@ -6,6 +6,7 @@ import {
   isDuplicateName,
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "../../lib/svelte-query/globalQueryClient";
@@ -50,6 +51,6 @@ export async function handleEntityRename(
 
     return `/files/${removeLeadingSlash(newFilePath)}`;
   } catch (err) {
-    console.error(err.response?.data?.message ?? err);
+    console.error(extractErrorMessage(err));
   }
 }
