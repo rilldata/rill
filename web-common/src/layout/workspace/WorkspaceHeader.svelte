@@ -79,8 +79,6 @@
     <div class="flex items-center gap-x-2 w-fit flex-none">
       {#if isConnector}
         <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
-      {/if}
-      {#if isConnector}
         <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
       {/if}
 

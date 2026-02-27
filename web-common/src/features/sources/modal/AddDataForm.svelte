@@ -218,7 +218,7 @@
       existingEnvBlob: existingEnvBlob ?? undefined,
     });
     if (result.ok) {
-      // Use quiet close — saveConnectorAnyway already navigated via goto().
+      // Use quiet close — saveConnector already navigated via goto().
       // The normal resetModal() fires a synthetic popstate that races with
       // SvelteKit's router and can revert the navigation.
       onCloseAfterNavigation();

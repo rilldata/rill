@@ -17,6 +17,7 @@
   // Map driver name to schema name for connector lookup
   $: schemaName = driverName ? getSchemaNameFromDriver(driverName) : null;
   $: isDataSource = schemaName ? SOURCES.includes(schemaName) : false;
+  $: isDisabled = hasUnsavedChanges || hasReconcileError || !driverName;
 
   /**
    * Opens the Add Data modal pre-configured for this connector.
@@ -30,11 +31,11 @@
 </script>
 
 {#if isDataSource}
-  <Tooltip distance={8}>
+  <Tooltip distance={8} suppress={!isDisabled}>
     <Button
       type="primary"
       onClick={openAddModel}
-      disabled={hasUnsavedChanges || hasReconcileError || !driverName}
+      disabled={isDisabled}
       label="Import data"
     >
       <Plus size="14px" />
@@ -45,8 +46,6 @@
         Save your changes first
       {:else if hasReconcileError}
         Fix connector errors first
-      {:else}
-        Import data using this connector
       {/if}
     </TooltipContent>
   </Tooltip>

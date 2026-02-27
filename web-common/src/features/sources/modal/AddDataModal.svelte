@@ -28,6 +28,7 @@
   } from "./connector-schemas";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -286,7 +287,7 @@
       {#if step === 2 && pendingConnectorName && !selectedConnector}
         <!-- Loading state while waiting for connector to be resolved -->
         <div class="p-6 flex items-center justify-center">
-          <span class="text-fg-secondary">Loading...</span>
+          <LoadingSpinner size="24px" />
         </div>
       {:else if step === 2 && selectedConnector && selectedSchemaName}
         {@const schema = getConnectorSchema(selectedSchemaName)}
