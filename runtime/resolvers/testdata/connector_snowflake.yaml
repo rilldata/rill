@@ -133,7 +133,7 @@ tests:
       TEXT_COL,Nullable(String)
       DATE_COL,Nullable(Date32)
       TIME_COL,Nullable(DateTime64(3))
-      TIMESTAMP_NTZ_COL,Nullable(DateTime64(3))
+      TIMESTAMP_NTZ_COL,"Nullable(DateTime64(3, 'UTC'))"
       VARIANT_COL,Nullable(String)
       ARRAY_COL,Nullable(String)
       OBJECT_COL,Nullable(String)

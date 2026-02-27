@@ -80,7 +80,9 @@
     class:rounded-sm={rounded === "sm"}
     class:rounded-md={rounded === "md"}
     class:rounded-lg={rounded === "lg"}
-    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none text-fg-secondary placeholder-fg-secondary"
+    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none text-fg-secondary placeholder-fg-secondary {large
+      ? 'min-h-9'
+      : ''}"
     class:h-full={large}
     {disabled}
     {placeholder}

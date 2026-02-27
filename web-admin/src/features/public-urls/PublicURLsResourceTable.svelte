@@ -69,14 +69,14 @@
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
-  <div class="w-64">
-    <Search
-      placeholder="Search"
-      autofocus={false}
-      bind:value={searchText}
-      rounded="lg"
-    />
-  </div>
+  <Search
+    placeholder="Search"
+    bind:value={searchText}
+    large
+    autofocus={false}
+    showBorderOnFocus={false}
+    disabled={data.length === 0}
+  />
 
   {#if filteredData.length === 0 && data.length === 0}
     <div class="border rounded-lg bg-surface-background">
@@ -98,7 +98,7 @@
       </div>
     </div>
   {:else}
-    <div class="border rounded-lg overflow-hidden">
+    <div class="border rounded-lg overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr class="bg-surface-background border-b">
@@ -166,13 +166,13 @@
                   <span class="text-fg-secondary">—</span>
                 {/if}
               </td>
-              <td class="table-cell">
+              <td class="table-cell whitespace-nowrap">
                 {formatDate(row.expiresOn)}
               </td>
               <td class="table-cell">
                 {row.attributes?.name || "—"}
               </td>
-              <td class="table-cell">
+              <td class="table-cell whitespace-nowrap">
                 {formatDate(row.usedOn)}
               </td>
               <td class="table-cell w-12">

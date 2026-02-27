@@ -6,7 +6,6 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import type {
     V1Resource,
     V1ResourceName,
@@ -20,12 +19,9 @@
   const { twoTieredNavigation, dashboardChat } = featureFlags;
 
   $: onProjectPage = !activeResource;
+  $: showDashboardChat = $dashboardChat && !onProjectPage;
 
-  $: shouldRender =
-    navigationEnabled ||
-    ($dashboardChat &&
-      (activeResource?.kind === ResourceKind.Explore.toString() ||
-        activeResource?.kind === ResourceKind.MetricsView.toString()));
+  $: shouldRender = navigationEnabled || showDashboardChat;
 
   // Dashboard breadcrumb
   $: dashboardsQuery = useValidDashboards(runtimeClient);
@@ -88,7 +84,7 @@
       <div class="flex-1" />
     {/if}
 
-    {#if $dashboardChat && (activeResource?.kind === ResourceKind.Explore.toString() || activeResource?.kind === ResourceKind.MetricsView.toString())}
+    {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />
         <ChatToggle />

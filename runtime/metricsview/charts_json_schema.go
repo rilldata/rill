@@ -193,6 +193,8 @@ const ChartsJSONSchema = `{
                 "y",
                 "-x",
                 "-y",
+                "y_delta",
+                "-y_delta",
                 "color",
                 "-color",
                 "measure",
