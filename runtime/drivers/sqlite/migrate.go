@@ -76,8 +76,8 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 		}
 	}
 
-	// Apply TTL to AI sessions: delete sessions whose newest message is older than aiSessionTTL.
-	// Related ai_messages rows are removed automatically via ON DELETE CASCADE.
+	// Apply TTL to AI sessions: delete sessions with no messages newer than aiSessionTTL.
+	// Messages are deleted explicitly before sessions to avoid reliance on ON DELETE CASCADE.
 	err = c.deleteExpiredAISessions(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete expired AI sessions: %w", err)
