@@ -11,13 +11,15 @@
     getGithubUserRepos,
   } from "@rilldata/web-admin/features/projects/github/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as Collapsible from "@rilldata/web-common/components/collapsible";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
-  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import {
+    Tabs,
+    UnderlineTabsList,
+    UnderlineTabsTrigger,
+  } from "@rilldata/web-common/components/tabs";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -37,37 +39,32 @@
   $: isPending = $connectProjectToGithub.isPending || $updateProject.isPending;
   $: parsedError = error ? extractGithubConnectError(error as any) : null;
 
-  type GithubConnectType = "create" | "pull";
-  const GithubSelectionTypeOptions = [
-    {
-      label: "Push project to a new GitHub repo",
-      value: "create",
-    },
-    {
-      label: "Pull changes from existing GitHub repo",
-      value: "pull",
-    },
-  ];
-  let connectType: GithubConnectType = "create";
-
-  let isNewRepoType = false;
-  let advancedOpened = false;
+  let activeTab = "new";
   let showOverwriteConfirmation = false;
 
   const githubUserOrgs = getGithubUserOrgs();
-  $: githubUserRepos = getGithubUserRepos(!isNewRepoType);
+  $: githubUserRepos = getGithubUserRepos(activeTab === "existing");
+
+  // Keep $form.type in sync with the active tab so yup conditional
+  // validation continues to work unchanged.
+  $: $form.type = activeTab === "new" ? "create" : "pull";
 
   const initialValues: {
-    type: GithubConnectType;
+    type: string;
     repo: string;
     org: string;
     name: string;
+    branch: string;
+    subpath: string;
   } = {
-    type: connectType,
+    type: "create",
     repo: "",
     org: "",
-    name: project, // Initialize repo name with project name
+    name: project,
+    branch: "",
+    subpath: "",
   };
+
   const schema = yup(
     object({
       type: string().required(),
@@ -102,11 +99,10 @@
       SPA: true,
       validators: schema,
       onUpdate: async ({ form }) => {
-        console.log(form.valid);
         if (!form.valid) return;
         const values = form.data;
 
-        if (isNewRepoType) {
+        if (activeTab === "new") {
           const remote = `https://github.com/${values.org}/${values.name}.git`;
 
           await $connectProjectToGithub.mutateAsync({
@@ -131,8 +127,6 @@
     },
   );
 
-  $: isNewRepoType = $form.type === "create";
-
   $: disableSubmit = isPending || $githubConnectionFailed;
 
   function onSelectedRepoChange(newRemote: string) {
@@ -156,6 +150,7 @@
     if (!o) {
       resetMutations();
       reset();
+      activeTab = "new";
     }
   }}
 >
@@ -168,134 +163,134 @@
       onClick={() => void githubAccessManager.ensureGithubAccess()}
     >
       <Github className="w-5 h-5 flex-shrink-0" />
-      <span class="hidden min-[1200px]:inline">Connect to GitHub</span>
-      <span class="min-[1200px]:hidden">Connect</span>
+      Connect to GitHub
     </Button>
   </Dialog.Trigger>
-  <Dialog.Content class="translate-y-[-200px]">
+  <Dialog.Content>
     <Dialog.Header>
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
         <div class="flex flex-col gap-y-1">
           <Dialog.Title>Connect to GitHub</Dialog.Title>
           <Dialog.Description>
-            Connect this project to a new repo.
+            Connect this project to GitHub.
           </Dialog.Description>
         </div>
       </div>
     </Dialog.Header>
 
-    <form
-      id={FORM_ID}
-      on:submit|preventDefault={submit}
-      use:enhance
-      class="flex flex-col gap-y-3"
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => {
+        if (value) activeTab = value;
+        resetMutations();
+        reset();
+      }}
+      class="mt-1"
     >
-      <Select
-        bind:value={$form.type}
-        id="type"
-        label="Connection type"
-        sameWidth
-        options={GithubSelectionTypeOptions}
-        onChange={resetMutations}
-      />
+      <UnderlineTabsList>
+        <UnderlineTabsTrigger value="new"
+          >Create repository</UnderlineTabsTrigger
+        >
+        <UnderlineTabsTrigger value="existing">
+          Existing repository
+        </UnderlineTabsTrigger>
+      </UnderlineTabsList>
 
-      {#if isNewRepoType}
-        <Select
-          bind:value={$form.org}
-          id="org"
-          label="Repository org"
-          options={$githubUserOrgs.data ?? []}
-          optionsLoading={$githubUserOrgs.isFetching}
-          sameWidth
-          enableSearch
-          onAddNew={() => githubAccessManager.reselectOrgOrRepos(false)}
-          addNewLabel="+ Connect other orgs"
-        />
+      <form
+        id={FORM_ID}
+        on:submit|preventDefault={submit}
+        use:enhance
+        class="flex flex-col gap-y-3 pt-4"
+      >
+        {#if activeTab === "new"}
+          <Select
+            bind:value={$form.org}
+            id="org"
+            label="Organization"
+            placeholder="Select organization"
+            options={$githubUserOrgs.data ?? []}
+            optionsLoading={$githubUserOrgs.isFetching}
+            sameWidth
+            enableSearch
+            onAddNew={() => githubAccessManager.reselectOrgOrRepos(false)}
+            addNewLabel="+ Connect other orgs"
+          />
 
-        <Input
-          bind:value={$form.name}
-          errors={$errors?.name}
-          id="name"
-          label="Repository name"
-          capitalizeLabel={false}
-        />
-      {:else}
-        <Select
-          bind:value={$form.repo}
-          id="name"
-          label="Repository"
-          sameWidth
-          options={$githubUserRepos.data?.repoOptions ?? []}
-          optionsLoading={$githubUserRepos.isFetching}
-          enableSearch
-          onChange={(newRepo) => onSelectedRepoChange(newRepo)}
-          onAddNew={() => githubAccessManager.reselectOrgOrRepos(true)}
-          addNewLabel="+ Connect other repos"
-        />
+          <Input
+            bind:value={$form.name}
+            errors={$errors?.name}
+            id="name"
+            label="Repository name"
+            capitalizeLabel={false}
+          />
+        {:else}
+          <Select
+            bind:value={$form.repo}
+            id="repo"
+            label="Repository"
+            placeholder="Select repository"
+            sameWidth
+            options={$githubUserRepos.data?.repoOptions ?? []}
+            optionsLoading={$githubUserRepos.isFetching}
+            enableSearch
+            onChange={(newRepo) => onSelectedRepoChange(newRepo)}
+            onAddNew={() => githubAccessManager.reselectOrgOrRepos(true)}
+            addNewLabel="+ Connect other repos"
+          />
 
-        <Collapsible.Root bind:open={advancedOpened}>
-          <Collapsible.Trigger asChild let:builder>
-            <Button builders={[builder]} type="text">
-              {#if advancedOpened}
-                <CaretDownFilledIcon size="12px" />
-              {:else}
-                <CaretRightFilledIcon size="12px" />
-              {/if}
-              <span class="text-sm">Advanced options</span>
+          <Input
+            bind:value={$form.branch}
+            errors={$errors?.branch}
+            id="branch"
+            label="Branch"
+            placeholder="main"
+            capitalizeLabel={false}
+          />
+
+          <Input
+            bind:value={$form.subpath}
+            errors={$errors?.subpath}
+            id="subpath"
+            label="Subpath"
+            placeholder="/"
+            capitalizeLabel={false}
+            optional
+          />
+        {/if}
+
+        {#if parsedError?.message}
+          <div class="text-red-500 text-sm py-px">
+            {parsedError.message}
+          </div>
+        {/if}
+
+        {#if $githubConnectionFailed}
+          <div class="text-red-500 text-sm py-px">
+            <div>Failed to connect to GitHub. Please try again.</div>
+            <Button
+              type="secondary"
+              onClick={() => githubAccessManager.ensureGithubAccess()}
+            >
+              Reconnect
             </Button>
-          </Collapsible.Trigger>
-          <Collapsible.Content class="flex flex-col gap-y-2">
-            <Input
-              bind:value={$form.branch}
-              errors={$errors?.branch}
-              id="branch"
-              label="Branch"
-              capitalizeLabel={false}
-            />
-
-            <Input
-              bind:value={$form.subpath}
-              errors={$errors?.subpath}
-              id="subpath"
-              label="Subpath"
-              capitalizeLabel={false}
-              optional
-            />
-          </Collapsible.Content>
-        </Collapsible.Root>
-      {/if}
-
-      {#if parsedError?.message}
-        <div class="text-red-500 text-sm py-px">
-          {parsedError.message}
-        </div>
-      {/if}
-
-      {#if $githubConnectionFailed}
-        <div class="text-red-500 text-sm py-px">
-          <div>Failed to connect to GitHub. Please try again.</div>
-          <Button
-            type="secondary"
-            onClick={() => githubAccessManager.ensureGithubAccess()}
-          >
-            Reconnect
-          </Button>
-        </div>
-      {/if}
-    </form>
+          </div>
+        {/if}
+      </form>
+    </Tabs>
 
     <Dialog.Footer>
       <Button
         onClick={() => {
           open = false;
           reset();
+          activeTab = "new";
         }}
         type="secondary"
       >
         Cancel
       </Button>
-      {#if isNewRepoType}
+      {#if activeTab === "new"}
         <Button
           form={FORM_ID}
           submitForm
@@ -303,7 +298,7 @@
           loading={disableSubmit}
           disabled={disableSubmit}
         >
-          Create and push changes
+          Create and push
         </Button>
       {:else}
         <Button

@@ -160,23 +160,24 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Resources</h2>
-  </div>
+  <h2 class="text-lg font-medium">Resources</h2>
 
   <!-- Search, Filter, and Action Controls -->
-  <div class="flex flex-row gap-x-4">
-    <Search
-      bind:value={searchText}
-      placeholder="Search"
-      large
-      autofocus={false}
-      showBorderOnFocus={false}
-    />
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
 
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >
@@ -212,7 +213,7 @@
 
     <DropdownMenu.Root bind:open={statusDropdownOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >
@@ -249,22 +250,24 @@
 
     {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
       <button
-        class="text-sm text-primary-500 hover:text-primary-600"
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         on:click={clearFilters}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
 
     <Button
       type="secondary"
       large
+      class="shrink-0 whitespace-nowrap"
       onClick={() => {
         isConfirmDialogOpen = true;
       }}
       disabled={isRefreshButtonDisabled}
     >
-      Refresh all sources and models
+      <span class="hidden lg:inline">Refresh all sources and models</span>
+      <span class="lg:hidden">Refresh all</span>
     </Button>
   </div>
 
