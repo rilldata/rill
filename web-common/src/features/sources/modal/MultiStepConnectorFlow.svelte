@@ -10,9 +10,8 @@
     getSchemaButtonLabels,
     getSchemaInitialValues,
   } from "../../templates/schema-utils";
-  import { getConnectorSchema } from "./connector-schemas";
+  import { getConnectorSchema, ICONS } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
-  import { ICONS } from "./icons";
   import type { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
   import type { ConnectorStepState } from "./connectorStepStore";

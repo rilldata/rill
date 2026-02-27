@@ -1,3 +1,5 @@
+import Postgres from "../../../components/icons/connectors/Postgres.svelte";
+import PostgresIcon from "../../../components/icons/connectors/PostgresIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const postgresSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const postgresSchema: MultiStepFormSchema = {
   type: "object",
   title: "PostgreSQL",
   "x-category": "sqlStore",
+  "x-icon": Postgres,
+  "x-small-icon": PostgresIcon,
   properties: {
     connection_mode: {
       type: "string",

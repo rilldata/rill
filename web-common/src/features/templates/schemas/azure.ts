@@ -1,3 +1,4 @@
+import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const azureSchema: MultiStepFormSchema = {
@@ -5,6 +6,7 @@ export const azureSchema: MultiStepFormSchema = {
   type: "object",
   title: "Azure Blob Storage",
   "x-category": "objectStore",
+  "x-icon": MicrosoftAzureBlobStorage,
   properties: {
     auth_method: {
       type: "string",

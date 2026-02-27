@@ -1,3 +1,5 @@
+import AmazonRedshift from "../../../components/icons/connectors/AmazonRedshift.svelte";
+import RedshiftIcon from "../../../components/icons/connectors/RedshiftIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const redshiftSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const redshiftSchema: MultiStepFormSchema = {
   type: "object",
   title: "Amazon Redshift",
   "x-category": "warehouse",
+  "x-icon": AmazonRedshift,
+  "x-small-icon": RedshiftIcon,
   properties: {
     aws_access_key_id: {
       type: "string",

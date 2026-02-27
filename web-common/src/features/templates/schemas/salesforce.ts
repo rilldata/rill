@@ -1,3 +1,5 @@
+import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
+import SalesforceIcon from "../../../components/icons/connectors/SalesforceIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const salesforceSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const salesforceSchema: MultiStepFormSchema = {
   type: "object",
   title: "Salesforce",
   "x-category": "warehouse",
+  "x-icon": Salesforce,
+  "x-small-icon": SalesforceIcon,
   properties: {
     soql: {
       type: "string",

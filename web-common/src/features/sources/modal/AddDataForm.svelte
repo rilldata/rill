@@ -27,7 +27,7 @@
     isVisibleForValues,
   } from "../../templates/schema-utils";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { ICONS } from "./icons";
+  import { ICONS } from "./connector-schemas";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;

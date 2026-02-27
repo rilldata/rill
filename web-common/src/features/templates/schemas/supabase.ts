@@ -1,3 +1,5 @@
+import Supabase from "../../../components/icons/connectors/Supabase.svelte";
+import SupabaseIcon from "../../../components/icons/connectors/SupabaseIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const supabaseSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const supabaseSchema: MultiStepFormSchema = {
   type: "object",
   title: "Supabase",
   "x-category": "sqlStore",
+  "x-icon": Supabase,
+  "x-small-icon": SupabaseIcon,
   properties: {
     connection_mode: {
       type: "string",

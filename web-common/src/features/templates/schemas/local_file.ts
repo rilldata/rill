@@ -1,3 +1,4 @@
+import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const localFileSchema: MultiStepFormSchema = {
@@ -5,6 +6,7 @@ export const localFileSchema: MultiStepFormSchema = {
   type: "object",
   title: "Local File",
   "x-category": "fileStore",
+  "x-icon": LocalFile,
   properties: {
     path: {
       type: "string",

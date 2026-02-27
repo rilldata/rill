@@ -1,3 +1,5 @@
+import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
+import GoogleBigQueryIcon from "../../../components/icons/connectors/GoogleBigQueryIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const bigquerySchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const bigquerySchema: MultiStepFormSchema = {
   type: "object",
   title: "BigQuery",
   "x-category": "warehouse",
+  "x-icon": GoogleBigQuery,
+  "x-small-icon": GoogleBigQueryIcon,
   properties: {
     google_application_credentials: {
       type: "string",

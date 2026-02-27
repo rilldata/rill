@@ -1,5 +1,7 @@
+import ClickHouseCloudIcon from "../../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 import type {
   ConnectorCategory,
+  ConnectorIcon,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
 import { athenaSchema } from "../../templates/schemas/athena";
@@ -132,3 +134,40 @@ export function getFormHeight(schema: MultiStepFormSchema | null): string {
 export function getFormWidth(schema: MultiStepFormSchema | null): string {
   return schema?.["x-form-width"] === "wide" ? "max-w-5xl" : "max-w-4xl";
 }
+
+/**
+ * Full-size icon components derived from schemas, keyed by connector name.
+ * Used in the add-data connector grid.
+ */
+export const ICONS: Record<string, ConnectorIcon> = Object.fromEntries(
+  Object.entries(multiStepFormSchemas)
+    .filter(([, schema]) => schema["x-icon"])
+    .map(([key, schema]) => [key, schema["x-icon"]!]),
+);
+
+/**
+ * Small icon components derived from schemas, keyed by connector name.
+ * Used in nav, cards, and dialog headers. Falls back to x-icon when
+ * x-small-icon is not defined.
+ */
+export const connectorIconMapping: Record<string, ConnectorIcon> = {
+  ...Object.fromEntries(
+    Object.entries(multiStepFormSchemas)
+      .filter(([, schema]) => schema["x-small-icon"] || schema["x-icon"])
+      .map(([key, schema]) => [
+        key,
+        (schema["x-small-icon"] ?? schema["x-icon"])!,
+      ]),
+  ),
+  // ClickHouse Cloud uses a distinct icon determined by getConnectorIconKey()
+  clickhousecloud: ClickHouseCloudIcon,
+};
+
+/**
+ * Custom display labels for connectors whose schema title differs from
+ * the conventional display name.
+ */
+export const connectorLabelMapping: Record<string, string> = {
+  duckdb: "DuckDB",
+  clickhouse: "ClickHouse",
+};

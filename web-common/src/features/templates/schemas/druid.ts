@@ -1,6 +1,10 @@
+import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
+import ApacheDruidIcon from "../../../components/icons/connectors/ApacheDruidIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const druidSchema: MultiStepFormSchema = {
+  "x-icon": ApacheDruid,
+  "x-small-icon": ApacheDruidIcon,
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "Apache Druid",

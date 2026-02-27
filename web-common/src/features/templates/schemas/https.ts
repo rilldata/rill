@@ -1,3 +1,4 @@
+import Https from "../../../components/icons/connectors/HTTPS.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const httpsSchema: MultiStepFormSchema = {
@@ -5,6 +6,7 @@ export const httpsSchema: MultiStepFormSchema = {
   type: "object",
   title: "HTTP(S)",
   "x-category": "fileStore",
+  "x-icon": Https,
   "x-button-labels": {
     "*": { "*": { idle: "Continue", loading: "Continuing..." } },
   },

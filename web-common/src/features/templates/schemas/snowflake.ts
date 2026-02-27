@@ -1,3 +1,5 @@
+import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
+import SnowflakeIcon from "../../../components/icons/connectors/SnowflakeIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const snowflakeSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const snowflakeSchema: MultiStepFormSchema = {
   type: "object",
   title: "Snowflake",
   "x-category": "warehouse",
+  "x-icon": Snowflake,
+  "x-small-icon": SnowflakeIcon,
   "x-form-height": "tall",
   properties: {
     auth_method: {

@@ -1,3 +1,5 @@
+import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
+import MotherDuckIcon from "../../../components/icons/connectors/MotherDuckIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const motherduckSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const motherduckSchema: MultiStepFormSchema = {
   type: "object",
   title: "MotherDuck",
   "x-category": "olap",
+  "x-icon": MotherDuck,
+  "x-small-icon": MotherDuckIcon,
   properties: {
     path: {
       type: "string",

@@ -1,3 +1,5 @@
+import AmazonAthena from "../../../components/icons/connectors/AmazonAthena.svelte";
+import AthenaIcon from "../../../components/icons/connectors/AthenaIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const athenaSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const athenaSchema: MultiStepFormSchema = {
   type: "object",
   title: "Amazon Athena",
   "x-category": "warehouse",
+  "x-icon": AmazonAthena,
+  "x-small-icon": AthenaIcon,
   properties: {
     aws_access_key_id: {
       type: "string",

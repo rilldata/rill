@@ -11,7 +11,6 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
@@ -19,14 +18,15 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
+    connectorIconMapping,
     connectors,
     getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
+    ICONS,
     isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
-  import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
   let step = 0;

@@ -1,6 +1,10 @@
+import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
+import ClickHouseIcon from "../../../components/icons/connectors/ClickHouseIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const clickhouseSchema: MultiStepFormSchema = {
+  "x-icon": ClickHouse,
+  "x-small-icon": ClickHouseIcon,
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "ClickHouse",
