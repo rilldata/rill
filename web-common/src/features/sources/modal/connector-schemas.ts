@@ -123,16 +123,7 @@ export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
 }
 
 /**
- * Determine if a connector is an AI connector (Claude, OpenAI, Gemini).
- * AI connectors save directly without testing the connection.
- */
-export function isAiConnector(schema: MultiStepFormSchema | null): boolean {
-  return schema?.["x-category"] === "ai";
-}
-
-/**
  * Build a V1ConnectorDriver-compatible object from a schema name.
- * Shared by AddDataModal.toConnectorDriver and addSourceModal.openForConnector.
  */
 export function toConnectorDriver(
   schemaName: string,

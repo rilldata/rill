@@ -35,7 +35,7 @@ import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { AI_CONNECTORS, OLAP_ENGINES } from "./constants";
 import { sourceIngestionTracker } from "../sources-store";
-import { getConnectorSchema } from "./connector-schemas";
+import { getConnectorSchema, toConnectorDriver } from "./connector-schemas";
 import {
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
@@ -145,6 +145,80 @@ async function setAiConnectorInRillYAML(
     create: true,
     createOnly: false,
   });
+}
+
+/**
+ * Save an AI connector directly: write .env, connector YAML, update rill.yaml,
+ * and navigate to the new file. Used by AddAiConnectorDialog.
+ */
+export async function saveAiConnector(
+  queryClient: QueryClient,
+  schemaName: string,
+  formValues: Record<string, string>,
+): Promise<void> {
+  const connector = toConnectorDriver(schemaName);
+  if (!connector) throw new Error(`Unknown AI connector: ${schemaName}`);
+
+  const instanceId = get(runtime).instanceId;
+  await beforeSubmitForm(instanceId, connector);
+
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : [];
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : [];
+
+  const newConnectorName = getName(
+    connector.name as string,
+    fileArtifacts.getNamesForKind(ResourceKind.Connector),
+  );
+
+  const newConnectorFilePath = getFileAPIPathFromNameAndType(
+    newConnectorName,
+    EntityType.Connector,
+  );
+
+  // Write secrets to .env
+  const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
+    await updateDotEnvWithSecrets(queryClient, connector, formValues, {
+      secretKeys: schemaSecretKeys,
+      schema: schema ?? undefined,
+    });
+
+  await runtimeServicePutFile(instanceId, {
+    path: ".env",
+    blob: newEnvBlob,
+    create: true,
+    createOnly: false,
+  });
+
+  // Write connector YAML
+  await runtimeServicePutFile(instanceId, {
+    path: newConnectorFilePath,
+    blob: compileConnectorYAML(connector, formValues, {
+      connectorInstanceName: newConnectorName,
+      orderedProperties: schemaFields,
+      secretKeys: schemaSecretKeys,
+      stringKeys: schemaStringKeys,
+      schema: schema ?? undefined,
+      existingEnvBlob: envBlobForYaml,
+      fieldFilter: schemaFields
+        ? (property) => !("internal" in property && property.internal)
+        : undefined,
+    }),
+    create: true,
+    createOnly: false,
+  });
+
+  // Register as the project's AI connector
+  await setAiConnectorInRillYAML(queryClient, instanceId, newConnectorName);
+
+  await goto(`/files/${newConnectorFilePath}`);
 }
 
 async function saveConnectorAnyway(
@@ -396,9 +470,6 @@ export async function submitAddConnectorForm(
         );
       }
 
-      // Note: Currently unreachable for AI connectors (they always use
-      // saveAnyway via isAiConnector), but kept as a safety net in case
-      // the flow changes to allow AI connectors through the test path.
       if (AI_CONNECTORS.includes(connector.name as string)) {
         await setAiConnectorInRillYAML(
           queryClient,

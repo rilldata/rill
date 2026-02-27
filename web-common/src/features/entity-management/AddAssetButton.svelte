@@ -15,9 +15,6 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
-  import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
-  import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -33,6 +30,7 @@
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceAndNavigate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import AddAiConnectorDialog from "./AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -46,6 +44,7 @@
   let active = false;
   let showExploreDialog = false;
   let generateDataDialog = false;
+  let showAiConnectorDialog = false;
 
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
@@ -290,35 +289,15 @@
           API
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Sub>
-          <DropdownMenu.SubTrigger class="flex gap-x-2">
-            <Bot size="14px" class="stroke-icon-muted" />
-            AI Connector
-          </DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent class="w-[180px]">
-            <DropdownMenu.Item
-              class="flex gap-x-2"
-              on:click={() => addSourceModal.openForConnector("claude")}
-            >
-              <ClaudeIcon size="16px" />
-              Claude
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              class="flex gap-x-2"
-              on:click={() => addSourceModal.openForConnector("gemini")}
-            >
-              <GeminiIcon size="16px" />
-              Gemini
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              class="flex gap-x-2"
-              on:click={() => addSourceModal.openForConnector("openai")}
-            >
-              <OpenAIIcon size="16px" />
-              OpenAI
-            </DropdownMenu.Item>
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => {
+            showAiConnectorDialog = true;
+          }}
+        >
+          <Bot size="14px" class="stroke-icon-muted" />
+          AI Connector
+        </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
@@ -353,5 +332,7 @@
 </DropdownMenu.Root>
 
 <CreateExploreDialog bind:open={showExploreDialog} {metricsViews} />
+
+<AddAiConnectorDialog bind:open={showAiConnectorDialog} />
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />

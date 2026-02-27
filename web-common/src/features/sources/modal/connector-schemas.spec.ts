@@ -3,31 +3,11 @@ import {
   getBackendConnectorName,
   getConnectorSchema,
   hasExplorerStep,
-  isAiConnector,
   isMultiStepConnector,
   toConnectorDriver,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas";
 
 describe("connector-schemas", () => {
-  describe("isAiConnector", () => {
-    it("returns true for AI connector schemas", () => {
-      expect(isAiConnector(getConnectorSchema("claude"))).toBe(true);
-      expect(isAiConnector(getConnectorSchema("openai"))).toBe(true);
-      expect(isAiConnector(getConnectorSchema("gemini"))).toBe(true);
-    });
-
-    it("returns false for non-AI connector schemas", () => {
-      expect(isAiConnector(getConnectorSchema("s3"))).toBe(false);
-      expect(isAiConnector(getConnectorSchema("postgres"))).toBe(false);
-      expect(isAiConnector(getConnectorSchema("bigquery"))).toBe(false);
-    });
-
-    it("returns false for null or undefined", () => {
-      expect(isAiConnector(null)).toBe(false);
-      expect(isAiConnector(undefined as never)).toBe(false);
-    });
-  });
-
   describe("isMultiStepConnector", () => {
     it("returns true for objectStore connectors", () => {
       expect(isMultiStepConnector(getConnectorSchema("s3"))).toBe(true);
