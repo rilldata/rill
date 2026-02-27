@@ -149,7 +149,6 @@
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce") ||
-    selectedConnector?.implementsAi ||
     isMultiStepConnectorSchema(
       getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
     );

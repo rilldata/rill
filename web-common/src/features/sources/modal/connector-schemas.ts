@@ -125,6 +125,17 @@ export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
 }
 
 /**
+ * Map a connector category to its docs URL path segment.
+ */
+export function getDocsCategory(
+  category: ConnectorCategory | undefined,
+): string {
+  if (category === "ai") return "services";
+  if (category === "olap") return "olap";
+  return "data-source";
+}
+
+/**
  * Build a V1ConnectorDriver-compatible object from a schema name.
  */
 export function toConnectorDriver(
@@ -134,16 +145,10 @@ export function toConnectorDriver(
   if (!schema) return null;
   const category = schema["x-category"];
   const backendName = getBackendConnectorName(schemaName);
-  const docsCategory =
-    category === "ai"
-      ? "services"
-      : category === "olap"
-        ? "olap"
-        : "data-source";
   return {
     name: backendName,
     displayName: schema.title ?? schemaName,
-    docsUrl: `https://docs.rilldata.com/developers/build/connectors/${docsCategory}/${backendName}`,
+    docsUrl: `https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${backendName}`,
     implementsObjectStore: category === "objectStore",
     implementsOlap: category === "olap",
     implementsSqlStore: category === "sqlStore",

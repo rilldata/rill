@@ -25,6 +25,7 @@ import {
   getDriverNameForConnector,
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
+import { getDocsCategory } from "../sources/modal/connector-schemas";
 
 function yamlModelTemplate(driverName: string) {
   return `# Model YAML
@@ -177,13 +178,13 @@ export function compileConnectorYAML(
 ) {
   // Add instructions to the top of the file
   const driverName = getDriverNameForConnector(connector.name as string);
-  const docsCategory = connector.implementsAi
-    ? "services"
+  const category = connector.implementsAi
+    ? "ai"
     : connector.implementsOlap
       ? "olap"
-      : "data-source";
+      : undefined;
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/${docsCategory}/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${driverName}
 
 type: connector
 
