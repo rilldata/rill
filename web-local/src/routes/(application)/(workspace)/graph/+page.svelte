@@ -82,10 +82,10 @@
     }
   }
 
-  // Clear all filters (reset to OLAP connector default)
+  // Clear all filters
   function handleClearFilters() {
     selectedStatuses = [];
-    handleKindChange("connector");
+    handleKindChange(null);
   }
 
   // Refresh all

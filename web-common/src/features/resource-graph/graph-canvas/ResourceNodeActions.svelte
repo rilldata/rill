@@ -2,9 +2,13 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    ResourceKind,
+    displayResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     RefreshCw,
     RotateCcw,
@@ -13,10 +17,10 @@
     GitBranch,
   } from "lucide-svelte";
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { goto } from "$app/navigation";
   import type { ResourceNodeData } from "../shared/types";
-  import ResourceDescribeModal from "./ResourceDescribeModal.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { tokenForKind } from "../navigation/seed-parser";
 
@@ -24,7 +28,11 @@
 
   let isOpen = false;
   let fullRefreshConfirmOpen = false;
-  let describeOpen = false;
+  let specDialogOpen = false;
+
+  export function open() {
+    isOpen = true;
+  }
 
   $: ({ instanceId } = $runtime);
   $: resource = data?.resource;
@@ -34,6 +42,33 @@
   $: canRefresh =
     (kind === ResourceKind.Model || kind === ResourceKind.Source) &&
     !!resourceName;
+
+  // Raw spec content (same pattern as project tables ResourceSpecDialog)
+  function getResourceSpec(res: V1Resource | undefined): string {
+    if (!res) return "";
+    const kindKeys = [
+      "source",
+      "model",
+      "metricsView",
+      "explore",
+      "theme",
+      "component",
+      "canvas",
+      "api",
+      "connector",
+      "report",
+      "alert",
+    ] as const;
+    for (const key of kindKeys) {
+      if (res[key]) {
+        return JSON.stringify(res[key], null, 2);
+      }
+    }
+    const { meta, ...rest } = res;
+    return JSON.stringify(rest, null, 2);
+  }
+
+  $: specContent = getResourceSpec(resource);
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
@@ -90,9 +125,9 @@
     goto(`/files${filePath}`);
   }
 
-  function handleDescribe() {
+  function handleViewSpec() {
     isOpen = false;
-    describeOpen = true;
+    specDialogOpen = true;
   }
 
   function viewNodeTree() {
@@ -110,14 +145,14 @@
 <div class="actions-root" on:click|stopPropagation on:mousedown|stopPropagation>
   <DropdownMenu.Root bind:open={isOpen}>
     <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isOpen} size={20}>
+      <IconButton rounded active={isOpen} size={28}>
         <ThreeDot size="16px" />
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content side="right" align="start">
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={handleDescribe}
+        on:click={handleViewSpec}
       >
         <div class="flex items-center gap-x-2">
           <Info size="12px" />
@@ -193,10 +228,34 @@
   </AlertDialog.Content>
 </AlertDialog.Root>
 
-<ResourceDescribeModal bind:open={describeOpen} {data} />
+<Dialog.Root bind:open={specDialogOpen}>
+  <Dialog.Content class="max-w-2xl max-h-[80vh] flex flex-col">
+    <Dialog.Header>
+      <Dialog.Title>
+        {resourceName}
+        <span class="text-fg-tertiary font-normal text-sm ml-2"
+          >{kind ? displayResourceKind(kind) : ""}</span
+        >
+      </Dialog.Title>
+    </Dialog.Header>
+    <div class="spec-container">
+      {#if !resource}
+        <p class="text-sm text-fg-secondary">No resource data available</p>
+      {:else}
+        <pre class="spec-content">{specContent}</pre>
+      {/if}
+    </div>
+  </Dialog.Content>
+</Dialog.Root>
 
 <style lang="postcss">
   .actions-root {
     @apply flex items-center;
+  }
+  .spec-container {
+    @apply overflow-auto flex-1 min-h-0;
+  }
+  .spec-content {
+    @apply text-xs font-mono whitespace-pre-wrap bg-surface-subtle rounded-md p-4;
   }
 </style>

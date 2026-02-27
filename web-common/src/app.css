@@ -113,11 +113,11 @@
 
     /* END SEMANTIC VARIABLES */
 
-    --canvas: var(--color-cyan-600);
+    --canvas: var(--color-teal-600);
     --explore: var(--color-indigo-700);
     --metrics: var(--color-violet-600);
     --model: var(--color-cyan-600);
-    --source: var(--color-emerald-600);
+    --source: var(--color-amber-600);
     --api: var(--color-orange-400);
     --data: var(--color-fuchsia-500);
     --theme: var(--color-pink-500);
@@ -303,11 +303,11 @@
     --icon-disabled: var(--color-gray-light-600);
     --icon-accent: var(--color-primary-light-400);
 
-    --canvas: var(--color-cyan-light-500);
+    --canvas: var(--color-teal-light-500);
     --explore: var(--color-indigo-light-400);
     --metrics: var(--color-violet-light-400);
     --model: var(--color-cyan-light-500);
-    --source: var(--color-emerald-light-400);
+    --source: var(--color-amber-light-400);
     --api: var(--color-orange-light-300);
     --data: var(--color-fuchsia-light-400);
     --theme: var(--color-pink-light-400);

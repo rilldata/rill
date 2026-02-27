@@ -234,7 +234,9 @@
 
   // Whether any filters are active (kind, status, or tree search)
   $: hasActiveFilters =
-    statusFilter.length > 0 || treeSearchQuery.trim().length > 0;
+    !!filterKind ||
+    statusFilter.length > 0 ||
+    treeSearchQuery.trim().length > 0;
 
   function handleClearFilters() {
     treeSearchQuery = "";
@@ -435,7 +437,7 @@
   $: selectedGroupIsConnector =
     effectiveSelectedGroupId?.includes("Connector") ?? false;
   $: breadcrumbLabel = selectedGroupIsConnector
-    ? `Full DAG · ${selectedGroup?.label ?? "OLAP"}`
+    ? `All Resources`
     : (selectedGroup?.label ?? "Select resource");
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
@@ -771,7 +773,7 @@
                     />
                     <span class="flex-1 truncate text-xs">
                       {isConnectorEntry
-                        ? `Full DAG · ${entry.name}`
+                        ? `All Resources`
                         : entry.name}
                     </span>
                     <span class="status-dot {entry.status}"></span>

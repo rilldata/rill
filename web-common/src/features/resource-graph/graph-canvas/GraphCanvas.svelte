@@ -235,50 +235,66 @@
     );
   })();
 
+  let graphError: string | null = null;
+
   $: {
-    const rootSet = new Set(rootNodeIds ?? []);
-    const graph = buildResourceGraph(resources ?? [], {
-      positionNs: flowId,
-      ignoreCache: true,
-    });
-    const nodeIds = new Set(graph.nodes.map((n) => n.id));
-    const filteredEdges = graph.edges.filter(
-      (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
-    );
-    const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
-      (node) => ({
-        ...node,
-        data: { ...node.data, isRoot: rootSet.has(node.id), showNodeActions },
-      }),
-    );
-    nodesStore.set(nodesWithRoots);
-    edgesStore.set(filteredEdges);
-    hasNodes = nodesWithRoots.length > 0;
-    // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes
+    graphError = null;
     try {
-      const nodeSig = nodesWithRoots
-        .map((n) => n.id)
-        .sort()
-        .join(",");
-      const edgeSig = filteredEdges
-        .map((e) => e.id || `${e.source}->${e.target}`)
-        .sort()
-        .join(",");
-      flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
-    } catch {
-      flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
-    }
-    // Debug logging (only in development)
-    if (import.meta.env.DEV) {
-      console.log("ResourceGraph graph", {
-        title,
-        nodes: nodesWithRoots.map((n) => n.id),
-        edges: filteredEdges.map((e) => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
-        })),
+      const rootSet = new Set(rootNodeIds ?? []);
+      const graph = buildResourceGraph(resources ?? [], {
+        positionNs: flowId,
+        ignoreCache: true,
       });
+      const nodeIds = new Set(graph.nodes.map((n) => n.id));
+      const filteredEdges = graph.edges.filter(
+        (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
+      );
+      const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
+        (node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isRoot: rootSet.has(node.id),
+            showNodeActions,
+          },
+        }),
+      );
+      nodesStore.set(nodesWithRoots);
+      edgesStore.set(filteredEdges);
+      hasNodes = nodesWithRoots.length > 0;
+      // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes
+      try {
+        const nodeSig = nodesWithRoots
+          .map((n) => n.id)
+          .sort()
+          .join(",");
+        const edgeSig = filteredEdges
+          .map((e) => e.id || `${e.source}->${e.target}`)
+          .sort()
+          .join(",");
+        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
+      } catch {
+        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
+      }
+      // Debug logging (only in development)
+      if (import.meta.env.DEV) {
+        console.log("ResourceGraph graph", {
+          title,
+          nodes: nodesWithRoots.map((n) => n.id),
+          edges: filteredEdges.map((e) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+          })),
+        });
+      }
+    } catch (err) {
+      console.error("Failed to build resource graph:", err);
+      graphError =
+        err instanceof Error ? err.message : "Failed to build graph layout";
+      nodesStore.set([]);
+      edgesStore.set([]);
+      hasNodes = false;
     }
   }
 </script>
@@ -348,6 +364,11 @@
         </SvelteFlow>
       {/key}
     </div>
+  {:else if graphError}
+    <div class="state error">
+      <p>Failed to render graph</p>
+      <pre class="text-xs text-fg-muted mt-1 max-w-md overflow-auto">{graphError}</pre>
+    </div>
   {:else}
     <div class="state">
       <p>No resources found.</p>
@@ -370,6 +391,10 @@
 
   .state {
     @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-fg-muted;
+  }
+
+  .state.error {
+    @apply flex-col text-red-600;
   }
 
   .expand-btn {

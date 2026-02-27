@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { Handle, Position } from "@xyflow/svelte";
+  import { Handle, Position, useSvelteFlow } from "@xyflow/svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
-  import { goto } from "$app/navigation";
-  import { tokenForKind } from "../navigation/seed-parser";
   import type { ResourceNodeData } from "../shared/types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
@@ -12,7 +10,7 @@
   import ResourceNodeActions from "./ResourceNodeActions.svelte";
 
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import { Unlock, AlertTriangle, Zap, Layers, Clock } from "lucide-svelte";
+  import { AlertTriangle } from "lucide-svelte";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -56,6 +54,13 @@
   );
 
   $: showActions = data?.showNodeActions !== false;
+
+  let actionsRef: { open: () => void } | undefined;
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    actionsRef?.open();
+  }
 
   const DEFAULT_COLOR = "#6B7280";
 
@@ -115,13 +120,17 @@
   // Connector node metadata
   $: connectorDriver = metadata?.connectorDriver ?? null;
 
+  const { fitView } = useSvelteFlow();
+
   function handleDoubleClick() {
-    const name = data?.resource?.meta?.name?.name;
-    const kindToken = tokenForKind(kind);
-    const params = new URLSearchParams();
-    if (kindToken) params.set("kind", kindToken);
-    if (name) params.set("resource", name);
-    goto(`/graph?${params.toString()}`);
+    fitView({ nodes: [{ id }], duration: 300, padding: 0.5 });
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleDoubleClick();
+    }
   }
 </script>
 
@@ -131,8 +140,6 @@
   distance={8}
   activeDelay={150}
 >
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
     class="node"
     class:selected
@@ -148,6 +155,8 @@
     role="button"
     tabindex="0"
     on:dblclick={handleDoubleClick}
+    on:keydown={handleKeydown}
+    on:contextmenu={handleContextMenu}
   >
     <Handle
       id="target"
@@ -168,7 +177,7 @@
       <p class="title" title={data?.label}>{data?.label}</p>
       {#if showActions}
         <div class="actions-trigger">
-          <ResourceNodeActions {data} />
+          <ResourceNodeActions bind:this={actionsRef} {data} />
         </div>
       {/if}
     </div>
@@ -186,34 +195,12 @@
             {#if metadata?.isMaterialized}
               <span class="badge" title="Materialized">Materialized</span>
             {/if}
-            <span class="badge" title={filePath}
-              >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
-            >
           </span>
-          <span class="icon-group">
-            {#if metadata?.incremental}
-              <span class="icon-indicator" title="Incremental">
-                <Zap size="10px" />
-              </span>
-            {/if}
-            {#if metadata?.partitioned}
-              <span class="icon-indicator" title="Partitioned">
-                <Layers size="10px" />
-              </span>
-            {/if}
-            {#if metadata?.hasSchedule}
-              <span
-                class="icon-indicator"
-                title={metadata?.scheduleDescription ?? "Scheduled"}
-              >
-                <Clock size="10px" />
-              </span>
-            {/if}
+          {#if testCount > 0}
             <span
               class="check-indicator"
-              class:checks-none={testCount === 0}
-              class:checks-pass={testCount > 0 && !testHasErrors}
-              class:checks-fail={testCount > 0 && testHasErrors}
+              class:checks-pass={!testHasErrors}
+              class:checks-fail={testHasErrors}
               title={checkTooltip}
             >
               {#if testHasErrors}
@@ -223,26 +210,18 @@
               {/if}
               {testCount}
             </span>
-          </span>
+          {/if}
         </div>
       {:else if isMetricsView}
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {measuresCount} meas, {dimensionsCount} dims
           </span>
-          <span
-            class="lock-indicator"
-            class:secured={hasSecurityRules}
-            title={hasSecurityRules
-              ? "Security policy defined"
-              : "No security policy"}
-          >
-            {#if hasSecurityRules}
+          {#if hasSecurityRules}
+            <span class="lock-indicator secured" title="Security policy defined">
               <Lock size="10px" color="currentColor" />
-            {:else}
-              <Unlock size="10px" />
-            {/if}
-          </span>
+            </span>
+          {/if}
         </div>
       {:else if isExplore}
         <div class="meta-row meta-row-spread">
@@ -254,43 +233,33 @@
               ? "all"
               : (metadata?.exploreDimensionsCount ?? 0)} dims
           </span>
-          <span
-            class="lock-indicator"
-            class:secured={hasSecurityRules}
-            title={hasSecurityRules
-              ? "Security policy defined"
-              : "No security policy"}
-          >
-            {#if hasSecurityRules}
+          {#if hasSecurityRules}
+            <span class="lock-indicator secured" title="Security policy defined">
               <Lock size="10px" color="currentColor" />
-            {:else}
-              <Unlock size="10px" />
-            {/if}
-          </span>
+            </span>
+          {/if}
         </div>
       {:else if isCanvas}
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {componentCount} component{componentCount !== 1 ? "s" : ""}
           </span>
-          <span
-            class="lock-indicator"
-            class:secured={hasSecurityRules}
-            title={hasSecurityRules
-              ? "Security policy defined"
-              : "No security policy"}
-          >
-            {#if hasSecurityRules}
+          {#if hasSecurityRules}
+            <span class="lock-indicator secured" title="Security policy defined">
               <Lock size="10px" color="currentColor" />
-            {:else}
-              <Unlock size="10px" />
-            {/if}
-          </span>
+            </span>
+          {/if}
         </div>
       {:else if isConnector}
         {#if connectorDriver}
+          {@const driverIcon = connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping] ?? null}
           <div class="meta-row">
-            <span class="badge">{connectorDriver}</span>
+            {#if driverIcon}
+              <span title={connectorDriver}>
+                <svelte:component this={driverIcon} size="12px" />
+              </span>
+            {/if}
+            <span class="meta-detail">{connectorDriver}</span>
           </div>
         {/if}
       {/if}
@@ -307,8 +276,8 @@
 
 <style lang="postcss">
   .node {
-    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle px-2.5 py-2 cursor-pointer shadow-sm;
-    border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
+    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle pl-3.5 pr-2.5 py-2 cursor-pointer shadow-sm;
+    border-color: var(--border);
     transition:
       box-shadow 120ms ease,
       border-color 120ms ease,
@@ -316,16 +285,22 @@
       background 120ms ease;
   }
 
+  /* Left-edge accent stripe */
+  .node::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--node-accent);
+  }
+
   .node.root {
-    border-color: color-mix(in srgb, var(--node-accent) 65%, transparent);
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--node-accent) 35%, transparent),
-      0 8px 18px rgba(15, 23, 42, 0.12);
-    background-color: color-mix(
-      in srgb,
-      var(--node-accent) 8%,
-      var(--surface-background, #ffffff)
-    );
+    border-color: var(--border);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+    background-color: var(--surface-subtle);
   }
 
   .node.selected {
@@ -336,29 +311,34 @@
   .node.error {
     @apply border-red-400;
     box-shadow:
-      0 0 0 2px rgba(239, 68, 68, 0.25),
-      0 4px 12px rgba(239, 68, 68, 0.15);
+      0 0 0 2px color-mix(in srgb, var(--color-red-500) 25%, transparent),
+      0 4px 12px color-mix(in srgb, var(--color-red-500) 15%, transparent);
     background-color: color-mix(
       in srgb,
-      #ef4444 5%,
+      var(--color-red-500) 5%,
       var(--surface-background, #ffffff)
     );
+  }
+
+  .node.error::before,
+  .node.warned::before {
+    display: none;
   }
 
   .node.warned {
     @apply border-amber-400;
     box-shadow:
-      0 0 0 2px rgba(245, 158, 11, 0.2),
-      0 4px 12px rgba(245, 158, 11, 0.1);
+      0 0 0 2px color-mix(in srgb, var(--color-amber-500) 20%, transparent),
+      0 4px 12px color-mix(in srgb, var(--color-amber-500) 10%, transparent);
     background-color: color-mix(
       in srgb,
-      #f59e0b 5%,
+      var(--color-amber-500) 5%,
       var(--surface-background, #ffffff)
     );
   }
 
   .node.pending {
-    border-color: color-mix(in srgb, #eab308 60%, transparent);
+    border-color: color-mix(in srgb, var(--color-yellow-500) 60%, transparent);
     border-style: dashed;
   }
 
@@ -396,26 +376,14 @@
     @apply inline-flex items-center gap-x-1.5;
   }
 
-  .icon-group {
-    @apply inline-flex items-center gap-x-1.5;
-  }
-
-  .icon-indicator {
-    @apply inline-flex items-center text-fg-muted;
-  }
-
   .badge {
     @apply inline-flex items-center px-1 py-px rounded text-[10px] font-medium bg-surface-subtle text-fg-secondary;
-    border: 1px solid color-mix(in srgb, var(--node-accent) 25%, transparent);
+    border: 1px solid var(--border);
   }
 
   /* Check indicator with icon */
   .check-indicator {
     @apply inline-flex items-center gap-x-0.5 text-[10px] font-medium;
-  }
-
-  .check-indicator.checks-none {
-    @apply text-fg-muted opacity-40;
   }
 
   .check-indicator.checks-pass {
@@ -426,13 +394,9 @@
     @apply text-amber-600;
   }
 
-  /* Lock/unlock indicator */
-  .lock-indicator {
-    @apply flex items-center text-fg-muted opacity-40;
-  }
-
+  /* Lock indicator (only rendered when security rules are present) */
   .lock-indicator.secured {
-    @apply text-amber-600 opacity-100;
+    @apply flex items-center text-amber-600;
   }
 
   /* Error tooltip styling */

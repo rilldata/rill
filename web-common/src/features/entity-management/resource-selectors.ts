@@ -77,7 +77,7 @@ export function resourceKindStyleName(kind: ResourceKind | undefined) {
     case ResourceKind.Report:
       return "bg-Report/15 text-Report";
     case ResourceKind.Source:
-      return "bg-Model/15 text-Model";
+      return "bg-Source/15 text-Source";
     case ResourceKind.Connector:
       return "bg-Connector/15 text-Connector";
     case ResourceKind.Model:
