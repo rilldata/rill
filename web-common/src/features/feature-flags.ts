@@ -65,7 +65,6 @@ class FeatureFlags {
   dashboardChat = new FeatureFlag("user", false);
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
-  generateCanvas = new FeatureFlag("user", false);
   stickyDashboardState = new FeatureFlag("user", false);
 
   constructor() {
