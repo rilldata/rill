@@ -103,7 +103,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 					path = ".dev.env"
 				default:
 					// should not happen
-					r.rt.Logger.Error("skipping variables for non-dev environment", zap.String("env", env), zap.String("instance_id", inst.ID))
+					r.rt.Logger.Error("skipping variables for non-dev environment. Only `dev` deployments can be made editable.", zap.String("env", env), zap.String("instance_id", inst.ID))
 					continue
 				}
 				contents, err := godotenv.Marshal(envVars)

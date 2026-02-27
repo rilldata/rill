@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/spf13/cobra"
 )
 
@@ -81,15 +82,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	}
 
 	// new vars from the cloud
-	perEnvVars := make(map[string]map[string]string)
-	for _, v := range res.Variables {
-		vars, ok := perEnvVars[v.Environment]
-		if !ok {
-			vars = make(map[string]string)
-			perEnvVars[v.Environment] = vars
-		}
-		vars[v.Name] = v.Value
-	}
+	perEnvVars := GroupVariablesByEnv(res)
 
 	// existing vars from the .env files in the project
 	dotEnv := p.GetDotEnvPerEnvironment()
@@ -126,7 +119,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		ch.Printf("Updated %q file with cloud credentials from project %q.\n", path, projectName)
 
 		// Add to gitignore if necessary
-		changed, err := cmdutil.EnsureGitignoreHasDotenv(ctx, repo, path)
+		changed, err := gitutil.EnsureGitignoreHasDotenv(ctx, repo, path)
 		if err != nil {
 			return err
 		}
@@ -135,6 +128,19 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		}
 	}
 	return nil
+}
+
+func GroupVariablesByEnv(res *adminv1.GetProjectVariablesResponse) map[string]map[string]string {
+	perEnvVars := make(map[string]map[string]string)
+	for _, v := range res.Variables {
+		vars, ok := perEnvVars[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnvVars[v.Environment] = vars
+		}
+		vars[v.Name] = v.Value
+	}
+	return perEnvVars
 }
 
 func pathForEnv(env string) string {

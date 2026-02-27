@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 
 	"github.com/joho/godotenv"
-	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 )
 
@@ -107,10 +107,13 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 
 		err = godotenv.Write(merged, filepath.Join(root, envFileName))
 		if err != nil {
-			return nil, fmt.Errorf("failed to write %s: %w", envFileName, err)
+			return nil, fmt.Errorf("failed to write %q: %w", envFileName, err)
 		}
 
-		_, _ = cmdutil.EnsureGitignoreHasDotenv(ctx, repo, envFileName)
+		_, err = gitutil.EnsureGitignoreHasDotenv(ctx, repo, envFileName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update .gitignore for %q: %w", envFileName, err)
+		}
 	}
 
 	return &runtimev1.PullEnvResponse{

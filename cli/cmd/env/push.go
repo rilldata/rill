@@ -64,15 +64,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// new vars from the cloud
-			perEnvVars := make(map[string]map[string]string)
-			for _, v := range res.Variables {
-				vars, ok := perEnvVars[v.Environment]
-				if !ok {
-					vars = make(map[string]string)
-					perEnvVars[v.Environment] = vars
-				}
-				vars[v.Name] = v.Value
-			}
+			perEnvVars := GroupVariablesByEnv(res)
 
 			// existing vars from the .env files in the project
 			current := p.GetDotEnvPerEnvironment()
