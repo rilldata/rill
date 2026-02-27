@@ -42,9 +42,6 @@ Request:
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
-- Prefer using absolute 'start' and 'end' times in 'time_range' and 'comparison_time_range' if available. 
-  Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields should be set as its not supported. 
-  Relative durations are evaluated against the execution time for scheduled insight mode or latest data for ad-hoc analysis.
 
 Response:
 - Returns aggregated data matching your query parameters
@@ -226,6 +223,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Compute a hard limit to prevent large results that bloat the context
+	// ideally can be moved to executor.enforceQueryLimits, but then we cannot return the warning message in the result as easily
 	var limit int64
 	var isSystemLimit bool
 	if v, ok := args["limit"]; ok { // Hackily extracting the query's 'limit' to avoid parsing the entire query outside of the resolver
@@ -242,6 +240,10 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		isSystemLimit = true
 	}
 	args["limit"] = limit
+	args["query_limits"] = metricsview.QueryLimits{
+		RequireTimeRange: cfg.AIRequireTimeRange,
+		MaxTimeRangeDays: cfg.AIMaxTimeRangeDays,
+	}
 
 	// Apply a timeout to prevent runaway queries
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
