@@ -89,36 +89,9 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		}
 	}
 	varsChanged := !maps.Equal(inst.Variables, allvars)
-	if varsChanged {
-		// if it is an editable deployment then just write to repo
-		if cfg.Editable {
-			// writing `.env` will trigger a controller restart, avoid duplicate restart
-			restartController = false
-			for env, envVars := range cfg.Variables {
-				var path string
-				switch env {
-				case "":
-					path = ".env"
-				case "dev":
-					path = ".dev.env"
-				default:
-					// should not happen
-					r.rt.Logger.Error("skipping variables for non-dev environment. Only `dev` deployments can be made editable.", zap.String("env", env), zap.String("instance_id", inst.ID))
-					continue
-				}
-				contents, err := godotenv.Marshal(envVars)
-				if err != nil {
-					return fmt.Errorf("failed to marshal env vars: %w", err)
-				}
-				err = r.rt.PutFile(ctx, instanceID, path, strings.NewReader(contents), true, true)
-				if err != nil {
-					return fmt.Errorf("failed to write %s file: %w", path, err)
-				}
-			}
-		} else {
-			inst.Variables = allvars
-			restartController = true
-		}
+	if varsChanged && !cfg.Editable { // for editable deployments we will write vars to `.env` which will also trigger controller restart
+		inst.Variables = allvars
+		restartController = true
 	}
 	inst.Annotations = cfg.Annotations
 
@@ -186,6 +159,32 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	err = r.rt.EditInstance(ctx, inst, restartController)
 	if err != nil {
 		return err
+	}
+	if !(varsChanged && cfg.Editable) {
+		return nil
+	}
+
+	// write variables to .env files for editable deployments. This will also trigger controller restart via repo watcher
+	for env, envVars := range cfg.Variables {
+		var path string
+		switch env {
+		case "":
+			path = ".env"
+		case "dev":
+			path = ".dev.env"
+		default:
+			// should not happen because only dev vars will be fetched for editable deployments
+			r.rt.Logger.Error("skipping variables for non-dev environment. Only `dev` deployments can be made editable.", zap.String("env", env), zap.String("instance_id", inst.ID))
+			continue
+		}
+		contents, err := godotenv.Marshal(envVars)
+		if err != nil {
+			return fmt.Errorf("failed to marshal env vars: %w", err)
+		}
+		err = r.rt.PutFile(ctx, instanceID, path, strings.NewReader(contents), true, true)
+		if err != nil {
+			return fmt.Errorf("failed to write %s file: %w", path, err)
+		}
 	}
 	return nil
 }
