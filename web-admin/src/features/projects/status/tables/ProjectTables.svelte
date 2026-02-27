@@ -224,6 +224,7 @@
         large
         autofocus={false}
         showBorderOnFocus={false}
+        retainValueOnMount
       />
     </div>
 
