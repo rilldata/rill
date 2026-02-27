@@ -8,7 +8,8 @@
   > = {
     gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
     refetchInterval: (query) => {
-      switch (query.state.data?.deployment?.status) {
+      const status = query.state.data?.deployment?.status;
+      switch (status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
         case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
           return PollTimeWhenProjectDeploymentPending;
@@ -20,6 +21,7 @@
           return false;
       }
     },
+    refetchIntervalInBackground: true, // Keep polling while the tab is hidden (e.g. deploy loader)
     refetchOnMount: true,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
