@@ -1,12 +1,18 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
+  import type {
+    V1OrganizationMemberUser,
+    V1Project,
+  } from "@rilldata/web-admin/client";
   import {
+    createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
     createAdminServiceListOrganizationMemberUsersInfinite,
+    createAdminServiceListProjectsForOrganization,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
+    getAdminServiceListProjectMemberUsergroupsQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
@@ -20,8 +26,13 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
+  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { PROJECT_ROLES_OPTIONS } from "@rilldata/web-admin/features/projects/constants";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -39,6 +50,11 @@
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
+  let selectedProjects: string[] = [];
+  let projectDropdownOpen = false;
+  let selectedRole: ProjectUserRoles = ProjectUserRoles.Viewer;
+  let roleDropdownOpen = false;
+
   // Debounce search input to avoid too many API calls.
   // Use a standard Svelte reactive block: it re-runs whenever `searchInput` changes.
   // We capture `searchInput` into a local constant to avoid race conditions in the timeout.
@@ -51,6 +67,40 @@
   }
 
   $: organization = $page.params.organization;
+
+  // Projects list
+  $: projectsQuery = createAdminServiceListProjectsForOrganization(
+    organization,
+    undefined,
+    {
+      query: {
+        enabled: open && !!organization,
+      },
+    },
+  );
+  $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
+
+  $: selectedRoleLabel =
+    PROJECT_ROLES_OPTIONS.find((o) => o.value === selectedRole)?.label ??
+    "Viewer";
+
+  $: selectedProjectsLabel = (() => {
+    if (selectedProjects.length === 0) return "Select projects";
+    if (selectedProjects.length === 1) return selectedProjects[0];
+    return `${selectedProjects.length} Projects`;
+  })();
+
+  function toggleProjectSelection(projectName: string) {
+    const idx = selectedProjects.indexOf(projectName);
+    if (idx >= 0) {
+      selectedProjects = selectedProjects.filter(
+        (name) => name !== projectName,
+      );
+    } else {
+      selectedProjects = [...selectedProjects, projectName];
+    }
+    projectDropdownOpen = true;
+  }
 
   // Infinite query for organization users (debounced by search)
   $: organizationUsersInfiniteQuery =
@@ -100,6 +150,8 @@
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
+  const addProjectMemberUsergroup =
+    createAdminServiceAddProjectMemberUsergroup();
 
   async function handleCreate(newName: string) {
     try {
@@ -112,6 +164,9 @@
 
       // Apply pending user changes after group creation
       await applyPendingChanges(newName);
+
+      // Add group to selected projects
+      await applyProjectAccess(newName);
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
@@ -126,12 +181,45 @@
       selectedUsers = [];
       pendingAdditions = [];
       pendingRemovals = [];
+      selectedProjects = [];
+      selectedRole = ProjectUserRoles.Viewer;
       open = false;
 
       eventBus.emit("notification", { message: "User group created" });
     } catch (error) {
       eventBus.emit("notification", {
         message: `Error: ${error.response.data.message}`,
+        type: "error",
+      });
+    }
+  }
+
+  async function applyProjectAccess(usergroup: string) {
+    if (selectedProjects.length === 0) return;
+
+    try {
+      await Promise.all(
+        selectedProjects.map(async (projectName) => {
+          await $addProjectMemberUsergroup.mutateAsync({
+            org: organization,
+            project: projectName,
+            usergroup: usergroup,
+            data: {
+              role: selectedRole,
+            },
+          });
+
+          await queryClient.invalidateQueries({
+            queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+              organization,
+              projectName,
+            ),
+          });
+        }),
+      );
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: `Error adding group to projects: ${error.response?.data?.message || error.message}`,
         type: "error",
       });
     }
@@ -211,7 +299,7 @@
     }),
   );
 
-  const { form, enhance, submit, errors, submitting } = superForm(
+  const { form, enhance, submit, errors, submitting, reset } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -239,20 +327,17 @@
       : undefined;
   }
 
-  // Check if form has been modified
-  $: hasFormChanges = $form.name !== initialValues.name;
-
   function handleClose() {
     open = false;
     searchInput = "";
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
-    $errors = {};
-    // Only reset the form if it has been modified
-    if (hasFormChanges) {
-      $form.name = initialValues.name;
-    }
+    selectedProjects = [];
+    selectedRole = ProjectUserRoles.Viewer;
+    projectDropdownOpen = false;
+    roleDropdownOpen = false;
+    reset();
   }
 </script>
 
@@ -281,6 +366,7 @@
       use:enhance
     >
       <div class="flex flex-col gap-4 w-full">
+        <!-- Name -->
         <Input
           bind:value={$form.name}
           id="create-user-group-name"
@@ -290,6 +376,97 @@
           alwaysShowError={true}
         />
 
+        <!-- Project access multi-select -->
+        <div class="flex flex-col gap-y-1">
+          <label
+            for="project-access"
+            class="line-clamp-1 text-sm font-medium text-fg-primary"
+          >
+            Project access
+          </label>
+          {#if $projectsQuery?.isLoading}
+            <div class="text-sm text-fg-secondary">Loading projects...</div>
+          {:else if projects.length === 0}
+            <div class="text-sm text-fg-secondary">No projects available</div>
+          {:else}
+            <Dropdown.Root
+              bind:open={projectDropdownOpen}
+              closeOnItemClick={false}
+            >
+              <Dropdown.Trigger
+                class="min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
+                  ? 'bg-gray-200'
+                  : 'hover:bg-surface-hover'}"
+              >
+                <span class="truncate">
+                  {selectedProjectsLabel}
+                </span>
+                {#if projectDropdownOpen}
+                  <CaretUpIcon size="12px" />
+                {:else}
+                  <CaretDownIcon size="12px" />
+                {/if}
+              </Dropdown.Trigger>
+              <Dropdown.Content
+                align="start"
+                sameWidth
+                class="max-h-60 overflow-y-auto"
+              >
+                {#each projects as p (p.id)}
+                  <Dropdown.CheckboxItem
+                    class="font-normal flex items-center overflow-hidden"
+                    checked={selectedProjects.includes(p.name)}
+                    onCheckedChange={() => toggleProjectSelection(p.name)}
+                  >
+                    <span class="truncate w-full" title={p.name}>{p.name}</span>
+                  </Dropdown.CheckboxItem>
+                {/each}
+              </Dropdown.Content>
+            </Dropdown.Root>
+          {/if}
+        </div>
+
+        <!-- Access level selector -->
+        <div class="flex flex-col gap-y-1">
+          <label
+            for="access-level"
+            class="line-clamp-1 text-sm font-medium text-fg-primary"
+          >
+            Access level
+          </label>
+          <Dropdown.Root bind:open={roleDropdownOpen}>
+            <Dropdown.Trigger
+              class="min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
+                ? 'bg-gray-200'
+                : 'hover:bg-surface-hover'}"
+            >
+              <span>{selectedRoleLabel}</span>
+              {#if roleDropdownOpen}
+                <CaretUpIcon size="12px" />
+              {:else}
+                <CaretDownIcon size="12px" />
+              {/if}
+            </Dropdown.Trigger>
+            <Dropdown.Content align="start" sameWidth>
+              {#each PROJECT_ROLES_OPTIONS as option}
+                <Dropdown.Item
+                  class="font-normal flex flex-col items-start py-2 {selectedRole ===
+                  option.value
+                    ? 'bg-surface-active'
+                    : ''}"
+                  on:click={() => (selectedRole = option.value)}
+                >
+                  <span class="font-medium">{option.label}</span>
+                  <span class="text-xs text-fg-secondary"
+                    >{option.description}</span
+                  >
+                </Dropdown.Item>
+              {/each}
+            </Dropdown.Content>
+          </Dropdown.Root>
+        </div>
+
+        <!-- Users -->
         <div class="flex flex-col gap-y-1">
           <label
             for="user-group-users"

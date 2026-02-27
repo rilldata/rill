@@ -94,6 +94,7 @@
       </div>
       <div class="mt-6">
         <OrgGroupsTable
+          {organization}
           data={filteredGroups}
           currentUserEmail={$currentUser.data?.user.email}
           {hasNextPage}

@@ -4,8 +4,10 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import GroupActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupActionsCell.svelte";
   import GroupCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupCompositeCell.svelte";
+  import GroupProjectsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupProjectsCell.svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
 
+  export let organization: string;
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
   export let hasNextPage: boolean;
@@ -34,23 +36,23 @@
           usersCount: row.original.usersCount,
         }),
       meta: {
-        widthPercent: 95,
+        widthPercent: 55,
       },
     },
-    // {
-    //   accessorKey: "roleName",
-    //   header: "Role",
-    //   cell: ({ row }) =>
-    //     flexRender(OrgGroupsTableRoleCell, {
-    //       name: row.original.groupName,
-    //       role: row.original.roleName,
-    //       manageOrgAdmins: manageOrgAdmins,
-    //     }),
-    //   meta: {
-    //     widthPercent: 20,
-    //     marginLeft: "8px",
-    //   },
-    // },
+    {
+      accessorKey: "projects",
+      header: "Projects",
+      enableSorting: false,
+      cell: ({ row }) =>
+        flexRender(GroupProjectsCell, {
+          organization,
+          groupName: row.original.groupName ?? "",
+        }),
+      meta: {
+        widthPercent: 40,
+        marginLeft: "8px",
+      },
+    },
     {
       accessorKey: "actions",
       header: "",
