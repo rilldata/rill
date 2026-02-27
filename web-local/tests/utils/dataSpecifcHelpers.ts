@@ -84,8 +84,7 @@ export function interceptTimeseriesResponse(
 
     const handler = async (response: Response) => {
       if (
-        response.url().includes("/queries/metrics-views/") &&
-        response.url().includes("/timeseries") &&
+        response.url().includes("QueryService/MetricsViewTimeSeries") &&
         response.request().method() === "POST"
       ) {
         try {
