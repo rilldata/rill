@@ -53,7 +53,10 @@
   $: correctedKindForChat =
     activeResource?.kind === ResourceKind.MetricsView
       ? ResourceKind.Explore
-      : activeResource?.kind;
+      : (activeResource?.kind as
+          | ResourceKind.Explore
+          | ResourceKind.Canvas
+          | undefined);
 
   $: showTopBar = navigationEnabled || showDashboardChat;
 
