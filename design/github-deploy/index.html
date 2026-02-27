@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect to GitHub — DataSync</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .perm-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border-muted);
+      font-size: 13px;
+    }
+    .perm-item:last-child { border-bottom: none; }
+    .perm-icon {
+      width: 28px; height: 28px;
+      background: var(--bg-hover);
+      border-radius: var(--r-md);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 12px;
+      width: 520px;
+      max-width: 100%;
+      margin-top: 28px;
+    }
+    .feature-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 16px;
+      text-align: center;
+    }
+    .feature-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--r-md);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 10px;
+    }
+    .feature-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .feature-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+<div class="connect-page">
+
+  <!-- App brand -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:32px;">
+    <div class="logo-icon" style="width:34px;height:34px;border-radius:9px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <span style="font-size:18px;font-weight:700;letter-spacing:-0.4px;">DataSync</span>
+    <span style="font-size:11px;background:rgba(88,166,255,0.12);color:var(--blue);padding:2px 8px;border-radius:var(--r-full);font-weight:600;">BETA</span>
+  </div>
+
+  <!-- Connect card -->
+  <div style="width:520px;max-width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:0 16px 64px rgba(0,0,0,0.4);">
+
+    <!-- Card top -->
+    <div style="padding:32px 32px 28px;text-align:center;background:linear-gradient(180deg,rgba(88,166,255,0.06) 0%,transparent 100%);border-bottom:1px solid var(--border);">
+      <div style="width:52px;height:52px;background:#161b22;border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="var(--text-primary)">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </div>
+      <h1 style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px;">Connect to GitHub</h1>
+      <p style="font-size:14px;color:var(--text-secondary);line-height:1.65;max-width:360px;margin:0 auto;">
+        Link your GitHub account to version-control your analyses, collaborate with your team, and deploy reports — all from within DataSync.
+      </p>
+    </div>
+
+    <!-- OAuth button section -->
+    <div style="padding:24px 32px;">
+      <a href="dashboard.html" class="btn btn-github btn-xl btn-block" style="margin-bottom:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+        Continue with GitHub
+      </a>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:12px;margin:20px 0;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:12px;color:var(--text-muted);">or use a token</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <!-- PAT input -->
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label" style="font-size:12px;">Personal Access Token</label>
+        <div style="display:flex;gap:8px;">
+          <input class="input input-mono" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="flex:1;">
+          <button class="btn btn-secondary" onclick="showToast('Token validated! Redirecting…','success');setTimeout(()=>location.href='dashboard.html',900);">
+            Connect
+          </button>
+        </div>
+        <div class="form-hint">
+          Create a token with <span class="code">repo</span> scope at
+          <a href="#" style="color:var(--blue);">github.com/settings/tokens</a>
+        </div>
+      </div>
+
+      <!-- Permissions -->
+      <div style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Permissions requested</div>
+
+        <div class="perm-item">
+          <div class="perm-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;margin-bottom:1px;">repo <span class="badge badge-blue" style="font-size:10px;">required</span></div>
+            <div style="font-size:12px;color:var(--text-muted);">Read/write access to your repositories for storing and managing analysis files.</div>
+          </div>
+        </div>
+
+        <div class="perm-item">
+          <div class="perm-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;margin-bottom:1px;">read:user</div>
+            <div style="font-size:12px;color:var(--text-muted);">Read your GitHub profile to display your name and avatar.</div>
+          </div>
+        </div>
+
+        <div class="perm-item" style="border-bottom:none;">
+          <div class="perm-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;margin-bottom:1px;">workflow</div>
+            <div style="font-size:12px;color:var(--text-muted);">Optional: trigger GitHub Actions to publish reports automatically.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust note -->
+      <div style="display:flex;align-items:center;gap:7px;margin-top:14px;font-size:12px;color:var(--text-muted);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        We never store your token. It is kept only in your local browser session.
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature highlights -->
+  <div class="feature-grid">
+    <div class="feature-item">
+      <div class="feature-icon" style="background:rgba(88,166,255,0.1);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
+      </div>
+      <div class="feature-title">Version Control</div>
+      <div class="feature-desc">Track every change to your analyses with full git history.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon" style="background:rgba(63,185,80,0.1);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+      </div>
+      <div class="feature-title">One-click Deploy</div>
+      <div class="feature-desc">Push reports and dashboards to GitHub with a single action.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon" style="background:rgba(188,140,255,0.1);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+      </div>
+      <div class="feature-title">Branch Versions</div>
+      <div class="feature-desc">Maintain separate analysis branches for different scenarios.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;font-size:12px;color:var(--text-muted);text-align:center;">
+    By connecting, you agree to DataSync's <a href="#" style="color:var(--blue);">Terms of Service</a> and <a href="#" style="color:var(--blue);">Privacy Policy</a>.
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
