@@ -91,7 +91,7 @@ export class Conversation {
   constructor(
     private readonly instanceId: string,
     initialConversationId: string,
-    private readonly agent: string = ToolName.ANALYST_AGENT,
+    private readonly agent: string = "", // Empty string lets the router agent decide
   ) {
     this.conversationIdStore = writable(initialConversationId);
 
