@@ -71,6 +71,9 @@ definitions:
       - [**GCS**](#gcs) - Google Cloud Storage
       - [**S3**](#s3) - Amazon S3 storage
 
+      ### _Table Formats_
+      - [**Delta Lake**](#delta) - Delta Lake tables via DuckDB
+
       ### Service Integrations
       - [**Claude**](#claude) - Claude connector for chat with your own API key
       - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
@@ -309,6 +312,40 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        - type: object
+          title: Delta
+          description: |
+            Read [Delta Lake](https://delta.io/) tables from object storage via DuckDB's [Delta extension](https://duckdb.org/docs/stable/core_extensions/delta). Delta tables are configured as DuckDB models using `delta_scan()`. Supports S3, Azure, and local storage. For details, see [Delta Lake](/developers/build/connectors/data-source/delta).
+          properties:
+            connector:
+              type: string
+              const: duckdb
+              description: Must be `duckdb`
+            create_secrets_from_connectors:
+              type: [string, array]
+              description: Storage connector name for authentication (e.g., `s3` or `azure`). Required for cloud storage backends.
+            materialize:
+              type: boolean
+              description: Whether to materialize the model results
+            sql:
+              type: string
+              description: SQL query using `delta_scan()` to read the Delta table
+          examples:
+            - # Example: Delta Lake model reading from S3
+              type: model
+              connector: duckdb
+              create_secrets_from_connectors: s3
+              materialize: true
+              sql: |
+                SELECT *
+                FROM delta_scan('s3://my-bucket/path/to/delta_table')
+            - # Example: Delta Lake model reading from local filesystem
+              type: model
+              connector: duckdb
+              materialize: true
+              sql: |
+                SELECT *
+                FROM delta_scan('/path/to/delta_table')
         - type: object
           title: Druid
           properties:

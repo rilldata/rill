@@ -269,6 +269,32 @@ export function maybeRewriteToDuckDb(
       delete formValues.table;
 
       break;
+    case "delta": {
+      connectorCopy.name = "duckdb";
+
+      // Determine which path field has a value
+      const deltaPath = (formValues.s3_path ||
+        formValues.azure_path ||
+        formValues.local_path) as string;
+      const deltaStorageType = formValues.storage_type as string;
+
+      // Set create_secrets_from_connectors for cloud storage backends
+      if (deltaStorageType && deltaStorageType !== "local") {
+        formValues.create_secrets_from_connectors = deltaStorageType;
+      }
+
+      formValues.sql = `SELECT *\nFROM delta_scan('${deltaPath}')`;
+
+      // Clean up intermediate fields
+      delete formValues.storage_type;
+      delete formValues.s3_path;
+      delete formValues.azure_path;
+      delete formValues.local_path;
+      delete formValues.s3_info;
+      delete formValues.azure_info;
+
+      break;
+    }
   }
 
   return [connectorCopy, formValues];

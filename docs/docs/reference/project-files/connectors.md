@@ -34,6 +34,9 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**GCS**](#gcs) - Google Cloud Storage
 - [**S3**](#s3) - Amazon S3 storage
 
+### _Table Formats_
+- [**Delta Lake**](#delta) - Delta Lake tables via DuckDB
+
 ### Service Integrations
 - [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
@@ -1115,6 +1118,48 @@ aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Ke
 aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # Optional AWS session token for temporary credentials
 endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage
 region: "us-east-1" # AWS region of the S3 bucket
+```
+
+## Delta
+
+Read [Delta Lake](https://delta.io/) tables from object storage via DuckDB's [Delta extension](https://duckdb.org/docs/stable/core_extensions/delta). Delta tables are configured as DuckDB models using `delta_scan()`. Supports S3, Azure, and local storage. For details, see [Delta Lake](/developers/build/connectors/data-source/delta).
+
+
+### `connector`
+
+_[string]_ - Must be `duckdb` 
+
+### `create_secrets_from_connectors`
+
+_[string, array]_ - Storage connector name for authentication (e.g., `s3` or `azure`). Required for cloud storage backends. 
+
+### `materialize`
+
+_[boolean]_ - Whether to materialize the model results 
+
+### `sql`
+
+_[string]_ - SQL query using `delta_scan()` to read the Delta table 
+
+```yaml
+# Example: Delta Lake model reading from S3
+type: model
+connector: duckdb
+create_secrets_from_connectors: s3
+materialize: true
+sql: |
+    SELECT *
+    FROM delta_scan('s3://my-bucket/path/to/delta_table')
+```
+
+```yaml
+# Example: Delta Lake model reading from local filesystem
+type: model
+connector: duckdb
+materialize: true
+sql: |
+    SELECT *
+    FROM delta_scan('/path/to/delta_table')
 ```
 
 ## Salesforce

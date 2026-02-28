@@ -27,6 +27,8 @@
     isVisibleForValues,
   } from "../../templates/schema-utils";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
@@ -101,6 +103,28 @@
   let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
+
+  // Cloud storage backends that require an existing connector, per table format
+  const STORAGE_CONNECTOR_DEPS: Record<string, Record<string, string>> = {
+    delta: { s3: "S3", azure: "Azure" },
+    iceberg: { gcs: "GCS", s3: "S3", azure: "Azure" },
+  };
+
+  // Disable cloud storage options when the required connector doesn't exist
+  $: disabledOptions = (() => {
+    const deps = STORAGE_CONNECTOR_DEPS[schemaName];
+    if (!deps) return {};
+    const existingConnectors = new Set(
+      fileArtifacts.getNamesForKind(ResourceKind.Connector),
+    );
+    const disabled: Record<string, string> = {};
+    for (const [key, label] of Object.entries(deps)) {
+      if (!existingConnectors.has(key)) {
+        disabled[key] = `Create a ${label} connector first`;
+      }
+    }
+    return disabled;
+  })();
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
@@ -303,6 +327,7 @@
           bind:primaryLoadingCopy={multiStepLoadingCopy}
           bind:formId={multiStepFormId}
           bind:shouldShowSkipLink
+          {disabledOptions}
         />
       {:else if connectorSchema}
         <AddDataFormSection
@@ -318,6 +343,7 @@
             {onStringInputChange}
             {handleFileUpload}
             iconMap={ICONS}
+            {disabledOptions}
           />
         </AddDataFormSection>
       {:else}
