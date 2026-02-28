@@ -205,7 +205,8 @@
     if (!measureColumn) return undefined;
     const value = cell.getValue() as string | number | null | undefined;
     const formattedValue = measureColumn.tooltipFormatter(value);
-    if (formattedValue === null || formattedValue === undefined) return undefined;
+    if (formattedValue === null || formattedValue === undefined)
+      return undefined;
     return formattedValue;
   }
 

@@ -445,13 +445,14 @@ export function prepareDimensionTableRows(
     Object.fromEntries(
       allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)]),
     );
-  const tooltipFormattersForMeasures: { [key: string]: (val: number) => string } =
-    Object.fromEntries(
-      allMeasuresForSpec.map((m) => [
-        m.name,
-        createMeasureValueFormatter(m, "tooltip"),
-      ]),
-    );
+  const tooltipFormattersForMeasures: {
+    [key: string]: (val: number) => string;
+  } = Object.fromEntries(
+    allMeasuresForSpec.map((m) => [
+      m.name,
+      createMeasureValueFormatter(m, "tooltip"),
+    ]),
+  );
 
   const tableRows: DimensionTableRow[] = queryRows
     .filter((row) => row[activeMeasureName] !== undefined)
@@ -510,7 +511,8 @@ export function prepareDimensionTableRows(
               deltaRel !== null
                 ? formatMeasurePercentageDifference(deltaRel as number)
                 : PERC_DIFF.PREV_VALUE_NO_DATA;
-            rowOut[`__formatted_${measure.name}_delta_perc`] = formattedDeltaRel;
+            rowOut[`__formatted_${measure.name}_delta_perc`] =
+              formattedDeltaRel;
             rowOut[`__formatted_tooltip_${measure.name}_delta_perc`] =
               formattedDeltaRel;
           }

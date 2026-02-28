@@ -181,7 +181,7 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType slot="name" type={type} value={tooltipValue} />
+      <FormattedDataType slot="name" {type} value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>

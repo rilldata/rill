@@ -69,11 +69,9 @@
 
   let pivot;
   let tooltipPosition = new DOMRect(0, 0, 0, 0);
-  let hovering:
-    | {
-        value: string | number | null;
-      }
-    | null = null;
+  let hovering: {
+    value: string | number | null;
+  } | null = null;
 
   let rowIdxHover: number | undefined;
   let colIdxHover: number | undefined;
@@ -370,7 +368,11 @@
       handleEvent(evt, table, "__row", (n) => (newRowIdxHover = parseInt(n)));
       handleEvent(evt, table, "__col", (n) => (newColIdxHover = parseInt(n)));
       handleEvent(evt, table, "pin", () => (newHoveringPin = true));
-      const tooltipNode = getNodeWithAttribute(evt, table, "data-tooltip-value");
+      const tooltipNode = getNodeWithAttribute(
+        evt,
+        table,
+        "data-tooltip-value",
+      );
       const tooltipValue = tooltipNode?.getAttribute("data-tooltip-value");
       if (tooltipNode && tooltipValue) {
         hovering = {

@@ -238,9 +238,12 @@ export function getMeasureColumnProps(
 
     return {
       label: label || measure?.displayName || measureName,
-      formatter: type === "comparison_percent" ? percentFormatter : tableFormatter,
+      formatter:
+        type === "comparison_percent" ? percentFormatter : tableFormatter,
       tooltipFormatter:
-        type === "comparison_percent" ? percentFormatter : tooltipMeasureFormatter,
+        type === "comparison_percent"
+          ? percentFormatter
+          : tooltipMeasureFormatter,
       name: m,
       type,
       icon,
