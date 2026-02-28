@@ -255,7 +255,9 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
                   Math.abs(value),
                   FormatPreset.CURRENCY_USD,
                 );
-                const unsignedNumber = humanized.replaceAll("$", "");
+                const unsignedNumber = humanized.startsWith("$")
+                  ? humanized.slice(1)
+                  : humanized;
                 return `${sign}${currency[0]}${unsignedNumber}${currency[1]}`;
               }
               // Use custom currency symbol from locale

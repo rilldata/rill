@@ -44,8 +44,13 @@
     element.removeAttribute("data-tooltip-value");
     if (value === undefined || value === null) return;
     const valueAsString = String(value);
-    // Skip html placeholders such as loading and null cells.
-    if (valueAsString.includes("<")) return;
+    // Skip known HTML placeholders injected by regular-table.
+    const isKnownPlaceholder =
+      valueAsString === LOADING_CELL ||
+      valueAsString === NULL_CELL ||
+      valueAsString.includes('class="loading-cell') ||
+      valueAsString.includes('class="null-cell');
+    if (isKnownPlaceholder) return;
     element.setAttribute("data-tooltip-value", valueAsString);
   }
 

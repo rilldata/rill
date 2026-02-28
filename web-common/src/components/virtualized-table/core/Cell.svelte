@@ -11,19 +11,23 @@
     copyToClipboard,
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import type { PERC_DIFF } from "@rilldata/web-common/components/data-types/type-utils";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
+  import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { getContext } from "svelte";
   import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
+  type CellFormattedValue = string | number | NumberParts | PERC_DIFF | null;
+
   export let row;
   export let column;
   export let value;
-  export let formattedValue: string | null = null;
-  export let tooltipFormattedValue: unknown = null;
+  export let formattedValue: CellFormattedValue = null;
+  export let tooltipFormattedValue: CellFormattedValue = null;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -173,7 +177,7 @@
           inTable
           isNull={value === null || value === undefined}
           {type}
-          value={formattedValue || value}
+          value={formattedValue ?? value}
           color="text-fg-secondary"
         />
       </button>

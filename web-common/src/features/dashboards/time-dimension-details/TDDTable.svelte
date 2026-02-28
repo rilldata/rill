@@ -303,29 +303,16 @@
   };
 
   // Visible line list
-  const toggleVisible = (n) => {
-    n = parseInt(n);
-    if (comparing != "dimension" || n == 0) return;
-    const label = tableData?.rowHeaderData[n][0].value;
+  const toggleVisible = (rowIndexAttribute: string) => {
+    const rowIndex = parseInt(rowIndexAttribute);
+    if (Number.isNaN(rowIndex) || comparing !== "dimension" || rowIndex === 0)
+      return;
+    const label = tableData?.rowHeaderData[rowIndex][0].value;
     if (label !== undefined) onToggleFilter(label);
   };
 
   const togglePin = () => {
     onTogglePin();
-  };
-
-  const handleEvent = (evt, table, attribute, callback) => {
-    let currentNode = evt.target;
-
-    let found = currentNode.hasAttribute(attribute);
-    while (!found && currentNode !== table) {
-      currentNode = currentNode.parentNode;
-      found = currentNode.hasAttribute(attribute);
-    }
-    if (found) {
-      const attributeValue = currentNode.getAttribute(attribute);
-      callback(attributeValue);
-    }
   };
 
   function getNodeWithAttribute(
@@ -343,7 +330,20 @@
     return null;
   }
 
-  const handleMouseDown = (evt, table) => {
+  const handleEvent = (
+    evt: MouseEvent,
+    table: HTMLElement,
+    attribute: string,
+    callback: (attributeValue: string) => void,
+  ) => {
+    const node = getNodeWithAttribute(evt, table, attribute);
+    const attributeValue = node?.getAttribute(attribute);
+    if (attributeValue !== null && attributeValue !== undefined) {
+      callback(attributeValue);
+    }
+  };
+
+  const handleMouseDown = (evt: MouseEvent, table: HTMLElement) => {
     const tooltipNode = getNodeWithAttribute(evt, table, "data-tooltip-value");
     const tooltipValue = tooltipNode?.getAttribute("data-tooltip-value");
     if (evt.shiftKey && tooltipValue) {
@@ -351,13 +351,17 @@
       return;
     }
     handleEvent(evt, table, "__row", toggleVisible);
-    handleEvent(evt, table, "sort", (type) => onToggleSort(type));
-    handleEvent(evt, table, "pin", togglePin);
+    handleEvent(evt, table, "sort", (sortType) => {
+      if (sortType === "dimension" || sortType === "value") {
+        onToggleSort(sortType);
+      }
+    });
+    handleEvent(evt, table, "pin", () => togglePin());
   };
 
-  const handleMouseHover = (evt, table) => {
-    let newRowIdxHover;
-    let newColIdxHover;
+  const handleMouseHover = (evt: MouseEvent, table: HTMLElement) => {
+    let newRowIdxHover: number | undefined;
+    let newColIdxHover: number | undefined;
     let newHoveringPin = hoveringPin;
     if (evt.type === "mouseout") {
       newRowIdxHover = undefined;
@@ -365,8 +369,18 @@
       newHoveringPin = false;
       hovering = null;
     } else {
-      handleEvent(evt, table, "__row", (n) => (newRowIdxHover = parseInt(n)));
-      handleEvent(evt, table, "__col", (n) => (newColIdxHover = parseInt(n)));
+      handleEvent(evt, table, "__row", (rowIndexAttribute) => {
+        const parsedRowIndex = parseInt(rowIndexAttribute);
+        newRowIdxHover = Number.isNaN(parsedRowIndex)
+          ? undefined
+          : parsedRowIndex;
+      });
+      handleEvent(evt, table, "__col", (columnIndexAttribute) => {
+        const parsedColumnIndex = parseInt(columnIndexAttribute);
+        newColIdxHover = Number.isNaN(parsedColumnIndex)
+          ? undefined
+          : parsedColumnIndex;
+      });
       handleEvent(evt, table, "pin", () => (newHoveringPin = true));
       const tooltipNode = getNodeWithAttribute(
         evt,

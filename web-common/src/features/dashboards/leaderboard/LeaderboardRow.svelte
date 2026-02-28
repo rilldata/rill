@@ -271,18 +271,19 @@
     </LeaderboardCell>
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
+      {@const formattedPctOfTotal = hasValue(pctOfTotals[measureName])
+        ? formatMeasurePercentageDifference(pctOfTotals[measureName])
+        : null}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
-        tooltipValue={hasValue(pctOfTotals[measureName])
-          ? numberPartsToString(
-              formatMeasurePercentageDifference(pctOfTotals[measureName]),
-            )
+        tooltipValue={formattedPctOfTotal
+          ? numberPartsToString(formattedPctOfTotal)
           : null}
         dataType="INTEGER"
         cellType="comparison"
       >
         <PercentageChange
-          value={pctOfTotals[measureName]}
+          value={formattedPctOfTotal}
           color="text-fg-secondary"
         />
         {#if showZigZags[measureName]}
@@ -316,22 +317,18 @@
     {/if}
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+      {@const formattedDeltaRel = hasValue(deltaRels[measureName])
+        ? formatMeasurePercentageDifference(deltaRels[measureName])
+        : null}
       <LeaderboardCell
         value={deltaRels[measureName]?.toString() || ""}
-        tooltipValue={hasValue(deltaRels[measureName])
-          ? numberPartsToString(
-              formatMeasurePercentageDifference(deltaRels[measureName]),
-            )
+        tooltipValue={formattedDeltaRel
+          ? numberPartsToString(formattedDeltaRel)
           : null}
         {dataType}
         cellType="comparison"
       >
-        <PercentageChange
-          value={hasValue(deltaRels[measureName])
-            ? formatMeasurePercentageDifference(deltaRels[measureName])
-            : null}
-          color="text-fg-secondary"
-        />
+        <PercentageChange value={formattedDeltaRel} color="text-fg-secondary" />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
         {/if}
