@@ -14,6 +14,7 @@
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import OrganizationTabs from "@rilldata/web-admin/features/organizations/OrganizationTabs.svelte";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import SessionRecordingConsentBanner from "@rilldata/web-common/lib/analytics/SessionRecordingConsentBanner.svelte";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -171,3 +172,4 @@
 </QueryClientProvider>
 
 <NotificationCenter />
+<SessionRecordingConsentBanner />
