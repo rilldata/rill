@@ -81,6 +81,15 @@
     return measures.find((m) => m.name === columnId);
   }
 
+  function getCellTooltipValue(cell: Cell<PivotDataRow, unknown>) {
+    const measureColumn = getMeasureColumn(cell.column);
+    if (!measureColumn) return undefined;
+    const value = cell.getValue() as string | number | null | undefined;
+    const formattedValue = measureColumn.tooltipFormatter(value);
+    if (formattedValue === null || formattedValue === undefined) return undefined;
+    return formattedValue;
+  }
+
   function isCellActive(cell: Cell<PivotDataRow, unknown>) {
     return (
       cell.row.id === activeCell?.rowId &&
@@ -200,6 +209,7 @@
             class:border-r={hasBorderRight(cell.column.id)}
             class:total-label={cell.getValue() === "Total"}
             data-value={cell.getValue()}
+            data-tooltip-value={getCellTooltipValue(cell)}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}

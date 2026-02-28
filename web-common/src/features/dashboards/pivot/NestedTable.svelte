@@ -194,6 +194,15 @@
     return (index + offset) % measureCount === 0;
   }
 
+  function getCellTooltipValue(cell: Cell<PivotDataRow, unknown>) {
+    const measureColumn = measures.find((m) => m.name === cell.column.id);
+    if (!measureColumn) return undefined;
+    const value = cell.getValue() as string | number | null | undefined;
+    const formattedValue = measureColumn.tooltipFormatter(value);
+    if (formattedValue === null || formattedValue === undefined) return undefined;
+    return formattedValue;
+  }
+
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 </script>
 
@@ -342,6 +351,7 @@
             class:interactive-cell={canShowDataViewer}
             class:border-r={shouldShowRightBorder(i)}
             data-value={cell.getValue()}
+            data-tooltip-value={getCellTooltipValue(cell)}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
