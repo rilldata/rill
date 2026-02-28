@@ -2969,6 +2969,12 @@ definitions:
             type: string
             const: api
             description: Refers to the resource type and must be `api`
+          display_name:
+            type: string
+            description: A human-readable display name for the API
+          description:
+            type: string
+            description: A brief description of what this API does
           openapi:
             type: object
             description: OpenAPI specification for the API endpoint

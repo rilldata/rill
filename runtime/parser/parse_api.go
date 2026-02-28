@@ -11,6 +11,8 @@ import (
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
+	DisplayName        string              `yaml:"display_name"`
+	Description        string              `yaml:"description"`
 	DataYAML           `yaml:",inline" mapstructure:",squash"`
 	OpenAPI            *OpenAPIYAML        `yaml:"openapi"`
 	Security           *SecurityPolicyYAML `yaml:"security"`
@@ -114,6 +116,11 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
+	r.APISpec.DisplayName = tmp.DisplayName
+	if r.APISpec.DisplayName == "" {
+		r.APISpec.DisplayName = ToDisplayName(node.Name)
+	}
+	r.APISpec.Description = tmp.Description
 	r.APISpec.Resolver = resolver
 	r.APISpec.ResolverProperties = resolverProps
 	r.APISpec.OpenapiSummary = openapiSummary

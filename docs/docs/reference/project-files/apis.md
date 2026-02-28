@@ -12,6 +12,14 @@ Custom APIs allow you to create endpoints that can be called to retrieve or mani
 
 _[string]_ - Refers to the resource type and must be `api` _(required)_
 
+### `display_name`
+
+_[string]_ - A human-readable display name for the API 
+
+### `description`
+
+_[string]_ - A brief description of what this API does 
+
 ### `openapi`
 
 _[object]_ - OpenAPI specification for the API endpoint 

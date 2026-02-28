@@ -3958,6 +3958,12 @@ definitions:
   v1APISpec:
     type: object
     properties:
+      displayName:
+        type: string
+        title: User-facing name
+      description:
+        type: string
+        title: User-facing description
       resolver:
         type: string
       resolverProperties:
