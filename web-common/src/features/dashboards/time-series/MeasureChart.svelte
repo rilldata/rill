@@ -91,7 +91,10 @@
 
   export let mouseoverTimeFormat: (d: Date) => string = (v) => v.toString();
 
-  $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
+  $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(
+    measure,
+    "tooltip",
+  );
   $: axisFormat = createMeasureValueFormatter<null | undefined>(
     measure,
     "axis",
