@@ -4,6 +4,7 @@
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
+  import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import type {
     PivotPos,
     PivotRenderCallback,
@@ -67,6 +68,12 @@
   );
 
   let pivot;
+  let tooltipPosition = new DOMRect(0, 0, 0, 0);
+  let hovering:
+    | {
+        value: string | number | null;
+      }
+    | null = null;
 
   let rowIdxHover: number | undefined;
   let colIdxHover: number | undefined;
@@ -323,9 +330,26 @@
     }
   };
 
+  function getNodeWithAttribute(
+    evt: MouseEvent,
+    table: HTMLElement,
+    attribute: string,
+  ): HTMLElement | null {
+    let currentNode = evt.target as HTMLElement | null;
+    while (currentNode && currentNode !== table) {
+      if (currentNode.hasAttribute(attribute)) {
+        return currentNode;
+      }
+      currentNode = currentNode.parentElement;
+    }
+    return null;
+  }
+
   const handleMouseDown = (evt, table) => {
-    if (evt.shiftKey && evt.target.title) {
-      copyToClipboard(evt.target.title);
+    const tooltipNode = getNodeWithAttribute(evt, table, "data-tooltip-value");
+    const tooltipValue = tooltipNode?.getAttribute("data-tooltip-value");
+    if (evt.shiftKey && tooltipValue) {
+      copyToClipboard(tooltipValue);
       return;
     }
     handleEvent(evt, table, "__row", toggleVisible);
@@ -341,10 +365,21 @@
       newRowIdxHover = undefined;
       newColIdxHover = undefined;
       newHoveringPin = false;
+      hovering = null;
     } else {
       handleEvent(evt, table, "__row", (n) => (newRowIdxHover = parseInt(n)));
       handleEvent(evt, table, "__col", (n) => (newColIdxHover = parseInt(n)));
       handleEvent(evt, table, "pin", () => (newHoveringPin = true));
+      const tooltipNode = getNodeWithAttribute(evt, table, "data-tooltip-value");
+      const tooltipValue = tooltipNode?.getAttribute("data-tooltip-value");
+      if (tooltipNode && tooltipValue) {
+        hovering = {
+          value: tooltipValue,
+        };
+        tooltipPosition = tooltipNode.getBoundingClientRect();
+      } else {
+        hovering = null;
+      }
     }
 
     if (hoveringPin !== newHoveringPin) {
@@ -363,6 +398,7 @@
   function resetHighlight() {
     rowIdxHover = undefined;
     colIdxHover = undefined;
+    hovering = null;
     onHighlight(colIdxHover, rowIdxHover);
     pivot?.draw();
   }
@@ -429,6 +465,15 @@
     onPositionChange={handlePos}
   />
 </div>
+
+{#if hovering}
+  <VirtualTooltip
+    hoverPosition={tooltipPosition}
+    pinned={false}
+    {hovering}
+    sortable={false}
+  />
+{/if}
 
 <style>
   /* Define cursor styles */

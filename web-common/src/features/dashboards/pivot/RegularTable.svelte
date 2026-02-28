@@ -37,6 +37,18 @@
   export let getRowHeaderWidth: (x: number) => number | void = () => undefined;
   export let onPositionChange: (pos: PivotPos) => void = () => {};
 
+  function setTooltipValueAttribute(
+    element: HTMLElement,
+    value: string | number | undefined | null,
+  ) {
+    element.removeAttribute("data-tooltip-value");
+    if (value === undefined || value === null) return;
+    const valueAsString = String(value);
+    // Skip html placeholders such as loading and null cells.
+    if (valueAsString.includes("<")) return;
+    element.setAttribute("data-tooltip-value", valueAsString);
+  }
+
   let table: RegularTableElement;
   let initialized = false;
   export function draw() {
@@ -112,9 +124,7 @@
     if (typeof x !== "number" || typeof y !== "number") return;
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
-    if (value?.value !== undefined && value?.value !== null) {
-      th.setAttribute("title", value.value);
-    }
+    setTooltipValueAttribute(th, value?.value);
 
     th.onmouseover = () => cellInspectorStore.updateValue(value?.value);
     th.onfocus = () => cellInspectorStore.updateValue(value?.value);
@@ -150,6 +160,7 @@
     const value = meta?.value;
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
+    td.removeAttribute("data-tooltip-value");
 
     td.onmouseover = () => cellInspectorStore.updateValue(value);
     td.onfocus = () => cellInspectorStore.updateValue(value);
@@ -166,14 +177,14 @@
     } else if (value === undefined) {
       td.innerHTML = LOADING_CELL;
     } else if (typeof value === "string") {
-      td.setAttribute("title", value);
+      setTooltipValueAttribute(td, value);
       td.innerHTML = value;
     } else if (typeof value === "number") {
       const formattedValue = formatter(value) ?? "";
       const tooltipValue = tooltipFormatter
         ? (tooltipFormatter(value) ?? formattedValue)
         : formattedValue;
-      td.setAttribute("title", String(tooltipValue));
+      setTooltipValueAttribute(td, tooltipValue);
       td.innerHTML = formattedValue;
     }
 
