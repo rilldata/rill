@@ -21,6 +21,9 @@
   export let formatter: ReturnType<
     typeof createMeasureValueFormatter<null | undefined>
   >;
+  export let tooltipFormatter:
+    | ReturnType<typeof createMeasureValueFormatter<null | undefined>>
+    | undefined = undefined;
   export let onMouseDown: undefined | ((evt: MouseEvent, table: any) => any) =
     undefined;
   export let onMouseHover: undefined | ((evt: MouseEvent, table: any) => any) =
@@ -33,6 +36,23 @@
   export let getColumnWidth: (x: number) => number | void = () => undefined;
   export let getRowHeaderWidth: (x: number) => number | void = () => undefined;
   export let onPositionChange: (pos: PivotPos) => void = () => {};
+
+  function setTooltipValueAttribute(
+    element: HTMLElement,
+    value: string | number | undefined | null,
+  ) {
+    element.removeAttribute("data-tooltip-value");
+    if (value === undefined || value === null) return;
+    const valueAsString = String(value);
+    // Skip known HTML placeholders injected by regular-table.
+    const isKnownPlaceholder =
+      valueAsString === LOADING_CELL ||
+      valueAsString === NULL_CELL ||
+      valueAsString.includes('class="loading-cell') ||
+      valueAsString.includes('class="null-cell');
+    if (isKnownPlaceholder) return;
+    element.setAttribute("data-tooltip-value", valueAsString);
+  }
 
   let table: RegularTableElement;
   let initialized = false;
@@ -109,8 +129,25 @@
     if (typeof x !== "number" || typeof y !== "number") return;
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
-    if (value?.value !== undefined && value?.value !== null) {
-      th.setAttribute("title", value.value);
+    const headerValue = value?.value;
+    let numericHeaderValue: number | null = null;
+    if (typeof headerValue === "number" && Number.isFinite(headerValue)) {
+      numericHeaderValue = headerValue;
+    } else if (
+      typeof headerValue === "string" &&
+      headerValue.trim() !== "" &&
+      Number.isFinite(Number(headerValue))
+    ) {
+      numericHeaderValue = Number(headerValue);
+    }
+
+    if (numericHeaderValue !== null) {
+      const formattedTooltipValue = tooltipFormatter
+        ? (tooltipFormatter(numericHeaderValue) ?? headerValue)
+        : headerValue;
+      setTooltipValueAttribute(th, formattedTooltipValue);
+    } else {
+      setTooltipValueAttribute(th, headerValue);
     }
 
     th.onmouseover = () => cellInspectorStore.updateValue(value?.value);
@@ -147,6 +184,7 @@
     const value = meta?.value;
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
+    td.removeAttribute("data-tooltip-value");
 
     td.onmouseover = () => cellInspectorStore.updateValue(value);
     td.onfocus = () => cellInspectorStore.updateValue(value);
@@ -163,11 +201,15 @@
     } else if (value === undefined) {
       td.innerHTML = LOADING_CELL;
     } else if (typeof value === "string") {
-      td.setAttribute("title", value);
+      setTooltipValueAttribute(td, value);
       td.innerHTML = value;
     } else if (typeof value === "number") {
-      td.setAttribute("title", value);
-      td.innerHTML = formatter(value) ?? "";
+      const formattedValue = formatter(value) ?? "";
+      const tooltipValue = tooltipFormatter
+        ? (tooltipFormatter(value) ?? formattedValue)
+        : formattedValue;
+      setTooltipValueAttribute(td, tooltipValue);
+      td.innerHTML = formattedValue;
     }
 
     const maybeVal = renderCell({ x, y, value, element: td });

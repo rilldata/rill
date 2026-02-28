@@ -5,6 +5,7 @@
   import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import {
@@ -42,12 +43,20 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+  export let tooltipFormatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
       leaderboardShowContextForAllMeasures ||
       measureName === leaderboardSortByMeasureName
     );
+  }
+
+  function hasValue(value: number | null | undefined): value is number {
+    return value !== null && value !== undefined;
   }
 
   let hovered = false;
@@ -238,6 +247,9 @@
   {#each leaderboardMeasureNames as measureName, i (i)}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
+      tooltipValue={hasValue(values[measureName])
+        ? tooltipFormatters[measureName]?.(values[measureName])
+        : null}
       dataType="INTEGER"
       cellType="measure"
       background={leaderboardMeasureNames.length === 1
@@ -247,7 +259,7 @@
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
           type="INTEGER"
-          value={values[measureName]
+          value={hasValue(values[measureName])
             ? formatters[measureName]?.(values[measureName])
             : null}
         />
@@ -259,13 +271,19 @@
     </LeaderboardCell>
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
+      {@const formattedPctOfTotal = hasValue(pctOfTotals[measureName])
+        ? formatMeasurePercentageDifference(pctOfTotals[measureName])
+        : null}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
+        tooltipValue={formattedPctOfTotal
+          ? numberPartsToString(formattedPctOfTotal)
+          : null}
         dataType="INTEGER"
         cellType="comparison"
       >
         <PercentageChange
-          value={pctOfTotals[measureName]}
+          value={formattedPctOfTotal}
           color="text-fg-secondary"
         />
         {#if showZigZags[measureName]}
@@ -277,13 +295,16 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaAbsMap[measureName]?.toString() || ""}
+        tooltipValue={hasValue(deltaAbsMap[measureName])
+          ? tooltipFormatters[measureName]?.(deltaAbsMap[measureName])
+          : null}
         dataType="INTEGER"
         cellType="comparison"
       >
         <FormattedDataType
           color="text-fg-secondary"
           type="INTEGER"
-          value={deltaAbsMap[measureName]
+          value={hasValue(deltaAbsMap[measureName])
             ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
@@ -296,17 +317,18 @@
     {/if}
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+      {@const formattedDeltaRel = hasValue(deltaRels[measureName])
+        ? formatMeasurePercentageDifference(deltaRels[measureName])
+        : null}
       <LeaderboardCell
         value={deltaRels[measureName]?.toString() || ""}
+        tooltipValue={formattedDeltaRel
+          ? numberPartsToString(formattedDeltaRel)
+          : null}
         {dataType}
         cellType="comparison"
       >
-        <PercentageChange
-          value={deltaRels[measureName]
-            ? formatMeasurePercentageDifference(deltaRels[measureName])
-            : null}
-          color="text-fg-secondary"
-        />
+        <PercentageChange value={formattedDeltaRel} color="text-fg-secondary" />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
         {/if}

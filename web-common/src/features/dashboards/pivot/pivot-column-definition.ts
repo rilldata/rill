@@ -8,6 +8,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
@@ -187,6 +188,9 @@ export type MeasureColumnProps = Array<{
   formatter: (
     value: string | number | null | undefined,
   ) => string | (null | undefined);
+  tooltipFormatter: (
+    value: string | number | null | undefined,
+  ) => string | (null | undefined);
   name: string;
   type: MeasureType;
 }>;
@@ -218,11 +222,28 @@ export function getMeasureColumnProps(
       console.warn(`Measure ${m} not found in config.allMeasures`);
     }
 
+    const tableFormatter = measure
+      ? createMeasureValueFormatter<null | undefined>(measure)
+      : (v: string | number | null | undefined) => v?.toString();
+    const tooltipMeasureFormatter = measure
+      ? createMeasureValueFormatter<null | undefined>(measure, "tooltip")
+      : (v: string | number | null | undefined) => v?.toString();
+    const percentFormatter = (v: string | number | null | undefined) => {
+      if (typeof v === "number") {
+        return numberPartsToString(formatMeasurePercentageDifference(v));
+      }
+      if (v === null || v === undefined) return v;
+      return String(v);
+    };
+
     return {
       label: label || measure?.displayName || measureName,
-      formatter: measure
-        ? createMeasureValueFormatter<null | undefined>(measure)
-        : (v: string | number | null | undefined) => v?.toString(),
+      formatter:
+        type === "comparison_percent" ? percentFormatter : tableFormatter,
+      tooltipFormatter:
+        type === "comparison_percent"
+          ? percentFormatter
+          : tooltipMeasureFormatter,
       name: m,
       type,
       icon,

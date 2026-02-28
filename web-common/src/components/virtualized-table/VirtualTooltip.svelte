@@ -61,7 +61,7 @@
           {#if isClipboardApiSupported()}
             <div>
               <StackingWord key="shift">Copy</StackingWord>
-              {hovering.isHeader ? "column name" : "this value"} to clipboard
+              {hovering.isHeader ? "column name to clipboard" : "to clipboard"}
             </div>
             <Shortcut>
               <span style="font-family: var(--system);">⇧</span> + Click

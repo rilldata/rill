@@ -20,6 +20,7 @@
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import { getCellTooltipValue } from "./pivot-tooltip-utils";
   import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
@@ -342,6 +343,7 @@
             class:interactive-cell={canShowDataViewer}
             class:border-r={shouldShowRightBorder(i)}
             data-value={cell.getValue()}
+            data-tooltip-value={getCellTooltipValue(cell, measures)}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
