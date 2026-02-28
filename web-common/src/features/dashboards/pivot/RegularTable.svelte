@@ -124,7 +124,26 @@
     if (typeof x !== "number" || typeof y !== "number") return;
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
-    setTooltipValueAttribute(th, value?.value);
+    const headerValue = value?.value;
+    let numericHeaderValue: number | null = null;
+    if (typeof headerValue === "number" && Number.isFinite(headerValue)) {
+      numericHeaderValue = headerValue;
+    } else if (
+      typeof headerValue === "string" &&
+      headerValue.trim() !== "" &&
+      Number.isFinite(Number(headerValue))
+    ) {
+      numericHeaderValue = Number(headerValue);
+    }
+
+    if (numericHeaderValue !== null) {
+      const formattedTooltipValue = tooltipFormatter
+        ? (tooltipFormatter(numericHeaderValue) ?? headerValue)
+        : headerValue;
+      setTooltipValueAttribute(th, formattedTooltipValue);
+    } else {
+      setTooltipValueAttribute(th, headerValue);
+    }
 
     th.onmouseover = () => cellInspectorStore.updateValue(value?.value);
     th.onfocus = () => cellInspectorStore.updateValue(value?.value);
