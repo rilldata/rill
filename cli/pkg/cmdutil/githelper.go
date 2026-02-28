@@ -76,7 +76,7 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 	return g.gitConfig, nil
 }
 
-func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateManagedGitRepoResponse, error) {
+func (g *GitHelper) PushToNewManagedRepo(ctx context.Context, primaryBranch string) (*adminv1.CreateManagedGitRepoResponse, error) {
 	c, err := g.h.Client()
 	if err != nil {
 		return nil, err
@@ -98,9 +98,14 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 		Username:          gitRepo.Username,
 		Password:          gitRepo.Password,
 		PasswordExpiresAt: gitRepo.PasswordExpiresAt.AsTime(),
-		DefaultBranch:     gitRepo.DefaultBranch,
 		ManagedRepo:       true,
 	}
+	if primaryBranch != "" {
+		config.DefaultBranch = primaryBranch
+	} else {
+		config.DefaultBranch = gitRepo.DefaultBranch
+	}
+
 	err = gitutil.CommitAndPush(ctx, g.localPath, config, "", author)
 	if err != nil {
 		return nil, err

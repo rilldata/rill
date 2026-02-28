@@ -353,7 +353,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ArchiveAssetId: assetID,
 		}
 	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
-		ghRepo, err := s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+		ghRepo, err := s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx, "")
 		if err != nil {
 			return nil, err
 		}
@@ -528,7 +528,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			}
 		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.CreateManagedRepo {
 			// project was previously deployed using zip and ship, or we are overwriting another project already connected to github
-			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx, "")
 			if err != nil {
 				return nil, err
 			}
