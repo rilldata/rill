@@ -130,6 +130,7 @@
     isTimeComparison,
     selectedValues,
     timeGrain,
+    (value: number) => tooltipMeasureFormatter(value),
   );
 
   function updateAdaptiveScrubRange(interval) {

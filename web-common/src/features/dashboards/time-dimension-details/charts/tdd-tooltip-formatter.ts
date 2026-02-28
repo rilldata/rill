@@ -11,6 +11,19 @@ export function escapeHTML(value: any): string {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 }
 
+function formatMeasureTooltipValue(
+  value: unknown,
+  measureValueFormatter?: (value: number) => string | number | null | undefined,
+): string {
+  if (typeof value === "number" && measureValueFormatter) {
+    const formattedValue = measureValueFormatter(value);
+    if (formattedValue !== null && formattedValue !== undefined) {
+      return String(formattedValue);
+    }
+  }
+  return String(value);
+}
+
 function createColorMap(
   measureLabel: string,
   selectedDimensionValues: (string | null)[],
@@ -49,6 +62,7 @@ function generateStackedAreaContent(
   rest: Record<string, any>,
   colorMap: Record<string, string>,
   isTimeComparison: boolean,
+  measureValueFormatter?: (value: number) => string | number | null | undefined,
 ) {
   let content = "";
   for (const key of keys) {
@@ -77,7 +91,9 @@ function generateStackedAreaContent(
           </svg>
         </td>
         <td class="key">${escapeHTML(label)}</td>
-        <td class="value">${escapeHTML(String(val))}</td>
+        <td class="value">${escapeHTML(
+          formatMeasureTooltipValue(val, measureValueFormatter),
+        )}</td>
       </tr>`;
   }
 
@@ -91,6 +107,7 @@ function generateBarContent(
   rest: Record<string, any>,
   colorMap: Record<string, string>,
   isTimeComparison: boolean,
+  measureValueFormatter?: (value: number) => string | number | null | undefined,
 ) {
   let content = "";
   const key =
@@ -119,7 +136,9 @@ function generateBarContent(
     </svg>
   </td>
     <td class="key">${escapeHTML(key)}</td>
-    <td class="value">${escapeHTML(String(val))}</td>
+    <td class="value">${escapeHTML(
+      formatMeasureTooltipValue(val, measureValueFormatter),
+    )}</td>
   </tr>`;
 
   return content;
@@ -133,6 +152,7 @@ function generateTableContent(
   dimensionLabel: string | undefined,
   isTimeComparison: boolean,
   selectedDimensionValues: (string | null)[],
+  measureValueFormatter?: (value: number) => string | number | null | undefined,
 ): string {
   const keys = Object.keys(rest);
   let content = "";
@@ -152,6 +172,7 @@ function generateTableContent(
         rest,
         colorMap,
         isNonDimensionalTimeComparison,
+        measureValueFormatter,
       );
     } else {
       content += generateBarContent(
@@ -161,6 +182,7 @@ function generateTableContent(
         rest,
         colorMap,
         isTimeComparison,
+        measureValueFormatter,
       );
     }
     content += `</table>`;
@@ -178,6 +200,7 @@ function generateTooltipContent(
   dimensionLabel: string | undefined,
   isTimeComparison: boolean,
   selectedDimensionValues: (string | null)[],
+  measureValueFormatter?: (value: number) => string | number | null | undefined,
 ): string {
   let content = "";
   const { Time, ...rest } = value;
@@ -194,6 +217,7 @@ function generateTooltipContent(
     dimensionLabel,
     isTimeComparison,
     selectedDimensionValues,
+    measureValueFormatter,
   );
 
   return content;
@@ -206,6 +230,7 @@ export function tddTooltipFormatter(
   isTimeComparison: boolean,
   selectedDimensionValues: (string | null)[],
   interval: V1TimeGrain | undefined,
+  measureValueFormatter?: (value: number) => string | number | null | undefined,
 ) {
   const colorMap = createColorMap(
     measureLabel,
@@ -223,5 +248,6 @@ export function tddTooltipFormatter(
       dimensionLabel,
       isTimeComparison,
       selectedDimensionValues,
+      measureValueFormatter,
     );
 }

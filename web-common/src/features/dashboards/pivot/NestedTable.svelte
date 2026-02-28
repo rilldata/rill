@@ -194,8 +194,14 @@
     return (index + offset) % measureCount === 0;
   }
 
+  function getMeasureColumn(cell: Cell<PivotDataRow, unknown>) {
+    const columnName =
+      (cell.column.columnDef as { name?: string }).name ?? cell.column.id;
+    return measures.find((m) => m.name === columnName);
+  }
+
   function getCellTooltipValue(cell: Cell<PivotDataRow, unknown>) {
-    const measureColumn = measures.find((m) => m.name === cell.column.id);
+    const measureColumn = getMeasureColumn(cell);
     if (!measureColumn) return undefined;
     const value = cell.getValue() as string | number | null | undefined;
     const formattedValue = measureColumn.tooltipFormatter(value);

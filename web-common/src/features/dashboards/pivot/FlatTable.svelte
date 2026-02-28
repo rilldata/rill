@@ -77,8 +77,9 @@
   }, 0);
 
   function getMeasureColumn(headerColumn: Column<PivotDataRow>) {
-    const columnId = headerColumn.id;
-    return measures.find((m) => m.name === columnId);
+    const columnName =
+      (headerColumn.columnDef as { name?: string }).name ?? headerColumn.id;
+    return measures.find((m) => m.name === columnName);
   }
 
   function getCellTooltipValue(cell: Cell<PivotDataRow, unknown>) {

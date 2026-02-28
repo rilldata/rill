@@ -21,6 +21,9 @@
   export let formatter: ReturnType<
     typeof createMeasureValueFormatter<null | undefined>
   >;
+  export let tooltipFormatter:
+    | ReturnType<typeof createMeasureValueFormatter<null | undefined>>
+    | undefined = undefined;
   export let onMouseDown: undefined | ((evt: MouseEvent, table: any) => any) =
     undefined;
   export let onMouseHover: undefined | ((evt: MouseEvent, table: any) => any) =
@@ -167,7 +170,10 @@
       td.innerHTML = value;
     } else if (typeof value === "number") {
       const formattedValue = formatter(value) ?? "";
-      td.setAttribute("title", formattedValue);
+      const tooltipValue = tooltipFormatter
+        ? (tooltipFormatter(value) ?? formattedValue)
+        : formattedValue;
+      td.setAttribute("title", String(tooltipValue));
       td.innerHTML = formattedValue;
     }
 

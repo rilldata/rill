@@ -61,6 +61,10 @@
     measure,
     hasNoFormatting ? "big-number" : "table",
   );
+  $: tooltipFormatter = createMeasureValueFormatter<null | undefined>(
+    measure,
+    "tooltip",
+  );
 
   let pivot;
 
@@ -418,6 +422,7 @@
     {renderRowCorner}
     {getColumnWidth}
     {formatter}
+    {tooltipFormatter}
     {getRowHeaderWidth}
     onMouseDown={handleMouseDown}
     onMouseHover={handleMouseHover}
