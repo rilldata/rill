@@ -148,14 +148,19 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			secretName := safeName(fmt.Sprintf("%s__%s__secret", opts.ModelName, connector))
 			validation := ", VALIDATION 'none'"
 			// azure does not support this property
+			var chain string
 			if connector == "azure" {
 				validation = ""
+				chain = "'env;cli'"
+			} else {
+				chain = "'env;config'"
 			}
 			fallbackSecrets = append(fallbackSecrets, fmt.Sprintf(`
 			CREATE OR REPLACE TEMPORARY SECRET  %s (
 			TYPE %s,
-			PROVIDER credential_chain%s
-			)`, secretName, connector, validation))
+			PROVIDER credential_chain,
+			CHAIN %s %s
+			)`, secretName, connector, chain, validation))
 			fallbackDrops = append(fallbackDrops, fmt.Sprintf(`DROP SECRET IF EXISTS %s`, secretName))
 		}
 
@@ -558,7 +563,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
 		} else if s3Config.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, CHAIN 'env;config', VALIDATION 'none'")
 		}
 
 		if s3Config.SessionToken != "" {
@@ -618,7 +623,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if gcsConfig.KeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(gcsConfig.KeyID), safeSQLString(gcsConfig.Secret))
 		} else if gcsConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, CHAIN 'env;config', VALIDATION 'none'")
 		}
 		writeScope(&sb, gcsConfig.PathPrefixes)
 		sb.WriteRune(')')
@@ -643,7 +648,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
 		} else if azureConfig.AllowHostAccess {
 			// duckdb will use default defaultazurecredential https://github.com/Azure/azure-sdk-for-cpp/blob/azure-identity_1.6.0/sdk/identity/azure-identity/README.md#defaultazurecredential
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, CHAIN 'env;cli'")
 		}
 		if azureConfig.GetAccount() != "" {
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
