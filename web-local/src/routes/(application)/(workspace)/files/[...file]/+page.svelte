@@ -10,6 +10,8 @@
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
+  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
+  import APIWorkspace from "@rilldata/web-common/features/workspaces/APIWorkspace.svelte";
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
@@ -27,6 +29,7 @@
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Explore, ExploreWorkspace],
     [ResourceKind.Canvas, CanvasWorkspace],
+    [ResourceKind.API, APIWorkspace],
     [null, null],
     [undefined, null],
   ]);

@@ -3484,13 +3484,17 @@ definitions:
           connector:
             type: string
             description: Specifies the connector to use with the glob input.
+          args:
+            type: object
+            description: Arguments to pass to the glob resolver.
+            additionalProperties: true
         required:
           - glob
-        examples: 
+        examples:
           - type: api
+            glob: data/*.csv
+            args:
 
-            glob: "data/*.csv"
- 
       - title: Resource Status Check
         type: object
         description: Uses the status of a resource as data.
@@ -3561,6 +3565,10 @@ definitions:
           connector:
             type: string
             description: Specifies the connector to use with the glob input.
+          args:
+            type: object
+            description: Arguments to pass to the glob resolver.
+            additionalProperties: true
         required:
           - glob
       - title: Resource Status Check
