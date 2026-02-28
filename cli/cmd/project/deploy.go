@@ -407,6 +407,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return err
 		}
 		req.GitRemote = gitRepo.Remote
+		req.PrimaryBranch = gitRepo.DefaultBranch
 	}
 	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
@@ -511,9 +512,10 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				Org:       ch.Org,
-				Project:   opts.Name,
-				GitRemote: &gitRepo.Remote,
+				Org:           ch.Org,
+				Project:       opts.Name,
+				GitRemote:     &gitRepo.Remote,
+				PrimaryBranch: &gitRepo.DefaultBranch,
 			}
 		}
 		// Update the project

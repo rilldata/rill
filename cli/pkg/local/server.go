@@ -369,6 +369,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Public:        false,
 			DirectoryName: directoryName,
 			GitRemote:     ghRepo.Remote,
+			PrimaryBranch: ghRepo.DefaultBranch,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -533,9 +534,10 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-				Org:       projResp.Project.OrgName,
-				Project:   projResp.Project.Name,
-				GitRemote: &ghRepo.Remote,
+				Org:           projResp.Project.OrgName,
+				Project:       projResp.Project.Name,
+				GitRemote:     &ghRepo.Remote,
+				PrimaryBranch: &ghRepo.DefaultBranch,
 			})
 			if err != nil {
 				return nil, err
