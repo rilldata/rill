@@ -166,8 +166,9 @@
       td.setAttribute("title", value);
       td.innerHTML = value;
     } else if (typeof value === "number") {
-      td.setAttribute("title", value);
-      td.innerHTML = formatter(value) ?? "";
+      const formattedValue = formatter(value) ?? "";
+      td.setAttribute("title", formattedValue);
+      td.innerHTML = formattedValue;
     }
 
     const maybeVal = renderCell({ x, y, value, element: td });
