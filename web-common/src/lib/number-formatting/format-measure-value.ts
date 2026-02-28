@@ -249,6 +249,15 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
                 string,
                 string,
               ];
+              if (isTooltip) {
+                const sign = value < 0 ? "-" : "";
+                const humanized = humanizer(
+                  Math.abs(value),
+                  FormatPreset.CURRENCY_USD,
+                );
+                const unsignedNumber = humanized.replaceAll("$", "");
+                return `${sign}${currency[0]}${unsignedNumber}${currency[1]}`;
+              }
               // Use custom currency symbol from locale
               const humanized = humanizer(value, FormatPreset.HUMANIZE);
               return `${currency[0]}${humanized}${currency[1]}`;

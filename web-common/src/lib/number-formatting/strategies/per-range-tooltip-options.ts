@@ -32,6 +32,13 @@ const tooltipRangeSpec: RangeFormatSpec[] = [
   },
 ];
 
+const tooltipCurrencyRangeSpec: RangeFormatSpec[] = tooltipRangeSpec.map(
+  (spec) => ({
+    ...spec,
+    padWithInsignificantZeros: true,
+  }),
+);
+
 export const tooltipNoFormattingOptions: FormatterOptionsCommon &
   FormatterRangeSpecsStrategy = {
   numberKind: NumberKind.ANY,
@@ -51,7 +58,7 @@ export const tooltipPercentOptions: FormatterOptionsCommon &
 export const tooltipCurrencyOptions = (
   numberKind: NumberKind,
 ): FormatterOptionsCommon & FormatterRangeSpecsStrategy => ({
-  rangeSpecs: tooltipRangeSpec,
+  rangeSpecs: tooltipCurrencyRangeSpec,
   defaultMaxDigitsRight: 2,
   upperCaseEForExponent: true,
   numberKind,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createMeasureValueFormatter } from "./format-measure-value";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+import { FormatPreset } from "./humanizer-types";
 
 describe("format-measure-value with d3_locale", () => {
   it("should apply custom thousand separators for big numbers", () => {
@@ -69,6 +70,38 @@ describe("format-measure-value with d3_locale", () => {
     // Tooltip should show the full number with custom separators
     // Since it's a tooltip with d3 format, it will use the d3 formatter directly
     expect(result).toBe("1.234,56");
+  });
+
+  it("should keep two decimal places for tooltip currency presets", () => {
+    const measure: MetricsViewSpecMeasure = {
+      name: "usd_measure",
+      expression: "SUM(amount)",
+      formatPreset: FormatPreset.CURRENCY_USD,
+    };
+
+    const formatter = createMeasureValueFormatter(measure, "tooltip");
+
+    expect(formatter(9064.8)).toBe("$9,064.80");
+    expect(formatter(9064)).toBe("$9,064.00");
+  });
+
+  it("should keep two decimal places for tooltip custom locale currency", () => {
+    const measure: MetricsViewSpecMeasure = {
+      name: "rupee_tooltip",
+      expression: "SUM(amount)",
+      formatD3: "$,",
+      formatD3Locale: {
+        thousands: ",",
+        decimal: ".",
+        grouping: [3],
+        currency: ["₹", ""],
+      },
+    };
+
+    const formatter = createMeasureValueFormatter(measure, "tooltip");
+
+    expect(formatter(9064.8)).toBe("₹9,064.80");
+    expect(formatter(9064)).toBe("₹9,064.00");
   });
 
   it("should apply custom thousand separators with non-currency formats", () => {
