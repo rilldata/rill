@@ -5,6 +5,7 @@
   import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import {
@@ -52,6 +53,10 @@
       leaderboardShowContextForAllMeasures ||
       measureName === leaderboardSortByMeasureName
     );
+  }
+
+  function hasValue(value: number | null | undefined): value is number {
+    return value !== null && value !== undefined;
   }
 
   let hovered = false;
@@ -242,7 +247,7 @@
   {#each leaderboardMeasureNames as measureName, i (i)}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
-      tooltipValue={values[measureName]
+      tooltipValue={hasValue(values[measureName])
         ? tooltipFormatters[measureName]?.(values[measureName])
         : null}
       dataType="INTEGER"
@@ -254,7 +259,7 @@
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
           type="INTEGER"
-          value={values[measureName]
+          value={hasValue(values[measureName])
             ? formatters[measureName]?.(values[measureName])
             : null}
         />
@@ -268,6 +273,11 @@
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
+        tooltipValue={hasValue(pctOfTotals[measureName])
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(pctOfTotals[measureName]),
+            )
+          : null}
         dataType="INTEGER"
         cellType="comparison"
       >
@@ -284,13 +294,16 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaAbsMap[measureName]?.toString() || ""}
+        tooltipValue={hasValue(deltaAbsMap[measureName])
+          ? tooltipFormatters[measureName]?.(deltaAbsMap[measureName])
+          : null}
         dataType="INTEGER"
         cellType="comparison"
       >
         <FormattedDataType
           color="text-fg-secondary"
           type="INTEGER"
-          value={deltaAbsMap[measureName]
+          value={hasValue(deltaAbsMap[measureName])
             ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
@@ -305,11 +318,16 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaRels[measureName]?.toString() || ""}
+        tooltipValue={hasValue(deltaRels[measureName])
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(deltaRels[measureName]),
+            )
+          : null}
         {dataType}
         cellType="comparison"
       >
         <PercentageChange
-          value={deltaRels[measureName]
+          value={hasValue(deltaRels[measureName])
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
           color="text-fg-secondary"
