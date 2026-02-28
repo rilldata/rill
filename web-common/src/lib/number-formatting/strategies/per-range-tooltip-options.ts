@@ -35,6 +35,7 @@ const tooltipRangeSpec: RangeFormatSpec[] = [
 const tooltipCurrencyRangeSpec: RangeFormatSpec[] = tooltipRangeSpec.map(
   (spec) => ({
     ...spec,
+    maxDigitsRight: 2,
     padWithInsignificantZeros: true,
   }),
 );

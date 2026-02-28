@@ -83,6 +83,7 @@ describe("format-measure-value with d3_locale", () => {
 
     expect(formatter(9064.8)).toBe("$9,064.80");
     expect(formatter(9064)).toBe("$9,064.00");
+    expect(formatter(89.1249)).toBe("$89.12");
   });
 
   it("should keep two decimal places for tooltip custom locale currency", () => {
@@ -102,6 +103,20 @@ describe("format-measure-value with d3_locale", () => {
 
     expect(formatter(9064.8)).toBe("₹9,064.80");
     expect(formatter(9064)).toBe("₹9,064.00");
+    expect(formatter(89.1249)).toBe("₹89.12");
+  });
+
+  it("should cap tooltip currency to two decimals for d3 currency formats", () => {
+    const measure: MetricsViewSpecMeasure = {
+      name: "d3_currency_tooltip",
+      expression: "SUM(amount)",
+      formatD3: "$,.4f",
+    };
+
+    const formatter = createMeasureValueFormatter(measure, "tooltip");
+
+    expect(formatter(89.1249)).toBe("$89.12");
+    expect(formatter(89)).toBe("$89.00");
   });
 
   it("should apply custom thousand separators with non-currency formats", () => {
