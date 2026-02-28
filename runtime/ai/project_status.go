@@ -23,7 +23,7 @@ type ProjectStatusArgs struct {
 	Kind                        string `json:"kind,omitempty" jsonschema:"Optional filter to only return resources of the specified kind."`
 	Name                        string `json:"name,omitempty" jsonschema:"Optional filter to only return the resource with the specified name."`
 	Path                        string `json:"path,omitempty" jsonschema:"Optional filter to only return resources declared in the specified file path."`
-	WaitUntilIdle               bool   `json:"wait_until_idle,omitempty" jsonschema:"If true, waits until all resources have finished reconciling before returning the status."`
+	WaitUntilIdle               bool   `json:"wait_until_idle,omitempty" jsonschema:"If true, waits until all resources have finished reconciling before returning the status. Set this if you have recently updated a resource and want to know if it parsed and reconciled successfully."`
 	WaitUntilIdleTimeoutSeconds int    `json:"wait_until_idle_timeout_seconds,omitempty" jsonschema:"Timeout in seconds for wait_until_idle. Defaults to 60. Only override if you anticipate large workloads."`
 	TailLogs                    int    `json:"tail_logs,omitempty" jsonschema:"Number of recent log entries to include in the response. Defaults to 0."`
 }
@@ -40,7 +40,7 @@ func (t *ProjectStatus) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        ProjectStatusName,
 		Title:       "Get project status",
-		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors and optionally recent logs. Can optionally wait until all resources have finished reconciling before returning.",
+		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors and optionally recent logs. If you have recently updated a resource in the project, it can optionally wait until all resources have finished reconciling before returning.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting project status...",
 			"openai/toolInvocation/invoked":  "Got project status",

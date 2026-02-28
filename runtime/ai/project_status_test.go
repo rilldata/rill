@@ -2,7 +2,9 @@ package ai_test
 
 import (
 	"testing"
+	"time"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -69,6 +71,31 @@ measures:
 			require.NotEmpty(t, r["kind"])
 			require.NotEmpty(t, r["name"])
 			require.NotEmpty(t, r["reconcile_status"])
+		}
+	})
+
+	t.Run("no logs by default", func(t *testing.T) {
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Empty(t, res.Logs)
+	})
+
+	t.Run("tail logs", func(t *testing.T) {
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
+			TailLogs: 100,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.NotEmpty(t, res.Logs)
+
+		// Verify log entries have expected fields
+		for _, l := range res.Logs {
+			require.NotEmpty(t, l["level"])
+			require.NotEmpty(t, l["time"])
+			require.NotEmpty(t, l["message"])
 		}
 	})
 
@@ -177,4 +204,62 @@ sql: SELECT 1 AS id
 		require.NotNil(t, res)
 		require.Empty(t, res.ParseErrors) // No parse errors for the valid file
 	})
+}
+
+func TestProjectStatusWaitUntilIdle(t *testing.T) {
+	// Use ClickHouse so that materializing a model with sleep() takes real time,
+	// eliminating the race where reconciliation finishes before we call WaitUntilIdle.
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"clickhouse"},
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: clickhouse",
+			"models/orders.yaml": `
+type: model
+sql: SELECT 1 AS order_id, 100.50 AS total_amount
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0) // parser + model
+
+	s := newSession(t, rt, instanceID)
+
+	// Add a materialized model with sleep(2) so reconciliation takes ~2 seconds.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"/models/slow.yaml": `
+type: model
+materialize: true
+sql: SELECT sleep(2), 1 AS id
+`,
+	})
+	ctrl, err := rt.Controller(t.Context(), instanceID)
+	require.NoError(t, err)
+	err = ctrl.Reconcile(t.Context(), runtime.GlobalProjectParserName)
+	require.NoError(t, err)
+
+	// Sleep briefly to let reconciliation begin.
+	time.Sleep(100 * time.Millisecond)
+
+	// Call project_status with WaitUntilIdle; it should wait for reconciliation to finish.
+	var res *ai.ProjectStatusResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
+		WaitUntilIdle: true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	// All resources should be idle after waiting.
+	require.NotEmpty(t, res.Resources)
+	for _, r := range res.Resources {
+		require.Equal(t, "RECONCILE_STATUS_IDLE", r["reconcile_status"])
+	}
+
+	// The new materialized model should be present.
+	var found bool
+	for _, r := range res.Resources {
+		if r["name"] == "slow" {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected 'slow' model to be present after WaitUntilIdle")
 }
