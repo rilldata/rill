@@ -280,7 +280,7 @@
   }
 
   .text.theme:hover {
-    @apply text-green-700;
+    @apply text-theme-700;
   }
 
   .text.theme:active,

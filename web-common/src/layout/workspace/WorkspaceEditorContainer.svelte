@@ -21,7 +21,7 @@
     <div
       role="status"
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
-      class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto"
+      class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-primary border-l-4 px-2 py-5 max-h-72 overflow-auto"
     >
       <div class="flex gap-x-2 items-center">
         <CancelCircle className="text-destructive" />{error}
