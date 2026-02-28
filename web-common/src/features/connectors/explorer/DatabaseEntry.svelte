@@ -12,10 +12,18 @@
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let store: ConnectorExplorerStore;
+  export let searchPattern: string = "";
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
   $: expanded = $expandedStore;
+  $: effectiveExpanded = expanded || !!searchPattern;
+
+  $: hasExpandedSchemasStore = store.hasExpandedChildren(
+    connectorName,
+    database,
+  );
+  $: hasExpandedSchemas = $hasExpandedSchemasStore;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
     instanceId,
@@ -30,11 +38,11 @@
   {#if database}
     <button
       class="database-entry-header"
-      class:open={expanded}
+      class:open={effectiveExpanded}
       on:click={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-fg-secondary {expanded
+        className="transform transition-transform text-fg-secondary {effectiveExpanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
@@ -47,7 +55,7 @@
   {/if}
 
   <ol transition:slide={{ duration }}>
-    {#if expanded}
+    {#if effectiveExpanded}
       {#if error}
         <span class="message"
           >Error: {error.message || error.response?.data?.message}</span
@@ -64,6 +72,8 @@
               {connector}
               {database}
               {store}
+              {searchPattern}
+              autoExpandOnSearch={!hasExpandedSchemas}
               databaseSchema={schema ?? ""}
             />
           {/each}
@@ -80,7 +90,8 @@
   }
 
   .database-entry-header {
-    @apply h-6 pl-[22px] pr-2;
+    @apply h-6 pr-2;
+    padding-left: calc(22px + var(--explorer-indent-offset, 0px));
     @apply flex items-center gap-x-1;
   }
 

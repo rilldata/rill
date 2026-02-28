@@ -405,20 +405,22 @@ export class AddDataFormManager {
       const connectorValues = this.filterValuesForStep(values, "connector");
       setConnectorConfig(connectorValues);
       setConnectorInstanceName(null);
-      setStep(nextStep);
-      return;
+    } else {
+      // Test the connection, then persist config and advance
+      const connectorInstanceName = await submitAddConnectorForm(
+        queryClient,
+        this.connector,
+        submitValues,
+        false,
+      );
+      const connectorValues = this.filterValuesForStep(
+        submitValues,
+        "connector",
+      );
+      setConnectorConfig(connectorValues);
+      setConnectorInstanceName(connectorInstanceName);
     }
 
-    // Test the connection, then persist config and advance
-    const connectorInstanceName = await submitAddConnectorForm(
-      queryClient,
-      this.connector,
-      submitValues,
-      false,
-    );
-    const connectorValues = this.filterValuesForStep(submitValues, "connector");
-    setConnectorConfig(connectorValues);
-    setConnectorInstanceName(connectorInstanceName);
     setStep(nextStep);
   }
 

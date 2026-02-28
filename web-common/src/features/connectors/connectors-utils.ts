@@ -108,6 +108,19 @@ export function makeTablePreviewHref(
 }
 
 /**
+ * Returns the effective driver name for a connector, accounting for special cases
+ * where the reported driver name differs from the logical product.
+ * For example, MotherDuck connectors report driver "duckdb" but use an "md:" path prefix.
+ */
+export function getEffectiveDriverName(connector: V1AnalyzedConnector): string {
+  const path = connector.config?.path;
+  if (typeof path === "string" && path.startsWith("md:")) {
+    return "motherduck";
+  }
+  return connector.driver?.name ?? "";
+}
+
+/**
  * Determines the correct icon key for a connector based on its configuration.
  * Special cases:
  * - MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
@@ -115,14 +128,13 @@ export function makeTablePreviewHref(
  * - Supabase connectors use "supabase" icon even though they have driver: postgres
  */
 export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
-  // Special case: MotherDuck connectors use md: path prefix
-  const path = connector.config?.path;
-  if (typeof path === "string" && path.startsWith("md:")) {
+  const effectiveDriver = getEffectiveDriverName(connector);
+  if (effectiveDriver === "motherduck") {
     return "motherduck";
   }
 
   // Special case: ClickHouse Cloud connectors have "clickhouse.cloud" in host or dsn
-  if (connector.driver?.name === "clickhouse") {
+  if (effectiveDriver === "clickhouse") {
     const host = connector.config?.host;
     const dsn = connector.config?.dsn;
 
@@ -148,7 +160,7 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
   }
 
   // Default: use the driver name
-  return connector.driver?.name || "duckdb";
+  return effectiveDriver || "duckdb";
 }
 
 /**
