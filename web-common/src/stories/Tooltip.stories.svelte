@@ -20,7 +20,7 @@
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
-        <StackingWord key="shift">Copy</StackingWord> this value to clipboard
+        <StackingWord key="shift">Copy</StackingWord> to clipboard
       </div>
       <Shortcut>
         <span style="font-family: var(--system);">⇧</span> + Click

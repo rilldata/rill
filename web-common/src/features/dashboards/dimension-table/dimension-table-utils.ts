@@ -445,6 +445,13 @@ export function prepareDimensionTableRows(
     Object.fromEntries(
       allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)]),
     );
+  const tooltipFormattersForMeasures: { [key: string]: (val: number) => string } =
+    Object.fromEntries(
+      allMeasuresForSpec.map((m) => [
+        m.name,
+        createMeasureValueFormatter(m, "tooltip"),
+      ]),
+    );
 
   const tableRows: DimensionTableRow[] = queryRows
     .filter((row) => row[activeMeasureName] !== undefined)
@@ -461,11 +468,19 @@ export function prepareDimensionTableRows(
             ? formattersForMeasures[name](val)
             : PERC_DIFF.CURRENT_VALUE_NO_DATA,
         ]);
+      const tooltipFormattedVals: [string, string | number | PERC_DIFF][] =
+        rawVals.map(([name, val]) => [
+          "__formatted_tooltip_" + name,
+          val !== null
+            ? tooltipFormattersForMeasures[name](val)
+            : PERC_DIFF.CURRENT_VALUE_NO_DATA,
+        ]);
 
       const rowOut: DimensionTableRow = Object.fromEntries([
         [dimensionColumn, row[dimensionColumn] as string],
         ...rawVals,
         ...formattedVals,
+        ...tooltipFormattedVals,
       ]);
 
       if (addDeltas) {
@@ -481,16 +496,23 @@ export function prepareDimensionTableRows(
               deltaAbs !== null
                 ? formattersForMeasures[measure.name](deltaAbs as number)
                 : PERC_DIFF.PREV_VALUE_NO_DATA;
+            rowOut[`__formatted_tooltip_${measure.name}_delta`] =
+              deltaAbs !== null
+                ? tooltipFormattersForMeasures[measure.name](deltaAbs as number)
+                : PERC_DIFF.PREV_VALUE_NO_DATA;
           }
 
           const deltaRel = row[measure.name + ComparisonDeltaRelativeSuffix];
           if (deltaRel !== undefined) {
             rowOut[`${measure.name}_delta_perc`] =
               castUnknownToNumberOrNull(deltaRel);
-            rowOut[`__formatted_${measure.name}_delta_perc`] =
+            const formattedDeltaRel =
               deltaRel !== null
                 ? formatMeasurePercentageDifference(deltaRel as number)
                 : PERC_DIFF.PREV_VALUE_NO_DATA;
+            rowOut[`__formatted_${measure.name}_delta_perc`] = formattedDeltaRel;
+            rowOut[`__formatted_tooltip_${measure.name}_delta_perc`] =
+              formattedDeltaRel;
           }
         });
       }
@@ -510,10 +532,17 @@ export function prepareDimensionTableRows(
               PERC_DIFF.CURRENT_VALUE_NO_DATA;
             rowOut[`__formatted_${measure.name}_percent_of_total`] =
               PERC_DIFF.CURRENT_VALUE_NO_DATA;
+            rowOut[`__formatted_tooltip_${measure.name}_percent_of_total`] =
+              PERC_DIFF.CURRENT_VALUE_NO_DATA;
           } else {
             rowOut[measure.name + "_percent_of_total"] = value / total;
+            const formattedPercentOfTotal = formatMeasurePercentageDifference(
+              value / total,
+            );
             rowOut[`__formatted_${measure.name}_percent_of_total`] =
-              formatMeasurePercentageDifference(value / total);
+              formattedPercentOfTotal;
+            rowOut[`__formatted_tooltip_${measure.name}_percent_of_total`] =
+              formattedPercentOfTotal;
           }
         });
       }

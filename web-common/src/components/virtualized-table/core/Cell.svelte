@@ -23,6 +23,7 @@
   export let column;
   export let value;
   export let formattedValue: string | null = null;
+  export let tooltipFormattedValue: unknown = null;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -101,10 +102,13 @@
       ? "ui-measure-bar-included-selected"
       : "ui-measure-bar-included";
 
+  $: tooltipSourceValue = tooltipFormattedValue ?? formattedValue ?? value;
   $: tooltipValue =
-    value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
-      ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
-      : value;
+    typeof tooltipSourceValue === "string" &&
+    STRING_LIKES.has(type) &&
+    tooltipSourceValue.length >= TOOLTIP_STRING_LIMIT
+      ? tooltipSourceValue.slice(0, TOOLTIP_STRING_LIMIT) + "..."
+      : tooltipSourceValue;
 
   $: formattedDataTypeStyle = excluded
     ? "font-normal text-fg-muted"
@@ -177,11 +181,11 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType slot="name" value={tooltipValue} />
+      <FormattedDataType slot="name" type={type} value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
-        <StackingWord key="shift">Copy</StackingWord> this value to clipboard
+        <StackingWord key="shift">Copy</StackingWord> to clipboard
       </div>
       <Shortcut>
         <span style="font-family: var(--system);">⇧</span> + Click

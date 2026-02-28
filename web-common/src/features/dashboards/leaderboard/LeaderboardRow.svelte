@@ -42,6 +42,10 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+  export let tooltipFormatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
@@ -238,6 +242,9 @@
   {#each leaderboardMeasureNames as measureName, i (i)}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
+      tooltipValue={values[measureName]
+        ? tooltipFormatters[measureName]?.(values[measureName])
+        : null}
       dataType="INTEGER"
       cellType="measure"
       background={leaderboardMeasureNames.length === 1
