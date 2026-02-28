@@ -11,6 +11,8 @@ import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
+import DatabricksIcon from "../../components/icons/connectors/DataBricksIcon.svelte";
+
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
 import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
@@ -30,6 +32,7 @@ export const connectorIconMapping = {
   s3: AmazonS3Icon,
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
+  databricks: DatabricksIcon,
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
 };

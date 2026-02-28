@@ -20,6 +20,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### _Data Warehouses_
 - [**Athena**](#athena) - Amazon Athena
 - [**BigQuery**](#bigquery) - Google BigQuery
+- [**Databricks**](#databricks) - Databricks SQL Warehouse
 - [**Redshift**](#redshift) - Amazon Redshift
 - [**Snowflake**](#snowflake) - Snowflake data warehouse
 
@@ -311,6 +312,47 @@ port: 9000 # Port number of the ClickHouse server
 database: "mydatabase" # Name of the ClickHouse database
 ssl: true # Enable SSL for secure connection
 cluster: "mycluster" # Cluster name
+```
+
+## Databricks
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `databricks` _(required)_
+
+### `host`
+
+_[string]_ - Your Databricks workspace hostname (e.g., adb-12345.azuredatabricks.net) 
+
+### `http_path`
+
+_[string]_ - The HTTP path to your SQL warehouse or cluster (e.g., /sql/1.0/warehouses/abc123) 
+
+### `token`
+
+_[string]_ - A Databricks personal access token 
+
+### `catalog`
+
+_[string]_ - Unity Catalog catalog name. If not set, the workspace default is used 
+
+### `schema`
+
+_[string]_ - Default schema within the catalog 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
+```yaml
+# Example: Databricks connector configuration
+type: connector # Must be `connector` (required)
+driver: databricks # Must be `databricks` _(required)_
+host: "adb-12345.azuredatabricks.net" # Databricks workspace hostname
+http_path: "/sql/1.0/warehouses/abc123" # HTTP path to SQL warehouse
+token: "{{ .env.DATABRICKS_TOKEN }}" # Personal access token
+catalog: "main" # Unity Catalog catalog name
+schema: "default" # Default schema
 ```
 
 ## Druid
