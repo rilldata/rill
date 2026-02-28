@@ -1190,6 +1190,59 @@ definitions:
           - type
           - driver
         - type: object
+          title: SQL Server
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `sqlserver`
+            dsn:
+              type: string
+              description: |
+                SQL Server Connection String in [mssql URI format](https://learn.microsoft.com/en-us/sql/connect/ado-net/connection-string-syntax).
+                ```text
+                mssql://user:password@host:1433/my-db
+                ```
+                Rules for special characters in password:
+                - The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+                - All other special characters must be percent-encoded (`%XX` format).
+            user:
+              type: string
+              description: Username for authentication
+            password:
+              type: string
+              description: Password for authentication
+            host:
+              type: string
+              description: Hostname or IP address of the SQL Server instance
+            port:
+              type: string
+              description: Port number for the SQL Server instance (default is 1433)
+            database:
+              type: string
+              description: Name of the SQL Server database to connect to
+            encrypt:
+              type: boolean
+              description: Encrypt the connection using TLS
+            log_queries:
+              type: boolean
+              description: Enable logging of all SQL queries (useful for debugging)
+          examples:
+            - # Example: SQL Server connector configured using individual properties
+              type: connector
+              driver: sqlserver
+              host: localhost
+              port: 1433
+              database: mydatabase
+              user: myusername
+              password: "{{ .env.SQLSERVER_PASSWORD }}"
+              encrypt: false
+            - # Example: SQL Server connector configured using dsn
+              type: connector
+              driver: sqlserver
+              dsn: "{{ .env.SQLSERVER_DSN }}"   # Define DSN in .env file
+          required:
+            - driver
+        - type: object
           title: SQLite
           properties:
             driver:

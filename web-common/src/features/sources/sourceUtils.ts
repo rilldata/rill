@@ -50,6 +50,15 @@ export function compileSourceYAML(
       .map((line) => `${indent}${line}`)
       .join("\n")}`;
   const trimSqlForDev = (sql: string) => sql.trim().replace(/;+\s*$/, "");
+  const applyDevLimit = (sql: string, driver: string) => {
+    if (driver === "sqlserver") {
+      return sql.replace(/^select\s+/i, "select TOP 10000 ");
+    }
+    if (driver === "oracle") {
+      return `${sql} FETCH FIRST 10000 ROWS ONLY`;
+    }
+    return `${sql} limit 10000`;
+  };
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
@@ -90,21 +99,20 @@ export function compileSourceYAML(
     })
     .join("\n");
 
+  // Use connector instance name if provided, otherwise fall back to driver name
+  const connectorName = opts?.connectorInstanceName || connector.name;
+  const driverName = opts?.originalDriverName || connector.name || "duckdb";
+
   const devSection =
-    connector.implementsWarehouse &&
+    (connector.implementsWarehouse || connector.implementsSqlStore) &&
     connector.name !== "redshift" &&
     typeof formValues.sql === "string" &&
     formValues.sql.trim()
       ? `\n\ndev:\n  ${formatSqlBlock(
-          `${trimSqlForDev(formValues.sql)} limit 10000`,
+          applyDevLimit(trimSqlForDev(formValues.sql), driverName),
           "    ",
         )}`
       : "";
-
-  // Use connector instance name if provided, otherwise fall back to driver name
-  const connectorName = opts?.connectorInstanceName || connector.name;
-
-  const driverName = opts?.originalDriverName || connector.name || "duckdb";
   return (
     `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +

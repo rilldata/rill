@@ -12,6 +12,7 @@ import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { salesforceSchema } from "../../templates/schemas/salesforce";
 import { snowflakeSchema } from "../../templates/schemas/snowflake";
+import { sqlserverSchema } from "../../templates/schemas/sqlserver";
 import { sqliteSchema } from "../../templates/schemas/sqlite";
 import { localFileSchema } from "../../templates/schemas/local_file";
 import { duckdbSchema } from "../../templates/schemas/duckdb";
@@ -31,6 +32,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   mysql: mysqlSchema,
   postgres: postgresSchema,
   redshift: redshiftSchema,
+  sqlserver: sqlserverSchema,
   salesforce: salesforceSchema,
   snowflake: snowflakeSchema,
   sqlite: sqliteSchema,

@@ -425,7 +425,7 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			return &localFileToSelfExecutor{c, f}, nil
 		}
 		switch opts.InputHandle.Driver() {
-		case "mysql", "postgres":
+		case "mysql", "postgres", "sqlserver":
 			return &sqlStoreToSelfExecutor{c}, nil
 		case "https":
 			return &httpsToSelfExecutor{c}, nil

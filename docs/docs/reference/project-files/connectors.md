@@ -1267,6 +1267,70 @@ dsn: "{{ .env.SNOWFLAKE_DSN }}" # define SNOWFLAKE_DSN in .env file
 parallel_fetch_limit: 2
 ```
 
+## SQL Server
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `sqlserver` _(required)_
+
+### `dsn`
+
+_[string]_ - SQL Server Connection String in [mssql URI format](https://learn.microsoft.com/en-us/sql/connect/ado-net/connection-string-syntax).
+```text
+mssql://user:password@host:1433/my-db
+```
+Rules for special characters in password:
+- The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+- All other special characters must be percent-encoded (`%XX` format).
+ 
+
+### `user`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `host`
+
+_[string]_ - Hostname or IP address of the SQL Server instance 
+
+### `port`
+
+_[string]_ - Port number for the SQL Server instance (default is 1433) 
+
+### `database`
+
+_[string]_ - Name of the SQL Server database to connect to 
+
+### `encrypt`
+
+_[boolean]_ - Encrypt the connection using TLS 
+
+### `log_queries`
+
+_[boolean]_ - Enable logging of all SQL queries (useful for debugging) 
+
+```yaml
+# Example: SQL Server connector configured using individual properties
+type: connector
+driver: sqlserver
+host: localhost
+port: 1433
+database: mydatabase
+user: myusername
+password: "{{ .env.SQLSERVER_PASSWORD }}"
+encrypt: false
+```
+
+```yaml
+# Example: SQL Server connector configured using dsn
+type: connector
+driver: sqlserver
+dsn: "{{ .env.SQLSERVER_DSN }}" # Define DSN in .env file
+```
+
 ## SQLite
 
 ### `driver`
