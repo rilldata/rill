@@ -31,7 +31,9 @@ export function getValidationSchemaForConnector(
 export function createConnectorForm(args: {
   schemaName: string;
   formType: AddDataFormType;
-  onUpdate: (event: { form: { data: FormData; valid: boolean } }) => void;
+  onUpdate: (event: {
+    form: { data: FormData; valid: boolean };
+  }) => void | Promise<void>;
 }) {
   const { schemaName, formType, onUpdate } = args;
   const schema = getConnectorSchema(schemaName);

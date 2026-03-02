@@ -15,7 +15,6 @@
   import { ICONS } from "./icons";
   import type { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
-  import type { ConnectorStepState } from "./connectorStepStore";
 
   export let connector: V1ConnectorDriver;
   export let formManager: AddDataFormManager;
@@ -51,10 +50,11 @@
     set: (method: string) => setAuthMethod(method || null),
   };
 
-  $: stepState = $connectorStepStore as ConnectorStepState;
+  $: stepState = $connectorStepStore;
   let activeSchema: MultiStepFormSchema | null = null;
   let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
   let selectedAuthMethod = "";
+  $: console.log(stepState);
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
 

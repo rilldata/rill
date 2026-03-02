@@ -77,11 +77,17 @@
       const values = form.data;
       const sql =
         values.mode === "table" ? `SELECT * FROM ${values.table}` : values.sql;
-      const yaml = compileSourceYAML(connectorDriver, {
-        name: values.name,
-        sql,
-        database: values.database,
-      });
+      const yaml = compileSourceYAML(
+        connectorDriver,
+        {
+          name: values.name,
+          sql,
+          database: values.database,
+        },
+        {
+          connectorInstanceName: connectorName,
+        },
+      );
       onCreate(
         values.name,
         get(connectorExplorerStore.selectedTableStore),

@@ -250,6 +250,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
         properties: {
           managed: { const: false },
           port: { default: "9000" },
+          ssl: { default: true },
         },
       },
     },

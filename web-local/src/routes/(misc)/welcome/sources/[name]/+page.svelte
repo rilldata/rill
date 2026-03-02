@@ -3,7 +3,7 @@
     getConnectorSchema,
     isMultiStepConnector,
   } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-  import AddDataForm from "@rilldata/web-common/features/sources/modal/AddDataForm.svelte";
+  import ConnectorForm from "@rilldata/web-common/features/welcome/new-sources/ConnectorForm.svelte";
   import type { LayoutData } from "./$types";
   import { goto } from "$app/navigation";
 
@@ -22,16 +22,11 @@
 </script>
 
 {#if connectorDriver}
-  <AddDataForm
+  <ConnectorForm
     connector={connectorDriver}
-    schemaName={connectorName}
     formType={isConnectorType ? "connector" : "source"}
-    onClose={() => {
-      void goto(`/welcome/sources/${connectorName}/tables`);
-    }}
-    onCloseAfterNavigation={() => {}}
+    onSubmit={() => void goto(`/welcome/sources/${connectorName}/tables`)}
     onBack={() => window.history.back()}
-    isSubmitting={false}
   />
 {/if}
 
