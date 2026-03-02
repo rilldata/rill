@@ -176,6 +176,17 @@ export class RequestQueue {
     this.nameHeap.delete(nameEntry);
   }
 
+  /** Reject all pending requests (client is being disposed). */
+  clear(): void {
+    while (!this.nameHeap.empty()) {
+      const nameEntry = this.nameHeap.pop()!;
+      while (!nameEntry.queryHeap.empty()) {
+        const entry = nameEntry.queryHeap.pop()!;
+        entry.reject?.(new DOMException("Request cancelled", "AbortError"));
+      }
+    }
+  }
+
   /** Deprioritize a resource (user navigated away). */
   inactiveByName(resourceName: string): void {
     const nameEntry = this.nameHeap.get(resourceName);
