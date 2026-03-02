@@ -1,3 +1,4 @@
+import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import {
   type CreateQueryOptions,
@@ -45,6 +46,43 @@ export type ExploreValidSpecResponse = {
   explore: V1ExploreSpec | undefined;
   metricsView: V1MetricsViewSpec | undefined;
 };
+
+function getExploreValidSpecs(
+  data: V1GetExploreResponse,
+): ExploreValidSpecResponse {
+  return {
+    explore: data.explore?.explore?.state?.validSpec,
+    metricsView: data.metricsView?.metricsView?.state?.validSpec,
+  };
+}
+
+/**
+ * Keeps the last complete pair of explore + metrics view specs while
+ * resources are reconciling. This avoids dashboard flicker when validSpec is
+ * temporarily cleared mid-reconcile.
+ */
+export function createCachedExploreValidSpecSelector() {
+  let cachedValidSpecs: ExploreValidSpecResponse | undefined;
+
+  return (data: V1GetExploreResponse): ExploreValidSpecResponse => {
+    const validSpecs = getExploreValidSpecs(data);
+
+    if (validSpecs.explore && validSpecs.metricsView) {
+      cachedValidSpecs = validSpecs;
+      return validSpecs;
+    }
+
+    const isReconciling =
+      resourceIsLoading(data.explore) || resourceIsLoading(data.metricsView);
+
+    if (isReconciling && cachedValidSpecs) {
+      return cachedValidSpecs;
+    }
+
+    return validSpecs;
+  };
+}
+
 export function useExploreValidSpec(
   instanceId: string,
   exploreName: string,
@@ -57,16 +95,14 @@ export function useExploreValidSpec(
   >,
   queryClient?: QueryClient,
 ) {
+  const selectCachedValidSpec = createCachedExploreValidSpecSelector();
+
   return createRuntimeServiceGetExplore(
     instanceId,
     { name: exploreName },
     {
       query: {
-        select: (data) =>
-          <ExploreValidSpecResponse>{
-            explore: data.explore?.explore?.state?.validSpec,
-            metricsView: data.metricsView?.metricsView?.state?.validSpec,
-          },
+        select: (data) => selectCachedValidSpec(data),
 
         enabled: !!exploreName,
         ...queryOptions,
@@ -79,22 +115,30 @@ export function useExploreValidSpec(
 export function getExploreValidSpecQueryOptions(
   exploreNameStore: Readable<string>,
 ) {
-  return derived([runtime, exploreNameStore], ([{ instanceId }, exploreName]) =>
-    getRuntimeServiceGetExploreQueryOptions(
-      instanceId,
-      {
-        name: exploreName,
-      },
-      {
-        query: {
-          select: (data) => ({
-            exploreSpec: data.explore?.explore?.state?.validSpec,
-            metricsViewSpec: data.metricsView?.metricsView?.state?.validSpec,
-          }),
-          enabled: !!exploreName,
+  const selectCachedValidSpec = createCachedExploreValidSpecSelector();
+
+  return derived(
+    [runtime, exploreNameStore],
+    ([{ instanceId }, exploreName]) => {
+      return getRuntimeServiceGetExploreQueryOptions(
+        instanceId,
+        {
+          name: exploreName,
         },
-      },
-    ),
+        {
+          query: {
+            select: (data) => {
+              const validSpecs = selectCachedValidSpec(data);
+              return {
+                exploreSpec: validSpecs.explore,
+                metricsViewSpec: validSpecs.metricsView,
+              };
+            },
+            enabled: !!exploreName,
+          },
+        },
+      );
+    },
   );
 }
 
