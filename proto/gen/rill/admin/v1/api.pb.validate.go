@@ -3693,6 +3693,10 @@ func (m *ListProjectsForOrganizationAndUserRequest) validate(all bool) error {
 
 	// no validation rules for PageToken
 
+	// no validation rules for Direct
+
+	// no validation rules for IncludeRoles
+
 	if len(errors) > 0 {
 		return ListProjectsForOrganizationAndUserRequestMultiError(errors)
 	}
@@ -3834,6 +3838,8 @@ func (m *ListProjectsForOrganizationAndUserResponse) validate(all bool) error {
 	}
 
 	// no validation rules for NextPageToken
+
+	// no validation rules for ProjectRoles
 
 	if len(errors) > 0 {
 		return ListProjectsForOrganizationAndUserResponseMultiError(errors)
