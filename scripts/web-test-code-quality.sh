@@ -79,7 +79,7 @@ if [[ "$COMMON" == "true" ]]; then
   npx svelte-kit sync
   cd ..
   npx eslint web-common --quiet || exit_code=$?
-  npx svelte-check --workspace web-common --no-tsconfig --ignore "src/features/dashboards/time-series/MetricsTimeSeriesCharts.svelte,src/features/dashboards/time-series/MeasureChart.svelte,src/features/dashboards/time-controls/TimeControls.svelte,src/components/data-graphic/elements/GraphicContext.svelte,src/components/data-graphic/guides/Axis.svelte,src/components/data-graphic/guides/DynamicallyPlacedLabel.svelte,src/components/data-graphic/guides/Grid.svelte,src/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte,src/components/data-graphic/marks/Area.svelte,src/components/data-graphic/marks/ChunkedLine.svelte,src/components/data-graphic/marks/HistogramPrimitive.svelte,src/components/data-graphic/marks/Line.svelte,src/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte,src/features/column-profile/column-types/details/SummaryNumberPlot.svelte,src/stories/Tooltip.stories.svelte,src/lib/number-formatting/__stories__/NumberFormatting.stories.svelte" || exit_code=$?
+  npx svelte-check --workspace web-common --no-tsconfig --ignore "src/stories/Tooltip.stories.svelte,src/lib/number-formatting/__stories__/NumberFormatting.stories.svelte" || exit_code=$?
 fi
 
 if [[ "$LOCAL" == "true" ]]; then
