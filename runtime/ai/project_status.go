@@ -67,7 +67,7 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			timeoutSeconds = 60 // NOTE: If you change this default, also update the jsonschema.
 		}
 		waitCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
-		err := ctrl.WaitUntilIdle(waitCtx, false)
+		err := ctrl.WaitUntilIdle(waitCtx, true)
 		cancel()
 		// If the parent context was cancelled, propagate the error.
 		// If only the wait timed out, proceed to return the current status.
