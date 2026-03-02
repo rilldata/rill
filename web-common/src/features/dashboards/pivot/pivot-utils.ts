@@ -530,7 +530,7 @@ export function getSortFilteredMeasureBody(
   return { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor };
 }
 
-function getValuesForFlatTable(
+export function getValuesForFlatTable(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   rowId: string,

@@ -705,6 +705,7 @@ export function createPivotDataStore(
                       totalsRowData: displayTotalsRow
                         ? totalsRowData
                         : undefined,
+                      columnDimensionAxes: columnDimensionAxes?.data,
                     };
                   },
                 ).subscribe(cellSet);

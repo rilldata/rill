@@ -62,8 +62,13 @@
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
   export let onCellClickToFilter:
-    | ((rowId: string, columnId: string) => Promise<void>)
+    | ((rowId: string, columnId: string, event: MouseEvent) => void)
     | undefined = undefined;
+  export let enableClickToFilter = false;
+  export let rowSelectionState:
+    | import("./pivot-row-selection").PivotRowSelectionState
+    | undefined = undefined;
+  export let clickedCell: { rowId: string; columnId: string } | null = null;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
@@ -239,17 +244,26 @@
       return;
     }
 
-    if (rowHeader) {
+    if (rowHeader && !onCellClickToFilter) {
+      // Legacy expand behavior: when no filter callback, row headers expand/collapse.
+      // When onCellClickToFilter is present, expand is handled by the chevron icon
+      // in PivotExpandableCell (stopPropagation), so row header clicks filter instead.
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
     } else {
-      // Set active cell for dashboard (if enabled)
+      // Skip totals row for filtering
+      const isTotalsRow = totalsRow && rowId === "0";
+      if (isTotalsRow && onCellClickToFilter) {
+        return;
+      }
+
+      // Set active cell for Explore data viewer (if enabled)
       if (setPivotActiveCell && canShowDataViewer) {
         setPivotActiveCell(rowId, columnId);
       }
 
-      // Apply filters for canvas (if enabled)
+      // Apply click-to-filter (Canvas or future Explore)
       if (onCellClickToFilter) {
-        onCellClickToFilter(rowId, columnId);
+        onCellClickToFilter(rowId, columnId, e);
       }
     }
   }
@@ -332,7 +346,10 @@
       {after}
       {totalRowSize}
       {canShowDataViewer}
+      {enableClickToFilter}
       {hasMeasureContextColumns}
+      {rowSelectionState}
+      {clickedCell}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
@@ -355,6 +372,9 @@
       {dataRows}
       {measures}
       {canShowDataViewer}
+      {enableClickToFilter}
+      {rowSelectionState}
+      {clickedCell}
       activeCell={$pivotState.activeCell}
       {assembled}
       {scrollLeft}

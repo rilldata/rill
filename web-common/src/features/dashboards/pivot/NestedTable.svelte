@@ -20,6 +20,7 @@
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import type { PivotRowSelectionState } from "./pivot-row-selection";
   import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
@@ -32,6 +33,9 @@
   export let measures: MeasureColumnProps;
   export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickedCell: { rowId: string; columnId: string } | null = null;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -157,6 +161,13 @@
     return (
       cell.row.id === activeCell?.rowId &&
       cell.column.id === activeCell?.columnId
+    );
+  }
+
+  function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
+    return (
+      cell.row.id === clickedCell?.rowId &&
+      cell.column.id === clickedCell?.columnId
     );
   }
 
@@ -329,17 +340,26 @@
     <tr style:height="{before}px" />
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr class:show-more-row={isShowMoreRow(rows[row.index])}>
+      {@const rowId = rows[row.index].id}
+      {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
+      {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
+      <tr
+        class:show-more-row={isShowMoreRow(rows[row.index])}
+        class:selected-row={isSelected}
+        class:dimmed-row={hasSelection && !isSelected}
+      >
         {#each cells as cell, i (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
+          {@const isClicked = isCellClicked(cell)}
           <td
             class="ui-copy-number cell truncate group/cell"
             class:active-cell={isActive}
-            class:interactive-cell={canShowDataViewer}
+            class:clicked-cell={isClicked}
+            class:interactive-cell={canShowDataViewer || enableClickToFilter}
             class:border-r={shouldShowRightBorder(i)}
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
@@ -500,6 +520,27 @@
   }
   .active-cell.cell {
     @apply bg-primary-50;
+  }
+
+  .clicked-cell {
+    @apply ring-1 ring-inset ring-primary-400;
+  }
+
+  .selected-row .cell {
+    @apply bg-primary-50;
+  }
+  .selected-row:hover .cell {
+    @apply bg-primary-100;
+  }
+  .selected-row > td:first-of-type {
+    @apply bg-primary-50;
+  }
+  .selected-row:hover > td:first-of-type {
+    @apply bg-primary-100;
+  }
+
+  .dimmed-row .cell {
+    @apply opacity-50;
   }
 
   /* Show more row styling */
