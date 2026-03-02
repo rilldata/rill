@@ -10,6 +10,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import type { ConnectError } from "@connectrpc/connect";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
@@ -89,10 +90,10 @@ export function useCanvas(
   client: RuntimeClient,
   canvasName: string,
   queryOptions?: Partial<
-    CreateQueryOptions<V1ResolveCanvasResponse, Error, CanvasResponse>
+    CreateQueryOptions<V1ResolveCanvasResponse, ConnectError, CanvasResponse>
   >,
   queryClient?: QueryClient,
-): CreateQueryResult<CanvasResponse, Error> {
+): CreateQueryResult<CanvasResponse, ConnectError> {
   return createQueryServiceResolveCanvas(
     client,
     { canvas: canvasName },
