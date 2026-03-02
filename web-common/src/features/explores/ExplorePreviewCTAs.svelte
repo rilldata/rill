@@ -6,7 +6,7 @@
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import {
@@ -18,20 +18,23 @@
 
   export let exploreName: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: exploreQuery = useExplore(instanceId, exploreName);
+  $: exploreQuery = useExplore(runtimeClient, exploreName);
   $: exploreFilePath = $exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";
   $: metricsViewFilePath =
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
   $: metricsViewName = $exploreQuery.data?.metricsView?.meta?.name?.name ?? "";
 
-  $: explorePolicyCheck = useDashboardPolicyCheck(instanceId, exploreFilePath);
+  $: explorePolicyCheck = useDashboardPolicyCheck(
+    runtimeClient,
+    exploreFilePath,
+  );
   $: metricsPolicyCheck = useDashboardPolicyCheck(
-    instanceId,
+    runtimeClient,
     metricsViewFilePath,
   );
-  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(instanceId);
+  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
 
   const { readOnly, dashboardChat } = featureFlags;
 </script>

@@ -1,17 +1,13 @@
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import { type ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import {
-  type ExploreValidSpecResponse,
-  useExploreValidSpec,
-} from "@rilldata/web-common/features/explores/selectors";
-import {
-  type RpcStatus,
   type V1ExplorePreset,
   type V1MetricsViewTimeRangeResponse,
-  createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
 import {
@@ -39,7 +35,7 @@ import {
 } from "../leaderboard-context-column";
 
 export type StateManagers = {
-  runtime: Writable<Runtime>;
+  runtimeClient: RuntimeClient;
   metricsViewName: Writable<string>;
   exploreName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
@@ -49,7 +45,7 @@ export type StateManagers = {
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
   validSpecStore: Readable<
-    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, Error>
   >;
   queryClient: QueryClient;
   updateDashboard: DashboardCallbackExecutor;
@@ -81,10 +77,12 @@ export function createStateManagers({
   queryClient,
   metricsViewName,
   exploreName,
+  runtimeClient,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
   exploreName: string;
+  runtimeClient: RuntimeClient;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const exploreNameStore = writable(exploreName);
@@ -99,12 +97,21 @@ export function createStateManagers({
   );
 
   const validSpecStore: Readable<
-    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
-  > = derived([runtime, exploreNameStore], ([r, exploreName], set) =>
-    useExploreValidSpec(
-      r.instanceId,
-      exploreName,
-      undefined,
+    QueryObserverResult<ExploreValidSpecResponse, Error>
+  > = derived([exploreNameStore], ([exploreName], set) =>
+    createRuntimeServiceGetExplore(
+      runtimeClient,
+      { name: exploreName },
+      {
+        query: {
+          select: (data) =>
+            <ExploreValidSpecResponse>{
+              explore: data.explore?.explore?.state?.validSpec,
+              metricsView: data.metricsView?.metricsView?.state?.validSpec,
+            },
+          enabled: !!exploreName,
+        },
+      },
       queryClient,
     ).subscribe(set),
   );
@@ -112,12 +119,12 @@ export function createStateManagers({
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   > = derived(
-    [runtime, metricsViewNameStore, validSpecStore, dashboardStore],
-    ([runtime, mvName, validSpec, $dashboardStore], set) =>
+    [metricsViewNameStore, validSpecStore, dashboardStore],
+    ([mvName, validSpec, $dashboardStore], set) =>
       createQueryServiceMetricsViewTimeRange(
-        runtime.instanceId,
-        mvName,
+        runtimeClient,
         {
+          metricsViewName: mvName,
           timeDimension: $dashboardStore?.selectedTimeDimension,
         },
         {
@@ -157,7 +164,7 @@ export function createStateManagers({
   );
 
   return {
-    runtime: runtime,
+    runtimeClient,
     metricsViewName: metricsViewNameStore,
     exploreName: exploreNameStore,
     metricsStore: metricsExplorerStore,

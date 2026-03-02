@@ -15,17 +15,17 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    type V1Resource,
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/v2/gen";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import InspectorHeaderGrid from "../../../layout/inspector/InspectorHeaderGrid.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";
   import PartitionsBrowser from "../partitions/PartitionsBrowser.svelte";
   import References from "./References.svelte";
@@ -44,27 +44,25 @@
 
   let showColumns = true;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+
   $: source = resource?.source;
   $: model = resource?.model;
 
   $: connectorType = source && formatConnectorType(source);
   $: fileExtension = source && getFileExtension(source);
 
-  $: cardinalityQuery = createQueryServiceTableCardinality(
-    instanceId,
+  $: cardinalityQuery = createQueryServiceTableCardinality(client, {
     tableName,
-    {
-      connector,
-      database,
-      databaseSchema,
-    },
-  );
+    connector,
+    database,
+    databaseSchema,
+  });
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
-    instanceId,
-    tableName,
+    client,
     {
+      tableName,
       connector,
       database,
       databaseSchema,
@@ -88,7 +86,7 @@
   $: columnCount = `${formatInteger(profileColumnsCount)} columns`;
 
   $: summaries = getSummaries(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -112,9 +110,9 @@
 
   $: cardinalityQueries = resourceRefs.map((ref) => {
     return createQueryServiceTableCardinality(
-      instanceId,
-      ref.name as string,
+      client,
       {
+        tableName: ref.name as string,
         connector,
         database,
         databaseSchema,
@@ -130,9 +128,9 @@
   $: sourceProfileColumns =
     resourceRefs.map((ref) => {
       return createQueryServiceTableColumns(
-        instanceId,
-        ref.name as string,
+        client,
         {
+          tableName: ref.name as string,
           connector,
           database,
           databaseSchema,
@@ -259,7 +257,13 @@
       </InspectorHeaderGrid>
 
       <hr />
-      <References refs={resourceRefs} modelHasError={hasErrors} />
+      <References
+        refs={resourceRefs}
+        modelHasError={hasErrors}
+        {connector}
+        {database}
+        {databaseSchema}
+      />
       <hr />
 
       <div>

@@ -1,6 +1,7 @@
 import { beforeNavigate } from "$app/navigation";
 import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
@@ -13,7 +14,10 @@ import { get } from "svelte/store";
  * under this scenario, the catalog entry returns a 404, and it's required to enter the top-level
  * `Dashboard.svelte` component.
  */
-export function resetSelectedMockUserAfterNavigate(queryClient: QueryClient) {
+export function resetSelectedMockUserAfterNavigate(
+  queryClient: QueryClient,
+  client: RuntimeClient,
+) {
   beforeNavigate(({ to, from }) => {
     if (!to?.params || !from?.params) return;
 
@@ -21,7 +25,7 @@ export function resetSelectedMockUserAfterNavigate(queryClient: QueryClient) {
       from.params.name !== to.params.name &&
       get(selectedMockUserStore) !== null
     ) {
-      updateDevJWT(queryClient, null).catch(console.error);
+      updateDevJWT(queryClient, client, null).catch(console.error);
     }
   });
 }

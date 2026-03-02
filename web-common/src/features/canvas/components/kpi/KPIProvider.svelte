@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createQueryServiceMetricsViewAggregation,
     createQueryServiceMetricsViewTimeSeries,
-    V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  } from "@rilldata/web-common/runtime-client/v2/gen";
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
@@ -19,12 +19,12 @@
   export let canvasName: string;
   export let visible: boolean;
 
-  $: ctx = getCanvasStore(canvasName, instanceId);
+  const client = useRuntimeClient();
+
+  $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: ({
     metricsView: { getMeasureForMetricView },
   } = ctx.canvasEntity);
-
-  $: ({ instanceId } = $runtime);
 
   $: ({
     metrics_view: metricsViewName,
@@ -62,9 +62,9 @@
   $: queryMeasures = [{ name: measureName }];
 
   $: totalQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: queryMeasures,
       timeRange: {
         start,
@@ -82,9 +82,9 @@
   );
 
   $: comparisonTotalQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: queryMeasures,
       timeRange: comparisonTimeRange,
       where,
@@ -104,9 +104,9 @@
   );
 
   $: primarySparklineQuery = createQueryServiceMetricsViewTimeSeries(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsViewName,
       measureNames: [measureName],
       timeStart: start,
       timeEnd: end,
@@ -123,9 +123,9 @@
   );
 
   $: comparisonSparklineQuery = createQueryServiceMetricsViewTimeSeries(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsViewName,
       measureNames: [measureName],
       timeStart: comparisonTimeRange?.start,
       timeEnd: comparisonTimeRange?.end,

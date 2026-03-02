@@ -15,8 +15,11 @@
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    extractErrorMessage,
+    extractErrorStatusCode,
+  } from "@rilldata/web-common/lib/errors";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
 
   export let exploreName: string;
@@ -26,14 +29,15 @@
     | undefined = undefined;
   export let disableMostRecentDashboardState: boolean = false;
 
-  $: ({ instanceId } = $runtime);
-  $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
+  const client = useRuntimeClient();
+
+  $: exploreSpecQuery = useExploreValidSpec(client, exploreName);
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 
   $: dataLoader = new DashboardStateDataLoader(
-    instanceId,
+    client,
     exploreName,
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
@@ -44,7 +48,7 @@
   $: if (dataLoader) {
     stateSync?.teardown();
     stateSync = new DashboardStateSync(
-      instanceId,
+      client,
       metricsViewName,
       exploreName,
       storageNamespacePrefix,
@@ -57,12 +61,12 @@
     | undefined;
   $: if (dataLoader) ({ initExploreState } = dataLoader);
 
-  let error: HTTPError | null;
+  let error: Error | null;
   let isLoading: boolean;
   $: if (initExploreState) {
     ({ isLoading, error } = $initExploreState as {
       isLoading: boolean;
-      error: HTTPError | null;
+      error: Error | null;
     });
   }
 
@@ -107,9 +111,9 @@
   <DashboardLoading {isLoading} />
 {:else if error}
   <ErrorPage
-    statusCode={error.response?.status}
+    statusCode={extractErrorStatusCode(error)}
     header="Failed to load dashboard"
-    detail={error.response?.data?.message ?? error.message}
+    detail={extractErrorMessage(error)}
   />
 {:else if $exploreStore}
   <slot />

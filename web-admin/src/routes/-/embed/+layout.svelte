@@ -17,7 +17,7 @@
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
@@ -138,11 +138,7 @@
         class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
         class:border-b={!onProjectPage}
       >
-        <TopNavigationBarEmbed
-          {instanceId}
-          {activeResource}
-          {navigationEnabled}
-        />
+        <TopNavigationBarEmbed {activeResource} {navigationEnabled} />
       </div>
     {/if}
 

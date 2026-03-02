@@ -17,7 +17,8 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
+import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Row } from "@tanstack/svelte-table";
 import { SHOW_MORE_BUTTON } from "./pivot-constants";
@@ -640,19 +641,21 @@ export function getFiltersForCell(
 }
 
 export function getErrorFromResponse(
-  queryResult: QueryObserverResult<V1MetricsViewAggregationResponse, HTTPError>,
+  queryResult: QueryObserverResult<
+    V1MetricsViewAggregationResponse,
+    ConnectError
+  >,
 ): PivotQueryError {
-  return {
-    statusCode: queryResult?.error?.response?.status || null,
-    message: queryResult?.error?.response?.data?.message,
-    traceId: queryResult?.error?.traceId,
-  };
+  const err = queryResult?.error;
+  const statusCode = err ? connectCodeToHTTPStatus(err.code) : null;
+  const message = err?.rawMessage || err?.message;
+  return { statusCode, message };
 }
 
 export function getErrorFromResponses(
   queryResults: (QueryObserverResult<
     V1MetricsViewAggregationResponse,
-    HTTPError
+    ConnectError
   > | null)[],
 ): PivotQueryError[] {
   return queryResults

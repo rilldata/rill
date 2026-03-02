@@ -1,7 +1,7 @@
 <script lang="ts">
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import { useReport } from "../selectors";
@@ -10,9 +10,9 @@
 
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: reportQuery = useReport(instanceId, report);
+  $: reportQuery = useReport(runtimeClient, report);
 
   /**
    * Table column definitions.

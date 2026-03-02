@@ -13,6 +13,7 @@ import {
   V1BuiltinMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { mergeDimensionAndMeasureFilters } from "../measure-filters/measure-filter-utils";
 import { getFiltersForOtherDimensions } from "../../selectors";
 
@@ -37,7 +38,7 @@ type DimensionSearchArgs = {
  * even if they're not in the top 250.
  */
 export function useDimensionSearch(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewNames: string[],
   dimensionName: string,
   {
@@ -72,9 +73,9 @@ export function useDimensionSearch(
     });
 
     return createQueryServiceMetricsViewAggregation(
-      instanceId,
-      mvName,
+      client,
       {
+        metricsView: mvName,
         dimensions: [{ name: dimensionName }],
         timeRange: { start: timeStart, end: timeEnd, timeDimension },
         limit: "250",
@@ -128,7 +129,7 @@ export function useDimensionSearch(
  * 3. For Contains mode, it returns the count of values matching the search text.
  */
 export function useAllSearchResultsCount(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewNames: string[],
   dimensionName: string,
   {
@@ -160,9 +161,9 @@ export function useAllSearchResultsCount(
     });
 
     return createQueryServiceMetricsViewAggregation(
-      instanceId,
-      mvName,
+      client,
       {
+        metricsView: mvName,
         measures: [
           {
             name: dimensionName + "__distinct_count",

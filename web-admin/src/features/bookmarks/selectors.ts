@@ -26,7 +26,8 @@ import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboard
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/lib/errors";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
@@ -89,7 +90,7 @@ export function isHomeBookmark(bookmark: V1Bookmark) {
 
 export function getHomeBookmarkExploreState(
   projectId: string,
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   exploreName: string,
 ): CompoundQueryResult<Partial<ExploreState> | null> {
@@ -97,8 +98,8 @@ export function getHomeBookmarkExploreState(
   return getCompoundQuery(
     [
       getBookmarks(projectId, ResourceKind.Explore, exploreName),
-      useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName),
+      useExploreValidSpec(client, exploreName),
+      useMetricsViewTimeRange(client, metricsViewName),
     ],
     ([bookmarksResp, exploreSpecResp, timeRangeResp]) => {
       const homeBookmark = bookmarksResp?.bookmarks?.find(isHomeBookmark);

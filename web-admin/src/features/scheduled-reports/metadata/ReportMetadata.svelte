@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
@@ -13,7 +14,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createAdminServiceDeleteReport } from "../../../client";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
@@ -36,20 +37,21 @@
   export let project: string;
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: reportQuery = useReport(instanceId, report);
-  $: isReportCreatedByCode = useIsReportCreatedByCode(instanceId, report);
+  $: reportQuery = useReport(runtimeClient, report);
+  $: isReportCreatedByCode = useIsReportCreatedByCode(runtimeClient, report);
 
   // Get dashboard
-  $: exploreName = useReportDashboardName(instanceId, report);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreName = useReportDashboardName(runtimeClient, report);
+  $: validSpecResp = useExploreValidSpec(runtimeClient, $exploreName.data);
   $: exploreSpec = $validSpecResp.data?.explore;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+  $: dashboardDoesNotExist =
+    $validSpecResp.isError && isNotFoundError($validSpecResp.error);
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     $exploreName.data,
   );
 
@@ -83,7 +85,7 @@
       forceOpenPivot: true,
     },
     {
-      instanceId,
+      client: runtimeClient,
       organization,
       project,
     },
@@ -105,7 +107,9 @@
       name: $reportQuery.data.resource.meta.name.name,
     });
     queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        runtimeClient.instanceId,
+      ),
     });
     goto(`/${organization}/${project}/-/reports`);
   }

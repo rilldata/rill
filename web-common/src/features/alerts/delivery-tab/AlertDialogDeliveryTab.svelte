@@ -8,17 +8,17 @@
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { SuperForm } from "sveltekit-superforms/client";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let exploreName: string;
 
+  const runtimeClient = useRuntimeClient();
+
   $: ({ form, errors } = superFormInstance);
 
-  $: ({ instanceId } = $runtime);
-
-  $: hasSlackNotifier = getHasSlackConnection(instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 </script>
 
 <div class="flex flex-col gap-y-3">

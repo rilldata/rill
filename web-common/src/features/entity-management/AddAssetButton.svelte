@@ -14,10 +14,10 @@
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceCreateDirectory,
-    createRuntimeServicePutFile,
+    createRuntimeServiceCreateDirectoryMutation,
+    createRuntimeServicePutFileMutation,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceAndNavigate } from "../file-explorer/new-files";
@@ -39,10 +39,11 @@
   let showExploreDialog = false;
   let generateDataDialog = false;
 
-  const createFile = createRuntimeServicePutFile();
-  const createFolder = createRuntimeServiceCreateDirectory();
+  const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = $runtime);
+  const createFile = createRuntimeServicePutFileMutation(runtimeClient);
+  const createFolder =
+    createRuntimeServiceCreateDirectoryMutation(runtimeClient);
   const { developerChat } = featureFlags;
 
   $: currentFile = $page.params.file;
@@ -51,20 +52,20 @@
     : "";
 
   $: currentDirectoryFileNamesQuery = useFileNamesInDirectory(
-    instanceId,
+    runtimeClient,
     currentDirectory,
   );
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
-    instanceId,
+    runtimeClient,
     currentDirectory,
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   $: metricsViewQuery = useFilteredResources(
-    instanceId,
+    runtimeClient,
     ResourceKind.MetricsView,
   );
 
@@ -98,10 +99,7 @@
         : nextFolderName;
 
     await $createFolder.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path: path,
-      },
+      path: path,
     });
 
     // Expand the directory to show the new folder
@@ -124,13 +122,10 @@
         : nextFileName;
 
     await $createFile.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path,
-        blob: undefined,
-        create: true,
-        createOnly: true,
-      },
+      path,
+      blob: undefined,
+      create: true,
+      createOnly: true,
     });
 
     await goto(`/files/${path}`);
@@ -173,7 +168,8 @@
       aria-label="Add Model"
       class="flex gap-x-2"
       disabled={!isModelingSupported}
-      on:click={() => createResourceAndNavigate(ResourceKind.Model)}
+      on:click={() =>
+        createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Model]}
@@ -191,7 +187,8 @@
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
-      on:click={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+      on:click={() =>
+        createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
@@ -207,6 +204,7 @@
       on:click={() => {
         if (metricsViews.length === 1) {
           void createResourceAndNavigate(
+            runtimeClient,
             ResourceKind.Explore,
             metricsViews.pop(),
           );
@@ -233,7 +231,8 @@
 
     <DropdownMenu.Item
       class="flex items-center justify-between gap-x-2"
-      on:click={() => createResourceAndNavigate(ResourceKind.Canvas)}
+      on:click={() =>
+        createResourceAndNavigate(runtimeClient, ResourceKind.Canvas)}
       disabled={metricsViews.length === 0}
     >
       <div class="flex gap-x-2 items-center">
@@ -273,7 +272,8 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => createResourceAndNavigate(ResourceKind.API)}
+          on:click={() =>
+            createResourceAndNavigate(runtimeClient, ResourceKind.API)}
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
@@ -285,7 +285,8 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => createResourceAndNavigate(ResourceKind.Theme)}
+          on:click={() =>
+            createResourceAndNavigate(runtimeClient, ResourceKind.Theme)}
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
@@ -294,7 +295,7 @@
           Theme
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
-        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Report)}>
+        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-fg-primary"
@@ -302,7 +303,7 @@
             />
             Report
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Alert)}>
+          <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
               className="text-fg-primary"

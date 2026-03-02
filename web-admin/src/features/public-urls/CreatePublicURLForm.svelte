@@ -21,7 +21,7 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Pencil } from "lucide-svelte";
   import { DateTime } from "luxon";

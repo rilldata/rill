@@ -2,8 +2,8 @@
   import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "../../components/button/Button.svelte";
-  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { createRuntimeServiceUnpackExampleMutation } from "../../runtime-client";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
@@ -21,9 +21,10 @@
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  const unpackExampleProject = createRuntimeServiceUnpackExample();
+  const unpackExampleProject =
+    createRuntimeServiceUnpackExampleMutation(runtimeClient);
 
   async function unpackProject(example: (typeof EXAMPLES)[number]) {
     await behaviourEvent?.fireSplashEvent(
@@ -37,11 +38,8 @@
 
     try {
       await $unpackExampleProject.mutateAsync({
-        instanceId,
-        data: {
-          name: example.name,
-          force: true,
-        },
+        name: example.name,
+        force: true,
       });
 
       await waitUntil(() => fileArtifacts.hasFileArtifact(example.firstFile));
@@ -72,7 +70,8 @@
     <div class="flex flex-col w-64 gap-y-4">
       <GenerateSampleData type="home" />
       <Button
-        onClick={() => createResourceAndNavigate(ResourceKind.Model)}
+        onClick={() =>
+          createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
         type="tertiary"
         large
         forcedStyle="height: 3rem;"
@@ -84,7 +83,8 @@
         Create blank model
       </Button>
       <Button
-        onClick={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+        onClick={() =>
+          createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
         type="tertiary"
         large
         forcedStyle="height: 3rem;"

@@ -18,14 +18,16 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { fade, slide } from "svelte/transition";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import { getUserFriendlyError } from "../models/error-utils";
 
   export let fileArtifact: FileArtifact;
+
+  const runtimeClient = useRuntimeClient();
 
   $: ({
     hasUnsavedChanges,
@@ -40,14 +42,12 @@
   $: workspace = workspaces.get(filePath);
   $: tableVisible = workspace.table.visible;
 
-  $: ({ instanceId } = $runtime);
-
-  $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: allErrorsStore = fileArtifact.getAllErrors(queryClient);
+  $: hasErrors = fileArtifact.getHasErrors(queryClient);
 
   $: allErrors = $allErrorsStore;
 
-  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
   $: model = $resourceQuery.data?.model;
   $: connector = (model as V1Model)?.spec?.outputConnector as string;
@@ -62,7 +62,6 @@
   $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
 
   async function save() {
-    httpRequestQueue.removeByName(assetName);
     await queryClient.cancelQueries({
       predicate: (query) => isProfilingQuery(query, assetName),
     });
@@ -70,7 +69,7 @@
 
   async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

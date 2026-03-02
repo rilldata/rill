@@ -7,16 +7,16 @@
   import {
     V1ReconcileStatus,
     type V1Resource,
-    createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createRuntimeServiceCreateTriggerMutation } from "@rilldata/web-common/runtime-client/v2/gen";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges = false;
 
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const client = useRuntimeClient();
+  const triggerMutation = createRuntimeServiceCreateTriggerMutation(client);
 
-  $: ({ instanceId } = $runtime);
   $: connectorName = resource?.meta?.name?.name;
   $: isReconciling =
     resource?.meta?.reconcileStatus ===
@@ -25,10 +25,7 @@
   function refreshConnector() {
     if (!connectorName) return;
     void $triggerMutation.mutateAsync({
-      instanceId,
-      data: {
-        resources: [{ kind: ResourceKind.Connector, name: connectorName }],
-      },
+      resources: [{ kind: ResourceKind.Connector, name: connectorName }],
     });
   }
 </script>

@@ -7,15 +7,16 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import {
-    createQueryServiceExport,
+    createQueryServiceExportMutation,
     V1ExportFormat,
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
-  import { runtime } from "../../runtime-client/runtime-store";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+
+  const runtimeClient = useRuntimeClient();
 
   export let disabled: boolean = false;
   export let workspace = false;
@@ -37,7 +38,7 @@
     scheduledReportQuery = getQuery(true);
   }
 
-  const exportDash = createQueryServiceExport();
+  const exportDash = createQueryServiceExportMutation(runtimeClient);
   const { reports, adminServer, exportHeader } = featureFlags;
 
   async function handleExport(options: {
@@ -46,20 +47,17 @@
   }) {
     const { format, includeHeader = false } = options;
     const result = await $exportDash.mutateAsync({
-      instanceId: get(runtime).instanceId,
-      data: {
-        query: exportQuery,
-        format,
-        includeHeader,
-        // Include metadata for CSV/XLSX exports in Cloud context.
-        ...(includeHeader &&
-          $adminServer && {
-            originDashboard: { name: exploreName, kind: ResourceKind.Explore },
-            origin_url: window.location.href,
-          }),
-      },
+      query: exportQuery as any,
+      format: format as any,
+      includeHeader,
+      // Include metadata for CSV/XLSX exports in Cloud context.
+      ...(includeHeader &&
+        $adminServer && {
+          originDashboard: { name: exploreName, kind: ResourceKind.Explore },
+          originUrl: window.location.href,
+        }),
     });
-    const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
+    const downloadUrl = `${runtimeClient.host}${result.downloadUrlPath}`;
     window.open(downloadUrl, "_self");
   }
 

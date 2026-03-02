@@ -23,7 +23,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
@@ -58,7 +57,7 @@
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
   queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
+    error: unknown,
     query: Query,
   ) => {
     // Add TanStack Query errors to telemetry
@@ -67,8 +66,9 @@
     // Handle network errors
     // Note: ideally, we'd throw this in the root `+layout.ts` file, but we're blocked by
     // https://github.com/sveltejs/kit/issues/10201
-    if (isAdminServerQuery(query) && error.message === "Network Error") {
-      errorStore.set(createUserFacingError(null, error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (isAdminServerQuery(query) && errorMessage === "Network Error") {
+      errorStore.set(createUserFacingError(null, errorMessage));
     }
   };
 

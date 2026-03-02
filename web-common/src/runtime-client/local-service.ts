@@ -20,7 +20,6 @@ import {
   GitPushRequest,
   GithubRepoStatusRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   createMutation,
   createQuery,
@@ -30,7 +29,6 @@ import {
   type DataTag,
   type QueryKey,
 } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 
 /**
  * Handwritten wrapper on LocalService.
@@ -42,15 +40,23 @@ const clients = new Map<
   string,
   ReturnType<typeof createPromiseClient<typeof LocalService>>
 >();
-function getClient() {
-  const host = get(runtime).host;
-  if (clients.has(host)) return clients.get(host)!;
+
+let defaultHost = "";
+
+/** Set the default host for LocalService calls. Called once at app init. */
+export function setLocalServiceHost(host: string) {
+  defaultHost = host;
+}
+
+function getClient(host?: string) {
+  const h = host ?? defaultHost;
+  if (clients.has(h)) return clients.get(h)!;
 
   const transport = createConnectTransport({
-    baseUrl: host,
+    baseUrl: h,
   });
   const client = createPromiseClient(LocalService, transport);
-  clients.set(host, client);
+  clients.set(h, client);
   return client;
 }
 

@@ -10,7 +10,7 @@
   import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { BellPlusIcon } from "lucide-svelte";
 
   const {
@@ -22,9 +22,9 @@
     dashboardStore,
   } = getStateManagers();
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: metricsView = useMetricsViewValidSpec(instanceId, $metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(runtimeClient, $metricsViewName);
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
   let open = false;

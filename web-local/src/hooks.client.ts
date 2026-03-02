@@ -1,14 +1,5 @@
-import { dev } from "$app/environment";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { setLocalServiceHost } from "@rilldata/web-common/runtime-client/local-service";
+import { LOCAL_HOST } from "./lib/local-runtime-config";
 
-/** INITIALIZE RUNTIME STORE **/
-// When testing, we need to use the relative path to the server
-const HOST = dev ? "http://localhost:9009" : "";
-const INSTANCE_ID = "default";
-
-const runtimeInit = {
-  host: HOST,
-  instanceId: INSTANCE_ID,
-};
-
-runtime.set(runtimeInit);
+// Initialize LocalService client with the runtime host
+setLocalServiceHost(LOCAL_HOST);

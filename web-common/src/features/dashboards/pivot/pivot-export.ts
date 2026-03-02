@@ -12,7 +12,6 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
-import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
 import { prepareMeasureForComparison } from "./pivot-utils";
@@ -62,6 +61,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 
   const query: V1Query = {
     metricsViewAggregationRequest: getPivotAggregationRequest({
+      instanceId: ctx.runtimeClient.instanceId,
       metricsViewName,
       timeDimension:
         exploreState.selectedTimeDimension ||
@@ -82,6 +82,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 }
 
 export function getPivotAggregationRequest({
+  instanceId,
   metricsViewName,
   timeDimension,
   exploreState,
@@ -93,6 +94,7 @@ export function getPivotAggregationRequest({
   isFlat,
   pivotState,
 }: {
+  instanceId: string;
   metricsViewName: string;
   timeDimension: string;
   exploreState: ExploreState;
@@ -179,7 +181,7 @@ export function getPivotAggregationRequest({
   }
 
   return {
-    instanceId: get(runtime).instanceId,
+    instanceId,
     metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,

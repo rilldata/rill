@@ -1,10 +1,9 @@
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { getLocalRuntimeClient } from "../../../../lib/local-runtime-config";
 import { error } from "@sveltejs/kit";
-import { get } from "svelte/store";
 
 export const load = async ({ params, depends }) => {
-  const { instanceId } = get(runtime);
+  const client = getLocalRuntimeClient();
 
   const exploreName = params.name;
 
@@ -12,7 +11,7 @@ export const load = async ({ params, depends }) => {
 
   try {
     const { explore, metricsView } = await fetchExploreSpec(
-      instanceId,
+      client,
       exploreName,
     );
 

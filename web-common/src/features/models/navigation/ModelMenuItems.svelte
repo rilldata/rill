@@ -17,7 +17,7 @@
   import Model from "../../../components/icons/Model.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { V1ReconcileStatus } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import {
@@ -26,17 +26,18 @@
     useCreateMetricsViewWithCanvasUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
+  const runtimeClient = useRuntimeClient();
   const { ai, generateCanvas, developerChat } = featureFlags;
   const queryClient = useQueryClient();
 
   export let filePath: string;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
-  $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: modelHasError = fileArtifact.getHasErrors(queryClient);
+  $: modelQuery = fileArtifact.getResource(queryClient);
   $: modelResource = $modelQuery.data;
   $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =
@@ -60,6 +61,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
+        runtimeClient,
         queryClient,
         connector as string,
         "",
@@ -83,6 +85,7 @@
   }
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -94,6 +97,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -105,6 +109,7 @@
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -118,7 +123,7 @@
     // Use developer agent if enabled, otherwise fall back to RPC
     if ($developerChat) {
       await createCanvasDashboardFromTableWithAgent(
-        instanceId,
+        runtimeClient,
         connector as string,
         "",
         "",

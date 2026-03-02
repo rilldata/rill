@@ -13,9 +13,8 @@ import {
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewTimeSeriesResponse,
-  createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import {
   keepPreviousData,
   type CreateQueryResult,
@@ -55,21 +54,16 @@ export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
-): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewTimeSeriesResponse, Error> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-    ],
-    ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+    [ctx.metricsViewName, ctx.dashboardStore, useTimeControlStore(ctx)],
+    ([metricsViewName, dashboardStore, timeControls], set) => {
       const timeGrain = timeControls.selectedTimeRange?.interval;
 
       return createQueryServiceMetricsViewTimeSeries(
-        runtime.instanceId,
-        metricsViewName,
+        ctx.runtimeClient,
         {
+          metricsViewName,
           measureNames: measures,
           where: sanitiseExpression(
             mergeDimensionAndMeasureFilters(
@@ -178,7 +172,7 @@ export function createTimeSeriesDataStore(
             });
 
       let unfilteredTotals:
-        | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>
+        | CreateQueryResult<V1MetricsViewAggregationResponse, Error>
         | Writable<null> = writable(null);
 
       if (dashboardStore?.selectedComparisonDimension) {
@@ -189,10 +183,10 @@ export function createTimeSeriesDataStore(
         );
       }
       let comparisonTimeSeries:
-        | CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError>
+        | CreateQueryResult<V1MetricsViewTimeSeriesResponse, Error>
         | Writable<null> = writable(null);
       let comparisonTotals:
-        | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>
+        | CreateQueryResult<V1MetricsViewAggregationResponse, Error>
         | Writable<null> = writable(null);
       if (showComparison) {
         comparisonTimeSeries = createMetricsViewTimeSeries(
@@ -248,13 +242,11 @@ export function createTimeSeriesDataStore(
           const error = {};
           if (primary.error) {
             isError = true;
-            error["timeseries"] = (
-              primary.error as HTTPError
-            ).response?.data?.message;
+            error["timeseries"] = (primary.error as Error).message;
           }
           if (primaryTotal.error) {
             isError = true;
-            error["totals"] = primaryTotal.error.response?.data?.message;
+            error["totals"] = (primaryTotal.error as Error).message;
           }
           const primaryIsFetching = primary.isFetching;
           const primaryTotalIsFetching = primaryTotal.isFetching;

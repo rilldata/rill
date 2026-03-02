@@ -7,7 +7,6 @@ import type {
   V1MetricsViewSpec,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { afterAll, beforeAll, vi } from "vitest";
 import { asyncWait } from "../../lib/waitUtils";
 
@@ -19,11 +18,6 @@ export class DashboardFetchMocks {
   }[] = [];
 
   public static useDashboardFetchMocks(): DashboardFetchMocks {
-    runtime.set({
-      host: "http://localhost",
-      instanceId: "default",
-    });
-
     const mock = new DashboardFetchMocks();
 
     beforeAll(() => {
@@ -123,8 +117,17 @@ export class DashboardFetchMocks {
     );
   }
 
-  private async fetchMock(url: string, body: string | undefined) {
+  private async fetchMock(url: string, body: string | Uint8Array | undefined) {
     const u = new URL(url);
+
+    // ConnectRPC routes: POST to /rill.runtime.v1.{Service}/{Method}
+    const connectMatch = u.pathname.match(
+      /^\/rill\.runtime\.v1\.(\w+)\/(\w+)$/,
+    );
+    if (connectMatch) {
+      return this.handleConnectRequest(connectMatch[1], connectMatch[2], body);
+    }
+
     const [, , , , type, ...parts] = u.pathname.split("/");
     let key: string;
 
@@ -162,14 +165,80 @@ export class DashboardFetchMocks {
       ok: true,
       json: () => {
         if (body && parts[2] === "aggregation") {
+          const bodyText = typeof body === "string" ? body : "";
           for (const { regex, response } of this.aggregationRequestMocks) {
-            if (!regex.test(body)) continue;
+            if (!regex.test(bodyText)) continue;
             return response;
           }
         }
         return this.responses.get(key);
       },
       headers: new Map([["content-type", "application/json"]]),
+    };
+  }
+
+  private async handleConnectRequest(
+    service: string,
+    method: string,
+    body: string | Uint8Array | undefined,
+  ) {
+    await asyncWait(1);
+
+    // ConnectRPC may send body as Uint8Array or other typed array
+    let bodyStr: string;
+    if (typeof body === "string") {
+      bodyStr = body;
+    } else if (body && typeof body === "object") {
+      bodyStr = new TextDecoder().decode(body as ArrayBufferView);
+    } else {
+      bodyStr = "";
+    }
+    const parsed = bodyStr ? JSON.parse(bodyStr) : {};
+    let responseData: unknown;
+
+    if (service === "RuntimeService" && method === "GetExplore") {
+      responseData = this.responses.get(`resources__explore__${parsed.name}`);
+    } else if (
+      service === "QueryService" &&
+      method === "MetricsViewTimeRange"
+    ) {
+      const stored = this.responses.get(
+        `queries__metrics-views__time-range-summary__${parsed.metricsViewName}`,
+      );
+      if (stored?.timeRangeSummary) {
+        // Convert short dates to RFC 3339 for proto Timestamp compatibility
+        const s = stored.timeRangeSummary;
+        responseData = {
+          timeRangeSummary: {
+            ...s,
+            min: s.min && !s.min.includes("T") ? s.min + "T00:00:00Z" : s.min,
+            max: s.max && !s.max.includes("T") ? s.max + "T00:00:00Z" : s.max,
+          },
+        };
+      } else {
+        responseData = stored;
+      }
+    } else if (
+      service === "QueryService" &&
+      method === "MetricsViewAggregation"
+    ) {
+      for (const { regex, response } of this.aggregationRequestMocks) {
+        if (regex.test(bodyStr)) {
+          responseData = response;
+          break;
+        }
+      }
+    }
+
+    // ConnectRPC expects status, ok, headers (Headers), json(), arrayBuffer()
+    const jsonBody = responseData ?? {};
+    return {
+      status: 200,
+      ok: true,
+      headers: new Headers({ "content-type": "application/json" }),
+      json: async () => jsonBody,
+      arrayBuffer: async () =>
+        new TextEncoder().encode(JSON.stringify(jsonBody)).buffer,
     };
   }
 }

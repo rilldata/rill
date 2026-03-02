@@ -2,8 +2,7 @@ import {
   queryServiceMetricsViewTimeRanges,
   queryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import { getLocalRuntimeClient } from "./local-runtime-config";
 import { Interval, DateTime, type DateTimeUnit } from "luxon";
 import { GrainAliasToOrder } from "@rilldata/web-common/lib/time/new-grains";
 
@@ -336,15 +335,13 @@ function generateFirstNPeriodTests(metadata: TimeMetadata, n: number = 3) {
 }
 
 export async function runTests(metricsViewName: string) {
-  const instanceId = get(runtime).instanceId;
+  const client = getLocalRuntimeClient();
 
   let failures = 1;
 
-  const okay = await queryServiceMetricsViewTimeRange(
-    instanceId,
+  const okay = await queryServiceMetricsViewTimeRange(client, {
     metricsViewName,
-    {},
-  );
+  });
 
   const { timeRangeSummary } = okay;
   if (
@@ -388,11 +385,10 @@ export async function runTests(metricsViewName: string) {
 
   const expressions = testCases.map((testCase) => testCase.syntax);
 
-  const response = await queryServiceMetricsViewTimeRanges(
-    instanceId,
+  const response = await queryServiceMetricsViewTimeRanges(client, {
     metricsViewName,
-    { expressions },
-  );
+    expressions,
+  });
 
   testCases.forEach(({ interval, log }, i) => {
     const apiFormat = {

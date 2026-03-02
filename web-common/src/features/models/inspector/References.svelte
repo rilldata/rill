@@ -4,29 +4,34 @@
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
+  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import {
-    type V1ResourceName,
-    createQueryServiceTableCardinality,
     createRuntimeServiceGetResource,
-  } from "@rilldata/web-common/runtime-client";
+    createQueryServiceTableCardinality,
+  } from "@rilldata/web-common/runtime-client/v2/gen";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let refs: V1ResourceName[];
   export let modelHasError: boolean;
+  export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   let showReferences = true;
 
   $: referencedResourcesStore = derived(
     refs.map((ref) => {
-      return createRuntimeServiceGetResource(instanceId, {
-        "name.name": ref.name as string,
-        "name.kind": ref.kind as string,
+      return createRuntimeServiceGetResource(client, {
+        name: {
+          name: ref.name as string,
+          kind: ref.kind as string,
+        },
       });
     }),
     (refs) => refs.map((ref) => ref.data),
@@ -35,18 +40,14 @@
 
   $: referencedResourceCardinalitiesStore = derived(
     refs.map((ref) => {
-      return createQueryServiceTableCardinality(
-        instanceId,
-        ref.name as string,
-        {},
-        {
-          query: {
-            select: (data) => +(data.cardinality ?? 0),
-          },
-        },
-      );
+      return createQueryServiceTableCardinality(client, {
+        tableName: ref.name as string,
+        connector,
+        database,
+        databaseSchema,
+      });
     }),
-    (refs) => refs.map((ref) => ref.data),
+    (refs) => refs.map((ref) => Number(ref.data?.cardinality ?? 0)),
   );
   $: referencedResourcesCardinalities = $referencedResourceCardinalitiesStore;
 </script>

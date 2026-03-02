@@ -2,23 +2,26 @@
   import { Database } from "lucide-svelte";
   import { slide } from "svelte/transition";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
   import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
-  export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let store: ConnectorExplorerStore;
+
+  const client = useRuntimeClient();
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
   $: expanded = $expandedStore;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
-    instanceId,
+    client,
     connectorName,
     database,
   );
@@ -49,9 +52,7 @@
   <ol transition:slide={{ duration }}>
     {#if expanded}
       {#if error}
-        <span class="message"
-          >Error: {error.message || error.response?.data?.message}</span
-        >
+        <span class="message">Error: {extractErrorMessage(error)}</span>
       {:else if isLoading}
         <span class="message">Loading schemas...</span>
       {:else if data}
@@ -60,7 +61,6 @@
         {:else}
           {#each data as schema (schema)}
             <DatabaseSchemaEntry
-              {instanceId}
               {connector}
               {database}
               {store}

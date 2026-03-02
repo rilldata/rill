@@ -16,7 +16,7 @@
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
@@ -64,12 +64,12 @@
 
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
+  const client = useRuntimeClient();
+
   $: ({ name: dimensionName = "" } = dimension);
 
-  $: ({ instanceId } = $runtime);
-
   $: selectedValues = selectedDimensionValues(
-    $runtime.instanceId,
+    client,
     [metricsViewName],
     $dashboardStore.whereFilter,
     dimensionName,
@@ -108,9 +108,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: filteredMeasures.filter(
         (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
       ),
@@ -157,9 +157,9 @@
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       measures: filteredMeasures,
       timeRange,

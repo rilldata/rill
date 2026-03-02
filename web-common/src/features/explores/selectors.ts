@@ -1,4 +1,4 @@
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   type CreateQueryOptions,
   type QueryFunction,
@@ -9,30 +9,25 @@ import {
   createRuntimeServiceGetExplore,
   getRuntimeServiceGetExploreQueryKey,
   runtimeServiceGetExplore,
-  type RpcStatus,
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
   getRuntimeServiceGetExploreQueryOptions,
 } from "@rilldata/web-common/runtime-client";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import type { ConnectError } from "@connectrpc/connect";
 import { error } from "@sveltejs/kit";
 import { derived, type Readable } from "svelte/store";
 
 export function useExplore(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
   queryOptions?: Partial<
-    CreateQueryOptions<
-      V1GetExploreResponse,
-      ErrorType<RpcStatus>,
-      V1GetExploreResponse
-    >
+    CreateQueryOptions<V1GetExploreResponse, ConnectError, V1GetExploreResponse>
   >,
   queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetExplore(
-    instanceId,
+    client,
     { name: exploreName },
     {
       query: queryOptions,
@@ -46,19 +41,19 @@ export type ExploreValidSpecResponse = {
   metricsView: V1MetricsViewSpec | undefined;
 };
 export function useExploreValidSpec(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
   queryOptions?: Partial<
     CreateQueryOptions<
       V1GetExploreResponse,
-      ErrorType<RpcStatus>,
+      ConnectError,
       ExploreValidSpecResponse
     >
   >,
   queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetExplore(
-    instanceId,
+    client,
     { name: exploreName },
     {
       query: {
@@ -77,11 +72,12 @@ export function useExploreValidSpec(
 }
 
 export function getExploreValidSpecQueryOptions(
+  client: RuntimeClient,
   exploreNameStore: Readable<string>,
 ) {
-  return derived([runtime, exploreNameStore], ([{ instanceId }, exploreName]) =>
+  return derived([exploreNameStore], ([exploreName]) =>
     getRuntimeServiceGetExploreQueryOptions(
-      instanceId,
+      client,
       {
         name: exploreName,
       },
@@ -99,16 +95,19 @@ export function getExploreValidSpecQueryOptions(
 }
 
 export async function fetchExploreSpec(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
 ) {
   const queryParams = {
     name: exploreName,
   };
-  const queryKey = getRuntimeServiceGetExploreQueryKey(instanceId, queryParams);
+  const queryKey = getRuntimeServiceGetExploreQueryKey(
+    client.instanceId,
+    queryParams,
+  );
   const queryFunction: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetExplore>>
-  > = ({ signal }) => runtimeServiceGetExplore(instanceId, queryParams, signal);
+  > = ({ signal }) => runtimeServiceGetExplore(client, queryParams, { signal });
 
   const response = await queryClient.fetchQuery({
     queryFn: queryFunction,

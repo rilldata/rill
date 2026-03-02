@@ -1,20 +1,20 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { derived, get, type Readable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import {
-  createQueryServiceResolveCanvas,
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
   type V1CanvasSpec,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
  * Metadata used to map a value to a label.
@@ -34,20 +34,20 @@ export type MetricsViewMetadata = {
  * Creates a store that contains a map of metrics view names to their metadata.
  * Each metrics view metadata has a reference to its spec, and a map of for measure and dimension spec by their names.
  */
-export function getInlineChatContextMetadata(): Readable<InlineContextMetadata> {
+export function getInlineChatContextMetadata(
+  client: RuntimeClient,
+): Readable<InlineContextMetadata> {
   const metricsViewsQuery = createQuery(
-    getValidMetricsViewsQueryOptions(),
+    getValidMetricsViewsQueryOptions(client),
     queryClient,
   );
 
   const canvasResourcesQuery = createQuery(
-    getClientFilteredResourcesQueryOptions(ResourceKind.Canvas, (res) =>
+    getClientFilteredResourcesQueryOptions(client, ResourceKind.Canvas, (res) =>
       Boolean(res.canvas?.state?.validSpec),
     ),
     queryClient,
   );
-
-  const instanceId = get(runtime).instanceId;
 
   return derived(
     [metricsViewsQuery, canvasResourcesQuery],
@@ -87,9 +87,8 @@ export function getInlineChatContextMetadata(): Readable<InlineContextMetadata> 
 
       const canvasQueries = canvasResources.map((r) =>
         createQueryServiceResolveCanvas(
-          instanceId,
-          r.meta?.name?.name ?? "",
-          {},
+          client,
+          { canvas: r.meta?.name?.name ?? "" },
           undefined,
           queryClient,
         ),

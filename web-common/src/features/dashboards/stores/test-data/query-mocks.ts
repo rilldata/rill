@@ -9,20 +9,20 @@ import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/exp
 import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
-  RpcStatus,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { writable } from "svelte/store";
 
 export function createMetricsMetaQueryMock(
   shouldInit = true,
-): CreateQueryResult<V1MetricsViewSpec, RpcStatus> & {
+): CreateQueryResult<V1MetricsViewSpec, ConnectError> & {
   setMeasures: (measures: Array<MetricsViewSpecMeasure>) => void;
   setDimensions: (dimensions: Array<MetricsViewSpecDimension>) => void;
 } {
   const { update, subscribe } = writable<
-    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
+    QueryObserverResult<V1MetricsViewSpec, ConnectError>
   >({
     data: undefined,
     isSuccess: false,
@@ -65,12 +65,12 @@ export function createValidSpecQueryMock(
   metricsView = AD_BIDS_NAME,
   shouldInit = true,
   initMetrics: V1MetricsViewSpec = AD_BIDS_METRICS_INIT,
-): CreateQueryResult<ExploreValidSpecResponse, RpcStatus> & {
+): CreateQueryResult<ExploreValidSpecResponse, ConnectError> & {
   setMeasures: (measures: Array<MetricsViewSpecMeasure>) => void;
   setDimensions: (dimensions: Array<MetricsViewSpecDimension>) => void;
 } {
   const { update, subscribe } = writable<
-    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, ConnectError>
   >({
     data: undefined,
     isSuccess: false,

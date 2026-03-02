@@ -2,12 +2,10 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { writable } from "svelte/store";
 import {
   createRuntimeServiceGetInstance,
-  getRuntimeServiceGetInstanceQueryKey,
-  type V1GetInstanceResponse,
+  runtimeServiceGetInstance,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";
-import { type Runtime, runtime } from "../runtime-client/runtime-store";
-import httpClient from "@rilldata/web-common/runtime-client/http-client.ts";
+import type { RuntimeClient } from "../runtime-client/v2";
 
 class FeatureFlag {
   private _internal = false;
@@ -68,50 +66,56 @@ class FeatureFlags {
   generateCanvas = new FeatureFlag("user", false);
   stickyDashboardState = new FeatureFlag("user", false);
 
+  private flagsUnsub?: () => void;
+
   constructor() {
     this.ready = new Promise<void>((resolve) => {
       this._resolveReady = resolve;
     });
+  }
 
-    const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
-      this._resolveReady();
+  clearRuntimeClient() {
+    this.flagsUnsub?.();
+    this.flagsUnsub = undefined;
+  }
 
-      // First, reset all user flags to their defaults
-      const userFlagKeys = Object.keys(this).filter((key) => {
-        const flag = this[key];
-        return flag instanceof FeatureFlag && !flag.internalOnly;
-      });
+  setRuntimeClient(client: RuntimeClient) {
+    this.flagsUnsub?.();
 
-      for (const key of userFlagKeys) {
-        const flag = this[key] as FeatureFlag;
-        flag.resetToDefault();
-      }
-
-      // Then apply project-specific overrides
-      for (const key in userFlags) {
-        const flag = this[key] as FeatureFlag | undefined;
-        if (!flag || flag.internalOnly) continue;
-        flag.set(userFlags[key]);
-      }
-    };
-
-    // Responsively update flags based rill.yaml
-    runtime.subscribe((runtime) => {
-      if (!runtime?.instanceId) return;
-
-      createRuntimeServiceGetInstance(
-        runtime.instanceId,
-        undefined,
-        {
-          query: {
-            select: (data) => data?.instance?.featureFlags,
-          },
+    this.flagsUnsub = createRuntimeServiceGetInstance(
+      client,
+      {},
+      {
+        query: {
+          select: (data) => data?.instance?.featureFlags,
         },
-        queryClient,
-      ).subscribe((features) => {
-        if (features.data) updateFlags(features.data);
-      });
+      },
+      queryClient,
+    ).subscribe((features) => {
+      if (features.data) this.updateFlags(features.data);
     });
+  }
+
+  private updateFlags(userFlags: V1InstanceFeatureFlags) {
+    this._resolveReady();
+
+    // First, reset all user flags to their defaults
+    const userFlagKeys = Object.keys(this).filter((key) => {
+      const flag = this[key];
+      return flag instanceof FeatureFlag && !flag.internalOnly;
+    });
+
+    for (const key of userFlagKeys) {
+      const flag = this[key] as FeatureFlag;
+      flag.resetToDefault();
+    }
+
+    // Then apply project-specific overrides
+    for (const key in userFlags) {
+      const flag = this[key] as FeatureFlag | undefined;
+      if (!flag || flag.internalOnly) continue;
+      flag.set(userFlags[key]);
+    }
   }
 
   get set() {
@@ -127,24 +131,13 @@ class FeatureFlags {
 
 export const featureFlags = new FeatureFlags();
 
-export async function getFeatureFlags(runtime: Runtime) {
-  const instanceResp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetInstanceQueryKey(
-      runtime.instanceId,
-      undefined,
-    ),
-    queryFn: () =>
-      httpClient<V1GetInstanceResponse>({
-        url: `/v1/instances/${runtime.instanceId}`,
-        method: "GET",
-        baseUrl: runtime.host,
-        headers: runtime.jwt
-          ? {
-              Authorization: `Bearer ${runtime.jwt?.token}`,
-            }
-          : undefined,
-      }),
-  });
-
-  return instanceResp.instance?.featureFlags ?? {};
+export async function getFeatureFlags(
+  client: RuntimeClient,
+): Promise<V1InstanceFeatureFlags> {
+  try {
+    const data = await runtimeServiceGetInstance(client, {});
+    return data.instance?.featureFlags ?? {};
+  } catch {
+    return {};
+  }
 }

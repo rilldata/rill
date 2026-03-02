@@ -4,20 +4,20 @@ import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQueries } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
 export function getCombinedMeasuresAndDimensionsForMetricsViews(
+  client: RuntimeClient,
   metricsViewNamesStore: Readable<string[]>,
 ) {
   const metricsViewQueryOptions = derived(
-    [runtime, metricsViewNamesStore],
-    ([{ instanceId }, metricsViewNames]) =>
+    metricsViewNamesStore,
+    (metricsViewNames) =>
       metricsViewNames.map((metricsViewName) =>
-        getRuntimeServiceGetResourceQueryOptions(instanceId, {
-          "name.kind": ResourceKind.MetricsView,
-          "name.name": metricsViewName,
+        getRuntimeServiceGetResourceQueryOptions(client, {
+          name: { kind: ResourceKind.MetricsView, name: metricsViewName },
         }),
       ),
   );

@@ -4,7 +4,7 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
@@ -36,6 +36,8 @@
   export let onBack: () => void;
   export let onClose: () => void;
   export let onCloseAfterNavigation: () => void = onClose;
+
+  const runtimeClient = useRuntimeClient();
 
   let saveAnyway = false;
   let showSaveAnyway = false;
@@ -108,7 +110,7 @@
   let existingEnvBlob: string | null = null;
   onMount(async () => {
     try {
-      const envFile = await runtimeServiceGetFile($runtime.instanceId, {
+      const envFile = await runtimeServiceGetFile(runtimeClient, {
         path: ".env",
       });
       existingEnvBlob = envFile.blob ?? "";
@@ -222,6 +224,7 @@
 
     saveAnyway = true;
     const result = await formManager.saveConnectorAnyway({
+      client: runtimeClient,
       queryClient,
       values: $form,
     });
@@ -249,6 +252,7 @@
   $: saveAnywayLoading = submitting && saveAnyway;
 
   handleOnUpdate = formManager.makeOnUpdate({
+    client: runtimeClient,
     onClose,
     queryClient,
     getSelectedAuthMethod: () => activeAuthMethod || undefined,

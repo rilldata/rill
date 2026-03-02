@@ -4,7 +4,7 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
@@ -41,7 +41,7 @@
     },
   } = getStateManagers();
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
@@ -131,9 +131,9 @@
   $: numColumns = 3;
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: $selectedMeasureNames.map((name) => ({ name })),
       where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },

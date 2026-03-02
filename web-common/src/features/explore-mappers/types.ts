@@ -9,6 +9,7 @@ import type {
   V1MetricsViewToplistRequest,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 
 export type QueryRequests =
@@ -22,7 +23,7 @@ export type TransformerProperties = QueryRequests;
 
 export type TransformerArgs<R extends TransformerProperties> = {
   queryClient: QueryClient;
-  instanceId: string;
+  client: RuntimeClient;
   dashboard: ExploreState;
   req: R;
   metricsView: V1MetricsViewSpec;

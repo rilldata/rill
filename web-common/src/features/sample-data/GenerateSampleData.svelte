@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
   import { SparklesIcon } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -14,9 +14,9 @@
   export let type: "init" | "home" | "modal";
   export let open = false;
 
+  const runtimeClient = useRuntimeClient();
   const initializeProject = type === "init";
 
-  $: ({ instanceId } = $runtime);
   const { developerChat } = featureFlags;
 
   const FORM_ID = "generate-sample-data-form";
@@ -36,7 +36,7 @@
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
-      void generateSampleData(initializeProject, instanceId, values.prompt);
+      void generateSampleData(runtimeClient, initializeProject, values.prompt);
       open = false;
     },
     invalidateAll: false,

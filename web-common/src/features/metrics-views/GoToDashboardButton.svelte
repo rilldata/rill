@@ -7,7 +7,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
   import {
@@ -19,11 +19,12 @@
 
   export let resource: V1Resource | undefined;
 
+  const runtimeClient = useRuntimeClient();
   const { ai, generateCanvas, developerChat } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: dashboardsQuery = useGetExploresForMetricsView(
-    instanceId,
+    runtimeClient,
     resource?.meta?.name?.name ?? "",
   );
   $: dashboards = $dashboardsQuery.data ?? [];
@@ -40,12 +41,12 @@
             // Use developer agent if enabled, otherwise fall back to RPC
             if ($developerChat) {
               createCanvasDashboardFromMetricsViewWithAgent(
-                instanceId,
+                runtimeClient,
                 resource.meta.name.name,
               );
             } else {
               await createCanvasDashboardFromMetricsView(
-                instanceId,
+                runtimeClient,
                 resource.meta.name.name,
               );
             }
@@ -60,7 +61,12 @@
       disabled={!resource}
       onClick={async () => {
         if (resource)
-          await createAndPreviewExplore(queryClient, instanceId, resource);
+          await createAndPreviewExplore(
+            runtimeClient,
+            queryClient,
+            instanceId,
+            resource,
+          );
       }}
     >
       Generate Explore Dashboard{$ai ? " with AI" : ""}
@@ -93,12 +99,12 @@
                 // Use developer agent if enabled, otherwise fall back to RPC
                 if ($developerChat) {
                   createCanvasDashboardFromMetricsViewWithAgent(
-                    instanceId,
+                    runtimeClient,
                     resource.meta.name.name,
                   );
                 } else {
                   await createCanvasDashboardFromMetricsView(
-                    instanceId,
+                    runtimeClient,
                     resource.meta.name.name,
                   );
                 }
@@ -112,7 +118,12 @@
         <DropdownMenu.Item
           on:click={async () => {
             if (resource)
-              await createAndPreviewExplore(queryClient, instanceId, resource);
+              await createAndPreviewExplore(
+                runtimeClient,
+                queryClient,
+                instanceId,
+                resource,
+              );
           }}
         >
           <Add />

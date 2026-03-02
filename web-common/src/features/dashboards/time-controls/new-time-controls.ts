@@ -15,6 +15,7 @@ import type {
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   DateTime,
   type DateTimeUnit,
@@ -165,9 +166,16 @@ class MetricsTimeControls {
   private _subrange = new IntervalStore();
   private _comparisonRange = new IntervalStore();
   private _showComparison: Writable<boolean> = writable(false);
+  private _client: RuntimeClient;
   private _metricsViewName: string;
 
-  constructor(maxStart: DateTime, maxEnd: DateTime, metricsViewName: string) {
+  constructor(
+    maxStart: DateTime,
+    maxEnd: DateTime,
+    client: RuntimeClient,
+    metricsViewName: string,
+  ) {
+    this._client = client;
     this._metricsViewName = metricsViewName;
     const maxInterval = Interval.fromDateTimes(
       maxStart.setZone("UTC"),
@@ -188,7 +196,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         iso,
-
+        this._client,
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -204,7 +212,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         name,
-
+        this._client,
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -284,11 +292,21 @@ class MetricsTimeControls {
 class TimeControls {
   private _timeControls = new Map<string, MetricsTimeControls>();
 
-  get(metricsViewName: string, maxStart?: DateTime, maxEnd?: DateTime) {
+  get(
+    metricsViewName: string,
+    client?: RuntimeClient,
+    maxStart?: DateTime,
+    maxEnd?: DateTime,
+  ) {
     let store = this._timeControls.get(metricsViewName);
 
-    if (!store && maxStart && maxEnd) {
-      store = new MetricsTimeControls(maxStart, maxEnd, metricsViewName);
+    if (!store && maxStart && maxEnd && client) {
+      store = new MetricsTimeControls(
+        maxStart,
+        maxEnd,
+        client,
+        metricsViewName,
+      );
       this._timeControls.set(metricsViewName, store);
     } else if (!store) {
       throw new Error("TimeControls.get() called without maxStart and maxEnd");
@@ -312,7 +330,6 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
   return RILL_PERIOD_TO_DATE.includes(value as RillPeriodToDate);
 }
 
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   getAllowedGrains,
   GrainAliasToV1TimeGrain,
@@ -331,6 +348,7 @@ import { getDefaultRangeBuckets } from "@rilldata/web-common/lib/time/defaults";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString | string,
+  client: RuntimeClient,
   metricsViewName: string,
   activeTimeZone: string,
   timeDimension?: string,
@@ -352,11 +370,10 @@ export async function deriveInterval(
     const parsed = parseRillTime(name);
 
     // We have a RillTime string
-    const instanceId = get(runtime).instanceId;
     const cacheBust = name.includes("now");
 
     const response = await fetchTimeRanges({
-      instanceId,
+      client,
       metricsViewName,
       rillTimes: [name],
       timeZone: activeTimeZone,

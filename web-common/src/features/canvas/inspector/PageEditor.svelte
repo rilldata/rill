@@ -24,8 +24,8 @@
     DEFAULT_TIMEZONES,
   } from "@rilldata/web-common/lib/time/config";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client/v2/gen";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 
@@ -41,11 +41,11 @@
   export let fileArtifact: FileArtifact;
   export let canvasName: string;
 
+  const client = useRuntimeClient();
+
   $: ({
     canvasEntity: { filtersEnabledStore, _embeddedTheme },
-  } = getCanvasStore(canvasName, instanceId));
-
-  $: ({ instanceId } = $runtime);
+  } = getCanvasStore(canvasName, client.instanceId));
 
   $: parsedDocument = getParsedDocument(fileArtifact);
 
@@ -87,15 +87,15 @@
 
   $: title = stringGuard(rawTitle) || stringGuard(rawDisplayName);
 
-  $: themesQuery = useFilteredResources(instanceId, ResourceKind.Theme);
+  $: themesQuery = useFilteredResources(client, ResourceKind.Theme);
 
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
   $: defaultThemeQuery = createRuntimeServiceGetInstance(
-    instanceId,
-    undefined,
+    client,
+    {},
     {
       query: {
         select: (data) => data?.instance?.theme,

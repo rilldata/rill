@@ -14,7 +14,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { ConnectError } from "@connectrpc/connect";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { type Readable, derived, readable } from "svelte/store";
@@ -340,11 +340,11 @@ export function createPivotDataStore(
 
         let globalTotalsQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> =
           readable(null);
         let totalsRowQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> =
           readable(null);
         if (rowDimensionNames.length && measureNames.length) {
           globalTotalsQuery = createPivotAggregationRowQuery(
@@ -484,8 +484,10 @@ export function createPivotDataStore(
 
             let tableCellQuery:
               | Readable<null>
-              | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
-              readable(null);
+              | CreateQueryResult<
+                  V1MetricsViewAggregationResponse,
+                  ConnectError
+                > = readable(null);
 
             let columnDef: ColumnDef<PivotDataRow>[] = [];
             if (
@@ -724,6 +726,7 @@ export const usePivotForExplore = memoizeMetricsStore<PivotDataStore>(
   (ctx: StateManagers) => {
     const pivotConfig = getPivotConfig(ctx);
     const pivotDashboardContext: PivotDashboardContext = {
+      runtimeClient: ctx.runtimeClient,
       metricsViewName: ctx.metricsViewName,
       queryClient: ctx.queryClient,
       enabled: !!ctx.dashboardStore,

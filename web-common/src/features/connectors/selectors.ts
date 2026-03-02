@@ -3,39 +3,40 @@ import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
-  createConnectorServiceListDatabaseSchemas,
-  createConnectorServiceGetTable,
-  createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
+} from "../../runtime-client";
+import type { RuntimeClient } from "../../runtime-client/v2";
+import { isNotFoundError } from "../../lib/errors";
+import {
+  createRuntimeServiceGetInstance,
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
-  type RpcStatus,
-} from "../../runtime-client";
-import { connectorServiceListTables } from "../../runtime-client/gen/connector-service/connector-service";
+  createConnectorServiceListDatabaseSchemas,
+  createConnectorServiceGetTable,
+  connectorServiceListTables,
+} from "../../runtime-client/v2/gen";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
 /**
  * Creates query options for checking modeling support of a connector
  */
 function createModelingSupportQueryOptions(
-  instanceId: string,
+  client: RuntimeClient,
   connectorName: string,
 ) {
+  const instanceId = client.instanceId;
   return {
     queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.kind": ResourceKind.Connector,
-      "name.name": connectorName,
+      name: { kind: ResourceKind.Connector, name: connectorName },
     }),
     queryFn: async () => {
       try {
-        return await runtimeServiceGetResource(instanceId, {
-          "name.kind": ResourceKind.Connector,
-          "name.name": connectorName,
+        return await runtimeServiceGetResource(client, {
+          name: { kind: ResourceKind.Connector, name: connectorName },
         });
       } catch (error) {
         // Handle legacy DuckDB projects where no explicit connector resource exists
-        if (connectorName === "duckdb" && error?.response?.status === 404) {
+        if (connectorName === "duckdb" && isNotFoundError(error)) {
           // Return a synthetic DuckDB connector
           return {
             resource: {
@@ -72,28 +73,23 @@ function createModelingSupportQueryOptions(
  * Check if modeling is supported for a specific connector based on its properties
  */
 export function useIsModelingSupportedForConnectorOLAP(
-  instanceId: string,
+  client: RuntimeClient,
   connectorName: string,
-): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
-  return createQuery(
-    createModelingSupportQueryOptions(instanceId, connectorName),
-  );
+): CreateQueryResult<boolean, Error> {
+  return createQuery(createModelingSupportQueryOptions(client, connectorName));
 }
 
 export function useIsModelingSupportedForDefaultOlapDriverOLAP(
-  instanceId: string,
-): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
-  const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  client: RuntimeClient,
+): CreateQueryResult<boolean, Error> {
+  const instanceQuery = createRuntimeServiceGetInstance(client, {
     sensitive: true,
   });
 
   // Create queryOptions store that includes the dynamic connector name
   const queryOptions = derived([instanceQuery], ([$instanceQuery]) => {
     const olapConnectorName = $instanceQuery.data?.instance?.olapConnector;
-    return createModelingSupportQueryOptions(
-      instanceId,
-      olapConnectorName || "",
-    );
+    return createModelingSupportQueryOptions(client, olapConnectorName || "");
   });
 
   return createQuery(queryOptions);
@@ -104,19 +100,19 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
  * The backend returns all schemas across databases; filtering is applied client-side.
  */
 export function useListDatabaseSchemas(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database?: string,
   enabled: boolean = true,
 ) {
   return createConnectorServiceListDatabaseSchemas(
+    client,
     {
-      instanceId,
       connector,
     },
     {
       query: {
-        enabled: !!instanceId && !!connector && enabled,
+        enabled: !!client.instanceId && !!connector && enabled,
         select: (data) => {
           const allSchemas = data.databaseSchemas ?? [];
 
@@ -152,7 +148,7 @@ export function useListDatabaseSchemas(
  * Infinite tables loader using pageToken cursor
  */
 export function useInfiniteListTables(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -162,11 +158,17 @@ export function useInfiniteListTables(
   return createInfiniteQuery({
     queryKey: [
       "/v1/connectors/tables",
-      { instanceId, connector, database, databaseSchema, pageSize },
+      {
+        instanceId: client.instanceId,
+        connector,
+        database,
+        databaseSchema,
+        pageSize,
+      },
     ],
     enabled:
       enabled &&
-      !!instanceId &&
+      !!client.instanceId &&
       !!connector &&
       (!!database || database === "") &&
       databaseSchema !== undefined,
@@ -175,15 +177,15 @@ export function useInfiniteListTables(
       lastPage?.nextPageToken || undefined,
     queryFn: ({ pageParam, signal }) =>
       connectorServiceListTables(
+        client,
         {
-          instanceId,
           connector,
           database,
           databaseSchema,
           pageSize,
           pageToken: pageParam,
         },
-        signal,
+        { signal },
       ),
     select: (data: any) => ({
       tables: data.pages.flatMap(
@@ -202,15 +204,15 @@ export function useInfiniteListTables(
  * Called when a table is selected/expanded
  */
 export function useGetTable(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
 ) {
   return createConnectorServiceGetTable(
+    client,
     {
-      instanceId,
       connector,
       database,
       databaseSchema,
@@ -219,7 +221,7 @@ export function useGetTable(
     {
       query: {
         enabled:
-          !!instanceId &&
+          !!client.instanceId &&
           !!connector &&
           !!table &&
           database !== undefined &&

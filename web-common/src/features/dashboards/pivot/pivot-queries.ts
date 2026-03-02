@@ -11,10 +11,9 @@ import {
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
-  createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { ConnectError } from "@connectrpc/connect";
+import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import {
   type CreateQueryResult,
   keepPreviousData,
@@ -50,7 +49,7 @@ export function createPivotAggregationRowQuery(
   limit = "100",
   offset = "0",
   timeRange: TimeRangeString | undefined = undefined,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> {
   if (!sort.length) {
     sort = [
       {
@@ -72,41 +71,39 @@ export function createPivotAggregationRowQuery(
     hasComparison = true;
   }
 
-  return derived(
-    [runtime, ctx.metricsViewName],
-    ([$runtime, metricsViewName], set) =>
-      createQueryServiceMetricsViewAggregation(
-        $runtime.instanceId,
-        metricsViewName,
-        {
-          measures: prepareMeasureForComparison(measures),
-          dimensions,
-          where: sanitiseExpression(whereFilter, undefined),
-          timeRange: {
-            start: timeRange?.start ? timeRange.start : config.time.timeStart,
-            end: timeRange?.end ? timeRange.end : config.time.timeEnd,
-            timeDimension: config.time.timeDimension,
-          },
-          comparisonTimeRange:
-            hasComparison && comparisonTime
-              ? {
-                  start: comparisonTime.start,
-                  end: comparisonTime.end,
-                  timeDimension: config.time.timeDimension,
-                }
-              : undefined,
-          sort,
-          limit,
-          offset,
+  return derived([ctx.metricsViewName], ([metricsViewName], set) =>
+    createQueryServiceMetricsViewAggregation(
+      ctx.runtimeClient,
+      {
+        metricsView: metricsViewName,
+        measures: prepareMeasureForComparison(measures),
+        dimensions,
+        where: sanitiseExpression(whereFilter, undefined),
+        timeRange: {
+          start: timeRange?.start ? timeRange.start : config.time.timeStart,
+          end: timeRange?.end ? timeRange.end : config.time.timeEnd,
+          timeDimension: config.time.timeDimension,
         },
-        {
-          query: {
-            enabled: ctx.enabled,
-            placeholderData: keepPreviousData,
-          },
+        comparisonTimeRange:
+          hasComparison && comparisonTime
+            ? {
+                start: comparisonTime.start,
+                end: comparisonTime.end,
+                timeDimension: config.time.timeDimension,
+              }
+            : undefined,
+        sort,
+        limit,
+        offset,
+      },
+      {
+        query: {
+          enabled: ctx.enabled,
+          placeholderData: keepPreviousData,
         },
-        ctx.queryClient,
-      ).subscribe(set),
+      },
+      ctx.queryClient,
+    ).subscribe(set),
   );
 }
 

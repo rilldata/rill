@@ -15,7 +15,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { ConnectError } from "@connectrpc/connect";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { type Readable, derived, readable, writable } from "svelte/store";
 import {
@@ -356,8 +356,10 @@ export function queryExpandedRowMeasureValues(
 
           let subTableQuery:
             | Readable<null>
-            | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
-            readable(null);
+            | CreateQueryResult<
+                V1MetricsViewAggregationResponse,
+                ConnectError
+              > = readable(null);
 
           if (config.colDimensionNames.length) {
             subTableQuery = createSubTableCellQuery(

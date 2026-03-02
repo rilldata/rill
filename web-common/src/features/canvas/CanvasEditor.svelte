@@ -7,18 +7,20 @@
   import { mapParseErrorToLine } from "@rilldata/web-common/features/metrics-views/errors";
   import { removeCanvasStore } from "./state-managers/state-managers";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let canvasName: string;
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
   export let parseError: V1ParseError | undefined = undefined;
 
+  const runtimeClient = useRuntimeClient();
+
   $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   /** If the parse error changes, update the editor gutter. */
   $: lineStatus = mapParseErrorToLine(parseError, $remoteContent ?? "");

@@ -14,7 +14,9 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { runtimeClientStore } from "@rilldata/web-common/runtime-client/v2";
+  import RuntimeContextBridge from "@rilldata/web-common/runtime-client/v2/RuntimeContextBridge.svelte";
+  import { readable } from "svelte/store";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
@@ -56,8 +58,12 @@
     dashboardChat,
     stickyDashboardState,
   } = featureFlags;
+  // TopNavigationBar renders in the root layout, ABOVE RuntimeProvider.
+  // Subscribe to the global store so we reactively get the client when
+  // RuntimeProvider mounts on project pages.
+  $: runtimeClient = $runtimeClientStore;
 
-  $: ({ instanceId } = $runtime);
+  $: instanceId = runtimeClient?.instanceId ?? "";
 
   // These can be undefined
   $: ({
@@ -138,10 +144,18 @@
     },
   );
 
-  $: visualizationsQuery = useDashboards(instanceId);
-
-  $: alertsQuery = useAlerts(instanceId, onAlertPage);
-  $: reportsQuery = useReports(instanceId, onReportPage);
+  // These queries only run when inside a RuntimeProvider (project pages).
+  // On org-level pages runtimeClient is null; use a no-op store so $-subscriptions don't crash.
+  const _noopQuery = readable({ data: undefined }) as any;
+  $: visualizationsQuery = runtimeClient
+    ? useDashboards(runtimeClient)
+    : _noopQuery;
+  $: alertsQuery = runtimeClient
+    ? useAlerts(runtimeClient, onAlertPage)
+    : _noopQuery;
+  $: reportsQuery = runtimeClient
+    ? useReports(runtimeClient, onReportPage)
+    : _noopQuery;
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
@@ -241,9 +255,11 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: exploreQuery = useExplore(instanceId, dashboard, {
-    enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
-  });
+  $: exploreQuery = runtimeClient
+    ? useExplore(runtimeClient, dashboard, {
+        enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
+      })
+    : _noopQuery;
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
   $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;
@@ -292,46 +308,52 @@
         {manageOrgMembers}
       />
     {/if}
-    {#if onMetricsExplorerPage && isDashboardValid}
-      {#if exploreSpec}
-        {#key dashboard}
-          <StateManagersProvider
-            metricsViewName={exploreSpec.metricsView}
-            exploreName={dashboard}
-            let:ready
-          >
-            <LastRefreshedDate {dashboard} />
-            {#if $dimensionSearch && ready}
-              <GlobalDimensionSearch />
+    {#if runtimeClient}
+      {#key runtimeClient}
+        <RuntimeContextBridge client={runtimeClient}>
+          {#if onMetricsExplorerPage && isDashboardValid}
+            {#if exploreSpec}
+              {#key dashboard}
+                <StateManagersProvider
+                  metricsViewName={exploreSpec.metricsView}
+                  exploreName={dashboard}
+                  let:ready
+                >
+                  <LastRefreshedDate {dashboard} />
+                  {#if $dimensionSearch && ready}
+                    <GlobalDimensionSearch />
+                  {/if}
+                  {#if $dashboardChat && !onPublicURLPage}
+                    <ChatToggle />
+                  {/if}
+                  {#if hasUserAccess}
+                    <ExploreBookmarks
+                      {organization}
+                      {project}
+                      metricsViewName={exploreSpec.metricsView}
+                      exploreName={dashboard}
+                    />
+                    {#if $alertsFlag}
+                      <CreateAlert />
+                    {/if}
+                    <ShareDashboardPopover
+                      createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+                    />
+                  {/if}
+                </StateManagersProvider>
+              {/key}
             {/if}
+          {/if}
+
+          {#if onCanvasDashboardPage && hasUserAccess}
             {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle />
             {/if}
-            {#if hasUserAccess}
-              <ExploreBookmarks
-                {organization}
-                {project}
-                metricsViewName={exploreSpec.metricsView}
-                exploreName={dashboard}
-              />
-              {#if $alertsFlag}
-                <CreateAlert />
-              {/if}
-              <ShareDashboardPopover
-                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
-              />
-            {/if}
-          </StateManagersProvider>
-        {/key}
-      {/if}
-    {/if}
-
-    {#if onCanvasDashboardPage && hasUserAccess}
-      {#if $dashboardChat && !onPublicURLPage}
-        <ChatToggle />
-      {/if}
-      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-      <ShareDashboardPopover createMagicAuthTokens={false} />
+            <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+            <ShareDashboardPopover createMagicAuthTokens={false} />
+          {/if}
+        </RuntimeContextBridge>
+      {/key}
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

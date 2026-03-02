@@ -1,11 +1,11 @@
 <script lang="ts">
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
+  import { onMount } from "svelte";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import {
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
-  } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
+  } from "../../runtime-client/v2/gen";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
@@ -21,7 +21,7 @@
   let mode = "summaries";
   let container;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   onMount(() => {
     const observer = new ResizeObserver(() => {
@@ -32,9 +32,9 @@
   });
 
   $: profileColumns = createQueryServiceTableColumns(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -43,7 +43,8 @@
   );
 
   /** get single example */
-  $: exampleValue = createQueryServiceTableRows(instanceId, objectName, {
+  $: exampleValue = createQueryServiceTableRows(client, {
+    tableName: objectName,
     connector,
     database,
     databaseSchema,
@@ -51,7 +52,7 @@
   });
 
   $: nestedColumnProfileQuery = getSummaries(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,

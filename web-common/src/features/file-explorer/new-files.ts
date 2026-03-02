@@ -9,8 +9,7 @@ import {
   runtimeServicePutFile,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
 import {
@@ -20,10 +19,11 @@ import {
 import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
 
 export async function createResourceAndNavigate(
+  client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
 ) {
-  const filePath = await createResourceFile(kind, baseResource);
+  const filePath = await createResourceFile(client, kind, baseResource);
   if (!filePath) return;
 
   const previousScreenName = getScreenNameFromPage();
@@ -37,6 +37,7 @@ export async function createResourceAndNavigate(
 }
 
 export async function createResourceFile(
+  client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
 ): Promise<string> {
@@ -45,9 +46,7 @@ export async function createResourceFile(
   }
 
   const newPath = getPathForNewResourceFile(kind, baseResource);
-  const instanceId = get(runtime).instanceId;
-
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newPath,
     blob: generateBlobForNewResourceFile(kind, baseResource),
     create: true,

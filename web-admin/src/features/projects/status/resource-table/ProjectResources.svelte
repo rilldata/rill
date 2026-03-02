@@ -2,12 +2,12 @@
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
@@ -30,8 +30,10 @@
   } from "../url-filter-sync";
   import { onMount } from "svelte";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
@@ -90,16 +92,16 @@
     ResourceKind.Connector,
   ];
 
-  $: ({ instanceId } = $runtime);
-
-  $: resources = useResources(instanceId);
+  $: resources = useResources(runtimeClient);
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     },
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );
@@ -143,19 +145,14 @@
   }
 
   function refreshAllSourcesAndModels() {
-    void $createTrigger
-      .mutateAsync({
-        instanceId,
-        data: { all: true },
-      })
-      .then(() => {
-        void queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceListResourcesQueryKey(
-            instanceId,
-            undefined,
-          ),
-        });
+    void $createTrigger.mutateAsync({ all: true }).then(() => {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+          undefined,
+        ),
       });
+    });
   }
 </script>
 

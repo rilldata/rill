@@ -10,7 +10,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -25,15 +25,18 @@
   export let hasUnsavedChanges: boolean;
   export let connector: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: metricsViewsQuery = useGetMetricsViewsForModel(instanceId, modelName);
+  $: metricsViewsQuery = useGetMetricsViewsForModel(runtimeClient, modelName);
 
   $: availableMetricsViews = $metricsViewsQuery.data ?? [];
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector,
     "",

@@ -3,6 +3,7 @@ import {
   setLastConversationId,
 } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
 import { getFeatureFlags } from "@rilldata/web-common/features/feature-flags.js";
+import { createRuntimeClientFromLayout } from "@rilldata/web-admin/lib/runtime-client-utils";
 import { redirect } from "@sveltejs/kit";
 
 export const load = async ({
@@ -11,10 +12,10 @@ export const load = async ({
   url,
   parent,
 }) => {
-  // Wait for the feature flags to load
   const { runtime } = await parent();
+  const client = createRuntimeClientFromLayout(runtime);
 
-  const fetchedFeatureFlags = await getFeatureFlags(runtime);
+  const fetchedFeatureFlags = await getFeatureFlags(client);
 
   // Redirect to `/-/dashboards` if chat feature is disabled
   // NOTE: In the future, we'll use user-level `ai` permissions for more granular access control

@@ -13,24 +13,25 @@ import {
   type V1MetricsViewAnnotationsResponseAnnotation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery } from "@tanstack/svelte-query";
 import { DateTime, Interval } from "luxon";
 import { derived, type Readable } from "svelte/store";
 
 export function getAnnotationsForMeasure({
-  instanceId,
+  client,
   exploreName,
   measureName,
   selectedTimeRange,
   dashboardTimezone,
 }: {
-  instanceId: string;
+  client: RuntimeClient;
   exploreName: string;
   measureName: string;
   selectedTimeRange: DashboardTimeControls | undefined;
   dashboardTimezone: string;
 }): Readable<Annotation[]> {
-  const exploreValidSpec = useExploreValidSpec(instanceId, exploreName);
+  const exploreValidSpec = useExploreValidSpec(client, exploreName);
   const selectedPeriod = TIME_GRAIN[selectedTimeRange?.interval ?? ""]
     ?.duration as Period | undefined;
 
@@ -42,14 +43,14 @@ export function getAnnotationsForMeasure({
       const metricsViewName = exploreSpec?.metricsView ?? "";
 
       return getQueryServiceMetricsViewAnnotationsQueryOptions(
-        instanceId,
-        metricsViewName,
+        client,
         {
+          metricsViewName,
           timeRange: {
-            start: selectedTimeRange?.start.toISOString(),
-            end: selectedTimeRange?.end.toISOString(),
+            start: selectedTimeRange?.start.toISOString() as any,
+            end: selectedTimeRange?.end.toISOString() as any,
           },
-          timeGrain: selectedTimeRange?.interval,
+          timeGrain: selectedTimeRange?.interval as any,
           measures: [measureName],
         },
         {

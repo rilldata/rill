@@ -1,4 +1,4 @@
-import { getRuntimeServiceGetInstanceQueryKey } from "@rilldata/web-common/runtime-client/gen/runtime-service/runtime-service.ts";
+import { getRuntimeServiceGetInstanceQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import {
   isColumnProfilingQuery,
   isProfilingQuery,
@@ -6,33 +6,77 @@ import {
 } from "@rilldata/web-common/runtime-client/query-matcher";
 import type { Query, QueryClient } from "@tanstack/svelte-query";
 
-// invalidation helpers
+/** Matches the new key format for a given instanceId. */
+function isRuntimeQueryForInstance(
+  queryKey: readonly unknown[],
+  instanceId: string,
+): boolean {
+  // Format: [ServiceName, methodName, instanceId, request]
+  if (queryKey.length >= 3 && queryKey[2] === instanceId) {
+    const svc = queryKey[0];
+    return (
+      svc === "QueryService" ||
+      svc === "RuntimeService" ||
+      svc === "ConnectorService"
+    );
+  }
+  return false;
+}
+
+/** Checks if a query key matches a metrics view query (by name). */
+function isMetricsViewQueryKey(
+  queryKey: readonly unknown[],
+  metricsViewName: string,
+): boolean {
+  // Format: ["QueryService", "metricsView*", instanceId, { metricsViewName, ... }]
+  if (
+    queryKey[0] === "QueryService" &&
+    typeof queryKey[1] === "string" &&
+    queryKey[1].startsWith("metricsView")
+  ) {
+    const request = queryKey[3];
+    return (
+      typeof request === "object" &&
+      request !== null &&
+      (request as Record<string, unknown>).metricsViewName === metricsViewName
+    );
+  }
+  return false;
+}
+
+/** Checks if a query key matches a component resolve query (by name). */
+function isComponentResolveKey(
+  queryKey: readonly unknown[],
+  componentName: string,
+): boolean {
+  // Format: ["QueryService", "resolveComponent", instanceId, { component: name }]
+  if (queryKey[0] === "QueryService" && queryKey[1] === "resolveComponent") {
+    const request = queryKey[3];
+    return (
+      typeof request === "object" &&
+      request !== null &&
+      (request as Record<string, unknown>).component === componentName
+    );
+  }
+  return false;
+}
+
+// --- invalidation helpers ---
 
 export function invalidateRuntimeQueries(
   queryClient: QueryClient,
   instanceId: string,
 ) {
   return queryClient.resetQueries({
-    predicate: (query) =>
-      typeof query.queryKey[0] === "string" &&
-      query.queryKey[0].startsWith(`/v1/instances/${instanceId}`),
+    predicate: (query) => isRuntimeQueryForInstance(query.queryKey, instanceId),
   });
 }
 
-export function isMetricsViewQuery(queryHash: string, metricsViewName: string) {
-  const r = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/queries/metrics-views/${metricsViewName}/`,
-  );
-  return r.test(queryHash);
-}
 export function invalidationForMetricsViewData(
   query: Query,
   metricsViewName: string,
 ) {
-  return (
-    typeof query.queryKey[0] === "string" &&
-    isMetricsViewQuery(query.queryKey[0], metricsViewName)
-  );
+  return isMetricsViewQueryKey(query.queryKey, metricsViewName);
 }
 
 export const invalidateMetricsViewData = (
@@ -71,9 +115,15 @@ export async function invalidateAllMetricsViews(
   // Second, refetch the resource entries (which returns the available dimensions and measures)
   await queryClient.refetchQueries({
     type: "active",
-    predicate: (query) =>
-      typeof query.queryKey[0] === "string" &&
-      query.queryKey[0].startsWith(`/v1/instances/${instanceId}/resource`),
+    predicate: (query) => {
+      const key = query.queryKey;
+      // Format: ["RuntimeService", "getResource" or "listResources", instanceId, ...]
+      return (
+        key[0] === "RuntimeService" &&
+        (key[1] === "getResource" || key[1] === "listResources") &&
+        key[2] === instanceId
+      );
+    },
   });
 
   // Third, reset queries for all metrics views. This will cause the active queries to refetch.
@@ -81,11 +131,13 @@ export async function invalidateAllMetricsViews(
   // nor `queryClient.invalidateQueries` were working as expected. Perhaps there's a race condition somewhere.
   void queryClient.resetQueries({
     predicate: (query: Query) => {
+      const key = query.queryKey;
+      // Format: ["QueryService", "metricsView*", instanceId, ...]
       return (
-        typeof query.queryKey[0] === "string" &&
-        query.queryKey[0].startsWith(
-          `/v1/instances/${instanceId}/queries/metrics-views`,
-        )
+        key[0] === "QueryService" &&
+        typeof key[1] === "string" &&
+        key[1].startsWith("metricsView") &&
+        key[2] === instanceId
       );
     },
   });
@@ -130,18 +182,17 @@ export async function invalidateComponentData(
   name: string,
   failed: boolean,
 ) {
-  const componentAPIRegex = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/queries/components/${name}/resolve`,
-  );
+  const matchesComponent = (query: Query) =>
+    isComponentResolveKey(query.queryKey, name);
 
   queryClient.removeQueries({
-    predicate: (query) => componentAPIRegex.test(query.queryHash),
+    predicate: matchesComponent,
     type: "inactive",
   });
   if (failed) return;
 
   return queryClient.resetQueries({
-    predicate: (query) => componentAPIRegex.test(query.queryHash),
+    predicate: matchesComponent,
     type: "active",
   });
 }

@@ -1,14 +1,17 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
+  import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import DatabaseEntry from "./DatabaseEntry.svelte";
   import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
-  export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
+
+  const client = useRuntimeClient();
 
   $: connectorName = connector?.name as string;
   $: hasError = !!connector?.errorMessage;
@@ -16,7 +19,7 @@
   $: queryEnabled = !hasError;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
-    instanceId,
+    client,
     connectorName,
     undefined,
     queryEnabled,
@@ -34,16 +37,14 @@
   {:else if isLoading && queryEnabled}
     <span class="message pl-6">Loading tables...</span>
   {:else if error && queryEnabled}
-    <span class="message pl-6"
-      >Error: {error.message || error.response?.data?.message}</span
-    >
+    <span class="message pl-6">Error: {extractErrorMessage(error)}</span>
   {:else if data}
     {#if data.length === 0}
       <span class="message pl-6">No tables found</span>
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry {instanceId} {connector} {database} {store} />
+          <DatabaseEntry {connector} {database} {store} />
         {/each}
       </ol>
     {/if}

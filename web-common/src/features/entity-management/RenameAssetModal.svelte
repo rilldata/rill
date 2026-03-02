@@ -13,7 +13,7 @@
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { renameFileArtifact } from "./actions";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -26,7 +26,7 @@
   export let filePath: string;
   export let isDir: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   let error: string;
 
@@ -87,7 +87,7 @@
       }
       try {
         const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-        await renameFileArtifact(instanceId, filePath, newPath);
+        await renameFileArtifact(runtimeClient, filePath, newPath);
         if (isDir) {
           if (
             $page.url.pathname.startsWith(
@@ -114,8 +114,11 @@
     },
   });
 
-  $: existingDirectories = useDirectoryNamesInDirectory(instanceId, folderName);
-  $: fileNamesInDirectory = useFileNamesInDirectory(instanceId, folderName);
+  $: existingDirectories = useDirectoryNamesInDirectory(
+    runtimeClient,
+    folderName,
+  );
+  $: fileNamesInDirectory = useFileNamesInDirectory(runtimeClient, folderName);
 </script>
 
 <Dialog.Root

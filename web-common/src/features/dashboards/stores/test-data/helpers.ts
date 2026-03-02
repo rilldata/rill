@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -120,10 +121,15 @@ export function initStateManagers(metricsViewName?: string) {
       },
     },
   });
+  const runtimeClient = new RuntimeClient({
+    host: "http://localhost",
+    instanceId: "test",
+  });
   const stateManagers = createStateManagers({
     queryClient,
     metricsViewName,
     exploreName,
+    runtimeClient,
   });
 
   return { stateManagers, queryClient };

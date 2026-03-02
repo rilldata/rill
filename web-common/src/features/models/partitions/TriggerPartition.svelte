@@ -5,16 +5,18 @@
   import { Button } from "../../../components/button";
   import {
     V1ReconcileStatus,
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceGetModelPartitionsQueryKey,
     type V1Resource,
   } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { addLeadingSlash } from "../../entity-management/entity-mappers";
   import { fileArtifacts } from "../../entity-management/file-artifacts";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   export let partitionKey: string;
   export let resource: V1Resource | undefined = undefined;
@@ -38,24 +40,20 @@
     }
 
     await $triggerMutation.mutateAsync({
-      instanceId,
-      data: {
-        models: [
-          {
-            model: modelName,
-            partitions: [partitionKey],
-          },
-        ],
-      },
+      models: [
+        {
+          model: modelName,
+          partitions: [partitionKey],
+        },
+      ],
     });
 
     // Poll for updates since partition execution happens asynchronously
     const invalidate = () =>
       queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
-          instanceId,
-          modelName,
-        ),
+        queryKey: getRuntimeServiceGetModelPartitionsQueryKey(instanceId, {
+          model: modelName,
+        }),
       });
 
     await invalidate();
@@ -75,7 +73,7 @@
     }, 2000);
   }
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: isLoading = $triggerMutation.isPending;
 
   // If resource is passed as prop, use it directly; otherwise derive from URL params (web-local)
@@ -84,7 +82,7 @@
     params.file !== undefined
       ? fileArtifacts.getFileArtifact(addLeadingSlash(params.file))
       : undefined;
-  $: resourceQuery = fileArtifact?.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact?.getResource(queryClient);
   $: resolvedResource = resource ?? $resourceQuery?.data;
 </script>
 

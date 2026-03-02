@@ -8,13 +8,13 @@ import { isFieldConfig } from "@rilldata/web-common/features/components/charts/u
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
+import type {
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -49,7 +49,7 @@ export class ScatterPlotChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.spec);
@@ -93,8 +93,8 @@ export class ScatterPlotChartProvider {
     }
 
     const topNColorQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      timeAndFilterStore,
+      ($timeAndFilterStore) => {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled =
           !!timeRange?.start &&
@@ -109,9 +109,9 @@ export class ScatterPlotChartProvider {
         );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: colorDimensionName }],
             sort: config?.y?.field
@@ -133,8 +133,8 @@ export class ScatterPlotChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, topNColorQuery],
-      ([$runtime, $timeAndFilterStore, $topNColorQuery]) => {
+      [timeAndFilterStore, topNColorQuery],
+      ([$timeAndFilterStore, $topNColorQuery]) => {
         const { timeRange, where, timeGrain } = $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
@@ -182,9 +182,9 @@ export class ScatterPlotChartProvider {
         this.combinedWhere.set(combinedWhere);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: finalDimensions,
             where: combinedWhere,

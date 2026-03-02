@@ -21,10 +21,10 @@
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
   import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/local-runtime-config";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
   import "@rilldata/web-common/app.css";
@@ -33,10 +33,8 @@
 
   const { deploy } = featureFlags;
 
-  queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
-    query: Query,
-  ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
+    errorEventHandler?.requestErrorEventHandler(error, query);
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
@@ -47,7 +45,7 @@
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
 
     if (shouldSendAnalytics) {
-      await initMetrics(config); // Proxies events through the Rill "intake" service
+      await initMetrics(config, host); // Proxies events through the Rill "intake" service
       initPosthog(config.version);
       posthogIdentify(config.userId, {
         installId: config.installId,
@@ -69,7 +67,8 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: ({ host, instanceId } = $runtime);
+  const host = LOCAL_HOST;
+  const instanceId = LOCAL_INSTANCE_ID;
 
   $: ({ route } = $page);
 
@@ -77,20 +76,24 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <FileAndResourceWatcher {host} {instanceId}>
-    <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
-      {#if data.initialized}
-        <BannerCenter />
-        <RepresentingUserBanner />
-        <ApplicationHeader {mode} />
-        {#if $deploy}
-          <RemoteProjectManager />
+  <RuntimeProvider {host} {instanceId}>
+    <FileAndResourceWatcher {host} {instanceId}>
+      <div
+        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+      >
+        {#if data.initialized}
+          <BannerCenter />
+          <RepresentingUserBanner />
+          <ApplicationHeader {mode} />
+          {#if $deploy}
+            <RemoteProjectManager />
+          {/if}
         {/if}
-      {/if}
 
-      <slot />
-    </div>
-  </FileAndResourceWatcher>
+        <slot />
+      </div>
+    </FileAndResourceWatcher>
+  </RuntimeProvider>
 </QueryClientProvider>
 
 {#if $overlay !== null}

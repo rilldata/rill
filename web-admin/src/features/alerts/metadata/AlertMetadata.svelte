@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import EditAlert from "@rilldata/web-admin/features/alerts/EditAlert.svelte";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
@@ -31,28 +32,29 @@
     getRuntimeServiceListResourcesQueryKey,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let organization: string;
   export let project: string;
   export let alert: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: alertQuery = useAlert(instanceId, alert);
-  $: isAlertCreatedByCode = useIsAlertCreatedByCode(instanceId, alert);
+  $: alertQuery = useAlert(runtimeClient, alert);
+  $: isAlertCreatedByCode = useIsAlertCreatedByCode(runtimeClient, alert);
 
   // Get dashboard
-  $: exploreName = useAlertDashboardName(instanceId, alert);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreName = useAlertDashboardName(runtimeClient, alert);
+  $: validSpecResp = useExploreValidSpec(runtimeClient, $exploreName.data);
   $: exploreSpec = $validSpecResp.data?.explore;
   $: metricsViewName = exploreSpec?.metricsView;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+  $: dashboardDoesNotExist =
+    $validSpecResp.isError && isNotFoundError($validSpecResp.error);
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     $exploreName.data,
   );
 
@@ -74,7 +76,7 @@
     queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
 
-  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
+  $: dashboardState = useAlertDashboardState(runtimeClient, alertSpec);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
@@ -91,7 +93,7 @@
       exploreProtoState: alertSpec?.annotations?.web_open_state,
     },
     {
-      instanceId,
+      client: runtimeClient,
       organization,
       project,
     },
@@ -108,7 +110,9 @@
       name: $alertQuery.data.resource.meta.name.name,
     });
     await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        runtimeClient.instanceId,
+      ),
     });
     // goto only after invalidate is complete
     goto(`/${organization}/${project}/-/alerts`);

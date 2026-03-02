@@ -16,7 +16,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { GitBranch, WandIcon } from "lucide-svelte";
   import {
     createCanvasDashboardFromMetricsView,
@@ -24,14 +24,15 @@
   } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
 
+  const runtimeClient = useRuntimeClient();
   const { ai, generateCanvas, developerChat } = featureFlags;
 
   export let filePath: string;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ instanceId } = $runtime);
-  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: ({ instanceId } = runtimeClient);
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
 
   /**
@@ -80,11 +81,14 @@
     // Use developer agent if enabled, otherwise fall back to RPC
     if ($developerChat) {
       createCanvasDashboardFromMetricsViewWithAgent(
-        instanceId,
+        runtimeClient,
         metricsViewName,
       );
     } else {
-      await createCanvasDashboardFromMetricsView(instanceId, metricsViewName);
+      await createCanvasDashboardFromMetricsView(
+        runtimeClient,
+        metricsViewName,
+      );
     }
   }
 </script>
@@ -118,7 +122,12 @@
   {#if resource}
     <NavigationMenuItem
       on:click={() =>
-        createAndPreviewExplore(queryClient, instanceId, resource)}
+        createAndPreviewExplore(
+          runtimeClient,
+          queryClient,
+          instanceId,
+          resource,
+        )}
     >
       <ExploreIcon slot="icon" />
       <div class="flex gap-x-2 items-center">

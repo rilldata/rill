@@ -4,14 +4,15 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { derived, type Readable } from "svelte/store";
 import { Theme } from "./theme";
-import type { RpcStatus } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { CanvasResponse } from "../canvas/selector";
 import type { ExploreValidSpecResponse } from "../explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-export function useTheme(instanceId: string, name: string) {
-  return useResource(instanceId, name, ResourceKind.Theme);
+export function useTheme(client: RuntimeClient, name: string) {
+  return useResource(client, name, ResourceKind.Theme);
 }
 
 function extractThemeInfo(
@@ -39,9 +40,9 @@ function extractThemeInfo(
 export function createResolvedThemeStore(
   urlThemeName: Readable<string | undefined | null>,
   query: Readable<
-    QueryObserverResult<CanvasResponse | ExploreValidSpecResponse, RpcStatus>
+    QueryObserverResult<CanvasResponse | ExploreValidSpecResponse, ConnectError>
   >,
-  instanceId: string,
+  client: RuntimeClient,
 ): Readable<Theme | undefined> {
   const themeInput = derived([urlThemeName, query], ([$url, $query]) => {
     const { themeName, embeddedTheme } = extractThemeInfo($query.data);
@@ -64,7 +65,7 @@ export function createResolvedThemeStore(
     // Case 2: Named theme (reference to theme resource)
     if (name) {
       const themeQuery = useResource(
-        instanceId,
+        client,
         name,
         ResourceKind.Theme,
         undefined,

@@ -9,10 +9,11 @@ import { createQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import { parse } from "yaml";
 import { createRuntimeServiceGetFile } from "../../runtime-client";
+import type { RuntimeClient } from "../../runtime-client/v2";
 
-export function useProjectTitle(instanceId: string) {
+export function useProjectTitle(client: RuntimeClient) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     { path: "/rill.yaml" },
     {
       query: {

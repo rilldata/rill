@@ -4,6 +4,7 @@ import {
   type V1MetricsViewSpec,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 
 export type DimensionSearchResult = {
@@ -20,7 +21,7 @@ export type DimensionSearchResults = {
 const BatchSize = 5;
 
 export function useDimensionSearchResults(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   metricsView: V1MetricsViewSpec,
   timeRangeSummary: V1TimeRangeSummary,
@@ -30,13 +31,14 @@ export function useDimensionSearchResults(
   const batches = createBatches(dimensions, BatchSize);
   return derived(
     batches.map((batch) =>
-      createQueryServiceMetricsViewSearch(instanceId, metricsViewName, {
+      createQueryServiceMetricsViewSearch(client, {
+        metricsViewName,
         dimensions: batch.map((d) => d.name ?? ""),
         search: searchText,
         limit: 100,
         timeRange: {
-          start: timeRangeSummary.min,
-          end: timeRangeSummary.max,
+          start: timeRangeSummary.min as any,
+          end: timeRangeSummary.max as any,
         },
       }),
     ),
@@ -53,11 +55,7 @@ export function useDimensionSearchResults(
       searchResults.forEach((searchResult, index) => {
         if (searchResult.error) {
           results.errors.push(
-            new Error(
-              searchResult.error.response?.data?.message ??
-                searchResult.error.message ??
-                "Unknown error",
-            ),
+            new Error(searchResult.error.message ?? "Unknown error"),
           );
         } else if (searchResult.data?.results) {
           searchResult.data.results.forEach((dr) => {

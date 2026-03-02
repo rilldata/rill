@@ -5,13 +5,15 @@ import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sideb
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
-  type V1Resource,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/v2/gen";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get, writable } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
@@ -26,7 +28,7 @@ export const generatingCanvas = writable(false);
  * Used internally by canvas generation functions.
  */
 async function createMetricsViewFromTable(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -42,7 +44,7 @@ async function createMetricsViewFromTable(
   const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
 
   // Request an AI-generated metrics view
-  void runtimeServiceGenerateMetricsViewFile(instanceId, {
+  void runtimeServiceGenerateMetricsViewFile(client, {
     connector: connector,
     database: database,
     databaseSchema: databaseSchema,
@@ -53,14 +55,14 @@ async function createMetricsViewFromTable(
 
   // Poll until file creation is complete or canceled
   const fileCreated = await pollForFileCreation(
-    instanceId,
+    client,
     newMetricsViewFilePath,
     abortController.signal,
   );
 
   // If the user canceled the AI request, submit another request with `useAi=false`
   if (!fileCreated) {
-    await runtimeServiceGenerateMetricsViewFile(instanceId, {
+    await runtimeServiceGenerateMetricsViewFile(client, {
       connector: connector,
       database: database,
       databaseSchema: databaseSchema,
@@ -73,7 +75,7 @@ async function createMetricsViewFromTable(
   // Wait for Metrics View resource to be ready
   const metricsViewResource = fileArtifacts
     .getFileArtifact(newMetricsViewFilePath)
-    .getResource(queryClient, instanceId);
+    .getResource(queryClient);
 
   await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
@@ -90,7 +92,7 @@ async function createMetricsViewFromTable(
  * TODO: Delete after remvoing developerChat feature flag
  */
 export async function createCanvasDashboardFromMetricsView(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
 ) {
   const isAiEnabled = get(featureFlags.ai);
@@ -117,26 +119,22 @@ export async function createCanvasDashboardFromMetricsView(
 
   try {
     // Request AI-generated canvas dashboard
-    void runtimeServiceGenerateCanvasFile(
-      instanceId,
-      {
-        metricsViewName: metricsViewName,
-        path: canvasFilePath,
-        useAi: isAiEnabled,
-      },
-      abortController.signal,
-    );
+    void runtimeServiceGenerateCanvasFile(client, {
+      metricsViewName: metricsViewName,
+      path: canvasFilePath,
+      useAi: isAiEnabled,
+    });
 
     // Poll until file creation is complete or canceled
     const fileCreated = await pollForFileCreation(
-      instanceId,
+      client,
       canvasFilePath,
       abortController.signal,
     );
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (!fileCreated) {
-      await runtimeServiceGenerateCanvasFile(instanceId, {
+      await runtimeServiceGenerateCanvasFile(client, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
         useAi: false,
@@ -148,7 +146,7 @@ export async function createCanvasDashboardFromMetricsView(
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create Canvas dashboard for " + metricsViewName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
   } finally {
     // Always clean up the overlay
@@ -161,7 +159,7 @@ export async function createCanvasDashboardFromMetricsView(
  * Opens the developer agent sidebar, sends generation prompt, and navigates to the created file.
  */
 export async function createCanvasDashboardFromMetricsViewWithAgent(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
 ): Promise<void> {
   // 1. Generate unique canvas name
@@ -177,7 +175,7 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
   try {
     // 3. Set up file creation detection
     // Get conversation manager and start a new conversation
-    const conversationManager = getConversationManager(instanceId, {
+    const conversationManager = getConversationManager(client, {
       conversationState: "browserStorage",
       agent: ToolName.DEVELOPER_AGENT,
     });
@@ -216,7 +214,7 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
  * First creates a metrics view from the table, then generates the canvas dashboard.
  */
 export async function createCanvasDashboardFromTableWithAgent(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -241,7 +239,7 @@ export async function createCanvasDashboardFromTableWithAgent(
   try {
     // Step 1: Create metrics view from table
     const resource = await createMetricsViewFromTable(
-      instanceId,
+      client,
       connector,
       database,
       databaseSchema,
@@ -259,17 +257,14 @@ export async function createCanvasDashboardFromTableWithAgent(
 
     // Step 2: Generate canvas dashboard using developer agent
     // This will open the chat sidebar and handle the rest of the flow
-    void createCanvasDashboardFromMetricsViewWithAgent(
-      instanceId,
-      metricsViewName,
-    );
+    void createCanvasDashboardFromMetricsViewWithAgent(client, metricsViewName);
   } catch (err) {
     // Remove overlay on error
     overlay.set(null);
 
     eventBus.emit("notification", {
       message: "Failed to create Metrics View for " + tableName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
   }
 }
@@ -279,7 +274,7 @@ export async function createCanvasDashboardFromTableWithAgent(
  * Returns the file path of the created canvas, or null if creation failed.
  */
 export async function createCanvasDashboardWithoutNavigation(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
 ): Promise<string | null> {
   const isAiEnabled = get(featureFlags.ai);
@@ -294,19 +289,15 @@ export async function createCanvasDashboardWithoutNavigation(
 
   try {
     // Request AI-generated canvas dashboard
-    void runtimeServiceGenerateCanvasFile(
-      instanceId,
-      {
-        metricsViewName: metricsViewName,
-        path: canvasFilePath,
-        useAi: isAiEnabled,
-      },
-      abortController.signal,
-    );
+    void runtimeServiceGenerateCanvasFile(client, {
+      metricsViewName: metricsViewName,
+      path: canvasFilePath,
+      useAi: isAiEnabled,
+    });
 
     // Poll until file creation is complete or canceled
     const fileCreated = await pollForFileCreation(
-      instanceId,
+      client,
       canvasFilePath,
       abortController.signal,
       1000,
@@ -314,7 +305,7 @@ export async function createCanvasDashboardWithoutNavigation(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (!fileCreated) {
-      await runtimeServiceGenerateCanvasFile(instanceId, {
+      await runtimeServiceGenerateCanvasFile(client, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
         useAi: false,
@@ -325,7 +316,7 @@ export async function createCanvasDashboardWithoutNavigation(
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create Canvas dashboard for " + metricsViewName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
     return null;
   }

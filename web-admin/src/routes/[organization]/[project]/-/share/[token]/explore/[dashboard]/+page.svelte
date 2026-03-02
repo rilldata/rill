@@ -11,9 +11,9 @@
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: ({ organization, project, dashboard: exploreName } = $page.params);
 
@@ -34,7 +34,7 @@
   }
 
   // Call `GetExplore` to get the Explore's metrics view
-  $: exploreQuery = createRuntimeServiceGetExplore(instanceId, {
+  $: exploreQuery = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
   $: ({ data: explore } = $exploreQuery);

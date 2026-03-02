@@ -2,18 +2,19 @@ import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
 import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 export function useDashboardsLastUpdated(
-  instanceId: string,
+  client: RuntimeClient,
   organization: string,
   project: string,
 ) {
   return derived(
     [
-      useValidExplores(instanceId),
+      useValidExplores(client),
       createAdminServiceGetProject(organization, project),
     ],
     ([dashboardsResp, projResp]) => {
@@ -26,7 +27,7 @@ export function useDashboardsLastUpdated(
 
       const max = Math.max(
         ...dashboardsResp.data.map((res) =>
-          new Date(res.meta.stateUpdatedOn).getTime(),
+          new Date(res.meta!.stateUpdatedOn!).getTime(),
         ),
       );
       return new Date(max);
@@ -35,15 +36,19 @@ export function useDashboardsLastUpdated(
 }
 
 export function useDashboards(
-  instanceId: string,
+  client: RuntimeClient,
 ): CreateQueryResult<V1Resource[]> {
-  return createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        return data.resources.filter((res) => res.canvas || res.explore);
+  return createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          return data.resources.filter((res) => res.canvas || res.explore);
+        },
+        enabled: !!client.instanceId,
+        refetchInterval: smartRefetchIntervalFunc,
       },
-      enabled: !!instanceId,
-      refetchInterval: smartRefetchIntervalFunc,
     },
-  });
+  );
 }

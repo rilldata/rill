@@ -8,8 +8,8 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { createRuntimeServiceUnpackEmptyMutation } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileLocalFileSourceYAML } from "../sourceUtils";
@@ -18,27 +18,25 @@
   export let onClose: () => void = () => {};
   export let onBack: () => void = () => {};
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const unpackEmptyProject =
+    createRuntimeServiceUnpackEmptyMutation(runtimeClient);
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
   }
 
   async function handleUpload(files: Array<File>) {
-    const uploadedFiles = uploadTableFiles(files, instanceId, false);
-    const initialized = await isProjectInitialized(instanceId);
+    const uploadedFiles = uploadTableFiles(files, runtimeClient, false);
+    const initialized = await isProjectInitialized(runtimeClient);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
         if (!initialized) {
           $unpackEmptyProject.mutate({
-            instanceId,
-            data: {
-              displayName: EMPTY_PROJECT_TITLE,
-              olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
-            },
+            displayName: EMPTY_PROJECT_TITLE,
+            olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
           });
 
           // Race condition: invalidate("init") must be called before we navigate to
@@ -48,7 +46,7 @@
         }
 
         const yaml = compileLocalFileSourceYAML(filePath);
-        await createSource(instanceId, tableName, yaml);
+        await createSource(runtimeClient, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,
           EntityType.Table,
