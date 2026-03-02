@@ -2,7 +2,6 @@ import type { Interceptor } from "@connectrpc/connect";
 import { appQueryStatusStore } from "../application-store";
 import { Heap } from "./heap";
 import {
-  ACTIVE_COLUMN_PRIORITY_OFFSET,
   ACTIVE_PRIORITY,
   INACTIVE_PRIORITY,
   getPriorityForMethod,
@@ -13,7 +12,6 @@ interface QueueEntry {
   weight: number;
   id: number;
   columnName?: string;
-
   resolve?: (value: unknown) => void;
   reject?: (reason: unknown) => void;
   fn?: () => Promise<unknown>;
@@ -143,26 +141,6 @@ export class RequestQueue {
 
     this.drain();
     return promise;
-  }
-
-  /** Boost or reduce priority for column-level queries (active column in Explore). */
-  prioritiseColumn(
-    resourceName: string,
-    columnName: string,
-    active: boolean,
-  ): void {
-    const nameEntry = this.nameHeap.get(resourceName);
-    if (!nameEntry) return;
-    const columnEntries = nameEntry.columnMap.get(columnName);
-    if (!columnEntries) return;
-    for (const entry of columnEntries) {
-      if (active && entry.weight < ACTIVE_COLUMN_PRIORITY_OFFSET) {
-        entry.weight += ACTIVE_COLUMN_PRIORITY_OFFSET;
-      } else if (!active && entry.weight > ACTIVE_COLUMN_PRIORITY_OFFSET) {
-        entry.weight -= ACTIVE_COLUMN_PRIORITY_OFFSET;
-      }
-      nameEntry.queryHeap.updateItem(entry);
-    }
   }
 
   /** Remove all queued requests for a resource (entity deleted/renamed). */
