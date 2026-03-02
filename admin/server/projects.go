@@ -134,15 +134,19 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 		dtos[i] = s.projToDTO(p, org.Name)
 	}
 
-	var projectRoles map[string]string
+	var projectRoles map[string]*adminv1.ProjectMemberUser
 	if req.IncludeRoles && len(projects) > 0 {
 		ids := make([]string, len(projects))
 		for i, p := range projects {
 			ids[i] = p.ID
 		}
-		projectRoles, err = s.admin.DB.FindProjectRolesForUser(ctx, req.UserId, ids)
+		members, err := s.admin.DB.FindProjectMemberUsersForUserAndProjects(ctx, req.UserId, ids)
 		if err != nil {
 			return nil, err
+		}
+		projectRoles = make(map[string]*adminv1.ProjectMemberUser, len(members))
+		for projectID, m := range members {
+			projectRoles[projectID] = projMemberUserToPB(m)
 		}
 	}
 

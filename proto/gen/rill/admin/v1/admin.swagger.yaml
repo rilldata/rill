@@ -5519,8 +5519,8 @@ definitions:
       projectRoles:
         type: object
         additionalProperties:
-          type: string
-        description: Maps project IDs to the user's direct role name. Only populated when include_roles is true.
+          $ref: '#/definitions/v1ProjectMemberUser'
+        description: Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:

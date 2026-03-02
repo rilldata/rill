@@ -815,16 +815,16 @@ export interface V1ListProjectsForFingerprintResponse {
 }
 
 /**
- * Maps project IDs to the user's direct role name. Only populated when include_roles is true.
+ * Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
  */
 export type V1ListProjectsForOrganizationAndUserResponseProjectRoles = {
-  [key: string]: string;
+  [key: string]: V1ProjectMemberUser;
 };
 
 export interface V1ListProjectsForOrganizationAndUserResponse {
   projects?: V1Project[];
   nextPageToken?: string;
-  /** Maps project IDs to the user's direct role name. Only populated when include_roles is true. */
+  /** Maps project IDs to the user's direct project membership. Only populated when include_roles is true. */
   projectRoles?: V1ListProjectsForOrganizationAndUserResponseProjectRoles;
 }
 

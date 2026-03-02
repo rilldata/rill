@@ -2278,24 +2278,39 @@ func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, u
 	return role, nil
 }
 
-func (c *connection) FindProjectRolesForUser(ctx context.Context, userID string, projectIDs []string) (map[string]string, error) {
+func (c *connection) FindProjectMemberUsersForUserAndProjects(ctx context.Context, userID string, projectIDs []string) (map[string]*database.ProjectMemberUser, error) {
 	type row struct {
 		ProjectID string `db:"project_id"`
-		RoleName  string `db:"role_name"`
+		projectMemberUserDTO
 	}
 	var rows []row
 	err := c.getDB(ctx).SelectContext(ctx, &rows, `
-		SELECT upr.project_id, pr.name AS role_name
-		FROM users_projects_roles upr
-		JOIN project_roles pr ON pr.id = upr.project_role_id
+		SELECT
+			upr.project_id,
+			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
+			(SELECT pr.name FROM project_roles pr WHERE pr.id = upr.project_role_id) AS role_name,
+			(
+				SELECT orr.name
+				FROM org_roles orr
+				JOIN users_orgs_roles uor ON orr.id = uor.org_role_id
+				WHERE uor.user_id = u.id AND uor.org_id = (SELECT org_id FROM projects WHERE id = upr.project_id)
+			) AS org_role_name,
+			upr.resources,
+			upr.restrict_resources
+		FROM users u
+		JOIN users_projects_roles upr ON upr.user_id = u.id
 		WHERE upr.user_id = $1 AND upr.project_id = ANY($2)
 	`, userID, projectIDs)
 	if err != nil {
-		return nil, parseErr("project roles", err)
+		return nil, parseErr("project members", err)
 	}
-	res := make(map[string]string, len(rows))
-	for _, r := range rows {
-		res[r.ProjectID] = r.RoleName
+	res := make(map[string]*database.ProjectMemberUser, len(rows))
+	for i := range rows {
+		m, err := rows[i].projectMemberUserDTO.asModel()
+		if err != nil {
+			return nil, err
+		}
+		res[rows[i].ProjectID] = m
 	}
 	return res, nil
 }

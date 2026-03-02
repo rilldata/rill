@@ -1474,8 +1474,8 @@ message ListProjectsForOrganizationAndUserRequest {
 message ListProjectsForOrganizationAndUserResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
-  // Maps project IDs to the user's direct role name. Only populated when include_roles is true.
-  map<string, string> project_roles = 3;
+  // Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
+  map<string, ProjectMemberUser> project_roles = 3;
 }
 
 message ListProjectsForFingerprintRequest {

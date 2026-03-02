@@ -1516,7 +1516,7 @@ func TestRBAC(t *testing.T) {
 		require.Len(t, resp.Projects, 1)
 		require.Equal(t, proj1.Project.Name, resp.Projects[0].Name)
 
-		// With both flags: project_roles should contain the direct role
+		// With both flags: project_roles should contain the direct membership
 		resp, err = c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
 			Org:          org1.Organization.Name,
 			UserId:       u2.ID,
@@ -1526,7 +1526,10 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, resp.Projects, 1)
 		require.Len(t, resp.ProjectRoles, 1)
-		require.Equal(t, database.ProjectRoleNameViewer, resp.ProjectRoles[resp.Projects[0].Id])
+		member := resp.ProjectRoles[resp.Projects[0].Id]
+		require.NotNil(t, member)
+		require.Equal(t, database.ProjectRoleNameViewer, member.RoleName)
+		require.Equal(t, u2.Email, member.UserEmail)
 	})
 
 	t.Run("User attributes", func(t *testing.T) {

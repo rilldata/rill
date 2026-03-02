@@ -1085,8 +1085,8 @@ components:
                     type: string
                 projectRoles:
                     additionalProperties:
-                        type: string
-                    description: Maps project IDs to the user's direct role name. Only populated when include_roles is true.
+                        $ref: '#/components/schemas/v1ProjectMemberUser'
+                    description: Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
                     type: object
                 projects:
                     items:

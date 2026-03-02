@@ -248,8 +248,8 @@ type DB interface {
 	FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
 	FindProjectMemberUser(ctx context.Context, projectID, userID string) (*ProjectMemberUser, error)
-	// FindProjectRolesForUser returns a map of project ID to direct role name for the given user.
-	FindProjectRolesForUser(ctx context.Context, userID string, projectIDs []string) (map[string]string, error)
+	// FindProjectMemberUsersForUserAndProjects returns a map of project ID to direct project membership for a user.
+	FindProjectMemberUsersForUserAndProjects(ctx context.Context, userID string, projectIDs []string) (map[string]*ProjectMemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string, restrictResources bool, resources []ResourceName) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error

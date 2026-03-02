@@ -1545,11 +1545,11 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
   nextPageToken = "";
 
   /**
-   * Maps project IDs to the user's direct role name. Only populated when include_roles is true.
+   * Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
    *
-   * @generated from field: map<string, string> project_roles = 3;
+   * @generated from field: map<string, rill.admin.v1.ProjectMemberUser> project_roles = 3;
    */
-  projectRoles: { [key: string]: string } = {};
+  projectRoles: { [key: string]: ProjectMemberUser } = {};
 
   constructor(data?: PartialMessage<ListProjectsForOrganizationAndUserResponse>) {
     super();
@@ -1561,7 +1561,7 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "project_roles", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "project_roles", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: ProjectMemberUser} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationAndUserResponse {
