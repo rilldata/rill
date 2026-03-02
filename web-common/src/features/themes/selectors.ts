@@ -4,7 +4,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { derived, type Readable } from "svelte/store";
 import { Theme } from "./theme";
-import type { RpcStatus } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { CanvasResponse } from "../canvas/selector";
@@ -40,7 +40,7 @@ function extractThemeInfo(
 export function createResolvedThemeStore(
   urlThemeName: Readable<string | undefined | null>,
   query: Readable<
-    QueryObserverResult<CanvasResponse | ExploreValidSpecResponse, RpcStatus>
+    QueryObserverResult<CanvasResponse | ExploreValidSpecResponse, ConnectError>
   >,
   client: RuntimeClient,
 ): Readable<Theme | undefined> {

@@ -12,7 +12,7 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/lib/errors";
+import type { ConnectError } from "@connectrpc/connect";
 import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import {
   type CreateQueryResult,
@@ -49,7 +49,7 @@ export function createPivotAggregationRowQuery(
   limit = "100",
   offset = "0",
   timeRange: TimeRangeString | undefined = undefined,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> {
   if (!sort.length) {
     sort = [
       {

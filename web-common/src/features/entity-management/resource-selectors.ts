@@ -4,7 +4,6 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   getRuntimeServiceListResourcesQueryOptions,
-  type RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
   type V1ExploreSpec,
@@ -14,6 +13,7 @@ import {
   V1ReconcileStatus,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -147,7 +147,7 @@ export function useResource<T = V1Resource>(
   queryOptions?: Partial<
     CreateQueryOptions<
       V1GetResourceResponse,
-      RpcStatus,
+      ConnectError,
       T // T is the return type of the `select` function
     >
   >,
@@ -181,7 +181,7 @@ export function useResourceV2<T = V1Resource>(
   queryOptions?: Partial<
     CreateQueryOptions<
       V1GetResourceResponse,
-      RpcStatus,
+      ConnectError,
       T // T is the return type of the `select` function
     >
   >,
@@ -207,7 +207,7 @@ export function useProjectParser(
   queryClient: QueryClient,
   client: RuntimeClient,
   queryOptions?: Partial<
-    CreateQueryOptions<V1GetResourceResponse, RpcStatus, V1Resource>
+    CreateQueryOptions<V1GetResourceResponse, ConnectError, V1Resource>
   >,
 ) {
   return useResource(

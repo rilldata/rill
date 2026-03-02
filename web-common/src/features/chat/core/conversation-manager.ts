@@ -1,9 +1,9 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceListConversationsQueryOptions,
-  type RpcStatus,
   type V1ListConversationsResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
@@ -84,7 +84,7 @@ export class ConversationManager {
    */
   public listConversationsQuery(): CreateQueryResult<
     V1ListConversationsResponse,
-    RpcStatus
+    ConnectError
   > {
     return createQuery(
       getRuntimeServiceListConversationsQueryOptions(this.client, {

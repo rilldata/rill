@@ -9,12 +9,12 @@ import {
   createRuntimeServiceGetExplore,
   getRuntimeServiceGetExploreQueryKey,
   runtimeServiceGetExplore,
-  type RpcStatus,
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
   getRuntimeServiceGetExploreQueryOptions,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import { error } from "@sveltejs/kit";
 import { derived, type Readable } from "svelte/store";
 
@@ -22,7 +22,7 @@ export function useExplore(
   client: RuntimeClient,
   exploreName: string,
   queryOptions?: Partial<
-    CreateQueryOptions<V1GetExploreResponse, RpcStatus, V1GetExploreResponse>
+    CreateQueryOptions<V1GetExploreResponse, ConnectError, V1GetExploreResponse>
   >,
   queryClient?: QueryClient,
 ) {
@@ -46,7 +46,7 @@ export function useExploreValidSpec(
   queryOptions?: Partial<
     CreateQueryOptions<
       V1GetExploreResponse,
-      RpcStatus,
+      ConnectError,
       ExploreValidSpecResponse
     >
   >,

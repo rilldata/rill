@@ -17,10 +17,8 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import {
-  connectCodeToHTTPStatus,
-  type HTTPError,
-} from "@rilldata/web-common/lib/errors";
+import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
+import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Row } from "@tanstack/svelte-table";
 import { SHOW_MORE_BUTTON } from "./pivot-constants";
@@ -643,28 +641,21 @@ export function getFiltersForCell(
 }
 
 export function getErrorFromResponse(
-  queryResult: QueryObserverResult<V1MetricsViewAggregationResponse, HTTPError>,
+  queryResult: QueryObserverResult<
+    V1MetricsViewAggregationResponse,
+    ConnectError
+  >,
 ): PivotQueryError {
   const err = queryResult?.error;
-  // ConnectError has .code (gRPC status) and .rawMessage; Axios has .response.status
-  const statusCode =
-    (err as unknown as { code?: number })?.code !== undefined
-      ? connectCodeToHTTPStatus((err as unknown as { code: number }).code)
-      : err?.response?.status || null;
-  const message =
-    (err as unknown as { rawMessage?: string })?.rawMessage ??
-    err?.response?.data?.message;
-  return {
-    statusCode,
-    message,
-    traceId: err?.traceId,
-  };
+  const statusCode = err ? connectCodeToHTTPStatus(err.code) : null;
+  const message = err?.rawMessage || err?.message;
+  return { statusCode, message };
 }
 
 export function getErrorFromResponses(
   queryResults: (QueryObserverResult<
     V1MetricsViewAggregationResponse,
-    HTTPError
+    ConnectError
   > | null)[],
 ): PivotQueryError[] {
   return queryResults

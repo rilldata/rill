@@ -17,13 +17,13 @@ import {
   createRuntimeServiceListResources,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
   getRuntimeServiceListResourcesQueryOptions,
-  type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   createQuery,
@@ -39,7 +39,7 @@ export function useMetricsView(
   metricsViewName: string,
   queryOptions?: CreateQueryOptions<
     V1GetResourceResponse,
-    RpcStatus,
+    ConnectError,
     V1Resource
   >,
 ) {

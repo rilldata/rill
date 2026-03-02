@@ -5,12 +5,12 @@ import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
   runtimeServiceForkConversation,
-  type RpcStatus,
   type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   SSEFetchClient,
@@ -73,7 +73,7 @@ export class Conversation {
   private hasReceivedFirstMessage = false;
   private readonly conversationQuery: CreateQueryResult<
     V1GetConversationResponse,
-    RpcStatus
+    ConnectError
   >;
   private readonly messageById = new Map<string, V1Message>();
 
@@ -143,7 +143,7 @@ export class Conversation {
    */
   public getConversationQuery(): CreateQueryResult<
     V1GetConversationResponse,
-    RpcStatus
+    ConnectError
   > {
     return this.conversationQuery;
   }
