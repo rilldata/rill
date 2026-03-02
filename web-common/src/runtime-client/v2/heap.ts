@@ -58,7 +58,9 @@ export class Heap<Item extends { index?: number }, Key = string> {
       this.array[idx] = this.array.pop()!;
       this.array[idx].index = idx;
       this.setIndex(this.array[idx], idx);
-      this.moveDown(idx);
+      if (!this.moveUp(idx)) {
+        this.moveDown(idx);
+      }
     } else {
       this.array.pop();
     }
