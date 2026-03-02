@@ -172,6 +172,10 @@ message ModelState {
   int64 total_execution_duration_ms = 12;
   // latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
   int64 latest_execution_duration_ms = 13;
+  // rows_total is the total number of rows in the model's output table.
+  int64 rows_total = 14;
+  // bytes_total is the total size in bytes of the model's output table.
+  int64 bytes_total = 15;
 }
 
 enum ModelChangeMode {
