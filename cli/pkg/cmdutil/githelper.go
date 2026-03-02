@@ -76,7 +76,7 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 	return g.gitConfig, nil
 }
 
-func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateManagedGitRepoResponse, error) {
+func (g *GitHelper) PushToNewManagedRepo(ctx context.Context, primaryBranch string) (*adminv1.CreateManagedGitRepoResponse, error) {
 	c, err := g.h.Client()
 	if err != nil {
 		return nil, err
@@ -88,6 +88,11 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 	})
 	if err != nil {
 		return nil, err
+	}
+	// git does not allow setting default branch on repo on creation
+	// but there is no restriction to push to any branch so directly update default branch here
+	if primaryBranch != "" {
+		gitRepo.DefaultBranch = primaryBranch
 	}
 	author, err := g.h.GitSignature(ctx, g.localPath)
 	if err != nil {
@@ -101,6 +106,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 		DefaultBranch:     gitRepo.DefaultBranch,
 		ManagedRepo:       true,
 	}
+
 	err = gitutil.CommitAndPush(ctx, g.localPath, config, "", author)
 	if err != nil {
 		return nil, err
