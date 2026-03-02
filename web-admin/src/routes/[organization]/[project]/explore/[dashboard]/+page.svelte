@@ -5,7 +5,6 @@
   import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
   import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
     DashboardBannerID,
     DashboardBannerPriority,
@@ -82,7 +81,6 @@
   );
 
   onNavigate(({ from, to }) => {
-    viewAsUserStore.set(null);
     errorStore.reset();
 
     const changedDashboard =
