@@ -25,7 +25,7 @@ import { QueryService } from "../../proto/gen/rill/runtime/v1/queries_connect";
 import { RuntimeService } from "../../proto/gen/rill/runtime/v1/api_connect";
 import { ConnectorService } from "../../proto/gen/rill/runtime/v1/connectors_connect";
 
-interface ServiceDef {
+export interface ServiceDef {
   typeName: string;
   methods: Record<
     string,
@@ -39,7 +39,7 @@ interface ServiceDef {
   >;
 }
 
-interface MethodInfo {
+export interface MethodInfo {
   /** camelCase method name as it appears in the service descriptor (e.g. "metricsViewAggregation") */
   methodKey: string;
   /** PascalCase method name from the proto (e.g. "MetricsViewAggregation") */
@@ -238,31 +238,9 @@ function generateServiceFile(service: ServiceDef): string {
     `} from "${protoImportPath}";`,
   );
 
-  // Utility: strip undefined values before passing to proto fromJson
-  // (proto fromJson rejects undefined; Orval's HTTP client silently omitted them)
-  lines.push(
-    ``,
-    `/** Deep-strip undefined values — proto fromJson rejects them */`,
-    `// eslint-disable-next-line @typescript-eslint/no-explicit-any`,
-    `function stripUndefined(obj: Record<string, any>): Record<string, unknown> {`,
-    `  const result: Record<string, unknown> = {};`,
-    `  for (const [key, value] of Object.entries(obj)) {`,
-    `    if (value === undefined) continue;`,
-    `    if (Array.isArray(value)) {`,
-    `      result[key] = value.map((item) =>`,
-    `        item && typeof item === "object" && !Array.isArray(item)`,
-    `          ? stripUndefined(item)`,
-    `          : item,`,
-    `      );`,
-    `    } else if (value && typeof value === "object" && !(value instanceof Date)) {`,
-    `      result[key] = stripUndefined(value);`,
-    `    } else {`,
-    `      result[key] = value;`,
-    `    }`,
-    `  }`,
-    `  return result;`,
-    `}`,
-  );
+  // Import stripUndefined utility (proto fromJson rejects undefined values;
+  // Orval's HTTP client silently omitted them)
+  lines.push(`import { stripUndefined } from "../strip-undefined";`);
 
   lines.push(``);
 
@@ -429,50 +407,59 @@ function generateIndex(serviceNames: string[]): string {
   return lines.join("\n");
 }
 
-// --- Main ---
+// --- Exports (for tests) ---
 
-const outDir = path.resolve(__dirname, "gen");
+export { generateServiceFile, generateIndex, extractMethods };
 
-fs.mkdirSync(outDir, { recursive: true });
+// --- Main (only when run as a script) ---
 
-const services: { descriptor: ServiceDef; name: string }[] = [
-  { descriptor: QueryService as unknown as ServiceDef, name: "QueryService" },
-  {
-    descriptor: RuntimeService as unknown as ServiceDef,
-    name: "RuntimeService",
-  },
-  {
-    descriptor: ConnectorService as unknown as ServiceDef,
-    name: "ConnectorService",
-  },
-];
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const outDir = path.resolve(__dirname, "gen");
 
-let totalQueries = 0;
-let totalMutations = 0;
+  fs.mkdirSync(outDir, { recursive: true });
 
-for (const { descriptor, name } of services) {
-  const code = generateServiceFile(descriptor);
-  const fileName = `${toKebabCase(name)}.ts`;
-  const filePath = path.join(outDir, fileName);
-  fs.writeFileSync(filePath, code);
+  const services: { descriptor: ServiceDef; name: string }[] = [
+    {
+      descriptor: QueryService as unknown as ServiceDef,
+      name: "QueryService",
+    },
+    {
+      descriptor: RuntimeService as unknown as ServiceDef,
+      name: "RuntimeService",
+    },
+    {
+      descriptor: ConnectorService as unknown as ServiceDef,
+      name: "ConnectorService",
+    },
+  ];
 
-  const methods = extractMethods(descriptor);
-  const queries = methods.filter((m) => m.classification === "query").length;
-  const mutations = methods.filter(
-    (m) => m.classification === "mutation",
-  ).length;
-  const skipped = Object.keys(descriptor.methods).length - methods.length;
-  totalQueries += queries;
-  totalMutations += mutations;
+  let totalQueries = 0;
+  let totalMutations = 0;
 
-  console.log(
-    `  ${fileName}: ${queries} queries, ${mutations} mutations, ${skipped} skipped`,
-  );
+  for (const { descriptor, name } of services) {
+    const code = generateServiceFile(descriptor);
+    const fileName = `${toKebabCase(name)}.ts`;
+    const filePath = path.join(outDir, fileName);
+    fs.writeFileSync(filePath, code);
+
+    const methods = extractMethods(descriptor);
+    const queries = methods.filter((m) => m.classification === "query").length;
+    const mutations = methods.filter(
+      (m) => m.classification === "mutation",
+    ).length;
+    const skipped = Object.keys(descriptor.methods).length - methods.length;
+    totalQueries += queries;
+    totalMutations += mutations;
+
+    console.log(
+      `  ${fileName}: ${queries} queries, ${mutations} mutations, ${skipped} skipped`,
+    );
+  }
+
+  // Generate barrel index
+  const indexCode = generateIndex(services.map((s) => s.name));
+  fs.writeFileSync(path.join(outDir, "index.ts"), indexCode);
+
+  console.log(`\nTotal: ${totalQueries} queries, ${totalMutations} mutations`);
+  console.log(`Output: ${outDir}`);
 }
-
-// Generate barrel index
-const indexCode = generateIndex(services.map((s) => s.name));
-fs.writeFileSync(path.join(outDir, "index.ts"), indexCode);
-
-console.log(`\nTotal: ${totalQueries} queries, ${totalMutations} mutations`);
-console.log(`Output: ${outDir}`);
