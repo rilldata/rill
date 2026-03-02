@@ -364,14 +364,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			// Compute rows/bytes added
 			var rowsAdded, bytesAdded int64
 			if firstRunIncremental {
-				rowsAdded = newRowsTotal - oldRowsTotal
-				if rowsAdded < 0 {
-					rowsAdded = 0
-				}
-				bytesAdded = newBytesTotal - oldBytesTotal
-				if bytesAdded < 0 {
-					bytesAdded = 0
-				}
+				rowsAdded = max(newRowsTotal - oldRowsTotal, 0)
+				bytesAdded = max(newBytesTotal - oldBytesTotal, 0)
 			} else {
 				rowsAdded = newRowsTotal
 				bytesAdded = newBytesTotal
