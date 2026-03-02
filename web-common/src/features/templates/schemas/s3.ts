@@ -10,11 +10,14 @@ export const s3Schema: MultiStepFormSchema = {
       type: "string",
       title: "Authentication method",
       description: "Choose how to authenticate to S3",
-      enum: ["access_keys"],
+      enum: ["access_keys", "public"],
       default: "access_keys",
       "x-display": "radio",
-      "x-enum-labels": ["Access keys"],
-      "x-enum-descriptions": ["Use AWS access key ID and secret access key."],
+      "x-enum-labels": ["Access keys", "Public access"],
+      "x-enum-descriptions": [
+        "Use AWS access key ID and secret access key.",
+        "Use public access to the S3 bucket.",
+      ],
       "x-ui-only": true,
       "x-grouped-fields": {
         access_keys: [
@@ -99,6 +102,10 @@ export const s3Schema: MultiStepFormSchema = {
       then: {
         required: ["aws_access_key_id", "aws_secret_access_key"],
       },
+    },
+     {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: { required: [] },
     },
   ],
 };

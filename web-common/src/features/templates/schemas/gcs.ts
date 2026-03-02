@@ -9,14 +9,15 @@ export const gcsSchema: MultiStepFormSchema = {
     auth_method: {
       type: "string",
       title: "Authentication method",
-      enum: ["credentials", "hmac"],
+      enum: ["credentials", "hmac", "public"],
       default: "credentials",
       description: "Choose how to authenticate to GCS",
       "x-display": "radio",
-      "x-enum-labels": ["GCP credentials", "HMAC keys"],
+      "x-enum-labels": ["GCP credentials", "HMAC keys", "Public"],
       "x-enum-descriptions": [
         "Upload a JSON key file for a service account with GCS access.",
         "Use HMAC access key and secret for S3-compatible authentication.",
+        "Use public access to GCS bucket.",
       ],
       "x-ui-only": true,
       "x-grouped-fields": {
@@ -85,6 +86,10 @@ export const gcsSchema: MultiStepFormSchema = {
     {
       if: { properties: { auth_method: { const: "hmac" } } },
       then: { required: ["key_id", "secret"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: { required: [] },
     },
   ],
 };

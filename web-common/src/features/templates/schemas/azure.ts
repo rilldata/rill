@@ -9,7 +9,7 @@ export const azureSchema: MultiStepFormSchema = {
     auth_method: {
       type: "string",
       title: "Authentication method",
-      enum: ["connection_string", "account_key", "sas_token"],
+      enum: ["connection_string", "account_key", "sas_token", "public"],
       default: "connection_string",
       description: "Choose how to authenticate to Azure Blob Storage",
       "x-display": "radio",
@@ -17,17 +17,20 @@ export const azureSchema: MultiStepFormSchema = {
         "Connection String",
         "Storage Account Key",
         "SAS Token",
+        "Public Access",
       ],
       "x-enum-descriptions": [
         "Provide a full Azure Storage connection string.",
         "Provide the storage account name and access key.",
         "Provide the storage account name and SAS token.",
+        "Use public access to the Azure blob container.",
       ],
       "x-ui-only": true,
       "x-grouped-fields": {
         connection_string: ["azure_storage_connection_string"],
         account_key: ["azure_storage_account", "azure_storage_key"],
         sas_token: ["azure_storage_account", "azure_storage_sas_token"],
+        public: [],
       },
       "x-step": "connector",
     },
@@ -103,6 +106,10 @@ export const azureSchema: MultiStepFormSchema = {
       then: {
         required: ["azure_storage_account", "azure_storage_sas_token"],
       },
+    },
+    {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: { required: [] },
     },
   ],
 };
