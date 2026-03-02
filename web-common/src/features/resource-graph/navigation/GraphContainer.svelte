@@ -28,6 +28,7 @@
     | ((value: ResourceStatusFilterValue) => void)
     | null = null;
   export let onClearFilters: (() => void) | null = null;
+  export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
 
   $: ({ instanceId } = $runtime);
@@ -101,5 +102,6 @@
   {statusFilterOptions}
   {onStatusToggle}
   {onClearFilters}
+  {onSelectAll}
   {hasUrlFilters}
 />

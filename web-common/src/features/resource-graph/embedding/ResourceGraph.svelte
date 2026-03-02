@@ -81,6 +81,7 @@
     | ((value: ResourceStatusFilterValue) => void)
     | null = null;
   export let onClearFilters: (() => void) | null = null;
+  export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
 
   type SummaryMemo = {
@@ -308,6 +309,20 @@
     const groupId = `${entry.kind}:${entry.name}`;
     internalSelectedGroupId = groupId;
     onSelectedGroupChange?.(groupId);
+  }
+
+  function handleSelectAll() {
+    if (onSelectAll) {
+      onSelectAll();
+    } else {
+      // Fallback: select the first connector entry (shows full DAG)
+      const connectorSection = allResourceSections.find(
+        (s) => s.kind === ResourceKind.Connector,
+      );
+      if (connectorSection?.entries[0]) {
+        handleResourceSelect(connectorSection.entries[0]);
+      }
+    }
   }
 
   let internalSelectedGroupId: string | null = null;
@@ -706,10 +721,16 @@
               />
             </div>
             <div class="tree-dropdown-list">
+              <DropdownMenu.Item
+                class="flex items-center gap-x-2 cursor-pointer {selectedGroupIsConnector
+                  ? 'font-semibold'
+                  : ''}"
+                on:click={handleSelectAll}
+              >
+                <span class="flex-1 truncate text-xs">All Resources</span>
+              </DropdownMenu.Item>
               {#each filteredResourceSections as section, sIdx}
-                {#if sIdx > 0}
-                  <DropdownMenu.Separator />
-                {/if}
+                <DropdownMenu.Separator />
                 <div class="section-header">
                   <ResourceTypeBadge kind={section.kind} />
                   <span class="text-[10px] text-fg-muted"
@@ -718,8 +739,6 @@
                 </div>
                 {#each section.entries as entry}
                   {@const entryId = `${entry.kind}:${entry.name}`}
-                  {@const isConnectorEntry =
-                    entry.kind === ResourceKind.Connector}
                   <DropdownMenu.Item
                     class="flex items-center gap-x-2 cursor-pointer {effectiveSelectedGroupId ===
                     entryId
@@ -732,7 +751,7 @@
                       size="12px"
                     />
                     <span class="flex-1 truncate text-xs">
-                      {isConnectorEntry ? `All Resources` : entry.name}
+                      {entry.name}
                     </span>
                     <span class="status-dot {entry.status}"></span>
                   </DropdownMenu.Item>
@@ -796,7 +815,7 @@
         />
       {:else}
         <div class="state">
-          <p>No DAGs match filters.</p>
+          <p>No resources match the current filters.</p>
         </div>
       {/if}
     </div>
@@ -927,7 +946,7 @@
   }
 
   .graph-toolbar-bar {
-    @apply flex items-center justify-between px-4 h-11 flex-none gap-x-2;
+    @apply flex items-center justify-between px-4 min-h-[2.75rem] flex-none gap-x-2 gap-y-1 flex-wrap;
     transition: padding-left 300ms ease-in-out;
   }
 
@@ -954,7 +973,7 @@
   }
 
   .toolbar-right {
-    @apply flex items-center gap-x-2;
+    @apply flex items-center gap-x-2 flex-wrap;
   }
 
   .clear-link {
@@ -1008,21 +1027,24 @@
   }
 
   .status-dot {
-    @apply flex-shrink-0 rounded-full;
+    @apply flex-shrink-0;
     width: 6px;
     height: 6px;
   }
 
   .status-dot.ok {
-    @apply bg-green-500;
+    @apply rounded-full bg-green-500;
   }
 
   .status-dot.pending {
-    @apply bg-yellow-500;
+    @apply rounded-full border border-yellow-500;
+    background: transparent;
   }
 
   .status-dot.errored {
     @apply bg-red-500;
+    border-radius: 1px;
+    transform: rotate(45deg);
   }
 
   .resource-graph-grid {

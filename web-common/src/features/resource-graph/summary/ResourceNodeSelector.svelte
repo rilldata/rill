@@ -177,20 +177,23 @@
   }
 
   .status-dot {
-    @apply flex-shrink-0 rounded-full;
+    @apply flex-shrink-0;
     width: 6px;
     height: 6px;
   }
 
   .status-dot.ok {
-    @apply bg-green-500;
+    @apply rounded-full bg-green-500;
   }
 
   .status-dot.pending {
-    @apply bg-yellow-500;
+    @apply rounded-full border border-yellow-500;
+    background: transparent;
   }
 
   .status-dot.errored {
     @apply bg-red-500;
+    border-radius: 1px;
+    transform: rotate(45deg);
   }
 </style>

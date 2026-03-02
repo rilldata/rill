@@ -191,7 +191,7 @@
       >
         <div class="flex items-center gap-x-2">
           <GitBranch size="12px" />
-          <span>View Resource Tree</span>
+          <span>View Lineage</span>
         </div>
       </DropdownMenu.Item>
       {#if filePath}

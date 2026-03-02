@@ -135,6 +135,7 @@
     statusFilterOptions={statusOptions}
     onStatusToggle={toggleStatus}
     onClearFilters={handleClearFilters}
+    onSelectAll={() => goto("/graph")}
     {hasUrlFilters}
   />
 </div>

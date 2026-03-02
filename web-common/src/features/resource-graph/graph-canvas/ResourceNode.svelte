@@ -186,6 +186,19 @@
     <div class="title-row">
       {#if kind}<ResourceTypeBadge {kind} />{/if}
       <p class="title" title={data?.label}>{data?.label}</p>
+      {#if hasError}
+        <span class="node-status-icon error" title="Error">
+          <AlertTriangle size="10px" />
+        </span>
+      {:else if isTestOnlyError}
+        <span class="node-status-icon warned" title="Check failed">
+          <AlertTriangle size="10px" />
+        </span>
+      {:else if isPending}
+        <span class="node-status-icon pending" title="Reconciling">
+          <Clock size="10px" />
+        </span>
+      {/if}
       {#if showActions}
         <div class="actions-trigger">
           <ResourceNodeActions bind:this={actionsRef} {data} />
@@ -196,19 +209,19 @@
     <!-- Content row -->
     <div class="content">
       {#if isSourceOrModel}
-        {@const rightIndicators = [
+        {@const allIndicators = [
           metadata?.isMaterialized ? { type: "materialized" } : null,
           isIncremental ? { type: "incremental" } : null,
           isPartitioned ? { type: "partitioned" } : null,
           hasSchedule ? { type: "schedule" } : null,
           testCount > 0 ? { type: "checks" } : null,
-        ]
-          .filter(Boolean)
-          .slice(0, 3)}
+        ].filter(Boolean)}
+        {@const rightIndicators = allIndicators.slice(0, 3)}
+        {@const hiddenCount = allIndicators.length - rightIndicators.length}
         <div class="meta-row meta-row-spread">
           <span class="badge-group">
             {#if connectorIcon && kind === ResourceKind.Source}
-              <span class="accent-icon" title={connector}>
+              <span title={connector}>
                 <svelte:component this={connectorIcon} size="10px" />
               </span>
             {/if}
@@ -245,12 +258,17 @@
                 </span>
               {/if}
             {/each}
+            {#if hiddenCount > 0}
+              <span class="icon-indicator" title="{hiddenCount} more">
+                +
+              </span>
+            {/if}
           </span>
         </div>
       {:else if isMetricsView}
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
-            {measuresCount} meas, {dimensionsCount} dims
+            {measuresCount} measures, {dimensionsCount} dimensions
           </span>
           {#if hasSecurityRules}
             <span
@@ -266,10 +284,10 @@
           <span class="meta-detail">
             {metadata?.exploreMeasuresAll
               ? "all"
-              : (metadata?.exploreMeasuresCount ?? 0)} meas,
+              : (metadata?.exploreMeasuresCount ?? 0)} measures,
             {metadata?.exploreDimensionsAll
               ? "all"
-              : (metadata?.exploreDimensionsCount ?? 0)} dims
+              : (metadata?.exploreDimensionsCount ?? 0)} dimensions
           </span>
           {#if hasSecurityRules}
             <span
@@ -326,19 +344,15 @@
       background 120ms ease;
   }
 
-  .node.root {
-    border-color: var(--border);
-    background-color: var(--surface-subtle);
-  }
-
   .node.selected {
     @apply shadow-md;
+    border-width: 2px;
     background-color: color-mix(
       in srgb,
-      var(--node-accent) 6%,
+      var(--node-accent) 14%,
       var(--surface-background, #ffffff)
     );
-    border-color: color-mix(in srgb, var(--node-accent) 30%, var(--border));
+    border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
   }
 
   .node.route-highlighted {
@@ -374,6 +388,22 @@
 
   .title {
     @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
+  }
+
+  .node-status-icon {
+    @apply flex-shrink-0 flex items-center;
+  }
+
+  .node-status-icon.error {
+    @apply text-red-500;
+  }
+
+  .node-status-icon.warned {
+    @apply text-amber-500;
+  }
+
+  .node-status-icon.pending {
+    @apply text-yellow-500;
   }
 
   .actions-trigger {

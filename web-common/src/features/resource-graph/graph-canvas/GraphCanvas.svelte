@@ -335,13 +335,13 @@
             duration: 0,
           }}
           preventScrolling={false}
-          zoomOnScroll={false}
-          panOnScroll={false}
+          zoomOnScroll
+          panOnScroll
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable
           selectionOnDrag
-          onlyRenderVisibleElements={false}
+          onlyRenderVisibleElements
           defaultEdgeOptions={edgeOptions}
           on:paneclick={handlePaneClick}
         >
