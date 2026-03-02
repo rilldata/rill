@@ -167,7 +167,13 @@ export class RequestQueue {
 
   /** Remove all queued requests for a resource (entity deleted/renamed). */
   removeByName(resourceName: string): void {
-    this.nameHeap.delete(undefined, resourceName);
+    const nameEntry = this.nameHeap.get(resourceName);
+    if (!nameEntry) return;
+    while (!nameEntry.queryHeap.empty()) {
+      const entry = nameEntry.queryHeap.pop()!;
+      entry.reject?.(new DOMException("Request cancelled", "AbortError"));
+    }
+    this.nameHeap.delete(nameEntry);
   }
 
   /** Deprioritize a resource (user navigated away). */
