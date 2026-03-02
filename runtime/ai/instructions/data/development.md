@@ -241,7 +241,7 @@ The following tools are typically available for project development:
 - `develop_file` for delegating file development to a sub-agent, which handles writing and iterating on errors
 - `file_write` for directly creating, updating or deleting a file (available to sub-agents; waits for parse/reconcile and returns resource status)
 {% end %}
-- `project_status` for checking resource names and their current status (idle, running, error)
+- `project_status` for checking resource names and their current status (idle, running, error); supports `wait_until_idle` to block until reconciliation completes, and includes recent instance logs by default
 - `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and low timeouts, and be mindful of performance or making too many queries
 - `query_metrics_view` for querying a metrics view; useful for answering data questions and validating dashboard behavior
 - `list_tables` and `show_table` for accessing the information schema of a database connector
