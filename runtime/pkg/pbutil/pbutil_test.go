@@ -2,6 +2,7 @@ package pbutil
 
 import (
 	"math/big"
+	"net"
 	"testing"
 	"time"
 
@@ -100,6 +101,8 @@ func TestToValue_NilPointers(t *testing.T) {
 		{name: "*time.Time", input: (*time.Time)(nil)},
 		{name: "*float32", input: (*float32)(nil)},
 		{name: "*float64", input: (*float64)(nil)},
+		{name: "*big.Int", input: (*big.Int)(nil)},
+		{name: "*net.IP", input: (*net.IP)(nil)},
 	}
 
 	for _, tt := range cases {
@@ -107,6 +110,60 @@ func TestToValue_NilPointers(t *testing.T) {
 			actual, err := ToValue(tt.input, nil)
 			require.NoError(t, err)
 			require.Equal(t, expected, actual)
+		})
+	}
+}
+
+func TestToValue_PointerValues(t *testing.T) {
+	now := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	boolVal := true
+	intVal := int(42)
+	int32Val := int32(43)
+	int64Val := int64(44)
+	uintVal := uint(45)
+	uint32Val := uint32(46)
+	uint64Val := uint64(47)
+	strVal := "hello"
+	int8Val := int8(48)
+	int16Val := int16(49)
+	uint8Val := uint8(50)
+	uint16Val := uint16(51)
+	timeVal := now
+	float32Val := float32(1.5)
+	float64Val := float64(2.5)
+	ipVal := net.ParseIP("192.168.0.1")
+	bigIntVal := *big.NewInt(12345)
+
+	cases := []struct {
+		name     string
+		input    any
+		expected *structpb.Value
+	}{
+		{name: "*bool", input: &boolVal, expected: structpb.NewBoolValue(true)},
+		{name: "*int", input: &intVal, expected: structpb.NewNumberValue(42)},
+		{name: "*int32", input: &int32Val, expected: structpb.NewNumberValue(43)},
+		{name: "*int64", input: &int64Val, expected: structpb.NewNumberValue(44)},
+		{name: "*uint", input: &uintVal, expected: structpb.NewNumberValue(45)},
+		{name: "*uint32", input: &uint32Val, expected: structpb.NewNumberValue(46)},
+		{name: "*uint64", input: &uint64Val, expected: structpb.NewNumberValue(47)},
+		{name: "*string", input: &strVal, expected: structpb.NewStringValue("hello")},
+		{name: "*int8", input: &int8Val, expected: structpb.NewNumberValue(48)},
+		{name: "*int16", input: &int16Val, expected: structpb.NewNumberValue(49)},
+		{name: "*uint8", input: &uint8Val, expected: structpb.NewNumberValue(50)},
+		{name: "*uint16", input: &uint16Val, expected: structpb.NewNumberValue(51)},
+		{name: "*time.Time", input: &timeVal, expected: structpb.NewStringValue(now.In(time.UTC).Format(time.RFC3339Nano))},
+		{name: "*float32", input: &float32Val, expected: structpb.NewNumberValue(float64(float32Val))},
+		{name: "*float64", input: &float64Val, expected: structpb.NewNumberValue(float64Val)},
+		{name: "*net.IP", input: &ipVal, expected: structpb.NewStringValue(ipVal.String())},
+		{name: "*big.Int", input: &bigIntVal, expected: structpb.NewNumberValue(func() float64 { f, _ := new(big.Float).SetInt(&bigIntVal).Float64(); return f }())},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := ToValue(tt.input, nil)
+			require.NoError(t, err)
+			require.True(t, proto.Equal(tt.expected, actual), "expected: %v, actual: %v", tt.expected, actual)
 		})
 	}
 }
