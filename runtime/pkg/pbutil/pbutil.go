@@ -21,6 +21,13 @@ import (
 // ToValue converts any value to a google.protobuf.Value. It's similar to
 // structpb.NewValue, but adds support for a few extra primitive types.
 func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
+	if v != nil {
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Ptr && rv.IsNil() {
+			return structpb.NewNullValue(), nil
+		}
+	}
+
 	switch v := v.(type) {
 	case nil:
 		return structpb.NewNullValue(), nil
