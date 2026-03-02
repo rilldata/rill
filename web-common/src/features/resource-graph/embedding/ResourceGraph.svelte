@@ -203,32 +203,6 @@
       );
     }
 
-    // Filter by status (multi-select: show groups matching ANY selected status)
-    if (statusFilter.length > 0) {
-      groups = groups.filter((group) =>
-        group.resources.some((r) => {
-          if (
-            statusFilter.includes("pending") &&
-            r.meta?.reconcileStatus &&
-            r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE"
-          ) {
-            return true;
-          }
-          if (statusFilter.includes("errored") && !!r.meta?.reconcileError) {
-            return true;
-          }
-          if (
-            statusFilter.includes("ok") &&
-            r.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE" &&
-            !r.meta?.reconcileError
-          ) {
-            return true;
-          }
-          return false;
-        }),
-      );
-    }
-
     return groups;
   })();
 
@@ -239,10 +213,7 @@
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // Whether any filters are active (URL params, status, or tree search)
-  $: hasActiveFilters =
-    hasUrlFilters ||
-    statusFilter.length > 0 ||
-    treeSearchQuery.trim().length > 0;
+  $: hasActiveFilters = hasUrlFilters || treeSearchQuery.trim().length > 0;
 
   function handleClearFilters() {
     treeSearchQuery = "";
