@@ -109,7 +109,6 @@ jobs:
           netlify deploy \
             --prod \
             --dir=./web-admin/build \
-            --config=./netlify.toml \
             --message "Cloud-admin ${{ github.ref_name }} deployed to ui.${{ env.DOMAIN }}"
         env:
           NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID }}
