@@ -409,6 +409,22 @@ message QueryResult {
   }
 }
 
+// Span corresponds to a single OTel span captured during a request.
+message Span {
+  string name = 1;
+  string span_id = 2;
+  string parent_span_id = 3;
+  int64 start_time_unix_ms = 4;
+  int64 duration_ms = 5;
+  // span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
+  map<string, string> attributes = 6;
+}
+
+// Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
+message Trace {
+  repeated Span spans = 1;
+}
+
 // **********
 // Metrics APIs
 // **********
@@ -453,6 +469,8 @@ message MetricsViewAggregationRequest {
   bool fill_missing = 21;
   // Optional. Defaults to false. Used to fetch rows from underlying model
   bool rows = 22;
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 23;
 }
 
 message MetricsViewAggregationResponse {
@@ -460,6 +478,8 @@ message MetricsViewAggregationResponse {
   StructType schema = 1;
   // Not optional, not null
   repeated google.protobuf.Struct data = 2;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 3;
 }
 
 message MetricsViewAggregationDimension {
@@ -553,6 +573,8 @@ message MetricsViewToplistRequest {
   string having_sql = 16;
   int32 priority = 11;
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 17;
 }
 
 message MetricsViewToplistResponse {
@@ -560,6 +582,8 @@ message MetricsViewToplistResponse {
   repeated MetricsViewColumn meta = 1;
   // Not optional, not null
   repeated google.protobuf.Struct data = 2;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 3;
 }
 
 // Request message for QueryService.MetricsViewComparison
@@ -599,12 +623,16 @@ message MetricsViewComparisonRequest {
   bool exact = 13;
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 19;
 }
 
 // Response message for QueryService.MetricsViewComparison
 message MetricsViewComparisonResponse {
   // Not optional, not null
   repeated MetricsViewComparisonRow rows = 1;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 2;
 }
 
 // 2 of the (start, end, iso_duration) should be set
@@ -703,6 +731,8 @@ message MetricsViewTimeSeriesRequest {
   int32 priority = 8;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
   string time_dimension = 15; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 16;
 }
 
 message MetricsViewTimeSeriesResponse {
@@ -710,6 +740,8 @@ message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
   // Not optional, not null
   repeated TimeSeriesValue data = 2;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 3;
 }
 
 message MetricsViewTotalsRequest {
@@ -727,6 +759,8 @@ message MetricsViewTotalsRequest {
   int32 priority = 8;
   MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
   string time_dimension = 12; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 13;
 }
 
 message MetricsViewTotalsResponse {
@@ -734,6 +768,8 @@ message MetricsViewTotalsResponse {
   repeated MetricsViewColumn meta = 1;
   // Not optional, not null
   google.protobuf.Struct data = 2;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 3;
 }
 
 message MetricsViewRowsRequest {
@@ -759,6 +795,8 @@ message MetricsViewRowsRequest {
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
   // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   string time_dimension = 13;
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 14;
 }
 
 message MetricsViewRowsResponse {
@@ -766,6 +804,8 @@ message MetricsViewRowsResponse {
   repeated MetricsViewColumn meta = 1;
   // Not optional, not null
   repeated google.protobuf.Struct data = 2;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 3;
 }
 
 message MetricsViewSort {
@@ -807,21 +847,29 @@ message MetricsViewTimeRangeRequest {
   int32 priority = 3;
   // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   string time_dimension = 4;
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 5;
 }
 
 message MetricsViewTimeRangeResponse {
   // Not optional, not null
   TimeRangeSummary time_range_summary = 1;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 2;
 }
 
 message MetricsViewSchemaRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 4;
 }
 
 message MetricsViewSchemaResponse {
   StructType schema = 1;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 2;
 }
 
 message MetricsViewSearchRequest {
@@ -838,6 +886,8 @@ message MetricsViewSearchRequest {
   // Optional
   int32 limit = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 10;
 }
 
 message MetricsViewSearchResponse {
@@ -847,6 +897,8 @@ message MetricsViewSearchResponse {
   }
 
   repeated SearchResult results = 1;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 2;
 }
 
 message MetricsViewTimeRangesRequest {
@@ -862,6 +914,8 @@ message MetricsViewTimeRangesRequest {
   string time_dimension = 6;
   // Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
   optional google.protobuf.Timestamp execution_time = 7;
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 8;
 }
 
 message MetricsViewTimeRangesResponse {
@@ -872,6 +926,8 @@ message MetricsViewTimeRangesResponse {
   // The same values as resolved_time_ranges for backwards compatibility.
   // Deprecated: use resolved_time_ranges instead.
   repeated TimeRange time_ranges = 2;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 4;
 }
 
 message ResolvedTimeRange {
@@ -903,6 +959,8 @@ message MetricsViewAnnotationsRequest {
   int64 limit = 8 [(validate.rules).int64.gte = 0];
   // Optional
   int64 offset = 9 [(validate.rules).int64.gte = 0];
+  // Optional. If true, the response will include traces of spans captured during execution.
+  bool trace = 10;
 }
 
 message MetricsViewAnnotationsResponse {
@@ -922,6 +980,8 @@ message MetricsViewAnnotationsResponse {
   }
 
   repeated Annotation rows = 1;
+  // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+  Trace trace = 2;
 }
 
 message ConvertExpressionToMetricsSQLRequest {

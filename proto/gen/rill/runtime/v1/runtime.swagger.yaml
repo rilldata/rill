@@ -2013,6 +2013,9 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/annotations:
@@ -2065,6 +2068,9 @@ paths:
                 type: string
                 format: int64
                 title: Optional
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -2176,6 +2182,9 @@ paths:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
                 title: Optional
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
@@ -2261,6 +2270,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/schema:
@@ -2290,6 +2302,11 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: trace
+          description: Optional. If true, the response will include traces of spans captured during execution.
+          in: query
+          required: false
+          type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/search:
@@ -2342,6 +2359,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -2380,6 +2400,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
@@ -2429,6 +2452,9 @@ paths:
                 type: string
                 format: date-time
                 description: Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -2500,6 +2526,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -2570,6 +2599,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
             title: Deprecated, use MetricsViewComparisonRequest without a comparison time range
       tags:
         - QueryService
@@ -2630,6 +2662,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -6002,6 +6037,9 @@ definitions:
       rows:
         type: boolean
         title: Optional. Defaults to false. Used to fetch rows from underlying model
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -6013,6 +6051,9 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewAggregationSort:
     type: object
     properties:
@@ -6030,6 +6071,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAnnotationsResponseAnnotation'
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewAnnotationsResponseAnnotation:
     type: object
     properties:
@@ -6157,6 +6201,9 @@ definitions:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
     title: Request message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonResponse:
     type: object
@@ -6167,6 +6214,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonRow'
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
     title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
@@ -6277,6 +6327,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -6291,11 +6344,17 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewSchemaResponse:
     type: object
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewSearchResponse:
     type: object
     properties:
@@ -6304,6 +6363,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewSearchResponseSearchResult'
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewSort:
     type: object
     properties:
@@ -6469,6 +6531,9 @@ definitions:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewTimeRangesResponse:
     type: object
     properties:
@@ -6489,6 +6554,9 @@ definitions:
         description: |-
           The same values as resolved_time_ranges for backwards compatibility.
           Deprecated: use resolved_time_ranges instead.
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -6535,6 +6603,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -6550,6 +6621,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewToplistRequest:
     type: object
     properties:
@@ -6594,6 +6668,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
     title: Deprecated, use MetricsViewComparisonRequest without a comparison time range
   v1MetricsViewToplistResponse:
     type: object
@@ -6609,6 +6686,9 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewTotalsRequest:
     type: object
     properties:
@@ -6643,6 +6723,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -6655,6 +6738,9 @@ definitions:
       data:
         type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1Migration:
     type: object
     properties:
@@ -7619,6 +7705,27 @@ definitions:
       refreshedOn:
         type: string
         format: date-time
+  v1Span:
+    type: object
+    properties:
+      name:
+        type: string
+      spanId:
+        type: string
+      parentSpanId:
+        type: string
+      startTimeUnixMs:
+        type: string
+        format: int64
+      durationMs:
+        type: string
+        format: int64
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
+    description: Span corresponds to a single OTel span captured during a request.
   v1StringListValue:
     type: object
     properties:
@@ -7927,6 +8034,15 @@ definitions:
           type: object
           $ref: '#/definitions/TopKEntry'
         title: Not optional, not null
+  v1Trace:
+    type: object
+    properties:
+      spans:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Span'
+    description: Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

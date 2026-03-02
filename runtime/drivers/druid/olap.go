@@ -2,6 +2,7 @@ package druid
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -12,8 +13,13 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/druid")
 
 const (
 	numRetries = 3
@@ -45,7 +51,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		fields := []zap.Field{
@@ -67,6 +73,22 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 
 		return nil, rows.Close()
 	}
+
+	// Start a span covering connection acquisition and query execution (including retries).
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("olap", "druid")))
+
+	start := time.Now()
+	defer func() {
+		totalLatency := time.Since(start).Milliseconds()
+		cancelled := errors.Is(outErr, context.Canceled)
+		failed := outErr != nil
+		span.SetAttributes(
+			attribute.Int64("total_latency_ms", totalLatency),
+			attribute.Bool("cancelled", cancelled),
+			attribute.Bool("failed", failed),
+		)
+		span.End()
+	}()
 
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
@@ -97,18 +119,18 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	}
 
 	var rows *sqlx.Rows
-	var err error
 
 	re := retrier.New(retrier.ExponentialBackoff(numRetries, retryWait), retryErrClassifier{})
-	err = re.RunCtx(ctx, func(ctx2 context.Context) error {
+	outErr = re.RunCtx(ctx, func(ctx2 context.Context) error {
+		var err error
 		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
 		return err
 	})
-	if err != nil {
+	if outErr != nil {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-		return nil, err
+		return nil, outErr
 	}
 
 	schema, err := rowsToSchema(rows)
@@ -117,12 +139,11 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-
 		return nil, err
 	}
 
-	r := &drivers.Result{Rows: rows, Schema: schema}
-	r.SetCleanupFunc(func() error {
+	res = &drivers.Result{Rows: rows, Schema: schema}
+	res.SetCleanupFunc(func() error {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
@@ -130,7 +151,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil
 	})
 
-	return r, nil
+	return res, nil
 }
 
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
