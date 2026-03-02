@@ -14,7 +14,7 @@ import {
   createQueryServiceColumnTimeSeries,
   createQueryServiceColumnTopK,
   createQueryServiceTableCardinality,
-} from "@rilldata/web-common/runtime-client/v2/gen";
+} from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
 import {
   keepPreviousData,

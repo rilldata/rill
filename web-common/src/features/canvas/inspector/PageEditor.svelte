@@ -25,7 +25,7 @@
   } from "@rilldata/web-common/lib/time/config";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client/v2/gen";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 

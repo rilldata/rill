@@ -9,7 +9,7 @@ import {
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
 import type { ConnectError } from "@connectrpc/connect";
 import type {
   CreateQueryOptions,

@@ -30,7 +30,7 @@ import type {
 import {
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
-} from "../../../runtime-client/v2/gen";
+} from "@rilldata/web-common/runtime-client";
 import { createYamlModelFromTable } from "../../connectors/code-utils";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";

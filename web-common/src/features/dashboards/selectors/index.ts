@@ -1,5 +1,5 @@
 import type { V1MetricsViewTimeRangeResponse } from "@rilldata/web-common/runtime-client";
-import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";

@@ -27,7 +27,7 @@ import {
   V1TimeGrain,
   type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
-import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 import {
   type CreateQueryResult,
   keepPreviousData,

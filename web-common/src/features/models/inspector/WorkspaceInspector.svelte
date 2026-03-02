@@ -20,7 +20,7 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-  } from "@rilldata/web-common/runtime-client/v2/gen";
+  } from "@rilldata/web-common/runtime-client";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";

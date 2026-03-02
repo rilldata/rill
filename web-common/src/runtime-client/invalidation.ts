@@ -1,4 +1,4 @@
-import { getRuntimeServiceGetInstanceQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import { getRuntimeServiceGetInstanceQueryKey } from "./v2/gen/runtime-service";
 import {
   isColumnProfilingQuery,
   isProfilingQuery,

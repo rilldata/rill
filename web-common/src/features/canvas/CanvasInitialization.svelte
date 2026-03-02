@@ -17,7 +17,7 @@
     type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client/v2/gen";
+  import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
   import {
     ResourceKind,
     useResource,

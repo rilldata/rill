@@ -8,7 +8,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { V1MetricsViewAggregationResponse } from "@rilldata/web-common/runtime-client";
-import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 

@@ -2,7 +2,7 @@
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import { useRuntimeClient } from "../../../runtime-client/v2";
-  import { createRuntimeServiceAnalyzeConnectors } from "../../../runtime-client/v2/gen";
+  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
   import ConnectorEntry from "./ConnectorEntry.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 

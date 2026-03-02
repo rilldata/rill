@@ -47,7 +47,7 @@ import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
 
 export const lastVisitedState = new Map<string, string>();
 

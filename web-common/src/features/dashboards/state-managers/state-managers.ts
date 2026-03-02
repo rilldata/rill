@@ -6,8 +6,8 @@ import {
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
-import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
 import {

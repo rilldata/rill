@@ -14,7 +14,7 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewTimeSeriesResponse,
 } from "@rilldata/web-common/runtime-client";
-import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client";
 import {
   keepPreviousData,
   type CreateQueryResult,

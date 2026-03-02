@@ -3,7 +3,7 @@
   import { Tag } from "../../../components/tag";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
-  import { createRuntimeServiceGetInstance } from "../../../runtime-client/v2/gen";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { connectorIconMapping } from "../connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors-utils";

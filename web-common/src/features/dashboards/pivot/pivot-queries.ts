@@ -13,7 +13,7 @@ import {
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { ConnectError } from "@connectrpc/connect";
-import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 import {
   type CreateQueryResult,
   keepPreviousData,

@@ -10,7 +10,7 @@
   import {
     createQueryServiceColumnDescriptiveStatistics,
     createQueryServiceColumnRugHistogram,
-  } from "@rilldata/web-common/runtime-client/v2/gen";
+  } from "@rilldata/web-common/runtime-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
   import { derived } from "svelte/store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";

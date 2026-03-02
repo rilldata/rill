@@ -25,7 +25,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,

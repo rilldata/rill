@@ -12,7 +12,7 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
-} from "@rilldata/web-common/runtime-client/v2/gen";
+} from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get, writable } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";

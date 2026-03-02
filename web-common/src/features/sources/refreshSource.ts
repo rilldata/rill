@@ -8,7 +8,7 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   runtimeServiceCreateTrigger,
   runtimeServicePutFile,
-} from "@rilldata/web-common/runtime-client/v2/gen";
+} from "@rilldata/web-common/runtime-client";
 
 export async function refreshSource(
   connector: string,

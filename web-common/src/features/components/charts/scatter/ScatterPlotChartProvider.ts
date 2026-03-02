@@ -13,7 +13,7 @@ import type {
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
-import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {

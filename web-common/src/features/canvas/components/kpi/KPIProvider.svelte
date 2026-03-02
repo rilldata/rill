@@ -6,7 +6,7 @@
   import {
     createQueryServiceMetricsViewAggregation,
     createQueryServiceMetricsViewTimeSeries,
-  } from "@rilldata/web-common/runtime-client/v2/gen";
+  } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";

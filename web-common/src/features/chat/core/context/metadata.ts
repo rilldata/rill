@@ -9,7 +9,7 @@ import {
   type V1ComponentSpec,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
 import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,

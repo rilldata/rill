@@ -14,7 +14,7 @@ import {
   createConnectorServiceListDatabaseSchemas,
   createConnectorServiceGetTable,
   connectorServiceListTables,
-} from "../../runtime-client/v2/gen";
+} from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
 
 /**

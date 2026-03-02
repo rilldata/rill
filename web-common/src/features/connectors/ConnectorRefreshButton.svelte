@@ -9,7 +9,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createRuntimeServiceCreateTriggerMutation } from "@rilldata/web-common/runtime-client/v2/gen";
+  import { createRuntimeServiceCreateTriggerMutation } from "@rilldata/web-common/runtime-client";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges = false;

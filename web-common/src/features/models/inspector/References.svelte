@@ -8,7 +8,7 @@
   import {
     createRuntimeServiceGetResource,
     createQueryServiceTableCardinality,
-  } from "@rilldata/web-common/runtime-client/v2/gen";
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";

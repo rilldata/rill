@@ -5,7 +5,7 @@
   import {
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
-  } from "../../runtime-client/v2/gen";
+  } from "@rilldata/web-common/runtime-client";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
