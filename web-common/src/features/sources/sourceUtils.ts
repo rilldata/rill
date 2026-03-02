@@ -276,11 +276,12 @@ export function maybeRewriteToDuckDb(
       const icebergPath = (formValues.gcs_path ||
         formValues.s3_path ||
         formValues.azure_path ||
+        formValues.public_path ||
         formValues.local_path) as string;
       const storageType = formValues.storage_type as string;
 
       // Set create_secrets_from_connectors for cloud storage backends
-      if (storageType && storageType !== "local") {
+      if (storageType && storageType !== "local" && storageType !== "public") {
         formValues.create_secrets_from_connectors = storageType;
       }
 
@@ -308,6 +309,7 @@ export function maybeRewriteToDuckDb(
       delete formValues.gcs_path;
       delete formValues.s3_path;
       delete formValues.azure_path;
+      delete formValues.public_path;
       delete formValues.local_path;
       delete formValues.gcs_info;
       delete formValues.s3_info;

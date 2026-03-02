@@ -10,18 +10,20 @@ export const icebergSchema: MultiStepFormSchema = {
     storage_type: {
       type: "string",
       title: "Storage backend",
-      enum: ["local", "gcs", "s3", "azure"],
+      enum: ["local", "public", "gcs", "s3", "azure"],
       default: "local",
       "x-display": "select",
       "x-select-style": "rich",
       "x-enum-labels": [
         "Local",
+        "Public URL",
         "Google Cloud Storage",
         "Amazon S3",
         "Azure Blob Storage",
       ],
       "x-enum-descriptions": [
         "Read Iceberg tables from a local directory",
+        "Read Iceberg tables from a public HTTP/HTTPS URL",
         "Read Iceberg tables from a GCS bucket",
         "Read Iceberg tables from an S3 bucket",
         "Read Iceberg tables from Azure Blob Storage",
@@ -32,6 +34,7 @@ export const icebergSchema: MultiStepFormSchema = {
         s3: ["s3_info", "s3_path"],
         azure: ["azure_info", "azure_path"],
         local: ["local_path"],
+        public: ["public_path"],
       },
       "x-step": "source",
     },
@@ -100,6 +103,17 @@ export const icebergSchema: MultiStepFormSchema = {
       "x-placeholder": "/path/to/iceberg_table",
       "x-step": "source",
     },
+    public_path: {
+      type: "string",
+      title: "Iceberg table URL",
+      description: "Public HTTP/HTTPS URL to the Iceberg table directory",
+      errorMessage: {
+        pattern:
+          "Must be an HTTP or HTTPS URL (e.g. https://example.com/path/to/iceberg_table)",
+      },
+      "x-placeholder": "https://example.com/path/to/iceberg_table",
+      "x-step": "source",
+    },
     allow_moved_paths: {
       type: "boolean",
       title: "Allow moved paths",
@@ -142,6 +156,10 @@ export const icebergSchema: MultiStepFormSchema = {
     {
       if: { properties: { storage_type: { const: "local" } } },
       then: { required: ["local_path"] },
+    },
+    {
+      if: { properties: { storage_type: { const: "public" } } },
+      then: { required: ["public_path"] },
     },
   ],
 };
