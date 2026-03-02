@@ -56,27 +56,23 @@ function stripUndefined(obj: Record<string, any>): Record<string, unknown> {
 /**
  * Raw RPC call: ConnectorService.ListBuckets
  */
-export function connectorServiceListBuckets(
+export async function connectorServiceListBuckets(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListBucketsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListBucketsResponse> {
-  return client.connectorService
-    .listBuckets(
-      ListBucketsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListBucketsResponse,
-    );
+  const r = await client.connectorService.listBuckets(
+    ListBucketsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListBucketsResponse;
 }
 
 export function getConnectorServiceListBucketsQueryKey(
@@ -139,27 +135,23 @@ export function createConnectorServiceListBuckets<
 /**
  * Raw RPC call: ConnectorService.ListObjects
  */
-export function connectorServiceListObjects(
+export async function connectorServiceListObjects(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListObjectsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListObjectsResponse> {
-  return client.connectorService
-    .listObjects(
-      ListObjectsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListObjectsResponse,
-    );
+  const r = await client.connectorService.listObjects(
+    ListObjectsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListObjectsResponse;
 }
 
 export function getConnectorServiceListObjectsQueryKey(
@@ -222,27 +214,23 @@ export function createConnectorServiceListObjects<
 /**
  * Raw RPC call: ConnectorService.OLAPListTables
  */
-export function connectorServiceOLAPListTables(
+export async function connectorServiceOLAPListTables(
   client: RuntimeClient,
   request: Omit<PartialMessage<OLAPListTablesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1OLAPListTablesResponse> {
-  return client.connectorService
-    .oLAPListTables(
-      OLAPListTablesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1OLAPListTablesResponse,
-    );
+  const r = await client.connectorService.oLAPListTables(
+    OLAPListTablesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1OLAPListTablesResponse;
 }
 
 export function getConnectorServiceOLAPListTablesQueryKey(
@@ -305,27 +293,23 @@ export function createConnectorServiceOLAPListTables<
 /**
  * Raw RPC call: ConnectorService.OLAPGetTable
  */
-export function connectorServiceOLAPGetTable(
+export async function connectorServiceOLAPGetTable(
   client: RuntimeClient,
   request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1OLAPGetTableResponse> {
-  return client.connectorService
-    .oLAPGetTable(
-      OLAPGetTableRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1OLAPGetTableResponse,
-    );
+  const r = await client.connectorService.oLAPGetTable(
+    OLAPGetTableRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1OLAPGetTableResponse;
 }
 
 export function getConnectorServiceOLAPGetTableQueryKey(
@@ -388,27 +372,23 @@ export function createConnectorServiceOLAPGetTable<
 /**
  * Raw RPC call: ConnectorService.ListDatabaseSchemas
  */
-export function connectorServiceListDatabaseSchemas(
+export async function connectorServiceListDatabaseSchemas(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListDatabaseSchemasRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListDatabaseSchemasResponse> {
-  return client.connectorService
-    .listDatabaseSchemas(
-      ListDatabaseSchemasRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListDatabaseSchemasResponse,
-    );
+  const r = await client.connectorService.listDatabaseSchemas(
+    ListDatabaseSchemasRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListDatabaseSchemasResponse;
 }
 
 export function getConnectorServiceListDatabaseSchemasQueryKey(
@@ -475,27 +455,23 @@ export function createConnectorServiceListDatabaseSchemas<
 /**
  * Raw RPC call: ConnectorService.ListTables
  */
-export function connectorServiceListTables(
+export async function connectorServiceListTables(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListTablesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListTablesResponse> {
-  return client.connectorService
-    .listTables(
-      ListTablesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListTablesResponse,
-    );
+  const r = await client.connectorService.listTables(
+    ListTablesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListTablesResponse;
 }
 
 export function getConnectorServiceListTablesQueryKey(
@@ -551,25 +527,21 @@ export function createConnectorServiceListTables<TData = V1ListTablesResponse>(
 /**
  * Raw RPC call: ConnectorService.GetTable
  */
-export function connectorServiceGetTable(
+export async function connectorServiceGetTable(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetTableRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetTableResponse> {
-  return client.connectorService
-    .getTable(
-      GetTableRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1GetTableResponse,
-    );
+  const r = await client.connectorService.getTable(
+    GetTableRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1GetTableResponse;
 }
 
 export function getConnectorServiceGetTableQueryKey(

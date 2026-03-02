@@ -123,27 +123,23 @@ function stripUndefined(obj: Record<string, any>): Record<string, unknown> {
 /**
  * Raw RPC call: QueryService.MetricsViewAggregation
  */
-export function queryServiceMetricsViewAggregation(
+export async function queryServiceMetricsViewAggregation(
   client: RuntimeClient,
   request: Omit<V1MetricsViewAggregationRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewAggregationResponse> {
-  return client.queryService
-    .metricsViewAggregation(
-      MetricsViewAggregationRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewAggregationResponse,
-    );
+  const r = await client.queryService.metricsViewAggregation(
+    MetricsViewAggregationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewAggregationResponse;
 }
 
 export function getQueryServiceMetricsViewAggregationQueryKey(
@@ -211,27 +207,23 @@ export function createQueryServiceMetricsViewAggregation<
 /**
  * Raw RPC call: QueryService.MetricsViewToplist
  */
-export function queryServiceMetricsViewToplist(
+export async function queryServiceMetricsViewToplist(
   client: RuntimeClient,
   request: Omit<V1MetricsViewToplistRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewToplistResponse> {
-  return client.queryService
-    .metricsViewToplist(
-      MetricsViewToplistRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewToplistResponse,
-    );
+  const r = await client.queryService.metricsViewToplist(
+    MetricsViewToplistRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewToplistResponse;
 }
 
 export function getQueryServiceMetricsViewToplistQueryKey(
@@ -298,27 +290,23 @@ export function createQueryServiceMetricsViewToplist<
 /**
  * Raw RPC call: QueryService.MetricsViewComparison
  */
-export function queryServiceMetricsViewComparison(
+export async function queryServiceMetricsViewComparison(
   client: RuntimeClient,
   request: Omit<V1MetricsViewComparisonRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewComparisonResponse> {
-  return client.queryService
-    .metricsViewComparison(
-      MetricsViewComparisonRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewComparisonResponse,
-    );
+  const r = await client.queryService.metricsViewComparison(
+    MetricsViewComparisonRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewComparisonResponse;
 }
 
 export function getQueryServiceMetricsViewComparisonQueryKey(
@@ -386,27 +374,23 @@ export function createQueryServiceMetricsViewComparison<
 /**
  * Raw RPC call: QueryService.MetricsViewTimeSeries
  */
-export function queryServiceMetricsViewTimeSeries(
+export async function queryServiceMetricsViewTimeSeries(
   client: RuntimeClient,
   request: Omit<V1MetricsViewTimeSeriesRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTimeSeriesResponse> {
-  return client.queryService
-    .metricsViewTimeSeries(
-      MetricsViewTimeSeriesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewTimeSeriesResponse,
-    );
+  const r = await client.queryService.metricsViewTimeSeries(
+    MetricsViewTimeSeriesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewTimeSeriesResponse;
 }
 
 export function getQueryServiceMetricsViewTimeSeriesQueryKey(
@@ -474,27 +458,23 @@ export function createQueryServiceMetricsViewTimeSeries<
 /**
  * Raw RPC call: QueryService.MetricsViewTotals
  */
-export function queryServiceMetricsViewTotals(
+export async function queryServiceMetricsViewTotals(
   client: RuntimeClient,
   request: Omit<V1MetricsViewTotalsRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTotalsResponse> {
-  return client.queryService
-    .metricsViewTotals(
-      MetricsViewTotalsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewTotalsResponse,
-    );
+  const r = await client.queryService.metricsViewTotals(
+    MetricsViewTotalsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewTotalsResponse;
 }
 
 export function getQueryServiceMetricsViewTotalsQueryKey(
@@ -561,27 +541,23 @@ export function createQueryServiceMetricsViewTotals<
 /**
  * Raw RPC call: QueryService.MetricsViewRows
  */
-export function queryServiceMetricsViewRows(
+export async function queryServiceMetricsViewRows(
   client: RuntimeClient,
   request: Omit<V1MetricsViewRowsRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewRowsResponse> {
-  return client.queryService
-    .metricsViewRows(
-      MetricsViewRowsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewRowsResponse,
-    );
+  const r = await client.queryService.metricsViewRows(
+    MetricsViewRowsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewRowsResponse;
 }
 
 export function getQueryServiceMetricsViewRowsQueryKey(
@@ -648,27 +624,23 @@ export function createQueryServiceMetricsViewRows<
 /**
  * Raw RPC call: QueryService.MetricsViewTimeRange
  */
-export function queryServiceMetricsViewTimeRange(
+export async function queryServiceMetricsViewTimeRange(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewTimeRangeRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTimeRangeResponse> {
-  return client.queryService
-    .metricsViewTimeRange(
-      MetricsViewTimeRangeRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewTimeRangeResponse,
-    );
+  const r = await client.queryService.metricsViewTimeRange(
+    MetricsViewTimeRangeRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewTimeRangeResponse;
 }
 
 export function getQueryServiceMetricsViewTimeRangeQueryKey(
@@ -735,27 +707,23 @@ export function createQueryServiceMetricsViewTimeRange<
 /**
  * Raw RPC call: QueryService.MetricsViewSchema
  */
-export function queryServiceMetricsViewSchema(
+export async function queryServiceMetricsViewSchema(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewSchemaRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewSchemaResponse> {
-  return client.queryService
-    .metricsViewSchema(
-      MetricsViewSchemaRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewSchemaResponse,
-    );
+  const r = await client.queryService.metricsViewSchema(
+    MetricsViewSchemaRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewSchemaResponse;
 }
 
 export function getQueryServiceMetricsViewSchemaQueryKey(
@@ -822,27 +790,23 @@ export function createQueryServiceMetricsViewSchema<
 /**
  * Raw RPC call: QueryService.MetricsViewSearch
  */
-export function queryServiceMetricsViewSearch(
+export async function queryServiceMetricsViewSearch(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewSearchRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewSearchResponse> {
-  return client.queryService
-    .metricsViewSearch(
-      MetricsViewSearchRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewSearchResponse,
-    );
+  const r = await client.queryService.metricsViewSearch(
+    MetricsViewSearchRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewSearchResponse;
 }
 
 export function getQueryServiceMetricsViewSearchQueryKey(
@@ -909,27 +873,23 @@ export function createQueryServiceMetricsViewSearch<
 /**
  * Raw RPC call: QueryService.MetricsViewTimeRanges
  */
-export function queryServiceMetricsViewTimeRanges(
+export async function queryServiceMetricsViewTimeRanges(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewTimeRangesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTimeRangesResponse> {
-  return client.queryService
-    .metricsViewTimeRanges(
-      MetricsViewTimeRangesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewTimeRangesResponse,
-    );
+  const r = await client.queryService.metricsViewTimeRanges(
+    MetricsViewTimeRangesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewTimeRangesResponse;
 }
 
 export function getQueryServiceMetricsViewTimeRangesQueryKey(
@@ -997,27 +957,23 @@ export function createQueryServiceMetricsViewTimeRanges<
 /**
  * Raw RPC call: QueryService.MetricsViewAnnotations
  */
-export function queryServiceMetricsViewAnnotations(
+export async function queryServiceMetricsViewAnnotations(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewAnnotationsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewAnnotationsResponse> {
-  return client.queryService
-    .metricsViewAnnotations(
-      MetricsViewAnnotationsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1MetricsViewAnnotationsResponse,
-    );
+  const r = await client.queryService.metricsViewAnnotations(
+    MetricsViewAnnotationsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewAnnotationsResponse;
 }
 
 export function getQueryServiceMetricsViewAnnotationsQueryKey(
@@ -1085,7 +1041,7 @@ export function createQueryServiceMetricsViewAnnotations<
 /**
  * Raw RPC call: QueryService.ConvertExpressionToMetricsSQL
  */
-export function queryServiceConvertExpressionToMetricsSQL(
+export async function queryServiceConvertExpressionToMetricsSQL(
   client: RuntimeClient,
   request: Omit<
     PartialMessage<ConvertExpressionToMetricsSQLRequest>,
@@ -1093,22 +1049,18 @@ export function queryServiceConvertExpressionToMetricsSQL(
   >,
   options?: { signal?: AbortSignal },
 ): Promise<V1ConvertExpressionToMetricsSQLResponse> {
-  return client.queryService
-    .convertExpressionToMetricsSQL(
-      ConvertExpressionToMetricsSQLRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ConvertExpressionToMetricsSQLResponse,
-    );
+  const r = await client.queryService.convertExpressionToMetricsSQL(
+    ConvertExpressionToMetricsSQLRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ConvertExpressionToMetricsSQLResponse;
 }
 
 export function getQueryServiceConvertExpressionToMetricsSQLQueryKey(
@@ -1187,27 +1139,23 @@ export function createQueryServiceConvertExpressionToMetricsSQL<
 /**
  * Raw RPC call: QueryService.ResolveCanvas
  */
-export function queryServiceResolveCanvas(
+export async function queryServiceResolveCanvas(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveCanvasRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveCanvasResponse> {
-  return client.queryService
-    .resolveCanvas(
-      ResolveCanvasRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ResolveCanvasResponse,
-    );
+  const r = await client.queryService.resolveCanvas(
+    ResolveCanvasRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ResolveCanvasResponse;
 }
 
 export function getQueryServiceResolveCanvasQueryKey(
@@ -1265,27 +1213,23 @@ export function createQueryServiceResolveCanvas<
 /**
  * Raw RPC call: QueryService.ResolveComponent
  */
-export function queryServiceResolveComponent(
+export async function queryServiceResolveComponent(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveComponentRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveComponentResponse> {
-  return client.queryService
-    .resolveComponent(
-      ResolveComponentRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ResolveComponentResponse,
-    );
+  const r = await client.queryService.resolveComponent(
+    ResolveComponentRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ResolveComponentResponse;
 }
 
 export function getQueryServiceResolveComponentQueryKey(
@@ -1352,27 +1296,23 @@ export function createQueryServiceResolveComponent<
 /**
  * Raw RPC call: QueryService.ResolveTemplatedString
  */
-export function queryServiceResolveTemplatedString(
+export async function queryServiceResolveTemplatedString(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveTemplatedStringRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveTemplatedStringResponse> {
-  return client.queryService
-    .resolveTemplatedString(
-      ResolveTemplatedStringRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ResolveTemplatedStringResponse,
-    );
+  const r = await client.queryService.resolveTemplatedString(
+    ResolveTemplatedStringRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ResolveTemplatedStringResponse;
 }
 
 export function getQueryServiceResolveTemplatedStringQueryKey(
@@ -1440,27 +1380,23 @@ export function createQueryServiceResolveTemplatedString<
 /**
  * Raw RPC call: QueryService.ColumnRollupInterval
  */
-export function queryServiceColumnRollupInterval(
+export async function queryServiceColumnRollupInterval(
   client: RuntimeClient,
   request: Omit<V1ColumnRollupIntervalRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnRollupIntervalResponse> {
-  return client.queryService
-    .columnRollupInterval(
-      ColumnRollupIntervalRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnRollupIntervalResponse,
-    );
+  const r = await client.queryService.columnRollupInterval(
+    ColumnRollupIntervalRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnRollupIntervalResponse;
 }
 
 export function getQueryServiceColumnRollupIntervalQueryKey(
@@ -1527,27 +1463,23 @@ export function createQueryServiceColumnRollupInterval<
 /**
  * Raw RPC call: QueryService.ColumnTopK
  */
-export function queryServiceColumnTopK(
+export async function queryServiceColumnTopK(
   client: RuntimeClient,
   request: Omit<V1ColumnTopKRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnTopKResponse> {
-  return client.queryService
-    .columnTopK(
-      ColumnTopKRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnTopKResponse,
-    );
+  const r = await client.queryService.columnTopK(
+    ColumnTopKRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnTopKResponse;
 }
 
 export function getQueryServiceColumnTopKQueryKey(
@@ -1603,27 +1535,23 @@ export function createQueryServiceColumnTopK<TData = V1ColumnTopKResponse>(
 /**
  * Raw RPC call: QueryService.ColumnNullCount
  */
-export function queryServiceColumnNullCount(
+export async function queryServiceColumnNullCount(
   client: RuntimeClient,
   request: Omit<V1ColumnNullCountRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnNullCountResponse> {
-  return client.queryService
-    .columnNullCount(
-      ColumnNullCountRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnNullCountResponse,
-    );
+  const r = await client.queryService.columnNullCount(
+    ColumnNullCountRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnNullCountResponse;
 }
 
 export function getQueryServiceColumnNullCountQueryKey(
@@ -1690,27 +1618,23 @@ export function createQueryServiceColumnNullCount<
 /**
  * Raw RPC call: QueryService.ColumnDescriptiveStatistics
  */
-export function queryServiceColumnDescriptiveStatistics(
+export async function queryServiceColumnDescriptiveStatistics(
   client: RuntimeClient,
   request: Omit<V1ColumnDescriptiveStatisticsRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnDescriptiveStatisticsResponse> {
-  return client.queryService
-    .columnDescriptiveStatistics(
-      ColumnDescriptiveStatisticsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnDescriptiveStatisticsResponse,
-    );
+  const r = await client.queryService.columnDescriptiveStatistics(
+    ColumnDescriptiveStatisticsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnDescriptiveStatisticsResponse;
 }
 
 export function getQueryServiceColumnDescriptiveStatisticsQueryKey(
@@ -1780,27 +1704,23 @@ export function createQueryServiceColumnDescriptiveStatistics<
 /**
  * Raw RPC call: QueryService.ColumnTimeGrain
  */
-export function queryServiceColumnTimeGrain(
+export async function queryServiceColumnTimeGrain(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeGrainRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnTimeGrainResponse> {
-  return client.queryService
-    .columnTimeGrain(
-      ColumnTimeGrainRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnTimeGrainResponse,
-    );
+  const r = await client.queryService.columnTimeGrain(
+    ColumnTimeGrainRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnTimeGrainResponse;
 }
 
 export function getQueryServiceColumnTimeGrainQueryKey(
@@ -1867,27 +1787,23 @@ export function createQueryServiceColumnTimeGrain<
 /**
  * Raw RPC call: QueryService.ColumnNumericHistogram
  */
-export function queryServiceColumnNumericHistogram(
+export async function queryServiceColumnNumericHistogram(
   client: RuntimeClient,
   request: Omit<V1ColumnNumericHistogramRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnNumericHistogramResponse> {
-  return client.queryService
-    .columnNumericHistogram(
-      ColumnNumericHistogramRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnNumericHistogramResponse,
-    );
+  const r = await client.queryService.columnNumericHistogram(
+    ColumnNumericHistogramRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnNumericHistogramResponse;
 }
 
 export function getQueryServiceColumnNumericHistogramQueryKey(
@@ -1955,27 +1871,23 @@ export function createQueryServiceColumnNumericHistogram<
 /**
  * Raw RPC call: QueryService.ColumnRugHistogram
  */
-export function queryServiceColumnRugHistogram(
+export async function queryServiceColumnRugHistogram(
   client: RuntimeClient,
   request: Omit<V1ColumnRugHistogramRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnRugHistogramResponse> {
-  return client.queryService
-    .columnRugHistogram(
-      ColumnRugHistogramRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnRugHistogramResponse,
-    );
+  const r = await client.queryService.columnRugHistogram(
+    ColumnRugHistogramRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnRugHistogramResponse;
 }
 
 export function getQueryServiceColumnRugHistogramQueryKey(
@@ -2042,27 +1954,23 @@ export function createQueryServiceColumnRugHistogram<
 /**
  * Raw RPC call: QueryService.ColumnTimeRange
  */
-export function queryServiceColumnTimeRange(
+export async function queryServiceColumnTimeRange(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeRangeRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnTimeRangeResponse> {
-  return client.queryService
-    .columnTimeRange(
-      ColumnTimeRangeRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnTimeRangeResponse,
-    );
+  const r = await client.queryService.columnTimeRange(
+    ColumnTimeRangeRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnTimeRangeResponse;
 }
 
 export function getQueryServiceColumnTimeRangeQueryKey(
@@ -2129,27 +2037,23 @@ export function createQueryServiceColumnTimeRange<
 /**
  * Raw RPC call: QueryService.ColumnCardinality
  */
-export function queryServiceColumnCardinality(
+export async function queryServiceColumnCardinality(
   client: RuntimeClient,
   request: Omit<V1ColumnCardinalityRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnCardinalityResponse> {
-  return client.queryService
-    .columnCardinality(
-      ColumnCardinalityRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnCardinalityResponse,
-    );
+  const r = await client.queryService.columnCardinality(
+    ColumnCardinalityRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnCardinalityResponse;
 }
 
 export function getQueryServiceColumnCardinalityQueryKey(
@@ -2216,27 +2120,23 @@ export function createQueryServiceColumnCardinality<
 /**
  * Raw RPC call: QueryService.ColumnTimeSeries
  */
-export function queryServiceColumnTimeSeries(
+export async function queryServiceColumnTimeSeries(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeSeriesRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ColumnTimeSeriesResponse> {
-  return client.queryService
-    .columnTimeSeries(
-      ColumnTimeSeriesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ColumnTimeSeriesResponse,
-    );
+  const r = await client.queryService.columnTimeSeries(
+    ColumnTimeSeriesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ColumnTimeSeriesResponse;
 }
 
 export function getQueryServiceColumnTimeSeriesQueryKey(
@@ -2303,27 +2203,23 @@ export function createQueryServiceColumnTimeSeries<
 /**
  * Raw RPC call: QueryService.TableCardinality
  */
-export function queryServiceTableCardinality(
+export async function queryServiceTableCardinality(
   client: RuntimeClient,
   request: Omit<V1TableCardinalityRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1TableCardinalityResponse> {
-  return client.queryService
-    .tableCardinality(
-      TableCardinalityRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1TableCardinalityResponse,
-    );
+  const r = await client.queryService.tableCardinality(
+    TableCardinalityRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1TableCardinalityResponse;
 }
 
 export function getQueryServiceTableCardinalityQueryKey(
@@ -2390,27 +2286,23 @@ export function createQueryServiceTableCardinality<
 /**
  * Raw RPC call: QueryService.TableColumns
  */
-export function queryServiceTableColumns(
+export async function queryServiceTableColumns(
   client: RuntimeClient,
   request: Omit<V1TableColumnsRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1TableColumnsResponse> {
-  return client.queryService
-    .tableColumns(
-      TableColumnsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1TableColumnsResponse,
-    );
+  const r = await client.queryService.tableColumns(
+    TableColumnsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1TableColumnsResponse;
 }
 
 export function getQueryServiceTableColumnsQueryKey(
@@ -2466,25 +2358,23 @@ export function createQueryServiceTableColumns<TData = V1TableColumnsResponse>(
 /**
  * Raw RPC call: QueryService.TableRows
  */
-export function queryServiceTableRows(
+export async function queryServiceTableRows(
   client: RuntimeClient,
   request: Omit<V1TableRowsRequest, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1TableRowsResponse> {
-  return client.queryService
-    .tableRows(
-      TableRowsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1TableRowsResponse,
-    );
+  const r = await client.queryService.tableRows(
+    TableRowsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1TableRowsResponse;
 }
 
 export function getQueryServiceTableRowsQueryKey(
@@ -2537,23 +2427,19 @@ export function createQueryServiceTableRows<TData = V1TableRowsResponse>(
 /**
  * Raw RPC call (mutation): QueryService.Query
  */
-export function queryServiceQuery(
+export async function queryServiceQuery(
   client: RuntimeClient,
   request: Omit<PartialMessage<QueryRequest>, "instanceId">,
 ): Promise<V1QueryResponse> {
-  return client.queryService
-    .query(
-      QueryRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1QueryResponse,
-    );
+  const r = await client.queryService.query(
+    QueryRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1QueryResponse;
 }
 
 export function getQueryServiceQueryMutationOptions(
@@ -2598,23 +2484,19 @@ export function createQueryServiceQueryMutation(
 /**
  * Raw RPC call (mutation): QueryService.Export
  */
-export function queryServiceExport(
+export async function queryServiceExport(
   client: RuntimeClient,
   request: Omit<PartialMessage<ExportRequest>, "instanceId">,
 ): Promise<V1ExportResponse> {
-  return client.queryService
-    .export(
-      ExportRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1ExportResponse,
-    );
+  const r = await client.queryService.export(
+    ExportRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1ExportResponse;
 }
 
 export function getQueryServiceExportMutationOptions(
@@ -2659,25 +2541,21 @@ export function createQueryServiceExportMutation(
 /**
  * Raw RPC call (mutation): QueryService.ExportReport
  */
-export function queryServiceExportReport(
+export async function queryServiceExportReport(
   client: RuntimeClient,
   request: Omit<PartialMessage<ExportReportRequest>, "instanceId">,
 ): Promise<V1ExportReportResponse> {
-  return client.queryService
-    .exportReport(
-      ExportReportRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ExportReportResponse,
-    );
+  const r = await client.queryService.exportReport(
+    ExportReportRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ExportReportResponse;
 }
 
 export function getQueryServiceExportReportMutationOptions(

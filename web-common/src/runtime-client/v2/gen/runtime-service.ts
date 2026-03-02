@@ -142,19 +142,16 @@ function stripUndefined(obj: Record<string, any>): Record<string, unknown> {
 /**
  * Raw RPC call: RuntimeService.Ping
  */
-export function runtimeServicePing(
+export async function runtimeServicePing(
   client: RuntimeClient,
   request: PartialMessage<PingRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1PingResponse> {
-  return client.runtimeService
-    .ping(
-      PingRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) => r.toJson({ emitDefaultValues: true }) as unknown as V1PingResponse,
-    );
+  const r = await client.runtimeService.ping(
+    PingRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
+    { signal: options?.signal },
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1PingResponse;
 }
 
 export function getRuntimeServicePingQueryKey(
@@ -203,20 +200,16 @@ export function createRuntimeServicePing<TData = V1PingResponse>(
 /**
  * Raw RPC call: RuntimeService.Health
  */
-export function runtimeServiceHealth(
+export async function runtimeServiceHealth(
   client: RuntimeClient,
   request: PartialMessage<HealthRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1HealthResponse> {
-  return client.runtimeService
-    .health(
-      HealthRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1HealthResponse,
-    );
+  const r = await client.runtimeService.health(
+    HealthRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
+    { signal: options?.signal },
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1HealthResponse;
 }
 
 export function getRuntimeServiceHealthQueryKey(
@@ -265,27 +258,23 @@ export function createRuntimeServiceHealth<TData = V1HealthResponse>(
 /**
  * Raw RPC call: RuntimeService.InstanceHealth
  */
-export function runtimeServiceInstanceHealth(
+export async function runtimeServiceInstanceHealth(
   client: RuntimeClient,
   request: Omit<PartialMessage<InstanceHealthRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1InstanceHealthResponse> {
-  return client.runtimeService
-    .instanceHealth(
-      InstanceHealthRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1InstanceHealthResponse,
-    );
+  const r = await client.runtimeService.instanceHealth(
+    InstanceHealthRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1InstanceHealthResponse;
 }
 
 export function getRuntimeServiceInstanceHealthQueryKey(
@@ -348,24 +337,20 @@ export function createRuntimeServiceInstanceHealth<
 /**
  * Raw RPC call: RuntimeService.ListInstances
  */
-export function runtimeServiceListInstances(
+export async function runtimeServiceListInstances(
   client: RuntimeClient,
   request: PartialMessage<ListInstancesRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListInstancesResponse> {
-  return client.runtimeService
-    .listInstances(
-      ListInstancesRequest.fromJson(
-        stripUndefined(request) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListInstancesResponse,
-    );
+  const r = await client.runtimeService.listInstances(
+    ListInstancesRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListInstancesResponse;
 }
 
 export function getRuntimeServiceListInstancesQueryKey(
@@ -428,27 +413,23 @@ export function createRuntimeServiceListInstances<
 /**
  * Raw RPC call: RuntimeService.GetInstance
  */
-export function runtimeServiceGetInstance(
+export async function runtimeServiceGetInstance(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetInstanceResponse> {
-  return client.runtimeService
-    .getInstance(
-      GetInstanceRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GetInstanceResponse,
-    );
+  const r = await client.runtimeService.getInstance(
+    GetInstanceRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GetInstanceResponse;
 }
 
 export function getRuntimeServiceGetInstanceQueryKey(
@@ -504,25 +485,23 @@ export function createRuntimeServiceGetInstance<TData = V1GetInstanceResponse>(
 /**
  * Raw RPC call: RuntimeService.ListFiles
  */
-export function runtimeServiceListFiles(
+export async function runtimeServiceListFiles(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListFilesResponse> {
-  return client.runtimeService
-    .listFiles(
-      ListFilesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1ListFilesResponse,
-    );
+  const r = await client.runtimeService.listFiles(
+    ListFilesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListFilesResponse;
 }
 
 export function getRuntimeServiceListFilesQueryKey(
@@ -578,25 +557,21 @@ export function createRuntimeServiceListFiles<TData = V1ListFilesResponse>(
 /**
  * Raw RPC call: RuntimeService.GetFile
  */
-export function runtimeServiceGetFile(
+export async function runtimeServiceGetFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetFileResponse> {
-  return client.runtimeService
-    .getFile(
-      GetFileRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1GetFileResponse,
-    );
+  const r = await client.runtimeService.getFile(
+    GetFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1GetFileResponse;
 }
 
 export function getRuntimeServiceGetFileQueryKey(
@@ -647,24 +622,20 @@ export function createRuntimeServiceGetFile<TData = V1GetFileResponse>(
 /**
  * Raw RPC call: RuntimeService.ListExamples
  */
-export function runtimeServiceListExamples(
+export async function runtimeServiceListExamples(
   client: RuntimeClient,
   request: PartialMessage<ListExamplesRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListExamplesResponse> {
-  return client.runtimeService
-    .listExamples(
-      ListExamplesRequest.fromJson(
-        stripUndefined(request) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListExamplesResponse,
-    );
+  const r = await client.runtimeService.listExamples(
+    ListExamplesRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListExamplesResponse;
 }
 
 export function getRuntimeServiceListExamplesQueryKey(
@@ -722,27 +693,23 @@ export function createRuntimeServiceListExamples<
 /**
  * Raw RPC call: RuntimeService.QueryResolver
  */
-export function runtimeServiceQueryResolver(
+export async function runtimeServiceQueryResolver(
   client: RuntimeClient,
   request: Omit<PartialMessage<QueryResolverRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1QueryResolverResponse> {
-  return client.runtimeService
-    .queryResolver(
-      QueryResolverRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1QueryResolverResponse,
-    );
+  const r = await client.runtimeService.queryResolver(
+    QueryResolverRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1QueryResolverResponse;
 }
 
 export function getRuntimeServiceQueryResolverQueryKey(
@@ -805,25 +772,21 @@ export function createRuntimeServiceQueryResolver<
 /**
  * Raw RPC call: RuntimeService.GetLogs
  */
-export function runtimeServiceGetLogs(
+export async function runtimeServiceGetLogs(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetLogsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetLogsResponse> {
-  return client.runtimeService
-    .getLogs(
-      GetLogsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1GetLogsResponse,
-    );
+  const r = await client.runtimeService.getLogs(
+    GetLogsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1GetLogsResponse;
 }
 
 export function getRuntimeServiceGetLogsQueryKey(
@@ -874,27 +837,23 @@ export function createRuntimeServiceGetLogs<TData = V1GetLogsResponse>(
 /**
  * Raw RPC call: RuntimeService.ListResources
  */
-export function runtimeServiceListResources(
+export async function runtimeServiceListResources(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListResourcesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListResourcesResponse> {
-  return client.runtimeService
-    .listResources(
-      ListResourcesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListResourcesResponse,
-    );
+  const r = await client.runtimeService.listResources(
+    ListResourcesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListResourcesResponse;
 }
 
 export function getRuntimeServiceListResourcesQueryKey(
@@ -957,27 +916,23 @@ export function createRuntimeServiceListResources<
 /**
  * Raw RPC call: RuntimeService.GetResource
  */
-export function runtimeServiceGetResource(
+export async function runtimeServiceGetResource(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetResourceRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetResourceResponse> {
-  return client.runtimeService
-    .getResource(
-      GetResourceRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GetResourceResponse,
-    );
+  const r = await client.runtimeService.getResource(
+    GetResourceRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GetResourceResponse;
 }
 
 export function getRuntimeServiceGetResourceQueryKey(
@@ -1033,27 +988,23 @@ export function createRuntimeServiceGetResource<TData = V1GetResourceResponse>(
 /**
  * Raw RPC call: RuntimeService.GetExplore
  */
-export function runtimeServiceGetExplore(
+export async function runtimeServiceGetExplore(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetExploreRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetExploreResponse> {
-  return client.runtimeService
-    .getExplore(
-      GetExploreRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GetExploreResponse,
-    );
+  const r = await client.runtimeService.getExplore(
+    GetExploreRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GetExploreResponse;
 }
 
 export function getRuntimeServiceGetExploreQueryKey(
@@ -1109,27 +1060,23 @@ export function createRuntimeServiceGetExplore<TData = V1GetExploreResponse>(
 /**
  * Raw RPC call: RuntimeService.GetModelPartitions
  */
-export function runtimeServiceGetModelPartitions(
+export async function runtimeServiceGetModelPartitions(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetModelPartitionsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetModelPartitionsResponse> {
-  return client.runtimeService
-    .getModelPartitions(
-      GetModelPartitionsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GetModelPartitionsResponse,
-    );
+  const r = await client.runtimeService.getModelPartitions(
+    GetModelPartitionsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GetModelPartitionsResponse;
 }
 
 export function getRuntimeServiceGetModelPartitionsQueryKey(
@@ -1196,24 +1143,20 @@ export function createRuntimeServiceGetModelPartitions<
 /**
  * Raw RPC call: RuntimeService.ListConnectorDrivers
  */
-export function runtimeServiceListConnectorDrivers(
+export async function runtimeServiceListConnectorDrivers(
   client: RuntimeClient,
   request: PartialMessage<ListConnectorDriversRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListConnectorDriversResponse> {
-  return client.runtimeService
-    .listConnectorDrivers(
-      ListConnectorDriversRequest.fromJson(
-        stripUndefined(request) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListConnectorDriversResponse,
-    );
+  const r = await client.runtimeService.listConnectorDrivers(
+    ListConnectorDriversRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListConnectorDriversResponse;
 }
 
 export function getRuntimeServiceListConnectorDriversQueryKey(
@@ -1280,27 +1223,23 @@ export function createRuntimeServiceListConnectorDrivers<
 /**
  * Raw RPC call: RuntimeService.AnalyzeConnectors
  */
-export function runtimeServiceAnalyzeConnectors(
+export async function runtimeServiceAnalyzeConnectors(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1AnalyzeConnectorsResponse> {
-  return client.runtimeService
-    .analyzeConnectors(
-      AnalyzeConnectorsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1AnalyzeConnectorsResponse,
-    );
+  const r = await client.runtimeService.analyzeConnectors(
+    AnalyzeConnectorsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1AnalyzeConnectorsResponse;
 }
 
 export function getRuntimeServiceAnalyzeConnectorsQueryKey(
@@ -1367,27 +1306,23 @@ export function createRuntimeServiceAnalyzeConnectors<
 /**
  * Raw RPC call: RuntimeService.ListNotifierConnectors
  */
-export function runtimeServiceListNotifierConnectors(
+export async function runtimeServiceListNotifierConnectors(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListNotifierConnectorsResponse> {
-  return client.runtimeService
-    .listNotifierConnectors(
-      ListNotifierConnectorsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListNotifierConnectorsResponse,
-    );
+  const r = await client.runtimeService.listNotifierConnectors(
+    ListNotifierConnectorsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListNotifierConnectorsResponse;
 }
 
 export function getRuntimeServiceListNotifierConnectorsQueryKey(
@@ -1455,27 +1390,23 @@ export function createRuntimeServiceListNotifierConnectors<
 /**
  * Raw RPC call: RuntimeService.ListConversations
  */
-export function runtimeServiceListConversations(
+export async function runtimeServiceListConversations(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListConversationsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListConversationsResponse> {
-  return client.runtimeService
-    .listConversations(
-      ListConversationsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListConversationsResponse,
-    );
+  const r = await client.runtimeService.listConversations(
+    ListConversationsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListConversationsResponse;
 }
 
 export function getRuntimeServiceListConversationsQueryKey(
@@ -1542,27 +1473,23 @@ export function createRuntimeServiceListConversations<
 /**
  * Raw RPC call: RuntimeService.GetConversation
  */
-export function runtimeServiceGetConversation(
+export async function runtimeServiceGetConversation(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetConversationRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1GetConversationResponse> {
-  return client.runtimeService
-    .getConversation(
-      GetConversationRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GetConversationResponse,
-    );
+  const r = await client.runtimeService.getConversation(
+    GetConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GetConversationResponse;
 }
 
 export function getRuntimeServiceGetConversationQueryKey(
@@ -1629,25 +1556,23 @@ export function createRuntimeServiceGetConversation<
 /**
  * Raw RPC call: RuntimeService.ListTools
  */
-export function runtimeServiceListTools(
+export async function runtimeServiceListTools(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListToolsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListToolsResponse> {
-  return client.runtimeService
-    .listTools(
-      ListToolsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1ListToolsResponse,
-    );
+  const r = await client.runtimeService.listTools(
+    ListToolsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListToolsResponse;
 }
 
 export function getRuntimeServiceListToolsQueryKey(
@@ -1703,24 +1628,20 @@ export function createRuntimeServiceListTools<TData = V1ListToolsResponse>(
 /**
  * Raw RPC call: RuntimeService.IssueDevJWT
  */
-export function runtimeServiceIssueDevJWT(
+export async function runtimeServiceIssueDevJWT(
   client: RuntimeClient,
   request: V1IssueDevJWTRequest,
   options?: { signal?: AbortSignal },
 ): Promise<V1IssueDevJWTResponse> {
-  return client.runtimeService
-    .issueDevJWT(
-      IssueDevJWTRequest.fromJson(
-        stripUndefined(request) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1IssueDevJWTResponse,
-    );
+  const r = await client.runtimeService.issueDevJWT(
+    IssueDevJWTRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1IssueDevJWTResponse;
 }
 
 export function getRuntimeServiceIssueDevJWTQueryKey(
@@ -1776,27 +1697,23 @@ export function createRuntimeServiceIssueDevJWT<TData = V1IssueDevJWTResponse>(
 /**
  * Raw RPC call: RuntimeService.AnalyzeVariables
  */
-export function runtimeServiceAnalyzeVariables(
+export async function runtimeServiceAnalyzeVariables(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeVariablesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1AnalyzeVariablesResponse> {
-  return client.runtimeService
-    .analyzeVariables(
-      AnalyzeVariablesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1AnalyzeVariablesResponse,
-    );
+  const r = await client.runtimeService.analyzeVariables(
+    AnalyzeVariablesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1AnalyzeVariablesResponse;
 }
 
 export function getRuntimeServiceAnalyzeVariablesQueryKey(
@@ -1863,27 +1780,23 @@ export function createRuntimeServiceAnalyzeVariables<
 /**
  * Raw RPC call: RuntimeService.ListGitCommits
  */
-export function runtimeServiceListGitCommits(
+export async function runtimeServiceListGitCommits(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListGitCommitsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListGitCommitsResponse> {
-  return client.runtimeService
-    .listGitCommits(
-      ListGitCommitsRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListGitCommitsResponse,
-    );
+  const r = await client.runtimeService.listGitCommits(
+    ListGitCommitsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListGitCommitsResponse;
 }
 
 export function getRuntimeServiceListGitCommitsQueryKey(
@@ -1946,27 +1859,23 @@ export function createRuntimeServiceListGitCommits<
 /**
  * Raw RPC call: RuntimeService.ListGitBranches
  */
-export function runtimeServiceListGitBranches(
+export async function runtimeServiceListGitBranches(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListGitBranchesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListGitBranchesResponse> {
-  return client.runtimeService
-    .listGitBranches(
-      ListGitBranchesRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-      { signal: options?.signal },
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ListGitBranchesResponse,
-    );
+  const r = await client.runtimeService.listGitBranches(
+    ListGitBranchesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ListGitBranchesResponse;
 }
 
 export function getRuntimeServiceListGitBranchesQueryKey(
@@ -2033,25 +1942,21 @@ export function createRuntimeServiceListGitBranches<
 /**
  * Raw RPC call (mutation): RuntimeService.CreateInstance
  */
-export function runtimeServiceCreateInstance(
+export async function runtimeServiceCreateInstance(
   client: RuntimeClient,
   request: Omit<V1CreateInstanceRequest, "instanceId">,
 ): Promise<V1CreateInstanceResponse> {
-  return client.runtimeService
-    .createInstance(
-      CreateInstanceRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1CreateInstanceResponse,
-    );
+  const r = await client.runtimeService.createInstance(
+    CreateInstanceRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1CreateInstanceResponse;
 }
 
 export function getRuntimeServiceCreateInstanceMutationOptions(
@@ -2099,25 +2004,21 @@ export function createRuntimeServiceCreateInstanceMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.EditInstance
  */
-export function runtimeServiceEditInstance(
+export async function runtimeServiceEditInstance(
   client: RuntimeClient,
   request: Omit<PartialMessage<EditInstanceRequest>, "instanceId">,
 ): Promise<V1EditInstanceResponse> {
-  return client.runtimeService
-    .editInstance(
-      EditInstanceRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1EditInstanceResponse,
-    );
+  const r = await client.runtimeService.editInstance(
+    EditInstanceRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1EditInstanceResponse;
 }
 
 export function getRuntimeServiceEditInstanceMutationOptions(
@@ -2165,25 +2066,21 @@ export function createRuntimeServiceEditInstanceMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.DeleteInstance
  */
-export function runtimeServiceDeleteInstance(
+export async function runtimeServiceDeleteInstance(
   client: RuntimeClient,
   request: Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">,
 ): Promise<V1DeleteInstanceResponse> {
-  return client.runtimeService
-    .deleteInstance(
-      DeleteInstanceRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1DeleteInstanceResponse,
-    );
+  const r = await client.runtimeService.deleteInstance(
+    DeleteInstanceRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1DeleteInstanceResponse;
 }
 
 export function getRuntimeServiceDeleteInstanceMutationOptions(
@@ -2231,25 +2128,21 @@ export function createRuntimeServiceDeleteInstanceMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.ReloadConfig
  */
-export function runtimeServiceReloadConfig(
+export async function runtimeServiceReloadConfig(
   client: RuntimeClient,
   request: Omit<PartialMessage<ReloadConfigRequest>, "instanceId">,
 ): Promise<V1ReloadConfigResponse> {
-  return client.runtimeService
-    .reloadConfig(
-      ReloadConfigRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ReloadConfigResponse,
-    );
+  const r = await client.runtimeService.reloadConfig(
+    ReloadConfigRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ReloadConfigResponse;
 }
 
 export function getRuntimeServiceReloadConfigMutationOptions(
@@ -2297,23 +2190,19 @@ export function createRuntimeServiceReloadConfigMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.PutFile
  */
-export function runtimeServicePutFile(
+export async function runtimeServicePutFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<PutFileRequest>, "instanceId">,
 ): Promise<V1PutFileResponse> {
-  return client.runtimeService
-    .putFile(
-      PutFileRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1PutFileResponse,
-    );
+  const r = await client.runtimeService.putFile(
+    PutFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1PutFileResponse;
 }
 
 export function getRuntimeServicePutFileMutationOptions(
@@ -2361,25 +2250,21 @@ export function createRuntimeServicePutFileMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.CreateDirectory
  */
-export function runtimeServiceCreateDirectory(
+export async function runtimeServiceCreateDirectory(
   client: RuntimeClient,
   request: Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">,
 ): Promise<V1CreateDirectoryResponse> {
-  return client.runtimeService
-    .createDirectory(
-      CreateDirectoryRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1CreateDirectoryResponse,
-    );
+  const r = await client.runtimeService.createDirectory(
+    CreateDirectoryRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1CreateDirectoryResponse;
 }
 
 export function getRuntimeServiceCreateDirectoryMutationOptions(
@@ -2427,25 +2312,21 @@ export function createRuntimeServiceCreateDirectoryMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.DeleteFile
  */
-export function runtimeServiceDeleteFile(
+export async function runtimeServiceDeleteFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<DeleteFileRequest>, "instanceId">,
 ): Promise<V1DeleteFileResponse> {
-  return client.runtimeService
-    .deleteFile(
-      DeleteFileRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1DeleteFileResponse,
-    );
+  const r = await client.runtimeService.deleteFile(
+    DeleteFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1DeleteFileResponse;
 }
 
 export function getRuntimeServiceDeleteFileMutationOptions(
@@ -2493,25 +2374,21 @@ export function createRuntimeServiceDeleteFileMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.RenameFile
  */
-export function runtimeServiceRenameFile(
+export async function runtimeServiceRenameFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<RenameFileRequest>, "instanceId">,
 ): Promise<V1RenameFileResponse> {
-  return client.runtimeService
-    .renameFile(
-      RenameFileRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1RenameFileResponse,
-    );
+  const r = await client.runtimeService.renameFile(
+    RenameFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1RenameFileResponse;
 }
 
 export function getRuntimeServiceRenameFileMutationOptions(
@@ -2559,25 +2436,21 @@ export function createRuntimeServiceRenameFileMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.UnpackExample
  */
-export function runtimeServiceUnpackExample(
+export async function runtimeServiceUnpackExample(
   client: RuntimeClient,
   request: Omit<PartialMessage<UnpackExampleRequest>, "instanceId">,
 ): Promise<V1UnpackExampleResponse> {
-  return client.runtimeService
-    .unpackExample(
-      UnpackExampleRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1UnpackExampleResponse,
-    );
+  const r = await client.runtimeService.unpackExample(
+    UnpackExampleRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1UnpackExampleResponse;
 }
 
 export function getRuntimeServiceUnpackExampleMutationOptions(
@@ -2625,25 +2498,21 @@ export function createRuntimeServiceUnpackExampleMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.UnpackEmpty
  */
-export function runtimeServiceUnpackEmpty(
+export async function runtimeServiceUnpackEmpty(
   client: RuntimeClient,
   request: Omit<PartialMessage<UnpackEmptyRequest>, "instanceId">,
 ): Promise<V1UnpackEmptyResponse> {
-  return client.runtimeService
-    .unpackEmpty(
-      UnpackEmptyRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1UnpackEmptyResponse,
-    );
+  const r = await client.runtimeService.unpackEmpty(
+    UnpackEmptyRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1UnpackEmptyResponse;
 }
 
 export function getRuntimeServiceUnpackEmptyMutationOptions(
@@ -2691,25 +2560,21 @@ export function createRuntimeServiceUnpackEmptyMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GenerateMetricsViewFile
  */
-export function runtimeServiceGenerateMetricsViewFile(
+export async function runtimeServiceGenerateMetricsViewFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<GenerateMetricsViewFileRequest>, "instanceId">,
 ): Promise<V1GenerateMetricsViewFileResponse> {
-  return client.runtimeService
-    .generateMetricsViewFile(
-      GenerateMetricsViewFileRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GenerateMetricsViewFileResponse,
-    );
+  const r = await client.runtimeService.generateMetricsViewFile(
+    GenerateMetricsViewFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GenerateMetricsViewFileResponse;
 }
 
 export function getRuntimeServiceGenerateMetricsViewFileMutationOptions(
@@ -2756,25 +2621,21 @@ export function createRuntimeServiceGenerateMetricsViewFileMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GenerateCanvasFile
  */
-export function runtimeServiceGenerateCanvasFile(
+export async function runtimeServiceGenerateCanvasFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">,
 ): Promise<V1GenerateCanvasFileResponse> {
-  return client.runtimeService
-    .generateCanvasFile(
-      GenerateCanvasFileRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GenerateCanvasFileResponse,
-    );
+  const r = await client.runtimeService.generateCanvasFile(
+    GenerateCanvasFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GenerateCanvasFileResponse;
 }
 
 export function getRuntimeServiceGenerateCanvasFileMutationOptions(
@@ -2822,25 +2683,21 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GenerateResolver
  */
-export function runtimeServiceGenerateResolver(
+export async function runtimeServiceGenerateResolver(
   client: RuntimeClient,
   request: Omit<PartialMessage<GenerateResolverRequest>, "instanceId">,
 ): Promise<V1GenerateResolverResponse> {
-  return client.runtimeService
-    .generateResolver(
-      GenerateResolverRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GenerateResolverResponse,
-    );
+  const r = await client.runtimeService.generateResolver(
+    GenerateResolverRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GenerateResolverResponse;
 }
 
 export function getRuntimeServiceGenerateResolverMutationOptions(
@@ -2888,25 +2745,21 @@ export function createRuntimeServiceGenerateResolverMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GenerateRenderer
  */
-export function runtimeServiceGenerateRenderer(
+export async function runtimeServiceGenerateRenderer(
   client: RuntimeClient,
   request: Omit<PartialMessage<GenerateRendererRequest>, "instanceId">,
 ): Promise<V1GenerateRendererResponse> {
-  return client.runtimeService
-    .generateRenderer(
-      GenerateRendererRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GenerateRendererResponse,
-    );
+  const r = await client.runtimeService.generateRenderer(
+    GenerateRendererRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GenerateRendererResponse;
 }
 
 export function getRuntimeServiceGenerateRendererMutationOptions(
@@ -2954,25 +2807,21 @@ export function createRuntimeServiceGenerateRendererMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.CreateTrigger
  */
-export function runtimeServiceCreateTrigger(
+export async function runtimeServiceCreateTrigger(
   client: RuntimeClient,
   request: Omit<PartialMessage<CreateTriggerRequest>, "instanceId">,
 ): Promise<V1CreateTriggerResponse> {
-  return client.runtimeService
-    .createTrigger(
-      CreateTriggerRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1CreateTriggerResponse,
-    );
+  const r = await client.runtimeService.createTrigger(
+    CreateTriggerRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1CreateTriggerResponse;
 }
 
 export function getRuntimeServiceCreateTriggerMutationOptions(
@@ -3020,25 +2869,21 @@ export function createRuntimeServiceCreateTriggerMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.ShareConversation
  */
-export function runtimeServiceShareConversation(
+export async function runtimeServiceShareConversation(
   client: RuntimeClient,
   request: Omit<PartialMessage<ShareConversationRequest>, "instanceId">,
 ): Promise<V1ShareConversationResponse> {
-  return client.runtimeService
-    .shareConversation(
-      ShareConversationRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ShareConversationResponse,
-    );
+  const r = await client.runtimeService.shareConversation(
+    ShareConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ShareConversationResponse;
 }
 
 export function getRuntimeServiceShareConversationMutationOptions(
@@ -3086,25 +2931,21 @@ export function createRuntimeServiceShareConversationMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.ForkConversation
  */
-export function runtimeServiceForkConversation(
+export async function runtimeServiceForkConversation(
   client: RuntimeClient,
   request: Omit<PartialMessage<ForkConversationRequest>, "instanceId">,
 ): Promise<V1ForkConversationResponse> {
-  return client.runtimeService
-    .forkConversation(
-      ForkConversationRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1ForkConversationResponse,
-    );
+  const r = await client.runtimeService.forkConversation(
+    ForkConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1ForkConversationResponse;
 }
 
 export function getRuntimeServiceForkConversationMutationOptions(
@@ -3152,23 +2993,19 @@ export function createRuntimeServiceForkConversationMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.Complete
  */
-export function runtimeServiceComplete(
+export async function runtimeServiceComplete(
   client: RuntimeClient,
   request: Omit<PartialMessage<CompleteRequest>, "instanceId">,
 ): Promise<V1CompleteResponse> {
-  return client.runtimeService
-    .complete(
-      CompleteRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1CompleteResponse,
-    );
+  const r = await client.runtimeService.complete(
+    CompleteRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1CompleteResponse;
 }
 
 export function getRuntimeServiceCompleteMutationOptions(
@@ -3216,23 +3053,21 @@ export function createRuntimeServiceCompleteMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GitStatus
  */
-export function runtimeServiceGitStatus(
+export async function runtimeServiceGitStatus(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitStatusRequest>, "instanceId">,
 ): Promise<V1GitStatusResponse> {
-  return client.runtimeService
-    .gitStatus(
-      GitStatusRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1GitStatusResponse,
-    );
+  const r = await client.runtimeService.gitStatus(
+    GitStatusRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GitStatusResponse;
 }
 
 export function getRuntimeServiceGitStatusMutationOptions(
@@ -3280,23 +3115,21 @@ export function createRuntimeServiceGitStatusMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GitCommit
  */
-export function runtimeServiceGitCommit(
+export async function runtimeServiceGitCommit(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitCommitRequest>, "instanceId">,
 ): Promise<V1GitCommitResponse> {
-  return client.runtimeService
-    .gitCommit(
-      GitCommitRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1GitCommitResponse,
-    );
+  const r = await client.runtimeService.gitCommit(
+    GitCommitRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GitCommitResponse;
 }
 
 export function getRuntimeServiceGitCommitMutationOptions(
@@ -3344,25 +3177,21 @@ export function createRuntimeServiceGitCommitMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.RestoreGitCommit
  */
-export function runtimeServiceRestoreGitCommit(
+export async function runtimeServiceRestoreGitCommit(
   client: RuntimeClient,
   request: Omit<PartialMessage<RestoreGitCommitRequest>, "instanceId">,
 ): Promise<V1RestoreGitCommitResponse> {
-  return client.runtimeService
-    .restoreGitCommit(
-      RestoreGitCommitRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1RestoreGitCommitResponse,
-    );
+  const r = await client.runtimeService.restoreGitCommit(
+    RestoreGitCommitRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1RestoreGitCommitResponse;
 }
 
 export function getRuntimeServiceRestoreGitCommitMutationOptions(
@@ -3410,25 +3239,21 @@ export function createRuntimeServiceRestoreGitCommitMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GitMergeToBranch
  */
-export function runtimeServiceGitMergeToBranch(
+export async function runtimeServiceGitMergeToBranch(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitMergeToBranchRequest>, "instanceId">,
 ): Promise<V1GitMergeToBranchResponse> {
-  return client.runtimeService
-    .gitMergeToBranch(
-      GitMergeToBranchRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GitMergeToBranchResponse,
-    );
+  const r = await client.runtimeService.gitMergeToBranch(
+    GitMergeToBranchRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GitMergeToBranchResponse;
 }
 
 export function getRuntimeServiceGitMergeToBranchMutationOptions(
@@ -3476,25 +3301,21 @@ export function createRuntimeServiceGitMergeToBranchMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GitSwitchBranch
  */
-export function runtimeServiceGitSwitchBranch(
+export async function runtimeServiceGitSwitchBranch(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitSwitchBranchRequest>, "instanceId">,
 ): Promise<V1GitSwitchBranchResponse> {
-  return client.runtimeService
-    .gitSwitchBranch(
-      GitSwitchBranchRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({
-          emitDefaultValues: true,
-        }) as unknown as V1GitSwitchBranchResponse,
-    );
+  const r = await client.runtimeService.gitSwitchBranch(
+    GitSwitchBranchRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GitSwitchBranchResponse;
 }
 
 export function getRuntimeServiceGitSwitchBranchMutationOptions(
@@ -3542,23 +3363,19 @@ export function createRuntimeServiceGitSwitchBranchMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GitPull
  */
-export function runtimeServiceGitPull(
+export async function runtimeServiceGitPull(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitPullRequest>, "instanceId">,
 ): Promise<V1GitPullResponse> {
-  return client.runtimeService
-    .gitPull(
-      GitPullRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1GitPullResponse,
-    );
+  const r = await client.runtimeService.gitPull(
+    GitPullRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1GitPullResponse;
 }
 
 export function getRuntimeServiceGitPullMutationOptions(
@@ -3606,23 +3423,19 @@ export function createRuntimeServiceGitPullMutation(
 /**
  * Raw RPC call (mutation): RuntimeService.GitPush
  */
-export function runtimeServiceGitPush(
+export async function runtimeServiceGitPush(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitPushRequest>, "instanceId">,
 ): Promise<V1GitPushResponse> {
-  return client.runtimeService
-    .gitPush(
-      GitPushRequest.fromJson(
-        stripUndefined({
-          instanceId: client.instanceId,
-          ...request,
-        }) as unknown as JsonValue,
-      ),
-    )
-    .then(
-      (r) =>
-        r.toJson({ emitDefaultValues: true }) as unknown as V1GitPushResponse,
-    );
+  const r = await client.runtimeService.gitPush(
+    GitPushRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1GitPushResponse;
 }
 
 export function getRuntimeServiceGitPushMutationOptions(
