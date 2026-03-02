@@ -81,7 +81,7 @@
         return JSON.stringify(res[key], null, 2);
       }
     }
-    const { meta, ...rest } = res;
+    const { meta: _meta, ...rest } = res;
     return JSON.stringify(rest, null, 2);
   }
 

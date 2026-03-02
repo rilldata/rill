@@ -684,7 +684,7 @@
                         onStatusToggle?.(opt.value);
                       }
                     }
-                    if (val) onStatusToggle?.(val);
+                    if (val) onStatusToggle?.(val as ResourceStatusFilterValue);
                   }}
                 >
                   <option value="">All statuses</option>
