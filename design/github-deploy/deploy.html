@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deploy — DataSync</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="logo-text">DataSync</span>
+      <span class="logo-badge">BETA</span>
+    </div>
+    <div class="sidebar-repo">
+      <div class="sidebar-section-label">Repository</div>
+      <div class="repo-selector">
+        <div class="repo-selector-icon">Q</div>
+        <span class="repo-selector-name">q4-revenue-analysis</span>
+        <svg class="repo-selector-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <a href="dashboard.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview
+        </a>
+        <a href="deploy.html" class="nav-link active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Deploy
+          <span class="nav-badge">5</span>
+        </a>
+        <a href="branches.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          Branches
+          <span class="nav-badge">4</span>
+        </a>
+        <a href="history.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Settings</div>
+        <a href="#" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-avatar">DS</div>
+        <div>
+          <div class="user-name">Diana S.</div>
+          <div class="user-handle">@diana-sync</div>
+        </div>
+        <div class="connected-dot"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        Deploy
+        <span>/</span>
+        Commit &amp; Push
+      </div>
+
+      <div class="branch-chip" data-dd="#branch-dd-deploy">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        <span class="current-branch-label">main</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="dropdown-menu" id="branch-dd-deploy" style="right:0;left:auto;">
+        <div class="dropdown-header">Target branch</div>
+        <div class="dropdown-item active" onclick="switchBranch('main')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>main</div>
+        <div class="dropdown-item" onclick="switchBranch('feature/q4-forecasting')">feature/q4-forecasting</div>
+        <div class="dropdown-item" onclick="switchBranch('release/v2.1')">release/v2.1</div>
+      </div>
+
+      <span class="badge badge-orange">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        5 changes
+      </span>
+    </header>
+
+    <div class="content">
+      <form id="deploy-form">
+        <div class="grid-main-aside" style="align-items:start;">
+
+          <!-- Left column -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <!-- Stage files -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Stage Files
+                </span>
+                <div class="card-actions">
+                  <span style="font-size:12px;color:var(--text-muted);"><span id="staged-count">0</span> selected</span>
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="document.querySelectorAll('.file-cb').forEach(c=>c.checked=true);document.getElementById('select-all-cb').checked=true;updateStagedCount();">Stage all</button>
+                </div>
+              </div>
+
+              <div style="padding:8px 12px 4px;border-bottom:1px solid var(--border-muted);">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:var(--text-muted);font-weight:500;">
+                  <input type="checkbox" class="checkbox" id="select-all-cb">
+                  Select all modified &amp; new files
+                </label>
+              </div>
+
+              <div class="file-list" style="padding:4px 8px 8px;">
+                <!-- Modified -->
+                <div style="padding:8px 4px 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);font-weight:600;">Modified</div>
+
+                <label class="file-item" style="cursor:pointer;">
+                  <input type="checkbox" class="checkbox file-cb" checked>
+                  <span class="file-status M">M</span>
+                  <span class="file-name"><span class="file-path-prefix">reports/</span>q4_revenue_summary.xlsx</span>
+                  <span class="file-meta">+2.3 KB</span>
+                </label>
+
+                <label class="file-item" style="cursor:pointer;">
+                  <input type="checkbox" class="checkbox file-cb" checked>
+                  <span class="file-status M">M</span>
+                  <span class="file-name"><span class="file-path-prefix">dashboards/</span>executive_kpis.json</span>
+                  <span class="file-meta">+856 B</span>
+                </label>
+
+                <!-- New -->
+                <div style="padding:8px 4px 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);font-weight:600;">New</div>
+
+                <label class="file-item" style="cursor:pointer;">
+                  <input type="checkbox" class="checkbox file-cb" checked>
+                  <span class="file-status A">A</span>
+                  <span class="file-name"><span class="file-path-prefix">reports/</span>margin_analysis_dec.csv</span>
+                  <span class="file-meta">new</span>
+                </label>
+
+                <label class="file-item" style="cursor:pointer;">
+                  <input type="checkbox" class="checkbox file-cb" checked>
+                  <span class="file-status A">A</span>
+                  <span class="file-name"><span class="file-path-prefix">charts/</span>revenue_vs_target.png</span>
+                  <span class="file-meta">48 KB</span>
+                </label>
+
+                <!-- Deleted -->
+                <div style="padding:8px 4px 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);font-weight:600;">Deleted</div>
+
+                <label class="file-item" style="cursor:pointer;">
+                  <input type="checkbox" class="checkbox file-cb">
+                  <span class="file-status D">D</span>
+                  <span class="file-name"><span class="file-path-prefix">reports/</span>q3_revenue_draft.xlsx</span>
+                  <span class="file-meta" style="color:var(--red);">removed</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Diff preview -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  Diff Preview
+                </span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <select class="select" style="width:auto;font-size:12px;padding:4px 28px 4px 10px;">
+                    <option>executive_kpis.json</option>
+                    <option>q4_revenue_summary.xlsx</option>
+                  </select>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <div class="diff-block" style="border-radius:0;font-size:12px;line-height:1.7;">
+                  <div class="diff-line info">@@ -14,7 +14,9 @@ "kpis": {</div>
+                  <div class="diff-line" style="color:var(--text-muted);"> &nbsp;&nbsp;"revenue_target": 4200000,</div>
+                  <div class="diff-line remove">-&nbsp;&nbsp;"revenue_actual": 3980000,</div>
+                  <div class="diff-line add">+&nbsp;&nbsp;"revenue_actual": 4315000,</div>
+                  <div class="diff-line add">+&nbsp;&nbsp;"revenue_vs_target_pct": 102.7,</div>
+                  <div class="diff-line" style="color:var(--text-muted);"> &nbsp;&nbsp;"margin_pct": 38.2,</div>
+                  <div class="diff-line remove">-&nbsp;&nbsp;"margin_target": 36.0</div>
+                  <div class="diff-line add">+&nbsp;&nbsp;"margin_target": 36.0,</div>
+                  <div class="diff-line add">+&nbsp;&nbsp;"margin_vs_target_pct": 106.1</div>
+                  <div class="diff-line" style="color:var(--text-muted);"> }</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right column -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <!-- Commit message -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
+                  Commit Message
+                </span>
+                <span id="msg-counter" style="font-size:12px;color:var(--text-muted);">0/72</span>
+              </div>
+              <div class="card-body">
+                <div class="form-group" style="margin-bottom:12px;">
+                  <textarea class="textarea input-mono" id="commit-msg" rows="3" placeholder="Short summary of what changed (e.g. 'Update Q4 revenue actuals')"></textarea>
+                  <div class="form-hint">Use imperative mood: "Add report" not "Added report"</div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" style="font-size:12px;">Extended description <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+                  <textarea class="textarea" rows="2" placeholder="More context, links to tickets, etc."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Push options -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Options
+                </span>
+              </div>
+              <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+
+                <label class="toggle-row">
+                  <div class="toggle">
+                    <input type="checkbox" checked>
+                    <div class="toggle-track"></div>
+                  </div>
+                  <div class="toggle-label-wrap">
+                    <div class="toggle-label">Push to remote</div>
+                    <div class="toggle-desc">Immediately push to <span class="code">origin/main</span> after committing</div>
+                  </div>
+                </label>
+
+                <label class="toggle-row">
+                  <div class="toggle">
+                    <input type="checkbox">
+                    <div class="toggle-track"></div>
+                  </div>
+                  <div class="toggle-label-wrap">
+                    <div class="toggle-label">Create release tag</div>
+                    <div class="toggle-desc">Tag this commit as a versioned release</div>
+                  </div>
+                </label>
+
+                <div id="tag-section" class="hidden">
+                  <label class="form-label" style="font-size:12px;">Tag name</label>
+                  <input class="input input-mono" placeholder="v2.1.0" style="margin-bottom:6px;">
+                  <label class="form-label" style="font-size:12px;">Release notes</label>
+                  <textarea class="textarea" rows="2" placeholder="What's new in this release…"></textarea>
+                </div>
+
+                <label class="toggle-row">
+                  <div class="toggle">
+                    <input type="checkbox">
+                    <div class="toggle-track"></div>
+                  </div>
+                  <div class="toggle-label-wrap">
+                    <div class="toggle-label">Trigger publish workflow</div>
+                    <div class="toggle-desc">Run the <span class="code">publish-reports.yml</span> GitHub Action after push</div>
+                  </div>
+                </label>
+
+              </div>
+            </div>
+
+            <!-- Co-authors -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Committing as
+                </span>
+              </div>
+              <div class="card-body" style="display:flex;align-items:center;gap:10px;">
+                <div class="user-avatar" style="width:32px;height:32px;font-size:12px;">DS</div>
+                <div>
+                  <div style="font-size:13px;font-weight:600;">Diana S.</div>
+                  <div style="font-size:12px;color:var(--text-muted);">diana@company.io · @diana-sync</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div id="action-buttons" style="display:flex;flex-direction:column;gap:8px;">
+              <button type="submit" class="btn btn-success btn-xl btn-block" data-submit-btn>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Commit &amp; Push
+              </button>
+              <button type="button" class="btn btn-secondary btn-block" onclick="showToast('Saved as local commit. Not pushed.','info')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
+                Commit only
+              </button>
+            </div>
+
+            <!-- ── Preview & Share panel (appears after push) ── -->
+            <div id="preview-panel" class="hidden" style="border:1px solid rgba(63,185,80,0.35);border-radius:var(--r-xl);overflow:hidden;background:var(--bg-secondary);animation:previewSlideIn 0.3s ease;">
+
+              <!-- Success strip -->
+              <div style="background:rgba(63,185,80,0.08);border-bottom:1px solid rgba(63,185,80,0.2);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                <div style="width:22px;height:22px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:600;color:var(--green);">Preview ready</div>
+                  <div style="font-size:11px;color:var(--text-muted);">Pushed to <span class="code">origin/main</span> · commit <span id="preview-hash" class="code" style="color:var(--blue);">—</span></div>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="resetDeployForm()" style="font-size:11px;color:var(--text-muted);">
+                  New commit
+                </button>
+              </div>
+
+              <!-- Preview URL -->
+              <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:8px;">Preview link</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <div style="flex:1;display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--r-md);min-width:0;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span id="preview-url" class="font-mono text-sm truncate" style="color:var(--blue);font-size:12px;">preview.datasync.io/diana-sync/q4-revenue/—</span>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" id="copy-url-btn" onclick="copyPreviewUrl()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy
+                  </button>
+                  <a id="open-preview-btn" href="#" target="_blank" class="btn btn-primary btn-sm" onclick="showToast('Opening preview in new tab…','info');return false;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Open
+                  </a>
+                </div>
+              </div>
+
+              <!-- Access control -->
+              <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:10px;">Who can view this preview?</div>
+
+                <div style="display:flex;flex-direction:column;gap:6px;" id="access-options">
+                  <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:border-color 0.15s;" id="access-me" onclick="setAccess('me')">
+                    <input type="radio" name="access" value="me" style="accent-color:var(--blue);">
+                    <div style="width:28px;height:28px;background:var(--bg-hover);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:500;">Only me</div>
+                      <div style="font-size:11px;color:var(--text-muted);">Private — only you can see this preview</div>
+                    </div>
+                  </label>
+
+                  <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--blue);border-radius:var(--r-md);cursor:pointer;background:rgba(88,166,255,0.05);transition:border-color 0.15s;" id="access-link" onclick="setAccess('link')">
+                    <input type="radio" name="access" value="link" checked style="accent-color:var(--blue);">
+                    <div style="width:28px;height:28px;background:rgba(88,166,255,0.12);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:500;color:var(--blue);">Anyone with the link</div>
+                      <div style="font-size:11px;color:var(--text-muted);">Share freely — no login required</div>
+                    </div>
+                  </label>
+
+                  <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:border-color 0.15s;" id="access-specific" onclick="setAccess('specific')">
+                    <input type="radio" name="access" value="specific" style="accent-color:var(--blue);">
+                    <div style="width:28px;height:28px;background:var(--bg-hover);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:500;">Specific teammates</div>
+                      <div style="font-size:11px;color:var(--text-muted);">Invite by email or @username</div>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- Invite input (shown for "specific" mode) -->
+                <div id="invite-section" style="margin-top:10px;display:none;">
+                  <div style="display:flex;gap:6px;">
+                    <input class="input" id="invite-input" placeholder="Email or @username" style="flex:1;font-size:13px;">
+                    <button type="button" class="btn btn-secondary" onclick="addInvitee()">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Invited people list -->
+                <div id="invitees-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+                  <div class="invitee-row" style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--r-md);">
+                    <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--orange),#c0440a);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;">MK</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:12px;font-weight:500;">Mike K.</div>
+                      <div style="font-size:11px;color:var(--text-muted);">mike@company.io</div>
+                    </div>
+                    <span class="badge badge-gray" style="font-size:10px;">can view</span>
+                    <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 6px;" onclick="this.closest('.invitee-row').remove();showToast('Mike K. removed from preview','info')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Publish -->
+              <div style="padding:14px 16px;background:rgba(0,0,0,0.1);">
+                <button type="button" class="btn btn-success btn-xl btn-block" onclick="publishDashboard()" style="margin-bottom:8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+                  Publish dashboard
+                </button>
+                <p style="font-size:12px;color:var(--text-muted);text-align:center;line-height:1.5;">
+                  Publishing makes this version the live dashboard for all subscribers. <a href="#" style="color:var(--blue);">Learn more →</a>
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Release tag toggle
+    document.querySelectorAll('.toggle-row').forEach(row => {
+      const input = row.querySelector('input[type="checkbox"]');
+      if (row.querySelector('.toggle-label')?.textContent.includes('release tag')) {
+        input?.addEventListener('change', () => {
+          document.getElementById('tag-section')?.classList.toggle('hidden', !input.checked);
+        });
+      }
+    });
+    updateStagedCount();
+  });
+
+  /* Show preview panel after push */
+  function showPreviewPanel(hash) {
+    const panel = document.getElementById('preview-panel');
+    const btns  = document.getElementById('action-buttons');
+    if (!panel) return;
+
+    // Populate hash and URL
+    document.getElementById('preview-hash').textContent = hash;
+    document.getElementById('preview-url').textContent =
+      `preview.datasync.io/diana-sync/q4-revenue/${hash}`;
+
+    // Fade out buttons, slide in panel
+    btns.style.transition = 'opacity 0.2s';
+    btns.style.opacity = '0';
+    setTimeout(() => {
+      btns.style.display = 'none';
+      panel.classList.remove('hidden');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 200);
+  }
+
+  /* Reset to allow another commit */
+  function resetDeployForm() {
+    const panel = document.getElementById('preview-panel');
+    const btns  = document.getElementById('action-buttons');
+    panel.classList.add('hidden');
+    btns.style.display = '';
+    btns.style.opacity = '1';
+    document.getElementById('commit-msg').value = '';
+    document.getElementById('msg-counter').textContent = '0/72';
+  }
+
+  /* Copy preview URL */
+  function copyPreviewUrl() {
+    const url = document.getElementById('preview-url').textContent;
+    navigator.clipboard?.writeText('https://' + url).catch(() => {});
+    const btn = document.getElementById('copy-url-btn');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    btn.style.color = 'var(--green)';
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+      btn.style.color = '';
+    }, 2000);
+  }
+
+  /* Access level selection */
+  function setAccess(mode) {
+    const options = { me: 'access-me', link: 'access-link', specific: 'access-specific' };
+    Object.entries(options).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (key === mode) {
+        el.style.borderColor = 'var(--blue)';
+        el.style.background  = 'rgba(88,166,255,0.05)';
+        el.querySelector('div:nth-child(3) div:first-child').style.color = 'var(--blue)';
+      } else {
+        el.style.borderColor = 'var(--border)';
+        el.style.background  = '';
+        el.querySelector('div:nth-child(3) div:first-child').style.color = '';
+      }
+    });
+    document.getElementById('invite-section').style.display = mode === 'specific' ? '' : 'none';
+  }
+
+  /* Add invitee chip */
+  function addInvitee() {
+    const input = document.getElementById('invite-input');
+    const val   = input.value.trim();
+    if (!val) { showToast('Enter an email or @username.', 'warning'); return; }
+
+    const initials = val.startsWith('@') ? val.slice(1,3).toUpperCase() : val.slice(0,2).toUpperCase();
+    const colors   = ['linear-gradient(135deg,var(--blue),var(--purple))',
+                      'linear-gradient(135deg,var(--green),#1a7f37)',
+                      'linear-gradient(135deg,var(--orange),#c0440a)'];
+    const bg       = colors[Math.floor(Math.random() * colors.length)];
+
+    const row = document.createElement('div');
+    row.className = 'invitee-row';
+    row.style = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--r-md);';
+    row.innerHTML = `
+      <div style="width:24px;height:24px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;">${initials}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;">${val}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Invited · can view</div>
+      </div>
+      <span class="badge badge-blue" style="font-size:10px;">pending</span>
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 6px;" onclick="this.closest('.invitee-row').remove();showToast('Invite removed','info')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+
+    document.getElementById('invitees-list').appendChild(row);
+    showToast(`Invite sent to ${val}`, 'success');
+    input.value = '';
+  }
+
+  /* Publish */
+  function publishDashboard() {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Publishing…`;
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Published`;
+      btn.style.background = 'var(--blue)';
+      btn.style.borderColor = 'var(--blue)';
+      showToast('Dashboard is now live for all subscribers!', 'success', 5000);
+    }, 1600);
+  }
+</script>
+
+<style>
+  @keyframes previewSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</body>
+</html>

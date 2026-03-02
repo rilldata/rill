@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History — DataSync</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .commit-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .commit-card:hover { border-color: rgba(88,166,255,0.3); }
+
+    .commit-card-header {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 13px 16px;
+      cursor: pointer;
+    }
+
+    .commit-card-body {
+      border-top: 1px solid var(--border);
+      padding: 0;
+      display: none;
+    }
+    .commit-card.expanded .commit-card-body { display: block; }
+    .commit-card.expanded .expand-icon { transform: rotate(90deg); }
+
+    .expand-icon { transition: transform 0.18s; color: var(--text-muted); flex-shrink: 0; margin-top: 2px; }
+
+    .day-label {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin: 20px 0 8px;
+    }
+    .day-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .changed-file-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 16px;
+      font-size: 12px;
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .changed-file-row:last-child { border-bottom: none; }
+
+    .diff-stat {
+      display: flex; gap: 3px; align-items: center;
+    }
+    .diff-bar { width: 6px; height: 10px; border-radius: 2px; }
+    .diff-bar.add    { background: var(--green); }
+    .diff-bar.remove { background: var(--red); }
+    .diff-bar.empty  { background: var(--bg-hover); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="logo-text">DataSync</span>
+      <span class="logo-badge">BETA</span>
+    </div>
+    <div class="sidebar-repo">
+      <div class="sidebar-section-label">Repository</div>
+      <div class="repo-selector">
+        <div class="repo-selector-icon">Q</div>
+        <span class="repo-selector-name">q4-revenue-analysis</span>
+        <svg class="repo-selector-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <a href="dashboard.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview
+        </a>
+        <a href="deploy.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Deploy
+          <span class="nav-badge">5</span>
+        </a>
+        <a href="branches.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          Branches
+          <span class="nav-badge">4</span>
+        </a>
+        <a href="history.html" class="nav-link active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Settings</div>
+        <a href="#" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-avatar">DS</div>
+        <div>
+          <div class="user-name">Diana S.</div>
+          <div class="user-handle">@diana-sync</div>
+        </div>
+        <div class="connected-dot"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        History
+        <span>/</span>
+        Version Log
+      </div>
+
+      <div class="branch-chip" style="cursor:default;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        <span class="current-branch-label" style="color:var(--text-primary);">main</span>
+      </div>
+
+      <button class="btn btn-secondary btn-sm" onclick="showToast('Fetching latest commits from origin…','info')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+    </header>
+
+    <div class="content">
+
+      <!-- Filter bar -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--r-lg);">
+        <div style="flex:1;min-width:180px;">
+          <input class="input" placeholder="Search commit messages…" style="height:32px;font-size:12px;">
+        </div>
+        <select class="select" style="width:auto;font-size:12px;height:32px;padding:4px 28px 4px 10px;">
+          <option>All branches</option>
+          <option>main</option>
+          <option>feature/q4-forecasting</option>
+          <option>hotfix/margin-calc</option>
+        </select>
+        <select class="select" style="width:auto;font-size:12px;height:32px;padding:4px 28px 4px 10px;">
+          <option>All authors</option>
+          <option>diana-sync</option>
+          <option>mike-k</option>
+          <option>jessie-l</option>
+        </select>
+        <select class="select" style="width:auto;font-size:12px;height:32px;padding:4px 28px 4px 10px;">
+          <option>Last 30 days</option>
+          <option>Last 7 days</option>
+          <option>Last 3 months</option>
+          <option>All time</option>
+        </select>
+        <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">142 commits</span>
+      </div>
+
+      <!-- Day: Today -->
+      <div class="day-label">Today</div>
+
+      <!-- Commit 1 (expanded by default) -->
+      <div class="commit-card expanded" style="margin-bottom:8px;">
+        <div class="commit-card-header" onclick="this.closest('.commit-card').classList.toggle('expanded')">
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="user-avatar" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">DS</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Update Q4 revenue targets with actuals</div>
+            <div style="font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <span>diana-sync</span>
+              <span>·</span>
+              <span>2 hours ago</span>
+              <span>·</span>
+              <span>3 files changed</span>
+              <span class="badge badge-green" style="font-size:10px;">main</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="commit-hash">a3f9e12</span>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Restoring to commit a3f9e12…','info')" title="Restore to this version">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.54"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="commit-card-body">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border-muted);">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Files changed</div>
+          </div>
+          <div class="changed-file-row">
+            <span class="file-status M" style="font-size:11px;font-weight:700;width:14px;text-align:center;color:var(--orange);">M</span>
+            <span style="font-family:monospace;font-size:12px;flex:1;color:var(--text-primary);">reports/q4_revenue_summary.xlsx</span>
+            <span style="font-size:11px;color:var(--green);">+2 KB</span>
+            <div class="diff-stat">
+              <div class="diff-bar add"></div><div class="diff-bar add"></div><div class="diff-bar add"></div>
+              <div class="diff-bar remove"></div><div class="diff-bar empty"></div>
+            </div>
+          </div>
+          <div class="changed-file-row">
+            <span class="file-status M" style="font-size:11px;font-weight:700;width:14px;text-align:center;color:var(--orange);">M</span>
+            <span style="font-family:monospace;font-size:12px;flex:1;color:var(--text-primary);">dashboards/executive_kpis.json</span>
+            <span style="font-size:11px;color:var(--green);">+856 B</span>
+            <div class="diff-stat">
+              <div class="diff-bar add"></div><div class="diff-bar add"></div>
+              <div class="diff-bar remove"></div><div class="diff-bar empty"></div><div class="diff-bar empty"></div>
+            </div>
+          </div>
+          <div class="changed-file-row">
+            <span style="font-size:11px;font-weight:700;width:14px;text-align:center;color:var(--green);">A</span>
+            <span style="font-family:monospace;font-size:12px;flex:1;color:var(--text-primary);">reports/margin_analysis_dec.csv</span>
+            <span style="font-size:11px;color:var(--green);">new file</span>
+            <div class="diff-stat">
+              <div class="diff-bar add"></div><div class="diff-bar add"></div><div class="diff-bar add"></div>
+              <div class="diff-bar add"></div><div class="diff-bar add"></div>
+            </div>
+          </div>
+          <div style="padding:10px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border-muted);background:rgba(0,0,0,0.1);">
+            <button class="btn btn-ghost btn-sm" onclick="showToast('Opening full diff view…','info')">View full diff</button>
+            <button class="btn btn-secondary btn-sm" onclick="showToast('Files from a3f9e12 downloaded','success')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download snapshot
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="showToast('Revert would create a new commit undoing a3f9e12','warning')">Revert</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commit 2 -->
+      <div class="commit-card" style="margin-bottom:8px;">
+        <div class="commit-card-header" onclick="this.closest('.commit-card').classList.toggle('expanded')">
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="user-avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,var(--orange),#c0440a);flex-shrink:0;">MK</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Fix margin calculation rounding error</div>
+            <div style="font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;">
+              <span>mike-k</span>
+              <span>·</span>
+              <span>5 hours ago</span>
+              <span>·</span>
+              <span>1 file changed</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="commit-hash">b82d441</span>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Restoring to commit b82d441…','info')" title="Restore to this version">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.54"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="commit-card-body">
+          <div class="changed-file-row">
+            <span style="font-size:11px;font-weight:700;width:14px;text-align:center;color:var(--orange);">M</span>
+            <span style="font-family:monospace;font-size:12px;flex:1;">models/margin_calculator.py</span>
+            <span style="font-size:11px;color:var(--orange);">±12 lines</span>
+            <div class="diff-stat">
+              <div class="diff-bar add"></div><div class="diff-bar add"></div>
+              <div class="diff-bar remove"></div><div class="diff-bar remove"></div><div class="diff-bar empty"></div>
+            </div>
+          </div>
+          <div style="padding:10px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border-muted);background:rgba(0,0,0,0.1);">
+            <button class="btn btn-ghost btn-sm" onclick="showToast('Opening full diff view…','info')">View full diff</button>
+            <button class="btn btn-danger btn-sm" onclick="showToast('Revert would create a new commit undoing b82d441','warning')">Revert</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Day: Yesterday -->
+      <div class="day-label">Yesterday</div>
+
+      <!-- Commit 3 -->
+      <div class="commit-card" style="margin-bottom:8px;">
+        <div class="commit-card-header" onclick="this.closest('.commit-card').classList.toggle('expanded')">
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="user-avatar" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">DS</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Add executive KPI dashboard v2</div>
+            <div style="font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;">
+              <span>diana-sync</span>
+              <span>·</span>
+              <span>yesterday at 3:41 PM</span>
+              <span>·</span>
+              <span>2 files changed</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="commit-hash">c115b9f</span>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Restoring to commit c115b9f…','info')" title="Restore to this version">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.54"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="commit-card-body">
+          <div class="changed-file-row">
+            <span style="font-size:11px;font-weight:700;width:14px;text-align:center;color:var(--green);">A</span>
+            <span style="font-family:monospace;font-size:12px;flex:1;">dashboards/executive_kpis.json</span>
+            <span style="font-size:11px;color:var(--green);">new file</span>
+            <div class="diff-stat"><div class="diff-bar add"></div><div class="diff-bar add"></div><div class="diff-bar add"></div><div class="diff-bar add"></div><div class="diff-bar add"></div></div>
+          </div>
+          <div class="changed-file-row">
+            <span style="font-size:11px;font-weight:700;width:14px;text-align:center;color:var(--green);">A</span>
+            <span style="font-family:monospace;font-size:12px;flex:1;">charts/kpi_overview.png</span>
+            <span style="font-size:11px;color:var(--green);">new · 62 KB</span>
+            <div class="diff-stat"><div class="diff-bar add"></div><div class="diff-bar add"></div><div class="diff-bar add"></div><div class="diff-bar empty"></div><div class="diff-bar empty"></div></div>
+          </div>
+          <div style="padding:10px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border-muted);background:rgba(0,0,0,0.1);">
+            <button class="btn btn-ghost btn-sm" onclick="showToast('Opening full diff view…','info')">View full diff</button>
+            <button class="btn btn-secondary btn-sm" onclick="showToast('Downloaded snapshot at c115b9f','success')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download snapshot
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="showToast('Revert would create a new commit undoing c115b9f','warning')">Revert</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commit 4 -->
+      <div class="commit-card" style="margin-bottom:8px;">
+        <div class="commit-card-header" onclick="this.closest('.commit-card').classList.toggle('expanded')">
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="user-avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,var(--green),#1a7f37);flex-shrink:0;">JL</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Import Nov actuals from ERP export</div>
+            <div style="font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;">
+              <span>jessie-l</span>
+              <span>·</span>
+              <span>yesterday at 10:12 AM</span>
+              <span>·</span>
+              <span>4 files changed</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="commit-hash">d990f77</span>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Restoring to commit d990f77…','info')" title="Restore to this version">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.54"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="commit-card-body">
+          <div style="padding:10px 16px;text-align:center;font-size:12px;color:var(--text-muted);">
+            Click to expand files changed…
+          </div>
+        </div>
+      </div>
+
+      <!-- Day: 2 days ago -->
+      <div class="day-label">2 days ago</div>
+
+      <div class="commit-card" style="margin-bottom:8px;">
+        <div class="commit-card-header" onclick="this.closest('.commit-card').classList.toggle('expanded')">
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="user-avatar" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">DS</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Restructure reports directory</div>
+            <div style="font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;">
+              <span>diana-sync</span>
+              <span>·</span>
+              <span>2 days ago</span>
+              <span>·</span>
+              <span>12 files moved</span>
+              <span class="badge badge-gray" style="font-size:10px;">refactor</span>
+            </div>
+          </div>
+          <span class="commit-hash">e1ba39c</span>
+        </div>
+      </div>
+
+      <div class="commit-card" style="margin-bottom:8px;">
+        <div class="commit-card-header" onclick="this.closest('.commit-card').classList.toggle('expanded')">
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="user-avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,var(--orange),#c0440a);flex-shrink:0;">MK</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Initial Q4 forecast model setup</div>
+            <div style="font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;">
+              <span>mike-k</span>
+              <span>·</span>
+              <span>2 days ago</span>
+              <span>·</span>
+              <span>6 files added</span>
+            </div>
+          </div>
+          <span class="commit-hash">f6c0d14</span>
+        </div>
+      </div>
+
+      <!-- Load more -->
+      <div style="text-align:center;margin-top:20px;">
+        <button class="btn btn-secondary" onclick="showToast('Loading older commits…','info')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Load older commits
+        </button>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Showing 6 of 142 commits</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

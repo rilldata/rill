@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rill Publish — Design Handoff</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --accent:        #5655ff;
+      --accent-dim:    #dde4ff;
+      --accent-dark:   #3125ae;
+      --fg-primary:    #0a0a0a;
+      --fg-secondary:  #404040;
+      --fg-muted:      #737373;
+      --border:        #e5e5e5;
+      --bg:            #ffffff;
+      --surface:       #f5f8fc;
+      --surface-hover: #f0f4fa;
+      --green:         #16a34a;
+      --green-bg:      rgba(22,163,74,0.08);
+      --green-border:  rgba(22,163,74,0.2);
+      --red:           #ef4444;
+      --amber:         #b45309;
+      --amber-bg:      rgba(180,83,9,0.08);
+      --r-xs: 2px;
+      --r-sm: 4px;
+      --r-md: 8px;
+      --r-lg: 12px;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #1a1a1a;
+      color: var(--fg-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Canvas layout ── */
+    .export-canvas {
+      background: #1a1a1a;
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+
+    .canvas-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .canvas-subtitle {
+      font-size: 12px;
+      color: #666;
+      font-weight: 400;
+    }
+
+    .export-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      align-items: flex-start;
+    }
+
+    .export-frame {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .frame-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .frame-body {
+      background: white;
+      overflow: hidden;
+    }
+
+    /* Scale wrapper for full-screen frames */
+    .scale-wrap {
+      width: 640px;
+      height: 410px;
+      overflow: hidden;
+      position: relative;
+    }
+    .scale-inner {
+      width: 1280px;
+      height: 820px;
+      transform: scale(0.5);
+      transform-origin: top left;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* ───────────────────────────────────────
+       SHARED COMPONENT STYLES (used in frames)
+    ─────────────────────────────────────────*/
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 12px;
+      border-radius: var(--r-xs);
+      font-size: 13px; font-weight: 500;
+      border: 1px solid transparent;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap; line-height: 1;
+      cursor: default;
+    }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-outline  { background: var(--bg); color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-xs); }
+    .btn-ghost    { background: transparent; color: var(--fg-muted); border-color: transparent; }
+    .btn-sm       { height: 24px; padding: 0 8px; font-size: 12px; }
+    .btn-success  { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn-danger-ghost { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-amber-ghost  { background: transparent; color: var(--amber); border: 1px solid rgba(180,83,9,0.35); }
+
+    /* Avatar */
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* Top nav */
+    .topnav {
+      height: 48px; background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 16px; gap: 10px;
+      flex-shrink: 0;
+    }
+    .rill-logo { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .logo-sq {
+      width: 24px; height: 24px; background: var(--accent);
+      border-radius: 5px; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+    .nav-breadcrumb {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 13px; color: var(--fg-muted); flex: 1;
+    }
+    .crumb-cur { color: var(--fg-primary); font-weight: 500; }
+    .crumb-link { color: var(--fg-muted); }
+    .nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+    /* Draft badge */
+    .draft-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(180,83,9,0.08); color: var(--amber);
+      border: 1px solid rgba(180,83,9,0.2);
+      flex-shrink: 0;
+    }
+
+    /* Live tag */
+    .live-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600;
+      background: var(--green-bg); color: var(--green);
+      border: 1px solid var(--green-border);
+    }
+
+    /* Version trigger */
+    .version-trigger {
+      display: flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-xs);
+      font-size: 13px; font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      color: var(--fg-primary); box-shadow: var(--shadow-xs);
+    }
+
+    /* File bar */
+    .filebar {
+      height: 40px; background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 16px; gap: 8px;
+      flex-shrink: 0; font-size: 12px; color: var(--fg-muted);
+    }
+    .fb-sep { color: var(--border); margin: 0 2px; }
+    .fb-crumb { display: flex; align-items: center; gap: 4px; padding: 2px 4px; }
+    .fb-crumb.active { color: var(--fg-primary); font-weight: 500; }
+
+    /* Body layout */
+    .app-body { display: flex; flex: 1; overflow: hidden; height: calc(820px - 88px); }
+
+    /* Left sidebar (edit mode) */
+    .sidebar {
+      width: 240px; background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      font-size: 12px; flex-shrink: 0; overflow-y: auto;
+    }
+    .sb-add {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; margin: 8px;
+      border: 1px dashed var(--border); border-radius: var(--r-sm);
+      color: var(--fg-muted); font-size: 12px;
+    }
+    .sb-sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .sb-label {
+      padding: 8px 12px 4px;
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.7px; color: var(--fg-muted);
+    }
+    .sb-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 12px; color: var(--fg-secondary);
+    }
+    .sb-item.active { background: var(--accent-dim); color: var(--accent-dark); font-weight: 500; }
+    .sb-icon-yaml { font-size: 10px; font-weight: 700; color: var(--accent); font-family: monospace; width: 14px; text-align: center; }
+    .sb-explorer-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 12px 3px 16px;
+      font-size: 11px; color: var(--fg-muted);
+    }
+    .sb-explorer-item.file-active { background: rgba(86,85,255,0.06); color: var(--accent-dark); font-weight: 500; }
+
+    /* Project sidebar (view/preview mode) */
+    .project-sidebar {
+      width: 220px; background: var(--bg);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .ps-project-header { padding: 12px 16px 10px; border-bottom: 1px solid var(--border); }
+    .ps-project-name { font-size: 13px; font-weight: 600; color: var(--fg-primary); margin-bottom: 3px; }
+    .ps-project-meta { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg-muted); }
+    .ps-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .ps-nav { flex: 1; padding: 6px 0; }
+    .ps-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; font-size: 13px; color: var(--fg-secondary);
+      position: relative;
+    }
+    .ps-item.active {
+      background: rgba(86,85,255,0.07);
+      color: var(--accent-dark); font-weight: 500;
+    }
+    .ps-item.active::before {
+      content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
+      width: 3px; background: var(--accent); border-radius: 0 3px 3px 0;
+    }
+    .ps-badge {
+      margin-left: auto; font-size: 10px; font-weight: 600;
+      background: var(--accent); color: #fff;
+      padding: 1px 5px; border-radius: 8px;
+    }
+    .ps-sep { height: 1px; background: var(--border); margin: 6px 16px; }
+    .ps-footer {
+      padding: 10px 16px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--fg-muted);
+    }
+    /* Static toggle (off state) */
+    .ps-toggle-static {
+      width: 28px; height: 16px; background: var(--border);
+      border-radius: 8px; position: relative; flex-shrink: 0;
+    }
+    .ps-toggle-thumb-static {
+      position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; border-radius: 50%; background: #fff;
+    }
+
+    /* Metrics area */
+    .metrics-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .ma-toolbar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .ma-search {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--r-sm);
+      background: var(--bg); font-size: 12px; color: var(--fg-muted);
+      flex: 1; max-width: 260px;
+    }
+    .section-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px 6px; font-size: 13px; font-weight: 600;
+      border-bottom: 1px solid var(--border); background: var(--surface);
+      flex-shrink: 0;
+    }
+    .section-head .count { font-size: 11px; font-weight: 400; color: var(--fg-muted); }
+    .add-btn-small {
+      margin-left: auto; display: flex; align-items: center; gap: 3px;
+      padding: 2px 8px; height: 22px;
+      background: none; border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 500; font-family: 'Inter', sans-serif;
+      color: var(--fg-secondary);
+    }
+    .metrics-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .metrics-table th {
+      padding: 7px 12px; text-align: left;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--fg-muted);
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .metrics-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .metrics-table tr.row-selected td { background: rgba(86,85,255,0.04); }
+    .metrics-table .cb { width: 32px; }
+    .pill-tag {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 500;
+      background: var(--accent-dim); color: var(--accent-dark);
+      border: 1px solid rgba(86,85,255,0.2);
+    }
+    .code-cell { font-family: 'SF Mono', Consolas, monospace; color: var(--fg-secondary); }
+    .dash-cell { color: var(--fg-muted); }
+
+    /* Right panel */
+    .right-panel {
+      width: 280px; border-left: 1px solid var(--border);
+      background: var(--bg); display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .rp-header {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .rp-body { flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+    .rp-field { display: flex; flex-direction: column; gap: 4px; }
+    .rp-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.6px; color: var(--fg-muted);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .rp-input {
+      width: 100%; padding: 6px 8px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 13px; font-family: 'Inter', sans-serif; color: var(--fg-primary);
+    }
+    .rp-chip-row { display: flex; gap: 5px; flex-wrap: wrap; }
+    .rp-chip {
+      padding: 4px 10px; border: 1px solid var(--border);
+      border-radius: var(--r-sm); font-size: 12px;
+      background: var(--bg); color: var(--fg-secondary);
+    }
+    .rp-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-dark); font-weight: 500; }
+    .rp-footer {
+      padding: 10px 14px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* Preview banner */
+    .preview-banner {
+      display: flex; align-items: center; gap: 12px;
+      height: 48px; padding: 0 16px;
+      background: #18181b; flex-shrink: 0;
+    }
+    .preview-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(255,255,255,0.1);
+      font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7);
+      letter-spacing: 0.4px; flex-shrink: 0;
+    }
+    .preview-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+    .preview-project-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); flex: 1; }
+    .btn-preview-ghost {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 12px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--r-xs);
+      font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.8);
+      font-family: 'Inter', sans-serif; white-space: nowrap;
+    }
+    .btn-preview-accent {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 14px;
+      background: var(--accent); color: #fff;
+      border: 1px solid var(--accent); border-radius: var(--r-xs);
+      font-size: 12px; font-weight: 500; font-family: 'Inter', sans-serif;
+    }
+
+    /* Version row */
+    .version-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; border-bottom: 1px solid var(--border);
+    }
+    .version-row.current-row { background: rgba(86,85,255,0.04); }
+    .version-row:last-child { border-bottom: none; }
+    .vr-badge {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 22px; border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 700; flex-shrink: 0; font-family: 'SF Mono', monospace;
+    }
+    .vr-badge.cur  { background: var(--accent-dim); color: var(--accent-dark); }
+    .vr-badge.past { background: var(--surface); color: var(--fg-muted); border: 1px solid var(--border); }
+    .vr-badge.prod { background: rgba(22,163,74,0.1); color: var(--green); }
+    .vr-info { flex: 1; min-width: 0; }
+    .vr-name { font-size: 13px; font-weight: 500; color: var(--fg-primary); }
+    .vr-meta { font-size: 11px; color: var(--fg-muted); }
+    .vr-tag {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 600;
+    }
+    .vr-tag.live    { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .vr-tag.current { background: var(--accent-dim); color: var(--accent-dark); border: 1px solid rgba(86,85,255,0.2); }
+    .vr-view-btn {
+      height: 22px; padding: 0 8px;
+      background: var(--bg); color: var(--accent);
+      border: 1px solid var(--accent); border-radius: var(--r-xs);
+      font-size: 11px; font-weight: 500; font-family: 'Inter', sans-serif;
+    }
+
+    /* Deployment row */
+    .deploy-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    .deploy-row:last-child { border-bottom: none; }
+    .deploy-badge {
+      display: flex; align-items: center; justify-content: center;
+      width: 26px; height: 22px; border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .deploy-badge.live-dep { background: rgba(22,163,74,0.12); color: var(--green); }
+    .deploy-badge.old-dep  { background: var(--surface); color: var(--fg-muted); border: 1px solid var(--border); }
+    .deploy-info { flex: 1; min-width: 0; }
+    .deploy-name { font-size: 13px; font-weight: 500; color: var(--fg-primary); }
+    .deploy-meta { font-size: 11px; color: var(--fg-muted); }
+
+    /* PP row */
+    .pp-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; font-size: 13px; color: var(--fg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .pp-row svg { color: var(--fg-muted); flex-shrink: 0; }
+    .pp-row-label { flex: 1; }
+
+    /* Repo list */
+    .repo-list { border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; margin-bottom: 10px; }
+    .repo-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    .repo-item:last-child { border-bottom: none; }
+    .repo-item.selected { background: rgba(86,85,255,0.04); }
+    .repo-radio {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .repo-item.selected .repo-radio { border-color: var(--accent); }
+    .repo-radio-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: none; }
+    .repo-item.selected .repo-radio-dot { display: block; }
+    .repo-info { flex: 1; min-width: 0; }
+    .repo-name { font-size: 13px; font-weight: 500; color: var(--fg-primary); }
+    .repo-meta { font-size: 11px; color: var(--fg-muted); }
+    .repo-badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border); color: var(--fg-muted); }
+
+    /* Modal */
+    .modal-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 15px; font-weight: 600; }
+    .modal-close-btn {
+      background: none; border: none;
+      color: var(--fg-muted); display: flex; align-items: center;
+      border-radius: var(--r-sm); padding: 4px;
+      width: 24px; height: 24px; justify-content: center;
+    }
+    .modal-body { padding: 20px; }
+    .modal-footer {
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+
+    /* GitHub connect */
+    .gh-connect-state { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; padding: 8px 0 4px; }
+    .gh-icon-wrap {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--fg-primary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gh-connect-title { font-size: 16px; font-weight: 600; }
+    .gh-connect-sub { font-size: 13px; color: var(--fg-muted); max-width: 300px; line-height: 1.6; }
+    .btn-github {
+      display: inline-flex; align-items: center; gap: 8px;
+      height: 36px; padding: 0 20px;
+      background: var(--fg-primary); color: #fff;
+      border: none; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;
+    }
+    .gh-connected-badge {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: var(--green-bg);
+      border: 1px solid var(--green-border); border-radius: var(--r-sm);
+      margin-bottom: 16px;
+    }
+    .gh-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--fg-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .gh-connected-info { flex: 1; min-width: 0; }
+    .gh-username { font-size: 13px; font-weight: 600; }
+    .gh-connected-label { font-size: 11px; color: var(--green); }
+    .gh-disconnect { font-size: 11px; color: var(--fg-muted); background: none; border: none; font-family: 'Inter', sans-serif; text-decoration: underline; }
+
+    /* Tabs */
+    .gh-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+    .gh-tab {
+      flex: 1; padding: 6px 10px; border: 1px solid var(--border);
+      border-radius: var(--r-sm); font-size: 12px; font-weight: 500;
+      color: var(--fg-secondary); background: var(--bg); text-align: center;
+    }
+    .gh-tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-dark); }
+
+    /* Search input */
+    .gh-search {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: var(--r-sm); background: var(--bg); margin-bottom: 6px;
+      font-size: 13px; color: var(--fg-muted);
+    }
+
+    /* Form fields */
+    .gh-form-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .gh-form-label { font-size: 12px; font-weight: 600; color: var(--fg-secondary); }
+    .gh-input {
+      width: 100%; padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 13px; font-family: 'Inter', sans-serif; color: var(--fg-primary);
+    }
+    .visibility-row { display: flex; gap: 8px; }
+    .vis-opt {
+      flex: 1; display: flex; align-items: center; gap: 6px;
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: var(--r-sm); font-size: 12px;
+    }
+    .vis-opt.active { border-color: var(--accent); background: rgba(86,85,255,0.04); color: var(--accent-dark); }
+
+    /* Manage rows */
+    .manage-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 13px; color: var(--fg-secondary);
+    }
+    .manage-row:last-child { border-bottom: none; }
+    .manage-row.danger { color: var(--red); }
+    .manage-row .ml-auto { margin-left: auto; }
+
+    /* Restore banner */
+    .restore-banner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px;
+      background: rgba(180,83,9,0.06);
+      border-bottom: 2px solid var(--amber);
+      font-size: 12px; flex-shrink: 0;
+    }
+
+    /* Share popover */
+    .share-popover-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-md); box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .sp-header { padding: 11px 14px 9px; border-bottom: 1px solid var(--border); }
+    .sp-title { font-size: 13px; font-weight: 600; color: var(--fg-primary); margin-bottom: 2px; }
+    .sp-sub { font-size: 11px; color: var(--fg-muted); }
+    .sp-url-row {
+      display: flex; align-items: center; gap: 6px;
+      margin: 10px 14px 4px; padding: 7px 10px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 12px; font-family: 'SF Mono', Consolas, monospace;
+      color: var(--fg-secondary);
+    }
+    .sp-url-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sp-copy-btn {
+      background: none; border: none; color: var(--fg-muted);
+      display: flex; align-items: center; padding: 3px; border-radius: var(--r-sm); flex-shrink: 0;
+    }
+    .sp-expiry {
+      display: flex; align-items: center; gap: 5px;
+      padding: 0 14px 10px; font-size: 11px; color: var(--fg-muted);
+    }
+
+    /* View nav */
+    .viewnav {
+      height: 48px; background: var(--bg); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="export-canvas">
+
+  <!-- PAGE TITLE -->
+  <div>
+    <div class="canvas-title">Rill Publish — Design Handoff</div>
+    <div class="canvas-subtitle">Static Figma export · all UI states rendered inline · no JavaScript</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ROW 1 — Full screens at 50% scale
+  ═══════════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="frame-label" style="color:#aaa;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;">Row 1 — Full screens (50% scale)</div>
+  </div>
+  <div class="export-row">
+
+    <!-- ─── FRAME 1: Draft Editor — Default ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 1 — Draft Editor · Default</div>
+      <div class="frame-body" style="border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.35);">
+        <div class="scale-wrap">
+          <div class="scale-inner">
+            <!-- Top Nav -->
+            <nav class="topnav">
+              <div class="rill-logo">
+                <div class="logo-sq">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+              </div>
+              <div class="nav-sep"></div>
+              <span class="draft-badge">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Draft
+              </span>
+              <div class="nav-breadcrumb">
+                <span class="crumb-link">rill currency exchange</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                <span class="crumb-cur">rill currency exchange draft</span>
+              </div>
+              <div class="nav-right">
+                <div class="version-trigger">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Latest
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <button class="btn btn-outline">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Save
+                </button>
+                <button class="btn btn-primary">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+                  Publish
+                </button>
+                <div class="avatar">HC</div>
+              </div>
+            </nav>
+            <!-- File bar -->
+            <div class="filebar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <span class="fb-crumb">3 sources</span>
+              <span class="fb-sep">›</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <span class="fb-crumb">2 models</span>
+              <span class="fb-sep">›</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+              <span class="fb-crumb active">company-metrics.yaml</span>
+            </div>
+            <!-- Body -->
+            <div class="app-body">
+              <!-- Left sidebar -->
+              <aside class="sidebar">
+                <div class="sb-add">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add
+                </div>
+                <div class="sb-sep"></div>
+                <div class="sb-label">Dashboards</div>
+                <div class="sb-item">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  canvas-dashboard.yaml
+                </div>
+                <div class="sb-item">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  explore-dashboard.yaml
+                </div>
+                <div class="sb-sep"></div>
+                <div class="sb-label">Metrics</div>
+                <div class="sb-item active">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  Metrics_margin.yaml
+                </div>
+                <div class="sb-sep"></div>
+                <div class="sb-label">Models</div>
+                <div class="sb-item"><span class="sb-icon-yaml">{ }</span>model.sql</div>
+                <div class="sb-item"><span class="sb-icon-yaml">{ }</span>model_1.sql</div>
+                <div class="sb-sep"></div>
+                <div class="sb-label">Sources</div>
+                <div class="sb-item">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                  connector-name
+                </div>
+                <div class="sb-item">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                  connector-name
+                </div>
+                <div class="sb-sep"></div>
+                <div class="sb-label">Data Explorer</div>
+                <div class="sb-explorer-item">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>
+                  DuckDB
+                </div>
+                <div class="sb-explorer-item">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  folder-name
+                </div>
+                <div class="sb-explorer-item file-active">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                  file-name
+                </div>
+              </aside>
+              <!-- Main area -->
+              <div class="metrics-area">
+                <!-- Toolbar -->
+                <div class="ma-toolbar">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5655ff" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span style="font-size:14px;font-weight:600;margin-left:4px;">company-metrics.yaml</span>
+                  </div>
+                  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+                    <div class="ma-search">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      <span style="color:var(--fg-muted);font-size:12px;">Search</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Measures -->
+                <div class="section-head">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                  Measures <span class="count">3</span>
+                  <button class="add-btn-small">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add
+                  </button>
+                </div>
+                <table class="metrics-table">
+                  <thead><tr>
+                    <th class="cb"><input type="checkbox" style="accent-color:#5655ff;"></th>
+                    <th>Name</th><th>Display name</th><th>SQL expression</th><th>Format</th><th>Description</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr><td class="cb"><input type="checkbox" style="accent-color:#5655ff;"></td><td class="code-cell">avg_bid_floor</td><td><span class="pill-tag">Avg Bid Floor</span></td><td class="code-cell">SUM(bid_floo…</td><td>Currency (USD)</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="cb"><input type="checkbox" style="accent-color:#5655ff;"></td><td class="code-cell">sum_bid_price</td><td><span class="pill-tag">Sum of Bid Price</span></td><td class="code-cell">SUM(bid_pric…</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+                    <tr class="row-selected"><td class="cb"><input type="checkbox" checked style="accent-color:#5655ff;"></td><td class="code-cell">records</td><td><span class="pill-tag">Total records</span></td><td class="code-cell">COUNT(*)</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+                  </tbody>
+                </table>
+                <!-- Dimensions -->
+                <div class="section-head" style="margin-top:4px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                  Dimensions <span class="count">4</span>
+                  <button class="add-btn-small">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add
+                  </button>
+                </div>
+                <table class="metrics-table">
+                  <thead><tr>
+                    <th class="cb"><input type="checkbox" style="accent-color:#5655ff;"></th>
+                    <th>Name</th><th>Display name</th><th>Tags</th><th>SQL expression</th><th>Description</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr><td class="cb"><input type="checkbox" style="accent-color:#5655ff;"></td><td class="code-cell">customer</td><td><span class="pill-tag">Customer</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="cb"><input type="checkbox" style="accent-color:#5655ff;"></td><td class="code-cell">plan_name</td><td><span class="pill-tag">Plan Name</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="cb"><input type="checkbox" style="accent-color:#5655ff;"></td><td class="code-cell">plan_name</td><td><span class="pill-tag">Plan Name</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="cb"><input type="checkbox" style="accent-color:#5655ff;"></td><td class="code-cell">currency</td><td><span class="pill-tag">Currency</span></td><td style="font-size:11px;color:var(--fg-muted);">+ Add tag</td><td class="code-cell">currency_code</td><td class="dash-cell">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <!-- Right panel -->
+              <div class="right-panel">
+                <div class="rp-header">
+                  Edit field
+                  <span style="font-size:11px;color:var(--fg-muted);font-weight:400;">records</span>
+                </div>
+                <div class="rp-body">
+                  <div class="rp-field">
+                    <label class="rp-label">Name <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></label>
+                    <input class="rp-input" value="sum_bid_request" readonly>
+                  </div>
+                  <div class="rp-field">
+                    <label class="rp-label">Display name <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></label>
+                    <input class="rp-input" value="Sum Bid Requests" readonly>
+                  </div>
+                  <div class="rp-field">
+                    <label class="rp-label">Format</label>
+                    <div class="rp-chip-row">
+                      <div class="rp-chip active">Simple</div>
+                      <div class="rp-chip">d3-format</div>
+                    </div>
+                    <div style="margin-top:6px;">
+                      <div class="rp-input" style="display:flex;justify-content:space-between;align-items:center;cursor:default;">
+                        <span>Humanize</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rp-field">
+                    <label class="rp-label">SQL expression</label>
+                    <input class="rp-input" style="font-family:monospace;font-size:12px;" value="COUNT(*)" readonly>
+                  </div>
+                  <div class="rp-field">
+                    <label class="rp-label">Description</label>
+                    <div class="rp-input" style="min-height:56px;color:var(--fg-muted);font-size:12px;">Optional description…</div>
+                  </div>
+                </div>
+                <div class="rp-footer">
+                  <button class="btn btn-sm btn-danger-ghost">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                    Delete
+                  </button>
+                  <div style="display:flex;gap:6px;">
+                    <button class="btn btn-ghost btn-sm">Cancel</button>
+                    <button class="btn btn-primary btn-sm">Apply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 2: Published / Live View ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 2 — Published · Live View</div>
+      <div class="frame-body" style="border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.35);">
+        <div class="scale-wrap">
+          <div class="scale-inner">
+            <!-- View nav -->
+            <nav class="viewnav">
+              <div class="rill-logo">
+                <div class="logo-sq"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+              </div>
+              <div class="nav-sep"></div>
+              <div class="nav-breadcrumb">
+                <span class="crumb-link">Draft</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                <span class="crumb-cur">rill currency exchange draft</span>
+              </div>
+              <div class="nav-right">
+                <span class="live-tag">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Live
+                </span>
+                <span style="font-size:12px;color:var(--fg-muted);">v1 · just now</span>
+                <button class="btn btn-ghost">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  Share
+                </button>
+                <button class="btn btn-outline">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit project
+                </button>
+                <div class="avatar">HC</div>
+              </div>
+            </nav>
+            <!-- Body -->
+            <div style="display:flex;flex:1;height:calc(820px - 48px);overflow:hidden;">
+              <!-- Project sidebar -->
+              <aside class="project-sidebar">
+                <div class="ps-project-header">
+                  <div class="ps-project-name">rill currency exchange</div>
+                  <div class="ps-project-meta"><div class="ps-live-dot"></div>Live · published just now</div>
+                </div>
+                <nav class="ps-nav">
+                  <div class="ps-item active">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Overview
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l3 3"/></svg>
+                    Ask AI <span class="ps-badge">New</span>
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    Dashboards
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Metrics
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                    Reports
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    Alerts
+                  </div>
+                </nav>
+                <div class="ps-footer">
+                  <div class="ps-toggle-static"><div class="ps-toggle-thumb-static"></div></div>
+                  <span>Admin view</span>
+                </div>
+              </aside>
+              <!-- Metrics (no checkboxes, no right panel, no add buttons) -->
+              <div class="metrics-area">
+                <div class="ma-toolbar">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5655ff" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span style="font-size:14px;font-weight:600;margin-left:4px;">company-metrics.yaml</span>
+                  </div>
+                  <div style="margin-left:auto;">
+                    <div class="ma-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="color:var(--fg-muted);font-size:12px;">Search</span></div>
+                  </div>
+                </div>
+                <div class="section-head">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                  Measures <span class="count">3</span>
+                </div>
+                <table class="metrics-table">
+                  <thead><tr><th>Name</th><th>Display name</th><th>SQL expression</th><th>Format</th><th>Description</th></tr></thead>
+                  <tbody>
+                    <tr><td class="code-cell">avg_bid_floor</td><td><span class="pill-tag">Avg Bid Floor</span></td><td class="code-cell">SUM(bid_floo…</td><td>Currency (USD)</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">sum_bid_price</td><td><span class="pill-tag">Sum of Bid Price</span></td><td class="code-cell">SUM(bid_pric…</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">records</td><td><span class="pill-tag">Total records</span></td><td class="code-cell">COUNT(*)</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+                  </tbody>
+                </table>
+                <div class="section-head" style="margin-top:4px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                  Dimensions <span class="count">4</span>
+                </div>
+                <table class="metrics-table">
+                  <thead><tr><th>Name</th><th>Display name</th><th>Tags</th><th>SQL expression</th><th>Description</th></tr></thead>
+                  <tbody>
+                    <tr><td class="code-cell">customer</td><td><span class="pill-tag">Customer</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">plan_name</td><td><span class="pill-tag">Plan Name</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">plan_name</td><td><span class="pill-tag">Plan Name</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">currency</td><td><span class="pill-tag">Currency</span></td><td style="font-size:11px;color:var(--fg-muted);">+ Add tag</td><td class="code-cell">currency_code</td><td class="dash-cell">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 3: Preview Mode ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 3 — Preview Mode</div>
+      <div class="frame-body" style="border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.35);">
+        <div class="scale-wrap">
+          <div class="scale-inner">
+            <!-- Preview banner -->
+            <div class="preview-banner">
+              <button class="btn-preview-ghost">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                Back to edit
+              </button>
+              <div style="width:1px;height:20px;background:rgba(255,255,255,0.15);flex-shrink:0;"></div>
+              <div class="preview-badge">
+                <div class="preview-badge-dot"></div>
+                Preview
+              </div>
+              <span class="preview-project-name">rill currency exchange draft</span>
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <button class="btn-preview-ghost">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  Share preview
+                </button>
+                <button class="btn-preview-accent">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+                  Publish
+                </button>
+              </div>
+            </div>
+            <!-- Body -->
+            <div style="display:flex;flex:1;height:calc(820px - 48px);overflow:hidden;">
+              <!-- Project sidebar -->
+              <aside class="project-sidebar">
+                <div class="ps-project-header">
+                  <div class="ps-project-name">rill currency exchange</div>
+                  <div class="ps-project-meta"><div class="ps-live-dot"></div>Live · published just now</div>
+                </div>
+                <nav class="ps-nav">
+                  <div class="ps-item active">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Overview
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l3 3"/></svg>
+                    Ask AI <span class="ps-badge">New</span>
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    Dashboards
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Metrics
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                    Reports
+                  </div>
+                  <div class="ps-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    Alerts
+                  </div>
+                </nav>
+                <div class="ps-footer">
+                  <div class="ps-toggle-static"><div class="ps-toggle-thumb-static"></div></div>
+                  <span>Admin view</span>
+                </div>
+              </aside>
+              <!-- Metrics (read-only, no checkboxes) -->
+              <div class="metrics-area">
+                <div class="ma-toolbar">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5655ff" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span style="font-size:14px;font-weight:600;margin-left:4px;">company-metrics.yaml</span>
+                  </div>
+                  <div style="margin-left:auto;"><div class="ma-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="color:var(--fg-muted);font-size:12px;">Search</span></div></div>
+                </div>
+                <div class="section-head"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>Measures <span class="count">3</span></div>
+                <table class="metrics-table">
+                  <thead><tr><th>Name</th><th>Display name</th><th>SQL expression</th><th>Format</th><th>Description</th></tr></thead>
+                  <tbody>
+                    <tr><td class="code-cell">avg_bid_floor</td><td><span class="pill-tag">Avg Bid Floor</span></td><td class="code-cell">SUM(bid_floo…</td><td>Currency (USD)</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">sum_bid_price</td><td><span class="pill-tag">Sum of Bid Price</span></td><td class="code-cell">SUM(bid_pric…</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">records</td><td><span class="pill-tag">Total records</span></td><td class="code-cell">COUNT(*)</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+                  </tbody>
+                </table>
+                <div class="section-head" style="margin-top:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>Dimensions <span class="count">4</span></div>
+                <table class="metrics-table">
+                  <thead><tr><th>Name</th><th>Display name</th><th>Tags</th><th>SQL expression</th><th>Description</th></tr></thead>
+                  <tbody>
+                    <tr><td class="code-cell">customer</td><td><span class="pill-tag">Customer</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">plan_name</td><td><span class="pill-tag">Plan Name</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">plan_name</td><td><span class="pill-tag">Plan Name</span></td><td class="code-cell">Sku_description</td><td class="code-cell">—</td><td class="dash-cell">—</td></tr>
+                    <tr><td class="code-cell">currency</td><td><span class="pill-tag">Currency</span></td><td style="font-size:11px;color:var(--fg-muted);">—</td><td class="code-cell">currency_code</td><td class="dash-cell">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end row 1 -->
+
+  <!-- ═══════════════════════════════════════════
+       ROW 2 — Dropdown panels (actual size)
+  ═══════════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="frame-label" style="color:#aaa;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;">Row 2 — Dropdown / Popover panels (actual size)</div>
+  </div>
+  <div class="export-row">
+
+    <!-- ─── FRAME 4: Version History Panel ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 4 — Version History Panel</div>
+      <div style="width:340px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-lg);overflow:hidden;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);">
+          <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--fg-muted);">Version History</span>
+          <button class="btn btn-ghost btn-sm" style="height:20px;padding:0 6px;font-size:11px;">Close</button>
+        </div>
+        <!-- v3 (current) -->
+        <div class="version-row current-row">
+          <div class="vr-badge cur">v3</div>
+          <div class="vr-info">
+            <div class="vr-name">14:32 (current)</div>
+            <div class="vr-meta">just now · diana-sync</div>
+          </div>
+          <div class="vr-tag current">editing</div>
+        </div>
+        <!-- v2 -->
+        <div class="version-row">
+          <div class="vr-badge past">v2</div>
+          <div class="vr-info">
+            <div class="vr-name">13:45</div>
+            <div class="vr-meta">1h ago · diana-sync</div>
+          </div>
+          <button class="vr-view-btn">View</button>
+        </div>
+        <!-- v1 -->
+        <div class="version-row">
+          <div class="vr-badge past">v1</div>
+          <div class="vr-info">
+            <div class="vr-name">Initial setup</div>
+            <div class="vr-meta">3d ago · diana-sync</div>
+          </div>
+          <button class="vr-view-btn">View</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 5: Publish Dropdown ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 5 — Publish Dropdown</div>
+      <div style="width:300px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-md);overflow:hidden;">
+        <div style="padding:12px 14px 10px;border-bottom:1px solid var(--border);">
+          <div style="font-size:13px;font-weight:600;color:var(--fg-primary);margin-bottom:2px;">Production deployment</div>
+          <div style="font-size:12px;color:var(--fg-muted);">Publish version 3 to your organization</div>
+        </div>
+        <div class="pp-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="pp-row-label">Version history</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="pp-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          <span class="pp-row-label">Connect to Github</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div style="display:flex;gap:8px;padding:10px 14px;">
+          <button class="btn btn-outline" style="flex:1;justify-content:center;">Preview</button>
+          <button class="btn btn-primary" style="flex:1;justify-content:center;">Publish</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 6: GitHub Deployment History Panel ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 6 — GitHub Deployment History</div>
+      <div style="width:340px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-lg);overflow:hidden;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);">
+          <button style="background:none;border:none;color:var(--fg-muted);display:flex;align-items:center;gap:4px;font-size:12px;font-family:'Inter',sans-serif;padding:0;cursor:default;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            Back
+          </button>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--fg-primary);">GitHub deployment history</div>
+            <div style="font-size:12px;color:var(--fg-muted);">Published versions pushed to origin</div>
+          </div>
+        </div>
+        <!-- #2 deployment (live) -->
+        <div class="deploy-row">
+          <div class="deploy-badge live-dep">#2</div>
+          <div class="deploy-info">
+            <div class="deploy-name">v3 · 14:32</div>
+            <div class="deploy-meta">just now · diana-sync</div>
+          </div>
+          <span class="vr-tag live">live</span>
+        </div>
+        <!-- #1 deployment (old) -->
+        <div class="deploy-row">
+          <div class="deploy-badge old-dep">#1</div>
+          <div class="deploy-info">
+            <div class="deploy-name">v1 · Initial setup</div>
+            <div class="deploy-meta">3d ago · diana-sync</div>
+          </div>
+          <button class="vr-view-btn" style="color:var(--amber);border-color:rgba(180,83,9,0.35);">Rollback</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 7: Share Preview Popover ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 7 — Share Preview Popover</div>
+      <div class="share-popover-card" style="width:320px;">
+        <div class="sp-header">
+          <div class="sp-title">Share preview link</div>
+          <div class="sp-sub">Anyone with this link can view this preview</div>
+        </div>
+        <div class="sp-url-row">
+          <span class="sp-url-text">ui.rilldata.com/preview/abc123xyz</span>
+          <button class="sp-copy-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <div class="sp-expiry">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Expires in 7 days · anyone with the link can view
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 8: Share Project Popover ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 8 — Share Project Popover</div>
+      <div class="share-popover-card" style="width:320px;">
+        <div class="sp-header">
+          <div class="sp-title">Share project</div>
+          <div class="sp-sub">Anyone with this link can view the live project</div>
+        </div>
+        <div class="sp-url-row">
+          <span class="sp-url-text">ui.rilldata.com/p/def456</span>
+          <button class="sp-copy-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <div class="sp-expiry">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Public link · no expiry
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end row 2 -->
+
+  <!-- ═══════════════════════════════════════════
+       ROW 3 — GitHub Connect Modal states
+  ═══════════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="frame-label" style="color:#aaa;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;">Row 3 — GitHub Connect Modal states (460px wide)</div>
+  </div>
+  <div class="export-row">
+
+    <!-- ─── FRAME 9: GitHub Connect — Not Connected ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 9 — GitHub Connect · Not Connected</div>
+      <div class="modal-box" style="width:460px;">
+        <div class="modal-header">
+          <div class="modal-title">Connect to GitHub</div>
+          <button class="modal-close-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="gh-connect-state">
+            <div class="gh-icon-wrap">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            </div>
+            <div class="gh-connect-title">Connect your GitHub account</div>
+            <div class="gh-connect-sub">Link your GitHub account to sync your Rill project with a repository and enable version control.</div>
+            <button class="btn-github">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+              Continue with GitHub
+            </button>
+            <div style="font-size:12px;color:var(--fg-muted);">You'll be redirected to GitHub to authorize access.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 10: GitHub Connect — Select Repo ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 10 — GitHub Connect · Select Repo</div>
+      <div class="modal-box" style="width:460px;">
+        <div class="modal-header">
+          <div class="modal-title">GitHub repository</div>
+          <button class="modal-close-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <!-- Connected badge -->
+          <div class="gh-connected-badge">
+            <div class="gh-avatar">DH</div>
+            <div class="gh-connected-info">
+              <div class="gh-username">diana-huang</div>
+              <div class="gh-connected-label">Connected to GitHub</div>
+            </div>
+            <button class="gh-disconnect">Disconnect</button>
+          </div>
+          <!-- Tabs -->
+          <div class="gh-tabs">
+            <div class="gh-tab active">Select repo</div>
+            <div class="gh-tab">Create new</div>
+            <div class="gh-tab">Manage</div>
+          </div>
+          <!-- Search -->
+          <div class="gh-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span style="color:var(--fg-muted);font-size:13px;">Search repositories…</span>
+          </div>
+          <!-- Repo list -->
+          <div class="repo-list">
+            <div class="repo-item selected">
+              <div class="repo-radio"><div class="repo-radio-dot"></div></div>
+              <div class="repo-info">
+                <div class="repo-name">rill-currency-exchange <span style="font-size:11px;color:var(--accent);font-weight:600;">· linked</span></div>
+                <div class="repo-meta">Updated 2h ago</div>
+              </div>
+              <span class="repo-badge">Private</span>
+            </div>
+            <div class="repo-item">
+              <div class="repo-radio"></div>
+              <div class="repo-info">
+                <div class="repo-name">rill-ad-revenue-dashboard</div>
+                <div class="repo-meta">Updated 1d ago</div>
+              </div>
+              <span class="repo-badge">Private</span>
+            </div>
+            <div class="repo-item">
+              <div class="repo-radio"></div>
+              <div class="repo-info">
+                <div class="repo-name">company-metrics-v2</div>
+                <div class="repo-meta">Updated 3d ago</div>
+              </div>
+              <span class="repo-badge">Public</span>
+            </div>
+            <div class="repo-item">
+              <div class="repo-radio"></div>
+              <div class="repo-info">
+                <div class="repo-name">rill-demos</div>
+                <div class="repo-meta">Updated 1w ago</div>
+              </div>
+              <span class="repo-badge">Public</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 11: GitHub Connect — Create New Repo ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 11 — GitHub Connect · Create New Repo</div>
+      <div class="modal-box" style="width:460px;">
+        <div class="modal-header">
+          <div class="modal-title">GitHub repository</div>
+          <button class="modal-close-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <!-- Connected badge -->
+          <div class="gh-connected-badge">
+            <div class="gh-avatar">DH</div>
+            <div class="gh-connected-info">
+              <div class="gh-username">diana-huang</div>
+              <div class="gh-connected-label">Connected to GitHub</div>
+            </div>
+            <button class="gh-disconnect">Disconnect</button>
+          </div>
+          <!-- Tabs -->
+          <div class="gh-tabs">
+            <div class="gh-tab">Select repo</div>
+            <div class="gh-tab active">Create new</div>
+            <div class="gh-tab">Manage</div>
+          </div>
+          <!-- Form -->
+          <div class="gh-form-field">
+            <label class="gh-form-label">Repository name</label>
+            <input class="gh-input" value="rill-currency-exchange" readonly>
+          </div>
+          <div class="gh-form-field">
+            <label class="gh-form-label">Description</label>
+            <input class="gh-input" placeholder="Optional description" readonly>
+          </div>
+          <div class="gh-form-field">
+            <label class="gh-form-label">Visibility</label>
+            <div class="visibility-row">
+              <div class="vis-opt active">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Private
+              </div>
+              <div class="vis-opt">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Public
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">Create &amp; connect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FRAME 12: GitHub Connect — Manage ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 12 — GitHub Connect · Manage</div>
+      <div class="modal-box" style="width:460px;">
+        <div class="modal-header">
+          <div class="modal-title">GitHub repository</div>
+          <button class="modal-close-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <!-- Connected badge -->
+          <div class="gh-connected-badge">
+            <div class="gh-avatar">DH</div>
+            <div class="gh-connected-info">
+              <div class="gh-username">diana-huang</div>
+              <div class="gh-connected-label">Connected to GitHub</div>
+            </div>
+            <button class="gh-disconnect">Disconnect</button>
+          </div>
+          <!-- Tabs -->
+          <div class="gh-tabs">
+            <div class="gh-tab">Select repo</div>
+            <div class="gh-tab">Create new</div>
+            <div class="gh-tab active">Manage</div>
+          </div>
+          <!-- Manage rows -->
+          <div>
+            <div class="manage-row">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+              <span style="flex:1;">Open repository on GitHub</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </div>
+            <div class="manage-row">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+              <span style="flex:1;">Manage branches &amp; permissions</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="manage-row">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              <span style="flex:1;">Deploy keys</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="manage-row danger">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span style="flex:1;">Disconnect GitHub account</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end row 3 -->
+
+  <!-- ═══════════════════════════════════════════
+       ROW 4 — Restore flow (actual size)
+  ═══════════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="frame-label" style="color:#aaa;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;">Row 4 — Restore flow (actual size)</div>
+  </div>
+  <div class="export-row">
+
+    <!-- ─── FRAME 13: Restore Banner + Read-only State ─── -->
+    <div class="export-frame">
+      <div class="frame-label">Frame 13 — Restore Banner · Read-only Snapshot</div>
+      <div class="frame-body" style="width:1280px;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.35);overflow:hidden;">
+        <!-- Restore banner -->
+        <div class="restore-banner">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.54"/></svg>
+          <span>Viewing <strong style="color:var(--amber);">v2</strong> — read-only snapshot.</span>
+          <button class="btn btn-sm btn-amber-ghost">Restore this version</button>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;">Back to current</button>
+        </div>
+        <!-- File bar -->
+        <div class="filebar">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <span class="fb-crumb">3 sources</span>
+          <span class="fb-sep">›</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span class="fb-crumb">2 models</span>
+          <span class="fb-sep">›</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          <span class="fb-crumb active">company-metrics.yaml</span>
+          <span style="margin-left:8px;padding:2px 8px;background:rgba(180,83,9,0.08);color:var(--amber);border:1px solid rgba(180,83,9,0.2);border-radius:4px;font-size:11px;font-weight:600;">Read-only snapshot</span>
+        </div>
+        <!-- Metrics table header (dimmed rows) -->
+        <div style="opacity:1;">
+          <div class="section-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            Measures <span class="count">3</span>
+          </div>
+        </div>
+        <div style="opacity:0.55;">
+          <table class="metrics-table">
+            <thead><tr>
+              <th>Name</th><th>Display name</th><th>SQL expression</th><th>Format</th><th>Description</th>
+            </tr></thead>
+            <tbody>
+              <tr><td class="code-cell">avg_bid_floor</td><td><span class="pill-tag">Avg Bid Floor</span></td><td class="code-cell">SUM(bid_floo…</td><td>Currency (USD)</td><td class="dash-cell">—</td></tr>
+              <tr><td class="code-cell">sum_bid_price</td><td><span class="pill-tag">Sum of Bid Price</span></td><td class="code-cell">SUM(bid_pric…</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+              <tr><td class="code-cell">records</td><td><span class="pill-tag">Total records</span></td><td class="code-cell">COUNT(*)</td><td>Humanize</td><td class="dash-cell">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end row 4 -->
+
+</div><!-- end export-canvas -->
+</body>
+</html>

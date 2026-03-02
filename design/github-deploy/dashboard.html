@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overview — DataSync</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <span class="logo-text">DataSync</span>
+      <span class="logo-badge">BETA</span>
+    </div>
+
+    <!-- Repo selector -->
+    <div class="sidebar-repo">
+      <div class="sidebar-section-label">Repository</div>
+      <div class="dropdown">
+        <button class="repo-selector" data-dd="#repo-dropdown">
+          <div class="repo-selector-icon">Q</div>
+          <span class="repo-selector-name">q4-revenue-analysis</span>
+          <svg class="repo-selector-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-menu" id="repo-dropdown" style="width:216px;">
+          <div class="dropdown-header">Your repositories</div>
+          <div class="dropdown-item active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            q4-revenue-analysis
+          </div>
+          <div class="dropdown-item" onclick="showToast('Switched repository','info')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            marketing-dashboards
+          </div>
+          <div class="dropdown-item" onclick="showToast('Switched repository','info')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            ops-metrics-2025
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            New repository…
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <a href="dashboard.html" class="nav-link active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview
+        </a>
+        <a href="deploy.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Deploy
+          <span class="nav-badge">5</span>
+        </a>
+        <a href="branches.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          Branches
+          <span class="nav-badge">4</span>
+        </a>
+        <a href="history.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Settings</div>
+        <a href="#" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </div>
+    </nav>
+
+    <!-- User -->
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-avatar">DS</div>
+        <div>
+          <div class="user-name">Diana S.</div>
+          <div class="user-handle">@diana-sync</div>
+        </div>
+        <div class="connected-dot" title="Connected to GitHub"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title">
+        Overview
+        <span>/</span>
+        q4-revenue-analysis
+      </div>
+
+      <div class="branch-chip" data-dd="#branch-topbar-dd">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        <span class="current-branch-label">main</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="dropdown-menu" id="branch-topbar-dd" style="right:0;left:auto;">
+        <div class="dropdown-header">Switch branch</div>
+        <div class="dropdown-item active" onclick="switchBranch('main')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          main
+        </div>
+        <div class="dropdown-item" onclick="switchBranch('feature/q4-forecasting')">feature/q4-forecasting</div>
+        <div class="dropdown-item" onclick="switchBranch('hotfix/margin-calc')">hotfix/margin-calc</div>
+        <div class="dropdown-item" onclick="switchBranch('release/v2.1')">release/v2.1</div>
+      </div>
+
+      <div class="sync-status">
+        <span class="sdot sdot-green"></span>
+        Synced 2 min ago
+      </div>
+
+      <button class="btn btn-secondary btn-sm" data-action="sync">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Sync
+      </button>
+
+      <a href="deploy.html" class="btn btn-success btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Deploy
+      </a>
+    </header>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Alert: uncommitted changes -->
+      <div class="alert alert-orange" style="margin-bottom:20px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>You have <strong>5 uncommitted changes</strong> in the working tree. <a href="deploy.html" style="color:var(--orange);text-decoration:underline;">Review and deploy →</a></span>
+      </div>
+
+      <!-- Stat row -->
+      <div class="grid-4" style="margin-bottom:20px;">
+        <div class="stat-card">
+          <div class="stat-label">Total commits</div>
+          <div class="stat-value stat-blue">142</div>
+          <div class="stat-sub">↑ 8 this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open branches</div>
+          <div class="stat-value">4</div>
+          <div class="stat-sub">2 behind main</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tracked files</div>
+          <div class="stat-value stat-green">37</div>
+          <div class="stat-sub">5 modified</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Last pushed</div>
+          <div class="stat-value" style="font-size:18px;">2h ago</div>
+          <div class="stat-sub">by diana-sync</div>
+        </div>
+      </div>
+
+      <!-- Main grid -->
+      <div class="grid-main-aside">
+
+        <!-- Left: changes + recent commits -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Changed files -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Working Changes
+              </span>
+              <div class="card-actions">
+                <span class="badge badge-orange">5 modified</span>
+                <a href="deploy.html" class="btn btn-primary btn-sm">Stage &amp; Commit</a>
+              </div>
+            </div>
+
+            <div class="file-list" style="padding:6px 8px;">
+              <div class="file-item">
+                <span class="file-status M">M</span>
+                <span class="file-name"><span class="file-path-prefix">reports/</span>q4_revenue_summary.xlsx</span>
+                <span class="file-meta">+2.3 KB</span>
+              </div>
+              <div class="file-item">
+                <span class="file-status M">M</span>
+                <span class="file-name"><span class="file-path-prefix">dashboards/</span>executive_kpis.json</span>
+                <span class="file-meta">+856 B</span>
+              </div>
+              <div class="file-item">
+                <span class="file-status A">A</span>
+                <span class="file-name"><span class="file-path-prefix">reports/</span>margin_analysis_dec.csv</span>
+                <span class="file-meta">new</span>
+              </div>
+              <div class="file-item">
+                <span class="file-status A">A</span>
+                <span class="file-name"><span class="file-path-prefix">charts/</span>revenue_vs_target.png</span>
+                <span class="file-meta">new · 48 KB</span>
+              </div>
+              <div class="file-item">
+                <span class="file-status D">D</span>
+                <span class="file-name"><span class="file-path-prefix">reports/</span>q3_revenue_draft.xlsx</span>
+                <span class="file-meta">deleted</span>
+              </div>
+            </div>
+
+            <div class="card-footer" style="display:flex;justify-content:flex-end;gap:8px;">
+              <button class="btn btn-ghost btn-sm" data-action="sync">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Refresh
+              </button>
+              <a href="deploy.html" class="btn btn-success btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Deploy all
+              </a>
+            </div>
+          </div>
+
+          <!-- Recent commits -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
+                Recent Commits
+              </span>
+              <a href="history.html" class="btn btn-ghost btn-sm">View all →</a>
+            </div>
+            <div class="card-body p-0">
+              <div class="commit-list" style="padding:4px 16px;">
+
+                <div class="commit-item">
+                  <div class="commit-avatar">DS</div>
+                  <div class="commit-body">
+                    <div class="commit-msg">Update Q4 revenue targets with actuals</div>
+                    <div class="commit-meta">
+                      <span>diana-sync</span>
+                      <span>·</span>
+                      <span>2 hours ago</span>
+                      <span class="badge badge-green" style="font-size:10px;">main</span>
+                    </div>
+                  </div>
+                  <span class="commit-hash">a3f9e12</span>
+                </div>
+
+                <div class="commit-item">
+                  <div class="commit-avatar" style="background:linear-gradient(135deg,var(--orange),#e05c00);">MK</div>
+                  <div class="commit-body">
+                    <div class="commit-msg">Fix margin calculation rounding error</div>
+                    <div class="commit-meta">
+                      <span>mike-k</span>
+                      <span>·</span>
+                      <span>5 hours ago</span>
+                    </div>
+                  </div>
+                  <span class="commit-hash">b82d441</span>
+                </div>
+
+                <div class="commit-item">
+                  <div class="commit-avatar">DS</div>
+                  <div class="commit-body">
+                    <div class="commit-msg">Add executive KPI dashboard v2</div>
+                    <div class="commit-meta">
+                      <span>diana-sync</span>
+                      <span>·</span>
+                      <span>yesterday</span>
+                    </div>
+                  </div>
+                  <span class="commit-hash">c115b9f</span>
+                </div>
+
+                <div class="commit-item">
+                  <div class="commit-avatar" style="background:linear-gradient(135deg,var(--green),#1a7f37);">JL</div>
+                  <div class="commit-body">
+                    <div class="commit-msg">Import Nov actuals from ERP export</div>
+                    <div class="commit-meta">
+                      <span>jessie-l</span>
+                      <span>·</span>
+                      <span>2 days ago</span>
+                    </div>
+                  </div>
+                  <span class="commit-hash">d990f77</span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: status panel -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Remote status -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Remote Status
+              </span>
+              <span class="badge badge-green">
+                <span class="badge-dot" style="background:var(--green);"></span>
+                Connected
+              </span>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span class="text-muted">Remote</span>
+                <span class="font-mono text-blue">origin</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span class="text-muted">URL</span>
+                <span class="font-mono text-sm truncate" style="max-width:140px;" title="github.com/diana/q4-revenue-analysis">github.com/diana/…</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span class="text-muted">Ahead</span>
+                <span class="badge badge-orange">0 commits</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span class="text-muted">Behind</span>
+                <span class="badge badge-gray">0 commits</span>
+              </div>
+              <div class="divider-sm"></div>
+              <button class="btn btn-secondary btn-sm btn-block" data-action="pull">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Pull from origin
+              </button>
+            </div>
+          </div>
+
+          <!-- Branch overview -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                Branches
+              </span>
+              <a href="branches.html" class="btn btn-ghost btn-sm">Manage →</a>
+            </div>
+            <div class="card-body p-0">
+              <div style="padding:8px 0;">
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 16px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                  <span class="font-mono text-sm flex-1">main</span>
+                  <span class="badge badge-green">default</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 16px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                  <span class="font-mono text-sm flex-1">feature/q4-forecasting</span>
+                  <span class="badge badge-orange">3 behind</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 16px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                  <span class="font-mono text-sm flex-1">hotfix/margin-calc</span>
+                  <span class="badge badge-gray">up to date</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 16px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                  <span class="font-mono text-sm flex-1">release/v2.1</span>
+                  <span class="badge badge-blue">1 ahead</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Storage usage -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                Repository Size
+              </span>
+            </div>
+            <div class="card-body" style="gap:10px;display:flex;flex-direction:column;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span class="text-muted">Used</span>
+                <span class="font-semibold">124 MB / 1 GB</span>
+              </div>
+              <div class="progress">
+                <div class="progress-bar" style="width:12.4%;background:var(--blue);"></div>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);">37 files tracked · LFS: 89 MB</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

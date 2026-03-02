@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Branches — DataSync</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="logo-text">DataSync</span>
+      <span class="logo-badge">BETA</span>
+    </div>
+    <div class="sidebar-repo">
+      <div class="sidebar-section-label">Repository</div>
+      <div class="repo-selector">
+        <div class="repo-selector-icon">Q</div>
+        <span class="repo-selector-name">q4-revenue-analysis</span>
+        <svg class="repo-selector-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <a href="dashboard.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview
+        </a>
+        <a href="deploy.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Deploy
+          <span class="nav-badge">5</span>
+        </a>
+        <a href="branches.html" class="nav-link active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          Branches
+          <span class="nav-badge">4</span>
+        </a>
+        <a href="history.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Settings</div>
+        <a href="#" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-avatar">DS</div>
+        <div>
+          <div class="user-name">Diana S.</div>
+          <div class="user-handle">@diana-sync</div>
+        </div>
+        <div class="connected-dot"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        Branches
+        <span>/</span>
+        q4-revenue-analysis
+      </div>
+
+      <!-- Active branch indicator -->
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+        <span class="text-muted">Active:</span>
+        <span class="branch-chip" style="cursor:default;border-color:rgba(63,185,80,0.4);background:rgba(63,185,80,0.06);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          <span class="current-branch-label" style="color:var(--green);">main</span>
+        </span>
+      </div>
+
+      <button class="btn btn-primary btn-sm" data-modal="modal-new-branch">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        New branch
+      </button>
+    </header>
+
+    <div class="content">
+
+      <!-- Tabs: All / Active / Stale -->
+      <div class="tabs" data-group="branches-tab">
+        <div class="tab active" data-tab="all" data-group="branches-tab">All <span class="tab-count">4</span></div>
+        <div class="tab" data-tab="active" data-group="branches-tab">Active <span class="tab-count">3</span></div>
+        <div class="tab" data-tab="stale" data-group="branches-tab">Stale <span class="tab-count">1</span></div>
+      </div>
+
+      <!-- Branch cards -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Default / main branch -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" style="gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+              Default Branch
+            </span>
+          </div>
+          <div>
+            <div class="branch-row current" data-branch="main">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+              <div class="branch-name">
+                main
+                <span class="badge badge-green">active</span>
+                <span class="badge badge-gray">default</span>
+              </div>
+              <div class="branch-meta">
+                <span>Last commit: <strong>2h ago</strong></span>
+                <span>by diana-sync</span>
+                <span class="code">a3f9e12</span>
+              </div>
+              <div class="branch-actions">
+                <span style="font-size:12px;color:var(--green);font-weight:500;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;"><polyline points="20 6 9 17 4 12"/></svg>
+                  Current branch
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature branches -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+              Feature &amp; Hotfix Branches
+            </span>
+            <span class="text-sm text-muted">3 branches</span>
+          </div>
+
+          <!-- feature/q4-forecasting -->
+          <div class="branch-row" data-branch="feature/q4-forecasting">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            <div class="branch-name" style="flex-direction:column;align-items:flex-start;gap:3px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                feature/q4-forecasting
+                <span class="badge badge-orange">3 behind main</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);font-family:inherit;">Add Q4 forecasting model with scenario planning</div>
+            </div>
+            <div class="branch-meta">
+              <span>Updated <strong>1 day ago</strong></span>
+              <span>by diana-sync</span>
+              <span class="code">e72a301</span>
+            </div>
+            <div class="branch-actions">
+              <button class="btn btn-secondary btn-sm" data-checkout="feature/q4-forecasting">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Checkout
+              </button>
+              <div class="dropdown">
+                <button class="btn btn-ghost btn-sm" data-dd="#dd-feat-q4" style="padding:4px 8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+                <div class="dropdown-menu right" id="dd-feat-q4">
+                  <div class="dropdown-item" onclick="showToast('Merge dialog would open here','info')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
+                    Merge into main
+                  </div>
+                  <div class="dropdown-item" onclick="showToast('Comparing branches…','info')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Compare with main
+                  </div>
+                  <div class="dropdown-item" onclick="showToast('Pulled latest from main','success')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    Sync with main
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item danger" data-action="delete-branch">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    Delete branch
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- hotfix/margin-calc -->
+          <div class="branch-row" data-branch="hotfix/margin-calc">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            <div class="branch-name" style="flex-direction:column;align-items:flex-start;gap:3px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                hotfix/margin-calc
+                <span class="badge badge-gray">up to date</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);font-family:inherit;">Fix rounding error in gross margin calculation</div>
+            </div>
+            <div class="branch-meta">
+              <span>Updated <strong>5 hours ago</strong></span>
+              <span>by mike-k</span>
+              <span class="code">b82d441</span>
+            </div>
+            <div class="branch-actions">
+              <button class="btn btn-secondary btn-sm" data-checkout="hotfix/margin-calc">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Checkout
+              </button>
+              <div class="dropdown">
+                <button class="btn btn-ghost btn-sm" data-dd="#dd-hotfix" style="padding:4px 8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+                <div class="dropdown-menu right" id="dd-hotfix">
+                  <div class="dropdown-item" onclick="showToast('Merge dialog would open here','info')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
+                    Merge into main
+                  </div>
+                  <div class="dropdown-item" onclick="showToast('Comparing branches…','info')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Compare with main
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item danger" data-action="delete-branch">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    Delete branch
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- release/v2.1 -->
+          <div class="branch-row" data-branch="release/v2.1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            <div class="branch-name" style="flex-direction:column;align-items:flex-start;gap:3px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                release/v2.1
+                <span class="badge badge-blue">1 ahead</span>
+                <span class="badge badge-purple">release</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);font-family:inherit;">Q4 final release — all reports locked for board review</div>
+            </div>
+            <div class="branch-meta">
+              <span>Updated <strong>3 days ago</strong></span>
+              <span>by diana-sync</span>
+              <span class="code">f440c82</span>
+            </div>
+            <div class="branch-actions">
+              <button class="btn btn-secondary btn-sm" data-checkout="release/v2.1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Checkout
+              </button>
+              <div class="dropdown">
+                <button class="btn btn-ghost btn-sm" data-dd="#dd-release" style="padding:4px 8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+                <div class="dropdown-menu right" id="dd-release">
+                  <div class="dropdown-item" onclick="showToast('Comparing branches…','info')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Compare with main
+                  </div>
+                  <div class="dropdown-item" onclick="showToast('Push to origin/release/v2.1','info')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Push ahead commits
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item danger" data-action="delete-branch">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    Delete branch
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Compare branches -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              Compare Branches
+            </span>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:140px;">
+                <label class="form-label" style="font-size:12px;">Base</label>
+                <select class="select">
+                  <option>main</option>
+                  <option>feature/q4-forecasting</option>
+                  <option>hotfix/margin-calc</option>
+                  <option>release/v2.1</option>
+                </select>
+              </div>
+              <div style="padding-top:20px;color:var(--text-muted);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+              <div style="flex:1;min-width:140px;">
+                <label class="form-label" style="font-size:12px;">Compare</label>
+                <select class="select">
+                  <option>feature/q4-forecasting</option>
+                  <option>main</option>
+                  <option>hotfix/margin-calc</option>
+                  <option>release/v2.1</option>
+                </select>
+              </div>
+              <div style="padding-top:20px;">
+                <button class="btn btn-secondary" onclick="showToast('Opening diff view for feature/q4-forecasting ← main','info')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  Compare
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── New Branch Modal ── -->
+<div class="modal-overlay" id="modal-new-branch">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Create new branch</span>
+      <button class="modal-close" data-modal-close>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Branch name <span class="required">*</span></label>
+        <input class="input input-mono" id="new-branch-name" placeholder="feature/my-new-analysis" autocomplete="off">
+        <div class="form-hint">Use lowercase letters, numbers, and hyphens. Prefix with <span class="code">feature/</span>, <span class="code">hotfix/</span>, or <span class="code">release/</span>.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Branch from</label>
+        <select class="select">
+          <option>main</option>
+          <option>feature/q4-forecasting</option>
+          <option>hotfix/margin-calc</option>
+          <option>release/v2.1</option>
+        </select>
+        <div class="form-hint">New branch will be created from the tip of the selected branch.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancel</button>
+      <button class="btn btn-primary" data-action="create-branch">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        Create branch
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rill — Publish Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Rill design tokens ── */
+    :root {
+      --accent:          #5655ff;
+      --accent-dim:      #dde4ff;
+      --accent-dark:     #3125ae;
+      --accent-hover:    #4544e0;
+      --fg-primary:      #0a0a0a;
+      --fg-secondary:    #404040;
+      --fg-muted:        #737373;
+      --border:          #e5e5e5;
+      --bg:              #ffffff;
+      --surface:         #f5f8fc;
+      --surface-hover:   #f0f4fa;
+      --red:             #ef4444;
+      --green:           #22c55e;
+      --r-xs: 2px;
+      --r-sm: 4px;
+      --r-md: 8px;
+      --r-lg: 12px;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Browser chrome mockup ── */
+    .browser-chrome {
+      background: #8cace5;
+      height: 87px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .browser-tab {
+      position: absolute;
+      top: 8px; left: 18px;
+      background: #cedbf4;
+      border-radius: 8px 8px 0 0;
+      padding: 4px 12px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 500; color: #202124;
+      width: 210px; height: 34px;
+    }
+    .browser-tab svg { flex-shrink: 0; }
+    .browser-address {
+      position: absolute;
+      bottom: 6px; left: 157px; right: 157px;
+      background: #f5f8fc;
+      border-radius: 25px;
+      padding: 8px 32px;
+      font-size: 14px; font-weight: 500;
+      color: #6b6d71;
+      height: 52px;
+      display: flex; align-items: center;
+    }
+    .browser-address .url-domain { color: #202124; }
+
+    /* ── App shell ── */
+    .app { display: flex; flex-direction: column; height: calc(100vh - 87px); }
+
+    /* ── Project header ── */
+    .project-header {
+      height: 48px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .ph-logo {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 8px;
+      border-radius: var(--r-md);
+      flex-shrink: 0;
+    }
+    .ph-logo-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: var(--r-md);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ph-logo-name {
+      font-weight: 600; font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .ph-sep { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; margin: 0 4px; }
+
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 14px; color: var(--fg-muted);
+    }
+    .breadcrumb .current { color: var(--fg-primary); font-weight: 500; }
+    .breadcrumb svg { color: var(--fg-muted); }
+
+    .ph-right {
+      display: flex; align-items: center; gap: 8px;
+      margin-left: auto; flex-shrink: 0;
+    }
+
+    .rill-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0 12px;
+      height: 28px;
+      border-radius: var(--r-xs);
+      font-size: 12px; font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-family: inherit;
+      transition: all 0.12s;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .rill-btn-outline {
+      background: var(--bg);
+      color: var(--accent);
+      border-color: var(--accent);
+      box-shadow: var(--shadow-xs);
+    }
+    .rill-btn-outline:hover { background: var(--accent-dim); }
+
+    .rill-btn-primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      box-shadow: var(--shadow-xs);
+    }
+    .rill-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+    .rill-btn-ghost {
+      background: transparent; color: var(--fg-muted);
+      border-color: transparent;
+    }
+    .rill-btn-ghost:hover { background: var(--surface); color: var(--fg-primary); }
+
+    .rill-btn-sm { height: 24px; padding: 0 10px; font-size: 12px; }
+    .rill-btn-lg { height: 36px; padding: 0 16px; font-size: 14px; font-weight: 500; }
+
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; color: white;
+      flex-shrink: 0;
+    }
+
+    /* ── Body layout ── */
+    .body-layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Left sidebar ── */
+    .sidebar {
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    .sidebar-section { padding: 4px 0; }
+    .sidebar-section + .sidebar-section { border-top: 1px solid var(--border); }
+
+    .sidebar-label {
+      padding: 8px 16px 4px;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--fg-muted);
+    }
+
+    .sidebar-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 16px;
+      color: var(--fg-secondary);
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.1s;
+      font-size: 12px;
+    }
+    .sidebar-item:hover { background: var(--surface-hover); }
+    .sidebar-item.active { background: var(--accent-dim); color: var(--accent-dark); font-weight: 500; }
+    .sidebar-item svg { flex-shrink: 0; opacity: 0.7; }
+    .sidebar-item.active svg { opacity: 1; }
+
+    .sidebar-item-indent { padding-left: 32px; }
+
+    /* ── Main area ── */
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Dashboard header ── */
+    .dash-header {
+      height: 80px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .dash-title { font-size: 18px; font-weight: 600; }
+    .dash-header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    .filter-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0; flex-wrap: wrap;
+    }
+
+    .rill-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px; color: var(--fg-secondary);
+      background: var(--bg);
+      cursor: pointer;
+    }
+    .rill-chip svg { color: var(--fg-muted); }
+    .rill-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Dashboard canvas ── */
+    .dash-canvas { flex: 1; overflow-y: auto; padding: 16px; display: flex; gap: 16px; }
+
+    .chart-area { flex: 1; display: flex; flex-direction: column; gap: 0; }
+
+    .chart-row {
+      display: flex; align-items: stretch;
+      border-bottom: 1px solid var(--border);
+      min-height: 120px;
+    }
+    .chart-row:last-child { border-bottom: none; }
+
+    .kpi {
+      width: 140px; flex-shrink: 0;
+      padding: 12px 16px;
+      display: flex; flex-direction: column;
+      justify-content: center;
+    }
+    .kpi-label { font-size: 11px; color: var(--fg-muted); margin-bottom: 4px; }
+    .kpi-value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+    .kpi-delta { font-size: 11px; margin-top: 4px; }
+    .kpi-delta.neg { color: var(--red); }
+    .kpi-delta.pos { color: var(--green); }
+
+    .chart-viz {
+      flex: 1;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      border-radius: 0;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Fake sparkline */
+    .sparkline { width: 100%; height: 100%; position: relative; }
+    .sparkline svg { width: 100%; height: 100%; }
+
+    /* ── Right panel ── */
+    .right-panel {
+      width: 280px;
+      border-left: 1px solid var(--border);
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+      font-size: 13px;
+    }
+
+    .rp-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .rp-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--fg-muted); margin-bottom: 8px; }
+
+    .rp-input {
+      width: 100%; padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 13px; font-family: inherit;
+      color: var(--fg-primary);
+      outline: none;
+    }
+    .rp-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(86,85,255,0.1); }
+
+    .rp-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .rp-chip {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px; cursor: pointer;
+      background: var(--bg); color: var(--fg-secondary);
+      transition: all 0.1s;
+    }
+    .rp-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-dark); font-weight: 500; }
+    .rp-chip:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+    .rp-color-row { display: flex; align-items: center; gap: 8px; }
+    .rp-color-swatch { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ── Publish modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      display: none; align-items: flex-start; justify-content: center;
+      padding-top: 80px;
+      backdrop-filter: blur(2px);
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .publish-modal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      width: 480px;
+      box-shadow: var(--shadow-lg);
+      animation: modalIn 0.18s ease;
+      overflow: hidden;
+    }
+
+    @keyframes modalIn {
+      from { transform: translateY(-8px) scale(0.98); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title {
+      font-size: 15px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .modal-title svg { color: var(--accent); }
+    .modal-close {
+      width: 28px; height: 28px;
+      border: none; background: none; cursor: pointer;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--fg-muted);
+      transition: all 0.1s;
+    }
+    .modal-close:hover { background: var(--surface); color: var(--fg-primary); }
+
+    .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Dashboard info strip */
+    .dash-info-strip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+    }
+    .dash-info-icon {
+      width: 32px; height: 32px;
+      background: var(--accent-dim);
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .dash-info-name { font-size: 13px; font-weight: 600; }
+    .dash-info-meta { font-size: 12px; color: var(--fg-muted); }
+    .dash-info-badge {
+      margin-left: auto;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(34,197,94,0.1); color: #16a34a;
+      border: 1px solid rgba(34,197,94,0.2);
+    }
+
+    /* Section labels */
+    .section-label {
+      font-size: 12px; font-weight: 600;
+      color: var(--fg-secondary);
+      margin-bottom: 8px;
+    }
+
+    /* Preview URL bar */
+    .url-bar {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .url-display {
+      flex: 1;
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      min-width: 0;
+    }
+    .url-text {
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+      font-size: 12px;
+      color: var(--accent);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lock-icon { color: #22c55e; flex-shrink: 0; }
+
+    /* Access options */
+    .access-options { display: flex; flex-direction: column; gap: 6px; }
+    .access-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .access-option:hover { border-color: var(--accent); background: rgba(86,85,255,0.02); }
+    .access-option.selected {
+      border-color: var(--accent);
+      background: rgba(86,85,255,0.04);
+    }
+    .access-option input[type="radio"] {
+      accent-color: var(--accent);
+      width: 15px; height: 15px;
+      flex-shrink: 0;
+    }
+    .access-icon {
+      width: 30px; height: 30px;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .access-icon.lock  { background: rgba(115,115,115,0.1); color: var(--fg-muted); }
+    .access-icon.link  { background: rgba(86,85,255,0.1);   color: var(--accent); }
+    .access-icon.team  { background: rgba(34,197,94,0.1);   color: #16a34a; }
+    .access-option-label { font-size: 13px; font-weight: 500; }
+    .access-option-desc  { font-size: 11px; color: var(--fg-muted); margin-top: 1px; }
+    .access-option.selected .access-option-label { color: var(--accent-dark); }
+
+    /* Invite section */
+    .invite-area { display: flex; flex-direction: column; gap: 8px; }
+    .invite-row { display: flex; gap: 6px; }
+    .invite-input {
+      flex: 1; padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 13px; font-family: inherit;
+      outline: none;
+      color: var(--fg-primary);
+    }
+    .invite-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(86,85,255,0.1); }
+
+    .invitee {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+    }
+    .invitee-av {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: white;
+      flex-shrink: 0;
+    }
+    .invitee-name { font-size: 12px; font-weight: 500; flex: 1; }
+    .invitee-email { font-size: 11px; color: var(--fg-muted); }
+    .invitee-role {
+      font-size: 11px; padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--accent-dim); color: var(--accent-dark);
+      font-weight: 500;
+    }
+    .invitee-remove {
+      background: none; border: none; cursor: pointer;
+      color: var(--fg-muted); padding: 2px; border-radius: 3px;
+      display: flex; transition: all 0.1s;
+    }
+    .invitee-remove:hover { background: var(--surface-hover); color: var(--fg-primary); }
+
+    /* Divider */
+    .modal-divider { height: 1px; background: var(--border); margin: 0 -20px; }
+
+    /* Modal footer */
+    .modal-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .modal-footer-note { font-size: 12px; color: var(--fg-muted); max-width: 260px; line-height: 1.5; }
+    .modal-footer-actions { display: flex; gap: 8px; align-items: center; }
+
+    /* Published state */
+    .published-banner {
+      display: none;
+      align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: rgba(34,197,94,0.06);
+      border: 1px solid rgba(34,197,94,0.2);
+      border-radius: var(--r-md);
+      font-size: 13px;
+    }
+    .published-banner.visible { display: flex; }
+    .published-banner svg { color: #16a34a; flex-shrink: 0; }
+    .published-banner-text strong { display: block; font-weight: 600; color: #15803d; font-size: 13px; }
+    .published-banner-text span { color: var(--fg-muted); font-size: 12px; }
+
+    /* Tag strip */
+    .status-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .tag-draft   { background: rgba(245,158,11,0.1); color: #b45309; border: 1px solid rgba(245,158,11,0.2); }
+    .tag-preview { background: var(--accent-dim);    color: var(--accent-dark); border: 1px solid rgba(86,85,255,0.2); }
+    .tag-live    { background: rgba(34,197,94,0.1);  color: #16a34a; border: 1px solid rgba(34,197,94,0.2); }
+
+    /* Separator */
+    .sep-or {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--fg-muted);
+    }
+    .sep-or::before, .sep-or::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Toast */
+    .toast-wrap {
+      position: fixed; bottom: 20px; right: 20px;
+      z-index: 200; display: flex; flex-direction: column; gap: 8px;
+    }
+    .rill-toast {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--fg-primary); color: white;
+      border-radius: var(--r-md);
+      font-size: 13px;
+      box-shadow: var(--shadow-md);
+      animation: toastIn 0.2s ease;
+    }
+    @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+
+<!-- ── Browser chrome ── -->
+<div class="browser-chrome">
+  <div class="browser-tab">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#5655ff"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4" stroke="white" stroke-width="1.5" fill="none"/></svg>
+    Design - Rill developer
+  </div>
+  <div class="browser-address">
+    <span>https://</span><span class="url-domain">dev.rilldata.com</span>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div class="app">
+
+  <!-- Project header -->
+  <div class="project-header">
+    <!-- Logo + org -->
+    <div class="ph-logo">
+      <div class="ph-logo-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="ph-logo-name">Org name</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2"><path d="M7 15l5-5 5 5"/><path d="M7 9l5 5 5-5"/></svg>
+    </div>
+
+    <div class="ph-sep"></div>
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <span>Draft</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="current">rill currency exchange draft</span>
+      <span class="status-tag tag-draft">Draft</span>
+    </div>
+
+    <!-- Right actions -->
+    <div class="ph-right">
+      <button class="rill-btn rill-btn-outline">Save</button>
+      <button class="rill-btn rill-btn-primary" id="publish-btn" onclick="openPublish()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="m3.29 15 1.42 1.42"/><path d="M10.5 10.5 13 8l3 3-2.5 2.5"/><path d="M6 17.07 8.93 14"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+        Publish
+      </button>
+      <div class="avatar">HC</div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body-layout">
+
+    <!-- Left sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Dashboards</div>
+        <div class="sidebar-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          canvas-dashboard.yaml
+        </div>
+        <div class="sidebar-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          explore-dashboard.yaml
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Metrics</div>
+        <div class="sidebar-item active">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Metrics_margin.yaml
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Models</div>
+        <div class="sidebar-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          model.sql
+        </div>
+        <div class="sidebar-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          model_1.sql
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sources</div>
+        <div class="sidebar-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          connector-name
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Data</div>
+        <div class="sidebar-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          folder-name
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main dashboard -->
+    <div class="main-area">
+      <!-- Dashboard header -->
+      <div class="dash-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span class="dash-title">Site Traffic</span>
+        </div>
+        <div class="dash-header-right">
+          <button class="rill-btn rill-btn-ghost rill-btn-sm">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Preview
+          </button>
+          <button class="rill-btn rill-btn-ghost rill-btn-sm">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="rill-chip">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Year to date  Jan 1 – Mar 11, 2024
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="rill-chip">PDT <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="rill-chip">by Hour complete <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="rill-chip">by Day <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="rill-chip" style="background:#dde4ff;border-color:#3125ae;color:#3125ae;">Comparing  Previous year</div>
+        <span style="font-size:12px;color:#737373;margin-left:4px;">as of 3h ago</span>
+      </div>
+
+      <!-- Charts -->
+      <div class="dash-canvas">
+        <div class="chart-area">
+          <div class="chart-row" style="min-height:150px;">
+            <div class="kpi">
+              <div class="kpi-label">Total Cost</div>
+              <div class="kpi-value">$536.1k</div>
+              <div class="kpi-delta neg">–$82.8k &nbsp;–13%</div>
+            </div>
+            <div class="chart-viz">
+              <svg viewBox="0 0 460 100" preserveAspectRatio="none" style="position:absolute;inset:0;">
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#5655ff" stop-opacity="0.18"/>
+                    <stop offset="100%" stop-color="#5655ff" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,70 C40,65 80,40 130,45 C180,50 220,30 280,28 C330,26 380,35 460,20" fill="none" stroke="#5655ff" stroke-width="2"/>
+                <path d="M0,70 C40,65 80,40 130,45 C180,50 220,30 280,28 C330,26 380,35 460,20 L460,100 L0,100 Z" fill="url(#g1)"/>
+                <path d="M0,80 C50,75 100,72 160,70 C220,68 280,65 360,60 C400,58 430,56 460,52" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4,3"/>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div class="kpi">
+              <div class="kpi-label">Total Revenue</div>
+              <div class="kpi-value">$2.0M</div>
+              <div class="kpi-delta neg">–$34.6k &nbsp;–2%</div>
+            </div>
+            <div class="chart-viz">
+              <svg viewBox="0 0 460 80" preserveAspectRatio="none" style="position:absolute;inset:0;">
+                <path d="M0,50 C60,45 110,35 170,30 C230,25 290,38 360,36 C400,35 430,30 460,25" fill="none" stroke="#5655ff" stroke-width="2"/>
+                <path d="M0,50 C60,45 110,35 170,30 C230,25 290,38 360,36 C400,35 430,30 460,25 L460,80 L0,80 Z" fill="url(#g1)" opacity="0.6"/>
+                <path d="M0,60 C50,58 100,55 160,52 C220,49 280,50 360,48 C400,47 430,46 460,44" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4,3"/>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div class="kpi">
+              <div class="kpi-label">Net Revenue</div>
+              <div class="kpi-value">$1.4M</div>
+              <div class="kpi-delta pos">+$48.2k &nbsp;+4%</div>
+            </div>
+            <div class="chart-viz">
+              <svg viewBox="0 0 460 80" preserveAspectRatio="none" style="position:absolute;inset:0;">
+                <path d="M0,55 C50,50 100,42 160,35 C220,28 280,22 360,20 C400,19 430,18 460,16" fill="none" stroke="#5655ff" stroke-width="2"/>
+                <path d="M0,55 C50,50 100,42 160,35 C220,28 280,22 360,20 C400,19 430,18 460,16 L460,80 L0,80 Z" fill="url(#g1)" opacity="0.5"/>
+                <path d="M0,60 C50,58 110,56 170,58 C230,60 290,62 360,60 C400,59 430,57 460,55" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4,3"/>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div class="kpi">
+              <div class="kpi-label">Gross Margin %</div>
+              <div class="kpi-value">72.9%</div>
+              <div class="kpi-delta pos">+3.7%</div>
+            </div>
+            <div class="chart-viz">
+              <svg viewBox="0 0 460 80" preserveAspectRatio="none" style="position:absolute;inset:0;">
+                <path d="M0,45 C40,42 90,48 150,44 C200,40 250,35 320,38 C370,40 410,36 460,32" fill="none" stroke="#5655ff" stroke-width="2"/>
+                <path d="M0,45 C40,42 90,48 150,44 C200,40 250,35 320,38 C370,40 410,36 460,32 L460,80 L0,80 Z" fill="url(#g1)" opacity="0.5"/>
+                <path d="M0,58 C60,56 130,60 200,56 C260,52 330,50 400,48 C430,47 445,47 460,46" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4,3"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right panel -->
+        <div class="right-panel">
+          <div class="rp-section">
+            <div class="rp-label">Display name</div>
+            <input class="rp-input" value="Site Traffic">
+          </div>
+          <div class="rp-section">
+            <div class="rp-label">Metrics view referenced</div>
+            <input class="rp-input" value="Company Metrics">
+          </div>
+          <div class="rp-section">
+            <div class="rp-label">Measures</div>
+            <div class="rp-chip-row">
+              <div class="rp-chip active">All</div>
+              <div class="rp-chip">Subset</div>
+              <div class="rp-chip">Expression</div>
+            </div>
+          </div>
+          <div class="rp-section">
+            <div class="rp-label">Dimensions</div>
+            <div class="rp-chip-row">
+              <div class="rp-chip active">All</div>
+              <div class="rp-chip">Subset</div>
+              <div class="rp-chip">Expression</div>
+            </div>
+            <div style="margin-top:8px;">
+              <input class="rp-input" value="5 of 50" style="color:#737373;">
+            </div>
+          </div>
+          <div class="rp-section">
+            <div class="rp-label">Filter bar</div>
+            <div class="rp-chip-row" style="margin-bottom:6px;">
+              <div class="rp-chip active">Default time ranges</div>
+              <div class="rp-chip">Custom</div>
+            </div>
+            <div class="rp-chip-row">
+              <div class="rp-chip">Default time zones</div>
+              <div class="rp-chip active">Custom</div>
+            </div>
+            <div style="margin-top:6px;">
+              <input class="rp-input" value="8 time zones">
+            </div>
+          </div>
+          <div class="rp-section">
+            <div class="rp-label">Theme</div>
+            <div class="rp-chip-row" style="margin-bottom:8px;">
+              <div class="rp-chip active">Presets</div>
+              <div class="rp-chip">Custom</div>
+            </div>
+            <input class="rp-input" value="Default" style="margin-bottom:8px;">
+            <div class="rp-color-row">
+              <div class="rp-color-swatch" style="background:#3524c7;"></div>
+              <input class="rp-input" value="3524C7" style="flex:1;">
+              <span style="font-size:12px;color:#737373;">Primary</span>
+            </div>
+            <div class="rp-color-row" style="margin-top:6px;">
+              <div class="rp-color-swatch" style="background:#00b8ff;"></div>
+              <input class="rp-input" value="00B8FF" style="flex:1;">
+              <span style="font-size:12px;color:#737373;">Secondary</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────
+     PUBLISH MODAL
+────────────────────────────────────────── -->
+<div class="modal-backdrop" id="publish-modal" onclick="handleBackdropClick(event)">
+  <div class="publish-modal" id="modal-inner">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="m3.29 15 1.42 1.42"/><path d="M10.5 10.5 13 8l3 3-2.5 2.5"/><path d="M6 17.07 8.93 14"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+        Publish dashboard
+      </div>
+      <button class="modal-close" onclick="closePublish()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Published success banner (hidden until published) -->
+      <div class="published-banner" id="published-banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        <div class="published-banner-text">
+          <strong>Dashboard is live</strong>
+          <span>Shared with everyone who has the link. Last published just now.</span>
+        </div>
+      </div>
+
+      <!-- Dashboard info -->
+      <div class="dash-info-strip">
+        <div class="dash-info-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5655ff" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <div>
+          <div class="dash-info-name">Site Traffic</div>
+          <div class="dash-info-meta">rill currency exchange draft · saved 2 min ago</div>
+        </div>
+        <span class="dash-info-badge" id="publish-status-badge">Ready to publish</span>
+      </div>
+
+      <!-- Preview link -->
+      <div>
+        <div class="section-label">Preview link</div>
+        <div class="url-bar">
+          <div class="url-display">
+            <svg class="lock-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span class="url-text" id="preview-url-text">ui.rilldata.com/org-name/site-traffic/preview/draft</span>
+          </div>
+          <button class="rill-btn rill-btn-outline rill-btn-sm" id="copy-btn" onclick="copyLink()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+          <button class="rill-btn rill-btn-outline rill-btn-sm" onclick="toast('Opening preview…')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open
+          </button>
+        </div>
+        <p style="font-size:11px;color:#737373;margin-top:6px;">
+          This link gives read-only access to the current state of your dashboard before it goes live.
+        </p>
+      </div>
+
+      <!-- Access control -->
+      <div>
+        <div class="section-label">Who can view after publishing?</div>
+        <div class="access-options" id="access-options">
+
+          <label class="access-option" id="opt-private" onclick="selectAccess('private')">
+            <input type="radio" name="access" value="private">
+            <div class="access-icon lock">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+              <div class="access-option-label">Private</div>
+              <div class="access-option-desc">Only members of your Rill organization</div>
+            </div>
+          </label>
+
+          <label class="access-option selected" id="opt-link" onclick="selectAccess('link')">
+            <input type="radio" name="access" value="link" checked>
+            <div class="access-icon link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </div>
+            <div>
+              <div class="access-option-label">Anyone with the link</div>
+              <div class="access-option-desc">No login required — share freely</div>
+            </div>
+          </label>
+
+          <label class="access-option" id="opt-specific" onclick="selectAccess('specific')">
+            <input type="radio" name="access" value="specific">
+            <div class="access-icon team">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <div class="access-option-label">Specific teammates</div>
+              <div class="access-option-desc">Invite by email or Rill username</div>
+            </div>
+          </label>
+
+        </div>
+
+        <!-- Invite section — only shown for "specific" -->
+        <div id="invite-section" style="display:none;margin-top:10px;">
+          <div class="invite-area">
+            <div class="invite-row">
+              <input class="invite-input" id="invite-input" placeholder="colleague@company.io or @username">
+              <button class="rill-btn rill-btn-outline" onclick="addInvitee()" style="flex-shrink:0;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Invite
+              </button>
+            </div>
+            <div id="invitees-list">
+              <div class="invitee" id="invitee-hc">
+                <div class="invitee-av" style="background:#5655ff;">HC</div>
+                <div style="flex:1;min-width:0;">
+                  <div class="invitee-name">Hector C. <span style="font-weight:400;color:#737373;">(you)</span></div>
+                  <div class="invitee-email">hector@company.io</div>
+                </div>
+                <span class="invitee-role">owner</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <p class="modal-footer-note">
+        Publishing generates a live URL visible to people above. You can unpublish at any time.
+      </p>
+      <div class="modal-footer-actions">
+        <button class="rill-btn rill-btn-ghost rill-btn-lg" onclick="closePublish()">Cancel</button>
+        <button class="rill-btn rill-btn-primary rill-btn-lg" id="publish-action-btn" onclick="doPublish()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="m3.29 15 1.42 1.42"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+          Publish
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+  /* ── Modal ── */
+  function openPublish() {
+    document.getElementById('publish-modal').classList.add('open');
+  }
+  function closePublish() {
+    document.getElementById('publish-modal').classList.remove('open');
+  }
+  function handleBackdropClick(e) {
+    if (e.target === document.getElementById('publish-modal')) closePublish();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePublish(); });
+
+  /* ── Access level ── */
+  function selectAccess(mode) {
+    ['private','link','specific'].forEach(m => {
+      const el = document.getElementById('opt-' + m);
+      el.classList.toggle('selected', m === mode);
+      el.querySelector('input').checked = (m === mode);
+    });
+    document.getElementById('invite-section').style.display = mode === 'specific' ? '' : 'none';
+  }
+
+  /* ── Copy link ── */
+  function copyLink() {
+    const url = 'https://' + document.getElementById('preview-url-text').textContent;
+    navigator.clipboard?.writeText(url).catch(() => {});
+    const btn = document.getElementById('copy-btn');
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    btn.style.color = '#16a34a';
+    btn.style.borderColor = '#16a34a';
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2000);
+  }
+
+  /* ── Invite ── */
+  function addInvitee() {
+    const input = document.getElementById('invite-input');
+    const val = input.value.trim();
+    if (!val) { toast('Enter an email or @username', true); return; }
+
+    const initials = val.startsWith('@') ? val.slice(1,3).toUpperCase() : val.slice(0,2).toUpperCase();
+    const colors = ['#5655ff','#8b5cf6','#06b6d4','#f59e0b'];
+    const bg = colors[document.querySelectorAll('.invitee').length % colors.length];
+
+    const div = document.createElement('div');
+    div.className = 'invitee';
+    div.innerHTML = `
+      <div class="invitee-av" style="background:${bg};">${initials}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="invitee-name">${val}</div>
+        <div class="invitee-email">Invite pending</div>
+      </div>
+      <span class="invitee-role">viewer</span>
+      <button class="invitee-remove" onclick="this.closest('.invitee').remove();toast('Invite removed')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+    document.getElementById('invitees-list').appendChild(div);
+    toast(`Invite sent to ${val}`);
+    input.value = '';
+  }
+
+  /* ── Publish action ── */
+  function doPublish() {
+    const btn = document.getElementById('publish-action-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .8s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Publishing…`;
+
+    setTimeout(() => {
+      // Update modal state
+      document.getElementById('published-banner').classList.add('visible');
+      document.getElementById('publish-status-badge').textContent = '✓ Live';
+      document.getElementById('publish-status-badge').style.background = 'rgba(34,197,94,0.1)';
+      document.getElementById('publish-status-badge').style.color = '#16a34a';
+      document.getElementById('publish-status-badge').style.borderColor = 'rgba(34,197,94,0.2)';
+      document.getElementById('preview-url-text').textContent = 'ui.rilldata.com/org-name/site-traffic';
+
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published`;
+      btn.style.background = '#16a34a';
+      btn.style.borderColor = '#16a34a';
+
+      // Update header Publish button
+      const headerBtn = document.getElementById('publish-btn');
+      headerBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published`;
+      headerBtn.style.background = '#16a34a';
+      headerBtn.style.borderColor = '#16a34a';
+
+      // Update breadcrumb tag
+      document.querySelector('.tag-draft').className = 'status-tag tag-live';
+      document.querySelector('.status-tag').textContent = 'Live';
+
+      toast('Dashboard is now live! 🎉');
+    }, 1400);
+  }
+
+  /* ── Toast ── */
+  function toast(msg, isError = false) {
+    const wrap = document.getElementById('toast-wrap');
+    const el = document.createElement('div');
+    el.className = 'rill-toast';
+    el.style.background = isError ? '#ef4444' : '#0a0a0a';
+    el.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ${msg}`;
+    wrap.appendChild(el);
+    setTimeout(() => { el.style.transition='opacity .2s'; el.style.opacity='0'; setTimeout(()=>el.remove(),200); }, 3000);
+  }
+
+  /* Spin keyframe */
+  const s = document.createElement('style');
+  s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(s);
+</script>
+</body>
+</html>
