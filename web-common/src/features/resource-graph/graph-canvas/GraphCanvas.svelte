@@ -276,18 +276,6 @@
       } catch {
         flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
       }
-      // Debug logging (only in development)
-      if (import.meta.env.DEV) {
-        console.log("ResourceGraph graph", {
-          title,
-          nodes: nodesWithRoots.map((n) => n.id),
-          edges: filteredEdges.map((e) => ({
-            id: e.id,
-            source: e.source,
-            target: e.target,
-          })),
-        });
-      }
     } catch (err) {
       console.error("Failed to build resource graph:", err);
       graphError =

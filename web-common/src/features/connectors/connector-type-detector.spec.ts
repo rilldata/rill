@@ -3,6 +3,7 @@ import {
   detectConnectorFromPath,
   detectConnectorFromContent,
   detectConnector,
+  deriveConnectorType,
 } from "./connector-type-detector";
 
 describe("connector-type-detector", () => {
@@ -252,6 +253,88 @@ describe("connector-type-detector", () => {
 
     it("should handle path-only detection", () => {
       expect(detectConnector("gs://bucket/file.csv", null)).toBe("gcs");
+    });
+  });
+
+  describe("deriveConnectorType", () => {
+    it("should detect from partition resolver properties first", () => {
+      expect(
+        deriveConnectorType({
+          partitionsResolverProperties: { uri: "s3://bucket/part/*.parquet" },
+          sourcePath: "gs://other-bucket/file.csv",
+          sqlContent: "SELECT * FROM read_csv('/local/file.csv')",
+          inputConnector: "postgres",
+        }),
+      ).toBe("s3");
+    });
+
+    it("should skip non-string partition resolver values", () => {
+      expect(
+        deriveConnectorType({
+          partitionsResolverProperties: { count: 42, flag: true },
+          sourcePath: "gs://bucket/file.csv",
+        }),
+      ).toBe("gcs");
+    });
+
+    it("should fall back to source path when partitions have no match", () => {
+      expect(
+        deriveConnectorType({
+          partitionsResolverProperties: { key: "no-cloud-prefix" },
+          sourcePath: "azure://container/file.parquet",
+        }),
+      ).toBe("azure");
+    });
+
+    it("should fall back to SQL content when source path has no match", () => {
+      expect(
+        deriveConnectorType({
+          sourcePath: "/local/path/model.sql",
+          sqlContent: "SELECT * FROM read_parquet('gs://bucket/file.parquet')",
+        }),
+      ).toBe("gcs");
+    });
+
+    it("should fall back to inputConnector when nothing else matches", () => {
+      expect(
+        deriveConnectorType({
+          sourcePath: "/models/my_model.sql",
+          sqlContent: "SELECT * FROM other_model",
+          inputConnector: "postgres",
+        }),
+      ).toBe("postgres");
+    });
+
+    it("should return undefined when nothing matches and no inputConnector", () => {
+      expect(
+        deriveConnectorType({
+          sqlContent: "SELECT 1",
+        }),
+      ).toBeUndefined();
+    });
+
+    it("should return undefined for empty options", () => {
+      expect(deriveConnectorType({})).toBeUndefined();
+    });
+
+    it("should handle null/undefined values gracefully", () => {
+      expect(
+        deriveConnectorType({
+          partitionsResolverProperties: null,
+          sourcePath: null,
+          sqlContent: null,
+          inputConnector: null,
+        }),
+      ).toBeUndefined();
+    });
+
+    it("should use sourcePath as content fallback when sqlContent is absent", () => {
+      // sourcePath doesn't match a prefix but contains an embedded URL
+      expect(
+        deriveConnectorType({
+          sourcePath: "read_parquet('s3://bucket/file.parquet')",
+        }),
+      ).toBe("s3");
     });
   });
 });

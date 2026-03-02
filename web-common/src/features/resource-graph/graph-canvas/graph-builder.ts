@@ -103,15 +103,15 @@ function buildReverseRefCounts(
   for (const res of resources) {
     const resKind = res.meta?.name?.kind;
     if (
-      resKind !== "rill.runtime.v1.Alert" &&
-      resKind !== "rill.runtime.v1.API"
+      resKind !== ResourceKind.Alert &&
+      resKind !== ResourceKind.API
     )
       continue;
     for (const ref of res.meta?.refs ?? []) {
       const refId = resourceNameToId(ref);
       if (!refId) continue;
       const entry = counts.get(refId) ?? { alerts: 0, apis: 0 };
-      if (resKind === "rill.runtime.v1.Alert") entry.alerts++;
+      if (resKind === ResourceKind.Alert) entry.alerts++;
       else entry.apis++;
       counts.set(refId, entry);
     }
@@ -657,13 +657,16 @@ function buildVisibleResourceMap(
  * Converts V1ResourceName objects to string IDs and removes duplicates.
  */
 function normalizeSeeds(seeds: (string | V1ResourceName)[]): string[] {
-  const toSeedId = (seed: string | V1ResourceName) =>
-    typeof seed === "string" ? seed : createResourceId({ name: seed });
-
-  return seeds
-    .map((s) => toSeedId(s))
-    .filter((id): id is string => !!id)
-    .filter((id, idx, arr) => arr.indexOf(id) === idx);
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const seed of seeds) {
+    const id = typeof seed === "string" ? seed : createResourceId({ name: seed });
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
+  }
+  return result;
 }
 
 /**

@@ -14,6 +14,10 @@
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { ALLOWED_FOR_GRAPH } from "../navigation/seed-parser";
+  import {
+    RESOURCE_RESOURCE_SECTION_ORDER,
+    RESOURCE_RESOURCE_SECTION_LABELS,
+  } from "../shared/config";
 
   export let resources: V1Resource[] = [];
   export let activeResourceId: string | null = null;
@@ -32,23 +36,6 @@
     entries: ResourceEntry[];
   };
 
-  const SECTION_ORDER: ResourceKind[] = [
-    ResourceKind.Connector,
-    ResourceKind.Source,
-    ResourceKind.Model,
-    ResourceKind.MetricsView,
-    ResourceKind.Explore,
-    ResourceKind.Canvas,
-  ];
-
-  const SECTION_LABELS: Partial<Record<ResourceKind, string>> = {
-    [ResourceKind.Connector]: "OLAP Connector",
-    [ResourceKind.Source]: "Source Models",
-    [ResourceKind.Model]: "Models",
-    [ResourceKind.MetricsView]: "Metric Views",
-    [ResourceKind.Explore]: "Explore Dashboards",
-    [ResourceKind.Canvas]: "Canvas Dashboards",
-  };
 
   function getStatus(r: V1Resource): "ok" | "pending" | "errored" {
     if (r.meta?.reconcileError) return "errored";
@@ -86,13 +73,13 @@
     }
 
     const result: ResourceSection[] = [];
-    for (const kind of SECTION_ORDER) {
+    for (const kind of RESOURCE_SECTION_ORDER) {
       const entries = grouped.get(kind);
       if (!entries?.length) continue;
       entries.sort((a, b) => a.name.localeCompare(b.name));
       result.push({
         kind,
-        label: SECTION_LABELS[kind] ?? resourceLabelMapping[kind] ?? "Unknown",
+        label: RESOURCE_SECTION_LABELS[kind] ?? resourceLabelMapping[kind] ?? "Unknown",
         entries,
       });
     }

@@ -34,24 +34,9 @@
   export let positionAbsoluteX = 0;
   export let positionAbsoluteY = 0;
 
-  // XYFlow injects these props for layout, but we only need them for typing support.
-  const ensureFlowProps = (..._args: unknown[]) => {};
-  $: ensureFlowProps(
-    id,
-    type,
-    height,
-    sourcePosition,
-    targetPosition,
-    dragHandle,
-    parentId,
-    dragging,
-    zIndex,
-    selectable,
-    deletable,
-    draggable,
-    positionAbsoluteX,
-    positionAbsoluteY,
-  );
+  // XYFlow injects these props for layout; declaring them above prevents
+  // "unknown prop" warnings. No reactive usage needed.
+  void [type, height, sourcePosition, targetPosition, dragHandle, parentId, dragging, zIndex, selectable, deletable, draggable, positionAbsoluteX, positionAbsoluteY];
 
   $: showActions = data?.showNodeActions !== false;
 
@@ -85,7 +70,7 @@
   $: isPending =
     reconcileStatus &&
     reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: routeHighlighted = (data as any)?.routeHighlighted === true;
+  $: routeHighlighted = data?.routeHighlighted === true;
 
   $: isSourceOrModel =
     kind === ResourceKind.Source || kind === ResourceKind.Model;
@@ -334,6 +319,11 @@
     @apply shadow-md;
     background-color: color-mix(in srgb, var(--node-accent) 6%, var(--surface-background, #ffffff));
     border-color: color-mix(in srgb, var(--node-accent) 30%, var(--border));
+  }
+
+  .node.route-highlighted {
+    border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
+    background-color: color-mix(in srgb, var(--node-accent) 4%, var(--surface-background, #ffffff));
   }
 
   .node.error {

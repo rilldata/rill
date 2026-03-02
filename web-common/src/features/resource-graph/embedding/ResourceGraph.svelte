@@ -28,7 +28,12 @@
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import ResourceNodeSelector from "../summary/ResourceNodeSelector.svelte";
   import { onDestroy } from "svelte";
-  import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
+  import {
+    UI_CONFIG,
+    FIT_VIEW_CONFIG,
+    RESOURCE_SECTION_ORDER,
+    RESOURCE_SECTION_LABELS,
+  } from "../shared/config";
   import type {
     ResourceStatusFilter,
     ResourceStatusFilterValue,
@@ -259,23 +264,6 @@
     entries: ResourceDropdownEntry[];
   };
 
-  const DROPDOWN_SECTION_ORDER: ResourceKind[] = [
-    ResourceKind.Connector,
-    ResourceKind.Source,
-    ResourceKind.Model,
-    ResourceKind.MetricsView,
-    ResourceKind.Explore,
-    ResourceKind.Canvas,
-  ];
-
-  const DROPDOWN_SECTION_LABELS: Partial<Record<ResourceKind, string>> = {
-    [ResourceKind.Connector]: "OLAP Connector",
-    [ResourceKind.Source]: "Source Models",
-    [ResourceKind.Model]: "Models",
-    [ResourceKind.MetricsView]: "Metric Views",
-    [ResourceKind.Explore]: "Explore Dashboards",
-    [ResourceKind.Canvas]: "Canvas Dashboards",
-  };
 
   function getResourceStatus(r: V1Resource): "ok" | "pending" | "errored" {
     if (r.meta?.reconcileError) return "errored";
@@ -303,13 +291,13 @@
     }
 
     const result: ResourceDropdownSection[] = [];
-    for (const kind of DROPDOWN_SECTION_ORDER) {
+    for (const kind of RESOURCE_SECTION_ORDER) {
       const entries = grouped.get(kind);
       if (!entries?.length) continue;
       entries.sort((a, b) => a.name.localeCompare(b.name));
       result.push({
         kind,
-        label: DROPDOWN_SECTION_LABELS[kind] ?? kind,
+        label: RESOURCE_SECTION_LABELS[kind] ?? kind,
         entries,
       });
     }
@@ -576,7 +564,7 @@
 
   // Auto-expand logic when seeds change
   $: {
-    const signature = (seeds ?? []).join("|");
+    const signature = JSON.stringify(seeds ?? []);
     if (signature !== lastSeedsSignature) {
       // Show a short loading state to indicate graphs are updating
       seedTransitionLoading = true;

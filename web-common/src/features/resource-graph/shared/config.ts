@@ -5,6 +5,8 @@
  * configuration to make them easier to maintain and adjust.
  */
 
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+
 /**
  * Node sizing configuration
  */
@@ -230,6 +232,28 @@ export const CACHE_CONFIG = {
    */
   PRUNE_PERCENTAGE: 0.25,
 } as const;
+
+/**
+ * Ordering and labels for resource kind sections in the graph UI.
+ * Shared by ResourceGraph dropdown and ResourceNodeSelector sidebar.
+ */
+export const RESOURCE_SECTION_ORDER: ResourceKind[] = [
+  ResourceKind.Connector,
+  ResourceKind.Source,
+  ResourceKind.Model,
+  ResourceKind.MetricsView,
+  ResourceKind.Explore,
+  ResourceKind.Canvas,
+];
+
+export const RESOURCE_SECTION_LABELS: Partial<Record<ResourceKind, string>> = {
+  [ResourceKind.Connector]: "OLAP Connector",
+  [ResourceKind.Source]: "Source Models",
+  [ResourceKind.Model]: "Models",
+  [ResourceKind.MetricsView]: "Metric Views",
+  [ResourceKind.Explore]: "Explore Dashboards",
+  [ResourceKind.Canvas]: "Canvas Dashboards",
+};
 
 /**
  * Debug mode configuration.
