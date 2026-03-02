@@ -31,6 +31,7 @@
   import {
     UI_CONFIG,
     FIT_VIEW_CONFIG,
+    PERFORMANCE_CONFIG,
     RESOURCE_SECTION_ORDER,
     RESOURCE_SECTION_LABELS,
   } from "../shared/config";
@@ -568,7 +569,7 @@
       if (seedTransitionTimer) clearTimeout(seedTransitionTimer);
       seedTransitionTimer = setTimeout(
         () => (seedTransitionLoading = false),
-        500,
+        PERFORMANCE_CONFIG.SEED_TRANSITION_DELAY_MS,
       );
 
       lastSeedsSignature = signature;
@@ -865,6 +866,7 @@
       {#each visibleResourceGroups as group, index (group.id)}
         {@const isExpanded = currentExpandedId === group.id}
         {@const isHidden = hasExpandedItem && !isExpanded}
+        {@const parts = groupTitleParts(group, index)}
         <div
           class="grid-item"
           class:expanded={isExpanded}
@@ -885,15 +887,9 @@
               flowId={group.id}
               resources={group.resources}
               title={null}
-              titleLabel={showCardTitles
-                ? groupTitleParts(group, index).labelWithCount
-                : null}
-              titleErrorCount={showCardTitles
-                ? groupTitleParts(group, index).errorCount
-                : null}
-              anchorError={showCardTitles
-                ? groupTitleParts(group, index).anchorError
-                : false}
+              titleLabel={showCardTitles ? parts.labelWithCount : null}
+              titleErrorCount={showCardTitles ? parts.errorCount : null}
+              anchorError={showCardTitles ? parts.anchorError : false}
               rootNodeIds={groupRootNodeIds(group)}
               {showControls}
               {showNodeActions}
@@ -912,15 +908,9 @@
                 flowId={group.id}
                 resources={group.resources}
                 title={null}
-                titleLabel={showCardTitles
-                  ? groupTitleParts(group, index).labelWithCount
-                  : null}
-                titleErrorCount={showCardTitles
-                  ? groupTitleParts(group, index).errorCount
-                  : null}
-                anchorError={showCardTitles
-                  ? groupTitleParts(group, index).anchorError
-                  : false}
+                titleLabel={showCardTitles ? parts.labelWithCount : null}
+                titleErrorCount={showCardTitles ? parts.errorCount : null}
+                anchorError={showCardTitles ? parts.anchorError : false}
                 rootNodeIds={groupRootNodeIds(group)}
                 showControls={false}
                 {showNodeActions}

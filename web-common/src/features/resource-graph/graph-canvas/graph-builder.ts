@@ -382,13 +382,12 @@ export function buildResourceGraph(
   const positionNs = opts?.positionNs?.trim() || "global";
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
-    rankdir: "TB",
-    // Extreme compactness; overlaps allowed
+    rankdir: DAGRE_CONFIG.RANKDIR,
     nodesep: DAGRE_NODESEP,
     ranksep: DAGRE_RANKSEP,
     edgesep: DAGRE_EDGESEP,
-    ranker: "tight-tree",
-    acyclicer: "greedy",
+    ranker: DAGRE_CONFIG.RANKER,
+    acyclicer: DAGRE_CONFIG.ACYCLICER,
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 

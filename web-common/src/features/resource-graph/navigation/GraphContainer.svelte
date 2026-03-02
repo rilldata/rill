@@ -11,6 +11,8 @@
     ResourceStatusFilter,
     ResourceStatusFilterValue,
   } from "../shared/types";
+  import { graphCache } from "../shared/cache/position-cache";
+  import { onMount } from "svelte";
 
   export let seeds: string[] | undefined;
   export let searchQuery = "";
@@ -30,6 +32,10 @@
   export let onClearFilters: (() => void) | null = null;
   export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
+
+  onMount(() => {
+    graphCache.initialize();
+  });
 
   $: ({ instanceId } = $runtime);
 
