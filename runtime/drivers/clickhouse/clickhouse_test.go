@@ -121,3 +121,41 @@ func TestManagedModePrecedence(t *testing.T) {
 		})
 	}
 }
+
+func TestDropSyncDefaultAndOverride(t *testing.T) {
+	t.Run("defaults to true when omitted", func(t *testing.T) {
+		conf := &configProperties{
+			CanScaleToZero: true,
+			MaxOpenConns:   20,
+			MaxIdleConns:   5,
+			DropSync:       true,
+		}
+		err := mapstructure.WeakDecode(map[string]any{"dsn": "clickhouse://default:default@localhost:9000"}, conf)
+		require.NoError(t, err)
+		require.True(t, conf.DropSync)
+	})
+
+	t.Run("can be explicitly disabled", func(t *testing.T) {
+		conf := &configProperties{
+			CanScaleToZero: true,
+			MaxOpenConns:   20,
+			MaxIdleConns:   5,
+			DropSync:       true,
+		}
+		err := mapstructure.WeakDecode(map[string]any{"dsn": "clickhouse://default:default@localhost:9000", "drop_sync": false}, conf)
+		require.NoError(t, err)
+		require.False(t, conf.DropSync)
+	})
+}
+
+func TestDropTableQueryRespectsDropSync(t *testing.T) {
+	t.Run("drop sync enabled", func(t *testing.T) {
+		query := dropTableQuery("tmp_table", `ON CLUSTER "test_cluster"`, true)
+		require.Equal(t, `DROP TABLE "tmp_table" ON CLUSTER "test_cluster" SYNC`, query)
+	})
+
+	t.Run("drop sync disabled", func(t *testing.T) {
+		query := dropTableQuery("tmp_table", `ON CLUSTER "test_cluster"`, false)
+		require.Equal(t, `DROP TABLE "tmp_table" ON CLUSTER "test_cluster"`, query)
+	})
+}
