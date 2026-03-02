@@ -175,15 +175,7 @@
     <div class="title-row">
       {#if kind}<ResourceTypeBadge {kind} />{/if}
       <p class="title" title={data?.label}>{data?.label}</p>
-      {#if hasError}
-        <span class="node-status-icon error" title="Error">
-          <AlertTriangle size="10px" />
-        </span>
-      {:else if isTestOnlyError}
-        <span class="node-status-icon warned" title="Check failed">
-          <AlertTriangle size="10px" />
-        </span>
-      {:else if isPending}
+      {#if isPending}
         <span class="node-status-icon pending" title="Reconciling">
           <Clock size="10px" />
         </span>

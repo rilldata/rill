@@ -730,7 +730,7 @@
               >
                 <span class="flex-1 truncate text-xs">All Resources</span>
               </DropdownMenu.Item>
-              {#each filteredResourceSections as section, sIdx}
+              {#each filteredResourceSections as section}
                 <DropdownMenu.Separator />
                 <div class="section-header">
                   <ResourceTypeBadge kind={section.kind} />
