@@ -2,7 +2,7 @@
  * Code generator: reads ConnectRPC *_connect.ts service descriptors and
  * produces TanStack Query hooks for Svelte.
  *
- * Usage: tsx scripts/generate-query-hooks.ts
+ * Usage: tsx src/runtime-client/v2/generate-query-hooks.ts
  *
  * Output: src/runtime-client/v2/gen/{query-service,runtime-service,connector-service}.ts
  */
@@ -14,13 +14,16 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { MethodKind } from "@bufbuild/protobuf";
-import { classifyMethod, type MethodClassification } from "./generate-query-hooks-config";
+import {
+  classifyMethod,
+  type MethodClassification,
+} from "./generate-query-hooks-config";
 
 // --- Service descriptors ---
 
-import { QueryService } from "../src/proto/gen/rill/runtime/v1/queries_connect";
-import { RuntimeService } from "../src/proto/gen/rill/runtime/v1/api_connect";
-import { ConnectorService } from "../src/proto/gen/rill/runtime/v1/connectors_connect";
+import { QueryService } from "../../proto/gen/rill/runtime/v1/queries_connect";
+import { RuntimeService } from "../../proto/gen/rill/runtime/v1/api_connect";
+import { ConnectorService } from "../../proto/gen/rill/runtime/v1/connectors_connect";
 
 interface ServiceDef {
   typeName: string;
@@ -93,10 +96,7 @@ function getProtoImportPath(serviceName: string): string {
 // --- JSON bridge: Orval type helpers ---
 
 /** Read Orval schemas to discover available V1 types at generation time */
-const orvalSchemaPath = path.resolve(
-  __dirname,
-  "../src/runtime-client/gen/index.schemas.ts",
-);
+const orvalSchemaPath = path.resolve(__dirname, "../gen/index.schemas.ts");
 const orvalSchemaContent = fs.readFileSync(orvalSchemaPath, "utf-8");
 const availableOrvalTypes = new Set<string>();
 for (const match of orvalSchemaContent.matchAll(
@@ -430,10 +430,7 @@ function generateIndex(serviceNames: string[]): string {
 
 // --- Main ---
 
-const outDir = path.resolve(
-  __dirname,
-  "../src/runtime-client/v2/gen",
-);
+const outDir = path.resolve(__dirname, "gen");
 
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -476,7 +473,5 @@ for (const { descriptor, name } of services) {
 const indexCode = generateIndex(services.map((s) => s.name));
 fs.writeFileSync(path.join(outDir, "index.ts"), indexCode);
 
-console.log(
-  `\nTotal: ${totalQueries} queries, ${totalMutations} mutations`,
-);
+console.log(`\nTotal: ${totalQueries} queries, ${totalMutations} mutations`);
 console.log(`Output: ${outDir}`);

@@ -59,14 +59,9 @@ export function classifyMethod(
 
   // Service-specific defaults
   if (serviceName === "RuntimeService") {
-    const queryPrefixes = [
-      "get",
-      "list",
-      "ping",
-      "health",
-      "instanceHealth",
-    ];
-    const lowerMethod = methodName.charAt(0).toLowerCase() + methodName.slice(1);
+    const queryPrefixes = ["get", "list", "ping", "health", "instanceHealth"];
+    const lowerMethod =
+      methodName.charAt(0).toLowerCase() + methodName.slice(1);
     if (queryPrefixes.some((p) => lowerMethod.startsWith(p))) {
       return "query";
     }
