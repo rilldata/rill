@@ -10,6 +10,7 @@
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -109,7 +110,7 @@
         }
         closeModal();
       } catch (err) {
-        error = err.response.data?.message;
+        error = extractErrorMessage(err);
       }
     },
   });
