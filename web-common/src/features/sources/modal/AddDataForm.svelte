@@ -106,7 +106,7 @@
 
   // Cloud storage backends that require an existing connector, per table format
   const STORAGE_CONNECTOR_DEPS: Record<string, Record<string, string>> = {
-    delta: { s3: "S3", azure: "Azure" },
+    delta: { gcs: "GCS", s3: "S3", azure: "Azure" },
     iceberg: { gcs: "GCS", s3: "S3", azure: "Azure" },
   };
 

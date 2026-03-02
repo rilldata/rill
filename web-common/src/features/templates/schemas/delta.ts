@@ -10,22 +10,51 @@ export const deltaSchema: MultiStepFormSchema = {
     storage_type: {
       type: "string",
       title: "Storage backend",
-      enum: ["local", "s3", "azure"],
+      enum: ["local", "public", "gcs", "s3", "azure"],
       default: "local",
       "x-display": "select",
       "x-select-style": "rich",
-      "x-enum-labels": ["Local", "Amazon S3", "Azure Blob Storage"],
+      "x-enum-labels": [
+        "Local",
+        "Public URL",
+        "Google Cloud Storage",
+        "Amazon S3",
+        "Azure Blob Storage",
+      ],
       "x-enum-descriptions": [
         "Read Delta tables from a local directory",
+        "Read Delta tables from a public HTTP/HTTPS URL",
+        "Read Delta tables from a GCS bucket",
         "Read Delta tables from an S3 bucket",
         "Read Delta tables from Azure Blob Storage",
       ],
       "x-ui-only": true,
       "x-grouped-fields": {
+        gcs: ["gcs_info", "gcs_path"],
         s3: ["s3_info", "s3_path"],
         azure: ["azure_info", "azure_path"],
         local: ["local_path"],
+        public: ["public_path"],
       },
+      "x-step": "source",
+    },
+    gcs_info: {
+      type: "boolean",
+      title: "GCS Connector Required",
+      default: true,
+      "x-informational": true,
+      "x-ui-only": true,
+      "x-step": "source",
+    },
+    gcs_path: {
+      type: "string",
+      title: "Delta table URI",
+      description: "GCS path to the Delta table directory",
+      pattern: "^gs://[^/]+(/.*)?$",
+      errorMessage: {
+        pattern: "Must be a GCS URI (e.g. gs://bucket/path/to/delta_table)",
+      },
+      "x-placeholder": "gs://bucket/path/to/delta_table",
       "x-step": "source",
     },
     s3_info: {
@@ -74,6 +103,17 @@ export const deltaSchema: MultiStepFormSchema = {
       "x-placeholder": "/path/to/delta_table",
       "x-step": "source",
     },
+    public_path: {
+      type: "string",
+      title: "Delta table URL",
+      description: "Public HTTP/HTTPS URL to the Delta table directory",
+      errorMessage: {
+        pattern:
+          "Must be an HTTP or HTTPS URL (e.g. https://example.com/path/to/delta_table)",
+      },
+      "x-placeholder": "https://example.com/path/to/delta_table",
+      "x-step": "source",
+    },
     name: {
       type: "string",
       title: "Model name",
@@ -86,6 +126,10 @@ export const deltaSchema: MultiStepFormSchema = {
   required: ["name"],
   allOf: [
     {
+      if: { properties: { storage_type: { const: "gcs" } } },
+      then: { required: ["gcs_path"] },
+    },
+    {
       if: { properties: { storage_type: { const: "s3" } } },
       then: { required: ["s3_path"] },
     },
@@ -96,6 +140,10 @@ export const deltaSchema: MultiStepFormSchema = {
     {
       if: { properties: { storage_type: { const: "local" } } },
       then: { required: ["local_path"] },
+    },
+    {
+      if: { properties: { storage_type: { const: "public" } } },
+      then: { required: ["public_path"] },
     },
   ],
 };
