@@ -350,14 +350,14 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, directOnly bool, afterProjectName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, afterProjectName string, limit int) ([]*database.Project, error) {
 	var qry strings.Builder
 	qry.WriteString("SELECT p.* FROM projects p WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (")
 	if includePublic {
 		qry.WriteString("p.public = true OR ")
 	}
 	qry.WriteString("p.id IN (SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3")
-	if !directOnly {
+	if includeGroups {
 		qry.WriteString(`
 		UNION
 		SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3`)

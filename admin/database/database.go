@@ -80,8 +80,8 @@ type DB interface {
 	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, rillMgdRemote string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user.
-	// When directOnly is true, only projects with direct user membership are returned (excludes usergroup-inherited access).
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, directOnly bool, afterProjectName string, limit int) ([]*Project, error)
+	// When includeGroups is true, projects accessible through usergroup membership are also included.
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
