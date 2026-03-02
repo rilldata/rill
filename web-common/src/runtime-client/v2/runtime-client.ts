@@ -22,6 +22,7 @@ export class RuntimeClient {
   private currentJwt: string | undefined;
   private jwtReceivedAt: number;
   private authContext: AuthContext;
+  private disposed = false;
 
   // Cached service clients (created once per RuntimeClient)
   private _queryService: Client<typeof QueryService> | null = null;
@@ -119,8 +120,12 @@ export class RuntimeClient {
     // Embeds have a 24h backend-issued TTL; skip client-side expiry check
     if (this.authContext === "embed") return;
 
+    const deadline = Date.now() + 60_000;
     let expiresAt = this.jwtReceivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;
     while (Date.now() + JWT_EXPIRY_WARNING_WINDOW > expiresAt) {
+      if (Date.now() > deadline || this.disposed) {
+        throw new Error("Timed out waiting for a fresh JWT");
+      }
       await new Promise((r) =>
         setTimeout(r, CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL),
       );
@@ -130,6 +135,7 @@ export class RuntimeClient {
   }
 
   dispose(): void {
-    // Future: clean up SSE connections, cancel pending requests
+    this.disposed = true;
+    this.requestQueue.clear();
   }
 }
