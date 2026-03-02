@@ -1,26 +1,20 @@
 # This should be used for docs also
 #
-# Header accumulation: Netlify accumulates headers from all matching rules.
-# Same-name headers from more specific paths override the broader path's value.
-# The embed and share routes only need to override Content-Security-Policy;
-# all other headers are inherited from the default "/*" rule.
+# Content-Security-Policy is intentionally absent from the static headers below.
+# It is set dynamically by the netlify/edge-functions/csp-nonce.ts edge function,
+# which generates a per-request nonce, injects it into all <script> tags, and
+# builds the full CSP header with 'strict-dynamic'. This eliminates the host
+# allowlist bypass risk while maintaining compatibility with SvelteKit, Pylon,
+# and CodeMirror.
 
-# Default headers for main application (strict CSP)
+[[edge_functions]]
+  function = "csp-nonce"
+  path = "/*"
+
+# Security headers for all routes (CSP is handled by the edge function above)
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = """\
-      default-src 'self'; \
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com; \
-      style-src 'self' 'unsafe-inline' https://*.usepylon.com; \
-      img-src https: data: blob:; \
-      frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
-      frame-ancestors 'self'; \
-      form-action 'self'; \
-      object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
-      font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
-      """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"
     X-Content-Type-Options = "nosniff"
@@ -28,37 +22,3 @@
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-
-# Embed routes - only override CSP to allow framing from any HTTPS origin
-[[headers]]
-  for = "/-/embed/*"
-  [headers.values]
-    Content-Security-Policy = """\
-      default-src 'self'; \
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com; \
-      style-src 'self' 'unsafe-inline'; \
-      img-src https: data: blob:; \
-      frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
-      frame-ancestors https:; \
-      form-action 'self'; \
-      object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
-      font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
-      """
-
-# Public share routes - only override CSP to allow framing from any HTTPS origin
-[[headers]]
-  for = "/*/-/share/*"
-  [headers.values]
-    Content-Security-Policy = """\
-      default-src 'self'; \
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com; \
-      style-src 'self' 'unsafe-inline'; \
-      img-src https: data: blob:; \
-      frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
-      frame-ancestors https:; \
-      form-action 'self'; \
-      object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
-      font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
-      """
