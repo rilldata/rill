@@ -27,7 +27,7 @@
   }
 
   onDestroy(() => {
-    runtimeClientStore.set(null);
+    runtimeClientStore.update((c) => (c === client ? null : c));
     client.dispose();
   });
 </script>
