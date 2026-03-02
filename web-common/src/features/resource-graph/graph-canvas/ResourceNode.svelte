@@ -10,7 +10,7 @@
   import ResourceNodeActions from "./ResourceNodeActions.svelte";
 
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import { AlertTriangle } from "lucide-svelte";
+  import { AlertTriangle, Zap, Layers, Clock } from "lucide-svelte";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -100,6 +100,9 @@
   $: testHasErrors = (metadata?.testErrors?.length ?? 0) > 0;
   $: componentCount = metadata?.componentCount ?? 0;
   $: hasSecurityRules = metadata?.hasSecurityRules === true;
+  $: isIncremental = metadata?.incremental === true;
+  $: isPartitioned = metadata?.partitioned === true;
+  $: hasSchedule = metadata?.hasSchedule === true;
   $: connector = metadata?.connector ?? null;
   $: connectorIcon = (
     connector &&
@@ -119,6 +122,12 @@
 
   // Connector node metadata
   $: connectorDriver = metadata?.connectorDriver ?? null;
+  $: driverIcon = (
+    connectorDriver &&
+    connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping]
+      ? connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping]
+      : null
+  ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
   const { fitView } = useSvelteFlow();
 
@@ -134,43 +143,43 @@
   }
 </script>
 
-<ConditionalTooltip
-  showTooltip={hasError}
-  location="top"
-  distance={8}
-  activeDelay={150}
+<div
+  class="node"
+  class:selected
+  class:route-highlighted={routeHighlighted}
+  class:error={hasError}
+  class:warned={isTestOnlyError}
+  class:pending={isPending}
+  class:root={data?.isRoot}
+  style:--node-accent={color}
+  style:width={width ? `${width}px` : undefined}
+  style:height={height ? `${height}px` : undefined}
+  data-kind={kind}
+  role="button"
+  tabindex="0"
+  on:dblclick={handleDoubleClick}
+  on:keydown={handleKeydown}
+  on:contextmenu={handleContextMenu}
 >
-  <div
-    class="node"
-    class:selected
-    class:route-highlighted={routeHighlighted}
-    class:error={hasError}
-    class:warned={isTestOnlyError}
-    class:pending={isPending}
-    class:root={data?.isRoot}
-    style:--node-accent={color}
-    style:width={width ? `${width}px` : undefined}
-    style:height={height ? `${height}px` : undefined}
-    data-kind={kind}
-    role="button"
-    tabindex="0"
-    on:dblclick={handleDoubleClick}
-    on:keydown={handleKeydown}
-    on:contextmenu={handleContextMenu}
-  >
-    <Handle
-      id="target"
-      type="target"
-      position={Position.Top}
-      isConnectable={isConnectable ?? true}
-    />
-    <Handle
-      id="source"
-      type="source"
-      position={Position.Bottom}
-      isConnectable={isConnectable ?? true}
-    />
+  <Handle
+    id="target"
+    type="target"
+    position={Position.Top}
+    isConnectable={isConnectable ?? true}
+  />
+  <Handle
+    id="source"
+    type="source"
+    position={Position.Bottom}
+    isConnectable={isConnectable ?? true}
+  />
 
+  <ConditionalTooltip
+    showTooltip={hasError}
+    location="top"
+    distance={8}
+    activeDelay={150}
+  >
     <!-- Title row: kind badge + name + actions -->
     <div class="title-row">
       {#if kind}<ResourceTypeBadge {kind} />{/if}
@@ -185,32 +194,54 @@
     <!-- Content row -->
     <div class="content">
       {#if isSourceOrModel}
+        {@const rightIndicators = [
+          metadata?.isMaterialized ? { type: "materialized" } : null,
+          isIncremental ? { type: "incremental" } : null,
+          isPartitioned ? { type: "partitioned" } : null,
+          hasSchedule ? { type: "schedule" } : null,
+          testCount > 0 ? { type: "checks" } : null,
+        ].filter(Boolean).slice(0, 3)}
         <div class="meta-row meta-row-spread">
           <span class="badge-group">
             {#if connectorIcon && kind === ResourceKind.Source}
-              <span title={connector}>
+              <span class="accent-icon" title={connector}>
                 <svelte:component this={connectorIcon} size="10px" />
               </span>
             {/if}
-            {#if metadata?.isMaterialized}
-              <span class="badge" title="Materialized">Materialized</span>
-            {/if}
           </span>
-          {#if testCount > 0}
-            <span
-              class="check-indicator"
-              class:checks-pass={!testHasErrors}
-              class:checks-fail={testHasErrors}
-              title={checkTooltip}
-            >
-              {#if testHasErrors}
-                <AlertTriangle size="10px" />
-              {:else}
-                <CheckCircle size="10px" color="currentColor" />
+          <span class="badge-group">
+            {#each rightIndicators as ind}
+              {#if ind?.type === "materialized"}
+                <span class="badge" title="Materialized">Materialized</span>
+              {:else if ind?.type === "incremental"}
+                <span class="icon-indicator" title="Incremental">
+                  <Zap size="10px" />
+                </span>
+              {:else if ind?.type === "partitioned"}
+                <span class="icon-indicator" title="Partitioned">
+                  <Layers size="10px" />
+                </span>
+              {:else if ind?.type === "schedule"}
+                <span class="icon-indicator" title="Scheduled">
+                  <Clock size="10px" />
+                </span>
+              {:else if ind?.type === "checks"}
+                <span
+                  class="check-indicator"
+                  class:checks-pass={!testHasErrors}
+                  class:checks-fail={testHasErrors}
+                  title={checkTooltip}
+                >
+                  {#if testHasErrors}
+                    <AlertTriangle size="10px" />
+                  {:else}
+                    <CheckCircle size="10px" color="currentColor" />
+                  {/if}
+                  {testCount}
+                </span>
               {/if}
-              {testCount}
-            </span>
-          {/if}
+            {/each}
+          </span>
         </div>
       {:else if isMetricsView}
         <div class="meta-row meta-row-spread">
@@ -251,32 +282,29 @@
           {/if}
         </div>
       {:else if isConnector}
-        {#if connectorDriver}
-          {@const driverIcon = connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping] ?? null}
+        {#if driverIcon}
           <div class="meta-row">
-            {#if driverIcon}
-              <span title={connectorDriver}>
-                <svelte:component this={driverIcon} size="12px" />
-              </span>
-            {/if}
-            <span class="meta-detail">{connectorDriver}</span>
+            <span title={connectorDriver}>
+              <svelte:component this={driverIcon} size="12px" />
+            </span>
           </div>
         {/if}
       {/if}
     </div>
-  </div>
-  <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
-    <div class="error-tooltip-content">
-      <span class="error-tooltip-title">Error</span>
-      <pre class="error-tooltip-message">{data?.resource?.meta
-          ?.reconcileError}</pre>
-    </div>
-  </TooltipContent>
-</ConditionalTooltip>
+
+    <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
+      <div class="error-tooltip-content">
+        <span class="error-tooltip-title">Error</span>
+        <pre class="error-tooltip-message">{data?.resource?.meta
+            ?.reconcileError}</pre>
+      </div>
+    </TooltipContent>
+  </ConditionalTooltip>
+</div>
 
 <style lang="postcss">
   .node {
-    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle pl-3.5 pr-2.5 py-2 cursor-pointer shadow-sm;
+    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle pl-3.5 pr-2.5 py-2 cursor-pointer shadow-sm overflow-hidden;
     border-color: var(--border);
     transition:
       box-shadow 120ms ease,
@@ -290,10 +318,9 @@
     content: "";
     position: absolute;
     left: 0;
-    top: 4px;
-    bottom: 4px;
+    top: 0;
+    bottom: 0;
     width: 3px;
-    border-radius: 0 2px 2px 0;
     background: var(--node-accent);
   }
 
@@ -304,20 +331,13 @@
   }
 
   .node.selected {
-    @apply shadow border-2;
-    border-color: var(--node-accent);
+    @apply shadow-md;
+    background-color: color-mix(in srgb, var(--node-accent) 6%, var(--surface-background, #ffffff));
+    border-color: color-mix(in srgb, var(--node-accent) 30%, var(--border));
   }
 
   .node.error {
-    @apply border-red-400;
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--color-red-500) 25%, transparent),
-      0 4px 12px color-mix(in srgb, var(--color-red-500) 15%, transparent);
-    background-color: color-mix(
-      in srgb,
-      var(--color-red-500) 5%,
-      var(--surface-background, #ffffff)
-    );
+    border-color: var(--color-red-400);
   }
 
   .node.error::before,
@@ -326,19 +346,11 @@
   }
 
   .node.warned {
-    @apply border-amber-400;
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--color-amber-500) 20%, transparent),
-      0 4px 12px color-mix(in srgb, var(--color-amber-500) 10%, transparent);
-    background-color: color-mix(
-      in srgb,
-      var(--color-amber-500) 5%,
-      var(--surface-background, #ffffff)
-    );
+    border-color: var(--color-amber-400);
   }
 
   .node.pending {
-    border-color: color-mix(in srgb, var(--color-yellow-500) 60%, transparent);
+    border-color: color-mix(in srgb, var(--color-yellow-500) 60%, var(--surface-background, #ffffff));
     border-style: dashed;
   }
 
@@ -379,6 +391,10 @@
   .badge {
     @apply inline-flex items-center px-1 py-px rounded text-[10px] font-medium bg-surface-subtle text-fg-secondary;
     border: 1px solid var(--border);
+  }
+
+  .icon-indicator {
+    @apply inline-flex items-center text-fg-muted;
   }
 
   /* Check indicator with icon */

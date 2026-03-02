@@ -76,6 +76,7 @@
     | ((value: ResourceStatusFilterValue) => void)
     | null = null;
   export let onClearFilters: (() => void) | null = null;
+  export let hasUrlFilters = false;
 
   type SummaryMemo = {
     connector: number;
@@ -232,9 +233,9 @@
       : filteredResourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
 
-  // Whether any filters are active (kind, status, or tree search)
+  // Whether any filters are active (URL params, status, or tree search)
   $: hasActiveFilters =
-    !!filterKind ||
+    hasUrlFilters ||
     statusFilter.length > 0 ||
     treeSearchQuery.trim().length > 0;
 
@@ -334,16 +335,11 @@
 
   function handleResourceSelect(entry: ResourceDropdownEntry) {
     const groupId = `${entry.kind}:${entry.name}`;
-    if (isSidebarControlled) {
-      onSelectedGroupChange?.(groupId);
-    } else {
-      internalSelectedGroupId = groupId;
-    }
+    internalSelectedGroupId = groupId;
+    onSelectedGroupChange?.(groupId);
   }
 
   let internalSelectedGroupId: string | null = null;
-  $: isSidebarControlled =
-    selectedGroupId !== null || onSelectedGroupChange !== null;
 
   // Resolve selectedGroupId (which may be a short name like "orders") to a
   // fully qualified group ID (like "rill.runtime.v1.MetricsView:orders")
@@ -381,50 +377,32 @@
     filteredResourceGroups,
   );
 
-  // Auto-select first group when none selected (controlled path)
+  // Auto-select first group when none selected.
+  // Uses internal state only — never calls onSelectedGroupChange, so the URL
+  // stays clean until the user explicitly clicks a resource.
   $: if (
     layout === "sidebar" &&
-    isSidebarControlled &&
     !resolvedControlledId &&
-    filteredResourceGroups.length > 0
-  ) {
-    onSelectedGroupChange?.(filteredResourceGroups[0].id);
-  }
-
-  // Auto-select first group when none selected (uncontrolled path)
-  $: if (
-    layout === "sidebar" &&
-    !isSidebarControlled &&
     !internalSelectedGroupId &&
     filteredResourceGroups.length > 0
   ) {
     internalSelectedGroupId = filteredResourceGroups[0].id;
   }
 
-  // Fallback when selected group is removed by filters (controlled path)
+  // Fallback when selected group is removed by filters
   $: if (
     layout === "sidebar" &&
-    isSidebarControlled &&
-    resolvedControlledId &&
-    !filteredResourceGroups.some((g) => g.id === resolvedControlledId)
-  ) {
-    onSelectedGroupChange?.(filteredResourceGroups[0]?.id ?? null);
-  }
-
-  // Fallback when selected group is removed by filters (uncontrolled path)
-  $: if (
-    layout === "sidebar" &&
-    !isSidebarControlled &&
-    internalSelectedGroupId &&
-    !filteredResourceGroups.some((g) => g.id === internalSelectedGroupId)
+    (resolvedControlledId || internalSelectedGroupId) &&
+    !filteredResourceGroups.some(
+      (g) =>
+        g.id === resolvedControlledId || g.id === internalSelectedGroupId,
+    )
   ) {
     internalSelectedGroupId = filteredResourceGroups[0]?.id ?? null;
   }
 
-  // Effective selected ID for rendering — purely derived, no writes
-  $: effectiveSelectedGroupId = isSidebarControlled
-    ? resolvedControlledId
-    : internalSelectedGroupId;
+  // Effective selected ID: controlled (URL) takes precedence, falls back to internal
+  $: effectiveSelectedGroupId = resolvedControlledId ?? internalSelectedGroupId;
 
   $: selectedGroup =
     layout === "sidebar"
@@ -736,11 +714,32 @@
             </button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content align="start" class="w-64">
-            <div class="tree-search-wrapper">
+            <div class="tree-filter-row">
+              {#if statusFilterOptions.length > 0}
+                <select
+                  class="status-select"
+                  value={statusFilter.length === 1 ? statusFilter[0] : ""}
+                  on:change|stopPropagation={(e) => {
+                    const val = e.currentTarget.value;
+                    // Clear existing filters first, then set the new one
+                    for (const opt of statusFilterOptions) {
+                      if (statusFilter.includes(opt.value)) {
+                        onStatusToggle?.(opt.value);
+                      }
+                    }
+                    if (val) onStatusToggle?.(val);
+                  }}
+                >
+                  <option value="">All statuses</option>
+                  {#each statusFilterOptions as opt}
+                    <option value={opt.value}>{opt.label}</option>
+                  {/each}
+                </select>
+              {/if}
               <input
                 class="tree-search-input"
                 type="text"
-                placeholder="Filter resources..."
+                placeholder="Search..."
                 bind:value={treeSearchQuery}
                 on:keydown|stopPropagation
               />
@@ -795,31 +794,6 @@
           <button class="clear-link" on:click={handleClearFilters}
             >Clear Filter</button
           >
-        {/if}
-        {#if statusFilterOptions.length > 0}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild let:builder>
-              <Button builders={[builder]} type="tertiary">
-                {#if statusFilter.length === 0}
-                  All statuses
-                {:else}
-                  {statusFilter.length} status{statusFilter.length > 1
-                    ? "es"
-                    : ""}
-                {/if}
-              </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end" class="w-40">
-              {#each statusFilterOptions as opt}
-                <DropdownMenu.CheckboxItem
-                  checked={statusFilter.includes(opt.value)}
-                  onCheckedChange={() => onStatusToggle?.(opt.value)}
-                >
-                  {opt.label}
-                </DropdownMenu.CheckboxItem>
-              {/each}
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
         {/if}
         {#if onRefreshAll}
           <Button type="secondary" onClick={onRefreshAll}>
@@ -1032,12 +1006,25 @@
     @apply text-primary-600;
   }
 
-  .tree-search-wrapper {
-    @apply px-2 pb-1.5 pt-0.5 border-b;
+  .tree-filter-row {
+    @apply flex items-center gap-1.5 px-2 pb-1.5 pt-1 border-b;
+  }
+
+  .status-select {
+    @apply flex-none text-xs py-1 pl-1.5 pr-5 rounded border bg-transparent text-fg-primary;
+    @apply outline-none cursor-pointer appearance-none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 2px center;
+    background-repeat: no-repeat;
+    background-size: 14px;
+  }
+
+  .status-select:focus {
+    @apply border-primary-300 ring-1 ring-primary-300;
   }
 
   .tree-search-input {
-    @apply w-full text-xs px-2 py-1.5 rounded border bg-transparent text-fg-primary;
+    @apply flex-1 min-w-0 text-xs px-2 py-1 rounded border bg-transparent text-fg-primary;
     @apply outline-none;
   }
 

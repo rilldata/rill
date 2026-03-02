@@ -1,3 +1,9 @@
+<script context="module" lang="ts">
+  // Track the currently open dropdown so right-clicking another node
+  // closes the previous one instead of stacking.
+  let closeActive: (() => void) | null = null;
+</script>
+
 <script lang="ts">
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -9,13 +15,7 @@
     ResourceKind,
     displayResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    RefreshCw,
-    RotateCcw,
-    ExternalLink,
-    Info,
-    GitBranch,
-  } from "lucide-svelte";
+  import { RefreshCw, ExternalLink, Info, GitBranch, Copy } from "lucide-svelte";
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -30,9 +30,18 @@
   let fullRefreshConfirmOpen = false;
   let specDialogOpen = false;
 
+  function close() {
+    isOpen = false;
+  }
+
   export function open() {
+    if (closeActive && closeActive !== close) closeActive();
+    closeActive = close;
     isOpen = true;
   }
+
+  // Keep module-level tracker in sync when dropdown closes via outside click
+  $: if (!isOpen && closeActive === close) closeActive = null;
 
   $: ({ instanceId } = $runtime);
   $: resource = data?.resource;
@@ -42,6 +51,8 @@
   $: canRefresh =
     (kind === ResourceKind.Model || kind === ResourceKind.Source) &&
     !!resourceName;
+  $: isIncremental = !!resource?.model?.spec?.incremental;
+  $: reconcileError = resource?.meta?.reconcileError ?? "";
 
   // Raw spec content (same pattern as project tables ResourceSpecDialog)
   function getResourceSpec(res: V1Resource | undefined): string {
@@ -130,6 +141,13 @@
     specDialogOpen = true;
   }
 
+  function handleCopyError() {
+    isOpen = false;
+    navigator.clipboard.writeText(reconcileError).catch((err) => {
+      console.error("Failed to copy error:", err);
+    });
+  }
+
   function viewNodeTree() {
     isOpen = false;
     const kindToken = tokenForKind(kind);
@@ -179,26 +197,39 @@
           </div>
         </DropdownMenu.Item>
       {/if}
-      {#if canRefresh}
-        <DropdownMenu.Separator />
+      {#if reconcileError}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={handleIncrementalRefresh}
+          on:click={handleCopyError}
         >
           <div class="flex items-center gap-x-2">
-            <RefreshCw size="12px" />
-            <span>Incremental Refresh</span>
+            <Copy size="12px" />
+            <span>Copy Error Message</span>
           </div>
         </DropdownMenu.Item>
+      {/if}
+      {#if canRefresh}
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={handleFullRefreshClick}
         >
           <div class="flex items-center gap-x-2">
-            <RotateCcw size="12px" />
+            <RefreshCw size="12px" />
             <span>Full Refresh</span>
           </div>
         </DropdownMenu.Item>
+        {#if isIncremental}
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={handleIncrementalRefresh}
+          >
+            <div class="flex items-center gap-x-2">
+              <RefreshCw size="12px" />
+              <span>Incremental Refresh</span>
+            </div>
+          </DropdownMenu.Item>
+        {/if}
       {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>

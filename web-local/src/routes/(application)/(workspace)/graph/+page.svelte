@@ -35,15 +35,15 @@
       ? urlParams.resources
       : [activeKind];
 
-  // Sidebar selection from URL ?resource= param
-  $: selectedResource =
-    urlParams.resources.length > 0 ? urlParams.resources[0] : null;
-  $: selectedGroupId = selectedResource;
+  // Sidebar selection from URL ?resource= param.
+  // Only use controlled mode when the URL explicitly names a resource;
+  // otherwise let the sidebar auto-select internally without touching the URL.
+  $: hasResourceParam = urlParams.resources.length > 0;
+  $: selectedGroupId = hasResourceParam ? urlParams.resources[0] : null;
 
   function handleSelectedGroupChange(groupId: string | null) {
     if (!groupId) return;
     const name = groupId.includes(":") ? groupId.split(":").pop() : groupId;
-    // Derive kind from the fully qualified group ID (e.g. "rill.runtime.v1.Model:orders")
     const kindPart = groupId.includes(":")
       ? groupId.split(":").slice(0, -1).join(":")
       : null;
@@ -81,6 +81,10 @@
       selectedStatuses = [...selectedStatuses, value];
     }
   }
+
+  // True when the URL has any explicit filter params (kind or resource)
+  $: hasUrlFilters =
+    !!urlParams.kind || urlParams.resources.length > 0;
 
   // Clear all filters
   function handleClearFilters() {
@@ -132,6 +136,7 @@
     statusFilterOptions={statusOptions}
     onStatusToggle={toggleStatus}
     onClearFilters={handleClearFilters}
+    {hasUrlFilters}
   />
 </div>
 
