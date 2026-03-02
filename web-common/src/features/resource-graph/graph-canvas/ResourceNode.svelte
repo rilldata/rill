@@ -259,9 +259,7 @@
               {/if}
             {/each}
             {#if hiddenCount > 0}
-              <span class="icon-indicator" title="{hiddenCount} more">
-                +
-              </span>
+              <span class="icon-indicator" title="{hiddenCount} more"> + </span>
             {/if}
           </span>
         </div>
