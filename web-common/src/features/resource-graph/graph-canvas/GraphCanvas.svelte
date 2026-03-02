@@ -355,7 +355,8 @@
   {:else if graphError}
     <div class="state error">
       <p>Failed to render graph</p>
-      <pre class="text-xs text-fg-muted mt-1 max-w-md overflow-auto">{graphError}</pre>
+      <pre
+        class="text-xs text-fg-muted mt-1 max-w-md overflow-auto">{graphError}</pre>
     </div>
   {:else}
     <div class="state">

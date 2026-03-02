@@ -102,10 +102,7 @@ function buildReverseRefCounts(
   const counts = new Map<string, { alerts: number; apis: number }>();
   for (const res of resources) {
     const resKind = res.meta?.name?.kind;
-    if (
-      resKind !== ResourceKind.Alert &&
-      resKind !== ResourceKind.API
-    )
+    if (resKind !== ResourceKind.Alert && resKind !== ResourceKind.API)
       continue;
     for (const ref of res.meta?.refs ?? []) {
       const refId = resourceNameToId(ref);
@@ -660,7 +657,8 @@ function normalizeSeeds(seeds: (string | V1ResourceName)[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const seed of seeds) {
-    const id = typeof seed === "string" ? seed : createResourceId({ name: seed });
+    const id =
+      typeof seed === "string" ? seed : createResourceId({ name: seed });
     if (id && !seen.has(id)) {
       seen.add(id);
       result.push(id);

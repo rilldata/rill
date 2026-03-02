@@ -15,8 +15,8 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { ALLOWED_FOR_GRAPH } from "../navigation/seed-parser";
   import {
-    RESOURCE_RESOURCE_SECTION_ORDER,
-    RESOURCE_RESOURCE_SECTION_LABELS,
+    RESOURCE_SECTION_ORDER,
+    RESOURCE_SECTION_LABELS,
   } from "../shared/config";
 
   export let resources: V1Resource[] = [];
@@ -35,7 +35,6 @@
     label: string;
     entries: ResourceEntry[];
   };
-
 
   function getStatus(r: V1Resource): "ok" | "pending" | "errored" {
     if (r.meta?.reconcileError) return "errored";
@@ -79,7 +78,10 @@
       entries.sort((a, b) => a.name.localeCompare(b.name));
       result.push({
         kind,
-        label: RESOURCE_SECTION_LABELS[kind] ?? resourceLabelMapping[kind] ?? "Unknown",
+        label:
+          RESOURCE_SECTION_LABELS[kind] ??
+          resourceLabelMapping[kind] ??
+          "Unknown",
         entries,
       });
     }
@@ -117,7 +119,7 @@
         <CaretDownIcon size="10px" />
       </button>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start" class="w-72">
+    <DropdownMenu.Content align="start" class="w-96">
       <DropdownMenu.Item on:click={handleSelectAll}>
         <span class="text-xs">All resources ({totalCount})</span>
       </DropdownMenu.Item>

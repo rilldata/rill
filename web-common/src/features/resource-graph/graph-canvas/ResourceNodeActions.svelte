@@ -15,7 +15,13 @@
     ResourceKind,
     displayResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { RefreshCw, ExternalLink, Info, GitBranch, Copy } from "lucide-svelte";
+  import {
+    RefreshCw,
+    ExternalLink,
+    Info,
+    GitBranch,
+    Copy,
+  } from "lucide-svelte";
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

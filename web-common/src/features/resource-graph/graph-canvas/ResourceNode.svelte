@@ -36,7 +36,21 @@
 
   // XYFlow injects these props for layout; declaring them above prevents
   // "unknown prop" warnings. No reactive usage needed.
-  void [type, height, sourcePosition, targetPosition, dragHandle, parentId, dragging, zIndex, selectable, deletable, draggable, positionAbsoluteX, positionAbsoluteY];
+  void [
+    type,
+    height,
+    sourcePosition,
+    targetPosition,
+    dragHandle,
+    parentId,
+    dragging,
+    zIndex,
+    selectable,
+    deletable,
+    draggable,
+    positionAbsoluteX,
+    positionAbsoluteY,
+  ];
 
   $: showActions = data?.showNodeActions !== false;
 
@@ -110,7 +124,9 @@
   $: driverIcon = (
     connectorDriver &&
     connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping]
-      ? connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping]
+      ? connectorIconMapping[
+          connectorDriver as keyof typeof connectorIconMapping
+        ]
       : null
   ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
@@ -139,6 +155,7 @@
   style:--node-accent={color}
   style:width={width ? `${width}px` : undefined}
   style:height={height ? `${height}px` : undefined}
+  title={filePath}
   data-kind={kind}
   role="button"
   tabindex="0"
@@ -185,7 +202,9 @@
           isPartitioned ? { type: "partitioned" } : null,
           hasSchedule ? { type: "schedule" } : null,
           testCount > 0 ? { type: "checks" } : null,
-        ].filter(Boolean).slice(0, 3)}
+        ]
+          .filter(Boolean)
+          .slice(0, 3)}
         <div class="meta-row meta-row-spread">
           <span class="badge-group">
             {#if connectorIcon && kind === ResourceKind.Source}
@@ -234,7 +253,10 @@
             {measuresCount} meas, {dimensionsCount} dims
           </span>
           {#if hasSecurityRules}
-            <span class="lock-indicator secured" title="Security policy defined">
+            <span
+              class="lock-indicator secured"
+              title="Security policy defined"
+            >
               <Lock size="10px" color="currentColor" />
             </span>
           {/if}
@@ -250,7 +272,10 @@
               : (metadata?.exploreDimensionsCount ?? 0)} dims
           </span>
           {#if hasSecurityRules}
-            <span class="lock-indicator secured" title="Security policy defined">
+            <span
+              class="lock-indicator secured"
+              title="Security policy defined"
+            >
               <Lock size="10px" color="currentColor" />
             </span>
           {/if}
@@ -261,7 +286,10 @@
             {componentCount} component{componentCount !== 1 ? "s" : ""}
           </span>
           {#if hasSecurityRules}
-            <span class="lock-indicator secured" title="Security policy defined">
+            <span
+              class="lock-indicator secured"
+              title="Security policy defined"
+            >
               <Lock size="10px" color="currentColor" />
             </span>
           {/if}
@@ -289,7 +317,7 @@
 
 <style lang="postcss">
   .node {
-    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle pl-3.5 pr-2.5 py-2 cursor-pointer shadow-sm overflow-hidden;
+    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle px-2.5 py-2 cursor-pointer shadow overflow-hidden;
     border-color: var(--border);
     transition:
       box-shadow 120ms ease,
@@ -298,41 +326,32 @@
       background 120ms ease;
   }
 
-  /* Left-edge accent stripe */
-  .node::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--node-accent);
-  }
-
   .node.root {
     border-color: var(--border);
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
     background-color: var(--surface-subtle);
   }
 
   .node.selected {
     @apply shadow-md;
-    background-color: color-mix(in srgb, var(--node-accent) 6%, var(--surface-background, #ffffff));
+    background-color: color-mix(
+      in srgb,
+      var(--node-accent) 6%,
+      var(--surface-background, #ffffff)
+    );
     border-color: color-mix(in srgb, var(--node-accent) 30%, var(--border));
   }
 
   .node.route-highlighted {
     border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
-    background-color: color-mix(in srgb, var(--node-accent) 4%, var(--surface-background, #ffffff));
+    background-color: color-mix(
+      in srgb,
+      var(--node-accent) 4%,
+      var(--surface-background, #ffffff)
+    );
   }
 
   .node.error {
     border-color: var(--color-red-400);
-  }
-
-  .node.error::before,
-  .node.warned::before {
-    display: none;
   }
 
   .node.warned {
@@ -340,7 +359,11 @@
   }
 
   .node.pending {
-    border-color: color-mix(in srgb, var(--color-yellow-500) 60%, var(--surface-background, #ffffff));
+    border-color: color-mix(
+      in srgb,
+      var(--color-yellow-500) 60%,
+      var(--surface-background, #ffffff)
+    );
     border-style: dashed;
   }
 

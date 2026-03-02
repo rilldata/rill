@@ -83,8 +83,7 @@
   }
 
   // True when the URL has any explicit filter params (kind or resource)
-  $: hasUrlFilters =
-    !!urlParams.kind || urlParams.resources.length > 0;
+  $: hasUrlFilters = !!urlParams.kind || urlParams.resources.length > 0;
 
   // Clear all filters
   function handleClearFilters() {

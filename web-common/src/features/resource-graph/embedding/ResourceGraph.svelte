@@ -264,7 +264,6 @@
     entries: ResourceDropdownEntry[];
   };
 
-
   function getResourceStatus(r: V1Resource): "ok" | "pending" | "errored" {
     if (r.meta?.reconcileError) return "errored";
     if (
@@ -382,8 +381,7 @@
     layout === "sidebar" &&
     (resolvedControlledId || internalSelectedGroupId) &&
     !filteredResourceGroups.some(
-      (g) =>
-        g.id === resolvedControlledId || g.id === internalSelectedGroupId,
+      (g) => g.id === resolvedControlledId || g.id === internalSelectedGroupId,
     )
   ) {
     internalSelectedGroupId = filteredResourceGroups[0]?.id ?? null;
@@ -701,7 +699,7 @@
               </span>
             </button>
           </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start" class="w-64">
+          <DropdownMenu.Content align="start" class="w-96">
             <div class="tree-filter-row">
               {#if statusFilterOptions.length > 0}
                 <select
@@ -759,9 +757,7 @@
                       size="12px"
                     />
                     <span class="flex-1 truncate text-xs">
-                      {isConnectorEntry
-                        ? `All Resources`
-                        : entry.name}
+                      {isConnectorEntry ? `All Resources` : entry.name}
                     </span>
                     <span class="status-dot {entry.status}"></span>
                   </DropdownMenu.Item>
@@ -1025,7 +1021,7 @@
   }
 
   .tree-dropdown-list {
-    @apply max-h-72 overflow-y-auto;
+    @apply max-h-72 overflow-y-auto overflow-x-hidden;
   }
 
   .section-header {
