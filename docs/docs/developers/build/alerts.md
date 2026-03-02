@@ -2,7 +2,7 @@
 title: Alerts
 description: Define alerts as code for automated monitoring and notifications
 sidebar_label: Alerts
-sidebar_position: 42
+sidebar_position: 45
 ---
 
 ## Overview
@@ -90,7 +90,7 @@ The alert triggers when the query returns **any rows**.
 
 ### Metrics SQL
 
-Use `metrics_sql` when you want to query a [metrics view](/developers/build/metrics-view) using its defined dimensions and measures, rather than writing raw SQL against the underlying model. This approach leverages the metrics view's security policies and allows you to reference measures and dimensions by name. For details on the `metrics_sql` syntax, see [Custom APIs](/developers/build/custom-apis#metrics-sql-api).
+Use `metrics_sql` when you want to query a [metrics view](/developers/build/metrics-view) using its defined dimensions and measures, rather than writing raw SQL against the underlying model. This approach leverages the metrics view's security policies and allows you to reference measures and dimensions by name. For details on the `metrics_sql` syntax, see [Metrics SQL APIs](/developers/build/custom-apis/metrics-sql).
 
 ```yaml
 data:

@@ -123,6 +123,10 @@
   }
 
   td.dimension-cell {
-    @apply sticky left-0 z-30;
+    @apply sticky left-0 z-30 bg-surface-background;
+  }
+
+  :global(tr:hover) td.dimension-cell {
+    @apply bg-popover-accent;
   }
 </style>

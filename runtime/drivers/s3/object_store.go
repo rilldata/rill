@@ -71,14 +71,14 @@ func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter st
 }
 
 // ListObjectsForGlob implements drivers.ObjectStore.
-func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]drivers.ObjectStoreEntry, error) {
+func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	blobBucket, err := c.openBucket(ctx, bucket, false)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer blobBucket.Close()
 
-	return blobBucket.ListObjectsForGlob(ctx, glob)
+	return blobBucket.ListObjectsForGlob(ctx, glob, pageSize, pageToken)
 }
 
 // DownloadFiles implements drivers.ObjectStore.

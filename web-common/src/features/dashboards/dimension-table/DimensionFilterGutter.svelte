@@ -30,13 +30,13 @@
 </script>
 
 <div
-  class="sticky left-0 top-0 z-20 bg-transparent"
+  class="sticky left-0 top-0 z-20 bg-surface-background"
   style:height="{totalHeight}px"
   style:width="{config.indexWidth}px"
 >
   <div
     style:height="{config.columnHeaderHeight}px"
-    class="sticky left-0 top-0 bg-transparent z-40 flex items-center"
+    class="sticky left-0 top-0 bg-surface-background z-40 flex items-center"
   >
     <DimensionCompareMenu
       {dimensionName}
