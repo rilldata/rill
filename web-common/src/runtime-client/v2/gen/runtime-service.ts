@@ -18,12 +18,8 @@ import type {
   V1AnalyzeVariablesResponse,
   V1CompleteResponse,
   V1CreateDirectoryResponse,
-  V1CreateInstanceRequest,
-  V1CreateInstanceResponse,
   V1CreateTriggerResponse,
   V1DeleteFileResponse,
-  V1DeleteInstanceResponse,
-  V1EditInstanceResponse,
   V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
@@ -71,11 +67,8 @@ import {
   AnalyzeVariablesRequest,
   CompleteRequest,
   CreateDirectoryRequest,
-  CreateInstanceRequest,
   CreateTriggerRequest,
   DeleteFileRequest,
-  DeleteInstanceRequest,
-  EditInstanceRequest,
   ForkConversationRequest,
   GenerateCanvasFileRequest,
   GenerateMetricsViewFileRequest,
@@ -1937,192 +1930,6 @@ export function createRuntimeServiceListGitBranches<
     options,
   );
   return createQuery(queryOptions, queryClient);
-}
-
-/**
- * Raw RPC call (mutation): RuntimeService.CreateInstance
- */
-export async function runtimeServiceCreateInstance(
-  client: RuntimeClient,
-  request: Omit<V1CreateInstanceRequest, "instanceId">,
-): Promise<V1CreateInstanceResponse> {
-  const r = await client.runtimeService.createInstance(
-    CreateInstanceRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1CreateInstanceResponse;
-}
-
-export function getRuntimeServiceCreateInstanceMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1CreateInstanceResponse,
-      unknown,
-      Omit<V1CreateInstanceRequest, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1CreateInstanceResponse,
-  unknown,
-  Omit<V1CreateInstanceRequest, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceCreateInstance(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceCreateInstanceMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1CreateInstanceResponse,
-      unknown,
-      Omit<V1CreateInstanceRequest, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1CreateInstanceResponse,
-  unknown,
-  Omit<V1CreateInstanceRequest, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceCreateInstanceMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call (mutation): RuntimeService.EditInstance
- */
-export async function runtimeServiceEditInstance(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<EditInstanceRequest>, "instanceId">,
-): Promise<V1EditInstanceResponse> {
-  const r = await client.runtimeService.editInstance(
-    EditInstanceRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1EditInstanceResponse;
-}
-
-export function getRuntimeServiceEditInstanceMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1EditInstanceResponse,
-      unknown,
-      Omit<PartialMessage<EditInstanceRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1EditInstanceResponse,
-  unknown,
-  Omit<PartialMessage<EditInstanceRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceEditInstance(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceEditInstanceMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1EditInstanceResponse,
-      unknown,
-      Omit<PartialMessage<EditInstanceRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1EditInstanceResponse,
-  unknown,
-  Omit<PartialMessage<EditInstanceRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceEditInstanceMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call (mutation): RuntimeService.DeleteInstance
- */
-export async function runtimeServiceDeleteInstance(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">,
-): Promise<V1DeleteInstanceResponse> {
-  const r = await client.runtimeService.deleteInstance(
-    DeleteInstanceRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1DeleteInstanceResponse;
-}
-
-export function getRuntimeServiceDeleteInstanceMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1DeleteInstanceResponse,
-      unknown,
-      Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1DeleteInstanceResponse,
-  unknown,
-  Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceDeleteInstance(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceDeleteInstanceMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1DeleteInstanceResponse,
-      unknown,
-      Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1DeleteInstanceResponse,
-  unknown,
-  Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceDeleteInstanceMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
 }
 
 /**

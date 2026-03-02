@@ -23,6 +23,10 @@ export const methodOverrides: Record<
     queryBatch: "skip",
   },
   RuntimeService: {
+    // Instance-management: admin-plane only, not used by frontend
+    createInstance: "skip",
+    editInstance: "skip",
+    deleteInstance: "skip",
     // Streaming
     watchFiles: "skip",
     watchLogs: "skip",
