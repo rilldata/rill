@@ -35,22 +35,11 @@
   export let positionAbsoluteY = 0;
 
   // XYFlow injects these props for layout; declaring them above prevents
-  // "unknown prop" warnings. No reactive usage needed.
-  void [
-    type,
-    height,
-    sourcePosition,
-    targetPosition,
-    dragHandle,
-    parentId,
-    dragging,
-    zIndex,
-    selectable,
-    deletable,
-    draggable,
-    positionAbsoluteX,
-    positionAbsoluteY,
-  ];
+  // "unknown prop" warnings. The reactive reference silences the Svelte
+  // "unused export property" warning without generating meaningful work.
+  // prettier-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  $: [type, height, sourcePosition, targetPosition, dragHandle, parentId, dragging, zIndex, selectable, deletable, draggable, positionAbsoluteX, positionAbsoluteY];
 
   $: showActions = data?.showNodeActions !== false;
 
