@@ -46,12 +46,19 @@
     name: $page.params.name,
   };
 
-  $: showTopBar =
-    navigationEnabled ||
-    ($dashboardChat &&
-      (activeResource?.kind === ResourceKind.Explore.toString() ||
-        activeResource?.kind === ResourceKind.MetricsView.toString()));
   $: onProjectPage = !activeResource;
+
+  $: showDashboardChat = $dashboardChat && !onProjectPage;
+  // Resource kind can be metrics view in some cases. But internally to render it will have to have an equivalent explore.
+  $: correctedKindForChat =
+    activeResource?.kind === ResourceKind.MetricsView
+      ? ResourceKind.Explore
+      : (activeResource?.kind as
+          | ResourceKind.Explore
+          | ResourceKind.Canvas
+          | undefined);
+
+  $: showTopBar = navigationEnabled || showDashboardChat;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -143,8 +150,8 @@
       <div class="flex-1 overflow-hidden">
         <slot />
       </div>
-      {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-        <DashboardChat />
+      {#if showDashboardChat && correctedKindForChat}
+        <DashboardChat kind={correctedKindForChat} />
       {/if}
     </div>
   </RuntimeProvider>
