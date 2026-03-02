@@ -102,6 +102,8 @@ export function makeTablePreviewHref(
       return `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
+    case "databricks":
+      return `/connector/databricks/${connectorName}/${database}/${databaseSchema}/${table}`;
     default:
       return null;
   }

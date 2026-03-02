@@ -263,6 +263,25 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"azure_storage_account":              azurite.AccountName,
 		}
 	},
+	// Databricks connector connects to a real Databricks SQL Warehouse.
+	// Requires RILL_RUNTIME_DATABRICKS_TEST_HOST, RILL_RUNTIME_DATABRICKS_TEST_HTTP_PATH, and RILL_RUNTIME_DATABRICKS_TEST_TOKEN.
+	// The test dataset is pre-populated with tables in the workspace.rill_ingestion_test schema.
+	"databricks": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		host := os.Getenv("RILL_RUNTIME_DATABRICKS_TEST_HOST")
+		require.NotEmpty(t, host, "RILL_RUNTIME_DATABRICKS_TEST_HOST not configured")
+		httpPath := os.Getenv("RILL_RUNTIME_DATABRICKS_TEST_HTTP_PATH")
+		require.NotEmpty(t, httpPath, "RILL_RUNTIME_DATABRICKS_TEST_HTTP_PATH not configured")
+		token := os.Getenv("RILL_RUNTIME_DATABRICKS_TEST_TOKEN")
+		require.NotEmpty(t, token, "RILL_RUNTIME_DATABRICKS_TEST_TOKEN not configured")
+		return map[string]string{
+			"host":      host,
+			"http_path": httpPath,
+			"token":     token,
+			"catalog":   "workspace",
+			"schema":    "rill_ingestion_test",
+		}
+	},
 	"pinot": func(t TestingT) map[string]string {
 		ctx := context.Background()
 		pinot, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
