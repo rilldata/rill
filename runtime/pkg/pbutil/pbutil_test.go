@@ -78,6 +78,39 @@ func Test_ToListValueUnknown(t *testing.T) {
 	}
 }
 
+func TestToValue_NilPointers(t *testing.T) {
+	expected := structpb.NewNullValue()
+
+	cases := []struct {
+		name  string
+		input any
+	}{
+		{name: "*bool", input: (*bool)(nil)},
+		{name: "*int", input: (*int)(nil)},
+		{name: "*int32", input: (*int32)(nil)},
+		{name: "*int64", input: (*int64)(nil)},
+		{name: "*uint", input: (*uint)(nil)},
+		{name: "*uint32", input: (*uint32)(nil)},
+		{name: "*uint64", input: (*uint64)(nil)},
+		{name: "*string", input: (*string)(nil)},
+		{name: "*int8", input: (*int8)(nil)},
+		{name: "*int16", input: (*int16)(nil)},
+		{name: "*uint8", input: (*uint8)(nil)},
+		{name: "*uint16", input: (*uint16)(nil)},
+		{name: "*time.Time", input: (*time.Time)(nil)},
+		{name: "*float32", input: (*float32)(nil)},
+		{name: "*float64", input: (*float64)(nil)},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := ToValue(tt.input, nil)
+			require.NoError(t, err)
+			require.Equal(t, expected, actual)
+		})
+	}
+}
+
 func structpbList(v []interface{}) *structpb.ListValue {
 	list, err := structpb.NewList(v)
 	if err != nil {

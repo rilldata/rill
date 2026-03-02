@@ -259,11 +259,12 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 
 	paginatedTables := filteredTables[startIndex:endIndex]
 
-	tables := make([]*drivers.OlapTable, 0, len(paginatedTables))
+	tables := make([]*drivers.OlapTable, len(paginatedTables))
 	// fetch table schemas in parallel with concurrency of 5
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(5)
-	for _, tableName := range paginatedTables {
+	for i, tableName := range paginatedTables {
+		i := i
 		tableName := tableName
 		g.Go(func() error {
 			table, err := c.Lookup(ctx, "", "", tableName)
@@ -271,7 +272,7 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 				fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
 				return nil
 			}
-			tables = append(tables, table)
+			tables[i] = table
 			return nil
 		})
 	}
