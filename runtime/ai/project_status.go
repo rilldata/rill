@@ -25,7 +25,7 @@ type ProjectStatusArgs struct {
 	Path                        string `json:"path,omitempty" jsonschema:"Optional filter to only return resources declared in the specified file path."`
 	WaitUntilIdle               bool   `json:"wait_until_idle,omitempty" jsonschema:"If true, waits until all resources have finished reconciling before returning the status. Set this if you have recently updated a resource and want to know if it parsed and reconciled successfully."`
 	WaitUntilIdleTimeoutSeconds int    `json:"wait_until_idle_timeout_seconds,omitempty" jsonschema:"Timeout in seconds for wait_until_idle. Defaults to 60. Only override if you anticipate large workloads."`
-	TailLogs                    int    `json:"tail_logs,omitempty" jsonschema:"Number of recent log entries to include in the response. Defaults to 0."`
+	TailLogsCount               int    `json:"tail_logs_count,omitempty" jsonschema:"Number of recent log entries to include in the response. Defaults to 0."`
 }
 
 type ProjectStatusResult struct {
@@ -153,12 +153,12 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 
 	// Get recent logs
 	var logs []map[string]any
-	if args.TailLogs > 0 {
+	if args.TailLogsCount > 0 {
 		logBuffer, err := t.Runtime.InstanceLogs(ctx, s.InstanceID())
 		if err != nil {
 			return nil, err
 		}
-		entries := logBuffer.GetLogs(true, args.TailLogs, runtimev1.LogLevel_LOG_LEVEL_DEBUG)
+		entries := logBuffer.GetLogs(true, args.TailLogsCount, runtimev1.LogLevel_LOG_LEVEL_DEBUG)
 		logs = make([]map[string]any, 0, len(entries))
 		for _, entry := range entries {
 			l := map[string]any{

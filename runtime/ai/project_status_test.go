@@ -85,7 +85,7 @@ measures:
 	t.Run("tail logs", func(t *testing.T) {
 		var res *ai.ProjectStatusResult
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
-			TailLogs: 100,
+			TailLogsCount: 100,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
