@@ -81,7 +81,9 @@
         return JSON.stringify(res[key], null, 2);
       }
     }
-    const { meta: _meta, ...rest } = res;
+    const rest = Object.fromEntries(
+      Object.entries(res).filter(([k]) => k !== "meta"),
+    );
     return JSON.stringify(rest, null, 2);
   }
 

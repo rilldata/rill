@@ -220,6 +220,19 @@
     onClearFilters?.();
   }
 
+  function handleStatusChange(e: Event) {
+    const el = e.currentTarget as HTMLSelectElement;
+    const val: ResourceStatusFilterValue | "" = el.value as
+      | ResourceStatusFilterValue
+      | "";
+    for (const opt of statusFilterOptions) {
+      if (statusFilter.includes(opt.value)) {
+        onStatusToggle?.(opt.value);
+      }
+    }
+    if (val) onStatusToggle?.(val);
+  }
+
   // --- Sidebar selection state ---
   let treeSearchQuery = "";
 
@@ -676,16 +689,7 @@
                 <select
                   class="status-select"
                   value={statusFilter.length === 1 ? statusFilter[0] : ""}
-                  on:change|stopPropagation={(e) => {
-                    const val = e.currentTarget.value;
-                    // Clear existing filters first, then set the new one
-                    for (const opt of statusFilterOptions) {
-                      if (statusFilter.includes(opt.value)) {
-                        onStatusToggle?.(opt.value);
-                      }
-                    }
-                    if (val) onStatusToggle?.(val as ResourceStatusFilterValue);
-                  }}
+                  on:change|stopPropagation={handleStatusChange}
                 >
                   <option value="">All statuses</option>
                   {#each statusFilterOptions as opt}
