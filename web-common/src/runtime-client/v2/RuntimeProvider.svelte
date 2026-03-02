@@ -27,6 +27,7 @@
   }
 
   onDestroy(() => {
+    featureFlags.clearRuntimeClient();
     runtimeClientStore.update((c) => (c === client ? null : c));
     client.dispose();
   });

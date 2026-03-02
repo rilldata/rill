@@ -74,6 +74,11 @@ class FeatureFlags {
     });
   }
 
+  clearRuntimeClient() {
+    this.flagsUnsub?.();
+    this.flagsUnsub = undefined;
+  }
+
   setRuntimeClient(client: RuntimeClient) {
     this.flagsUnsub?.();
 
