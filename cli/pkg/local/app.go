@@ -375,15 +375,15 @@ func (a *App) Close() error {
 
 // ServeOptions contains all configuration for serving the local app.
 type ServeOptions struct {
-	HTTPPort      int
-	GRPCPort      int
-	EnableUI      bool
-	OpenBrowser   bool
-	Readonly      bool
-	Preview bool
-	UserID        string
-	TLSCertPath   string
-	TLSKeyPath    string
+	HTTPPort    int
+	GRPCPort    int
+	EnableUI    bool
+	OpenBrowser bool
+	Readonly    bool
+	Preview     bool
+	UserID      string
+	TLSCertPath string
+	TLSKeyPath  string
 }
 
 func (a *App) Serve(opts ServeOptions) error {
@@ -395,18 +395,18 @@ func (a *App) Serve(opts ServeOptions) error {
 
 	// Build local metadata
 	metadata := &localMetadata{
-		InstanceID:        a.Instance.ID,
-		GRPCPort:          opts.GRPCPort,
-		InstallID:         installID,
-		ProjectPath:       a.ProjectPath,
-		UserID:            opts.UserID,
-		Version:           a.ch.Version.Number,
-		BuildCommit:       a.ch.Version.Commit,
-		BuildTime:         a.ch.Version.Timestamp,
-		IsDev:             a.ch.Version.IsDev(),
-		AnalyticsEnabled:  enabled,
-		Readonly:          opts.Readonly,
-		PreviewMode: opts.Preview,
+		InstanceID:       a.Instance.ID,
+		GRPCPort:         opts.GRPCPort,
+		InstallID:        installID,
+		ProjectPath:      a.ProjectPath,
+		UserID:           opts.UserID,
+		Version:          a.ch.Version.Number,
+		BuildCommit:      a.ch.Version.Commit,
+		BuildTime:        a.ch.Version.Timestamp,
+		IsDev:            a.ch.Version.IsDev(),
+		AnalyticsEnabled: enabled,
+		Readonly:         opts.Readonly,
+		PreviewMode:      opts.Preview,
 	}
 
 	// Create the local server handler

@@ -167,15 +167,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			userID, _ := ch.CurrentUserID(cmd.Context())
 
 			err = app.Serve(local.ServeOptions{
-				HTTPPort:      httpPort,
-				GRPCPort:      grpcPort,
-				EnableUI:      !noUI,
-				OpenBrowser:   !noOpen,
-				Readonly:      readonly,
-				Preview: preview,
-				UserID:        userID,
-				TLSCertPath:   tlsCertPath,
-				TLSKeyPath:    tlsKeyPath,
+				HTTPPort:    httpPort,
+				GRPCPort:    grpcPort,
+				EnableUI:    !noUI,
+				OpenBrowser: !noOpen,
+				Readonly:    readonly,
+				Preview:     preview,
+				UserID:      userID,
+				TLSCertPath: tlsCertPath,
+				TLSKeyPath:  tlsKeyPath,
 			})
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
