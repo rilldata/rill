@@ -172,7 +172,7 @@
         inPreviewMode={previewMode}
       />
     {:else if showDeveloperChat && !previewMode}
-      <ChatToggle beta />
+      <ChatToggle />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
