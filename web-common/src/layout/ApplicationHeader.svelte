@@ -133,15 +133,6 @@
     </a>
 
     {#if previewMode}
-      <span
-        class="text-[11px] font-medium px-1.5 py-0.5 rounded"
-        style="background: var(--surface-secondary); color: var(--fg-secondary)"
-      >
-        Preview
-      </span>
-    {/if}
-
-    {#if previewMode}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
