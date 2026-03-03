@@ -262,7 +262,6 @@ export class DashboardStateSync {
     metricsExplorerStore.mergePartialExplorerEntity(
       this.exploreName,
       partialExplore,
-      metricsViewSpec,
     );
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
