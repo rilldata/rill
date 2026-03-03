@@ -84,6 +84,7 @@ export const SOURCES = [
   "athena",
   "azure",
   "bigquery",
+  "delta",
   "gcs",
   "mysql",
   "postgres",

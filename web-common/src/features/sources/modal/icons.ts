@@ -6,6 +6,7 @@ import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte
 import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
 import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
 import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
+import DeltaLake from "../../../components/icons/connectors/DeltaLake.svelte";
 import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
 import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
 import Https from "../../../components/icons/connectors/HTTPS.svelte";
@@ -20,6 +21,7 @@ import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
 import Supabase from "../../../components/icons/connectors/Supabase.svelte";
 
 export const ICONS = {
+  delta: DeltaLake,
   gcs: GoogleCloudStorage,
   s3: AmazonS3,
   azure: MicrosoftAzureBlobStorage,

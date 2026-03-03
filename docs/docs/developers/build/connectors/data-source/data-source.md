@@ -146,9 +146,20 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     linkLabel="Learn more"
     referenceLink="azure"
   />
+</div>
 
+## Table Formats
+### Delta Lake
 
-
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Delta.svg" alt="Delta Lake" />}
+    header="Delta Lake"
+    content="Read Delta tables directly from object storage through compatible query engines."
+    link="/developers/build/connectors/data-source/delta"
+    linkLabel="Learn more"
+    referenceLink="delta"
+  />
 </div>
 
 ## Other Data Connectors
