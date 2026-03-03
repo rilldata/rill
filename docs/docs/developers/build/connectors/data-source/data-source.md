@@ -40,6 +40,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 ### Athena
 ### BigQuery
+### Databricks
 ### Redshift
 ### Snowflake
 
@@ -59,6 +60,14 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     link="/developers/build/connectors/data-source/bigquery"
     linkLabel="Learn more"
     referenceLink="bigquery"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" className="duckdb-icon"/>}
+    header="Databricks"
+    content="Connect to Databricks SQL Warehouses for unified analytics powered by Unity Catalog."
+    link="/developers/build/connectors/data-source/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon

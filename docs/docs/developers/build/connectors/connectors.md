@@ -95,6 +95,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ### Athena
 ### BigQuery
+### Databricks
 ### Redshift
 ### Snowflake
 
@@ -115,7 +116,14 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="bigquery"
   />
-
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" className="duckdb-icon"/>}
+    header="Databricks"
+    content="Connect to Databricks SQL Warehouses for unified analytics powered by Unity Catalog."
+    link="/developers/build/connectors/data-source/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
+  />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Redshift.svg" alt="Redshift" />}
     header="Redshift"
