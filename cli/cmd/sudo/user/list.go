@@ -1,9 +1,6 @@
 package user
 
 import (
-	"strings"
-
-	"github.com/rilldata/rill/cli/cmd/user"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -30,7 +27,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectName = args[1]
 			}
 
-			pageToken = strings.TrimPrefix(pageToken, user.UserTokenPrefix)
 			if projectName != "" {
 				members, err := client.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{
 					Org:                  orgName,
@@ -47,7 +43,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				if members.NextPageToken != "" {
 					cmd.Println()
-					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
+					cmd.Printf("Next page token: %s\n", members.NextPageToken)
 				}
 			} else {
 				members, err := client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
@@ -64,7 +60,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				if members.NextPageToken != "" {
 					cmd.Println()
-					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
+					cmd.Printf("Next page token: %s\n", members.NextPageToken)
 				}
 			}
 
