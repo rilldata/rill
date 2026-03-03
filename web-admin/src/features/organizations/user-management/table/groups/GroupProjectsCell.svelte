@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import {
-    adminServiceListProjectsForOrganization,
-    adminServiceListProjectMemberUsergroups,
+    createAdminServiceListProjectsForOrganization,
+    getAdminServiceListProjectMemberUsergroupsQueryOptions,
+    type V1Project,
   } from "@rilldata/web-admin/client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let organization: string;
   export let groupName: string;
@@ -18,64 +19,67 @@
   }
 
   let isDropdownOpen = false;
-  let isPending = true;
   let accessibleProjects: ProjectWithRole[] = [];
-  let hasLoaded = false;
+  let isProcessing = false;
+  let hasProcessed = false;
 
-  async function loadProjectsForGroup() {
-    if (hasLoaded) return;
+  const queryClient = useQueryClient();
 
-    isPending = true;
+  $: projectsQuery = createAdminServiceListProjectsForOrganization(
+    organization,
+    undefined,
+    {
+      query: {
+        enabled: isDropdownOpen && !!organization,
+      },
+    },
+  );
 
-    try {
-      const projectsResponse =
-        await adminServiceListProjectsForOrganization(organization);
-      const allProjects = projectsResponse.projects ?? [];
+  $: allProjects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
 
-      const projectAccessResults = await Promise.all(
-        allProjects.map(async (project) => {
-          try {
-            const usergroupsResponse =
-              await adminServiceListProjectMemberUsergroups(
-                organization,
-                project.name ?? "",
-              );
-            const members = usergroupsResponse.members ?? [];
-            const groupMember = members.find((m) => m.groupName === groupName);
-            if (groupMember) {
-              return {
-                project: {
-                  id: project.id ?? "",
-                  name: project.name ?? "",
-                  roleName: groupMember.roleName ?? "",
-                },
-                hasAccess: true,
-              };
-            }
-            return { project: null, hasAccess: false };
-          } catch {
-            return { project: null, hasAccess: false };
-          }
-        }),
-      );
+  async function processProjectAccess(projects: V1Project[]) {
+    if (hasProcessed || isProcessing || projects.length === 0) return;
 
-      accessibleProjects = projectAccessResults
-        .filter((r) => r.hasAccess && r.project)
-        .map((r) => r.project as ProjectWithRole);
-      hasLoaded = true;
-    } catch {
-      // Ignore errors, will show "No projects"
-    } finally {
-      isPending = false;
+    isProcessing = true;
+
+    const results: ProjectWithRole[] = [];
+
+    for (const project of projects) {
+      try {
+        const queryOptions =
+          getAdminServiceListProjectMemberUsergroupsQueryOptions(
+            organization,
+            project.name ?? "",
+          );
+
+        const response = await queryClient.fetchQuery(queryOptions);
+        const members = response?.members ?? [];
+        const groupMember = members.find((m) => m.groupName === groupName);
+
+        if (groupMember) {
+          results.push({
+            id: project.id ?? "",
+            name: project.name ?? "",
+            roleName: groupMember.roleName ?? "",
+          });
+        }
+      } catch {
+        // Ignore errors for individual projects
+      }
     }
+
+    accessibleProjects = results;
+    hasProcessed = true;
+    isProcessing = false;
   }
 
-  onMount(() => {
-    void loadProjectsForGroup();
-  });
+  $: if (isDropdownOpen && allProjects.length > 0 && !hasProcessed) {
+    void processProjectAccess(allProjects);
+  }
 
   $: projectCount = accessibleProjects.length;
   $: hasProjects = projectCount > 0;
+  $: isPending = $projectsQuery?.isPending || isProcessing;
 
   function getProjectUrl(projectName: string) {
     return `/${organization}/${projectName}/-/dashboards?share=true`;
@@ -86,23 +90,31 @@
   }
 </script>
 
-{#if hasLoaded && hasProjects}
-  <Dropdown.Root bind:open={isDropdownOpen}>
-    <Dropdown.Trigger
-      class="flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-        ? 'bg-gray-200'
-        : 'hover:bg-surface-hover'} px-2 py-1"
-    >
-      <span class="capitalize">
+<Dropdown.Root bind:open={isDropdownOpen}>
+  <Dropdown.Trigger
+    class="flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
+      ? 'bg-gray-200'
+      : 'hover:bg-surface-hover'} px-2 py-1"
+  >
+    <span class="capitalize">
+      {#if hasProcessed}
         {projectCount} Project{projectCount !== 1 ? "s" : ""}
-      </span>
-      {#if isDropdownOpen}
-        <CaretUpIcon size="12px" />
       {:else}
-        <CaretDownIcon size="12px" />
+        Projects
       {/if}
-    </Dropdown.Trigger>
-    <Dropdown.Content align="start">
+    </span>
+    {#if isDropdownOpen}
+      <CaretUpIcon size="12px" />
+    {:else}
+      <CaretDownIcon size="12px" />
+    {/if}
+  </Dropdown.Trigger>
+  <Dropdown.Content align="start">
+    {#if isPending}
+      <div class="px-3 py-2 text-fg-secondary">Loading...</div>
+    {:else if !hasProjects}
+      <div class="px-3 py-2 text-fg-secondary">No projects</div>
+    {:else}
       {#each accessibleProjects as project (project.id)}
         <Dropdown.Item
           href={getProjectUrl(project.name)}
@@ -116,10 +128,6 @@
           >
         </Dropdown.Item>
       {/each}
-    </Dropdown.Content>
-  </Dropdown.Root>
-{:else if isPending}
-  <div class="rounded-sm px-2 py-1 text-fg-secondary">Loading...</div>
-{:else}
-  <div class="rounded-sm px-2 py-1 text-fg-secondary">No projects</div>
-{/if}
+    {/if}
+  </Dropdown.Content>
+</Dropdown.Root>

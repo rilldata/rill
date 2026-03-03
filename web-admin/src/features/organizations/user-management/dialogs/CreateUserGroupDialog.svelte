@@ -194,29 +194,29 @@
     }
   }
 
+  // TODO: Handle partial updates - if group is created but only some projects
+  // get added, we should provide a way for users to retry or rollback.
   async function applyProjectAccess(usergroup: string) {
     if (selectedProjects.length === 0) return;
 
     try {
-      await Promise.all(
-        selectedProjects.map(async (projectName) => {
-          await $addProjectMemberUsergroup.mutateAsync({
-            org: organization,
-            project: projectName,
-            usergroup: usergroup,
-            data: {
-              role: selectedRole,
-            },
-          });
+      for (const projectName of selectedProjects) {
+        await $addProjectMemberUsergroup.mutateAsync({
+          org: organization,
+          project: projectName,
+          usergroup: usergroup,
+          data: {
+            role: selectedRole,
+          },
+        });
 
-          await queryClient.invalidateQueries({
-            queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
-              organization,
-              projectName,
-            ),
-          });
-        }),
-      );
+        await queryClient.invalidateQueries({
+          queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+            organization,
+            projectName,
+          ),
+        });
+      }
     } catch (error) {
       eventBus.emit("notification", {
         message: `Error adding group to projects: ${error.response?.data?.message || error.message}`,
