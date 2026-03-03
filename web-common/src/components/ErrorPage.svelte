@@ -20,7 +20,7 @@
   const onEmbedPage = isEmbedPage($page);
 
   function handleBackHome() {
-    const href = $previewModeStore ? "/home" : "/";
+    const href = $previewModeStore ? "/dashboards" : "/";
     goto(href);
   }
 </script>

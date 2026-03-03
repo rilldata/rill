@@ -1,22 +1,18 @@
 /** Route prefixes that are exclusively preview mode */
 export const PREVIEW_ROUTE_PREFIXES = [
-  "/home",
+  "/dashboards",
   "/ai",
-  "/preview",
-  "/reports",
-  "/alerts",
   "/status",
-  "/settings",
 ] as const;
 
 /** Route prefixes that are exclusively developer mode */
 export const DEVELOPER_ROUTE_PREFIXES = ["/files"] as const;
 
 /**
- * All route prefixes allowed in previewer mode (locked preview).
+ * All route prefixes allowed in preview mode.
  * Includes preview routes plus shared routes (/explore, /canvas, /deploy).
  */
-export const PREVIEWER_ALLOWED_PREFIXES = [
+export const PREVIEW_ALLOWED_PREFIXES = [
   ...PREVIEW_ROUTE_PREFIXES,
   "/explore/",
   "/canvas/",

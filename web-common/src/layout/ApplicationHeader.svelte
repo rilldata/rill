@@ -25,7 +25,6 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
-  import ModeToggle from "./ModeToggle.svelte";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
@@ -34,7 +33,6 @@
     | ((resourceName: string, resourceKind: string) => string)
     | undefined = undefined;
   export let noBorder = false;
-  export let previewLockedMode = false;
 
   $: previewMode = $previewModeStore;
 
@@ -134,8 +132,13 @@
       <Rill />
     </a>
 
-    {#if !previewLockedMode}
-      <ModeToggle />
+    {#if previewMode}
+      <span
+        class="text-[11px] font-medium px-1.5 py-0.5 rounded"
+        style="background: var(--surface-secondary); color: var(--fg-secondary)"
+      >
+        Preview
+      </span>
     {/if}
 
     {#if previewMode}

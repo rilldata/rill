@@ -25,7 +25,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pullEnv bool
 	var noUI bool
 	var noOpen bool
-	var previewLocked bool
+	var preview bool
 	var logFormat string
 	var envVars, envVarsOld []string
 	var environment string
@@ -172,7 +172,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				EnableUI:      !noUI,
 				OpenBrowser:   !noOpen,
 				Readonly:      readonly,
-				PreviewLocked: previewLocked,
+				Preview: preview,
 				UserID:        userID,
 				TLSCertPath:   tlsCertPath,
 				TLSKeyPath:    tlsKeyPath,
@@ -193,7 +193,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
-	startCmd.Flags().BoolVar(&previewLocked, "preview-locked", false, "Run in locked preview mode (no mode toggle)")
+	startCmd.Flags().BoolVar(&preview, "preview", false, "Run in preview mode")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")

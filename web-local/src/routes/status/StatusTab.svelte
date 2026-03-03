@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import TabNav from "@rilldata/web-common/components/nav/TabNav.svelte";
   import {
@@ -21,16 +20,14 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createLocalServiceGetVersion } from "@rilldata/web-common/runtime-client/local-service";
-  import Rocket from "svelte-radix/Rocket.svelte";
-  import ResourcesSection from "../status/ResourcesSection.svelte";
-  import ParseErrorsSection from "../status/ParseErrorsSection.svelte";
+  import ResourcesSection from "./ResourcesSection.svelte";
+  import ParseErrorsSection from "./ParseErrorsSection.svelte";
 
   let selectedPage = "overview";
 
   const navItems = [
     { label: "Overview", value: "overview" },
     { label: "Resources", value: "resources" },
-    { label: "Logs", value: "logs" },
   ];
 
   $: ({ instanceId } = $runtime);
@@ -158,21 +155,6 @@
           initialTypeFilter={resourceTypeFilter}
         />
         <ParseErrorsSection />
-      {:else if selectedPage === "logs"}
-        <div class="section">
-          <div class="section-header">
-            <h3 class="section-title">Logs</h3>
-          </div>
-          <p class="text-sm text-fg-muted">
-            Real-time logs are available after deploying.
-          </p>
-          <div class="mt-4">
-            <Button type="primary" href="/deploy" compact>
-              <Rocket size="14px" />
-              Deploy to unlock
-            </Button>
-          </div>
-        </div>
       {/if}
     </div>
   </div>

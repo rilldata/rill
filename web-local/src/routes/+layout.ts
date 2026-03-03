@@ -11,7 +11,7 @@ import {
 } from "@rilldata/web-common/runtime-client/index.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
 import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
-import { PREVIEWER_ALLOWED_PREFIXES } from "./route-constants";
+import { PREVIEW_ALLOWED_PREFIXES } from "./route-constants";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
@@ -21,17 +21,17 @@ export async function load({ url, depends, untrack }) {
 
   // Fetch metadata to check preview mode
   const metadata = await localServiceGetMetadata();
-  const previewLockedMode = metadata.previewLockedMode ?? false;
+  const previewMode = metadata.previewMode ?? false;
 
-  // In previewer mode, only allow preview-related routes; redirect everything else to /home
-  if (previewLockedMode) {
+  // In preview mode, only allow preview-related routes; redirect everything else to /dashboards
+  if (previewMode) {
     const isAllowed =
       url.pathname === "/" ||
-      PREVIEWER_ALLOWED_PREFIXES.some((prefix) =>
+      PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
         url.pathname.startsWith(prefix),
       );
     if (!isAllowed) {
-      throw redirect(303, "/home");
+      throw redirect(303, "/dashboards");
     }
   }
 
@@ -53,9 +53,9 @@ export async function load({ url, depends, untrack }) {
   const redirectPath = untrack(() => {
     if (!url.searchParams.get("redirect")) return false;
 
-    // In locked preview mode, redirect to /home instead of /files
-    if (previewLockedMode) {
-      return url.pathname !== "/home" && "/home";
+    // In preview mode, redirect to /dashboards instead of /files
+    if (previewMode) {
+      return url.pathname !== "/dashboards" && "/dashboards";
     }
 
     return (
@@ -72,5 +72,5 @@ export async function load({ url, depends, untrack }) {
     }
   }
 
-  return { initialized, previewLockedMode, metadata };
+  return { initialized, previewMode, metadata };
 }

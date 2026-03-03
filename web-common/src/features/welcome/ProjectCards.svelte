@@ -24,7 +24,7 @@
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
   // Determine redirect href based on current route
-  $: redirectHref = $page.url.pathname.startsWith("/home") ? "/home" : "/";
+  $: redirectHref = $page.url.pathname.startsWith("/dashboards") ? "/dashboards" : "/";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();

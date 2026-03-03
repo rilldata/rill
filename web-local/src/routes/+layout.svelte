@@ -50,11 +50,11 @@
   let removeJavascriptListeners: () => void;
 
   // Sync preview mode:
-  // - If --preview-locked flag is set, always lock to preview mode
+  // - If --preview flag is set, always lock to preview mode
   // - Otherwise, infer from the current URL so refresh on preview pages stays in preview mode
   //   and shared routes (/explore, /canvas) preserve the current mode
   $: {
-    if (data.previewLockedMode) {
+    if (data.previewMode) {
       previewModeStore.set(true);
     } else if (isPreviewRoute($page.url.pathname)) {
       previewModeStore.set(true);
@@ -65,9 +65,9 @@
   }
 
   onMount(async () => {
-    // If in preview mode and on root, redirect to /home
+    // If in preview mode and on root, redirect to /dashboards
     if ($previewModeStore && window.location.pathname === "/") {
-      goto("/home");
+      goto("/dashboards");
     }
 
     const config = data.metadata;
@@ -115,12 +115,11 @@
         <BannerCenter />
         <RepresentingUserBanner />
         <ApplicationHeader
-          logoHref={isPreviewMode ? "/home" : "/"}
+          logoHref={isPreviewMode ? "/dashboards" : "/"}
           breadcrumbResourceHref={isPreviewMode
             ? (name, kind) => `/${kind}/${name}`
             : undefined}
           noBorder={isPreviewMode}
-          previewLockedMode={data.previewLockedMode ?? false}
         />
         {#if shouldShowPreviewNav}
           <PreviewModeNav />

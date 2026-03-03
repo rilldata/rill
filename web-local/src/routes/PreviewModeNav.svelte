@@ -1,27 +1,25 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import LocalProjectStatusIndicator from "./LocalProjectStatusIndicator.svelte";
+
+  const { chat } = featureFlags;
 
   $: currentPath = $page.url.pathname;
 
-  const allTabs: {
-    id: string;
-    label: string;
-    path: string;
-  }[] = [
-    { id: "home", label: "Home", path: "/home" },
-    { id: "ai", label: "AI", path: "/ai" },
-    { id: "preview", label: "Dashboards", path: "/preview" },
-    { id: "reports", label: "Reports", path: "/reports" },
-    { id: "alerts", label: "Alerts", path: "/alerts" },
+  const baseTabs = [
+    { id: "dashboards", label: "Dashboards", path: "/dashboards" },
     { id: "status", label: "Status", path: "/status" },
-    { id: "settings", label: "Settings", path: "/settings" },
   ];
 
-  $: activeTab =
-    allTabs.find((t) => currentPath.startsWith(t.path))?.id ?? "preview";
+  const aiTab = { id: "ai", label: "AI", path: "/ai" };
 
-  $: selectedIndex = allTabs.findIndex((t) => t.id === activeTab);
+  $: tabs = $chat ? [baseTabs[0], aiTab, baseTabs[1]] : baseTabs;
+
+  $: activeTab =
+    tabs.find((t) => currentPath.startsWith(t.path))?.id ?? "dashboards";
+
+  $: selectedIndex = tabs.findIndex((t) => t.id === activeTab);
 
   // Track tab element positions for the animated underline
   let tabElements: HTMLAnchorElement[] = [];
@@ -45,7 +43,7 @@
 
 <div class="nav-bar">
   <nav>
-    {#each allTabs as tab, i (tab.id)}
+    {#each tabs as tab, i (tab.id)}
       <a
         href={tab.path}
         class="tab"

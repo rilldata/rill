@@ -1,5 +1,5 @@
 <script lang="ts">
-  import StatusTab from "../preview/StatusTab.svelte";
+  import StatusTab from "./StatusTab.svelte";
 </script>
 
 <StatusTab />

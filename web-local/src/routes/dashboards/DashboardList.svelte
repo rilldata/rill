@@ -8,7 +8,7 @@
   export let limit: number | undefined = undefined;
   export let showSearch = false;
   export let showSeeAll = false;
-  export let seeAllHref = "/preview";
+  export let seeAllHref = "/dashboards";
 
   $: dashboardsQuery = useDashboards($runtime.instanceId);
   $: ({ data: dashboardsData, isLoading, isError, error } = $dashboardsQuery);
