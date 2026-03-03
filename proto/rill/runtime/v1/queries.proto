@@ -414,7 +414,7 @@ message Span {
   string name = 1;
   string span_id = 2;
   string parent_span_id = 3;
-  int64 start_time_unix_ms = 4;
+  google.protobuf.Timestamp start_time = 4;
   int64 duration_ms = 5;
   // span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
   map<string, string> attributes = 6;

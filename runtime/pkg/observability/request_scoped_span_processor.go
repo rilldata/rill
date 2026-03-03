@@ -8,24 +8,25 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.opentelemetry.io/otel/attribute"
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ oteltrace.SpanProcessor = (*QueryLogSpanProcessor)(nil)
+var _ oteltrace.SpanProcessor = (*RequestScopedSpanProcessor)(nil)
 
-// QueryLogSpanProcessor is a trace.SpanProcessor that captures spans and routes them to request-scoped query trace collectors.
+// RequestScopedSpanProcessor is a trace.SpanProcessor that captures spans and routes them to request-scoped query trace collectors.
 // This only works when a collector is present in the parent context, which is only set when req.trace is set on runtimev1 query requests.
-type QueryLogSpanProcessor struct {
-	collectors sync.Map // spanID (trace.SpanID) → *Collector since multiple threads be calling onStart/onEnd concurrently thus use of sync.map
+type RequestScopedSpanProcessor struct {
+	collectors sync.Map // spanID (trace.SpanID) → *RequestScopedCollector since multiple threads be calling onStart/onEnd concurrently thus use of sync.map
 }
 
-// NewQueryLogSpanProcessor creates a new QueryLogSpanProcessor.
-func NewQueryLogSpanProcessor() *QueryLogSpanProcessor {
-	return &QueryLogSpanProcessor{}
+// NewRequestScopedSpanProcessor creates a new RequestScopedSpanProcessor.
+func NewRequestScopedSpanProcessor() *RequestScopedSpanProcessor {
+	return &RequestScopedSpanProcessor{}
 }
 
 // OnStart extracts the collector from the parent context and stores it keyed by spanID.
-func (p *QueryLogSpanProcessor) OnStart(parent context.Context, s oteltrace.ReadWriteSpan) {
-	collector, ok := CollectorFromContext(parent)
+func (p *RequestScopedSpanProcessor) OnStart(parent context.Context, s oteltrace.ReadWriteSpan) {
+	collector, ok := RequestScopedCollectorFromContext(parent)
 	if !ok {
 		return
 	}
@@ -34,13 +35,13 @@ func (p *QueryLogSpanProcessor) OnStart(parent context.Context, s oteltrace.Read
 }
 
 // OnEnd processes completed spans, building a generic Span proto and recording it to the collector.
-func (p *QueryLogSpanProcessor) OnEnd(s oteltrace.ReadOnlySpan) {
+func (p *RequestScopedSpanProcessor) OnEnd(s oteltrace.ReadOnlySpan) {
 	spanID := s.SpanContext().SpanID()
 	val, ok := p.collectors.LoadAndDelete(spanID)
 	if !ok {
 		return
 	}
-	collector := val.(*Collector)
+	collector := val.(*RequestScopedCollector)
 
 	// Build attributes map from span attributes
 	attrs := make(map[string]string)
@@ -55,22 +56,22 @@ func (p *QueryLogSpanProcessor) OnEnd(s oteltrace.ReadOnlySpan) {
 	}
 
 	collector.Record(&runtimev1.Span{
-		Name:            s.Name(),
-		SpanId:          spanID.String(),
-		ParentSpanId:    parentSpanID,
-		StartTimeUnixMs: s.StartTime().UnixMilli(),
-		DurationMs:      s.EndTime().Sub(s.StartTime()).Milliseconds(),
-		Attributes:      attrs,
+		Name:         s.Name(),
+		SpanId:       spanID.String(),
+		ParentSpanId: parentSpanID,
+		StartTime:    timestamppb.New(s.StartTime()),
+		DurationMs:   s.EndTime().Sub(s.StartTime()).Milliseconds(),
+		Attributes:   attrs,
 	})
 }
 
 // Shutdown is a no-op.
-func (p *QueryLogSpanProcessor) Shutdown(ctx context.Context) error {
+func (p *RequestScopedSpanProcessor) Shutdown(ctx context.Context) error {
 	return nil
 }
 
 // ForceFlush is a no-op.
-func (p *QueryLogSpanProcessor) ForceFlush(ctx context.Context) error {
+func (p *RequestScopedSpanProcessor) ForceFlush(ctx context.Context) error {
 	return nil
 }
 

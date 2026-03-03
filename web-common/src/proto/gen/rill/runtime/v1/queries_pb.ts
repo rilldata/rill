@@ -954,9 +954,9 @@ export class Span extends Message<Span> {
   parentSpanId = "";
 
   /**
-   * @generated from field: int64 start_time_unix_ms = 4;
+   * @generated from field: google.protobuf.Timestamp start_time = 4;
    */
-  startTimeUnixMs = protoInt64.zero;
+  startTime?: Timestamp;
 
   /**
    * @generated from field: int64 duration_ms = 5;
@@ -981,7 +981,7 @@ export class Span extends Message<Span> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "span_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "parent_span_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "start_time_unix_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "start_time", kind: "message", T: Timestamp },
     { no: 5, name: "duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);

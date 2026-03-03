@@ -331,21 +331,36 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+	// Extract trace data if present (will be attached after error mapping)
+	var te *traceError
+	hasTrace := errors.As(err, &te)
+
 	if errors.Is(err, context.DeadlineExceeded) {
-		return status.Error(codes.DeadlineExceeded, err.Error())
+		err = status.Error(codes.DeadlineExceeded, err.Error())
+	} else if errors.Is(err, context.Canceled) {
+		err = status.Error(codes.Canceled, err.Error())
+	} else if errors.Is(err, queries.ErrForbidden) {
+		err = ErrForbidden
+	} else if errors.Is(err, runtime.ErrForbidden) {
+		err = ErrForbidden
+	} else if errors.Is(err, metricsview.ErrForbidden) {
+		err = ErrForbidden
 	}
-	if errors.Is(err, context.Canceled) {
-		return status.Error(codes.Canceled, err.Error())
+
+	// Attach trace details to the gRPC status after error mapping
+	if hasTrace {
+		t := te.collector.ToProto()
+		if t != nil {
+			st, ok := status.FromError(err)
+			if !ok {
+				st = status.New(codes.Unknown, err.Error())
+			}
+			if detailed, detailErr := st.WithDetails(t); detailErr == nil {
+				return detailed.Err()
+			}
+		}
 	}
-	if errors.Is(err, queries.ErrForbidden) {
-		return ErrForbidden
-	}
-	if errors.Is(err, runtime.ErrForbidden) {
-		return ErrForbidden
-	}
-	if errors.Is(err, metricsview.ErrForbidden) {
-		return ErrForbidden
-	}
+
 	return err
 }
 

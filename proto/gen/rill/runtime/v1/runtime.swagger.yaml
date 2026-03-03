@@ -7714,9 +7714,9 @@ definitions:
         type: string
       parentSpanId:
         type: string
-      startTimeUnixMs:
+      startTime:
         type: string
-        format: int64
+        format: date-time
       durationMs:
         type: string
         format: int64

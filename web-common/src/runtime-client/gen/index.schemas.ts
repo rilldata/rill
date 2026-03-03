@@ -2456,7 +2456,7 @@ export interface V1Span {
   name?: string;
   spanId?: string;
   parentSpanId?: string;
-  startTimeUnixMs?: string;
+  startTime?: string;
   durationMs?: string;
   /** span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc. */
   attributes?: V1SpanAttributes;

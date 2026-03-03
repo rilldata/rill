@@ -24,6 +24,23 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// traceError wraps an error with trace data collected during request execution.
+// It is handled by mapGRPCError, which attaches the trace as gRPC error details after normal error mapping is applied.
+type traceError struct {
+	err       error
+	collector *observability.RequestScopedCollector
+}
+
+// Error returns the error message of the underlying error.
+func (e *traceError) Error() string {
+	return e.err.Error()
+}
+
+// Unwrap allows errors.Is and errors.As to work with traceError, by unwrapping to the underlying error.
+func (e *traceError) Unwrap() error {
+	return e.err
+}
+
 // MetricsViewAggregation implements QueryService.
 func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.MetricsViewAggregationRequest) (*runtimev1.MetricsViewAggregationResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -77,10 +94,10 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		FillMissing:         req.FillMissing,
 		Rows:                req.Rows,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -135,10 +152,10 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Filter:          req.Filter,
 		SecurityClaims:  claims,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -207,10 +224,10 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Filter:              req.Filter,
 		SecurityClaims:      claims,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -258,10 +275,10 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -304,10 +321,10 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -365,10 +382,10 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		Filter:             req.Filter,
 		TimeDimension:      req.TimeDimension,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -430,10 +447,10 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 		MetricsViewName: req.MetricsViewName,
 		SecurityClaims:  claims,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -475,10 +492,10 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		Limit:           &limit,
 		SecurityClaims:  claims,
 	}
-	var collector *observability.Collector
-	if req.Trace {
-		collector = &observability.Collector{}
-		ctx = observability.WithCollector(ctx, collector)
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -787,25 +804,17 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	return res, mv.State, nil
 }
 
-// withTrace attaches collected trace spans as gRPC error details so that
-// traces are available even when a request fails.
-func withTrace(err error, collector *observability.Collector) error {
+// canTrace returns true for Rill Developer (SkipChecks=true) and project admins (EditInstance),
+func canTrace(claims *runtime.SecurityClaims) bool {
+	return claims.Can(runtime.EditInstance)
+}
+
+// withTrace wraps an error with trace data if a collector is present.
+func withTrace(err error, collector *observability.RequestScopedCollector) error {
 	if collector == nil {
 		return err
 	}
-	t := collector.ToProto()
-	if t == nil {
-		return err
-	}
-	st, ok := status.FromError(err)
-	if !ok {
-		st = status.New(codes.Unknown, err.Error())
-	}
-	detailed, detailErr := st.WithDetails(t)
-	if detailErr != nil {
-		return err
-	}
-	return detailed.Err()
+	return &traceError{err: err, collector: collector}
 }
 
 func valOrNullTime(v time.Time) *timestamppb.Timestamp {
