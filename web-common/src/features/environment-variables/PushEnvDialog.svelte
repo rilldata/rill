@@ -66,8 +66,11 @@
     <DialogHeader>
       <DialogTitle>Push Environment Variables</DialogTitle>
       <DialogDescription>
-        Merge your local .env files with cloud for {environment || "all"} environment{environment === "" ? "s" : ""}. Existing
-        cloud variables will be updated with your local values.
+        Merge your local .env files with cloud for {environment || "all"} environment{environment ===
+        ""
+          ? "s"
+          : ""}. Existing cloud variables will be updated with your local
+        values.
       </DialogDescription>
     </DialogHeader>
 
