@@ -22,6 +22,13 @@
     getRuntimeServiceGetInstanceQueryKey,
     runtimeServiceGetInstance,
   } from "../../runtime-client";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
+  import { getScreenNameFromPage } from "../file-explorer/telemetry";
 
   export let open = false;
 
@@ -79,6 +86,12 @@
     error = "";
     existingAiConnector = "";
     fetchExistingAiConnector();
+    behaviourEvent?.fireSourceTriggerEvent(
+      BehaviourEventAction.SourceModal,
+      BehaviourEventMedium.Button,
+      getScreenNameFromPage(),
+      MetricsEventSpace.Modal,
+    );
   }
 
   // Clear inputs when the provider changes
@@ -110,9 +123,21 @@
       const formValues: Record<string, string> = { api_key: apiKey };
       if (model) formValues.model = model;
       await saveAiConnector(queryClient, schemaName, formValues);
+      behaviourEvent?.fireSourceTriggerEvent(
+        BehaviourEventAction.SourceAdd,
+        BehaviourEventMedium.Button,
+        getScreenNameFromPage(),
+        MetricsEventSpace.Modal,
+      );
       open = false;
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to save connector";
+      behaviourEvent?.fireSourceTriggerEvent(
+        BehaviourEventAction.SourceCancel,
+        BehaviourEventMedium.Button,
+        getScreenNameFromPage(),
+        MetricsEventSpace.Modal,
+      );
     } finally {
       saving = false;
     }
