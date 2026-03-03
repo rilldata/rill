@@ -69,8 +69,9 @@
     <DialogHeader>
       <DialogTitle>Pull Environment Variables</DialogTitle>
       <DialogDescription>
-        Replace your local .env files with cloud variables for {environment ||
-          "all"} environment{environment === "" ? "s" : ""}.
+        Merge cloud variables into your local .env files for {environment ||
+          "all"} environment{environment === "" ? "s" : ""}. Shared keys will be
+        overwritten; local-only variables are preserved.
       </DialogDescription>
     </DialogHeader>
 

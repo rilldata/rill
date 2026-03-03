@@ -157,13 +157,10 @@
           <button
             aria-label="Switch to {label}"
             id="{view}-toggle"
-            class="size-[22px] z-10 hover:brightness-75"
+            class="size-[22px] z-10 hover:brightness-75 p-0"
             on:click={handleToggleView}
           >
-            <Icon
-              size="15px"
-              color={view === viewMode ? "#4F46E5" : "#9CA3AF"}
-            />
+            <Icon size="15px" />
           </button>
           <TooltipContent slot="tooltip-content">
             {label}
@@ -188,22 +185,40 @@
           <span>View in Cloud</span>
         </Button>
       {/if}
-      <Button
-        type="secondary"
-        small
-        onClick={() => (pullDialogOpen = true)}
-        class="flex items-center gap-2"
-      >
-        <Download size="14px" />
-      </Button>
-      <Button
-        type="secondary"
-        small
-        onClick={() => (pushDialogOpen = true)}
-        class="flex items-center gap-2"
-      >
-        <Upload size="14px" />
-      </Button>
+      <Tooltip distance={8}>
+        <Button
+          type="secondary"
+          small
+          onClick={() => (pullDialogOpen = true)}
+          disabled={!isProjectLinked}
+          class="flex items-center gap-2"
+        >
+          <Download size="14px" />
+          <span>Pull</span>
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          {isProjectLinked
+            ? "Pull variables from Rill Cloud"
+            : "Deploy to Rill Cloud to sync variables"}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip distance={8}>
+        <Button
+          type="secondary"
+          small
+          onClick={() => (pushDialogOpen = true)}
+          disabled={!isProjectLinked}
+          class="flex items-center gap-2"
+        >
+          <Upload size="14px" />
+          <span>Push</span>
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          {isProjectLinked
+            ? "Push variables to Rill Cloud"
+            : "Deploy to Rill Cloud to sync variables"}
+        </TooltipContent>
+      </Tooltip>
       {#if viewMode === "viz"}
         <Button
           type="primary"
@@ -251,10 +266,10 @@
   }
 
   .toggle {
-    @apply bg-surface outline outline-slate-200 outline-[1px];
+    @apply bg-surface-hover;
   }
 
   .radio {
-    @apply h-fit bg-slate-100 p-[2px] rounded-[6px] flex;
+    @apply h-fit bg-surface-subtle border p-0.5 rounded-[6px] flex;
   }
 </style>

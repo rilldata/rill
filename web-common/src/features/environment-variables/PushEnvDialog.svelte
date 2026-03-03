@@ -69,8 +69,8 @@
         Merge your local .env files with cloud for {environment || "all"} environment{environment ===
         ""
           ? "s"
-          : ""}. Existing cloud variables will be updated with your local
-        values.
+          : ""}. Shared keys will be updated with your local values;
+        cloud-only variables are preserved.
       </DialogDescription>
     </DialogHeader>
 
