@@ -20,7 +20,10 @@
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
-  import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import type {
+    PivotClickSelectionState,
+    PivotRowSelectionState,
+  } from "./pivot-row-selection";
   import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
@@ -35,7 +38,7 @@
   export let canShowDataViewer = false;
   export let enableClickToFilter = false;
   export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
-  export let clickedCell: { rowId: string; columnId: string } | null = null;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -165,10 +168,7 @@
   }
 
   function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
-    return (
-      cell.row.id === clickedCell?.rowId &&
-      cell.column.id === clickedCell?.columnId
-    );
+    return clickSelection?.isCellSelected(cell.row.id, cell.column.id) ?? false;
   }
 
   function shouldShowHeaderRightBorder(header: any, index: number): boolean {
@@ -343,9 +343,11 @@
       {@const rowId = rows[row.index].id}
       {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
+      {@const isRowHeaderSelected =
+        clickSelection?.isRowHeaderSelected(rowId) ?? false}
       <tr
         class:show-more-row={isShowMoreRow(rows[row.index])}
-        class:selected-row={isSelected}
+        class:selected-row={isSelected && isRowHeaderSelected}
         class:dimmed-row={hasSelection && !isSelected}
       >
         {#each cells as cell, i (cell.id)}
@@ -359,6 +361,7 @@
             class="ui-copy-number cell truncate group/cell"
             class:active-cell={isActive}
             class:clicked-cell={isClicked}
+            class:selected-cell={isClicked}
             class:interactive-cell={canShowDataViewer || enableClickToFilter}
             class:border-r={shouldShowRightBorder(i)}
             data-value={cell.getValue()}
@@ -524,6 +527,13 @@
 
   .clicked-cell {
     @apply ring-1 ring-inset ring-primary-400;
+  }
+
+  .selected-cell.cell {
+    @apply bg-primary-50;
+  }
+  .selected-cell.cell:hover {
+    @apply bg-primary-100;
   }
 
   .selected-row .cell {

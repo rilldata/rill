@@ -16,7 +16,10 @@
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
-  import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import type {
+    PivotClickSelectionState,
+    PivotRowSelectionState,
+  } from "./pivot-row-selection";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -27,7 +30,7 @@
   export let canShowDataViewer = false;
   export let enableClickToFilter = false;
   export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
-  export let clickedCell: { rowId: string; columnId: string } | null = null;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -93,10 +96,7 @@
   }
 
   function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
-    return (
-      cell.row.id === clickedCell?.rowId &&
-      cell.column.id === clickedCell?.columnId
-    );
+    return clickSelection?.isCellSelected(cell.row.id, cell.column.id) ?? false;
   }
 
   function hasBorderRight(columnId: string): boolean {
@@ -198,8 +198,10 @@
       {@const rowId = rows[row.index].id}
       {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
+      {@const isRowHeaderSelected =
+        clickSelection?.isRowHeaderSelected(rowId) ?? false}
       <tr
-        class:selected-row={isSelected}
+        class:selected-row={isSelected && isRowHeaderSelected}
         class:dimmed-row={hasSelection && !isSelected}
       >
         {#each cells as cell (cell.id)}
@@ -213,6 +215,7 @@
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
             class:clicked-cell={isClicked}
+            class:selected-cell={isClicked}
             class:interactive-cell={(canShowDataViewer ||
               enableClickToFilter) &&
               cell.getValue() !== undefined}
@@ -337,6 +340,13 @@
 
   .clicked-cell {
     @apply ring-1 ring-inset ring-primary-400;
+  }
+
+  .selected-cell.cell {
+    @apply bg-primary-50;
+  }
+  .selected-cell.cell:hover {
+    @apply bg-primary-100;
   }
 
   .selected-row .cell {

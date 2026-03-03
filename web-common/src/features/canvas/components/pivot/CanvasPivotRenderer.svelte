@@ -2,8 +2,12 @@
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { extractDimensionFiltersFromExpression } from "@rilldata/web-common/features/dashboards/pivot/pivot-filter-extraction";
   import {
+    cellKey,
     computePivotRowSelection,
+    createEmptyClickSelectionState,
     extractSelectionDimensionFilters,
+    getFiltersForRowHeader,
+    type PivotClickSelectionState,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     getFiltersForCell,
@@ -31,8 +35,9 @@
   export let hasHeader = false;
   export let component: PivotCanvasComponent;
 
-  // Track last clicked cell for ring indicator
-  let lastClickedCell: { rowId: string; columnId: string } | null = null;
+  // Track click selections: row-header clicks and data-cell clicks
+  let clickSelection: PivotClickSelectionState =
+    createEmptyClickSelectionState();
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
 
@@ -75,10 +80,6 @@
     }
   }
 
-  $: rowDimensionNames = pivotConfig
-    ? ($pivotConfig?.rowDimensionNames ?? [])
-    : [];
-
   // Only compute selection state for dimensions the pivot itself filtered
   $: dimensionFilterMap = extractSelectionDimensionFilters($whereFilterStore, [
     ...$selfFilteredDimensions,
@@ -93,11 +94,12 @@
         )
       : undefined;
 
-  // Click-to-filter: extract dimension filters for the clicked cell,
+  // Click-to-filter: extract dimension filters for the clicked cell or row header,
   // then batch-toggle them on the FilterState and apply to URL once.
   function handleCellClickToFilter(
     rowId: string,
     columnId: string,
+    isRowHeader: boolean,
     event: MouseEvent,
   ) {
     if (!pivotDataStore || !$pivotDataStore || !pivotConfig || !$pivotConfig)
@@ -105,14 +107,17 @@
 
     const isExclusive = event.metaKey || event.ctrlKey;
 
-    // Compute filters for this cell directly (row + column dimensions)
-    const cellFilters = getFiltersForCell(
-      $pivotConfig,
-      rowId,
-      columnId,
-      $pivotDataStore.columnDimensionAxes ?? {},
-      $pivotDataStore.data,
-    );
+    // Row header click: only row dimension filters
+    // Data cell click: row + column dimension filters
+    const cellFilters = isRowHeader
+      ? getFiltersForRowHeader($pivotConfig, rowId, $pivotDataStore.data)
+      : getFiltersForCell(
+          $pivotConfig,
+          rowId,
+          columnId,
+          $pivotDataStore.columnDimensionAxes ?? {},
+          $pivotDataStore.data,
+        );
 
     if (!cellFilters.filters) return;
 
@@ -143,8 +148,39 @@
       );
     });
 
-    // Track clicked cell for ring indicator
-    lastClickedCell = { rowId, columnId };
+    // Track click selection for visual highlighting.
+    // Exclusive mode clears all previous selections; normal mode accumulates.
+    const nextRowHeaders = isExclusive
+      ? new Set<string>()
+      : new Set(clickSelection.rowHeaderSelections);
+    const nextCells = isExclusive
+      ? new Set<string>()
+      : new Set(clickSelection.cellSelections);
+
+    if (isRowHeader) {
+      // Toggle: if already selected, the filter toggle above removed it
+      if (nextRowHeaders.has(rowId)) {
+        nextRowHeaders.delete(rowId);
+      } else {
+        nextRowHeaders.add(rowId);
+      }
+    } else {
+      const key = cellKey(rowId, columnId);
+      if (nextCells.has(key)) {
+        nextCells.delete(key);
+      } else {
+        nextCells.add(key);
+      }
+    }
+
+    const hasAny = nextRowHeaders.size > 0 || nextCells.size > 0;
+    clickSelection = {
+      rowHeaderSelections: nextRowHeaders,
+      cellSelections: nextCells,
+      hasAnySelection: hasAny,
+      isRowHeaderSelected: (rid) => nextRowHeaders.has(rid),
+      isCellSelected: (rid, cid) => nextCells.has(cellKey(rid, cid)),
+    };
 
     // Mark these dimensions as self-filtered by the pivot
     selfFilteredDimensions.update((dims) => {
@@ -161,9 +197,9 @@
     }
   }
 
-  // Clear clicked cell when the pivot has no self-applied filters
+  // Clear selection state when the pivot has no self-applied filters
   $: if ($selfFilteredDimensions.size === 0) {
-    lastClickedCell = null;
+    clickSelection = createEmptyClickSelectionState();
   }
 </script>
 
@@ -192,7 +228,7 @@
         config={pivotConfig}
         {pivotState}
         {rowSelectionState}
-        clickedCell={lastClickedCell}
+        {clickSelection}
         enableClickToFilter
         setPivotExpanded={(expanded) => {
           pivotState.update((state) => ({

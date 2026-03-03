@@ -10,6 +10,10 @@
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import type {
+    PivotClickSelectionState,
+    PivotRowSelectionState,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
     splitPivotChips,
@@ -62,13 +66,16 @@
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
   export let onCellClickToFilter:
-    | ((rowId: string, columnId: string, event: MouseEvent) => void)
+    | ((
+        rowId: string,
+        columnId: string,
+        isRowHeader: boolean,
+        event: MouseEvent,
+      ) => void)
     | undefined = undefined;
   export let enableClickToFilter = false;
-  export let rowSelectionState:
-    | import("./pivot-row-selection").PivotRowSelectionState
-    | undefined = undefined;
-  export let clickedCell: { rowId: string; columnId: string } | null = null;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
@@ -263,7 +270,7 @@
 
       // Apply click-to-filter (Canvas or future Explore)
       if (onCellClickToFilter) {
-        onCellClickToFilter(rowId, columnId, e);
+        onCellClickToFilter(rowId, columnId, rowHeader, e);
       }
     }
   }
@@ -349,7 +356,7 @@
       {enableClickToFilter}
       {hasMeasureContextColumns}
       {rowSelectionState}
-      {clickedCell}
+      {clickSelection}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
@@ -374,7 +381,7 @@
       {canShowDataViewer}
       {enableClickToFilter}
       {rowSelectionState}
-      {clickedCell}
+      {clickSelection}
       activeCell={$pivotState.activeCell}
       {assembled}
       {scrollLeft}
