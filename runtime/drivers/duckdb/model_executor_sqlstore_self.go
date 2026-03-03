@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillmysql "github.com/rilldata/rill/runtime/drivers/mysql"
 	"github.com/rilldata/rill/runtime/drivers/postgres"
+	rillsqlserver "github.com/rilldata/rill/runtime/drivers/sqlserver"
 )
 
 type sqlStoreToSelfInputProps struct {
@@ -110,6 +111,24 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 		}
 		m.PreExec = fmt.Sprintf("INSTALL 'POSTGRES'; LOAD 'POSTGRES'; ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(dsn), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM postgres_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
+	case "sqlserver":
+		dsn := inputProps.resolveDSN()
+		if dsn == "" {
+			var config *rillsqlserver.ConfigProperties
+			if err := mapstructure.WeakDecode(inputHandle.Config(), &config); err != nil {
+				return nil, err
+			}
+			var err error
+			dsn, err = config.ResolveDSN()
+			if err != nil {
+				return nil, err
+			}
+		}
+		if dsn == "" {
+			return nil, fmt.Errorf("must set `dsn` for models that transfer data from `sqlserver` to `duckdb`")
+		}
+		m.PreExec = fmt.Sprintf("INSTALL 'mssql' FROM community; LOAD 'mssql'; ATTACH %s AS %s (TYPE mssql, READ_ONLY)", safeSQLString(dsn), safeDBName)
+		m.SQL = fmt.Sprintf("SELECT * FROM mssql_scan(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	default:
 		return nil, fmt.Errorf("internal error: unsupported external database: %s", inputHandle.Driver())
 	}

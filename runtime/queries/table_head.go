@@ -36,6 +36,7 @@ var supportedTableHeadDialects = map[drivers.Dialect]bool{
 	drivers.DialectMySQL:      true,
 	drivers.DialectPostgres:   true,
 	drivers.DialectStarRocks:  true,
+	drivers.DialectSQLServer:  true,
 }
 
 func (q *TableHead) Key() string {
@@ -143,6 +144,10 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
+	case drivers.DialectSQLServer:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -183,6 +188,21 @@ func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStor
 	columns, err := supportedColumns(ctx, olap, q.Database, q.DatabaseSchema, q.TableName)
 	if err != nil {
 		return "", err
+	}
+
+	// SQL Server uses TOP N instead of LIMIT N
+	if olap.Dialect() == drivers.DialectSQLServer {
+		topClause := ""
+		if q.Limit > 0 {
+			topClause = fmt.Sprintf("TOP %d ", q.Limit)
+		}
+		sql := fmt.Sprintf(
+			`SELECT %s%s FROM %s`,
+			topClause,
+			strings.Join(columns, ","),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		)
+		return sql, nil
 	}
 
 	limitClause := ""

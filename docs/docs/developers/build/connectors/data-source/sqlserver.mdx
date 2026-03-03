@@ -1,0 +1,143 @@
+---
+title: SQL Server
+description: Connect to data in SQL Server
+sidebar_label: SQL Server
+sidebar_position: 45
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[Microsoft SQL Server](https://learn.microsoft.com/en-us/sql/sql-server/) is a relational database management system developed by Microsoft. It supports a wide range of applications, from small projects to large enterprise systems, with features like advanced analytics, in-memory processing, and robust security. You can connect to and read from SQL Server databases directly.
+
+## Authentication Methods
+
+To connect to SQL Server, you need to provide database connection credentials. Rill supports connecting via individual parameters (host, port, user, password, database).
+
+<TwoStepFlowIntro
+  connector="SQL Server"
+  step1Description="Set up your SQL Server connector with connection credentials (host, port, user, password, database)"
+  step2Description="Define which table or query to execute"
+/>
+
+### Connection String Format
+
+When connecting to SQL Server, you can also specify a Data Source Name (DSN) using the following syntax:
+
+```bash
+mssql://<user>:<password>@<host>:<port>/<database>
+```
+
+- **scheme**: Use `mssql` for SQL Server connections.
+- **user** and **password**: Should correspond to the user credentials that Rill will use to connect to SQL Server.
+- **host** and **port**: Should correspond to the hostname and port (default 1433) of your SQL Server instance.
+- **database**: Should correspond to the database in SQL Server that you are using.
+
+For special characters in the password, percent-encode them (e.g., `@` becomes `%40`, `:` becomes `%3A`):
+```text
+mssql://user:pa%40ss@localhost:1433/my-db   # password contains '@'
+mssql://user:pa%3Ass@localhost:1433/my-db   # password contains ':'
+```
+
+For more details, see the [go-mssqldb connection string documentation](https://github.com/microsoft/go-mssqldb#connection-parameters-and-dsn).
+
+## Method 1: Connection Credentials
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **SQL Server** as the data source type
+3. In the authentication step:
+   - Enter your SQL Server host and port
+   - Enter your database name
+   - Enter your username and password
+   - Configure encryption if needed
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/sqlserver.yaml`:
+
+```yaml
+type: connector
+driver: sqlserver
+
+host: "localhost"
+port: 1433
+database: "mydatabase"
+user: "myusername"
+password: "{{ .env.SQLSERVER_PASSWORD }}"
+encrypt: false
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+SQLSERVER_PASSWORD=your-secure-password
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Method 2: DSN Connection String
+
+You can also configure the connector using a single DSN connection string instead of individual parameters.
+
+Create `connectors/sqlserver.yaml`:
+
+```yaml
+type: connector
+driver: sqlserver
+
+dsn: "{{ .env.SQLSERVER_DSN }}"
+```
+
+Add the DSN to your `.env` file:
+
+```bash
+SQLSERVER_DSN=mssql://myusername:mypassword@localhost:1433/mydatabase
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured, create a model to define what data to pull.
+
+Create `models/sqlserver_data.yaml`:
+
+```yaml
+type: model
+connector: sqlserver
+dev:
+  sql: SELECT TOP 10000 * FROM my_table
+
+sql: SELECT * FROM my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="SQL Server"
+  connectorId="sqlserver"
+  credentialDescription="the SQL Server connection credentials"
+/>

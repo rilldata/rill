@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
+	"github.com/testcontainers/testcontainers-go/modules/mssql"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -218,6 +219,41 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 		dsn := fmt.Sprintf("mysql://mysql:mysql@%v:%v/mysql", host, port.Port())
 		ip, err := mysqlContainer.ContainerIP(context.Background())
+		require.NoError(t, err)
+
+		return map[string]string{"dsn": dsn, "ip": ip}
+	},
+	"sqlserver": func(t TestingT) map[string]string {
+		_, currentFile, _, _ := goruntime.Caller(0)
+		testdataPath := filepath.Join(currentFile, "..", "testdata")
+		sqlserverInitData := filepath.Join(testdataPath, "init_data", "sqlserver_init_data.sql")
+
+		f, err := os.Open(sqlserverInitData)
+		require.NoError(t, err)
+		defer f.Close()
+
+		ctx := context.Background()
+		password := "SuperStrong@Passw0rd"
+		mssqlContainer, err := mssql.Run(ctx,
+			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			mssql.WithAcceptEULA(),
+			mssql.WithPassword(password),
+			mssql.WithInitSQL(f),
+		)
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err := mssqlContainer.Terminate(ctx)
+			require.NoError(t, err)
+		})
+
+		host, err := mssqlContainer.Host(ctx)
+		require.NoError(t, err)
+		port, err := mssqlContainer.MappedPort(ctx, "1433/tcp")
+		require.NoError(t, err)
+
+		dsn := fmt.Sprintf("mssql://sa:%s@%s:%s/testDB", password, host, port.Port())
+		ip, err := mssqlContainer.ContainerIP(context.Background())
 		require.NoError(t, err)
 
 		return map[string]string{"dsn": dsn, "ip": ip}
