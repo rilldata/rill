@@ -14,7 +14,13 @@ export const load = async ({
   // Wait for the feature flags to load
   const { runtime } = await parent();
 
-  const fetchedFeatureFlags = await getFeatureFlags(runtime);
+  let fetchedFeatureFlags: Awaited<ReturnType<typeof getFeatureFlags>> = {};
+  try {
+    fetchedFeatureFlags = await getFeatureFlags(runtime);
+  } catch {
+    // If the runtime is unreachable or the JWT is invalid, fall back to defaults.
+    // The project layout's JWT refresh polling will recover on the next interval.
+  }
 
   // Redirect to `/-/dashboards` if chat feature is disabled
   // NOTE: In the future, we'll use user-level `ai` permissions for more granular access control
