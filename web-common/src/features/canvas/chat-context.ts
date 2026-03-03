@@ -58,8 +58,8 @@ function getActiveCanvasContext(
       };
 
       if (selectedInterval?.isValid) {
-        analystAgentContext.timeStart = selectedInterval.start.toISO();
-        analystAgentContext.timeEnd = selectedInterval.end.toISO();
+        analystAgentContext.timeStart = selectedInterval.start.toUTC().toISO();
+        analystAgentContext.timeEnd = selectedInterval.end.toUTC().toISO();
       }
 
       if (filtersMap.size) {

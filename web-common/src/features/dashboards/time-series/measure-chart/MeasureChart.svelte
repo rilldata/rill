@@ -79,11 +79,12 @@
   $: measureName = measure.name ?? "";
   $: height = showTimeDimensionDetail ? 245 : 145;
 
-  // Extract ISO strings for API calls
-  $: timeStart = interval?.start?.toISO() ?? undefined;
-  $: timeEnd = interval?.end?.toISO() ?? undefined;
-  $: comparisonTimeStart = comparisonInterval?.start?.toISO() ?? undefined;
-  $: comparisonTimeEnd = comparisonInterval?.end?.toISO() ?? undefined;
+  // Extract ISO strings for API calls (must be UTC for protobuf Timestamp parsing)
+  $: timeStart = interval?.start?.toUTC().toISO() ?? undefined;
+  $: timeEnd = interval?.end?.toUTC().toISO() ?? undefined;
+  $: comparisonTimeStart =
+    comparisonInterval?.start?.toUTC().toISO() ?? undefined;
+  $: comparisonTimeEnd = comparisonInterval?.end?.toUTC().toISO() ?? undefined;
 
   // Time series queries
   $: timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
