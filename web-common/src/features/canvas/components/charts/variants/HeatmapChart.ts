@@ -4,7 +4,10 @@ import {
   HeatmapChartProvider,
   type HeatmapChartSpec as HeatmapChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/heatmap/HeatmapChartProvider";
-import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
+import {
+  ChartSortType,
+  type ChartFieldsMap,
+} from "@rilldata/web-common/features/components/charts/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   MetricsViewSpecDimensionType,
@@ -20,7 +23,7 @@ import type {
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
 const DEFAULT_NOMINAL_LIMIT = 40;
-const DEFAULT_SORT = "-color";
+const DEFAULT_SORT = ChartSortType.COLOR_DESC;
 
 export type HeatmapCanvasChartSpec = BaseChartConfig & HeatmapChartSpecBase;
 
@@ -38,7 +41,13 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["x", "-x", "color", "-color", "custom"],
+            options: [
+              ChartSortType.X_ASC,
+              ChartSortType.X_DESC,
+              ChartSortType.COLOR_ASC,
+              ChartSortType.COLOR_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           axisTitleSelector: true,
           nullSelector: true,
@@ -56,7 +65,13 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["y", "-y", "color", "-color", "custom"],
+            options: [
+              ChartSortType.Y_ASC,
+              ChartSortType.Y_DESC,
+              ChartSortType.COLOR_ASC,
+              ChartSortType.COLOR_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           axisTitleSelector: true,
           nullSelector: true,

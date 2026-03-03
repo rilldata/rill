@@ -22,7 +22,7 @@
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content" use:enhanceCitationLinks>
+  <div class="chat-message-content" use:enhanceCitationLinks={conversation}>
     <Markdown {content} />
   </div>
   <div class="chat-message-actions">

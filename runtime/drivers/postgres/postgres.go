@@ -20,8 +20,10 @@ import (
 )
 
 func init() {
-	drivers.Register("postgres", driver{})
-	drivers.RegisterAsConnector("postgres", driver{})
+	drivers.Register("postgres", driver{name: "postgres"})
+	drivers.RegisterAsConnector("postgres", driver{name: "postgres"})
+	drivers.Register("supabase", driver{name: "supabase"})
+	drivers.RegisterAsConnector("supabase", driver{name: "supabase"})
 }
 
 var spec = drivers.Spec{
@@ -89,7 +91,75 @@ var spec = drivers.Spec{
 	ImplementsSQLStore: true,
 }
 
-type driver struct{}
+var supabaseSpec = drivers.Spec{
+	DisplayName: "Supabase",
+	Description: "Connect to Supabase.",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/supabase",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Supabase Connection String",
+			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
+			Placeholder: "postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres",
+			Hint:        "Can be configured here or by setting the 'connector.supabase.dsn' environment variable (using '.env' or '--env').",
+			Secret:      true,
+		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Host",
+			Placeholder: "aws-0-[region].pooler.supabase.com",
+			Required:    true,
+			Hint:        "Supabase database host",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Port",
+			Placeholder: "5432",
+			Default:     "5432",
+			Hint:        "Supabase database port (default is 5432)",
+		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Placeholder: "postgres.[ref]",
+			Required:    true,
+			Hint:        "Supabase database user",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Placeholder: "your_password",
+			Hint:        "Supabase database password",
+			Secret:      true,
+		},
+		{
+			Key:         "dbname",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "postgres",
+			Required:    true,
+			Hint:        "Name of the Supabase database to connect to",
+		},
+		{
+			Key:         "sslmode",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "SSL Mode",
+			Placeholder: "require",
+			Default:     "require",
+			Hint:        "Options include disable, allow, prefer, require",
+		},
+	},
+	ImplementsSQLStore: true,
+}
+
+type driver struct {
+	name string
+}
 
 type ConfigProperties struct {
 	DatabaseURL string `mapstructure:"database_url"`
@@ -188,6 +258,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 }
 
 func (d driver) Spec() drivers.Spec {
+	if d.name == "supabase" {
+		return supabaseSpec
+	}
 	return spec
 }
 

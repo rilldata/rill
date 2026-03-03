@@ -131,11 +131,11 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := `
 	SELECT 
-		CASE WHEN t.table_type = 'view' THEN true ELSE false END AS view,
+		CASE WHEN lower(t.table_type) = 'view' THEN true ELSE false END AS view,
 		c.column_name, 
 		c.data_type
 	FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema
-	WHERE c.table_schema = $1 AND c.table_name = $2
+	WHERE c.table_schema = coalesce($1, current_schema()) AND c.table_name = $2
 	ORDER BY ordinal_position
 	`
 	db, err := c.getDB(ctx)
@@ -143,7 +143,13 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		return nil, err
 	}
 
-	rows, err := db.QueryContext(ctx, q, databaseSchema, table)
+	var args []any
+	if databaseSchema != "" {
+		args = append(args, databaseSchema, table)
+	} else {
+		args = append(args, nil, table)
+	}
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -580,6 +580,34 @@ paths:
             title: Request message for RuntimeService.ForkConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/messages/{messageId}:
+    get:
+      summary: GetAIMessage returns a message in a conversaion.
+      operationId: RuntimeService_GetAIMessage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAIMessageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: messageId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
     post:
       summary: ShareConversation enables sharing of the conversation by adding metadata.
@@ -699,10 +727,16 @@ paths:
           required: true
           type: string
         - name: path
+          description: Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
           in: query
           required: false
           type: string
         - name: delimiter
+          in: query
+          required: false
+          type: string
+        - name: glob
+          description: Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
           in: query
           required: false
           type: string
@@ -5325,6 +5359,12 @@ definitions:
         type: string
       resolverProperties:
         type: object
+  v1GetAIMessageResponse:
+    type: object
+    properties:
+      message:
+        $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:
     type: object
     properties:
