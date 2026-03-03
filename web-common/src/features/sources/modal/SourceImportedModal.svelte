@@ -17,11 +17,10 @@
   import { featureFlags } from "../../feature-flags";
   import {
     createCanvasDashboardFromTableWithAgent,
-    useCreateMetricsViewFromTableUIAction,
     useCreateMetricsViewWithCanvasAndExploreUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai, generateCanvas, developerChat } = featureFlags;
+  const { ai, developerChat } = featureFlags;
 
   export let sourcePath: string | null;
 
@@ -38,30 +37,17 @@
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
-  // When generateCanvas is enabled, create both explore and canvas dashboards
-  // and navigate to canvas (with fallback to explore on failure)
   $: createDashboardFromTable =
     sourcePath !== null
-      ? $generateCanvas
-        ? useCreateMetricsViewWithCanvasAndExploreUIAction(
-            instanceId,
-            sinkConnector as string,
-            "",
-            "",
-            sourceName,
-            BehaviourEventMedium.Button,
-            MetricsEventSpace.Modal,
-          )
-        : useCreateMetricsViewFromTableUIAction(
-            instanceId,
-            sinkConnector as string,
-            "",
-            "",
-            sourceName,
-            true,
-            BehaviourEventMedium.Button,
-            MetricsEventSpace.Modal,
-          )
+      ? useCreateMetricsViewWithCanvasAndExploreUIAction(
+          instanceId,
+          sinkConnector as string,
+          "",
+          "",
+          sourceName,
+          BehaviourEventMedium.Button,
+          MetricsEventSpace.Modal,
+        )
       : null;
 
   function close() {
@@ -80,8 +66,8 @@
     if (createDashboardFromTable === null) return;
     close();
 
-    // Use developer agent if enabled and generateCanvas is on, otherwise fall back to RPC
-    if ($generateCanvas && $developerChat) {
+    // Use developer agent if enabled, otherwise fall back to RPC
+    if ($developerChat) {
       await createCanvasDashboardFromTableWithAgent(
         instanceId,
         sinkConnector as string,
