@@ -67,6 +67,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_date_dimension", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_date_dimension(t, rt, instanceID)
 	})
+	t.Run("testMetricsViewsAggregation_like_nullable", func(t *testing.T) { testMetricsViewsAggregation_like_nullable(t, rt, instanceID) })
 }
 
 func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
@@ -5103,4 +5104,59 @@ func testMetricsViewsAggregation_comparison_date_dimension(t *testing.T, rt *run
 	require.NotEmpty(t, q.Result)
 	require.Equal(t, "2022-01-01", q.Result.Data[0].Fields["event_date"].GetStringValue())
 	require.Equal(t, "2022-01-02", q.Result.Data[1].Fields["event_date"].GetStringValue())
+}
+
+func testMetricsViewsAggregation_like_nullable(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	// Test LIKE on a Nullable(String) column
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_nullable_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "total_records",
+			},
+		},
+		Where: expressionpb.Like(
+			expressionpb.Identifier("publisher"),
+			expressionpb.Value(structpb.NewStringValue("%oo%")),
+		),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+		},
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	require.Len(t, rows, 3)
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[0], "publisher", "total_records"))
+	require.Equal(t, "Google,18763", fieldsToString(rows[1], "publisher", "total_records"))
+	require.Equal(t, "Yahoo,18593", fieldsToString(rows[2], "publisher", "total_records"))
+
+	// Test NOT LIKE with nullable column — should include NULL publisher rows
+	q.Where = expressionpb.NotLike(
+		expressionpb.Identifier("publisher"),
+		expressionpb.Value(structpb.NewStringValue("%oo%")),
+	)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	require.GreaterOrEqual(t, len(rows), 2)
+	// Should contain Microsoft and null publishers
+	publishers := make(map[string]bool)
+	for _, row := range rows {
+		publishers[fieldsToString(row, "publisher")] = true
+	}
+	require.True(t, publishers["Microsoft"])
+	require.True(t, publishers["null"])
 }

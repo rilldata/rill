@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -24,6 +25,9 @@ import (
 func init() {
 	drivers.Register("snowflake", driver{})
 	drivers.RegisterAsConnector("snowflake", driver{})
+
+	// Naughty Snowflake does logging inside the library using a global.
+	gosnowflake.GetLogger().SetOutput(io.Discard)
 }
 
 var spec = drivers.Spec{

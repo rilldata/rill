@@ -78,7 +78,7 @@ Rill offers flexible connection strategies to fit different data architectures a
   />
   
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-StarRocks.png" alt="StarRocks" className="starrocks-icon"/>}
+    icon={<img src="/img/build/connectors/icons/Logo-StarRocks.svg" alt="StarRocks" className="starrocks-icon"/>}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/developers/build/connectors/olap/starrocks"
     linkLabel="Learn more"
@@ -139,6 +139,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 ### MySQL
 ### PostgreSQL
 ### SQLite
+### Supabase
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -164,6 +165,14 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     link="/developers/build/connectors/data-source/sqlite"
     linkLabel="Learn more"
     referenceLink="sqlite"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Supabase.svg" alt="Supabase" className="duckdb-icon"/>}
+    header="Supabase"
+    content="Connect to Supabase's managed PostgreSQL databases with SSL support and standard connection methods."
+    link="/developers/build/connectors/data-source/supabase"
+    linkLabel="Learn more"
+    referenceLink="supabase"
   />
 </div>
 
@@ -264,19 +273,39 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 ## Service Integrations
 
+
+### Claude
+### Gemini
 ### OpenAI
 ### Slack
 
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Claude.svg" alt="Claude" className="sheets-icon" />}
     header="AI"
-    content="Define your own OpenAI Connector and define your own API key."
+    content="Create and define a Claude Connector with your own API key."
+    link="/developers/build/connectors/services/claude"
+    linkLabel="Learn more"
+    referenceLink="claude"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Gemini.svg" alt="Gemini" className="sheets-icon" />}
+    header="Gemini"
+    content="Create and define a Gemini Connector with your own API key."
+    link="/developers/build/connectors/services/gemini"
+    linkLabel="Learn more"
+    referenceLink="gemini"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="OpenAI" className="sheets-icon" />}
+    header="AI"
+    content="Create and define an OpenAI Connector with your own API key."
     link="/developers/build/connectors/services/openai"
     linkLabel="Learn more"
     referenceLink="openai"
   />
+
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Slack.svg" alt="Slack" className="slack-icon" />}
     header="Slack"

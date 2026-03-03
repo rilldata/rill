@@ -77,13 +77,13 @@ Create `connectors/snowflake.yaml`:
 type: connector
 driver: snowflake
 
-dsn: "{{ .env.connector.snowflake.dsn }}"
+dsn: "{{ .env.SNOWFLAKE_DSN }}"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.snowflake.dsn=myuser@myaccount/mydb/myschema?warehouse=mywh&role=myrole&authenticator=SNOWFLAKE_JWT&privateKey=<your_url_safe_private_key>
+SNOWFLAKE_DSN=myuser@myaccount/mydb/myschema?warehouse=mywh&role=myrole&authenticator=SNOWFLAKE_JWT&privateKey=<your_url_safe_private_key>
 ```
 
 <EnvPullTip />
@@ -110,13 +110,13 @@ Create `connectors/snowflake.yaml`:
 type: connector
 driver: snowflake
 
-dsn: "{{ .env.connector.snowflake.dsn }}"
+dsn: "{{ .env.SNOWFLAKE_DSN }}"
 ```
 
 Add credentials to `.env`:
 
 ```bash
-connector.snowflake.dsn=myuser:mypassword@myaccount/mydb/myschema?warehouse=mywh&role=myrole
+SNOWFLAKE_DSN=myuser:mypassword@myaccount/mydb/myschema?warehouse=mywh&role=myrole
 ```
 
 Then, [create your first model](#create-your-first-model).

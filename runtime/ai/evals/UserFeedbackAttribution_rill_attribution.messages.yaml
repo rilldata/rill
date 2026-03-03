@@ -1,0 +1,40 @@
+- id: b2672b3b-12c9-4141-b0db-6624fbe9011f
+  parent_id: ""
+  session_id: bd745584-57d4-4485-8d54-dc510dcebc29
+  time: 2026-02-03T15:57:16.650694+03:00
+  index: 0
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"What country has the highest revenue?"}'
+- id: 82c3496f-f9ae-4f71-828c-33a8638355a7
+  parent_id: b2672b3b-12c9-4141-b0db-6624fbe9011f
+  session_id: bd745584-57d4-4485-8d54-dc510dcebc29
+  time: 2026-02-03T15:57:16.650695+03:00
+  index: 1
+  role: assistant
+  type: result
+  tool: router_agent
+  content_type: text
+  content: Based on the data, the United States has the highest revenue at $1.2 billion.
+- id: f4234483-772f-4f71-9359-f94f75d723cc
+  parent_id: ""
+  session_id: bd745584-57d4-4485-8d54-dc510dcebc29
+  time: 2026-02-03T15:57:16.650699+03:00
+  index: 2
+  role: user
+  type: call
+  tool: feedback_agent
+  content_type: json
+  content: '{"target_message_id":"82c3496f-f9ae-4f71-828c-33a8638355a7","sentiment":"negative","comment":"This is completely wrong. The data clearly shows China has the highest revenue. You misread the data."}'
+- id: 97e96084-50be-41cf-9e6c-e01c7866d95e
+  parent_id: f4234483-772f-4f71-9359-f94f75d723cc
+  session_id: bd745584-57d4-4485-8d54-dc510dcebc29
+  time: 2026-02-03T15:57:19.656995+03:00
+  index: 3
+  role: user
+  type: result
+  tool: feedback_agent
+  content_type: json
+  content: '{"response":"Thanks for your feedback. I made an error in my response. I''ll work on improving.","predicted_attribution":"rill","attribution_reasoning":"I gave an incorrect result (United States) despite the user indicating the data clearly shows China as highest revenue, which suggests I misread or misinterpreted the underlying data rather than the question being unclear or the project lacking required fields."}'

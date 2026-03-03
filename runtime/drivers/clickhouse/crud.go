@@ -20,10 +20,17 @@ type tableWriteMetrics struct {
 	duration time.Duration
 }
 
-func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
+func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties, beforeCreate, afterCreate string) (*tableWriteMetrics, error) {
 	var onClusterClause string
 	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+
+	// Execute beforeCreate query
+	if beforeCreate != "" {
+		if err := c.Exec(ctx, &drivers.Statement{Query: beforeCreate, Priority: 100}); err != nil {
+			return nil, fmt.Errorf("failed to execute pre_exec: %w", err)
+		}
 	}
 
 	t := time.Now()
@@ -35,11 +42,21 @@ func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
+		if afterCreate != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: afterCreate, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
+		}
 		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	} else if outputProps.Typ == "DICTIONARY" {
 		err := c.createDictionary(ctx, name, sql, outputProps)
 		if err != nil {
 			return nil, err
+		}
+		if afterCreate != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: afterCreate, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
 		}
 		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	}
@@ -56,14 +73,30 @@ func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, err
 	}
+
+	// Execute afterCreate query
+	if afterCreate != "" {
+		if err := c.Exec(ctx, &drivers.Statement{Query: afterCreate, Priority: 100}); err != nil {
+			return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+		}
+	}
 	return &tableWriteMetrics{duration: time.Since(t)}, nil
 }
 
 type InsertTableOptions struct {
-	Strategy drivers.IncrementalStrategy
+	Strategy     drivers.IncrementalStrategy
+	BeforeInsert string
+	AfterInsert  string
 }
 
 func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
+	// Execute BeforeInsert query
+	if opts.BeforeInsert != "" {
+		if err := c.Exec(ctx, &drivers.Statement{Query: opts.BeforeInsert, Priority: 100}); err != nil {
+			return nil, fmt.Errorf("failed to execute pre_exec: %w", err)
+		}
+	}
+
 	start := time.Now()
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
@@ -73,6 +106,11 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 		if err != nil {
 			return nil, err
+		}
+		if opts.AfterInsert != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: opts.AfterInsert, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
 		}
 		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
@@ -163,6 +201,11 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil, err
 			}
 		}
+		if opts.AfterInsert != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: opts.AfterInsert, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
+		}
 		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
 
@@ -193,6 +236,11 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 		if err != nil {
 			return nil, err
+		}
+		if opts.AfterInsert != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: opts.AfterInsert, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
 		}
 		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
@@ -611,12 +659,19 @@ func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]str
 	if c.config.Cluster == "" {
 		tbl = "system.parts"
 	} else {
-		tbl = fmt.Sprint("cluster(", safeSQLString(c.config.Cluster), ", system.parts)")
+		// just query all replicas in case data is not fully replicated across the cluster
+		tbl = fmt.Sprint("clusterAllReplicas(", safeSQLString(c.config.Cluster), ", system.parts)")
 		name = localTableName(name)
 	}
+	var args []any
+	if c.config.Database == "" {
+		args = []any{nil, name}
+	} else {
+		args = []any{c.config.Database, name}
+	}
 	res, err := c.Query(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM %s WHERE table = ?", tbl),
-		Args:     []any{name},
+		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM %s WHERE database = coalesce(?, currentDatabase()) AND table = ?", tbl),
+		Args:     args,
 		Priority: 1,
 	})
 	if err != nil {

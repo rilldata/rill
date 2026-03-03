@@ -261,6 +261,11 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	if opts.OutputHandle == c {
+		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
+			return &olapToSelfExecutor{c, olap}, nil
+		}
+	}
 	return nil, drivers.ErrNotImplemented
 }
 

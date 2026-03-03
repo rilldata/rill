@@ -40,11 +40,13 @@
   {#if $explorePolicyCheck.data || $metricsPolicyCheck.data || $rillYamlPolicyCheck.data}
     <ViewAsButton />
   {/if}
-  <StateManagersProvider {metricsViewName} {exploreName}>
+  <StateManagersProvider {metricsViewName} {exploreName} let:ready>
     {#if $dashboardChat}
       <ChatToggle />
     {/if}
-    <GlobalDimensionSearch />
+    {#if ready}
+      <GlobalDimensionSearch />
+    {/if}
   </StateManagersProvider>
   {#if !$readOnly}
     <DropdownMenu.Root>

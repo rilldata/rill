@@ -100,8 +100,8 @@ Afterwards, create a file called clickhouse.yaml and add the following contents:
 type: connector
 driver: clickhouse
 
-host: '{{ .env.host }}'
-port: '{{ .env.port }}'
+host: "{{ .env.host }}"
+port: "{{ .env.port }}"
 ```
 
 
@@ -112,16 +112,16 @@ port: '{{ .env.port }}'
   <TabItem value="env" label="via .env">
 There's a few way to generate the .env file. Making a source that requires credentials will automatically generate it. Else, you can create it using `touch .env` in the rill directory.
 
-```yaml
-connector.clickhouse.host="localhost"
-connector.clickhouse.port=9000
-connector.clickhouse.username 
-connector.clickhouse.password 
-connector.clickhouse.ssl 
+```
+CLICKHOUSE_HOST="localhost"
+CLICKHOUSE_PORT=9000
+CLICKHOUSE_USERNAME=""
+CLICKHOUSE_PASSWORD=""
+CLICKHOUSE_SSL=false
 
 or
 
-connector.clickhouse.dsn="..."
+CLICKHOUSE_DSN="..."
 ```
 
   </TabItem>

@@ -1,0 +1,9 @@
+type: metrics_view
+model: ad_bids_nullable
+timeseries: timestamp
+dimensions:
+  - column: publisher
+  - column: domain
+measures:
+  - name: total_records
+    expression: COUNT(*)

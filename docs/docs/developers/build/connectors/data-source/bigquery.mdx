@@ -54,14 +54,14 @@ Create `connectors/bigquery.yaml`:
 type: connector
 driver: bigquery
 
-google_application_credentials: "{{ .env.connector.bigquery.google_application_credentials }}"
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
 project_id: "my-gcp-project"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.bigquery.google_application_credentials=<json_credentials>
+GOOGLE_APPLICATION_CREDENTIALS=<json_credentials>
 ```
 
 <EnvPullTip />

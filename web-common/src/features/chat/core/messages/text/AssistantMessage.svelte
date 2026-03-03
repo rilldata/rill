@@ -2,10 +2,17 @@
 <script lang="ts">
   import { enhanceCitationLinks } from "@rilldata/web-common/features/chat/core/messages/text/enhance-citation-links.ts";
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../../../runtime-client";
+  import type { Conversation } from "../../conversation";
+  import FeedbackButtons from "../../feedback/FeedbackButtons.svelte";
   import { extractMessageText } from "../../utils";
+  import type { TextBlock } from "./text-block";
 
-  export let message: V1Message;
+  export let block: TextBlock;
+  export let conversation: Conversation;
+  export let onDownvote: (messageId: string) => void;
+
+  $: message = block.message;
+  $: messageId = message.id ?? "";
 
   // Safety net: strip wrapper if the LLM wraps the entire response in ```markdown fences
   $: content = extractMessageText(message).replace(
@@ -15,8 +22,16 @@
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content" use:enhanceCitationLinks>
+  <div class="chat-message-content" use:enhanceCitationLinks={conversation}>
     <Markdown {content} />
+  </div>
+  <div class="chat-message-actions">
+    <FeedbackButtons
+      {messageId}
+      {conversation}
+      feedback={block.feedback}
+      {onDownvote}
+    />
   </div>
 </div>
 
@@ -29,5 +44,9 @@
     @apply py-2;
     @apply text-sm leading-relaxed break-words;
     @apply text-fg-primary;
+  }
+
+  .chat-message-actions {
+    @apply pb-2;
   }
 </style>

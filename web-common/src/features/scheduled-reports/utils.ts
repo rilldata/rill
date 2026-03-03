@@ -85,7 +85,11 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
   if (reportSpec.annotations?.web_open_path)
     return getExploreName(reportSpec.annotations.web_open_path);
 
-  const queryArgsJson = JSON.parse(reportSpec.queryArgsJson!);
+  const queryArgsJson = JSON.parse(
+    (reportSpec.resolverProperties?.query_args_json as string | undefined) ??
+      reportSpec.queryArgsJson ??
+      "{}",
+  );
 
   return (
     queryArgsJson?.metrics_view_name ??

@@ -297,6 +297,13 @@ service RuntimeService {
     };
   }
 
+  // GetAIMessage returns a message in a conversaion.
+  rpc GetAIMessage(GetAIMessageRequest) returns (GetAIMessageResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/messages/{message_id}"
+    };
+  }
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -1096,6 +1103,19 @@ message DeveloperAgentContext {
   string current_file_path = 2;
 }
 
+// Context for prompts handled by the feedback_agent.
+// When provided, the agent records feedback and, for negative sentiment, runs attribution.
+message FeedbackAgentContext {
+  // The ID of the message being rated.
+  string target_message_id = 1;
+  // Sentiment: "positive" or "negative".
+  string sentiment = 2;
+  // Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".
+  repeated string categories = 3;
+  // Optional free-text comment.
+  string comment = 4;
+}
+
 // Request message for RuntimeService.ListConversations
 message ListConversationsRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
@@ -1165,13 +1185,16 @@ message CompleteRequest {
   string prompt = 3;
   // Optional agent to use for the completion.
   // If not set, it will infer an agent based on the prompt and conversation history.
-  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent"]}];
+  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];
   // Optional context for prompts handled by the analyst_agent.
   // The field is ignored if another agent is selected.
   AnalystAgentContext analyst_agent_context = 11;
   // Optional context for prompts handled by the developer_agent.
   // The field is ignored if another agent is selected.
   DeveloperAgentContext developer_agent_context = 12;
+  // Optional context for prompts handled by the feedback_agent.
+  // The field is ignored if another agent is selected.
+  FeedbackAgentContext feedback_agent_context = 13;
 }
 
 // Response message for RuntimeService.Complete
@@ -1190,19 +1213,34 @@ message CompleteStreamingRequest {
   string prompt = 3;
   // Optional agent to use for the completion.
   // If not set, it will infer an agent based on the prompt and conversation history.
-  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent"]}];
+  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];
   // Optional context for prompts handled by the analyst_agent.
   // The field is ignored if another agent is selected.
   AnalystAgentContext analyst_agent_context = 11;
   // Optional context for prompts handled by the developer_agent.
   // The field is ignored if another agent is selected.
   DeveloperAgentContext developer_agent_context = 12;
+  // Optional context for prompts handled by the feedback_agent.
+  // The field is ignored if another agent is selected.
+  FeedbackAgentContext feedback_agent_context = 13;
 }
 
 // Response message for RuntimeService.CompleteStreaming
 message CompleteStreamingResponse {
   string conversation_id = 1;
   Message message = 2;
+}
+
+// Request message for RuntimeService.GetAIMessage
+message GetAIMessageRequest {
+  string instance_id = 1;
+  string conversation_id = 2;
+  string message_id = 3;
+}
+
+// Response message for RuntimeService.GetAIMessage
+message GetAIMessageResponse {
+  Message message = 1;
 }
 
 // **********

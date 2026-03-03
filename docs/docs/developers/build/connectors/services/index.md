@@ -8,11 +8,12 @@ import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
 Service Integrations extend Rill's capabilities by connecting to third-party services. Unlike data connectors that import data into Rill, these integrations enable features like AI-powered analytics and notifications.
 
-## Available Integrations
+## AI Integrations
 
 ### Claude
+### Gemini
 ### OpenAI
-### Slack
+
 
 
 <div className="connector-icon-grid">
@@ -25,6 +26,14 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
     referenceLink="claude"
   />
   <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Gemini.svg" alt="Gemini" className="sheets-icon" />}
+    header="Gemini"
+    content="Create and define a Gemini Connector with your own API key."
+    link="/developers/build/connectors/services/gemini"
+    linkLabel="Learn more"
+    referenceLink="gemini"
+  />
+  <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="OpenAI" className="sheets-icon" />}
     header="AI"
     content="Create and define an OpenAI Connector with your own API key."
@@ -32,6 +41,15 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
     linkLabel="Learn more"
     referenceLink="openai"
   />
+
+</div>
+
+
+## Notifications
+
+### Slack
+
+<div className="connector-icon-grid">
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Slack.svg" alt="Slack" className="slack-icon" />}
     header="Slack"
@@ -41,5 +59,3 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
     referenceLink="slack"
   />
 </div>
-
-

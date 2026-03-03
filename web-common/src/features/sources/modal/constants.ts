@@ -90,6 +90,8 @@ export const SOURCES = [
   "redshift",
   "s3",
   "snowflake",
+  "sqlite",
+  "supabase",
   "https",
 ];
 

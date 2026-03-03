@@ -297,6 +297,7 @@
     orientation: "horizontal",
   }}
   bind:this={container}
+  aria-label="Drag list {zone}"
 >
   {#each items as item, index (item.id)}
     <div

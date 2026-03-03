@@ -18,6 +18,7 @@ import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
 import SQLite from "../../../components/icons/connectors/SQLite.svelte";
 import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
 import Public from "../../../components/icons/connectors/Public.svelte";
+import Supabase from "../../../components/icons/connectors/Supabase.svelte";
 
 export const ICONS = {
   gcs: GoogleCloudStorage,
@@ -40,4 +41,5 @@ export const ICONS = {
   pinot: ApachePinot,
   starrocks: StarRocks,
   public: Public,
+  supabase: Supabase,
 };

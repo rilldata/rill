@@ -60,14 +60,14 @@ driver: postgres
 host: "localhost"
 port: "5432"
 user: "postgres"
-password: "{{ .env.connector.postgres.password }}"
+password: "{{ .env.POSTGRES_PASSWORD }}"
 dbname: "my_database"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.postgres.password=your_password_here
+POSTGRES_PASSWORD=your_password_here
 ```
 
 <EnvPullTip />
@@ -100,13 +100,13 @@ Create `connectors/postgres.yaml`:
 type: connector
 driver: postgres
 
-dsn: "{{ .env.connector.postgres.dsn }}"
+dsn: "{{ .env.POSTGRES_DSN }}"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.postgres.dsn=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
+POSTGRES_DSN=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
 Then, [create your first model](#create-your-first-model).

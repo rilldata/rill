@@ -72,6 +72,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder":
         "clickhouse://localhost:9000?username=default&password=password",
       "x-secret": true,
+      "x-env-var-name": "CLICKHOUSE_DSN",
       "x-visible-if": {
         deployment_type: ["cloud", "self-managed"],
       },
@@ -144,6 +145,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Password to connect to the ClickHouse server",
       "x-placeholder": "Database password",
       "x-secret": true,
+      "x-env-var-name": "CLICKHOUSE_PASSWORD",
       "x-visible-if": {
         deployment_type: ["cloud", "self-managed"],
       },
