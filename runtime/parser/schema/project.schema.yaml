@@ -64,6 +64,7 @@ definitions:
       - [**MySQL**](#mysql) - MySQL databases
       - [**PostgreSQL**](#postgres) - PostgreSQL databases
       - [**SQLite**](#sqlite) - SQLite databases
+      - [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
       ### _Object Storage_
       - [**Azure**](#azure) - Azure Blob Storage
@@ -900,6 +901,57 @@ definitions:
           required:
             - driver
         - type: object
+          title: Supabase
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `postgres`
+            dsn:
+              type: string
+              description: |
+                **Data Source Name (DSN)** for the Supabase connection, provided in
+                [PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+                Supabase uses PostgreSQL under the hood, so all PostgreSQL connection formats are supported.
+
+                URI format example:
+                ```text
+                postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+                ```
+            host:
+              type: string
+              description: Hostname of the Supabase database (e.g. aws-0-us-east-1.pooler.supabase.com)
+            port:
+              type: string
+              description: Port number for the Supabase database
+            dbname:
+              type: string
+              description: Name of the Supabase database
+            user:
+              type: string
+              description: Username for authentication (e.g. postgres.[your-project-ref])
+            password:
+              type: string
+              description: Password for authentication
+            sslmode:
+              type: string
+              description: "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+          examples:
+            - # Example: Supabase connector configured using individual properties
+              type: connector
+              driver: postgres
+              host: aws-0-us-east-1.pooler.supabase.com
+              port: 5432
+              dbname: postgres
+              user: "postgres.[your-project-ref]"
+              password: "{{ .env.SUPABASE_PASSWORD }}"
+              sslmode: require
+            - # Example: Supabase connector configured using dsn
+              type: connector
+              driver: postgres
+              dsn: "{{ .env.SUPABASE_DSN }}"  # Define DSN in .env file
+          required:
+            - driver
+        - type: object
           title: Redshift
           properties:
             driver:
@@ -1191,6 +1243,7 @@ definitions:
               - athena
               - redshift
               - postgres
+              - supabase
               - sqlite
               - snowflake
               - bigquery
@@ -1382,6 +1435,35 @@ definitions:
               - partitions:
                   connector: duckdb
                   sql: SELECT range AS num FROM range(0,10)
+          tests:
+            type: array
+            description: Define data quality tests for the model. Each test must have a `name` and either an `assert` expression or a `sql` query. An `assert` test passes when no rows violate the condition. A `sql` test passes when the query returns zero rows.
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: A unique name for the test.
+                assert:
+                  type: string
+                  description: A SQL boolean expression applied to each row of the model. The test passes if no rows violate the condition (i.e., all rows satisfy `assert`). Cannot be combined with `sql`.
+                sql:
+                  type: string
+                  description: A SQL query that returns rows representing test failures. The test passes if the query returns zero rows. Cannot be combined with `assert`.
+                connector:
+                  type: string
+                  description: The connector to use when executing the test query. Defaults to the model's connector.
+              required:
+                - name
+            examples:
+              - tests:
+                  - name: assert_positive_revenue
+                    assert: revenue >= 0
+                  - name: no_null_ids
+                    assert: id IS NOT NULL
+              - tests:
+                  - name: row_count_check
+                    sql: SELECT 'fail' WHERE (SELECT COUNT(*) FROM my_model) = 0
           materialize:
             type: boolean
             description: models will be materialized in olap

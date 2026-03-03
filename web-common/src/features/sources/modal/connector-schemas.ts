@@ -21,6 +21,7 @@ import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
+import { supabaseSchema } from "../../templates/schemas/supabase";
 import { SOURCES, OLAP_ENGINES } from "./constants";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
@@ -38,6 +39,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   druid: druidSchema,
   pinot: pinotSchema,
   starrocks: starrocksSchema,
+  supabase: supabaseSchema,
   local_file: localFileSchema,
   https: httpsSchema,
   s3: s3Schema,

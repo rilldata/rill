@@ -15,39 +15,21 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	// Register drivers
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
 func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
 	testmode.Expensive(t)
-
-	ctx := context.Background()
-	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
-		clickhouse.WithUsername("clickhouse"),
-		clickhouse.WithPassword("clickhouse"),
-		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := clickHouseContainer.Terminate(ctx)
-		require.NoError(t, err)
-	})
-
-	host, err := clickHouseContainer.Host(ctx)
-	require.NoError(t, err)
-	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
-	require.NoError(t, err)
-
+	// Create a test ClickHouse cluster
+	dsn := testclickhouse.Start(t)
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", dsn)
 	t.Run("TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist", func(t *testing.T) { TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t) })
 	t.Run("TestMetricsViewsComparison_dim_order", func(t *testing.T) { TestMetricsViewsComparison_dim_order(t) })
 	t.Run("TestMetricsViewsComparison_measure_order", func(t *testing.T) { TestMetricsViewsComparison_measure_order(t) })
