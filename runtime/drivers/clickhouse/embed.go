@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const embedVersion = "25.6.12.10"
+const embedVersion = "25.12.5.44"
 
 var (
 	embed             *embedClickHouse

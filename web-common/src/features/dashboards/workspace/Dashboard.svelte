@@ -194,8 +194,6 @@
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
-                timeSeriesWidth={metricsWidth}
-                workspaceWidth={exploreContainerWidth}
                 hideStartPivotButton={hidePivot}
               />
             {:else}

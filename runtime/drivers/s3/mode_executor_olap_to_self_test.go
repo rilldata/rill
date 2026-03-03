@@ -130,7 +130,7 @@ output:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
-	testExportedObjectExists(t, "gcs", rt, id)
+	testExportedObjectExists(t, "s3", rt, id)
 }
 
 func testExportedObjectExists(t *testing.T, driver string, rt *runtime.Runtime, id string) {

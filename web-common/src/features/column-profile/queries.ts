@@ -1,10 +1,3 @@
-import { convertTimestampPreview } from "@rilldata/web-common/lib/convertTimestampPreview";
-import {
-  QueryServiceColumnNumericHistogramHistogramMethod,
-  type V1ProfileColumn,
-  type V1TableColumnsResponse,
-} from "@rilldata/web-common/runtime-client";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   createQueryServiceColumnCardinality,
   createQueryServiceColumnNullCount,
@@ -14,7 +7,12 @@ import {
   createQueryServiceColumnTimeSeries,
   createQueryServiceColumnTopK,
   createQueryServiceTableCardinality,
+  QueryServiceColumnNumericHistogramHistogramMethod,
+  type V1ProfileColumn,
+  type V1TableColumnsResponse,
+  type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
 import {
   keepPreviousData,
@@ -228,6 +226,21 @@ export function getTopK(
   });
 }
 
+function convertPoint(point: V1TimeSeriesValue) {
+  const next = {
+    ...point,
+    count: point?.records?.count as number,
+    ts: point.ts ? new Date(point.ts) : new Date(0),
+  };
+  if (next.count == null || !isFinite(next.count)) {
+    next.count = 0;
+  }
+
+  return next;
+}
+
+export type TimestampDataPoint = ReturnType<typeof convertPoint>;
+
 export function getTimeSeriesAndSpark(
   client: RuntimeClient,
   connector: string,
@@ -295,28 +308,15 @@ export function getTimeSeriesAndSpark(
   return derived(
     [query, estimatedInterval, smallestTimeGrain],
     ([$query, $estimatedInterval, $smallestTimeGrain]) => {
+      const data = $query?.data?.rollup?.results?.map(convertPoint) || [];
+
+      const spark = $query?.data?.rollup?.spark?.map(convertPoint) || [];
       return {
         isFetching: $query?.isFetching,
         estimatedRollupInterval: $estimatedInterval?.data,
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
-        data: convertTimestampPreview(
-          $query?.data?.rollup?.results?.map((di) => {
-            const next = { ...di, count: di?.records?.count as number };
-            if (next.count == null || !isFinite(next.count)) {
-              next.count = 0;
-            }
-            return next;
-          }) || [],
-        ),
-        spark: convertTimestampPreview(
-          $query?.data?.rollup?.spark?.map((di) => {
-            const next = { ...di, count: di?.records?.count as number };
-            if (next.count == null || !isFinite(next.count)) {
-              next.count = 0;
-            }
-            return next;
-          }) || [],
-        ),
+        data,
+        spark,
       };
     },
   );
@@ -331,7 +331,6 @@ export function getNumericHistogram(
   columnName: string,
   histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
   enabled = true,
-  active = false,
 ) {
   return createQueryServiceColumnNumericHistogram(
     client,
@@ -342,7 +341,7 @@ export function getNumericHistogram(
       databaseSchema,
       columnName,
       histogramMethod,
-      priority: getPriorityForColumn("numeric-histogram", active),
+      priority: getPriorityForColumn("numeric-histogram", false),
     },
     {
       query: {
