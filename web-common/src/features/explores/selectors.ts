@@ -47,6 +47,10 @@ export type ExploreValidSpecResponse = {
   metricsView: V1MetricsViewSpec | undefined;
 };
 
+function getExploreIdentity(data: V1GetExploreResponse): string | undefined {
+  return data.explore?.meta?.name?.name;
+}
+
 function getExploreValidSpecs(
   data: V1GetExploreResponse,
 ): ExploreValidSpecResponse {
@@ -63,8 +67,15 @@ function getExploreValidSpecs(
  */
 export function createCachedExploreValidSpecSelector() {
   let cachedValidSpecs: ExploreValidSpecResponse | undefined;
+  let cachedExploreIdentity: string | undefined;
 
   return (data: V1GetExploreResponse): ExploreValidSpecResponse => {
+    const currentExploreIdentity = getExploreIdentity(data);
+    if (currentExploreIdentity !== cachedExploreIdentity) {
+      cachedValidSpecs = undefined;
+      cachedExploreIdentity = currentExploreIdentity;
+    }
+
     const validSpecs = getExploreValidSpecs(data);
 
     if (validSpecs.explore && validSpecs.metricsView) {
@@ -102,7 +113,7 @@ export function useExploreValidSpec(
     { name: exploreName },
     {
       query: {
-        select: (data) => selectCachedValidSpec(data),
+        select: selectCachedValidSpec,
 
         enabled: !!exploreName,
         ...queryOptions,

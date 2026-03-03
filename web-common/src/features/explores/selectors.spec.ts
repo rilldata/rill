@@ -21,11 +21,15 @@ function makeMetricsViewSpec(timeDimensionName: string): V1MetricsViewSpec {
 }
 
 function makeGetExploreResponse({
+  exploreName = "ad_bids_explore",
+  metricsViewName = "ad_bids_metrics",
   exploreSpec,
   metricsViewSpec,
   exploreReconcileStatus = V1ReconcileStatus.RECONCILE_STATUS_IDLE,
   metricsViewReconcileStatus = V1ReconcileStatus.RECONCILE_STATUS_IDLE,
 }: {
+  exploreName?: string;
+  metricsViewName?: string;
   exploreSpec: V1ExploreSpec | undefined;
   metricsViewSpec: V1MetricsViewSpec | undefined;
   exploreReconcileStatus?: V1ReconcileStatus;
@@ -34,6 +38,9 @@ function makeGetExploreResponse({
   return {
     explore: {
       meta: {
+        name: {
+          name: exploreName,
+        },
         reconcileStatus: exploreReconcileStatus,
       },
       explore: {
@@ -44,6 +51,9 @@ function makeGetExploreResponse({
     },
     metricsView: {
       meta: {
+        name: {
+          name: metricsViewName,
+        },
         reconcileStatus: metricsViewReconcileStatus,
       },
       metricsView: {
@@ -127,5 +137,55 @@ describe("createCachedExploreValidSpecSelector", () => {
 
     expect(updatedSpecs.explore?.metricsView).toBe("ad_impressions_metrics");
     expect(updatedSpecs.metricsView?.timeDimension).toBe("created_at");
+  });
+
+  it("keeps the cached pair when only one spec is missing during reconciliation", () => {
+    const selector = createCachedExploreValidSpecSelector();
+
+    const initialSpecs = selector(
+      makeGetExploreResponse({
+        exploreSpec: makeExploreSpec("ad_bids_metrics"),
+        metricsViewSpec: makeMetricsViewSpec("timestamp"),
+      }),
+    );
+
+    const partialSpecs = selector(
+      makeGetExploreResponse({
+        exploreSpec: makeExploreSpec("ad_bids_metrics"),
+        metricsViewSpec: undefined,
+        metricsViewReconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+      }),
+    );
+
+    expect(partialSpecs).toEqual(initialSpecs);
+  });
+
+  it("does not bleed cached specs across explores", () => {
+    const selector = createCachedExploreValidSpecSelector();
+
+    selector(
+      makeGetExploreResponse({
+        exploreName: "explore_a",
+        metricsViewName: "metrics_a",
+        exploreSpec: makeExploreSpec("metrics_a"),
+        metricsViewSpec: makeMetricsViewSpec("timestamp"),
+      }),
+    );
+
+    const otherExploreSpecs = selector(
+      makeGetExploreResponse({
+        exploreName: "explore_b",
+        metricsViewName: "metrics_b",
+        exploreSpec: undefined,
+        metricsViewSpec: undefined,
+        exploreReconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+        metricsViewReconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+      }),
+    );
+
+    expect(otherExploreSpecs).toEqual({
+      explore: undefined,
+      metricsView: undefined,
+    });
   });
 });
