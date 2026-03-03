@@ -6,6 +6,7 @@
   } from "@rilldata/web-admin/client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { formatProjectRole } from "@rilldata/web-common/features/users/roles";
 
   export let organization: string;
   export let userId: string;
@@ -16,7 +17,7 @@
 
   $: userProjectsQuery = createAdminServiceListProjectsForOrganizationAndUser(
     organization,
-    { userId },
+    { userId, includeRoles: true },
     {
       query: {
         enabled: !!userId && isDropdownOpen,
@@ -24,8 +25,8 @@
     },
   );
   $: ({ data, isPending, error } = $userProjectsQuery);
-  let projects: V1Project[];
   $: projects = data?.projects ?? [];
+  $: projectRoles = data?.projectRoles ?? {};
 
   $: hasProjects = projectCount > 0;
 
@@ -58,11 +59,17 @@
       {:else}
         {#each projects as project (project.id)}
           {@const projectName = project.name ?? ""}
+          {@const role = project.id ? projectRoles[project.id] : undefined}
           <Dropdown.Item
             href={getProjectShareUrl(projectName)}
-            class="whitespace-nowrap"
+            class="flex items-center gap-2 whitespace-nowrap"
           >
-            {projectName}
+            <span class="truncate">{projectName}</span>
+            {#if role}
+              <span class="text-fg-muted text-xs">
+                {formatProjectRole(role)}
+              </span>
+            {/if}
           </Dropdown.Item>
         {/each}
       {/if}

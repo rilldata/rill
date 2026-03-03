@@ -350,18 +350,19 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, directOnly bool, afterProjectName string, limit int) ([]*database.Project, error) {
 	var qry strings.Builder
 	qry.WriteString("SELECT p.* FROM projects p WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (")
 	if includePublic {
 		qry.WriteString("p.public = true OR ")
 	}
-	qry.WriteString(`p.id IN (
-		SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3
+	qry.WriteString("p.id IN (SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3")
+	if !directOnly {
+		qry.WriteString(`
 		UNION
-		SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3
-	)`)
-	qry.WriteString(") ORDER BY lower(p.name) LIMIT $4")
+		SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3`)
+	}
+	qry.WriteString(")) ORDER BY lower(p.name) LIMIT $4")
 
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), orgID, afterProjectName, userID, limit)
@@ -2275,6 +2276,28 @@ func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, u
 		return nil, parseErr("project member role", err)
 	}
 	return role, nil
+}
+
+func (c *connection) FindProjectRolesForUser(ctx context.Context, userID string, projectIDs []string) (map[string]string, error) {
+	type row struct {
+		ProjectID string `db:"project_id"`
+		RoleName  string `db:"role_name"`
+	}
+	var rows []row
+	err := c.getDB(ctx).SelectContext(ctx, &rows, `
+		SELECT upr.project_id, pr.name AS role_name
+		FROM users_projects_roles upr
+		JOIN project_roles pr ON pr.id = upr.project_role_id
+		WHERE upr.user_id = $1 AND upr.project_id = ANY($2)
+	`, userID, projectIDs)
+	if err != nil {
+		return nil, parseErr("project roles", err)
+	}
+	res := make(map[string]string, len(rows))
+	for _, r := range rows {
+		res[r.ProjectID] = r.RoleName
+	}
+	return res, nil
 }
 
 func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {

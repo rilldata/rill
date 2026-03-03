@@ -67,7 +67,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
 	} else if claims.OwnerType() == auth.OwnerTypeUser {
 		// Get projects the user is a (direct or group) member of, plus all public projects.
-		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), true, token.Val, pageSize)
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), true, false, token.Val, pageSize)
 	} else {
 		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Val, pageSize)
 	}
@@ -119,7 +119,7 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, req.UserId, false, pageToken.Val, pageSize)
+	projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, req.UserId, false, req.Direct, pageToken.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -134,9 +134,22 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 		dtos[i] = s.projToDTO(p, org.Name)
 	}
 
+	var projectRoles map[string]string
+	if req.IncludeRoles && len(projects) > 0 {
+		ids := make([]string, len(projects))
+		for i, p := range projects {
+			ids[i] = p.ID
+		}
+		projectRoles, err = s.admin.DB.FindProjectRolesForUser(ctx, req.UserId, ids)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &adminv1.ListProjectsForOrganizationAndUserResponse{
 		Projects:      dtos,
 		NextPageToken: nextToken,
+		ProjectRoles:  projectRoles,
 	}, nil
 }
 

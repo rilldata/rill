@@ -1052,6 +1052,16 @@ paths:
           in: query
           required: false
           type: string
+        - name: direct
+          description: Only return projects where the user has a direct membership (exclude usergroup-inherited access).
+          in: query
+          required: false
+          type: boolean
+        - name: includeRoles
+          description: Populate project_roles in the response.
+          in: query
+          required: false
+          type: boolean
   /v1/orgs/{org}/projects/{project}:
     get:
       summary: GetProject returns information about a specific project
@@ -5506,6 +5516,11 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+      projectRoles:
+        type: object
+        additionalProperties:
+          type: string
+        description: Maps project IDs to the user's direct role name. Only populated when include_roles is true.
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:

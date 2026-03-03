@@ -814,9 +814,18 @@ export interface V1ListProjectsForFingerprintResponse {
   unauthorizedProject?: string;
 }
 
+/**
+ * Maps project IDs to the user's direct role name. Only populated when include_roles is true.
+ */
+export type V1ListProjectsForOrganizationAndUserResponseProjectRoles = {
+  [key: string]: string;
+};
+
 export interface V1ListProjectsForOrganizationAndUserResponse {
   projects?: V1Project[];
   nextPageToken?: string;
+  /** Maps project IDs to the user's direct role name. Only populated when include_roles is true. */
+  projectRoles?: V1ListProjectsForOrganizationAndUserResponseProjectRoles;
 }
 
 export interface V1ListProjectsForOrganizationResponse {
@@ -1824,6 +1833,14 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
   pageToken?: string;
+  /**
+   * Only return projects where the user has a direct membership (exclude usergroup-inherited access).
+   */
+  direct?: boolean;
+  /**
+   * Populate project_roles in the response.
+   */
+  includeRoles?: boolean;
 };
 
 export type AdminServiceGetProjectParams = {
