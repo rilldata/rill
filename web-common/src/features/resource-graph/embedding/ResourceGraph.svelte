@@ -400,13 +400,44 @@
   // Display label for the breadcrumb trigger
   $: selectedGroupIsConnector =
     effectiveSelectedGroupId?.includes("Connector") ?? false;
-  $: breadcrumbLabel = selectedGroupIsConnector
-    ? `All Resources`
-    : (selectedGroup?.label ?? "Select resource");
+  // Show "All Resources" when a connector is auto-selected (no URL param),
+  // but show the actual connector name when explicitly selected via URL
+  $: breadcrumbLabel =
+    selectedGroupIsConnector && !resolvedControlledId
+      ? "All Resources"
+      : (selectedGroup?.label ?? "Select resource");
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
   let seedTransitionLoading = false;
   let seedTransitionTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Lazy rendering: only mount GraphCanvas when grid item is near the viewport.
+  // Uses IntersectionObserver with a generous rootMargin so graphs mount before
+  // the user scrolls to them, avoiding visible pop-in.
+  const LAZY_ROOT_MARGIN = "200px";
+  let visibleGroupIds = new Set<string>();
+
+  function lazyObserve(node: HTMLElement, groupId: string) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !visibleGroupIds.has(groupId)) {
+          visibleGroupIds = new Set([...visibleGroupIds, groupId]);
+        }
+      },
+      { rootMargin: LAZY_ROOT_MARGIN },
+    );
+    observer.observe(node);
+    return {
+      destroy() {
+        observer.disconnect();
+      },
+    };
+  }
+
+  // Reset visible set when groups change (e.g., filter applied)
+  $: if (visibleResourceGroups) {
+    visibleGroupIds = new Set<string>();
+  }
 
   // Cleanup timer on component destroy
   onDestroy(() => {
@@ -867,10 +898,12 @@
         {@const isExpanded = currentExpandedId === group.id}
         {@const isHidden = hasExpandedItem && !isExpanded}
         {@const parts = groupTitleParts(group, index)}
+        {@const isVisible = isExpanded || visibleGroupIds.has(group.id)}
         <div
           class="grid-item"
           class:expanded={isExpanded}
           class:hidden={isHidden}
+          use:lazyObserve={group.id}
         >
           {#if isExpanded && overlayMode !== "inline"}
             <!-- Fullscreen or modal overlay -->
@@ -901,8 +934,8 @@
               {fitViewMaxZoom}
               onExpand={() => handleExpandChange(null)}
             />
-          {:else}
-            <!-- Collapsed card view -->
+          {:else if isVisible}
+            <!-- Collapsed card view (lazy-mounted when near viewport) -->
             <slot name="graph-item" {group} {index}>
               <GraphCanvas
                 flowId={group.id}
@@ -1051,6 +1084,7 @@
 
   .grid-item {
     @apply relative h-full;
+    min-height: 200px;
   }
 
   .grid-item.hidden {

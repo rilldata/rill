@@ -14,6 +14,7 @@
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
+  import { goto } from "$app/navigation";
 
   export let id: string;
   export let type: string;
@@ -121,15 +122,38 @@
 
   const { fitView } = useSvelteFlow();
 
-  function handleDoubleClick() {
-    fitView({ nodes: [{ id }], duration: 300, padding: 0.5 });
+  $: rawFilePath = data?.resource?.meta?.filePaths?.[0] ?? null;
+
+  function navigateToFile() {
+    if (!rawFilePath) return;
+    try {
+      const prefs = JSON.parse(localStorage.getItem(rawFilePath) || "{}");
+      localStorage.setItem(
+        rawFilePath,
+        JSON.stringify({ ...prefs, view: "code" }),
+      );
+    } catch {
+      // ignore localStorage errors
+    }
+    goto(`/files${rawFilePath}`);
+  }
+
+  function handleClick(e: MouseEvent) {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    navigateToFile();
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      handleDoubleClick();
+      navigateToFile();
     }
+  }
+
+  function handleDoubleClick() {
+    fitView({ nodes: [{ id }], duration: 300, padding: 0.5 });
   }
 </script>
 
@@ -148,8 +172,9 @@
   data-kind={kind}
   role="button"
   tabindex="0"
-  on:dblclick={handleDoubleClick}
+  on:click={handleClick}
   on:keydown={handleKeydown}
+  on:dblclick={handleDoubleClick}
   on:contextmenu={handleContextMenu}
 >
   <Handle
