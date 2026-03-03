@@ -103,7 +103,7 @@ export const s3Schema: MultiStepFormSchema = {
         required: ["aws_access_key_id", "aws_secret_access_key"],
       },
     },
-     {
+    {
       if: { properties: { auth_method: { const: "public" } } },
       then: { required: [] },
     },

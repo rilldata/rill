@@ -5,6 +5,7 @@
   import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { addModelModal } from "../sources/modal/add-model-visibility";
   import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
@@ -72,7 +73,7 @@
     <div class="flex flex-col w-64 gap-y-4">
       <GenerateSampleData type="home" />
       <Button
-        onClick={() => createResourceAndNavigate(ResourceKind.Model)}
+        onClick={() => addModelModal.open()}
         type="tertiary"
         large
         forcedStyle="height: 3rem;"
@@ -81,7 +82,7 @@
           this={resourceIconMapping[ResourceKind.Model]}
           size="14px"
         />
-        Create blank model
+        Add a model
       </Button>
       <Button
         onClick={() => createResourceAndNavigate(ResourceKind.MetricsView)}

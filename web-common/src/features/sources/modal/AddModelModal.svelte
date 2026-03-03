@@ -12,34 +12,91 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
-  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
-  import { duplicateSourceName } from "../sources-store";
+  import { createRuntimeServiceAnalyzeConnectors } from "../../../runtime-client";
+  import { ResourceKind } from "../../entity-management/resource-selectors";
+  import { createResourceAndNavigate } from "../../file-explorer/new-files";
   import AddDataForm from "./AddDataForm.svelte";
-  import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
-  import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
-    connectors,
+    modelConnectors,
     getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
+    hasExplorerStep as hasExplorerStepSchema,
     isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { ICONS } from "./icons";
-  import { resetConnectorStep } from "./connectorStepStore";
+  import {
+    connectorStepStore,
+    resetConnectorStep,
+    setStep,
+    setConnectorInstanceName as setStoreConnectorInstanceName,
+  } from "./connectorStepStore";
+  import { File as FileIcon } from "lucide-svelte";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let selectedSchemaName: string | null = null;
   let pendingConnectorName: string | null = null;
   let connectorInstanceName: string | null = null;
-  let requestConnector = false;
   let isSubmittingForm = false;
 
-  // Filter connectors by category from JSON schemas
-  $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
-  $: olapConnectors = connectors.filter((c) => c.category === "olap");
+  // Track the previous connector step to detect back-navigation transitions
+  let prevConnectorStep: string | null = null;
+
+  $: ({ instanceId } = $runtime);
+
+  // Fetch existing connector instances (SQL stores, warehouses, object stores)
+  $: connectorInstances = createRuntimeServiceAnalyzeConnectors(instanceId, {
+    query: {
+      select: (data) => {
+        if (!data?.connectors) return { connectors: [] };
+        const filtered = data.connectors
+          .filter(
+            (c) =>
+              !c?.errorMessage &&
+              !c?.driver?.implementsOlap &&
+              (c?.driver?.implementsSqlStore ||
+                c?.driver?.implementsWarehouse ||
+                c?.driver?.implementsObjectStore),
+          )
+          .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        return { connectors: filtered };
+      },
+    },
+  });
+  $: existingInstances = $connectorInstances.data?.connectors ?? [];
+
+  // Deduplicate: get driver names covered by existing instances
+  $: existingDriverNames = new Set(
+    existingInstances.map((c) => c.driver?.name).filter(Boolean),
+  );
+
+  // Filter model connectors to exclude types already covered by existing instances
+  // Always include "public" and "local_file" since they aren't typical connector instances
+  $: uncoveredModelConnectors = modelConnectors.filter((c) => {
+    const backendName = getBackendConnectorName(c.name);
+    if (c.name === "public" || c.name === "local_file") return true;
+    return !existingDriverNames.has(backendName);
+  });
+
+  // Intercept back-navigation from the import step.
+  // When handleBack() in AddDataFormManager transitions from source/explorer
+  // back to connector step, we redirect to the tile selection instead of
+  // showing the connector credentials UI.
+  $: {
+    const currentConnectorStep = $connectorStepStore.step;
+    if (
+      step === 2 &&
+      prevConnectorStep !== null &&
+      (prevConnectorStep === "source" || prevConnectorStep === "explorer") &&
+      currentConnectorStep === "connector"
+    ) {
+      goBackToTileSelection();
+    }
+    prevConnectorStep = currentConnectorStep;
+  }
 
   // Get the form width class for the selected connector
   $: selectedSchema = selectedSchemaName
@@ -49,8 +106,6 @@
 
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
-   * Derives implements* flags from the schema's x-category.
-   * Uses x-driver for the name when specified.
    */
   function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
     const schema = getConnectorSchema(info.name);
@@ -70,11 +125,10 @@
 
   onMount(() => {
     function listen(e: PopStateEvent) {
-      // Ignore events from the AddModelModal
-      if (e.state?.modal === "model") return;
+      // Only handle events from the AddModelModal
+      if (e.state?.modal !== "model") return;
 
       const stateStep = e.state?.step ?? 0;
-      requestConnector = e.state?.requestConnector ?? false;
       connectorInstanceName = e.state?.connectorInstanceName ?? null;
 
       // Handle both full connector object and connector name string
@@ -84,12 +138,11 @@
         pendingConnectorName = null;
         step = stateStep;
       } else if (e.state?.connector) {
-        // Store the connector name to look up when connectors are loaded
         pendingConnectorName = e.state.connector;
         selectedSchemaName = e.state.connector;
         step = 2;
         // Try to resolve immediately if connectors are already loaded
-        const found = connectors.find((c) => c.name === e.state.connector);
+        const found = modelConnectors.find((c) => c.name === e.state.connector);
         if (found) {
           selectedConnector = toConnectorDriver(found);
           pendingConnectorName = null;
@@ -109,8 +162,8 @@
   });
 
   // Handle pending connector name when connectors finish loading
-  $: if (pendingConnectorName && connectors.length > 0) {
-    const found = connectors.find((c) => c.name === pendingConnectorName);
+  $: if (pendingConnectorName && modelConnectors.length > 0) {
+    const found = modelConnectors.find((c) => c.name === pendingConnectorName);
     if (found) {
       selectedConnector = toConnectorDriver(found);
       selectedSchemaName = pendingConnectorName;
@@ -120,60 +173,93 @@
   }
 
   function goToConnectorForm(connectorInfo: ConnectorInfo) {
-    // Reset multi-step state (auth selection, connector config) when switching connectors.
     resetConnectorStep();
 
+    // For multi-step connectors, skip directly to the import/source step.
+    // For SQL connectors with explorer, skip to explorer step.
+    const schema = getConnectorSchema(connectorInfo.name);
+    if (isMultiStepConnectorSchema(schema)) {
+      setStep("source");
+    } else if (hasExplorerStepSchema(schema)) {
+      setStep("explorer");
+    }
+
     const state = {
+      modal: "model" as const,
       step: 2,
       selectedConnector: toConnectorDriver(connectorInfo),
       schemaName: connectorInfo.name,
       connectorInstanceName: null,
-      requestConnector: false,
     };
     window.history.pushState(state, "", "");
     window.dispatchEvent(new PopStateEvent("popstate", { state }));
   }
 
-  function goToRequestConnector() {
-    const state = { step: 2, requestConnector: true };
+  function goToExistingConnector(instance: {
+    name?: string;
+    driver?: V1ConnectorDriver;
+  }) {
+    const driverName = instance.driver?.name ?? "";
+    const schema = getConnectorSchema(driverName);
+    const hasExplorer = hasExplorerStepSchema(schema);
+    const targetStep = hasExplorer ? "explorer" : "source";
+
+    resetConnectorStep();
+    setStep(targetStep);
+    setStoreConnectorInstanceName(instance.name ?? null);
+
+    const state = {
+      modal: "model" as const,
+      step: 2,
+      selectedConnector: instance.driver,
+      schemaName: driverName,
+      connectorInstanceName: instance.name ?? null,
+    };
     window.history.pushState(state, "", "");
     window.dispatchEvent(new PopStateEvent("popstate", { state }));
   }
 
-  function back() {
-    // Try to go back in browser history
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      // If no history to go back to, close the modal
-      resetModal();
-    }
+  async function handleBlankSQL() {
+    resetModal();
+    await createResourceAndNavigate(ResourceKind.Model);
   }
 
-  function resetModal() {
+  /**
+   * Navigate back to tile selection (step 1).
+   * Used by the reactive back-intercept and as the onBack for AddDataForm.
+   */
+  function goBackToTileSelection() {
     const state = {
-      step: 0,
+      modal: "model" as const,
+      step: 1,
       selectedConnector: null,
       schemaName: null,
       connectorInstanceName: null,
-      requestConnector: false,
     };
     window.history.pushState(state, "", "");
-    window.dispatchEvent(new PopStateEvent("popstate", { state: state }));
+    window.dispatchEvent(new PopStateEvent("popstate", { state }));
     isSubmittingForm = false;
     resetConnectorStep();
   }
 
-  /**
-   * Reset modal UI state without history manipulation.
-   * Use this after goto() has already navigated — firing a synthetic popstate
-   * races with SvelteKit's router and can revert the navigation.
-   */
+  function resetModal() {
+    const state = {
+      modal: "model" as const,
+      step: 0,
+      selectedConnector: null,
+      schemaName: null,
+      connectorInstanceName: null,
+    };
+    window.history.pushState(state, "", "");
+    window.dispatchEvent(new PopStateEvent("popstate", { state }));
+    isSubmittingForm = false;
+    resetConnectorStep();
+  }
+
   function resetModalQuietly() {
     step = 0;
     selectedConnector = null;
     selectedSchemaName = null;
-    requestConnector = false;
     isSubmittingForm = false;
     resetConnectorStep();
   }
@@ -189,10 +275,6 @@
     resetModal();
   }
 
-  $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
-  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
-
   $: isConnectorType =
     selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
@@ -204,7 +286,7 @@
     );
 </script>
 
-{#if step >= 1 || $duplicateSourceName}
+{#if step >= 1}
   <Dialog.Root
     open
     onOpenChange={async (open) => {
@@ -224,62 +306,62 @@
       noClose={step === 1}
     >
       {#if step === 1}
-        {#if isModelingSupported}
-          <Dialog.Title>Data Source Connector</Dialog.Title>
-          <section class="mb-1">
-            <div
-              class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
-            >
-              {#each sourceConnectors as connector (connector.name)}
-                <button
-                  id={connector.name}
-                  on:click={() => goToConnectorForm(connector)}
-                  class="connector-tile-button size-full"
-                >
-                  <div class="connector-wrapper px-6 py-4">
-                    <svelte:component this={ICONS[connector.name]} />
-                  </div>
-                </button>
-              {/each}
-            </div>
-          </section>
-        {/if}
-      {/if}
-
-      {#if step === 1}
+        <Dialog.Title>Add a Model</Dialog.Title>
         <section>
-          <Dialog.Title>Connect an OLAP engine</Dialog.Title>
-
           <div
             class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
           >
-            {#each olapConnectors as connector (connector.name)}
+            <!-- Existing connector instances -->
+            {#each existingInstances as instance (instance.name)}
+              {#if instance?.driver?.name}
+                <button
+                  id="instance-{instance.name}"
+                  on:click={() => goToExistingConnector(instance)}
+                  class="connector-tile-button size-full"
+                >
+                  <div class="connector-wrapper px-6 py-4">
+                    <div class="flex flex-col items-center gap-1">
+                      <svelte:component
+                        this={ICONS[instance.driver?.name]}
+                        size="32px"
+                      />
+                    </div>
+                  </div>
+                </button>
+              {/if}
+            {/each}
+
+            <!-- Uncovered model connector tiles -->
+            {#each uncoveredModelConnectors as connector (connector.name)}
               <button
                 id={connector.name}
-                class="connector-tile-button size-full"
                 on:click={() => goToConnectorForm(connector)}
+                class="connector-tile-button size-full"
               >
                 <div class="connector-wrapper px-6 py-4">
                   <svelte:component this={ICONS[connector.name]} />
                 </div>
               </button>
             {/each}
+
+            <!-- Blank SQL tile -->
+            <button
+              id="blank-sql"
+              on:click={handleBlankSQL}
+              class="connector-tile-button size-full"
+            >
+              <div class="connector-wrapper px-6 py-4">
+                <div class="flex flex-col items-center gap-1">
+                  <FileIcon size="32px" class="text-fg-secondary" />
+                  <span class="text-xs text-fg-secondary">Blank SQL</span>
+                </div>
+              </div>
+            </button>
           </div>
         </section>
-
-        <div class="text-fg-secondary">
-          Don't see what you're looking for?
-          <button
-            class="text-primary-500 hover:text-primary-600 font-medium"
-            on:click={goToRequestConnector}
-          >
-            Request a new connector
-          </button>
-        </div>
       {/if}
 
       {#if step === 2 && pendingConnectorName && !selectedConnector}
-        <!-- Loading state while waiting for connector to be resolved -->
         <div class="p-6 flex items-center justify-center">
           <span class="text-fg-secondary">Loading...</span>
         </div>
@@ -290,26 +372,20 @@
           connectorIconMapping[selectedConnector.name ?? ""]}
         {@const displayName = schema?.title ?? selectedConnector.displayName}
         <Dialog.Title class="p-4 border-b border-gray-200">
-          {#if $duplicateSourceName !== null}
-            Duplicate source
-          {:else}
-            <div class="flex items-center gap-[6px]">
-              {#if displayIcon}
-                <svelte:component this={displayIcon} size="18px" />
-              {/if}
-              <span class="text-lg leading-none font-semibold"
-                >{displayName}</span
-              >
-            </div>
-          {/if}
+          <div class="flex items-center gap-[6px]">
+            {#if displayIcon}
+              <svelte:component this={displayIcon} size="18px" />
+            {/if}
+            <span class="text-lg leading-none font-semibold">{displayName}</span
+            >
+          </div>
         </Dialog.Title>
 
-        {#if $duplicateSourceName !== null}
-          <div class="p-6">
-            <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
-          </div>
-        {:else if selectedConnector.name === "local_file"}
-          <LocalSourceUpload onClose={resetModal} onBack={back} />
+        {#if selectedConnector.name === "local_file"}
+          <LocalSourceUpload
+            onClose={resetModal}
+            onBack={goBackToTileSelection}
+          />
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
@@ -318,17 +394,10 @@
             {connectorInstanceName}
             onClose={resetModal}
             onCloseAfterNavigation={resetModalQuietly}
-            onBack={back}
+            onBack={goBackToTileSelection}
             bind:isSubmitting={isSubmittingForm}
           />
         {/if}
-      {/if}
-
-      {#if step === 2 && requestConnector}
-        <div class="p-6">
-          <Dialog.Title>Request a connector</Dialog.Title>
-          <RequestConnectorForm onClose={resetModal} onBack={back} />
-        </div>
       {/if}
     </Dialog.Content>
   </Dialog.Root>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import AddDataModal from "@rilldata/web-common/features/sources/modal/AddDataModal.svelte";
+  import AddModelModal from "@rilldata/web-common/features/sources/modal/AddModelModal.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
@@ -31,4 +32,5 @@
 {/if}
 
 <AddDataModal />
+<AddModelModal />
 <SourceImportedModal sourcePath={$sourceImportedPath} />

@@ -93,8 +93,8 @@ export const SOURCES = [
   "https",
 ];
 
-// model connectors shown in the "Add a model" section
-export const MODEL_CONNECTORS = ["public", "local_file"];
+// model connectors shown in the "Add a model" modal
+export const MODEL_CONNECTORS = ["gcs", "s3", "azure", "public", "local_file"];
 
 export const OLAP_ENGINES = [
   "clickhouse",
