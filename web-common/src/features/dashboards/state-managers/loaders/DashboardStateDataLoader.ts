@@ -250,8 +250,8 @@ export class DashboardStateDataLoader {
         }
 
         if (
-          fullTimeRange.data?.timeRangeSummary?.min === null &&
-          fullTimeRange.data?.timeRangeSummary?.max === null
+          fullTimeRange.data?.timeRangeSummary?.min == null &&
+          fullTimeRange.data?.timeRangeSummary?.max == null
         ) {
           // The timeRangeSummary is null when there are 0 rows of data.
           // Notably, this happens when a security policy fully restricts a user from reading any data.
