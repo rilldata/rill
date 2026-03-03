@@ -35,4 +35,4 @@
 
 <AddDataModal />
 <AddModelModal />
-<SourceImportedModal sourcePath={$sourceImportedPath} />
+<SourceImportedModal sourcePath={$ingestedPath} />
