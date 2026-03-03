@@ -16,10 +16,23 @@
   import { saveAiConnector } from "../sources/modal/submitAddDataForm";
   import { ExternalLinkIcon } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
+  import { get } from "svelte/store";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import {
+    getRuntimeServiceGetInstanceQueryKey,
+    runtimeServiceGetInstance,
+  } from "../../runtime-client";
 
   export let open = false;
 
   const queryClient = useQueryClient();
+
+  /** Expected API key prefixes per provider, used for soft validation. */
+  const API_KEY_PREFIXES: Record<string, { prefix: string; label: string }> = {
+    claude: { prefix: "sk-ant-", label: "Claude" },
+    openai: { prefix: "sk-", label: "OpenAI" },
+    gemini: { prefix: "AIza", label: "Gemini" },
+  };
 
   const providerOptions: Array<{
     value: string;
@@ -27,8 +40,8 @@
     icon: ComponentType<SvelteComponent>;
   }> = [
     { value: "claude", label: "Claude", icon: ClaudeIcon },
-    { value: "openai", label: "OpenAI", icon: OpenAIIcon },
     { value: "gemini", label: "Gemini", icon: GeminiIcon },
+    { value: "openai", label: "OpenAI", icon: OpenAIIcon },
   ];
 
   let schemaName = "claude";
@@ -36,6 +49,7 @@
   let model = "";
   let saving = false;
   let error = "";
+  let existingAiConnector = "";
 
   $: schema = schemaName ? getConnectorSchema(schemaName) : null;
   $: apiKeyProp = schema?.properties?.api_key;
@@ -45,13 +59,47 @@
     ? `https://docs.rilldata.com/developers/build/connectors/services/${getBackendConnectorName(schemaName)}`
     : "";
 
-  // Reset form fields when dialog opens
+  // Soft validation: warn when the API key doesn't match the expected prefix
+  $: apiKeyWarning = getApiKeyWarning(schemaName, apiKey);
+
+  function getApiKeyWarning(provider: string, key: string): string {
+    if (!key) return "";
+    const expected = API_KEY_PREFIXES[provider];
+    if (!expected) return "";
+    if (key.startsWith(expected.prefix)) return "";
+    return `This doesn't look like a ${expected.label} API key`;
+  }
+
+  // Reset form fields when dialog opens; also fetch the current AI connector
   $: if (open) {
     schemaName = "claude";
     apiKey = "";
     model = "";
     saving = false;
     error = "";
+    existingAiConnector = "";
+    fetchExistingAiConnector();
+  }
+
+  // Clear inputs when the provider changes
+  function handleProviderChange(value: string) {
+    schemaName = value;
+    apiKey = "";
+    model = "";
+    error = "";
+  }
+
+  async function fetchExistingAiConnector() {
+    try {
+      const instanceId = get(runtime).instanceId;
+      const instance = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetInstanceQueryKey(instanceId),
+        queryFn: () => runtimeServiceGetInstance(instanceId, {}),
+      });
+      existingAiConnector = instance?.instance?.aiConnector ?? "";
+    } catch {
+      existingAiConnector = "";
+    }
   }
 
   async function handleSave() {
@@ -94,7 +142,7 @@
         <SelectPrimitive.Root
           selected={{ value: schemaName }}
           onSelectedChange={(s) => {
-            if (s?.value) schemaName = s.value;
+            if (s?.value) handleProviderChange(s.value);
           }}
         >
           <SelectPrimitive.Trigger
@@ -136,6 +184,9 @@
         secret
         bind:value={apiKey}
       />
+      {#if apiKeyWarning}
+        <p class="text-sm text-red-500">{apiKeyWarning}</p>
+      {/if}
 
       <Input
         id="ai-connector-model"
@@ -145,6 +196,11 @@
         optional
         bind:value={model}
       />
+      {#if existingAiConnector}
+        <p class="text-sm text-red-500">
+          This will replace your existing AI connector ({existingAiConnector}).
+        </p>
+      {/if}
       {#if error}
         <p class="text-sm text-red-500">{error}</p>
       {/if}
@@ -152,20 +208,21 @@
 
     <AlertDialog.Footer>
       <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} type="secondary">Cancel</Button>
+        <Button large builders={[builder]} type="secondary" disabled={saving}
+          >Cancel</Button
+        >
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild let:builder>
-        <Button
-          disabled={!apiKey || saving}
-          large
-          builders={[builder]}
-          type="primary"
-          onClick={handleSave}
-        >
-          {saving ? "Saving..." : "Save"}
-        </Button>
-      </AlertDialog.Action>
+      <!-- Use a plain button instead of AlertDialog.Action to prevent
+           the dialog from auto-closing before the async save completes. -->
+      <Button
+        disabled={!apiKey || saving}
+        large
+        type="primary"
+        onClick={handleSave}
+      >
+        {saving ? "Saving..." : "Save"}
+      </Button>
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>
