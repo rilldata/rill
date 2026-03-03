@@ -97,7 +97,7 @@
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent>
     <DialogHeader>
       <DialogTitle>Edit environment variable</DialogTitle>
     </DialogHeader>

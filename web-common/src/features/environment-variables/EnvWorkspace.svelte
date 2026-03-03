@@ -18,11 +18,13 @@
   import AddEnvDialog from "./AddEnvDialog.svelte";
   import PullEnvDialog from "./PullEnvDialog.svelte";
   import PushEnvDialog from "./PushEnvDialog.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import {
     createLocalServiceGetCurrentProject,
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors";
+  import { getCloudFrontendUrl } from "@rilldata/web-common/features/organization/utils";
 
   export let fileArtifact: any;
 
@@ -52,14 +54,7 @@
     if (!project?.orgName || !project?.name || !adminUrl || !hasManageProject)
       return "";
 
-    // Convert admin URL to frontend URL (similar to getPlanUpgradeUrl)
-    let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
-    // hack for dev env
-    if (cloudUrl === "http://localhost:8080") {
-      cloudUrl = "http://localhost:3000";
-    }
-
-    const url = new URL(cloudUrl);
+    const url = new URL(getCloudFrontendUrl(adminUrl));
     url.pathname = `/${project.orgName}/${project.name}/-/settings/environment-variables`;
     return url.toString();
   })();
@@ -108,6 +103,10 @@
     const newVariables = event.detail.variables;
     const updatedVariables = [...envVariables, ...newVariables];
     await updateEnvFile(updatedVariables);
+    eventBus.emit("notification", {
+      type: "success",
+      message: `Added ${newVariables.length} variable${newVariables.length === 1 ? "" : "s"}.`,
+    });
   }
 
   async function handleEditVariable(
@@ -119,11 +118,19 @@
       v.key === oldKey ? { key, value } : v,
     );
     await updateEnvFile(updatedVariables);
+    eventBus.emit("notification", {
+      type: "success",
+      message: `Updated variable "${key}".`,
+    });
   }
 
   async function handleDeleteVariable(key: string) {
     const updatedVariables = envVariables.filter((v) => v.key !== key);
     await updateEnvFile(updatedVariables);
+    eventBus.emit("notification", {
+      type: "success",
+      message: `Deleted variable "${key}".`,
+    });
   }
 
   $: actionsColumn = {

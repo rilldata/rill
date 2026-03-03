@@ -15,8 +15,13 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
   import { createEventDispatcher } from "svelte";
+  import { parse as parseDotenv } from "dotenv";
   import { isDuplicateKey } from "./utils";
   import type { EnvVariable } from "./types";
+
+  const isMac =
+    typeof window !== "undefined" &&
+    window.navigator.userAgent.includes("Macintosh");
 
   export let open = false;
   export let existingVariables: EnvVariable[] = [];
@@ -28,6 +33,8 @@
   let inputErrors: { [key: number]: { type: string } } = {};
   let isKeyAlreadyExists = false;
   let fileInput: HTMLInputElement;
+  let nextId = 1;
+  let rowIds: number[] = [nextId++];
 
   $: hasExistingKeys = Object.keys(inputErrors).length > 0;
   $: hasNewChanges = $form.variables.some(
@@ -85,6 +92,7 @@
 
   function handleAdd() {
     $form.variables = [...$form.variables, { key: "", value: "" }];
+    rowIds = [...rowIds, nextId++];
   }
 
   function handleKeyChange(index: number, event: Event) {
@@ -101,6 +109,7 @@
 
   function handleRemove(index: number) {
     $form.variables = $form.variables.filter((_, i) => i !== index);
+    rowIds = rowIds.filter((_, i) => i !== index);
     checkForExistingKeys();
   }
 
@@ -108,6 +117,8 @@
     $form = initialValues;
     inputErrors = {};
     isKeyAlreadyExists = false;
+    nextId = 1;
+    rowIds = [nextId++];
   }
 
   function checkForExistingKeys() {
@@ -171,32 +182,22 @@
   }
 
   function parseFile(contents: string) {
-    const lines = contents.split("\n");
-    const variables: EnvVariable[] = [];
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith("#")) {
-        const [key, ...valueParts] = trimmed.split("=");
-        if (key) {
-          variables.push({
-            key: key.trim(),
-            value: valueParts
-              .join("=")
-              .trim()
-              .replace(/^["']|["']$/g, ""),
-          });
-        }
-      }
-    }
+    const parsed = parseDotenv(contents);
+    const variables: EnvVariable[] = Object.entries(parsed).map(
+      ([key, value]) => ({ key, value: value ?? "" }),
+    );
 
     if (variables.length > 0) {
-      const filteredVariables = $form.variables.filter(
-        (variable) =>
-          variable.key.trim() !== "" || variable.value.trim() !== "",
-      );
+      const keepIndices = $form.variables
+        .map((v, i) => (v.key.trim() !== "" || v.value.trim() !== "") ? i : -1)
+        .filter((i) => i !== -1);
+
+      const filteredVariables = keepIndices.map((i) => $form.variables[i]);
+      const filteredIds = keepIndices.map((i) => rowIds[i]);
+      const newIds = variables.map(() => nextId++);
 
       $form.variables = [...filteredVariables, ...variables];
+      rowIds = [...filteredIds, ...newIds];
     }
   }
 
@@ -226,7 +227,7 @@
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent>
     <DialogHeader>
       <DialogTitle>Add environment variables</DialogTitle>
     </DialogHeader>
@@ -239,7 +240,7 @@
       <div class="flex flex-col gap-y-5">
         <div class="flex flex-col gap-y-1">
           <p class="text-xs text-fg-muted">
-            Press ⌘⇧. to show .env in file picker
+            Press {isMac ? "⌘⇧." : "Ctrl+Shift+."} to show .env in file picker
           </p>
           <Button
             type="secondary"
@@ -262,7 +263,7 @@
           <div
             class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
           >
-            {#each $form.variables as variable, index}
+            {#each $form.variables as variable, index (rowIds[index])}
               <div
                 class="flex flex-row items-center gap-2"
                 id={`variable-${index}`}
@@ -271,8 +272,7 @@
                   bind:value={variable.key}
                   id={`key-${index}`}
                   label=""
-                  textClass={inputErrors[index] &&
-                  inputErrors[index].type === "draft"
+                  textClass={inputErrors[index]
                     ? "error-input-wrapper"
                     : ""}
                   placeholder="Key"
