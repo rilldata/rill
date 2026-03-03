@@ -94,6 +94,44 @@ _[oneOf]_ - Data source for the alert _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
+  - **option 6** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+
+    - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
+
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. 
+
+      - **`time_range`** - _[object]_ - Time range for the analysis period 
+
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month) 
+
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday) 
+
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+
+        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month') 
+
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis 
+
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period 
+
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week) 
+
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+
+        - **`expression`** - _[string]_ - Rill time expression for comparison period 
+
+      - **`context`** - _[object]_ - Context to constrain the AI analysis 
+
+        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze 
+
+        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis 
+
+        - **`measures`** - _[array of string]_ - List of measures to include in analysis 
+
 ### `for`
 
 _[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
@@ -132,7 +170,7 @@ _[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24
 
 ### `notify`
 
-_[object]_ - Notification configuration _(required)_
+_[object]_ - Notification configuration for email and Slack delivery _(required)_
 
   - **`email`** - _[object]_ - Send notifications via email. 
 

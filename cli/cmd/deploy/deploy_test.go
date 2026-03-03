@@ -75,6 +75,56 @@ func TestManagedDeploy(t *testing.T) {
 	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
 }
 
+func TestManagedDeployWithPrimaryBranch(t *testing.T) {
+	testmode.Expensive(t)
+	adm := testadmin.New(t)
+
+	_, c := adm.NewUser(t)
+	u1 := testcli.New(t, adm, c.Token)
+
+	result := u1.Run(t, "org", "create", "github-branch-test")
+	require.Equal(t, 0, result.ExitCode)
+
+	// set up a git repo with two branches having different content:
+	// - main: models/model.sql contains SELECT 'main' AS env
+	// - staging: models/model.sql contains SELECT 'staging' AS env
+	// The repo is left on the staging branch for the deploy.
+	tempDir := initRillProject(t)
+	initGitWithTwoBranches(t, tempDir)
+
+	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=github-branch-test", "--project=rill-mgd-branch", "--skip-deploy=true", "--primary-branch=staging", "--path="+tempDir)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify the project is correctly created
+	resp, err := c.GetProject(t.Context(), &adminv1.GetProjectRequest{
+		Org:     "github-branch-test",
+		Project: "rill-mgd-branch",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "rill-mgd-branch", resp.Project.Name)
+
+	// verify the primary branch is set to "staging"
+	require.Equal(t, "staging", resp.Project.PrimaryBranch)
+
+	// get a github client
+	installationID, err := adm.Admin.Github.ManagedOrgInstallationID()
+	require.NoError(t, err)
+	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
+
+	// cleanup repo
+	t.Cleanup(func() {
+		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
+		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
+		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
+		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
+	})
+
+	// verify the model file is present on the "staging" branch
+	verifyGithubRepoBranchContents(t, ghClient, resp.Project.GitRemote, "staging", map[string]string{
+		"models/model.sql": `SELECT 'staging' AS env`,
+	})
+}
+
 // This test require gh cli to be installed on the system.
 // Alternatively a personal access token can be set via RILL_TEST_GH_TOKEN environment variable.
 // TODO: Set personal acccess token for CI/CD tests.
@@ -286,12 +336,23 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 }
 
 func verifyGithubRepoContents(t *testing.T, client *github.Client, remote string, changes map[string]string) {
+	t.Helper()
+	verifyGithubRepoBranchContents(t, client, remote, "", changes)
+}
+
+func verifyGithubRepoBranchContents(t *testing.T, client *github.Client, remote string, branch string, changes map[string]string) {
+	t.Helper()
 	owner, repo, ok := gitutil.SplitGithubRemote(remote)
 	require.True(t, ok, "invalid github remote: %s", remote)
 
+	var opts *github.RepositoryContentGetOptions
+	if branch != "" {
+		opts = &github.RepositoryContentGetOptions{Ref: branch}
+	}
+
 	// TODO: consider downloading the repo and checking the files locally instead of making multiple API calls
 	for path, expectedContent := range changes {
-		con, _, _, err := client.Repositories.GetContents(t.Context(), owner, repo, path, nil)
+		con, _, _, err := client.Repositories.GetContents(t.Context(), owner, repo, path, opts)
 		require.NoError(t, err)
 		contents, err := con.GetContent()
 		require.NoError(t, err)
@@ -379,6 +440,39 @@ olap_connector: duckdb`,
 	})
 
 	return tempDir
+}
+
+// initGitWithTwoBranches initializes a git repository in dir with two branches:
+// - "main" with models/model.sql = SELECT 'main' AS env
+// - "staging" with models/model.sql = SELECT 'staging' AS env
+// The repo is left checked out on the "staging" branch.
+func initGitWithTwoBranches(t *testing.T, dir string) {
+	t.Helper()
+	runGitCmd := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "git %v failed: %s", args, out)
+	}
+
+	runGitCmd("init", "-b", "main")
+	runGitCmd("config", "user.email", "test@rilldata.com")
+	runGitCmd("config", "user.name", "Rill Test User")
+
+	// commit initial content on main
+	putFiles(t, dir, map[string]string{
+		"models/model.sql": `SELECT 'main' AS env`,
+	})
+	runGitCmd("add", ".")
+	runGitCmd("commit", "-m", "initial commit on main")
+
+	// create staging branch with different content
+	runGitCmd("checkout", "-b", "staging")
+	putFiles(t, dir, map[string]string{
+		"models/model.sql": `SELECT 'staging' AS env`,
+	})
+	runGitCmd("add", ".")
+	runGitCmd("commit", "-m", "staging changes")
 }
 
 func cloneRepo(ctx context.Context, repoURL, path string) error {

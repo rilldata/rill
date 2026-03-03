@@ -27,7 +27,7 @@ type ObjectStore interface {
 	// ListObjectsForGlob returns all objects in the given bucket whose paths match
 	// the specified glob pattern. The pattern supports doublestar syntax, including
 	// recursive patterns like "**". It returns the matching entries and any error.
-	ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]ObjectStoreEntry, error)
+	ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error)
 	// DownloadFiles provides an iterator for downloading and consuming files.
 	// It resolves globs similar to ListObjects.
 	DownloadFiles(ctx context.Context, path string) (FileIterator, error)
