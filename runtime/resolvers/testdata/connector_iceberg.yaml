@@ -1,0 +1,58 @@
+expensive: true
+connectors:
+  - gcs
+project_files:
+  iceberg_gcs_public.yaml:
+    type: model
+    connector: duckdb
+    materialize: true
+    sql: |
+      SELECT *
+      FROM iceberg_scan('gs://rilldata-public/iceberg/lineitem_iceberg',
+        allow_moved_paths = true)
+  iceberg_gcs_with_secrets.yaml:
+    type: model
+    connector: duckdb
+    create_secrets_from_connectors: gcs
+    materialize: true
+    sql: |
+      SELECT *
+      FROM iceberg_scan('gs://rilldata-public/iceberg/lineitem_iceberg',
+        allow_moved_paths = true)
+tests:
+  - name: test_iceberg_gcs_with_secrets_row_count
+    resolver: sql
+    properties:
+      sql: "select count(*) as count from iceberg_gcs_with_secrets"
+    result_csv: |
+      count
+      51793
+  - name: test_iceberg_gcs_with_secrets_schema
+    resolver: sql
+    properties:
+      sql: "describe iceberg_gcs_with_secrets"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      l_orderkey,INTEGER,YES,,,
+      l_partkey,INTEGER,YES,,,
+      l_suppkey,INTEGER,YES,,,
+      l_linenumber,INTEGER,YES,,,
+      l_quantity,INTEGER,YES,,,
+      l_extendedprice,"DECIMAL(15,2)",YES,,,
+      l_discount,"DECIMAL(15,2)",YES,,,
+      l_tax,"DECIMAL(15,2)",YES,,,
+      l_returnflag,VARCHAR,YES,,,
+      l_linestatus,VARCHAR,YES,,,
+      l_shipdate,DATE,YES,,,
+      l_commitdate,DATE,YES,,,
+      l_receiptdate,DATE,YES,,,
+      l_shipinstruct,VARCHAR,YES,,,
+      l_shipmode,VARCHAR,YES,,,
+      l_comment,VARCHAR,YES,,,
+  - name: test_iceberg_gcs_public_row_count
+    resolver: sql
+    properties:
+      sql: "select count(*) as count from iceberg_gcs_public"
+    result_csv: |
+      count
+      51793

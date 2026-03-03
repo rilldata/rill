@@ -216,6 +216,20 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 </div>
 
+## Table Formats
+### Apache Iceberg
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Iceberg.svg" alt="Apache Iceberg" />}
+    header="Apache Iceberg"
+    content="Read Iceberg tables directly from object storage through compatible query engines."
+    link="/developers/build/connectors/data-source/iceberg"
+    linkLabel="Learn more"
+    referenceLink="iceberg"
+  />
+</div>
+
 ## Other Data Connectors
 ### External DuckDB
 ### Google Sheets

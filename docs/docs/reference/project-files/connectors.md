@@ -40,6 +40,9 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
 - [**Slack**](#slack) - Slack data
 
+### _Table Formats_
+- [**Iceberg**](#iceberg) - Apache Iceberg tables via DuckDB
+
 ### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**Salesforce**](#salesforce) - Salesforce data
@@ -529,6 +532,86 @@ type: connector # Must be `connector` (required)
 driver: https # Must be `https` _(required)_
 headers:
     "Authorization": 'Bearer {{ .env.HTTPS_TOKEN }}' # HTTP headers to include in the request
+```
+
+## Iceberg
+
+Apache Iceberg tables are read through DuckDB's `iceberg_scan()` function. Iceberg is not a standalone connector; instead, configure a model that uses DuckDB with `iceberg_scan()`. For cloud storage backends, a corresponding storage connector (S3, GCS, or Azure) must be configured with valid credentials. See the [Iceberg documentation](/developers/build/connectors/data-source/iceberg) for more details.
+
+
+### `driver`
+
+_[string]_ - Must be `duckdb`. Iceberg tables are read through DuckDB's native Iceberg extension. _(required)_
+
+### `sql`
+
+_[string]_ - SQL query using `iceberg_scan()` to read the Iceberg table. The function accepts the table path and optional parameters:
+- `allow_moved_paths` (boolean): Allow reading tables where data files have been moved from their original location.
+- `version` (string): Read a specific Iceberg snapshot version instead of the latest.
+ 
+
+### `create_secrets_from_connectors`
+
+_[string, array]_ - Storage connector name(s) to use for authentication when reading Iceberg tables from cloud storage (e.g., `s3`, `gcs`, `azure`). 
+
+### `materialize`
+
+_[boolean]_ - Whether to materialize the model in the OLAP engine. Defaults to `true` for source models. 
+
+```yaml
+# Example: Iceberg model reading from S3
+type: model
+connector: duckdb
+create_secrets_from_connectors: s3
+materialize: true
+sql: |
+    SELECT *
+    FROM iceberg_scan('s3://my-bucket/path/to/iceberg_table')
+```
+
+```yaml
+# Example: Iceberg model reading from GCS
+type: model
+connector: duckdb
+create_secrets_from_connectors: gcs
+materialize: true
+sql: |
+    SELECT *
+    FROM iceberg_scan('gs://my-bucket/path/to/iceberg_table')
+```
+
+```yaml
+# Example: Iceberg model reading from Azure
+type: model
+connector: duckdb
+create_secrets_from_connectors: azure
+materialize: true
+sql: |
+    SELECT *
+    FROM iceberg_scan('azure://my-container/path/to/iceberg_table')
+```
+
+```yaml
+# Example: Iceberg model reading from local filesystem
+type: model
+connector: duckdb
+materialize: true
+sql: |
+    SELECT *
+    FROM iceberg_scan('/path/to/iceberg_table')
+```
+
+```yaml
+# Example: Iceberg model with optional parameters
+type: model
+connector: duckdb
+create_secrets_from_connectors: s3
+materialize: true
+sql: |
+    SELECT *
+    FROM iceberg_scan('s3://my-bucket/path/to/iceberg_table',
+      allow_moved_paths = true,
+      version = '2')
 ```
 
 ## MotherDuck

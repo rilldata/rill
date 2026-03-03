@@ -26,6 +26,9 @@
   // Icon mapping for select options
   export let iconMap: Record<string, ComponentType<SvelteComponent>> = {};
 
+  // Map of option value → disabled reason for rich select options
+  export let disabledOptions: Record<string, string> = {};
+
   // Use `any` for form values since field types are determined by JSON schema at runtime
   type FormData = Record<string, any>;
 
@@ -56,10 +59,15 @@
   $: tabGroupedFields = schema
     ? buildTabGroupedFields(schema, stepFilter)
     : new Map<string, Record<string, string[]>>();
-  $: groupedChildKeys = new Set([
-    ...Array.from(groupedFields.values()).flatMap((group) =>
+  // Keys that are children of x-grouped-fields only (rendered by GroupedFieldsRenderer).
+  // Used to filter these out of tab content so they don't render twice.
+  $: groupedFieldChildKeys = new Set(
+    Array.from(groupedFields.values()).flatMap((group) =>
       Object.values(group).flat(),
     ),
+  );
+  $: groupedChildKeys = new Set([
+    ...groupedFieldChildKeys,
     ...Array.from(tabGroupedFields.values()).flatMap((group) =>
       Object.values(group).flat(),
     ),
@@ -410,6 +418,7 @@
         <ConnectionTypeSelector
           bind:value={$form[key]}
           {options}
+          {disabledOptions}
           label={prop.title ?? ""}
           onChange={(newValue) => handleSelectChange(key, newValue)}
         />
@@ -425,6 +434,10 @@
             {getTabFieldsForOption}
             {tabGroupedFields}
             buildEnumOptions={buildEnumOptionsWithIconMap}
+            {disabledOptions}
+            groupedFieldsMap={groupedFields}
+            {getGroupedFieldsForOption}
+            {handleSelectChange}
           />
         {/if}
       </div>
@@ -454,6 +467,10 @@
             {getTabFieldsForOption}
             {tabGroupedFields}
             buildEnumOptions={buildEnumOptionsWithIconMap}
+            {disabledOptions}
+            groupedFieldsMap={groupedFields}
+            {getGroupedFieldsForOption}
+            {handleSelectChange}
           />
         {/if}
       </div>
@@ -480,6 +497,10 @@
                 {getTabFieldsForOption}
                 {tabGroupedFields}
                 buildEnumOptions={buildEnumOptionsWithIconMap}
+                {disabledOptions}
+                groupedFieldsMap={groupedFields}
+                {getGroupedFieldsForOption}
+                {handleSelectChange}
               />
             {/if}
           </svelte:fragment>
@@ -496,23 +517,97 @@
             <TabsContent value={option.value}>
               {#if tabGroupedFields.get(key)}
                 {#each getTabFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
-                  <div class="py-1.5 first:pt-0 last:pb-0">
-                    <SchemaField
-                      id={childKey}
-                      prop={childProp}
-                      optional={!isRequired(childKey)}
-                      errors={errors?.[childKey]}
-                      bind:value={$form[childKey]}
-                      bind:checked={$form[childKey]}
-                      {onStringInputChange}
-                      {handleFileUpload}
-                      options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
-                        : undefined}
-                      name={`${childKey}-radio`}
-                      disabled={isDisabled(childKey)}
-                    />
-                  </div>
+                  {#if groupedFieldChildKeys.has(childKey)}
+                    <!-- Skip: rendered by GroupedFieldsRenderer of parent selector -->
+                  {:else}
+                    <div class="py-1.5 first:pt-0 last:pb-0">
+                      {#if isRichSelectEnum(childProp)}
+                        {@const childOptions = getSelectOptions(childProp)}
+                        <ConnectionTypeSelector
+                          bind:value={$form[childKey]}
+                          options={childOptions}
+                          {disabledOptions}
+                          label={childProp.title ?? ""}
+                          onChange={(newValue) =>
+                            handleSelectChange(childKey, newValue)}
+                        />
+                        {#if groupedFields.get(childKey)}
+                          <GroupedFieldsRenderer
+                            fields={getGroupedFieldsForOption(
+                              childKey,
+                              $form[childKey],
+                            )}
+                            formStore={form}
+                            {errors}
+                            {onStringInputChange}
+                            {handleFileUpload}
+                            {isRequired}
+                            {isDisabled}
+                            {getTabFieldsForOption}
+                            {tabGroupedFields}
+                            buildEnumOptions={buildEnumOptionsWithIconMap}
+                            {disabledOptions}
+                            groupedFieldsMap={groupedFields}
+                            {getGroupedFieldsForOption}
+                            {handleSelectChange}
+                          />
+                        {/if}
+                      {:else if isSelectEnum(childProp)}
+                        {@const childSelectOptions =
+                          getSelectOptions(childProp)}
+                        <Select
+                          id={childKey}
+                          bind:value={$form[childKey]}
+                          options={childSelectOptions}
+                          label={childProp.title ?? ""}
+                          placeholder={childProp["x-placeholder"] ??
+                            "Select an option"}
+                          tooltip={childProp.description ?? ""}
+                          optional={!isRequired(childKey)}
+                          full
+                          onChange={(newValue) =>
+                            handleSelectChange(childKey, newValue)}
+                        />
+                        {#if groupedFields.get(childKey)}
+                          <GroupedFieldsRenderer
+                            fields={getGroupedFieldsForOption(
+                              childKey,
+                              $form[childKey],
+                            )}
+                            formStore={form}
+                            {errors}
+                            {onStringInputChange}
+                            {handleFileUpload}
+                            {isRequired}
+                            {isDisabled}
+                            {getTabFieldsForOption}
+                            {tabGroupedFields}
+                            buildEnumOptions={buildEnumOptionsWithIconMap}
+                            {disabledOptions}
+                            groupedFieldsMap={groupedFields}
+                            {getGroupedFieldsForOption}
+                            {handleSelectChange}
+                          />
+                        {/if}
+                      {:else}
+                        <SchemaField
+                          id={childKey}
+                          prop={childProp}
+                          optional={!isRequired(childKey)}
+                          errors={errors?.[childKey]}
+                          bind:value={$form[childKey]}
+                          bind:checked={$form[childKey]}
+                          {onStringInputChange}
+                          {handleFileUpload}
+                          options={isRadioEnum(childProp)
+                            ? radioOptions(childProp)
+                            : undefined}
+                          name={`${childKey}-radio`}
+                          disabled={isDisabled(childKey)}
+                        />
+                      {/if}
+                    </div>
+                  {/if}
                 {/each}
               {/if}
             </TabsContent>

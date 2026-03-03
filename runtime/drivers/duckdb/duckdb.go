@@ -522,6 +522,23 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries = append(dbInitQueries, c.config.InitSQL)
 	}
 
+	// Set extension and secret directories before loading extensions;
+	// once an extension initializes the secret manager, these settings become immutable.
+	if !c.config.AllowHostAccess {
+		extensionDir, err := extensions.ExtensionsDir()
+		if err != nil {
+			return err
+		}
+		secretDir, err := c.storage.DataDir("secrets")
+		if err != nil {
+			return err
+		}
+		dbInitQueries = append(dbInitQueries,
+			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
+			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
+		)
+	}
+
 	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
 		"INSTALL 'sqlite'",
@@ -529,12 +546,14 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"INSTALL 'parquet'",
 		"INSTALL 'httpfs'",
 		"INSTALL 'spatial'",
+		"INSTALL 'iceberg'",
 		"LOAD 'json'",
 		"LOAD 'sqlite'",
 		"LOAD 'icu'",
 		"LOAD 'parquet'",
 		"LOAD 'httpfs'",
 		"LOAD 'spatial'",
+		"LOAD 'iceberg'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
 	)
@@ -547,19 +566,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
-		extensionDir, err := extensions.ExtensionsDir()
-		if err != nil {
-			return err
-		}
-
-		secretDir, err := c.storage.DataDir("secrets")
-		if err != nil {
-			return err
-		}
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
-			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
-			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
 		)
 	}
 
