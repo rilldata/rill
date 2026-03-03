@@ -20,8 +20,8 @@
     },
     {
       label: "Tables",
-      route: "/model-details",
-      hasPermission: false,
+      route: "/tables",
+      hasPermission: true,
     },
     {
       label: "Logs",

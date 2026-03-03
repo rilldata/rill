@@ -7,7 +7,7 @@ import { waitForFileNavEntry } from "web-local/tests/utils/waitHelpers";
 
 export async function createExploreFromSource(
   page: Page,
-  sourcePath = "/sources/AdBids.yaml",
+  sourcePath = "/models/AdBids.yaml",
   metricsViewPath = "/metrics/AdBids_metrics.yaml",
 ) {
   await openFileNavEntryContextMenu(page, sourcePath);

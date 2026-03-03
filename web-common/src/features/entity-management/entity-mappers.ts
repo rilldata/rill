@@ -8,7 +8,7 @@ export function getFilePathFromPagePath(path: string): string {
 
   switch (entityType) {
     case "source":
-      return `/files/sources/${entityName}.yaml`;
+      return `/files/models/${entityName}.yaml`;
     case "model":
       return `/files/models/${entityName}.sql`;
     case "dashboard":
@@ -26,7 +26,7 @@ export function getFilePathFromNameAndType(
     case EntityType.Connector:
       return `/connectors/${name}.yaml`;
     case EntityType.Table:
-      return `/sources/${name}.yaml`;
+      return `/models/${name}.yaml`;
     case EntityType.Model:
       return `/models/${name}.sql`;
     case EntityType.MetricsDefinition:
@@ -49,7 +49,7 @@ export function getFileAPIPathFromNameAndType(
     case EntityType.Connector:
       return `connectors/${name}.yaml`;
     case EntityType.Table:
-      return `sources/${name}.yaml`;
+      return `models/${name}.yaml`;
     case EntityType.Model:
       return `models/${name}.sql`;
     case EntityType.MetricsDefinition:
