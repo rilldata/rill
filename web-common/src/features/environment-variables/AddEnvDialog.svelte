@@ -189,7 +189,7 @@
 
     if (variables.length > 0) {
       const keepIndices = $form.variables
-        .map((v, i) => (v.key.trim() !== "" || v.value.trim() !== "") ? i : -1)
+        .map((v, i) => (v.key.trim() !== "" || v.value.trim() !== "" ? i : -1))
         .filter((i) => i !== -1);
 
       const filteredVariables = keepIndices.map((i) => $form.variables[i]);
@@ -272,9 +272,7 @@
                   bind:value={variable.key}
                   id={`key-${index}`}
                   label=""
-                  textClass={inputErrors[index]
-                    ? "error-input-wrapper"
-                    : ""}
+                  textClass={inputErrors[index] ? "error-input-wrapper" : ""}
                   placeholder="Key"
                   on:input={(e) => handleKeyChange(index, e)}
                   onBlur={() => {

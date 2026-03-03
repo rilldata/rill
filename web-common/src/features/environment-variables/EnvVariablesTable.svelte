@@ -8,7 +8,8 @@
   import type { EnvVariable } from "./types";
 
   export let data: EnvVariable[];
-  export let emptyText: string = "No environment variables. Click \"Add variable\" to get started.";
+  export let emptyText: string =
+    'No environment variables. Click "Add variable" to get started.';
   export let actionsColumn: ColumnDef<EnvVariable, any> | null = null;
 
   $: columns = [
