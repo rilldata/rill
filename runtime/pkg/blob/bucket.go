@@ -183,14 +183,13 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 				continue
 			}
 
-			// finalizing the current dir
+			// finalize and append the previously accumulated directory entry.
 			if currentDir != nil {
 				entries = append(entries, *currentDir)
 				currentDir = nil
-			}
-
-			if len(entries) >= validPageSize {
-				break
+				if len(entries) >= validPageSize {
+					break
+				}
 			}
 
 			lastProcessedIdx = i
