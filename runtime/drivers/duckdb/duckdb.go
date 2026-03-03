@@ -522,6 +522,23 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries = append(dbInitQueries, c.config.InitSQL)
 	}
 
+	// Set extension and secret directories before loading extensions;
+	// once an extension initializes the secret manager, these settings become immutable.
+	if !c.config.AllowHostAccess {
+		extensionDir, err := extensions.ExtensionsDir()
+		if err != nil {
+			return err
+		}
+		secretDir, err := c.storage.DataDir("secrets")
+		if err != nil {
+			return err
+		}
+		dbInitQueries = append(dbInitQueries,
+			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
+			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
+		)
+	}
+
 	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
 		"INSTALL 'sqlite'",
