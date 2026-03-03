@@ -3404,6 +3404,20 @@ export class ReportSpec extends Message<ReportSpec> {
   timeoutSeconds = 0;
 
   /**
+   * Generic resolver configuration (preferred for new reports)
+   *
+   * @generated from field: string resolver = 17;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 18;
+   */
+  resolverProperties?: Struct;
+
+  /**
+   * Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
+   *
    * @generated from field: string query_name = 5;
    */
   queryName = "";
@@ -3472,6 +3486,8 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 17, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "resolver_properties", kind: "message", T: Struct },
     { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },

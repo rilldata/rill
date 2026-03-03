@@ -120,16 +120,21 @@ export interface TimeDimensionDefinition {
   format?: string;
 }
 
-export type ChartSortDirectionOptions =
-  | "x"
-  | "y"
-  | "-x"
-  | "-y"
-  | "color"
-  | "-color"
-  | "measure"
-  | "-measure"
-  | "custom";
+export enum ChartSortType {
+  X_ASC = "x",
+  X_DESC = "-x",
+  Y_ASC = "y",
+  Y_DESC = "-y",
+  Y_DELTA_ASC = "y_delta",
+  Y_DELTA_DESC = "-y_delta",
+  COLOR_ASC = "color",
+  COLOR_DESC = "-color",
+  MEASURE_ASC = "measure",
+  MEASURE_DESC = "-measure",
+  CUSTOM = "custom",
+}
+
+export type ChartSortDirectionOptions = `${ChartSortType}`;
 
 export type ChartSortDirection =
   | Exclude<ChartSortDirectionOptions, "custom">

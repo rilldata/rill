@@ -35,7 +35,7 @@ test.describe("Default olap_connector behavior", () => {
     await uploadFile(page, "AdBids.csv");
 
     // Wait for the source file to be created in the file nav
-    await waitForFileNavEntry(page, "/sources/AdBids.yaml", false);
+    await waitForFileNavEntry(page, "/models/AdBids.yaml", false);
 
     await page.getByText("View this source").click();
 

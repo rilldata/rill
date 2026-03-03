@@ -4,7 +4,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
+  import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -16,11 +16,12 @@
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import {
+    createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewFromTableUIAction,
     useCreateMetricsViewWithCanvasAndExploreUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
 
   export let sourcePath: string | null;
 
@@ -64,11 +65,11 @@
       : null;
 
   function close() {
-    sourceImportedPath.set(null);
+    sourceIngestionTracker.dismiss();
   }
 
   async function goToSource() {
-    await goto(`/files${$sourceImportedPath ?? ""}`);
+    await goto(`/files${sourcePath ?? ""}`);
     close();
   }
 
@@ -78,7 +79,19 @@
     // for type narrowing and just in case.
     if (createDashboardFromTable === null) return;
     close();
-    await createDashboardFromTable();
+
+    // Use developer agent if enabled and generateCanvas is on, otherwise fall back to RPC
+    if ($generateCanvas && $developerChat) {
+      await createCanvasDashboardFromTableWithAgent(
+        instanceId,
+        sinkConnector as string,
+        "",
+        "",
+        sourceName,
+      );
+    } else {
+      await createDashboardFromTable();
+    }
   }
 </script>
 

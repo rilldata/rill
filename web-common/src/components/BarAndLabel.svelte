@@ -34,7 +34,7 @@
     {customBackgroundColor !== ''
     ? customBackgroundColor
     : showBackground
-      ? 'bg-gray-100'
+      ? 'bg-surface-muted'
       : 'bg-transparent'}
     "
   style:flex="1"

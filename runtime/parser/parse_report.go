@@ -27,16 +27,19 @@ type ReportYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string `yaml:"timeout"`
-	Query   struct {
+	Timeout string    `yaml:"timeout"`
+	Data    *DataYAML `yaml:"data"` // Generic data resolver (preferred for new reports)
+	Query   struct {  // Legacy query-based report
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
 	} `yaml:"query"`
 	Export struct {
-		Format        string `yaml:"format"`
-		IncludeHeader bool   `yaml:"include_header"`
-		Limit         uint   `yaml:"limit"`
+		Format           string         `yaml:"format"`
+		IncludeHeader    bool           `yaml:"include_header"`
+		Limit            uint           `yaml:"limit"`
+		OutputConnector  string         `yaml:"output_connector"`
+		OutputProperties map[string]any `yaml:"output_properties"`
 	} `yaml:"export"`
 	Email struct {
 		Recipients []string `yaml:"recipients"`
@@ -112,27 +115,51 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// Query name
-	if tmp.Query.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
-	}
+	// Determine if using new data resolver or legacy query
+	var resolver string
+	var resolverProps *structpb.Struct
+	isLegacyQuery := tmp.Data == nil
 
-	// Query args
-	if tmp.Query.ArgsJSON != "" {
-		// Validate JSON
-		if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
-			return errors.New(`failed to parse "query.args_json" as JSON`)
-		}
-	} else {
-		// Fall back to query.args if query.args_json is not set
-		data, err := json.Marshal(tmp.Query.Args)
+	if !isLegacyQuery {
+		var refs []ResourceName
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
-			return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
-		tmp.Query.ArgsJSON = string(data)
-	}
-	if tmp.Query.ArgsJSON == "" {
-		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+		node.Refs = append(node.Refs, refs...)
+	} else {
+		// Query name
+		if tmp.Query.Name == "" {
+			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
+		}
+
+		// Query args
+		if tmp.Query.ArgsJSON != "" {
+			// Validate JSON
+			if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
+				return errors.New(`failed to parse "query.args_json" as JSON`)
+			}
+		} else {
+			// Fall back to query.args if query.args_json is not set
+			data, err := json.Marshal(tmp.Query.Args)
+			if err != nil {
+				return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			}
+			tmp.Query.ArgsJSON = string(data)
+		}
+		if tmp.Query.ArgsJSON == "" {
+			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+		}
+
+		resolver = "legacy_metrics"
+		props := map[string]any{
+			"query_name":      tmp.Query.Name,
+			"query_args_json": tmp.Query.ArgsJSON,
+		}
+		resolverProps, err = structpb.NewStruct(props)
+		if err != nil {
+			return fmt.Errorf("encountered invalid property type: %w", err)
+		}
 	}
 
 	// Parse export format
@@ -140,7 +167,7 @@ func (p *Parser) parseReport(node *Node) error {
 	if err != nil {
 		return err
 	}
-	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
+	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED && (resolver == "legacy_metrics" || resolver == "sql" || resolver == "metrics") {
 		return fmt.Errorf(`missing required property "export.format"`)
 	}
 
@@ -199,8 +226,9 @@ func (p *Parser) parseReport(node *Node) error {
 	if timeout != 0 {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
-	r.ReportSpec.QueryName = tmp.Query.Name
-	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
+
+	r.ReportSpec.Resolver = resolver
+	r.ReportSpec.ResolverProperties = resolverProps
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader

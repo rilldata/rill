@@ -24,7 +24,7 @@ export const AD_BIDS_EXPLORE_PATH =
 
 export async function createAdBidsModel(page: Page) {
   await Promise.all([
-    waitForSource(page, "/sources/AdBids.yaml", [
+    waitForSource(page, "/models/AdBids.yaml", [
       "publisher",
       "domain",
       "timestamp",
@@ -107,9 +107,9 @@ export function interceptTimeseriesResponse(
  * Gets the chart container element for timeseries
  */
 export function getChartContainer(page: Page) {
-  // The chart SVG has role="application" and contains path elements for the line
+  // The chart SVG has an aria-label and contains path elements for the line
   return page
-    .locator('svg[role="application"]')
+    .locator('svg[aria-label*="Measure Chart"]')
     .filter({ has: page.locator("path") })
     .first();
 }

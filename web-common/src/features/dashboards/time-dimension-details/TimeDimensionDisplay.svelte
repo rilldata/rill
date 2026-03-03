@@ -15,10 +15,10 @@
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import {
-    chartInteractionColumn,
     tableInteractionStore,
     useTimeDimensionDataStore,
   } from "./time-dimension-data-store";
+  import { hoverIndex } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { TDDComparison, TableData } from "./types";
 
   export let exploreName: string;
@@ -90,15 +90,8 @@
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
-  let highlitedRowIndex: number | undefined;
-  $: if (formattedData?.rowCount) {
-    highlitedRowIndex = undefined;
-    formattedData.rowHeaderData.forEach((row, index) => {
-      if (row[0]?.value === $chartInteractionColumn?.yHover) {
-        highlitedRowIndex = index;
-      }
-    });
-  }
+  $: highlightedColStart = $hoverIndex?.start;
+  $: highlightedColEnd = $hoverIndex?.end;
 
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(
@@ -106,15 +99,22 @@
   ) as (d: Date) => string;
 
   function highlightCell(x: number | undefined, y: number | undefined) {
-    if (x === undefined || y === undefined) return;
+    if (x === undefined || y === undefined) {
+      hoverIndex.clear("table");
+      tableInteractionStore.set({
+        dimensionValue: undefined,
+        time: undefined,
+      });
+      return;
+    }
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
     let time: Date | undefined = undefined;
-
     const colHeader = columnHeaders?.[x]?.value;
     if (colHeader) {
       time = new Date(colHeader);
     }
 
+    hoverIndex.set(x, "table");
     tableInteractionStore.set({
       dimensionValue,
       time: time,
@@ -182,6 +182,7 @@
   }
 
   onDestroy(() => {
+    hoverIndex.clear("table");
     tableInteractionStore.set({
       dimensionValue: undefined,
       time: undefined,
@@ -237,13 +238,10 @@
       comparing={comparisonCopy}
       {timeFormatter}
       tableData={formattedData}
-      highlightedRow={highlitedRowIndex}
-      highlightedCol={$chartInteractionColumn?.xHover}
+      highlightedRow={undefined}
+      {highlightedColStart}
+      {highlightedColEnd}
       {pinIndex}
-      scrubPos={{
-        start: $chartInteractionColumn?.scrubStart,
-        end: $chartInteractionColumn?.scrubEnd,
-      }}
       onTogglePin={togglePin}
       onToggleFilter={toggleFilter}
       onToggleSort={(type) => {

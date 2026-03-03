@@ -251,7 +251,7 @@ The following tools are typically available for project development:
 
 ### What to do when tools are not available
 
-You may be running in an external editor that does not have Rill's MCP server connected. In this case, you will need to approach your work differently because you can't run tool calls like `list_tables` or `project_status`. Instead:
+You may be running in an external editor that does not have Rill's development MCP server on `localhost:9009` connected. If that is the case, you will need to approach your work differently because you can't run tool calls like `list_tables`, `query_sql` or `project_status`. Instead:
 1. Use the `rill validate` CLI command to validate the project and get the status of different resources.
 2. Before editing a resource, load the specific instruction file for its resource type (if available).
 3. Be more bold in making changes, and rely on `rill validate` or user feedback to inform you of issues.

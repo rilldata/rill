@@ -97,7 +97,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 			ShowTableName,
 			QuerySQLName,
 			DevelopFileName,
-			NavigateName,
+			// NavigateName,
 		},
 		MaxIterations: 20,
 		UnwrapCall:    true,

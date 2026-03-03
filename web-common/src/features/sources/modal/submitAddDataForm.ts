@@ -32,6 +32,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import { sourceIngestionTracker } from "../sources-store";
 import { OLAP_ENGINES } from "./constants";
 import { getConnectorSchema } from "./connector-schemas";
 import {
@@ -454,11 +455,12 @@ export async function submitAddSourceForm(
     ? undefined
     : connectorInstanceName;
 
-  // Make a new <source>.yaml file
+  // Create model YAML file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
     newSourceName,
     EntityType.Table,
   );
+  sourceIngestionTracker.trackPending(`/${newSourceFilePath}`);
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
@@ -500,6 +502,7 @@ export async function submitAddSourceForm(
     );
   } catch (error) {
     // The source file was already created, so we need to delete it
+    sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
     await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     const errorDetails = (error as any).details;
 
@@ -520,6 +523,7 @@ export async function submitAddSourceForm(
     newSourceFilePath,
   );
   if (errorMessage) {
+    sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
     await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
