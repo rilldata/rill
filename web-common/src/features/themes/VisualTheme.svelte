@@ -35,6 +35,11 @@
     ),
   };
 
+  // Check if the theme has any color values defined
+  $: hasAnyColors =
+    Object.values(lightTheme).some((v) => !!v) ||
+    Object.values(darkTheme).some((v) => !!v);
+
   function updateColor(colorKey: string, value: string) {
     if (!parsedDocument) return;
 
@@ -54,24 +59,12 @@
     { key: "surface-background", label: "Surface Background" },
     { key: "surface-subtle", label: "Surface Header" },
     { key: "surface-card", label: "Component Background" },
-  ];
-
-  // Text/Foreground colors
-  const textColors = [
-    { key: "fg-primary", label: "Primary (Titles)" },
-    // Keeping these commented out for now, but they can be easily added back if needed. These should be surfaced for true theme editing.
-    // { key: "fg-secondary", label: "Secondary (Body)" },
-    // { key: "fg-tertiary", label: "Tertiary (Captions)" },
-    // { key: "fg-muted", label: "Muted (Hints)" },
-    // { key: "fg-disabled", label: "Disabled" },
-    // { key: "fg-inverse", label: "Inverse (On Dark)" },
-    // { key: "fg-accent", label: "Accent (Links)" },
+    { key: "fg-primary", label: "Text Primary" },
   ];
 
   const paletteInfo = [
     {
       name: "Qualitative",
-      count: 24,
       description: "For categorical data (1-24)",
       variables: Array.from(
         { length: 24 },
@@ -80,7 +73,6 @@
     },
     {
       name: "Sequential",
-      count: 9,
       description: "For continuous data (1-9)",
       variables: Array.from(
         { length: 9 },
@@ -89,7 +81,6 @@
     },
     {
       name: "Diverging",
-      count: 11,
       description: "For data with a midpoint (1-11)",
       variables: Array.from(
         { length: 11 },
@@ -101,41 +92,75 @@
 
 <div class="wrapper">
   <div class="main-area">
-    <div class="flex items-center gap-x-4 pb-4 border-b">
-      <h3 class="text-sm font-semibold text-fg-primary">Theme Mode</h3>
-      <FieldSwitcher
-        small
-        fields={["Light", "Dark"]}
-        selected={$themePreviewMode === "light" ? 0 : 1}
-        onClick={handleModeChange}
-      />
+    <div class="flex flex-col gap-y-3 pb-4 border-b">
+      <div class="flex items-center gap-x-4">
+        <h3 class="text-sm font-semibold text-fg-primary">Theme Mode</h3>
+        <FieldSwitcher
+          small
+          fields={["Light", "Dark"]}
+          selected={$themePreviewMode === "light" ? 0 : 1}
+          onClick={handleModeChange}
+        />
+      </div>
+      <!-- Live swatch preview of core colors for the active mode -->
+      {#if hasAnyColors}
+        <div class="mode-preview">
+          <div
+            class="mode-preview-bg"
+            style:background-color={currentColors["surface-background"] ||
+              "#fff"}
+          >
+            <!-- Header bar -->
+            {#if currentColors["surface-subtle"]}
+              <div
+                class="mode-preview-header"
+                style:background-color={currentColors["surface-subtle"]}
+              >
+                {#if currentColors["fg-primary"]}
+                  <span
+                    class="text-[10px] font-semibold"
+                    style:color={currentColors["fg-primary"]}
+                    >Primary Text Color</span
+                  >
+                {/if}
+              </div>
+            {/if}
+            <!-- Component cards with color dots -->
+            <div class="mode-preview-cards">
+              {#each ["primary", "secondary"] as key}
+                <div
+                  class="mode-preview-card"
+                  style:background-color={currentColors["surface-card"] ||
+                    "#fff"}
+                >
+                  {#if currentColors[key]}
+                    <div
+                      class="mode-preview-dot"
+                      style:background-color={currentColors[key]}
+                    />
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
     </div>
 
     <div class="content-scroll">
+      {#if !hasAnyColors}
+        <div class="empty-state">
+          <p class="text-sm text-fg-secondary">
+            No colors defined yet. Choose a primary color to get started.
+          </p>
+        </div>
+      {/if}
+
       <!-- Core Colors Section -->
       <section class="section">
         <h3 class="section-title">Core Colors</h3>
         <div class="palette-colors">
           {#each coreColors as { key, label }}
-            <div class="theme-color-item">
-              <span class="theme-color-label">{label}</span>
-              <ColorInput
-                label=""
-                stringColor={currentColors[key] || ""}
-                onChange={(color) => updateColor(key, color)}
-                allowLightnessControl={true}
-                small={true}
-              />
-            </div>
-          {/each}
-        </div>
-      </section>
-
-      <!-- Text Colors Section -->
-      <section class="section">
-        <h3 class="section-title">Text Colors</h3>
-        <div class="palette-colors">
-          {#each textColors as { key, label }}
             <div class="theme-color-item">
               <span class="theme-color-label">{label}</span>
               <ColorInput
@@ -159,6 +184,16 @@
             <div class="palette-header">
               <h4 class="palette-title">{palette.name}</h4>
               <p class="palette-description">{palette.description}</p>
+            </div>
+            <!-- Color strip preview -->
+            <div class="palette-strip">
+              {#each palette.variables as variable}
+                {@const color = currentColors[variable]}
+                <div
+                  class="palette-strip-cell"
+                  style:background-color={color || "#e5e7eb"}
+                />
+              {/each}
             </div>
             <div class="palette-colors">
               {#each palette.variables as variable}
@@ -187,11 +222,39 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 flex-1 p-4 bg-surface overflow-hidden;
+    @apply flex flex-col gap-y-4 flex-1 p-4 bg-surface-background border overflow-hidden;
   }
 
   .content-scroll {
     @apply flex-1 overflow-y-auto space-y-6;
+  }
+
+  .mode-preview {
+    @apply w-full;
+  }
+
+  .mode-preview-bg {
+    @apply flex flex-col rounded border overflow-hidden;
+  }
+
+  .mode-preview-header {
+    @apply flex items-center gap-2 px-2 py-1.5;
+  }
+
+  .mode-preview-dot {
+    @apply size-3 rounded-full border border-black/10;
+  }
+
+  .mode-preview-cards {
+    @apply flex gap-2 p-2;
+  }
+
+  .mode-preview-card {
+    @apply flex-1 h-8 rounded border border-black/10 flex items-center pl-2;
+  }
+
+  .empty-state {
+    @apply rounded border border-dashed border-gray-300 p-4 text-center;
   }
 
   .section {
@@ -216,6 +279,14 @@
 
   .palette-description {
     @apply text-xs text-fg-secondary;
+  }
+
+  .palette-strip {
+    @apply flex rounded overflow-hidden h-6;
+  }
+
+  .palette-strip-cell {
+    @apply flex-1 min-w-0;
   }
 
   .palette-colors {

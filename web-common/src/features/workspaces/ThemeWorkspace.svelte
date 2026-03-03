@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ThemeEditor from "@rilldata/web-common/features/themes/editor/ThemeEditor.svelte";
-  import ThemeDashboardPreview from "@rilldata/web-common/features/themes/ThemeDashboardPreview.svelte";
   import VisualTheme from "@rilldata/web-common/features/themes/VisualTheme.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -49,16 +49,19 @@
     slot="header"
     codeToggle
     titleInput={fileName}
-  >
-    <div slot="cta">
-      <ThemeDashboardPreview />
-    </div>
-  </WorkspaceHeader>
+  ></WorkspaceHeader>
 
   <div slot="body" class="size-full overflow-hidden flex flex-col">
     <div class="flex-1 min-h-0 overflow-hidden">
       {#if $selectedView === "code"}
         <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {parseError} />
+      {:else if parseError?.message}
+        <ErrorPage
+          body={parseError.message}
+          fatal
+          header="Unable to load theme preview"
+          statusCode={404}
+        />
       {:else}
         <VisualTheme {filePath} />
       {/if}
