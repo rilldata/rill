@@ -52,7 +52,7 @@
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
 
-  $: isEnvFile = path === "/.env";
+  $: isEnvFile = path === "/.env" || /^\/\.\w+\.env$/.test(path);
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
