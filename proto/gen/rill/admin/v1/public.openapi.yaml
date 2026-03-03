@@ -683,16 +683,9 @@ components:
                 duckdbConnectorConfig:
                     title: Duckdb connector config for the deployment
                     type: object
-                editable:
-                    type: boolean
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
-                projectVariables:
-                    description: Project-specific variables for the deployment.
-                    items:
-                        $ref: '#/components/schemas/v1ProjectVariable'
-                    type: array
                 updatedOn:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
@@ -703,7 +696,7 @@ components:
                 variables:
                     additionalProperties:
                         type: string
-                    description: 'Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.'
+                    title: Variables for the deployment (connector credentials, etc.)
                     type: object
             type: object
         v1GetDeploymentCredentialsResponse:
@@ -1090,6 +1083,11 @@ components:
             properties:
                 nextPageToken:
                     type: string
+                projectRoles:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1ProjectMemberUser'
+                    description: Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
+                    type: object
                 projects:
                     items:
                         $ref: '#/components/schemas/v1Project'
@@ -2323,7 +2321,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.82.0
+    version: v0.82.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}

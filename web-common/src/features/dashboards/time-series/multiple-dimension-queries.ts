@@ -8,7 +8,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import { type Readable, derived } from "svelte/store";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   SortDirection,
@@ -413,7 +413,7 @@ export function getDimensionValueTimeSeries(
           results.push({
             value,
             total,
-            color: COMPARIONS_COLORS[i] ? COMPARIONS_COLORS[i] : "",
+            color: COMPARISON_COLORS[i] ? COMPARISON_COLORS[i] : "",
             data: prepData,
             isFetching,
           });

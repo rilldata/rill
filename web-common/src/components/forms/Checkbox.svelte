@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
   import { Checkbox as CheckboxPrimitive } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Check } from "lucide-svelte";
@@ -64,7 +65,7 @@
             <InfoCircle size="13px" />
           </div>
           <TooltipContent maxWidth="240px" slot="tooltip-content">
-            {@html hint}
+            {@html DOMPurify.sanitize(hint)}
           </TooltipContent>
         </Tooltip>
       {/if}
