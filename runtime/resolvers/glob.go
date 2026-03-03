@@ -233,7 +233,7 @@ func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, 
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
 	rows := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
-		p := path.Dir(entry.Path)
+		p := entry.Path
 		if entry.IsDir {
 			// removing the tralling '/'
 			p = path.Dir(entry.Path)

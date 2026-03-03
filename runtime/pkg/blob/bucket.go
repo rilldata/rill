@@ -137,9 +137,13 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			// Match directory if the glob is not double-star ("**")
 			// and the file level is greater than the glob level.
 			if !hasDoubleStar && fileLevel > globLevel {
+
+				// Extract the directory at the same depth as the glob pattern
+				// so it can be matched against the glob.
 				dirPath := fileutil.PrefixUntilLevel(obj.Key, globLevel, delimiter)
 
-				// If this is a different directory, finalize the previous one
+				// If we've moved to a new directory, finalize and append
+				// the previously accumulated directory entry.
 				if currentDir != nil && currentDir.Path != dirPath {
 					entries = append(entries, *currentDir)
 					currentDir = nil
@@ -148,9 +152,11 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 					}
 				}
 
-				globForDir := fileutil.EnsureTrailingDelim(glob, delimiter)
 				lastProcessedIdx = i
-				// Match against glob pattern
+
+				// Ensure the glob ends with a delimiter so it correctly matches
+				// directory paths
+				globForDir := fileutil.EnsureTrailingDelim(glob, delimiter)
 				ok, err := doublestar.Match(globForDir, dirPath)
 				if err != nil {
 					return nil, "", err
