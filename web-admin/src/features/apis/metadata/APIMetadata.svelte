@@ -3,28 +3,28 @@
   import { useAPI } from "@rilldata/web-admin/features/apis/selectors";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
+  import { CANONICAL_ADMIN_API_URL } from "@rilldata/web-admin/client/http-client";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { Copy, Check } from "lucide-svelte";
 
   export let organization: string;
   export let project: string;
   export let api: string;
 
-  $: ({ instanceId, host } = $runtime);
+  $: ({ instanceId } = $runtime);
 
   $: apiQuery = useAPI(instanceId, api);
   $: apiSpec = $apiQuery.data?.resource?.api?.spec;
   $: apiMeta = $apiQuery.data?.resource?.meta;
 
   $: securityRules = apiSpec?.securityRules ?? [];
-  $: hasRequestSchema = !!apiSpec?.openapiRequestSchemaJson;
-  $: hasResponseSchema = !!apiSpec?.openapiResponseSchemaJson;
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
   $: canViewPolicy = !!$projectQuery.data?.projectPermissions?.manageProd;
 
-  // Construct the endpoint URL
-  $: endpointPath = `/v1/instances/${instanceId}/api/${api}`;
-  $: endpointUrl = host ? `${host}${endpointPath}` : endpointPath;
+  // Construct the endpoint URL via the admin API gateway
+  $: endpointUrl = `${CANONICAL_ADMIN_API_URL}/v1/organizations/${organization}/projects/${project}/runtime/api/${api}`;
 
   // Extract SQL from resolver properties (used by "sql" and "metrics_sql" resolvers)
   $: sql = apiSpec?.resolverProperties?.sql as string | undefined;
@@ -35,17 +35,36 @@
     const { sql: _sql, ...rest } = apiSpec.resolverProperties;
     return Object.keys(rest).length > 0 ? rest : null;
   })();
+
+  // Safely parse JSON schemas
+  $: requestSchema = safeParseJson(apiSpec?.openapiRequestSchemaJson);
+  $: responseSchema = safeParseJson(apiSpec?.openapiResponseSchemaJson);
+
+  function safeParseJson(json: string | undefined): unknown | null {
+    if (!json) return null;
+    try {
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  let copied = false;
+  function copyEndpointUrl() {
+    copyToClipboard(endpointUrl, "Copied endpoint URL to clipboard");
+    copied = true;
+    setTimeout(() => (copied = false), 2500);
+  }
 </script>
 
 {#if apiSpec}
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
-      <!-- Header row 1 -->
-      <div class="uppercase text-xs text-fg-secondary font-semibold">
-        {#if apiSpec.openapiSummary}
+      {#if apiSpec.openapiSummary}
+        <div class="uppercase text-xs text-fg-secondary font-semibold">
           <span>{apiSpec.openapiSummary}</span>
-        {/if}
-      </div>
+        </div>
+      {/if}
       <div class="flex gap-x-2 items-center">
         <h1 class="text-fg-primary text-lg font-bold" aria-label="API name">
           {apiSpec.displayName || api}
@@ -69,6 +88,18 @@
           class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md px-3 py-1.5 overflow-x-auto"
           >{endpointUrl}</code
         >
+        <button
+          type="button"
+          class="p-1 rounded hover:bg-surface-secondary cursor-pointer text-fg-secondary hover:text-fg-primary"
+          on:click={copyEndpointUrl}
+          aria-label="Copy endpoint URL"
+        >
+          {#if copied}
+            <Check size="14px" />
+          {:else}
+            <Copy size="14px" />
+          {/if}
+        </button>
       </div>
     </div>
 
@@ -77,13 +108,15 @@
       <!-- Resolver -->
       <div class="flex flex-col gap-y-3" aria-label="API resolver">
         <MetadataLabel>Resolver</MetadataLabel>
-        <MetadataValue>{apiSpec.resolver || "—"}</MetadataValue>
-      </div>
-
-      <!-- Authentication -->
-      <div class="flex flex-col gap-y-3" aria-label="API authentication">
-        <MetadataLabel>Authentication</MetadataLabel>
-        <MetadataValue>Bearer token</MetadataValue>
+        {#if apiSpec.resolver}
+          <span
+            class="w-fit text-xs font-medium px-2 py-0.5 rounded-full bg-surface-secondary text-fg-secondary border border-border"
+          >
+            {apiSpec.resolver}
+          </span>
+        {:else}
+          <MetadataValue>—</MetadataValue>
+        {/if}
       </div>
 
       <!-- Security rules -->
@@ -121,8 +154,8 @@
 
       <!-- Last updated -->
       {#if apiMeta?.stateUpdatedOn}
-        <div class="flex flex-col gap-y-3" aria-label="API last executed date">
-          <MetadataLabel>Last executed on</MetadataLabel>
+        <div class="flex flex-col gap-y-3" aria-label="API last updated date">
+          <MetadataLabel>Last updated</MetadataLabel>
           <MetadataValue>
             {new Date(apiMeta.stateUpdatedOn).toLocaleDateString(undefined, {
               year: "numeric",
@@ -147,34 +180,42 @@
     {#if otherResolverProperties}
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Resolver properties</MetadataLabel>
-        <pre
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(
-            otherResolverProperties,
-            null,
-            2,
-          )}</pre>
+        <div
+          class="bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto flex flex-col gap-y-2"
+        >
+          {#each Object.entries(otherResolverProperties) as [key, value]}
+            <div class="flex gap-x-2 text-xs font-mono">
+              <span class="text-fg-secondary shrink-0">{key}:</span>
+              <span class="text-fg-primary whitespace-pre-wrap"
+                >{typeof value === "object"
+                  ? JSON.stringify(value, null, 2)
+                  : value}</span
+              >
+            </div>
+          {/each}
+        </div>
       </div>
     {/if}
 
     <!-- OpenAPI schemas -->
-    {#if hasRequestSchema}
+    {#if requestSchema}
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Request schema</MetadataLabel>
         <pre
           class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(
-            JSON.parse(apiSpec.openapiRequestSchemaJson ?? ""),
+            requestSchema,
             null,
             2,
           )}</pre>
       </div>
     {/if}
 
-    {#if hasResponseSchema}
+    {#if responseSchema}
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Response schema</MetadataLabel>
         <pre
           class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(
-            JSON.parse(apiSpec.openapiResponseSchemaJson ?? ""),
+            responseSchema,
             null,
             2,
           )}</pre>

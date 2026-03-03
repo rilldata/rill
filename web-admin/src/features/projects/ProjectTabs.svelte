@@ -48,7 +48,7 @@
     {
       route: `/${organization}/${project}/-/apis`,
       label: "APIs",
-      hasPermission: true, // TODO: gate behind a feature flag or permission check
+      hasPermission: true,
     },
     {
       route: `/${organization}/${project}/-/status`,

@@ -7,8 +7,6 @@
   import APIsTableCompositeCell from "./APIsTableCompositeCell.svelte";
 
   export let data: V1Resource[];
-  export let organization: string;
-  export let project: string;
 
   const columns: ColumnDef<V1Resource, string>[] = [
     {
@@ -21,9 +19,8 @@
             info.row.original.meta.name.name,
           description: info.row.original.api?.spec?.description,
           resolver: info.row.original.api?.spec?.resolver,
-          openapiSummary: info.row.original.api?.spec?.openapiSummary,
-          securityRules: info.row.original.api?.spec?.securityRules ?? [],
           reconcileError: info.row.original.meta?.reconcileError,
+          lastUpdated: info.row.original.meta?.stateUpdatedOn,
         }),
     },
     {
@@ -37,7 +34,6 @@
   };
 </script>
 
-<!-- TODO: test with live API resources to verify data mapping -->
 <ResourceList {columns} {data} {columnVisibility} kind="API">
   <ResourceListEmptyState
     slot="empty"

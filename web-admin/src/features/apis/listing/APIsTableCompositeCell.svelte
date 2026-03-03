@@ -1,16 +1,17 @@
 <script lang="ts">
   import APIIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
-  import type { V1SecurityRule } from "@rilldata/web-common/runtime-client";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { timeAgo } from "../../dashboards/listing/utils";
 
   export let id: string;
   export let title: string;
   export let description: string | undefined;
   export let resolver: string | undefined;
-  export let openapiSummary: string | undefined;
-  export let securityRules: V1SecurityRule[];
   export let reconcileError: string | undefined;
+  export let lastUpdated: string | undefined;
 
-  $: accessExpression = securityRules?.[0]?.access?.conditionExpression;
+  $: lastUpdatedDate = lastUpdated ? new Date(lastUpdated) : null;
 </script>
 
 <a
@@ -24,6 +25,13 @@
     >
       {title}
     </span>
+    {#if resolver}
+      <span
+        class="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface-secondary text-fg-secondary border border-border"
+      >
+        {resolver}
+      </span>
+    {/if}
     {#if reconcileError}
       <span
         class="text-red-500 text-xs font-normal shrink-0"
@@ -37,16 +45,16 @@
     {#if description}
       <span class="truncate">{description}</span>
       <span class="shrink-0">•</span>
-    {:else if openapiSummary}
-      <span class="truncate">{openapiSummary}</span>
-      <span class="shrink-0">•</span>
     {/if}
-    {#if resolver}
-      <span class="shrink-0">{resolver}</span>
-    {/if}
-    {#if accessExpression}
-      <span class="shrink-0">•</span>
-      <span class="shrink-0 font-mono">access: {accessExpression}</span>
+    {#if lastUpdatedDate}
+      <Tooltip distance={8}>
+        <span class="shrink-0">Updated {timeAgo(lastUpdatedDate)}</span>
+        <TooltipContent slot="tooltip-content">
+          {lastUpdatedDate.toLocaleString()}
+        </TooltipContent>
+      </Tooltip>
+    {:else}
+      <span class="shrink-0">Not yet reconciled</span>
     {/if}
   </div>
 </a>
