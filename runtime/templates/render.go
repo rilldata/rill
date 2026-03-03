@@ -114,6 +114,11 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		applyDuckDBDerivedFields(input, data)
 	}
 
+	// ClickHouse rewrite: compute SQL using ClickHouse table functions
+	if input.Template.OLAP == "clickhouse" && input.Template.Driver != "" {
+		applyClickHouseDerivedFields(input, data, configProps)
+	}
+
 	// Special flags
 	data["no_dev"] = input.Template.Driver == "redshift"
 	data["materialize"] = input.Template.Driver != "duckdb" && input.Template.Driver != "motherduck"
@@ -239,6 +244,84 @@ func applyDuckDBDerivedFields(input *RenderInput, data map[string]any) {
 		table := strVal(input.Properties["table"])
 		data["sql"] = fmt.Sprintf("SELECT * FROM sqlite_scan('%s', '%s');", db, table)
 	}
+}
+
+// applyClickHouseDerivedFields computes ClickHouse-specific SQL using native table functions.
+// ClickHouse models don't use separate connectors; credentials are embedded in the SQL
+// as Rill env var references (e.g. {{ .env.AWS_ACCESS_KEY_ID }}).
+func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, configProps []ProcessedProp) {
+	path := strVal(input.Properties["path"])
+
+	// Build a lookup of processed config prop values by key (includes env var references for secrets)
+	propVal := make(map[string]string, len(configProps))
+	for _, p := range configProps {
+		propVal[p.Key] = p.Value
+	}
+
+	switch input.Template.Driver {
+	case "s3":
+		keyRef := propVal["aws_access_key_id"]
+		secretRef := propVal["aws_secret_access_key"]
+		data["sql"] = BuildClickHouseObjectStoreQuery("s3", path, keyRef, secretRef)
+
+	case "gcs":
+		// GCS on ClickHouse uses S3-compatible HMAC keys
+		keyRef := propVal["key_id"]
+		secretRef := propVal["secret"]
+		data["sql"] = BuildClickHouseObjectStoreQuery("gcs", path, keyRef, secretRef)
+
+	case "azure":
+		account := propVal["azure_storage_account"]
+		key := propVal["azure_storage_key"]
+		container, blobPath := parseAzurePath(path)
+		endpoint := fmt.Sprintf("https://%s.blob.core.windows.net", strVal(input.Properties["azure_storage_account"]))
+		data["sql"] = BuildClickHouseAzureQuery(endpoint, container, blobPath, account, key)
+
+	case "mysql":
+		host := strVal(input.Properties["host"])
+		port := strVal(input.Properties["port"])
+		if port == "" {
+			port = "3306"
+		}
+		db := strVal(input.Properties["database"])
+		table := strVal(input.Properties["table"])
+		user := propVal["user"]
+		pass := propVal["password"]
+		data["sql"] = BuildClickHouseDatabaseQuery("mysql", host+":"+port, db, table, user, pass)
+
+	case "postgres":
+		host := strVal(input.Properties["host"])
+		port := strVal(input.Properties["port"])
+		if port == "" {
+			port = "5432"
+		}
+		db := strVal(input.Properties["dbname"])
+		table := strVal(input.Properties["table"])
+		user := propVal["user"]
+		pass := propVal["password"]
+		data["sql"] = BuildClickHouseDatabaseQuery("postgresql", host+":"+port, db, table, user, pass)
+
+	case "https":
+		data["sql"] = BuildClickHouseURLQuery(path)
+
+	case "local_file":
+		data["sql"] = BuildClickHouseFileQuery(path)
+
+	case "sqlite":
+		db := strVal(input.Properties["db"])
+		table := strVal(input.Properties["table"])
+		data["sql"] = BuildClickHouseSQLiteQuery(db, table)
+	}
+}
+
+// parseAzurePath parses "azure://container/blob/path" into container and blob path.
+func parseAzurePath(path string) (container, blobPath string) {
+	path = strings.TrimPrefix(path, "azure://")
+	idx := strings.IndexByte(path, '/')
+	if idx < 0 {
+		return path, ""
+	}
+	return path[:idx], path[idx+1:]
 }
 
 // renderString renders a Go template string using [[ ]] delimiters.

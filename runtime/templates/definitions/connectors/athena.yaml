@@ -8,6 +8,8 @@ files:
     code_template: |
       # Connector YAML
       # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/athena
+
       type: connector
       driver: athena
+      
       [[ renderProps .props ]]

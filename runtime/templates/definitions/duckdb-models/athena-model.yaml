@@ -8,6 +8,7 @@ files:
     code_template: |
       # Model YAML
       # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/athena
+      
       type: model
       [[ if .connector_name -]]
       connector: "[[ .connector_name ]]"

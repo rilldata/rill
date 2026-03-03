@@ -3,14 +3,14 @@ package templates
 import (
 	"embed"
 	"fmt"
-	"path/filepath"
+	"io/fs"
 	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed definitions/*.yaml
+//go:embed definitions
 var definitionsFS embed.FS
 
 // Registry holds all loaded template definitions.
@@ -19,41 +19,43 @@ type Registry struct {
 	sorted    []*Template // sorted by name for stable List() output
 }
 
-// NewRegistry loads all embedded template definitions from the definitions/ directory.
+// NewRegistry loads all embedded template definitions from the definitions/ directory tree.
 func NewRegistry() (*Registry, error) {
-	entries, err := definitionsFS.ReadDir("definitions")
-	if err != nil {
-		return nil, fmt.Errorf("reading template definitions: %w", err)
-	}
-
 	r := &Registry{
-		templates: make(map[string]*Template, len(entries)),
+		templates: make(map[string]*Template),
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
+	err := fs.WalkDir(definitionsFS, "definitions", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".yaml") {
+			return nil
 		}
 
-		data, err := definitionsFS.ReadFile(filepath.Join("definitions", entry.Name()))
+		data, err := definitionsFS.ReadFile(path)
 		if err != nil {
-			return nil, fmt.Errorf("reading template %s: %w", entry.Name(), err)
+			return fmt.Errorf("reading template %s: %w", path, err)
 		}
 
 		var t Template
 		if err := yaml.Unmarshal(data, &t); err != nil {
-			return nil, fmt.Errorf("parsing template %s: %w", entry.Name(), err)
+			return fmt.Errorf("parsing template %s: %w", path, err)
 		}
 
 		if t.Name == "" {
-			return nil, fmt.Errorf("template %s has no name", entry.Name())
+			return fmt.Errorf("template %s has no name", path)
 		}
 
 		if _, exists := r.templates[t.Name]; exists {
-			return nil, fmt.Errorf("duplicate template name %q in %s", t.Name, entry.Name())
+			return fmt.Errorf("duplicate template name %q in %s", t.Name, path)
 		}
 
 		r.templates[t.Name] = &t
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("loading template definitions: %w", err)
 	}
 
 	// Build sorted list

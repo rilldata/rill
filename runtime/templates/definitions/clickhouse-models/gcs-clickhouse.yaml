@@ -1,0 +1,16 @@
+name: gcs-clickhouse
+display_name: "GCS (ClickHouse)"
+driver: gcs
+olap: clickhouse
+tags: ["gcs", "google", "object-storage", "clickhouse", "source"]
+files:
+  - name: model
+    path_template: "models/[[ .model_name ]].yaml"
+    code_template: |
+      # Model YAML
+      # Reference documentation: https://docs.rilldata.com/reference/project-files/models
+      type: model
+      materialize: true
+      connector: clickhouse
+      sql: |
+        [[ .sql ]]
