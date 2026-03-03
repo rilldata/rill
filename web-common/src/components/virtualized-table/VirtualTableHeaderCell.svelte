@@ -32,7 +32,7 @@
       slot="pin-button"
       title={"Toggle pin column"}
       aria-label={pinned ? "Unpin column" : "Pin column"}
-      class="pin-button duration-100 justify-self-end group-hover:block hidden text-gray-900"
+      class="pin-button duration-100 justify-self-end group-hover:block hidden text-fg-primary"
       on:mouseenter
       on:click
     >
@@ -52,7 +52,7 @@
 
 <style lang="postcss">
   th {
-    @apply truncate p-0 bg-surface;
+    @apply truncate p-0 bg-surface-subtle;
     height: var(--header-height);
   }
 

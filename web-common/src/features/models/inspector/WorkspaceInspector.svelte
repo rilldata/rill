@@ -171,7 +171,7 @@
 <Inspector {filePath}>
   <div class="wrapper" class:grayscale={hasUnsavedChanges}>
     {#if isEmpty}
-      <div class="px-4 py-24 italic ui-copy-disabled text-center">
+      <div class="px-4 py-24 italic text-fg-disabled text-center">
         {source ? "Source" : "Model"} is empty.
       </div>
     {:else if isResourceReconciling}
@@ -233,7 +233,7 @@
             <WithModelResultTooltip modelHasError={hasErrors}>
               <div
                 class:font-normal={hasErrors}
-                class:text-gray-500={hasErrors}
+                class:text-fg-secondary={hasErrors}
               >
                 {#if columnDelta > 0}
                   {formatInteger(columnDelta)}
@@ -302,6 +302,6 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply transition duration-200 py-2 flex flex-col gap-y-2;
+    @apply py-2 flex flex-col gap-y-2;
   }
 </style>

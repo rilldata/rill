@@ -301,17 +301,26 @@ export interface V1AlertState {
   executionCount?: number;
 }
 
+export type V1AnalystAgentContextWherePerMetricsView = {
+  [key: string]: V1Expression;
+};
+
 /**
  * Context for prompts handled by the analyst_agent.
  */
 export interface V1AnalystAgentContext {
   /** Optional explore dashboard. */
   explore?: string;
+  /** Optional canvas dashboard. */
+  canvas?: string;
+  /** Optional canvas component within a dashboard. */
+  canvasComponent?: string;
   /** Optional dimensions. */
   dimensions?: string[];
   /** Optional measures. */
   measures?: string[];
   where?: V1Expression;
+  wherePerMetricsView?: V1AnalystAgentContextWherePerMetricsView;
   /** Optional start of a time range. */
   timeStart?: string;
   /** Optional end of a time range. */
@@ -884,6 +893,7 @@ If not found in `time_ranges`, it should be added to the list. */
   timezone?: string;
   timeGrain?: string;
   selectTimeRange?: string;
+  timeDimension?: string;
   comparisonMode?: V1ExploreComparisonMode;
   compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
@@ -1004,6 +1014,21 @@ export interface V1Expression {
 }
 
 /**
+ * Context for prompts handled by the feedback_agent.
+When provided, the agent records feedback and, for negative sentiment, runs attribution.
+ */
+export interface V1FeedbackAgentContext {
+  /** The ID of the message being rated. */
+  targetMessageId?: string;
+  /** Sentiment: "positive" or "negative". */
+  sentiment?: string;
+  /** Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other". */
+  categories?: string[];
+  /** Optional free-text comment. */
+  comment?: string;
+}
+
+/**
  * FieldSelector describes logic for selecting a list of fields.
 It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
  */
@@ -1063,6 +1088,10 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
+export interface V1GetAIMessageResponse {
+  message?: V1Message;
+}
+
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
@@ -1100,6 +1129,57 @@ export type V1GetTableResponseSchema = { [key: string]: string };
 
 export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
+}
+
+export interface V1GitBranch {
+  name?: string;
+  hasDeployment?: boolean;
+  editableDeployment?: boolean;
+}
+
+export interface V1GitCommit {
+  commitSha?: string;
+  authorName?: string;
+  authorEmail?: string;
+  committedOn?: string;
+  message?: string;
+}
+
+export interface V1GitCommitResponse {
+  commitSha?: string;
+}
+
+export interface V1GitMergeToBranchResponse {
+  /** The output of the git merge command. Only set for unsuccessful merges. */
+  output?: string;
+}
+
+export interface V1GitPullResponse {
+  /** The output of the git pull command. Only set for unsuccessful pulls. */
+  output?: string;
+}
+
+export interface V1GitPushResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GitStatusResponse {
+  /** The current branch of the git repo. */
+  branch?: string;
+  /** The remote url of the git repo. */
+  githubUrl?: string;
+  /** If the repo is managed by Rill. */
+  managedGit?: boolean;
+  /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
+  localChanges?: boolean;
+  /** local_commits returns number of local commits that are not pushed to the remote git repo. */
+  localCommits?: number;
+  /** remote_commits returns number of remote commits not pulled yet. */
+  remoteCommits?: number;
+}
+
+export interface V1GitSwitchBranchResponse {
+  [key: string]: unknown;
 }
 
 export type V1HealthResponseInstancesHealth = {
@@ -1158,6 +1238,7 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
   frontendUrl?: string;
+  theme?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1219,6 +1300,16 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  currentBranch?: string;
+  branches?: V1GitBranch[];
+}
+
+export interface V1ListGitCommitsResponse {
+  commits?: V1GitCommit[];
+  nextPageToken?: string;
 }
 
 export interface V1ListInstancesResponse {
@@ -2098,6 +2189,8 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export type V1ReportSpecResolverProperties = { [key: string]: unknown };
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -2105,6 +2198,8 @@ export interface V1ReportSpec {
   trigger?: boolean;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
+  resolver?: string;
+  resolverProperties?: V1ReportSpecResolverProperties;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -2228,6 +2323,10 @@ export interface V1ResourceMeta {
 export interface V1ResourceName {
   kind?: string;
   name?: string;
+}
+
+export interface V1RestoreGitCommitResponse {
+  newCommitSha?: string;
 }
 
 export interface V1Schedule {
@@ -2589,6 +2688,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   agent?: string;
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
+  feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2601,6 +2701,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   agent?: string;
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
+  feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {
@@ -2630,8 +2731,15 @@ export type ConnectorServiceListBucketsParams = {
 };
 
 export type ConnectorServiceListObjectsParams = {
+  /**
+   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
+   */
   path?: string;
   delimiter?: string;
+  /**
+   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
+   */
+  glob?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -2740,6 +2848,38 @@ export type RuntimeServiceGenerateResolverBody = {
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
 };
+
+export type RuntimeServiceGitSwitchBranchBody = {
+  branch?: string;
+  create?: boolean;
+  ignoreLocalChanges?: boolean;
+};
+
+export type RuntimeServiceGitCommitBody = {
+  commitMessage?: string;
+};
+
+export type RuntimeServiceListGitCommitsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type RuntimeServiceGitMergeToBranchBody = {
+  branch?: string;
+  /** In case of merge conflicts, prefer current changes. */
+  force?: boolean;
+};
+
+export type RuntimeServiceGitPullBody = {
+  discardLocal?: boolean;
+};
+
+export type RuntimeServiceGitPushBody = {
+  commitMessage?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;

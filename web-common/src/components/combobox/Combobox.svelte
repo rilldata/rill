@@ -140,7 +140,7 @@
 
   <!-- NOTE: 52px * 4 for 208px to show scroller -->
   <Combobox.Content
-    class="w-full rounded-sm border border-muted bg-surface p-[6px] shadow-md outline-none"
+    class="w-full rounded-sm border border-muted bg-surface-subtle p-[6px] shadow-md outline-none"
     sideOffset={8}
   >
     <div
@@ -149,11 +149,11 @@
       on:scroll={maybeLoadMoreOnScroll}
     >
       {#if filteredItems.length === 0}
-        <div class="px-4 py-2 text-xs text-gray-500">No results found</div>
+        <div class="px-4 py-2 text-xs text-fg-secondary">No results found</div>
       {:else}
         {#each filteredItems as item (item.value)}
           <Combobox.Item
-            class="flex h-[52px] w-full select-none items-center rounded px-4 py-2 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-slate-100"
+            class="flex h-[52px] w-full select-none items-center rounded px-4 py-2 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-gray-100"
             value={item.value}
             label={item.label}
             {disabled}
@@ -172,7 +172,7 @@
         {/each}
         {#if hasMore && isLoadingMore}
           <div
-            class="px-4 py-2 text-xs text-gray-500 flex items-center justify-center"
+            class="px-4 py-2 text-xs text-fg-secondary flex items-center justify-center"
           >
             <LoadingSpinner size="16px" />
           </div>

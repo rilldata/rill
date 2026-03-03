@@ -64,6 +64,10 @@ func TestPgxOLAP(t *testing.T) {
 	t.Run("test exec", func(t *testing.T) {
 		testExec(t, olap)
 	})
+
+	t.Run("test LoadDDL", func(t *testing.T) {
+		testLoadDDL(t, olap)
+	})
 }
 
 func testOLAP(t *testing.T, olap drivers.OLAPStore) {
@@ -392,6 +396,31 @@ func testExec(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 	require.Equal(t, int64(1), res["id"]) // INT returns as int64
 	require.Equal(t, "test", res["name"])
+}
+
+func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
+	// Test DDL for a table
+	table, err := olap.InformationSchema().Lookup(t.Context(), "", "", "all_datatypes")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(t.Context(), table)
+	require.NoError(t, err)
+	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "all_datatypes")
+
+	// Create a view and test DDL for it
+	tableName := fmt.Sprintf("test_ddl_view_%d", time.Now().UnixNano())
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("CREATE VIEW %s AS SELECT id, name FROM all_datatypes", tableName)})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", tableName)})
+	})
+
+	view, err := olap.InformationSchema().Lookup(t.Context(), "", "", tableName)
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(t.Context(), view)
+	require.NoError(t, err)
+	require.Contains(t, view.DDL, "CREATE VIEW")
+	require.Contains(t, view.DDL, tableName)
 }
 
 func acquireTestPostgres(t *testing.T) (drivers.Handle, drivers.OLAPStore) {

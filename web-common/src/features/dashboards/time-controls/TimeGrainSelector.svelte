@@ -94,14 +94,14 @@
 
 <style lang="postcss">
   .tdd {
-    @apply border h-7 rounded-full px-2 pl-2.5;
+    @apply border h-7 rounded-full px-2 pl-2.5 bg-surface-background text-fg-primary;
   }
 
   .tdd:hover {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   .tdd[data-state="open"] {
-    @apply bg-gray-50 border-gray-400;
+    @apply bg-surface-background border-gray-400;
   }
 </style>

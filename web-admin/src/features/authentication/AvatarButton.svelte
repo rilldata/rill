@@ -10,6 +10,7 @@
   import { createAdminServiceGetCurrentUser } from "../../client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
+  import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -41,7 +42,7 @@
     />
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
-    {#if params.organization && params.project && params.dashboard}
+    {#if params.organization && params.project}
       <ProjectAccessControls
         organization={params.organization}
         project={params.project}
@@ -70,24 +71,27 @@
           </DropdownMenu.Sub>
         </svelte:fragment>
       </ProjectAccessControls>
-      <DropdownMenu.Item
-        href={`/${params.organization}/${params.project}/-/alerts`}
-        class="text-gray-800 font-normal"
-      >
-        Alerts
-      </DropdownMenu.Item>
-      <DropdownMenu.Item
-        href={`/${params.organization}/${params.project}/-/reports`}
-        class="text-gray-800 font-normal"
-      >
-        Reports
-      </DropdownMenu.Item>
+      {#if params.dashboard}
+        <DropdownMenu.Item
+          href={`/${params.organization}/${params.project}/-/alerts`}
+        >
+          Alerts
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          href={`/${params.organization}/${params.project}/-/reports`}
+        >
+          Reports
+        </DropdownMenu.Item>
+      {/if}
     {/if}
+
+    <ThemeToggle />
+    <DropdownMenu.Separator />
+
     <DropdownMenu.Item
       href="https://docs.rilldata.com"
       target="_blank"
       rel="noreferrer noopener"
-      class="text-gray-800 font-normal"
     >
       Documentation
     </DropdownMenu.Item>
@@ -95,18 +99,12 @@
       href="https://discord.gg/2ubRfjC7Rh"
       target="_blank"
       rel="noreferrer noopener"
-      class="text-gray-800 font-normal"
     >
       Join us on Discord
     </DropdownMenu.Item>
     <DropdownMenu.Item on:click={handlePylon}>
       Contact Rill support
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      on:click={redirectToLogout}
-      class="text-gray-800 font-normal"
-    >
-      Logout
-    </DropdownMenu.Item>
+    <DropdownMenu.Item on:click={redirectToLogout}>Logout</DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -11,7 +11,7 @@
     getColorForValues,
     resolveCSSVariable,
   } from "@rilldata/web-common/features/components/charts/util";
-  import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+  import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
   import { slide } from "svelte/transition";
 
@@ -40,7 +40,7 @@
   function handleColorChange(value: string, newColor: string) {
     const valueIndex = colorValues.findIndex((v) => v === value);
     const defaultColorVar =
-      COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
+      COMPARISON_COLORS[valueIndex % COMPARISON_COLORS.length];
 
     // Convert the color back to a CSS variable reference if it matches a palette color
     const colorToSave = colorToVariableReference(newColor);
@@ -87,15 +87,15 @@
 {#if colorMapConfig?.enable && colorValues.length > 0}
   <div>
     <button
-      class="w-full p-1 flex items-center justify-between hover:bg-gray-50"
+      class="w-full p-1 flex items-center justify-between hover:bg-surface-background"
       on:click={toggleExpanded}
     >
       <span class="text-xs font-medium">Color mapping</span>
       <div class="flex items-center gap-x-2">
         {#if isExpanded}
-          <ChevronDown size="14px" class="text-gray-400" />
+          <ChevronDown size="14px" class="text-fg-secondary" />
         {:else}
-          <ChevronRight size="14px" class="text-gray-400" />
+          <ChevronRight size="14px" class="text-fg-secondary" />
         {/if}
       </div>
     </button>
@@ -116,7 +116,7 @@
           />
         {/each}
         {#if allColorMappings.length === 0}
-          <div class="px-2 py-2 text-xs text-gray-500">
+          <div class="px-2 py-2 text-xs text-fg-secondary">
             No color values found
           </div>
         {/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -14,15 +14,17 @@
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
     createConnectorServiceOLAPListTables,
     createQueryServiceTableColumns,
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
+  } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
     type MetricsViewSpecDimension,
     type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
@@ -48,6 +50,11 @@
     YAMLDimension,
     YAMLMeasure,
   } from "../visual-metrics-editing/lib";
+  import {
+    getAllowedGrainsFromOrder,
+    getGrainOrder,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains";
 
   const store = connectorExplorerStore.duplicateStore(
     (connector, database, schema, table) => {
@@ -66,7 +73,7 @@
   );
 
   export let fileArtifact: FileArtifact;
-  export let errors: LineStatus[];
+  export let parseError: V1ParseError | undefined = undefined;
   export let switchView: () => void;
   export let unsavedChanges = false;
 
@@ -207,8 +214,21 @@
     .filter(({ type }) => type && TIMESTAMPS.has(type))
     .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
 
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = errors?.at(0);
+  $: typeOfSelectedTimeDimension = columns.find(
+    ({ name }) => name === timeDimension,
+  )?.type;
+
+  $: availableGrainOptions = getAllowedGrainsFromOrder(
+    typeOfSelectedTimeDimension === "DATE"
+      ? getGrainOrder(V1TimeGrain.TIME_GRAIN_DAY)
+      : getGrainOrder(V1TimeGrain.TIME_GRAIN_MINUTE),
+  ).map((grain) => {
+    const label = V1TimeGrainToDateTimeUnit[grain];
+    return {
+      value: label,
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+    };
+  });
 
   $: itemGroups = {
     measures:
@@ -550,9 +570,9 @@
                "
               >
                 {#if !hasValidOLAPTableSelected}
-                  <span class="text-gray-400 truncate">Select table</span>
+                  <span class="text-fg-muted truncate">Select table</span>
                 {:else}
-                  <span class="text-gray-700 truncate">
+                  <span class="text-fg-secondary truncate">
                     {modelOrSourceOrTableName}
                   </span>
                 {/if}
@@ -637,10 +657,7 @@
         full
         truncate
         value={smallestTimeGrain}
-        options={Object.entries(TIME_GRAIN).map(([_, { label }]) => ({
-          value: label,
-          label: label.charAt(0).toUpperCase() + label.slice(1),
-        }))}
+        options={availableGrainOptions}
         placeholder="Select time grain"
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
@@ -661,13 +678,13 @@
             searchValue = value;
           }}
         >
-          <Search slot="icon" size="16px" color="#374151" />
+          <Search slot="icon" size="16px" className="text-fg-muted" />
         </Input>
       </div>
 
       {#if totalSelected}
         <div
-          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
+          class="bg-surface-subtle rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}
@@ -677,7 +694,7 @@
             on:click={() => {
               triggerDelete();
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Trash size="16px" />
             Delete
@@ -690,7 +707,7 @@
                 dimensions: new Set(),
               };
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Close size="14px" />
           </button>
@@ -708,7 +725,6 @@
             <Button
               type="ghost"
               square
-              gray
               noStroke
               onClick={() => {
                 collapsed[type] = !collapsed[type];
@@ -729,7 +745,6 @@
             <Button
               type="ghost"
               square
-              gray
               noStroke
               label="Add new {type.slice(0, -1)}"
               onClick={() => {
@@ -777,14 +792,14 @@
       {/each}
     </div>
 
-    {#if mainError}
+    {#if parseError}
       <div
         role="status"
         transition:slide={{ duration: LIST_SLIDE_DURATION }}
-        class=" flex items-center gap-x-2 ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-40 overflow-auto"
+        class="flex items-center gap-x-2 border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-40 overflow-auto"
       >
-        <CancelCircle />
-        {mainError.message}
+        <CancelCircle className="text-destructive" />
+        {parseError.message}
       </div>
     {/if}
   </div>
@@ -828,7 +843,7 @@
     onCancel={() => (confirmation = null)}
     onConfirm={async () => {
       if (confirmation?.action === "delete") {
-        await deleteItems(
+        deleteItems(
           confirmation?.index !== undefined && confirmation.type
             ? {
                 [confirmation.type]: new Set([confirmation.index]),
@@ -837,7 +852,7 @@
         );
         resetEditing();
       } else if (confirmation?.action === "switch") {
-        await updateProperties(
+        updateProperties(
           {
             model: confirmation.model,
             database: confirmation.database,
@@ -859,7 +874,11 @@
             confirmation.type,
             confirmation.field,
           );
+        } else {
+          resetEditing();
         }
+      } else {
+        resetEditing();
       }
 
       confirmation = null;
@@ -879,7 +898,7 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-surface border;
+    @apply flex flex-col gap-y-4 size-full p-4 bg-surface-background border;
     @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 

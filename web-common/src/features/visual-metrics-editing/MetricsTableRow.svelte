@@ -75,10 +75,10 @@
       <button
         class:opacity-0={!hovered}
         disabled={!hovered || disableDrag}
-        class="text-gray-500 disabled:cursor-not-allowed"
+        class="disabled:cursor-not-allowed"
         on:mousedown={handleDragStart}
       >
-        <DragHandle size="16px" />
+        <DragHandle size="16px" className="fill-fg-secondary" />
       </button>
 
       <Checkbox onChange={onCheckedChange} checked={selected} />
@@ -87,11 +87,14 @@
 
   <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
     {#if !name && item instanceof YAMLDimension && item.resourceName}
-      <span class="text-gray-500" title="This name was inherited automatically">
+      <span
+        class="text-fg-secondary"
+        title="This name was inherited automatically"
+      >
         {item.resourceName}
       </span>
     {:else}
-      <span>{name || "-"}</span>
+      <span class="text-fg-secondary">{name || "-"}</span>
     {/if}
   </td>
   <td on:click={onCellClick} aria-label="Display name">
@@ -163,7 +166,7 @@
   .editing-controls {
     height: 39px;
     width: 192px;
-    @apply bg-gray-50;
+    @apply bg-surface-hover;
     @apply gap-x-2.5 px-4 py-2 flex items-center justify-center absolute top-0  z-50;
   }
 
@@ -172,7 +175,7 @@
   }
 
   tr {
-    @apply bg-surface;
+    @apply bg-surface-background;
   }
 
   .dragging {
@@ -180,7 +183,7 @@
   }
 
   tr:hover:not(.editing) {
-    @apply bg-gray-50;
+    @apply bg-surface-hover;
   }
 
   tr:hover.selected {
@@ -192,7 +195,7 @@
   }
 
   .editing {
-    @apply bg-gray-100;
+    @apply bg-surface-active;
   }
 
   .selected {

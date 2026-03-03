@@ -14,22 +14,15 @@ import {
   getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
-import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getComparionRangeForScrub,
-  getComparisonRange,
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import {
-  checkValidTimeGrain,
-  findValidTimeGrain,
-  getAllowedTimeGrains,
-  getDefaultTimeGrain,
-} from "@rilldata/web-common/lib/time/grains";
-import {
-  GrainAliasToV1TimeGrain,
+  allowedGrainsForInterval,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -56,10 +49,12 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
-import { derived, get } from "svelte/store";
+import { derived } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { parseRillTime } from "../url-state/time-ranges/parser";
 import type { RillTime } from "../url-state/time-ranges/RillTime";
+import { DateTime, Interval } from "luxon";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -70,6 +65,8 @@ export type TimeRangeState = {
   timeEnd?: string;
   adjustedStart?: string;
   adjustedEnd?: string;
+  aggregationOptions?: V1TimeGrain[];
+  interval?: Interval<true>;
 };
 
 export type ComparisonTimeRangeState = {
@@ -100,6 +97,8 @@ export type TimeControlState = {
   allTimeRange?: TimeRange;
   defaultTimeRange?: TimeRange;
   timeDimension?: string;
+  interval?: Interval;
+  aggregationOptions?: V1TimeGrain[];
 
   ready?: boolean;
 } & TimeRangeState &
@@ -228,7 +227,6 @@ export function getTimeControlState(
     timeDimension,
 
     ...timeRangeState,
-
     ...comparisonTimeRangeState,
   } as TimeControlState;
 }
@@ -344,20 +342,28 @@ export function calculateTimeRangePartial(
     }
   }
 
-  const rillTimeGrain: V1TimeGrain | undefined = parsed?.asOfLabel?.snap
-    ? GrainAliasToV1TimeGrain[parsed?.asOfLabel.snap]
-    : parsed?.interval.getGrain();
+  const maybeInterval = selectedTimeRange
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedTimeRange.start, {
+          zone: selectedTimezone,
+        }),
+        DateTime.fromJSDate(selectedTimeRange.end, { zone: selectedTimezone }),
+      )
+    : undefined;
 
-  // Temporary for the new rill-time UX to work.
-  // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
-  const skipGrainValidation = get(featureFlags.rillTime);
-  selectedTimeRange.interval =
-    !skipGrainValidation ||
-    !currentSelectedTimeRange.interval ||
-    currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-      ? rillTimeGrain ||
-        getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
-      : currentSelectedTimeRange.interval;
+  const interval = maybeInterval?.isValid ? maybeInterval : undefined;
+
+  const aggregationOptions = allowedGrainsForInterval(interval, minTimeGrain);
+
+  const validatedGrain = getValidatedTimeGrain(
+    interval,
+    minTimeGrain,
+    currentSelectedTimeRange?.interval,
+    parsed,
+  );
+  if (selectedTimeRange && validatedGrain) {
+    selectedTimeRange.interval = validatedGrain;
+  }
 
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
     selectedTimeRange.start,
@@ -380,9 +386,11 @@ export function calculateTimeRangePartial(
   return {
     selectedTimeRange,
     timeStart: timeStart.toISOString(),
-    adjustedStart,
+    adjustedStart: adjustedStart || undefined,
     timeEnd: timeEnd.toISOString(),
-    adjustedEnd,
+    adjustedEnd: adjustedEnd || undefined,
+    aggregationOptions,
+    interval,
   };
 }
 
@@ -404,6 +412,7 @@ export function calculateComparisonTimeRangePartial(
     allTimeRange,
     timeRangeState.selectedTimeRange,
     currentComparisonTimeRange,
+    selectedTimezone,
   );
 
   let comparisonAdjustedStart: string | undefined = undefined;
@@ -415,8 +424,8 @@ export function calculateComparisonTimeRangePartial(
       selectedTimezone,
       timeRangeState.selectedTimeRange?.interval,
     );
-    comparisonAdjustedStart = adjustedComparisonTime.start;
-    comparisonAdjustedEnd = adjustedComparisonTime.end;
+    comparisonAdjustedStart = adjustedComparisonTime.start || undefined;
+    comparisonAdjustedEnd = adjustedComparisonTime.end || undefined;
   }
 
   let comparisonTimeStart = selectedComparisonTimeRange?.start;
@@ -477,7 +486,15 @@ export function getTimeRange(
       end: new Date(selectedTimeRange.end),
     };
   } else if (selectedTimeRange?.name) {
-    if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+    if (selectedTimeRange.start && selectedTimeRange.end) {
+      // Time range already resolved.
+      timeRange = {
+        name: selectedTimeRange.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+        interval: selectedTimeRange.interval,
+      };
+    } else if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
       const minTimeUnit =
         V1TimeGrainToDateTimeUnit[
           minTimeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
@@ -490,13 +507,6 @@ export function getTimeRange(
         selectedTimezone,
         minTimeUnit,
       );
-    } else if (selectedTimeRange.start) {
-      timeRange = {
-        name: selectedTimeRange.name,
-        start: selectedTimeRange.start,
-        end: selectedTimeRange.end,
-        interval: selectedTimeRange.interval,
-      };
     } else {
       timeRange = isoDurationToFullTimeRange(
         selectedTimeRange?.name,
@@ -517,41 +527,12 @@ export function getTimeRange(
   return timeRange;
 }
 
-export function getTimeGrain(
-  selectedTimeRange: DashboardTimeControls | undefined,
-  timeRange: DashboardTimeControls,
-  minTimeGrain: V1TimeGrain,
-) {
-  const timeGrainOptions = getAllowedTimeGrains(timeRange.start, timeRange.end);
-  const isValidTimeGrain = checkValidTimeGrain(
-    selectedTimeRange?.interval,
-    timeGrainOptions,
-    minTimeGrain,
-  );
-
-  let timeGrain: V1TimeGrain | undefined;
-  if (isValidTimeGrain) {
-    timeGrain = selectedTimeRange?.interval;
-  } else {
-    const defaultTimeGrain = getDefaultTimeGrain(
-      timeRange.start,
-      timeRange.end,
-    ).grain;
-    timeGrain = findValidTimeGrain(
-      defaultTimeGrain,
-      timeGrainOptions,
-      minTimeGrain,
-    );
-  }
-
-  return timeGrain;
-}
-
 export function getComparisonTimeRange(
   timeRanges: V1ExploreTimeRange[] | undefined,
   allTimeRange: TimeRange | undefined,
   timeRange: DashboardTimeControls | undefined,
   comparisonTimeRange: DashboardTimeControls | undefined,
+  timezone: string | undefined,
 ) {
   if (!timeRange || !timeRange.name || !allTimeRange) return undefined;
 
@@ -561,6 +542,7 @@ export function getComparisonTimeRange(
       timeRange,
       undefined,
       allTimeRange,
+      timezone,
     );
     const range = getTimeComparisonParametersForComponent(
       comparisonOption,
@@ -568,6 +550,7 @@ export function getComparisonTimeRange(
       allTimeRange.end,
       timeRange.start,
       timeRange.end,
+      timezone || "UTC",
     );
 
     return {
@@ -585,16 +568,29 @@ export function getComparisonTimeRange(
   } else {
     // variable time range of some kind.
     const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;
-    const range = getComparisonRange(
-      timeRange.start,
-      timeRange.end,
-      comparisonOption,
+    const interval = Interval.fromDateTimes(
+      DateTime.fromJSDate(timeRange.start, { zone: timezone }),
+      DateTime.fromJSDate(timeRange.end, { zone: timezone }),
     );
 
-    return {
-      ...range,
-      name: comparisonOption,
-    };
+    if (interval.isValid) {
+      const range = getComparisonInterval(
+        interval,
+        comparisonOption,
+        timezone || "UTC",
+      );
+      return {
+        start: range?.start.toJSDate(),
+        end: range?.end.toJSDate(),
+        name: comparisonOption,
+      };
+    } else {
+      return {
+        start: undefined,
+        end: undefined,
+        name: comparisonOption,
+      };
+    }
   }
 }
 

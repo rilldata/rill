@@ -15,39 +15,21 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	// Register drivers
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
 func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
 	testmode.Expensive(t)
-
-	ctx := context.Background()
-	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
-		clickhouse.WithUsername("clickhouse"),
-		clickhouse.WithPassword("clickhouse"),
-		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := clickHouseContainer.Terminate(ctx)
-		require.NoError(t, err)
-	})
-
-	host, err := clickHouseContainer.Host(ctx)
-	require.NoError(t, err)
-	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
-	require.NoError(t, err)
-
+	// Create a test ClickHouse cluster
+	dsn := testclickhouse.Start(t)
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", dsn)
 	t.Run("TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist", func(t *testing.T) { TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t) })
 	t.Run("TestMetricsViewsComparison_dim_order", func(t *testing.T) { TestMetricsViewsComparison_dim_order(t) })
 	t.Run("TestMetricsViewsComparison_measure_order", func(t *testing.T) { TestMetricsViewsComparison_measure_order(t) })
@@ -57,6 +39,154 @@ func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
 	t.Run("TestMetricsViewsComparison_measure_filters_with_compare_aliases", func(t *testing.T) { TestMetricsViewsComparison_measure_filters_with_compare_aliases(t) })
 	t.Run("TestMetricsViewsComparison_export_xlsx", func(t *testing.T) { TestMetricsViewsComparison_export_xlsx(t) })
 	t.Run("TestServer_MetricsViewTimeseries_export_csv", func(t *testing.T) { TestServer_MetricsViewTimeseries_export_csv(t) })
+}
+
+func TestMetricsViewsComparisonAgainstStarRocks(t *testing.T) {
+	testmode.Expensive(t)
+
+	rt, instanceID := testruntime.NewInstanceWithStarRocksProject(t)
+	t.Run("testMetricsViewsComparison_dim_order", func(t *testing.T) {
+		testMetricsViewsComparison_dim_order(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsComparison_measure_order", func(t *testing.T) {
+		testMetricsViewsComparison_measure_order(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsComparison_measure_filters", func(t *testing.T) {
+		testMetricsViewsComparison_measure_filters(t, rt, instanceID)
+	})
+}
+
+func testMetricsViewsComparison_dim_order(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
+			},
+		},
+		Limit:          10,
+		SecurityClaims: testClaims(),
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+}
+
+func testMetricsViewsComparison_measure_order(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Limit:          10,
+		SecurityClaims: testClaims(),
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+}
+
+func testMetricsViewsComparison_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(1),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Limit:          10,
+		SecurityClaims: testClaims(),
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
 }
 
 func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t *testing.T) {

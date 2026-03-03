@@ -34,6 +34,7 @@ const DEFAULT_EDGE_STYLE = EDGE_CONFIG.DEFAULT_STYLE;
 
 // Resource kinds that should be displayed in the graph
 const ALLOWED_KINDS = new Set<ResourceKind>([
+  ResourceKind.Connector,
   ResourceKind.Source,
   ResourceKind.Model,
   ResourceKind.MetricsView,
@@ -127,6 +128,7 @@ export function buildResourceGraph(
     const nodeWidth = estimateNodeWidth(label);
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
+      case ResourceKind.Connector:
       case ResourceKind.Source:
         rankConstraint = "min";
         break;

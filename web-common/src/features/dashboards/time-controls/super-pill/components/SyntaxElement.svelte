@@ -7,9 +7,9 @@
 
 <svelte:element
   this={onClick ? "button" : "span"}
+  class:dark
   role={onClick ? "button" : undefined}
   class="element"
-  class:dark
   on:click={() => onClick?.(range)}
 >
   {range}
@@ -17,16 +17,16 @@
 
 <style lang="postcss">
   .element {
-    @apply bg-slate-100 text-slate-500 rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
+    @apply bg-surface-muted text-fg-secondary rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
     font-family: "Source Code Variable", monospace;
     @apply font-medium w-fit;
   }
 
-  .dark {
-    @apply bg-slate-600 text-slate-200;
+  .dark.element {
+    @apply bg-gray-300 text-fg-inverse;
   }
 
   .element:hover {
-    @apply bg-slate-200;
+    @apply bg-surface-hover;
   }
 </style>

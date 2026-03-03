@@ -7,12 +7,14 @@
 {#if assembled}
   {#if value !== null && value !== undefined}
     <span
-      class="pointer-events-none {value > 0 ? 'text-gray-500' : 'text-red-500'}"
+      class="pointer-events-none {value > 0
+        ? 'text-fg-secondary'
+        : 'text-destructive'}"
     >
       {formattedValue}
     </span>
   {:else}
-    <span class="text-gray-400 pointer-events-none">-</span>
+    <span class="text-fg-secondary pointer-events-none">-</span>
   {/if}
 {:else}
   <span class="loading-cell" />
@@ -20,6 +22,6 @@
 
 <style lang="postcss">
   .loading-cell {
-    @apply h-2 bg-gray-200 rounded w-full inline-block;
+    @apply h-2 bg-surface-subtle rounded w-full inline-block;
   }
 </style>

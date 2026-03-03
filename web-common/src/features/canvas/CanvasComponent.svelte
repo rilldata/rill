@@ -53,7 +53,7 @@
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
   class:outline={allowBorder || open}
   class:shadow-sm={allowBorder || open}
-  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 dark:outline-gray-300 bg-card overflow-hidden rounded-sm"
+  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-border bg-surface-card overflow-hidden rounded-sm"
 >
   <Toolbar
     {component}
@@ -85,7 +85,7 @@
   }
 
   .component-card:has(.component-error) {
-    @apply outline-red-200;
+    @apply outline-destructive;
   }
 
   .selected {

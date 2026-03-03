@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
   import InfoCircle from "../icons/InfoCircle.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
@@ -16,13 +17,13 @@
 <div class="label-wrapper">
   <label
     for={id}
-    class="line-clamp-1 {small ? 'text-xs' : 'text-sm'}"
+    class="line-clamp-1 {small ? 'text-xs' : 'text-sm'} text-fg-secondary"
     class:capitalize
     class:faint
   >
     {label}
     {#if optional}
-      <span class="text-gray-500 text-[12px] font-normal">(optional)</span>
+      <span class="text-fg-tertiary text-[12px] font-normal">(optional)</span>
     {/if}
   </label>
   {#if hint}
@@ -30,12 +31,12 @@
       <svelte:element
         this={link ? "a" : "div"}
         {...link ? { href: link, target: "_blank" } : {}}
-        class="text-gray-500"
+        class="text-icon-muted"
       >
         <InfoCircle size="13px" />
       </svelte:element>
       <TooltipContent maxWidth="240px" slot="tooltip-content">
-        {@html hint}
+        {@html DOMPurify.sanitize(hint)}
       </TooltipContent>
     </Tooltip>
   {/if}
@@ -48,10 +49,10 @@
   }
 
   label {
-    @apply font-medium text-gray-800;
+    @apply font-medium;
   }
 
   label.faint {
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 </style>

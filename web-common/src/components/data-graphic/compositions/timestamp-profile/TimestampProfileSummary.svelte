@@ -36,7 +36,7 @@
   $: displayRollupGrain = NicerTimeGrain[rollupTimeGrain];
 </script>
 
-<div class="ui-copy-muted" style:font-size="11px">
+<div class="text-fg-muted" style:font-size="11px">
   <LeftRightGrid>
     <GridCell>
       <Tooltip distance={16} location="top">

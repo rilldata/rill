@@ -116,7 +116,7 @@ func getTableTestServer(t *testing.T) (*server.Server, string) {
 		SELECT 1::int AS a, 10::int AS "b""b"
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -125,7 +125,7 @@ func getTableTestServer(t *testing.T) (*server.Server, string) {
 func getTableTestServerWithSql(t *testing.T, sql string) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -136,7 +136,7 @@ func getTableTestServerWithEmptyModel(t *testing.T) (*server.Server, string) {
 		SELECT 1::int AS a, 10::int AS "b""b" where 1<>1
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID

@@ -7,7 +7,7 @@
   import type {
     V1Expression,
     V1TimeRange,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
 
@@ -45,7 +45,7 @@
     {:else}
       <div
         in:fly|local={{ duration: 200, x: 8 }}
-        class="ui-copy-disabled grid items-center"
+        class="text-fg-disabled grid items-center"
         style:min-height="26px"
       >
         No criteria selected

@@ -471,6 +471,18 @@ export const AD_BIDS_SET_TIME_PIVOT_FILTER = (field: string) => {
     ])) as TestDashboardMutation;
 };
 
+// Time dimension mutations
+export const AD_BIDS_SET_TIME_DIMENSION_OFFSET: TestDashboardMutation = (
+  mut,
+) => {
+  mut.dashboard.selectedTimeDimension = "offset_timestamp";
+};
+export const AD_BIDS_SET_TIME_DIMENSION_PRIMARY: TestDashboardMutation = (
+  mut,
+) => {
+  mut.dashboard.selectedTimeDimension = undefined;
+};
+
 export async function applyMutationsToDashboard(
   name: string,
   mutations: TestDashboardMutation[],

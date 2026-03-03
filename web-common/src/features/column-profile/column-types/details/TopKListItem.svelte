@@ -1,27 +1,25 @@
 <script lang="ts">
   import BarAndLabel from "@rilldata/web-common/components/BarAndLabel.svelte";
-  import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
 
   export let value: number; // should be between 0 and 1.
   export let color = "bg-primary-200";
+  export let onFocus: (() => void) | undefined = undefined;
+  export let onBlur: (() => void) | undefined = undefined;
 
   /** compact mode is used in e.g. profiles */
 
-  const dispatch = createEventDispatcher();
-
   const onHover = () => {
-    dispatch("focus");
+    onFocus?.();
   };
   const onLeave = () => {
-    dispatch("blur");
+    onBlur?.();
   };
 </script>
 
 <button
   class="block flex flex-row w-full text-left transition-color"
   on:blur={onLeave}
-  on:click
   on:focus={onHover}
   on:mouseleave={onLeave}
   on:mouseover={onHover}

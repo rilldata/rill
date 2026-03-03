@@ -26,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Pinot",
 	Description: "Connect to Apache Pinot.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/pinot",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/pinot",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -326,8 +326,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {

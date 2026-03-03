@@ -2,9 +2,13 @@
   import { page } from "$app/stores";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import type {
+    PathOption,
+    PathOptions,
+  } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
@@ -19,10 +23,10 @@
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
+  import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
-  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
-  const { darkMode, deploy, developerChat } = featureFlags;
+  const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
   export let mode: string;
 
@@ -52,7 +56,10 @@
 
   $: hasValidDashboard = Boolean(defaultDashboard);
 
-  $: dashboardOptions = getBreadcrumbOptions(explores, canvases);
+  $: dashboardOptions = {
+    options: getBreadcrumbOptions(explores, canvases),
+    carryOverSearchParams: $stickyDashboardState,
+  } satisfies PathOptions;
 
   $: projectPath = <PathOption>{
     label: projectTitle,
@@ -62,7 +69,7 @@
   };
 
   $: pathParts = [
-    new Map([[projectTitle.toLowerCase(), projectPath]]),
+    { options: new Map([[projectTitle.toLowerCase(), projectPath]]) },
     dashboardOptions,
   ];
 
@@ -89,15 +96,13 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage}>
+<header class:border-b={!onDeployPage} class="bg-surface-base">
   {#if !onDeployPage}
     <a href="/">
       <Rill />
     </a>
 
-    <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
-      {mode}
-    </span>
+    <Tag text={mode} color="gray"></Tag>
 
     {#if mode === "Preview"}
       {#if $exploresQuery?.data}
@@ -129,13 +134,13 @@
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
-    <LocalAvatarButton darkMode={$darkMode} />
+    <LocalAvatarButton />
   </div>
 </header>
 
 <style lang="postcss">
   header {
-    @apply w-full bg-surface box-border;
+    @apply w-full box-border;
     @apply flex gap-x-2 items-center px-4 flex-none;
     @apply h-11;
   }

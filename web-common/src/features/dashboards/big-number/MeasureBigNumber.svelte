@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
@@ -11,7 +11,11 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import {
+    type MetricsViewSpecMeasure,
+    createQueryServiceMetricsViewAggregation,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     crossfade,
@@ -20,15 +24,91 @@
     type FlyParams,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
+  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let measure: MetricsViewSpecMeasure;
-  export let value: number | null;
-  export let comparisonValue: number | undefined = undefined;
-  export let showComparison = false;
-  export let status: EntityStatus;
-  export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+  export let instanceId: string;
+  export let metricsViewName: string;
+  export let where: V1Expression | undefined = undefined;
+  export let timeDimension: string | undefined = undefined;
+  export let timeStart: string | undefined = undefined;
+  export let timeEnd: string | undefined = undefined;
+  export let comparisonTimeStart: string | undefined = undefined;
+  export let comparisonTimeEnd: string | undefined = undefined;
+  export let showComparison = false;
+  export let ready: boolean = true;
+
+  $: measureName = measure.name ?? "";
+
+  // Primary totals query
+  $: primaryQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      measures: [{ name: measureName }],
+      where,
+      timeRange: {
+        start: timeStart,
+        end: timeEnd,
+        timeDimension,
+      },
+    },
+    {
+      query: {
+        enabled: ready && (!!timeStart || !timeDimension) && !!measureName,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
+    },
+  );
+
+  // Comparison totals query
+  $: comparisonQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      measures: [{ name: measureName }],
+      where,
+      timeRange: {
+        start: comparisonTimeStart,
+        end: comparisonTimeEnd,
+        timeDimension,
+      },
+    },
+    {
+      query: {
+        enabled:
+          ready && showComparison && !!comparisonTimeStart && !!measureName,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
+    },
+  );
+
+  // Derive value, comparisonValue, status, errorMessage from queries
+  $: value =
+    ($primaryQuery.data?.data?.[0]?.[measureName] as number | null) ?? null;
+  $: comparisonValue = showComparison
+    ? ($comparisonQuery.data?.data?.[0]?.[measureName] as number | undefined)
+    : undefined;
+
+  $: isFetching =
+    $primaryQuery.isFetching || (showComparison && $comparisonQuery.isFetching);
+  $: isError = $primaryQuery.isError || $comparisonQuery.isError;
+
+  $: status = isError
+    ? EntityStatus.Error
+    : isFetching
+      ? EntityStatus.Running
+      : EntityStatus.Idle;
+
+  $: errorMessage = isError
+    ? (($primaryQuery.error as any)?.response?.data?.message ??
+      ($comparisonQuery.error as any)?.response?.data?.message ??
+      undefined)
+    : undefined;
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -94,17 +174,11 @@
   $: useDiv = isMeasureExpanded || !withTimeseries;
 
   function handleMouseOver() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 
   function handleFocus() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 </script>
 
@@ -124,7 +198,7 @@
     this={useDiv ? "div" : "a"}
     role={useDiv ? "presentation" : "button"}
     tabindex={useDiv ? -1 : 0}
-    class="group big-number outline-gray-200 dark:outline-gray-300"
+    class="group big-number outline-border"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
     on:click={modified({
@@ -140,14 +214,14 @@
     href={tddHref}
   >
     <h2
-      class="line-clamp-2 ui-copy-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
+      class="line-clamp-2 text-fg-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
     </h2>
     <div
       role="button"
-      class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
+      class="text-fg-secondary relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
       on:mouseover={handleMouseOver}
@@ -163,21 +237,26 @@
             {#if comparisonValue != null}
               <div
                 role="complementary"
-                class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
+                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
                 class:font-semibold={isComparisonPositive}
-                on:mouseenter={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(diff) ?? "no data")}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(value) ?? "no data")}
+                on:mouseenter={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(diff) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(diff) ?? "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
               >
                 {#if !noChange}
                   {formattedDiff}
                 {:else}
-                  <span
-                    class="ui-copy-disabled-faint italic"
-                    style:font-size=".9em">no change</span
+                  <span class="text-fg-muted italic" style:font-size=".9em"
+                    >no change</span
                   >
                 {/if}
               </div>
@@ -185,16 +264,23 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() =>
-                  (tooltipValue = numberPartsToString(
+                on:mouseenter={() => {
+                  tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
                     ),
-                  ))}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? "no data")}
-                class="w-fit ui-copy-inactive"
+                  );
+                  copyValue =
+                    measureValueFormatterUnabridged(comparisonPercChange) ??
+                    "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
+                class="w-fit text-fg-secondary"
                 class:text-red-500={!isComparisonPositive}
               >
                 <WithTween
@@ -232,9 +318,9 @@
           />
         </div>
       {:else if value === null}
-        <span class="ui-copy-disabled-faint italic text-sm">no data</span>
+        <span class="text-fg-muted italic text-sm">no data</span>
       {:else if value === undefined}
-        <span class="ui-copy-disabled-faint italic text-sm">n/a</span>
+        <span class="text-fg-muted italic text-sm">n/a</span>
       {/if}
     </div>
   </svelte:element>
@@ -243,11 +329,33 @@
 <style lang="postcss">
   .big-number {
     @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
-    @apply items-start flex flex-col text-left;
+    @apply items-start flex flex-col text-left flex-none;
     min-height: 85px;
   }
 
   .shadow-grad:hover {
-    @apply shadow-md bg-gradient-to-b from-surface to-gray-50 outline-1 outline;
+    @apply shadow-md outline-1 outline;
+    outline-color: color-mix(
+      in oklab,
+      var(--color-theme-500) calc(0.15 * 100%),
+      transparent
+    );
+
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--white) calc(0.15 * 100%), transparent),
+      50%,
+      color-mix(in oklab, var(--color-theme-300) calc(0.1 * 100%), transparent)
+    );
+  }
+
+  :global(.dark) .shadow-grad:hover {
+    @apply shadow-md  outline-1 outline outline-[#FFFFFF26];
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--white) calc(0.1 * 100%), transparent),
+      50%,
+      color-mix(in oklab, var(--white) calc(0.05 * 100%), transparent)
+    );
   }
 </style>

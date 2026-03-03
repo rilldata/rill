@@ -35,7 +35,7 @@
       {#if items.length}
         <DragList {items} zone={title} {tableMode} />
       {:else}
-        <p class="text-gray-500 my-1">No available fields</p>
+        <p class="text-fg-secondary my-1">No available fields</p>
       {/if}
     </div>
   {/if}

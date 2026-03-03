@@ -343,7 +343,7 @@
   <div class="input-row">
     <div
       class={cn(
-        "input-with-role p-1 border border-gray-200 outline-transparent",
+        "input-with-role p-1 border outline-transparent",
         showDropdown
           ? "border-transparent outline outline-1 outline-primary-500"
           : "",
@@ -359,7 +359,7 @@
             {identifier}
             <button
               on:click={() => removeSelected(identifier)}
-              class="ml-1 rounded hover:bg-gray-100 transition-colors"
+              class="ml-1 rounded hover:bg-surface-hover transition-colors"
             >
               <Close size="12px" />
             </button>
@@ -379,7 +379,7 @@
           class:error={!!error}
           autocomplete="off"
           tabindex={autoFocusInput}
-          class="px-1"
+          class="px-1 placeholder-fg-secondary"
         />
       </div>
 
@@ -415,7 +415,7 @@
     >
       {#if categorizedResults.groups.length > 0}
         <div class="section-header">GROUPS</div>
-        {#each categorizedResults.groups as result}
+        {#each categorizedResults.groups as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
@@ -441,7 +441,7 @@
 
       {#if categorizedResults.members.length > 0}
         <div class="section-header">MEMBERS</div>
-        {#each categorizedResults.members as result}
+        {#each categorizedResults.members as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
@@ -467,7 +467,7 @@
 
       {#if categorizedResults.guests.length > 0}
         <div class="section-header">GUESTS</div>
-        {#each categorizedResults.guests as result}
+        {#each categorizedResults.guests as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
@@ -514,7 +514,7 @@
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    background: #fff;
+    @apply bg-input text-fg-primary border;
     border-radius: 6px;
     min-height: 32px;
     gap: 8px;
@@ -562,8 +562,7 @@
 
   .dropdown {
     position: fixed;
-    background: #fff;
-    border: 1px solid #d1d5db;
+    @apply bg-popover text-fg-primary border;
     border-radius: 6px;
     z-index: 50;
     min-height: 60px;
@@ -601,7 +600,7 @@
   }
 
   .section-header {
-    @apply text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2;
+    @apply text-xs font-semibold text-fg-secondary uppercase tracking-wide px-3 py-2;
     border-top: 1px solid #f3f4f6;
   }
 

@@ -64,6 +64,7 @@ export function getMappedExploreUrl(
 
       const searchParams = convertPartialExploreStateToUrlParams(
         exploreSpec,
+        metricsViewSpec,
         dashboardState.data.exploreState,
         getTimeControlState(
           metricsViewSpec,

@@ -34,6 +34,7 @@ import (
 //     dependency [`kind`] `name`: register a dependency (parse time)
 //     ref [`kind`] `name`: register a dependency at parse-time, resolve it to a name at resolve time (parse time and resolve time)
 //     lookup [`kind`] `name`: lookup another resource (resolve time)
+//     env `name`: access a project "environment" variable (parse and resolve time)
 //     .env.name: access a project "environment" variable (resolve time)
 //     .user.attribute: access an attribute from auth claims (resolve time)
 //     .meta: access the current resource's metadata (resolve time)
@@ -127,6 +128,13 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 		}
 		refs[name] = true
 		return map[string]any{}, nil
+	}
+	funcMap["env"] = func(name string) (string, error) {
+		if name == "" {
+			return "", fmt.Errorf(`"env" requires a variable name argument`)
+		}
+		// At parse time, just return a placeholder
+		return "", nil
 	}
 
 	// Parse template
@@ -259,6 +267,24 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 			"spec":  resource.Spec,
 			"state": resource.State,
 		}, nil
+	}
+
+	// Add func to access environment variables (case-insensitive)
+	funcMap["env"] = func(name string) (string, error) {
+		if name == "" {
+			return "", fmt.Errorf(`"env" requires a variable name argument`)
+		}
+		// Try exact match first
+		if value, ok := data.Variables[name]; ok {
+			return value, nil
+		}
+		// Try case-insensitive match
+		for key, value := range data.Variables {
+			if strings.EqualFold(key, name) {
+				return value, nil
+			}
+		}
+		return "", fmt.Errorf(`environment variable %q not found (check that it's defined in your .env file)`, name)
 	}
 
 	// Parse template (error on missing keys)

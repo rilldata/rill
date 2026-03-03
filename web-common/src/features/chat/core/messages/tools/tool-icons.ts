@@ -3,7 +3,13 @@
  * Maps tool names to their corresponding Svelte icon components.
  */
 
-import { FileSearch, FileText, FolderTree, Pencil } from "lucide-svelte";
+import {
+  FileSearch,
+  FileText,
+  FolderTree,
+  Pencil,
+  CornerDownRight,
+} from "lucide-svelte";
 import type { ComponentType } from "svelte";
 import Chart from "../../../../../components/icons/Chart.svelte";
 import List from "../../../../../components/icons/List.svelte";
@@ -28,6 +34,9 @@ export const TOOL_ICONS: Record<string, ComponentType> = {
   [ToolName.LIST_FILES]: FolderTree,
   [ToolName.READ_FILE]: FileText,
   [ToolName.WRITE_FILE]: Pencil,
+
+  // Common tools
+  [ToolName.NAVIGATE]: CornerDownRight,
 };
 
 /**

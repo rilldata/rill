@@ -1,17 +1,16 @@
-import {
-  getAvailableComparisonsForTimeRange,
-  getComparisonRange,
-} from "@rilldata/web-common/lib/time/comparisons";
-import { PREVIOUS_COMPLETE_DATE_RANGES } from "@rilldata/web-common/lib/time/config";
+import { getAvailableComparisonsForTimeRange } from "@rilldata/web-common/lib/time/comparisons";
 import {
   TimeComparisonOption,
   TimeRangePreset,
   type DashboardTimeControls,
 } from "@rilldata/web-common/lib/time/types";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+import { DateTime, Interval } from "luxon";
 
 export function getComparisonOptionsForCanvas(
   selectedTimeRange: DashboardTimeControls | undefined,
   allowCustomTimeRange: boolean,
+  timezone: string,
 ) {
   if (!selectedTimeRange) {
     return [];
@@ -27,35 +26,42 @@ export function getComparisonOptionsForCanvas(
     allOptions = allOptions.filter((o) => o !== TimeComparisonOption.CUSTOM);
   }
 
-  if (
-    selectedTimeRange?.name &&
-    selectedTimeRange?.name in PREVIOUS_COMPLETE_DATE_RANGES
-  ) {
-    // Previous complete ranges should only have previous period.
-    // Other options dont make sense with our current wording of the comparison ranges.
-    allOptions = [TimeComparisonOption.CONTIGUOUS];
-    if (allowCustomTimeRange) allOptions.push(TimeComparisonOption.CUSTOM);
-  }
-
   const timeComparisonOptions = getAvailableComparisonsForTimeRange(
     allTimeRange.start,
     allTimeRange.end,
     selectedTimeRange.start,
     selectedTimeRange.end,
     allOptions,
+    timezone,
   );
 
-  return timeComparisonOptions.map((co, i) => {
-    const comparisonTimeRange = getComparisonRange(
-      selectedTimeRange.start,
-      selectedTimeRange.end,
-      co,
-    );
-    return {
+  const interval = Interval.fromDateTimes(
+    DateTime.fromJSDate(selectedTimeRange.start, { zone: timezone }),
+    DateTime.fromJSDate(selectedTimeRange.end, { zone: timezone }),
+  );
+
+  if (!interval.isValid) {
+    return [];
+  }
+
+  const options: {
+    name: TimeComparisonOption;
+    key: number;
+    start: Date;
+    end: Date;
+  }[] = [];
+
+  timeComparisonOptions.forEach((co, i) => {
+    const comparisonTimeRange = getComparisonInterval(interval, co, timezone);
+
+    if (!comparisonTimeRange) return;
+    options.push({
       name: co,
       key: i,
-      start: comparisonTimeRange.start,
-      end: comparisonTimeRange.end,
-    };
+      start: comparisonTimeRange.start.toJSDate(),
+      end: comparisonTimeRange.end.toJSDate(),
+    });
   });
+
+  return options;
 }

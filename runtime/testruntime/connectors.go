@@ -16,9 +16,10 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/azurite"
+	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -80,6 +81,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		return map[string]string{"dsn": dsn}
 	},
 	"motherduck": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		path := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_PATH")
 		require.NotEmpty(t, path)
@@ -226,6 +228,8 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			ctx,
 			"mcr.microsoft.com/azure-storage/azurite:3.34.0",
 			azurite.WithInMemoryPersistence(64),
+			azurite.WithEnabledServices(azurite.BlobService),
+			testcontainers.WithCmdArgs("--skipApiVersionCheck"),
 		)
 		t.Cleanup(func() {
 			err := testcontainers.TerminateContainer(azuriteContainer)
@@ -233,7 +237,9 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		})
 		require.NoError(t, err)
 
-		blobServiceURL := fmt.Sprintf("%s/%s", azuriteContainer.MustServiceURL(ctx, azurite.BlobService), azurite.AccountName)
+		blobServiceURLBase, err := azuriteContainer.BlobServiceURL(ctx)
+		require.NoError(t, err)
+		blobServiceURL := fmt.Sprintf("%s/%s", blobServiceURLBase, azurite.AccountName)
 
 		cred, err := azblob.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 		require.NoError(t, err)
@@ -270,7 +276,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 				Image:        "apachepinot/pinot:latest",
 				ExposedPorts: []string{"9000/tcp", "8000/tcp"},
 				Cmd:          []string{"QuickStart", "-type", "batch"},
-				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(2 * time.Minute),
+				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(4 * time.Minute),
 			},
 			Started: true,
 		})
@@ -316,6 +322,18 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	"openai": func(t TestingT) map[string]string {
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_OPENAI_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
+	},
+	"claude": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_CLAUDE_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
+	},
+	"gemini": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_GEMINI_TEST_API_KEY")
 		require.NotEmpty(t, apiKey)
 		return map[string]string{"api_key": apiKey}
 	},

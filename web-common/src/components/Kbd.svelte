@@ -6,7 +6,7 @@
 
 <kbd
   class={cn(
-    "px-1.5 py-1 bg-surface rounded font-mono border border-gray-300 dark:border-gray-500",
+    "px-1.5 py-1 bg-surface-subtle rounded font-mono border border-gray-300 dark:border-gray-500",
     className,
   )}
 >

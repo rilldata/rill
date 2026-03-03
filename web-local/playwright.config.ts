@@ -24,6 +24,7 @@ export default defineConfig({
     launchOptions: {
       slowMo: parseInt(process.env.PLAYWRIGHT_SLOW_MO || "0"),
     },
+    viewport: { width: 1280, height: 720 },
   },
   /* Configure projects for major browsers */
   projects: [

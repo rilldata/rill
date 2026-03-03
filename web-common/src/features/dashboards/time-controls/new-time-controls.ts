@@ -333,6 +333,7 @@ export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString | string,
   metricsViewName: string,
   activeTimeZone: string,
+  timeDimension?: string,
 ): Promise<{
   interval: Interval;
   grain?: V1TimeGrain | undefined;
@@ -359,6 +360,7 @@ export async function deriveInterval(
       metricsViewName,
       rillTimes: [name],
       timeZone: activeTimeZone,
+      timeDimension,
       cacheBust,
     });
 

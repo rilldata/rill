@@ -26,7 +26,7 @@ func TestConversations(t *testing.T) {
 
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"models/orders.yaml": `
 type: model
@@ -57,7 +57,7 @@ measures:
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
 	// Create test server
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	// Create test context with claims (to test conversation listings, which filter by user ID)
@@ -136,6 +136,29 @@ measures:
 	})
 	require.NoError(t, err)
 	require.Len(t, list5.Conversations, 0)
+
+	// Check that getting a message on a non-existent conversation returns an error.
+	_, err = srv.GetAIMessage(fooCtx, &runtimev1.GetAIMessageRequest{
+		InstanceId:     instanceID,
+		ConversationId: "doesntexist",
+		MessageId:      "doesntexist",
+	})
+	require.ErrorContains(t, err, "failed to find the conversation")
+	// Check that getting a non-existent message on a existing conversation returns an error.
+	_, err = srv.GetAIMessage(fooCtx, &runtimev1.GetAIMessageRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+		MessageId:      "doesntexist",
+	})
+	require.ErrorContains(t, err, "failed to find the call")
+	// Happy path for getting a message.
+	msgRes, err := srv.GetAIMessage(fooCtx, &runtimev1.GetAIMessageRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+		MessageId:      res1.Messages[0].Id,
+	})
+	require.NoError(t, err)
+	require.Equal(t, res1.Messages[0], msgRes.Message)
 
 	// Check it errors if completing a conversation that doesn't exist
 	_, err = srv.Complete(fooCtx, &runtimev1.CompleteRequest{
@@ -302,9 +325,9 @@ func TestAgentChoiceAndContext(t *testing.T) {
 
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 	})
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	// Ask a question for the analyst agent

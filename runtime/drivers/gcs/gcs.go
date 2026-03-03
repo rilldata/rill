@@ -28,7 +28,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/gcs",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "google_application_credentials",
@@ -274,8 +274,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return c, true
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return c, nil
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {

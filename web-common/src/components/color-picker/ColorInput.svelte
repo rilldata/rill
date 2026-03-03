@@ -34,14 +34,14 @@
 />
 
 <div
-  class="color-wrapper"
+  class="color-wrapper bg-input"
   class:small
   class:pointer-events-none={disabled}
-  class:bg-gray-50={disabled}
-  class:text-gray-400={disabled}
+  class:opacity-50={disabled}
+  class:text-fg-secondary={disabled}
 >
   {#if labelFirst}
-    <p class:small class:text-gray-500={disabled} class="label-first">
+    <p class:small class:text-fg-secondary={disabled} class="label-first">
       {label}
     </p>
     <div class="input-button-container">
@@ -211,7 +211,7 @@
       }}
     />
 
-    <p class:small class:text-gray-500={disabled}>{label}</p>
+    <p class:small class:text-fg-secondary={disabled}>{label}</p>
   {/if}
 </div>
 
@@ -241,8 +241,8 @@
   }
 
   .color-wrapper {
-    @apply py-[5px] px-[5px] pr-3;
-    @apply h-8 w-full border border-gray-300 rounded-[2px];
+    @apply py-[5px] px-3;
+    @apply h-8 w-full border rounded-[2px];
     @apply flex gap-x-3;
   }
 

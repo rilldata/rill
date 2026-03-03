@@ -22,6 +22,7 @@ type DimensionSearchArgs = {
   values: string[];
   timeStart?: string;
   timeEnd?: string;
+  timeDimension?: string;
   enabled?: boolean;
 
   metricsViewWheres?: Map<string, V1Expression>;
@@ -45,6 +46,7 @@ export function useDimensionSearch(
     values,
     timeStart,
     timeEnd,
+    timeDimension,
     enabled,
 
     metricsViewWheres,
@@ -74,7 +76,7 @@ export function useDimensionSearch(
       mvName,
       {
         dimensions: [{ name: dimensionName }],
-        timeRange: { start: timeStart, end: timeEnd },
+        timeRange: { start: timeStart, end: timeEnd, timeDimension },
         limit: "250",
         offset: "0",
         sort: [{ name: dimensionName }],
@@ -135,6 +137,7 @@ export function useAllSearchResultsCount(
     values,
     timeStart,
     timeEnd,
+    timeDimension,
     enabled,
     metricsViewWheres,
   }: DimensionSearchArgs,
@@ -167,7 +170,7 @@ export function useAllSearchResultsCount(
             builtinMeasureArgs: [dimensionName],
           },
         ],
-        timeRange: { start: timeStart, end: timeEnd },
+        timeRange: { start: timeStart, end: timeEnd, timeDimension },
         limit: "250",
         offset: "0",
         where,

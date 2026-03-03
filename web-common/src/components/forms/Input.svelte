@@ -55,12 +55,12 @@
   export let onChange: (newValue: string) => void = voidFunction;
   export let onBlur: (
     e: FocusEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
+      currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
   export let onEnter: (
     e: KeyboardEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
+      currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
@@ -87,7 +87,7 @@
   });
 
   function onElementBlur(
-    e: FocusEvent & { currentTarget: EventTarget & HTMLDivElement },
+    e: FocusEvent & { currentTarget: EventTarget & HTMLElement },
   ) {
     if (hitEnter) {
       hitEnter = false;
@@ -99,11 +99,12 @@
 
   function onKeydown(
     e: KeyboardEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
+      currentTarget: EventTarget & HTMLElement;
     },
   ) {
     if (e.key === "Enter") {
-      if (e.shiftKey) return;
+      // In multiline mode, let Enter insert a newline normally
+      if (multiline || e.shiftKey) return;
       hitEnter = true;
       inputElement?.blur();
       onEnter(e);
@@ -139,7 +140,7 @@
 
   {#if !options}
     <div
-      class="input-wrapper {textClass}"
+      class="input-wrapper {textClass} bg-input"
       style:width
       class:error-input-wrapper={!!errors?.length}
       style:font-family={fontFamily}
@@ -148,7 +149,7 @@
       {#if textInputPrefix}
         <div
           class:text-sm={size !== "xl"}
-          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-gray-500 border-r border-gray-300 text-base px-2 mr-2"
+          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-fg-secondary border-r border-gray-300 text-base px-2 mr-2"
         >
           {textInputPrefix}
         </div>
@@ -161,17 +162,19 @@
       {/if}
 
       {#if multiline && typeof value !== "number"}
-        <div
+        <textarea
           {id}
-          contenteditable
           class="multiline-input"
-          class:pointer-events-none={disabled}
+          {disabled}
           {placeholder}
-          role="textbox"
-          tabindex="0"
-          aria-multiline="true"
+          name={id}
+          aria-label={label || title || placeholder}
           bind:this={inputElement}
-          bind:textContent={value}
+          bind:value
+          on:input={(e) => {
+            value = e.currentTarget.value;
+            onInput(value, e);
+          }}
           on:keydown={onKeydown}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}
@@ -215,9 +218,9 @@
           }}
         >
           {#if showPassword}
-            <EyeOffIcon size="14px" class="text-muted-foreground" />
+            <EyeOffIcon size="14px" class="text-fg-secondary" />
           {:else}
-            <EyeIcon size="14px" class="text-muted-foreground" />
+            <EyeIcon size="14px" class="text-fg-secondary" />
           {/if}
         </IconButton>
       {/if}
@@ -269,7 +272,7 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex flex-col h-fit justify-center;
+    @apply flex flex-col h-fit justify-center text-fg-primary;
   }
 
   .sm {
@@ -293,27 +296,32 @@
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-1;
-    @apply bg-surface justify-center;
-    @apply border border-gray-300 rounded-[2px];
+    @apply justify-center;
+    @apply border  rounded-[2px];
     @apply cursor-pointer;
     @apply h-fit w-fit;
   }
 
   .input-wrapper:has(input:disabled) {
-    @apply bg-gray-50 border-gray-200 cursor-not-allowed;
+    @apply bg-surface-background border-gray-200 cursor-not-allowed;
+  }
+
+  input {
+    @apply bg-transparent;
   }
 
   input,
   .multiline-input {
-    @apply bg-surface p-0;
+    @apply p-0;
     @apply size-full;
-    @apply outline-none border-0;
+    @apply outline-none border-0 placeholder-fg-muted;
     @apply cursor-text;
     vertical-align: middle;
   }
 
-  input:disabled {
-    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
+  input:disabled,
+  .multiline-input:disabled {
+    @apply bg-surface-background text-fg-secondary cursor-not-allowed;
   }
 
   input {
@@ -322,9 +330,11 @@
 
   .multiline-input {
     @apply h-fit w-full max-h-32 overflow-y-auto;
-    @apply py-1;
+    @apply py-1 bg-transparent;
     line-height: 1.58;
     word-wrap: break-word;
+    resize: none;
+    font-family: inherit;
   }
 
   .input-wrapper:focus-within {
@@ -356,6 +366,6 @@
   }
 
   .description {
-    @apply text-xs text-gray-500;
+    @apply text-xs text-fg-secondary;
   }
 </style>

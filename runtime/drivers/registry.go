@@ -69,6 +69,8 @@ type Instance struct {
 	AIInstructions string `db:"ai_instructions"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
+	// Theme is the name of the theme resource to use for AI-generated charts.
+	Theme string `db:"theme"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.
@@ -113,6 +115,14 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
+	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
+	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
+	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
+	AIMaxQueryLimit int64 `mapstructure:"rill.ai.max_query_limit"`
+	// AIRequireTimeRange indicates whether to require a time range on AI tool queries. If true, AI tool queries must include a time range filter, and if the query does not include a time range filter, the query will be rejected. Default is true.
+	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
+	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
+	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -175,6 +185,9 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
+		AIDefaultQueryLimit:                  25,
+		AIMaxQueryLimit:                      250,
+		AIRequireTimeRange:                   true,
 	}
 
 	// Resolve variables

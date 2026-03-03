@@ -15,7 +15,7 @@
   export const menuItems: MenuItem[] = [
     { id: "stacked_bar", label: "Chart", icon: ChartIcon },
     { id: "table", label: "Table", icon: TableIcon },
-    { id: "markdown", label: "Text", icon: TextIcon },
+    { id: "markdown", label: "Text/Markdown", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "image", label: "Image", icon: ChartIcon },
     { id: "leaderboard", label: "Leaderboard", icon: TableIcon },

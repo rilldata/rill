@@ -11,6 +11,7 @@ import { derived, readable } from "svelte/store";
 import { getLocalGitRepoStatus } from "../selectors";
 import { page } from "$app/stores";
 import { featureFlags } from "../../feature-flags";
+import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 
 /**
  * Returns a {@link Readable} with a route to deploy.
@@ -41,14 +42,35 @@ export function getCreateProjectRoute(orgName: string, useGit = false) {
 }
 
 export function getUpdateProjectRoute(
+  page: Page,
+  currentResource: V1ResourceName | undefined,
   orgName: string,
   projectName: string,
   createManagedRepo = false,
 ) {
-  const createManagedRepoParam = createManagedRepo
-    ? "&create_managed_repo=true"
-    : "";
-  return `/deploy/project/update?org=${orgName}&project=${projectName}${createManagedRepoParam}`;
+  const deployUrl = new URL(page.url);
+  deployUrl.pathname = "/deploy/project/update";
+  deployUrl.search = "";
+
+  deployUrl.searchParams.set("org", orgName);
+  deployUrl.searchParams.set("project", projectName);
+  if (createManagedRepo) {
+    deployUrl.searchParams.set("create_managed_repo", "true");
+  }
+
+  if (
+    currentResource?.kind === ResourceKind.Explore ||
+    currentResource?.kind === ResourceKind.Canvas
+  ) {
+    deployUrl.searchParams.set(
+      DeployingDashboardUrlParam,
+      currentResource.name!,
+    );
+  } else if (isDashboardVizRoute(page)) {
+    deployUrl.searchParams.set(DeployingDashboardUrlParam, page.params.name);
+  }
+
+  return deployUrl.toString();
 }
 
 export function getSelectProjectRoute() {
@@ -67,14 +89,17 @@ export function getSelectOrganizationRoute() {
   return `/deploy/organization/select`;
 }
 
-export function getDeployLandingPage(frontendUrl: string) {
+export function getDeployingPageUrl(frontendUrl: string, isInvite: boolean) {
   const url = new URL(frontendUrl);
-  url.searchParams.set("deploying", "true");
   const deployingDashboard = getDeployingDashboard();
   if (deployingDashboard) {
-    url.searchParams.set("deploying_dashboard", deployingDashboard);
+    url.searchParams.set(DeployingDashboardUrlParam, deployingDashboard);
   }
-  url.pathname += "/-/invite";
+  if (isInvite) {
+    url.pathname += "/-/invite";
+  } else {
+    url.pathname += "/-/deploying";
+  }
   const projectInviteUrlWithSessionId = addPosthogSessionIdToUrl(
     url.toString(),
   );
@@ -107,10 +132,10 @@ export function getDeployOrGithubRouteGetter() {
 
 /**
  * Returns a readable for the deploy route for the open project.
- * 1. If the project is not a github repo it returns the create project route (/deploy/project/create) directly.
+ * 1. If the project is not a github repo it returns the create project route (/developers/deploy/project/create) directly.
  *    Right now this is just a safeguard. We check upfront for git repo
  * 2. If the project is a github repo and we already have access to the repo then,
- *    it returns the create project route with github option (/deploy/project/create?use_git=true).
+ *    it returns the create project route with github option (/developers/deploy/project/create?use_git=true).
  * 3. If the project is a github repo and we do not have access to the repo then it returns github access route (<admin_server>/github/connect)
  */
 export function getDeployRouteForProject(orgName: string) {

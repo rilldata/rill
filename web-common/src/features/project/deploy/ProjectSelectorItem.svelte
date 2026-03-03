@@ -14,8 +14,8 @@
 </script>
 
 <button
-  class="flex flex-row items-center justify-between w-full text-xs text-gray-900 text-left font-medium p-1 pl-2"
-  class:hover:bg-slate-50={!selected}
+  class="flex flex-row items-center justify-between w-full text-xs text-fg-primary text-left font-medium p-1 pl-2"
+  class:hover:bg-surface-background={!selected}
   class:bg-primary-100={selected}
   on:click={onClick}
   on:mouseenter={() => (hovered = true)}

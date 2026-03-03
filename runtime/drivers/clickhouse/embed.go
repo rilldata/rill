@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const embedVersion = "25.6.12.10"
+const embedVersion = "25.12.5.44"
 
 var (
 	embed             *embedClickHouse
@@ -329,6 +329,8 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 	}
 
 	config := []byte(fmt.Sprintf(`<clickhouse>
+    <timezone>UTC</timezone>
+
     <logger>
         <level>debug</level>
         <console>true</console>

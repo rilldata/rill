@@ -87,7 +87,7 @@ export async function renameFileUsingMenu(
 ) {
   // open context menu and click rename
   await openFileNavEntryContextMenu(page, filePath);
-  await clickMenuButton(page, "Rename...");
+  await clickMenuButton(page, "Rename");
 
   // wait for rename modal to open
   await page

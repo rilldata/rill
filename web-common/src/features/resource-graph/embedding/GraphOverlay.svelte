@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { ResourceGraphGrouping } from "../graph-canvas/graph-builder";
   import GraphCanvas from "../graph-canvas/GraphCanvas.svelte";
-  import { createEventDispatcher } from "svelte";
   import { FIT_VIEW_CONFIG } from "../shared/config";
 
   export let group: ResourceGraphGrouping | null = null;
@@ -9,16 +8,15 @@
   export let mode: "inline" | "fullscreen" | "modal" = "inline";
   export let showControls = true;
   export let showCloseButton = true;
+  export let onClose: () => void;
 
   // Fit view configuration for better centering
   export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
 
-  const dispatch = createEventDispatcher<{ close: void }>();
-
   function handleClose() {
-    dispatch("close");
+    onClose();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -68,11 +66,7 @@
       <GraphCanvas
         flowId={group.id}
         resources={group.resources}
-        title={null}
         titleLabel={group.label}
-        titleErrorCount={null}
-        anchorError={false}
-        rootNodeIds={undefined}
         fillParent
         {showControls}
         showLock={false}
@@ -113,7 +107,7 @@
 
   /* Fullscreen mode: covers entire viewport */
   .graph-overlay-fullscreen {
-    @apply fixed inset-0 z-50 bg-background;
+    @apply fixed inset-0 z-50 bg-surface-background;
   }
 
   .graph-overlay-fullscreen .overlay-content {
@@ -131,7 +125,7 @@
   }
 
   .graph-overlay-modal .overlay-content {
-    @apply relative h-full w-full max-w-7xl rounded-lg border border-gray-200 bg-background p-4 shadow-xl;
+    @apply relative h-full w-full max-w-7xl rounded-lg border border-gray-200 bg-surface-background p-4 shadow-xl;
     z-index: 51;
   }
 
@@ -141,12 +135,12 @@
   }
 
   .close-btn {
-    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-background text-2xl font-light text-muted-foreground;
+    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-surface-background text-2xl font-light text-fg-secondary;
     line-height: 1;
   }
 
   .close-btn:hover {
-    @apply bg-muted text-foreground;
+    @apply bg-surface-muted text-fg-primary;
   }
 
   /* Ensure inline mode content fills available space */

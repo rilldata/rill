@@ -42,11 +42,17 @@
   export let timeEnd: string | undefined;
   export let watermark: DateTime | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let primaryTimeDimension: string | undefined = undefined;
+  export let selectedTimeDimension: string | undefined = undefined;
+  export let timeDimensions: { value: string; label: string }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
+  // Time dimension selection disabled when this function is not provided
+  export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
+    undefined;
 
   const newPicker = featureFlags.rillTime;
 
@@ -85,8 +91,12 @@
       {lockTimeZone}
       {availableTimeZones}
       {showFullRange}
+      {timeDimensions}
+      {primaryTimeDimension}
+      {selectedTimeDimension}
       {onSelectTimeZone}
       {onSelectRange}
+      {onTimeDimensionSelect}
     />
   {:else if interval && activeTimeGrain}
     <Elements.RangePicker
@@ -154,8 +164,8 @@
   }
 
   :global(.wrapper > button) {
-    @apply border;
-    @apply px-2 flex items-center justify-center bg-surface;
+    @apply border text-fg-primary;
+    @apply px-2 flex items-center justify-center bg-surface-background;
   }
 
   :global(.wrapper > button:focus) {
@@ -170,12 +180,12 @@
   }
 
   :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer;
+    @apply bg-surface-hover cursor-pointer;
   }
 
   /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50 border-gray-400 z-50;
+    @apply bg-surface-background border-gray-400 z-50;
   }
   */
 </style>

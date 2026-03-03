@@ -179,7 +179,7 @@
     aria-label={priorRange ? "Undo zoom" : "Zoom"}
   >
     <div class="content-wrapper">
-      <span class="flex-none">
+      <span class="flex-none text-icon-muted">
         <Zoom size="16px" />
       </span>
 
@@ -203,8 +203,10 @@
 
 <style lang="postcss">
   button {
-    @apply border rounded-[2px] bg-surface pointer-events-auto;
-    @apply absolute left-1/2 -top-8 -translate-x-1/2 z-50;
+    @apply border rounded-[2px] bg-surface-subtle pointer-events-auto;
+    @apply absolute top-0 -translate-x-1/2 z-50;
+    /* Center over the plot body, not the full chart (40px right margin for y-axis labels) */
+    left: calc(50% - 20px);
   }
 
   .content-wrapper {

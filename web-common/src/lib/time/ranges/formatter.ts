@@ -1,8 +1,11 @@
-import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains.ts";
+import {
+  V1TimeGrainToOrder,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
   V1TimeGrain,
   type V1TimeRange,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
 
 // Formats a Luxon interval for human readable display throughout the application.
@@ -113,4 +116,132 @@ function getCorrectGrainOrder(grain: V1TimeGrain) {
   )
     return yearGrainOrder + 1;
   return V1TimeGrainToOrder[grain];
+}
+
+const quarterGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER];
+const weekGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK];
+
+/**
+ * Formats a datetime according to the specified grain, showing only
+ * the relevant precision for that grain level.
+ */
+export function formatDateTimeByGrain(
+  dt: DateTime,
+  grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+): string {
+  if (!dt.isValid) return "Invalid date";
+
+  const grainOrder = getCorrectGrainOrder(grain);
+
+  const format: DateTimeFormatOptions = {
+    year: "numeric",
+  };
+
+  // Show month for quarter grain and finer
+  if (grainOrder <= quarterGrainOrder) {
+    format.month = "short";
+  }
+
+  // Show day for day grain and finer
+  if (grainOrder <= weekGrainOrder) {
+    format.day = "numeric";
+  }
+
+  // Show time components for hour grain and finer
+  if (grainOrder <= hourGrainOrder) {
+    format.hour = "numeric";
+    format.hour12 = true;
+  }
+
+  // Show minutes for minute grain and finer
+  if (grainOrder <= minuteGrainOrder) {
+    format.minute = "numeric";
+  }
+
+  // Show seconds only for second grain and millisecond grain
+  // (can't use order comparison since second, minute, millisecond all have order 0)
+  // may address in a follow up - bgh
+  if (
+    grain === V1TimeGrain.TIME_GRAIN_SECOND ||
+    grain === V1TimeGrain.TIME_GRAIN_MILLISECOND
+  ) {
+    format.second = "2-digit";
+  }
+
+  return dt.toLocaleString(format);
+}
+
+/**
+ * Formats a grain-sized bucket for hover labels and scrub readouts.
+ * For hour and finer grains, delegates to formatDateTimeByGrain.
+ * For day+ grains, shows the date range of the bucket, with partial
+ * bucket detection when the dashboard interval trims the first/last bucket.
+ */
+export function formatGrainBucket(
+  dt: DateTime,
+  grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  interval?: Interval<true>,
+): string {
+  if (!dt.isValid) return "Invalid date";
+
+  const grainOrder = getCorrectGrainOrder(grain);
+
+  // Hour and finer: delegate to existing formatter
+  if (grainOrder <= hourGrainOrder) {
+    return formatDateTimeByGrain(dt, grain);
+  }
+
+  const unit = V1TimeGrainToDateTimeUnit[grain];
+  const bucketEnd = dt.plus({ [unit + "s"]: 1 });
+
+  const effectiveStart =
+    interval?.start && interval.start > dt ? interval.start : dt;
+  const effectiveEnd =
+    interval?.end && interval.end < bucketEnd ? interval.end : bucketEnd;
+
+  // Day grain: show "Apr 17, 2025" or partial "Apr 17, 2025 (2 PM – 12 AM)"
+  if (grainOrder === dayGrainOrder) {
+    const datePart = dt.toLocaleString({
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    const isPartial =
+      !effectiveStart.equals(dt) || !effectiveEnd.equals(bucketEnd);
+    if (!isPartial) return datePart;
+
+    const timeFmt: DateTimeFormatOptions = {
+      hour: "numeric",
+      hour12: true,
+    };
+    if (effectiveStart.minute !== 0) timeFmt.minute = "2-digit";
+
+    const endFmt: DateTimeFormatOptions = {
+      hour: "numeric",
+      hour12: true,
+    };
+    if (effectiveEnd.minute !== 0) endFmt.minute = "2-digit";
+
+    const startTime = effectiveStart.toLocaleString(timeFmt);
+    const endTime = effectiveEnd.toLocaleString(endFmt);
+    return `${datePart} (${startTime} – ${endTime})`;
+  }
+
+  // Week, month, quarter, year: show range "Apr 17 – 23, 2025"
+  const inclusiveEnd = effectiveEnd.minus({ millisecond: 1 });
+  const rangeInterval = Interval.fromDateTimes(effectiveStart, inclusiveEnd);
+  if (!rangeInterval.isValid) {
+    return dt.toLocaleString({
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  return rangeInterval.toLocaleString({
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }

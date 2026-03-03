@@ -3,7 +3,7 @@
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
-  import type { V1AlertExecution } from "@rilldata/web-common/runtime-client";
+  import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
@@ -37,15 +37,15 @@
 
 <div class="flex flex-col gap-y-4 w-full">
   <div class="flex flex-col gap-y-1">
-    <h1 class="text-gray-600 text-lg font-bold">Recent history</h1>
-    <p class="text-gray-500 text-sm">Showing up to 25 most recent checks</p>
+    <h1 class="text-fg-secondary text-lg font-bold">Recent history</h1>
+    <p class="text-fg-secondary text-sm">Showing up to 25 most recent checks</p>
   </div>
   {#if $alertQuery.error}
     <div class="text-red-500">
       {$alertQuery.error.message}
     </div>
   {:else if $alertQuery.isLoading}
-    <div class="text-gray-500">Loading...</div>
+    <div class="text-fg-secondary">Loading...</div>
   {:else if !$alertQuery.data?.resource.alert.state.executionHistory.length}
     <NoAlertRunsYet />
   {:else}

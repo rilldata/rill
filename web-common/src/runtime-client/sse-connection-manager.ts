@@ -80,7 +80,9 @@ export class SSEConnectionManager {
    */
   private async reconnect() {
     // Prevent concurrent reconnection attempts
-    if (this.isReconnecting) return;
+    if (this.isReconnecting) {
+      return;
+    }
     this.isReconnecting = true;
 
     try {
@@ -117,7 +119,10 @@ export class SSEConnectionManager {
    * Stop the connection, mark closed and clean up resources
    */
   public heartbeat = async () => {
-    if (get(this.status) !== ConnectionStatus.OPEN) {
+    const status = get(this.status);
+    // Only reconnect if PAUSED (intentionally disconnected to save resources)
+    // Don't reconnect if CONNECTING (already in progress) or CLOSED (fatal error)
+    if (status === ConnectionStatus.PAUSED) {
       await this.reconnect();
     }
 

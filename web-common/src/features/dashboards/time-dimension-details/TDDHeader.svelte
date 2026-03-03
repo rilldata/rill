@@ -11,10 +11,8 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type {
     DashboardTimeControls,
-    TimeGrain,
     TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -29,6 +27,7 @@
   import StartPivotButton from "../toolbars/StartPivotButton.svelte";
   import { getTDDExportQuery } from "./tdd-export";
   import type { TDDComparison } from "./types";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -113,7 +112,7 @@
     const dashboardGrain = $dashboardStore?.selectedTimeRange?.interval;
     if (!dashboardGrain || !expandedMeasureName) return;
 
-    const timeGrain: TimeGrain = TIME_GRAIN[dashboardGrain];
+    const timeGrain = V1TimeGrainToDateTimeUnit[dashboardGrain];
     const rowDimensions = dimensionName
       ? [
           {
@@ -126,7 +125,7 @@
     metricsExplorerStore.createPivot(exploreName, rowDimensions, [
       {
         id: dashboardGrain,
-        title: timeGrain.label,
+        title: timeGrain,
         type: PivotChipType.Time,
       },
       {
@@ -180,8 +179,8 @@
   }
 </script>
 
-<div class="tdd-header">
-  <div class="flex gap-x-6 items-center font-normal text-gray-500">
+<div class="tdd-header bg-surface-background">
+  <div class="flex gap-x-6 items-center font-normal text-fg-secondary">
     <div class="flex items-center gap-x-4">
       <div class="flex items-center gap-x-1">
         <Row size="16px" /> Rows

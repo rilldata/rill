@@ -64,7 +64,6 @@
     columnName,
     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
     enableProfiling,
-    active,
   );
   let fdHistogram;
   $: if (isFloat(type)) {
@@ -77,7 +76,6 @@
       columnName,
       QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
       enableProfiling,
-      active,
     );
   }
 
@@ -201,7 +199,7 @@
   {hideRight}
   isFetching={fetchingSummaries}
   {mode}
-  on:select={toggleColumnProfile}
+  onSelect={toggleColumnProfile}
   onShiftClick={() => copyToClipboard(columnName)}
   {type}
 >

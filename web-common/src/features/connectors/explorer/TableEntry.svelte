@@ -70,7 +70,7 @@
         }}
       >
         <CaretDownIcon
-          className="flex-none transform transition-transform text-gray-400 {!showSchema &&
+          className="flex-none transform transition-transform text-fg-secondary {!showSchema &&
             '-rotate-90'}"
           size="14px"
         />
@@ -87,7 +87,7 @@
         store.toggleItem(connector, database, databaseSchema, table);
       }}
     >
-      <TableIcon size="14px" className="shrink-0 text-gray-400" />
+      <TableIcon size="14px" className="shrink-0 text-fg-secondary" />
       <span class="truncate">
         {table}
       </span>
@@ -145,19 +145,19 @@
   }
 
   .table-entry-header:hover {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   .open {
-    @apply bg-slate-100;
+    @apply bg-gray-100;
   }
 
   .clickable-text {
     @apply flex grow items-center gap-x-1;
-    @apply text-gray-900 truncate;
+    @apply text-fg-primary truncate;
   }
 
   .selected:hover {
-    @apply bg-slate-200;
+    @apply bg-gray-200;
   }
 </style>

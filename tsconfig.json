@@ -34,7 +34,15 @@
       "@rilldata/web-integration/tests/*": ["web-integration/tests/*"],
       "@rilldata/web-local/lib/*": ["web-local/src/lib/*"]
     },
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo",
     "outDir": "dist"
   },
-  "include": ["**/*.d.ts", "**/*.ts", "**/*.svelte", "**/rollup.config.js"]
+  "include": [
+    "**/*.d.ts",
+    "**/*.ts",
+    "**/*.svelte",
+    "**/rollup.config.js",
+    "scripts/**.js"
+  ]
 }

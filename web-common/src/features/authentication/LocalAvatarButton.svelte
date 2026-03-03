@@ -12,8 +12,6 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
-  export let darkMode: boolean;
-
   $: user = createLocalServiceGetCurrentUser({
     query: {
       // refetch in case user does a login/logout from outside of rill developer UI
@@ -55,13 +53,13 @@
   <div class="flex flex-row items-center h-7 mx-1.5">
     <Spinner size="16px" status={EntityStatus.Running} />
   </div>
-{:else if $user.data && $metadata.data}
+{:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
       class="flex-none w-7"
       aria-label="Avatar logged {loggedIn ? 'in' : 'out'}"
     >
-      {#if loggedIn && !photoUrlErrored}
+      {#if loggedIn && !photoUrlErrored && $user.data && $metadata.data}
         <Avatar
           src={$user.data?.user?.photoUrl}
           alt={$user.data?.user?.displayName || $user.data?.user?.email}
@@ -72,16 +70,13 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="p-1">
-      {#if darkMode}
-        <ThemeToggle />
-        <DropdownMenu.Separator />
-      {/if}
+      <ThemeToggle />
+      <DropdownMenu.Separator />
 
       <DropdownMenu.Item
         href="https://docs.rilldata.com"
         target="_blank"
         rel="noreferrer noopener"
-        class="text-gray-800 font-normal"
       >
         Documentation
       </DropdownMenu.Item>
@@ -91,7 +86,6 @@
         href="https://discord.gg/2ubRfjC7Rh"
         target="_blank"
         rel="noreferrer noopener"
-        class="text-gray-800 font-normal"
       >
         Join us on Discord
       </DropdownMenu.Item>
@@ -101,20 +95,12 @@
           Contact Rill support
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          href={logoutUrl}
-          rel="external"
-          class="text-gray-800 font-normal"
-        >
+        <DropdownMenu.Item href={logoutUrl} rel="external">
           Logout
         </DropdownMenu.Item>
       {:else}
         <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          href={loginUrl}
-          rel="external"
-          class="text-gray-800 font-normal"
-        >
+        <DropdownMenu.Item href={loginUrl} rel="external">
           Log in / Sign up
         </DropdownMenu.Item>
       {/if}

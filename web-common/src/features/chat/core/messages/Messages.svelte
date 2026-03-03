@@ -6,6 +6,7 @@
   import { runtime } from "../../../../runtime-client/runtime-store";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
+  import FeedbackModal from "../feedback/FeedbackModal.svelte";
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
@@ -14,10 +15,15 @@
   import UserMessage from "./text/UserMessage.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
+  import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
   export let config: ChatConfig;
+
+  // Feedback modal state (UI concern - stays here)
+  let feedbackModalOpen = false;
+  let pendingFeedbackMessageId: string | null = null;
 
   // Prefetch tools metadata for tool call display names
   const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
@@ -46,10 +52,46 @@
   $: isConversationEmpty =
     ($getConversationQuery.data?.messages?.length ?? 0) === 0;
 
-  // Track previous block count to detect new content
+  // Track previous block count to detect new content and previous block type to detect block changing.
+  // This is used to determine whether to scroll to bottom of messages container or not.
   let previousBlockCount = 0;
+  let previousBlockType = "";
 
-  // Check if user is near the bottom of a scroll container
+  // Auto-scroll behavior:
+  // - Always scroll when new blocks are added or if the last block changes (new message sent or response started)
+  // - Only scroll during streaming if user is near the bottom (respect scroll position)
+  afterUpdate(() => {
+    const currentBlockCount = blocks.length;
+    const currentBlockType = blocks[currentBlockCount - 1]?.type ?? "";
+    const hasBlockChanged =
+      currentBlockCount > previousBlockCount ||
+      currentBlockType !== previousBlockType;
+    previousBlockCount = currentBlockCount;
+    previousBlockType = currentBlockType;
+
+    if (messagesContainer && layout === "sidebar") {
+      if (hasBlockChanged || isNearBottom(messagesContainer)) {
+        scrollToBottom(messagesContainer);
+      }
+    } else if (layout === "fullpage") {
+      const parentWrapper = messagesContainer.closest(".chat-messages-wrapper");
+      if (parentWrapper && (hasBlockChanged || isNearBottom(parentWrapper))) {
+        scrollToBottom(parentWrapper);
+      }
+    }
+  });
+
+  // Feedback modal handlers
+  function handleDownvote(messageId: string) {
+    pendingFeedbackMessageId = messageId;
+    feedbackModalOpen = true;
+  }
+
+  function handleFeedbackModalClose() {
+    feedbackModalOpen = false;
+    pendingFeedbackMessageId = null;
+  }
+
   function isNearBottom(element: Element, threshold = 100): boolean {
     const { scrollTop, scrollHeight, clientHeight } = element;
     return scrollHeight - scrollTop - clientHeight <= threshold;
@@ -58,26 +100,6 @@
   function scrollToBottom(element: Element) {
     element.scrollTop = element.scrollHeight;
   }
-
-  // Auto-scroll behavior:
-  // - Always scroll when new blocks are added (new message sent or response started)
-  // - Only scroll during streaming if user is near the bottom (respect scroll position)
-  afterUpdate(() => {
-    const currentBlockCount = blocks.length;
-    const hasNewBlocks = currentBlockCount > previousBlockCount;
-    previousBlockCount = currentBlockCount;
-
-    if (messagesContainer && layout === "sidebar") {
-      if (hasNewBlocks || isNearBottom(messagesContainer)) {
-        scrollToBottom(messagesContainer);
-      }
-    } else if (layout === "fullpage") {
-      const parentWrapper = messagesContainer.closest(".chat-messages-wrapper");
-      if (parentWrapper && (hasNewBlocks || isNearBottom(parentWrapper))) {
-        scrollToBottom(parentWrapper);
-      }
-    }
-  });
 </script>
 
 <div
@@ -108,7 +130,11 @@
       {#if block.type === "text" && block.message.role === "user"}
         <UserMessage message={block.message} />
       {:else if block.type === "text" && block.message.role === "assistant"}
-        <AssistantMessage message={block.message} />
+        <AssistantMessage
+          {block}
+          conversation={currentConversation}
+          onDownvote={handleDownvote}
+        />
       {:else if block.type === "thinking"}
         <ThinkingBlock {block} {tools} />
       {:else if block.type === "working"}
@@ -117,6 +143,8 @@
         <ChartBlock {block} {tools} />
       {:else if block.type === "file-diff"}
         <FileDiffBlock {block} {tools} />
+      {:else if block.type === "simple-tool-call-block"}
+        <SimpleToolCallBlock {block} {tools} />
       {/if}
     {/each}
   {/if}
@@ -125,11 +153,18 @@
   {/if}
 </div>
 
+<FeedbackModal
+  open={feedbackModalOpen}
+  messageId={pendingFeedbackMessageId}
+  conversation={currentConversation}
+  agent={config.agent}
+  onClose={handleFeedbackModalClose}
+/>
+
 <style lang="postcss">
   .chat-messages {
     @apply flex-1;
-    @apply flex flex-col gap-2;
-    background: var(--surface);
+    @apply flex flex-col gap-2 py-3 pb-12;
   }
 
   .chat-messages.sidebar {
@@ -147,7 +182,7 @@
     @apply flex flex-col;
     @apply items-center justify-center;
     @apply h-full text-center;
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 
   .chat-messages.fullpage .chat-empty {
@@ -156,20 +191,20 @@
 
   .chat-empty-title {
     @apply text-base font-semibold;
-    @apply text-gray-700 mb-1;
+    @apply text-fg-secondary mb-1;
   }
 
   .chat-messages.fullpage .chat-empty-title {
     @apply text-2xl font-semibold;
-    @apply text-gray-900 mb-2;
+    @apply text-fg-primary mb-2;
   }
 
   .chat-empty-subtitle {
-    @apply text-xs text-gray-500;
+    @apply text-xs text-fg-secondary;
   }
 
   .chat-messages.fullpage .chat-empty-subtitle {
-    @apply text-base text-gray-500;
+    @apply text-base text-fg-secondary;
   }
 
   @media (max-width: 640px) {

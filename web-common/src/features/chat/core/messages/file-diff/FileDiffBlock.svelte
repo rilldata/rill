@@ -68,11 +68,11 @@
   }
 
   .file-path-link {
-    @apply text-gray-600 font-mono;
+    @apply text-fg-secondary font-mono;
   }
 
   .file-path-link:hover {
-    @apply text-gray-800 underline;
+    @apply text-fg-primary underline;
   }
 
   .new-badge {
@@ -81,7 +81,7 @@
   }
 
   .no-changes-message {
-    @apply p-3 text-xs text-gray-500 italic;
+    @apply p-3 text-xs text-fg-secondary italic;
   }
 
   .diff-view {
@@ -209,7 +209,7 @@
 
   /* Context/unchanged lines */
   .diff-view :global(.d2h-cntx) {
-    background-color: var(--surface);
+    background-color: var(--surface-subtle);
   }
 
   .diff-view :global(.d2h-cntx .d2h-code-linenumber) {
@@ -218,7 +218,7 @@
 
   .diff-view :global(.d2h-cntx .d2h-code-line-prefix),
   .diff-view :global(.d2h-cntx .d2h-code-line-ctn) {
-    background-color: var(--surface);
+    background-color: var(--surface-subtle);
   }
 
   /* Hunk header (@@) */

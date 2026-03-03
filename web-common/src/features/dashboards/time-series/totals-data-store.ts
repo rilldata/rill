@@ -47,6 +47,7 @@ export function createTotalsForMeasure(
             end: isComparison
               ? timeControls?.comparisonTimeEnd
               : timeControls.timeEnd,
+            timeDimension: dashboard.selectedTimeDimension,
           },
         },
         {
@@ -92,8 +93,11 @@ export function createUnfilteredTotalsForMeasure(
         {
           measures: measures.map((measure) => ({ name: measure })),
           where: updatedFilter,
-          timeStart: timeControls.timeStart,
-          timeEnd: timeControls.timeEnd,
+          timeRange: {
+            start: timeControls.timeStart,
+            end: timeControls.timeEnd,
+            timeDimension: dashboard.selectedTimeDimension,
+          },
         },
         {
           query: {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -20,7 +21,6 @@
   import type { Location } from "@rilldata/web-common/lib/place-element";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
-  import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import TopKListItem from "./TopKListItem.svelte";
 
@@ -29,8 +29,8 @@
   export let totalRows: number;
   export let k = 15;
   export let type: string;
-
-  const dispatch = createEventDispatcher();
+  export let onFocusTopK: ((value: TopKEntry) => void) | undefined = undefined;
+  export let onBlurTopK: ((value: TopKEntry) => void) | undefined = undefined;
 
   $: smallestPercentage =
     topK && topK.length
@@ -51,9 +51,10 @@
   $: topKCopy = topK ?? topKCopy;
 
   function ensureSpaces(str: string, n = 6) {
-    return `${Array.from({ length: n - str.length })
+    const sanitized = DOMPurify.sanitize(str, { ALLOWED_TAGS: [] });
+    return `${Array.from({ length: n - sanitized.length })
       .fill("&nbsp;")
-      .join("")}${str}`;
+      .join("")}${sanitized}`;
   }
 
   function getCopyValue(type: string, value) {
@@ -66,11 +67,11 @@
   };
 
   function handleFocus(value: TopKEntry) {
-    return () => dispatch("focus-top-k", value);
+    return () => onFocusTopK?.(value);
   }
 
   function handleBlur(value: TopKEntry) {
-    return () => dispatch("blur-top-k", value);
+    return () => onBlurTopK?.(value);
   }
 
   /** handle LISTs and STRUCTs */
@@ -86,8 +87,8 @@
       <TopKListItem
         value={item.count / totalRows}
         color={colorClass}
-        on:focus={handleFocus(item)}
-        on:blur={handleBlur(item)}
+        onFocus={handleFocus(item)}
+        onBlur={handleBlur(item)}
       >
         <svelte:fragment slot="title">
           <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
@@ -140,7 +141,7 @@
               })}
             >
               {formatInteger(item.count)}
-              <span class="ui-copy-inactive pl-2">
+              <span class="text-fg-disabled pl-2">
                 {@html ensureSpaces(percentage)}</span
               >
             </button>

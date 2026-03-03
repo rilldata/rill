@@ -6,8 +6,8 @@ import "github.com/rilldata/rill/runtime/metricsview"
 // It only pushes into sub-queries that make up the "spine" of the query result, i.e. where it does not impact correctness.
 // This may help optimize joins in some cases.
 func (e *Executor) rewriteLimitsIntoSubqueries(ast *metricsview.AST) error {
-	// There must be a limit and order
-	if len(ast.Root.OrderBy) == 0 || ast.Root.Limit == nil {
+	// There must be a limit and order. Do not rewrite if there is a having clause, as that may filter out rows that may satisfy the having later, which would change the results.
+	if len(ast.Root.OrderBy) == 0 || ast.Root.Limit == nil || ast.Query.Having != nil {
 		return nil
 	}
 

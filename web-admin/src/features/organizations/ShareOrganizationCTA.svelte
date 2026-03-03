@@ -7,7 +7,7 @@
 </script>
 
 <div class="flex flex-col">
-  <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
+  <span class="uppercase text-fg-secondary font-semibold text-[10px] leading-4"
     >Share</span
   >
   <div>

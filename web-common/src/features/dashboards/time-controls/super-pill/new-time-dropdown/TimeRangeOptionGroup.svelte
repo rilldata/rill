@@ -20,14 +20,14 @@
 {#if filtered.length}
   <div class="w-full h-fit px-1">
     {#if hideDivider}
-      <div class="h-px w-full bg-gray-200 my-1" />
+      <div class="h-px w-full bg-border my-1" />
     {/if}
     {#each filtered as option, i (i)}
       <TimeRangeMenuItem rillTime={option} {timeString} {onClick} />
     {/each}
 
     {#if !hideDivider}
-      <div class="h-px w-full bg-gray-200 my-1" />
+      <div class="h-px w-full bg-border my-1" />
     {/if}
   </div>
 {/if}

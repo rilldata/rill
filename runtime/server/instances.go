@@ -309,6 +309,7 @@ func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitiv
 		FeatureFlags:       featureFlags,
 		AiInstructions:     inst.AIInstructions,
 		FrontendUrl:        inst.FrontendURL,
+		Theme:              inst.Theme,
 	}
 
 	if sensitive {
@@ -317,10 +318,15 @@ func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitiv
 			olapConnector = inst.ProjectOLAPConnector
 		}
 
+		aiConnector := inst.AIConnector
+		if inst.ProjectAIConnector != "" {
+			aiConnector = inst.ProjectAIConnector
+		}
+
 		pb.OlapConnector = olapConnector
 		pb.RepoConnector = inst.RepoConnector
 		pb.AdminConnector = inst.AdminConnector
-		pb.AiConnector = inst.AIConnector
+		pb.AiConnector = aiConnector
 		pb.Connectors = inst.Connectors
 		pb.ProjectConnectors = inst.ProjectConnectors
 		pb.Variables = inst.Variables

@@ -38,7 +38,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply w-full border border-slate-200 text-slate-700 rounded-sm;
+    @apply w-full border text-fg-secondary rounded-sm bg-surface-background;
   }
 
   .settings-header {
@@ -47,15 +47,15 @@
 
   .settings-title {
     @apply flex flex-row gap-x-2 items-center mb-2;
-    @apply text-lg font-semibold;
+    @apply text-lg font-semibold text-fg-primary;
   }
 
   .settings-body {
-    @apply text-sm text-slate-800;
+    @apply text-sm text-fg-tertiary;
   }
 
   .settings-footer {
     @apply flex flex-row items-center px-5 py-2;
-    @apply bg-slate-50 text-slate-500 text-sm border-t border-slate-200;
+    @apply bg-surface-subtle text-fg-tertiary text-sm border-t;
   }
 </style>

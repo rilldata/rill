@@ -3,12 +3,11 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { createResourceFile } from "../file-explorer/new-files";
+  import { createResourceAndNavigate } from "../file-explorer/new-files";
   import { ResourceKind } from "./resource-selectors";
 
   export let open = false;
   export let metricsViews: V1Resource[];
-  export let wrapNavigation: (path: string | undefined) => Promise<void>;
 
   let selectedMetricsView: V1Resource | undefined = undefined;
 
@@ -16,16 +15,6 @@
     value: resource.meta?.name?.name ?? "",
     label: resource.meta?.name?.name ?? "",
   }));
-
-  async function createResource() {
-    if (selectedMetricsView) {
-      const newFilePath = await createResourceFile(
-        ResourceKind.Explore,
-        selectedMetricsView,
-      );
-      await wrapNavigation(newFilePath);
-    }
-  }
 </script>
 
 <AlertDialog.Root bind:open>
@@ -63,7 +52,11 @@
           large
           builders={[builder]}
           type="primary"
-          onClick={createResource}
+          onClick={() =>
+            void createResourceAndNavigate(
+              ResourceKind.Explore,
+              selectedMetricsView,
+            )}
         >
           Continue
         </Button>

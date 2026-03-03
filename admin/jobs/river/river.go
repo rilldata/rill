@@ -805,7 +805,7 @@ func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, e
 	if job.Attempt >= job.MaxAttempts {
 		var args string
 		_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
-		h.logger.Error("Job failed, max attempts reached", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.Int("max_attempts", job.MaxAttempts), zap.String("kind", job.Kind), zap.String("args", args), zap.Error(err))
+		h.logger.Error("Job failed, max attempts reached", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.Int("max_attempts", job.MaxAttempts), zap.String("job_kind", job.Kind), zap.String("args", args), zap.Error(err))
 	}
 	return nil
 }
@@ -813,7 +813,7 @@ func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, e
 func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, panicVal any, trace string) *river.ErrorHandlerResult {
 	var args string
 	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
-	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
+	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("job_kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
 	// Set the job to be immediately cancelled
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }

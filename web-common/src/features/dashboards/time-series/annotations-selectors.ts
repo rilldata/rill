@@ -1,111 +1,92 @@
-import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
+import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+import { Period, TimeUnit } from "@rilldata/web-common/lib/time/types.ts";
 import {
-  getOffset,
-  getStartOfPeriod,
-} from "@rilldata/web-common/lib/time/transforms";
-import {
-  type DashboardTimeControls,
-  Period,
-  TimeOffsetType,
-} from "@rilldata/web-common/lib/time/types.ts";
-import {
-  getQueryServiceMetricsViewAnnotationsQueryOptions,
+  createQueryServiceMetricsViewAnnotations,
   type V1MetricsViewAnnotationsResponseAnnotation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { createQuery } from "@tanstack/svelte-query";
 import { DateTime, Interval } from "luxon";
-import { derived, type Readable } from "svelte/store";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
+import { keepPreviousData } from "@tanstack/svelte-query";
 
-export function getAnnotationsForMeasure({
-  instanceId,
-  exploreName,
-  measureName,
-  selectedTimeRange,
-}: {
-  instanceId: string;
-  exploreName: string;
-  measureName: string;
-  selectedTimeRange: DashboardTimeControls | undefined;
-}): Readable<Annotation[]> {
-  const exploreValidSpec = useExploreValidSpec(instanceId, exploreName);
-  const selectedPeriod = TIME_GRAIN[selectedTimeRange?.interval ?? ""]
-    ?.duration as Period | undefined;
+/**
+ * Creates a query that fetches annotations for a measure and transforms
+ * the raw response rows into sorted Annotation objects via `select`.
+ */
+export function createAnnotationsQuery(
+  instanceId: string,
+  metricsViewName: string,
+  measureName: string,
+  timeDimension: string | undefined,
+  timeStart: string | undefined,
+  timeEnd: string | undefined,
+  timeGranularity: V1TimeGrain | undefined,
+  timeZone: string,
+  enabled: boolean,
+) {
+  const period = getPeriodFromTimeGrain(timeGranularity);
+  const grain = timeGranularity ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
-  const annotationsQueryOptions = derived(
-    exploreValidSpec,
-    (exploreValidSpec) => {
-      const metricsViewSpec = exploreValidSpec.data?.metricsView;
-      const exploreSpec = exploreValidSpec.data?.explore;
-      const metricsViewName = exploreSpec?.metricsView ?? "";
-
-      return getQueryServiceMetricsViewAnnotationsQueryOptions(
-        instanceId,
-        metricsViewName,
-        {
-          timeRange: {
-            start: selectedTimeRange?.start.toISOString(),
-            end: selectedTimeRange?.end.toISOString(),
-          },
-          timeGrain: selectedTimeRange?.interval,
-          measures: [measureName],
+  return createQueryServiceMetricsViewAnnotations(
+    instanceId,
+    metricsViewName,
+    {
+      timeRange: { start: timeStart, end: timeEnd, timeDimension },
+      timeGrain: timeGranularity,
+      measures: [measureName],
+    },
+    {
+      query: {
+        select: (data) => {
+          const rows = data.rows;
+          if (!rows?.length) return [] as Annotation[];
+          const list = rows.map((a) =>
+            convertV1AnnotationsResponseItemToAnnotation(
+              a,
+              period,
+              grain,
+              timeZone,
+            ),
+          );
+          list.sort((a, b) => a.startTime.toMillis() - b.startTime.toMillis());
+          return list;
         },
-        {
-          query: {
-            enabled:
-              !!metricsViewSpec?.annotations?.length &&
-              !!metricsViewName &&
-              !!selectedTimeRange,
-          },
-        },
-      );
+        enabled,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
     },
   );
-
-  const annotationsQuery = createQuery(annotationsQueryOptions);
-
-  return derived(annotationsQuery, (annotationsQuery) => {
-    const annotations =
-      annotationsQuery.data?.rows?.map((a) =>
-        convertV1AnnotationsResponseItemToAnnotation(
-          a,
-          selectedPeriod,
-          selectedTimeRange?.interval ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-          getLocalIANA(), // Use system timezone for annotations similar to chart labels
-        ),
-      ) ?? [];
-    annotations.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-    return annotations;
-  });
 }
 
 function convertV1AnnotationsResponseItemToAnnotation(
   annotation: V1MetricsViewAnnotationsResponseAnnotation,
   period: Period | undefined,
   selectedTimeGrain: V1TimeGrain,
-  timezone: string,
-) {
-  let startTime = new Date(annotation.time as string);
-  let endTime = annotation.timeEnd ? new Date(annotation.timeEnd) : undefined;
+  dashboardTimezone: string,
+): Annotation {
+  let startTime = DateTime.fromISO(annotation.time as string, {
+    zone: dashboardTimezone,
+  });
+  let endTime = annotation.timeEnd
+    ? DateTime.fromISO(annotation.timeEnd, {
+        zone: dashboardTimezone,
+      })
+    : undefined;
 
   // Only truncate start and ceil end when there is a grain column in the annotation.
   if (period && annotation.duration) {
-    startTime = getStartOfPeriod(startTime, period, timezone);
+    startTime = startTime.startOf(TimeUnit[period]);
     if (endTime) {
-      endTime = getOffset(endTime, period, TimeOffsetType.ADD, timezone);
-      endTime = getStartOfPeriod(endTime, period, timezone);
+      endTime = startTime
+        .plus({ [TimeUnit[period]]: 1 })
+        .startOf(TimeUnit[period]);
     }
   }
 
   const formattedTimeOrRange = prettyFormatTimeRange(
-    Interval.fromDateTimes(
-      DateTime.fromJSDate(startTime).setZone(timezone),
-      DateTime.fromJSDate(endTime ?? startTime).setZone(timezone),
-    ),
+    Interval.fromDateTimes(startTime, endTime ?? startTime),
     selectedTimeGrain,
   );
 
@@ -115,4 +96,10 @@ function convertV1AnnotationsResponseItemToAnnotation(
     endTime,
     formattedTimeOrRange,
   };
+}
+
+function getPeriodFromTimeGrain(
+  timeGrain: V1TimeGrain | string | undefined,
+): Period | undefined {
+  return TIME_GRAIN[timeGrain ?? ""]?.duration as Period | undefined;
 }

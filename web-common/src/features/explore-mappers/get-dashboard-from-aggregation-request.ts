@@ -291,9 +291,18 @@ function getPivotStateFromRequest(
   };
 }
 
-// We use a different suffix in pivot vs rest of the app. So map them correctly to not break pivot.
-// TODO: Unify the suffix to avoid this confusion
+// Map measure filter suffixes and API suffixes to pivot suffixes
+// to handle the measure filter format (_delta, _delta_perc) for backwards compatibility
 function convertComparisonMeasureToPivotMeasures(measure: string) {
+  if (
+    measure.endsWith(COMPARISON_DELTA) ||
+    measure.endsWith(COMPARISON_PERCENT) ||
+    measure.endsWith(COMPARISON_VALUE)
+  ) {
+    return measure;
+  }
+
+  // Handle measure filter format for backwards compatibility
   switch (true) {
     case measure.endsWith(ComparisonDeltaPreviousSuffix):
       return measure.replace(ComparisonDeltaPreviousSuffix, COMPARISON_VALUE);

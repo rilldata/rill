@@ -72,7 +72,7 @@
 />
 
 <nav
-  class="sidebar"
+  class="sidebar bg-surface-base"
   class:hide={!$navigationOpen}
   class:resizing
   style:width="{width}px"
@@ -141,10 +141,10 @@
             >
               <CaretDownIcon
                 size="14px"
-                className="text-gray-400 transition-transform {!showConnectors &&
+                className="text-fg-secondary transition-transform {!showConnectors &&
                   '-rotate-90'}"
               />
-              <h3>Data Explorer</h3>
+              <h3 class="text-fg-muted">Data Explorer</h3>
             </button>
 
             <div
@@ -175,7 +175,7 @@
 
 <style lang="postcss">
   .sidebar {
-    @apply flex flex-col flex-none relative overflow-hidden bg-surface;
+    @apply flex flex-col flex-none relative overflow-hidden;
     @apply h-full border-r z-0;
     @apply select-none;
     transition-property: width;
@@ -193,7 +193,7 @@
 
   .scroll-container {
     @apply overflow-y-auto overflow-x-hidden;
-    @apply h-full bg-surface;
+    @apply h-full;
   }
 
   .sidebar:not(.resizing) {
@@ -217,11 +217,11 @@
   button {
     @apply flex gap-x-1 items-center w-full;
     @apply pl-2 pr-3.5 py-1.5 cursor-pointer;
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-gray-100;
   }
 
   h3 {

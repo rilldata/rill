@@ -11,9 +11,14 @@ import {
 import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+import {
+  chatOpen,
+  sidebarActions,
+} from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 const RESIZE_THROTTLE_TIMEOUT = 200;
+const AI_PANE_CHANGE_THROTTLE_TIMEOUT = 200;
 
 export default function initEmbedPublicAPI(): () => void {
   const embedThemeStore = getEmbedThemeStoreInstance();
@@ -85,6 +90,22 @@ export default function initEmbedPublicAPI(): () => void {
     return true;
   });
 
+  registerRPCMethod("getAiPane", () => {
+    return { open: get(chatOpen) };
+  });
+
+  registerRPCMethod("setAiPane", (open: boolean) => {
+    if (typeof open !== "boolean") {
+      throw new Error("Expected open to be a boolean");
+    }
+    if (open) {
+      sidebarActions.openChat();
+    } else {
+      sidebarActions.closeChat();
+    }
+    return true;
+  });
+
   emitNotification("ready");
 
   const stateChangeThrottler = new Throttler(
@@ -123,9 +144,23 @@ export default function initEmbedPublicAPI(): () => void {
     height: document.body.scrollHeight,
   });
 
+  // Subscribe to AI pane state changes
+  const aiPaneChangeThrottler = new Throttler(
+    AI_PANE_CHANGE_THROTTLE_TIMEOUT,
+    AI_PANE_CHANGE_THROTTLE_TIMEOUT,
+  );
+  const aiPaneUnsubscribe = chatOpen.subscribe((isOpen) => {
+    aiPaneChangeThrottler.throttle(() => {
+      emitNotification("aiPaneChanged", {
+        open: isOpen,
+      });
+    });
+  });
+
   return () => {
     unsubscribe();
     resizeUnsub();
+    aiPaneUnsubscribe();
   };
 }
 

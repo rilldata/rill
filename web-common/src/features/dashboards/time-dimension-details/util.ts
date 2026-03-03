@@ -38,33 +38,33 @@ export function transposeArray(
 }
 
 export function getClassForCell(
-  palette: "fixed" | "scrubbed" | "default",
-  highlightedRow,
-  highlightedCol,
-  rowIdx,
-  colIdx,
+  palette: "fixed" | "default",
+  highlightedRow: number | undefined,
+  highlightedColStart: number | undefined,
+  highlightedColEnd: number | undefined,
+  rowIdx: number,
+  colIdx: number,
 ) {
   const bgColors = {
     fixed: {
-      base: "bg-slate-50",
-      highlighted: "bg-slate-100",
-      doubleHighlighted: "bg-slate-200",
-    },
-    scrubbed: {
-      base: "bg-primary-50",
-      highlighted: "bg-primary-100",
-      doubleHighlighted: "bg-primary-200",
+      base: "bg-surface-base",
+      highlighted: "bg-surface-hover/50",
+      doubleHighlighted: "bg-surface-hover",
     },
     default: {
-      base: "bg-surface",
-      highlighted: "bg-gray-100",
-      doubleHighlighted: "bg-gray-200",
+      base: "bg-surface-base",
+      highlighted: "bg-surface-hover/50",
+      doubleHighlighted: "bg-surface-hover",
     },
   };
 
   // Determine background color based on store
   const isRowHighlighted = highlightedRow === rowIdx;
-  const isColHighlighted = highlightedCol === colIdx;
+  const isColHighlighted =
+    highlightedColStart !== undefined &&
+    highlightedColEnd !== undefined &&
+    colIdx >= highlightedColStart &&
+    colIdx <= highlightedColEnd;
   const isHighlighted = isRowHighlighted || isColHighlighted;
   const isDoubleHighlighted = isRowHighlighted && isColHighlighted;
 

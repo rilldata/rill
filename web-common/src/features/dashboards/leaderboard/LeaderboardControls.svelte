@@ -70,7 +70,7 @@
 </script>
 
 <div
-  class="flex flex-row items-center ui-copy-muted gap-x-1"
+  class="flex flex-row items-center text-fg-muted gap-x-1"
   style:max-width="768px"
 >
   <DashboardMetricsDraggableList

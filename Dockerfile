@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.1-experimental
 FROM ubuntu
 
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates git
 
 COPY rill /usr/local/bin
 RUN chmod 777 /usr/local/bin/rill

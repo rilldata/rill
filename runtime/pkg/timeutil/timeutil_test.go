@@ -78,6 +78,11 @@ func TestTruncateTime_UTC_first_month(t *testing.T) {
 	require.Equal(t, parseTestTime(t, "2022-12-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-02-01T00:20:00Z"), TimeGrainQuarter, tz, 2, 3))
 	require.Equal(t, parseTestTime(t, "2022-12-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-02-01T00:20:00Z"), TimeGrainQuarter, tz, 2, 6))
 
+	// With firstMonth=0 (not set), should behave like firstMonth=1: Q2 starts in April
+	require.Equal(t, parseTestTime(t, "2023-04-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-04-15T00:20:00Z"), TimeGrainQuarter, tz, 1, 0))
+	require.Equal(t, parseTestTime(t, "2023-04-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-05-15T00:20:00Z"), TimeGrainQuarter, tz, 1, 0))
+	require.Equal(t, parseTestTime(t, "2023-01-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-01-15T00:20:00Z"), TimeGrainQuarter, tz, 1, 0))
+
 	require.Equal(t, parseTestTime(t, "2023-02-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-10-01T00:20:00Z"), TimeGrainYear, tz, 2, 2))
 	require.Equal(t, parseTestTime(t, "2023-03-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-10-01T00:20:00Z"), TimeGrainYear, tz, 2, 3))
 	require.Equal(t, parseTestTime(t, "2023-03-01T00:00:00Z"), TruncateTime(parseTestTime(t, "2023-03-01T00:20:00Z"), TimeGrainYear, tz, 2, 3))

@@ -65,6 +65,10 @@ export type ChartFieldInput = {
    * For measures toggle for displaying measure total value
    */
   totalSelector?: boolean;
+  /**
+   * Marks a field as optional which can be removed from the chart.
+   */
+  isRemovable?: boolean;
 };
 
 export interface ComponentInputParam {

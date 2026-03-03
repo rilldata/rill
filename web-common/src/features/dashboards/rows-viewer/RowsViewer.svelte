@@ -29,6 +29,8 @@
 
   let limit = writable(SAMPLE_SIZE);
 
+  $: timeDimension = $exploreState?.selectedTimeDimension;
+
   $: tableQuery = createQueryServiceMetricsViewRows(
     instanceId,
     metricsViewName,
@@ -37,6 +39,7 @@
       where: filters,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
+      timeDimension,
     },
     {
       query: {

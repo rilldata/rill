@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -36,7 +39,7 @@ func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusers
 
 	dtos := make([]*adminv1.User, len(users))
 	for i, user := range users {
-		dtos[i] = userToPB(user)
+		dtos[i] = s.userToPB(user, false)
 	}
 
 	return &adminv1.ListSuperusersResponse{Users: dtos}, nil
@@ -89,7 +92,7 @@ func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersReques
 
 	dtos := make([]*adminv1.User, len(users))
 	for i, user := range users {
-		dtos[i] = userToPB(user)
+		dtos[i] = s.userToPB(user, false)
 	}
 
 	return &adminv1.SearchUsersResponse{
@@ -117,7 +120,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	}
 
 	return &adminv1.GetCurrentUserResponse{
-		User: userToPB(u),
+		User: s.userToPB(u, true),
 		Preferences: &adminv1.UserPreferences{
 			TimeZone: &u.PreferenceTimeZone,
 		},
@@ -468,7 +471,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		if err != nil {
 			return nil, err
 		}
-		res.Resource = &adminv1.SudoGetResourceResponse_User{User: userToPB(user)}
+		res.Resource = &adminv1.SudoGetResourceResponse_User{User: s.userToPB(user, false)}
 	case *adminv1.SudoGetResourceRequest_OrgId:
 		org, err := s.admin.DB.FindOrganization(ctx, id.OrgId)
 		if err != nil {
@@ -515,7 +518,7 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 		return nil, err
 	}
 
-	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
+	return &adminv1.GetUserResponse{User: s.userToPB(user, false)}, nil
 }
 
 func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
@@ -576,7 +579,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		return nil, err
 	}
 
-	return &adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}, nil
+	return &adminv1.SudoUpdateUserQuotasResponse{User: s.userToPB(updatedUser, false)}, nil
 }
 
 // SearchProjectUsers returns a list of users that match the given search/email query.
@@ -616,7 +619,7 @@ func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProj
 
 	dtos := make([]*adminv1.User, len(users))
 	for i, user := range users {
-		dtos[i] = userToPB(user)
+		dtos[i] = s.userToPB(user, false)
 	}
 
 	return &adminv1.SearchProjectUsersResponse{
@@ -625,7 +628,15 @@ func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProj
 	}, nil
 }
 
-func userToPB(u *database.User) *adminv1.User {
+func (s *Server) userToPB(u *database.User, isCurrentUser bool) *adminv1.User {
+	// Compute a HMAC-SHA256 hash of the email if Pylon identity verification is configured.
+	var pylonEmailHash string
+	if isCurrentUser && len(s.opts.PylonIdentitySecret) != 0 {
+		h := hmac.New(sha256.New, s.opts.PylonIdentitySecret)
+		h.Write([]byte(u.Email))
+		pylonEmailHash = hex.EncodeToString(h.Sum(nil))
+	}
+
 	return &adminv1.User{
 		Id:          u.ID,
 		Email:       u.Email,
@@ -635,8 +646,9 @@ func userToPB(u *database.User) *adminv1.User {
 			SingleuserOrgs: int32(u.QuotaSingleuserOrgs),
 			TrialOrgs:      int32(u.QuotaTrialOrgs),
 		},
-		CreatedOn: timestamppb.New(u.CreatedOn),
-		UpdatedOn: timestamppb.New(u.UpdatedOn),
+		PylonEmailHash: pylonEmailHash,
+		CreatedOn:      timestamppb.New(u.CreatedOn),
+		UpdatedOn:      timestamppb.New(u.UpdatedOn),
 	}
 }
 

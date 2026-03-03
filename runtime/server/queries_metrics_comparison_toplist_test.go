@@ -18,7 +18,7 @@ import (
 func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -27,7 +27,7 @@ func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, str
 func getMetricsTestServerWithDefaultInstanceConfigs(t *testing.T, projectName string, instConfig map[string]string) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProjectWithConfigs(t, projectName, instConfig)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID

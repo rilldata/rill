@@ -1,39 +1,20 @@
 <script lang="ts">
   import {
-    createAdminServiceListOrganizationMemberUsersInfinite,
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { getOrgAdminMembers } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
 
   export let open: boolean;
   export let organization: string;
   export let currentBillingContact: string | undefined;
 
-  const PAGE_SIZE = 20;
-
-  $: adminUsersInfinite = createAdminServiceListOrganizationMemberUsersInfinite(
-    organization,
-    {
-      role: OrgUserRoles.Admin,
-      pageSize: PAGE_SIZE,
-    },
-    {
-      query: {
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
-        },
-      },
-    },
-  );
+  $: adminUsersInfinite = getOrgAdminMembers(organization);
 
   // Flatten all pages of admin users
   $: allAdminUsers =
@@ -100,8 +81,7 @@
           id="billingContact"
           bind:value={selectedBillingContact}
           options={selectableUsers}
-          on:change={({ detail: newName }) =>
-            (selectedBillingContact = newName)}
+          onChange={(newName) => (selectedBillingContact = newName)}
           sameWidth
           fontSize={14}
         />

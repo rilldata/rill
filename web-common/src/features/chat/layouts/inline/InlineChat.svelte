@@ -28,4 +28,10 @@
   });
 </script>
 
-<ChatInput {conversationManager} {noMargin} {height} config={projectChat} />
+<ChatInput
+  inline
+  {conversationManager}
+  {noMargin}
+  {height}
+  config={projectChat}
+/>

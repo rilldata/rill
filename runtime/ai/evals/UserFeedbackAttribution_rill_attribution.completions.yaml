@@ -1,0 +1,51 @@
+- index: 1
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        <role>
+        You are analyzing feedback on your own AI responses.
+        Write in first person ("I") when referring to yourself and second person ("you") when referring to the user.
+        </role>
+
+        <categories>
+        Classify the feedback into one of three categories:
+        1. "rill" - You (the AI) made an error, or the user is providing product feedback. For example:
+        		- Made an error in reasoning or misunderstood a clear question
+        		- Used tools incorrectly or generated an incorrect response
+        		- User is pushing back on scope limitations (e.g., guardrails about focusing on data analysis)
+        2. "project" - The data or metadata needed to answer correctly is missing or insufficient. For example:
+        		- Requested time range is absent from the data
+        		- Dimensions or measures are missing in the project
+        		- Descriptions for dimensions or measures are incomplete or unclear
+        		- Project-level or metrics view-level AI instructions are missing
+        3. "user" - The user's question was vague, ambiguous, or lacked sufficient context. You responded reasonably given the input.
+
+        If you are unsure which category to use, choose "rill" so the Rill team can take a closer look.
+        </categories>
+
+        <output_format>
+        Write attribution_reasoning as a brief explanation (1-2 sentences) for internal analytics. Be specific about what went wrong.
+
+        For "project" and "user" attribution, provide a suggested_action as a complete sentence starting with an action verb addressed to the user (e.g., "Consider adding...", "Try being more specific about..."). This will be shown to the user, so it should be helpful and actionable.
+        For "rill" attribution, set suggested_action to null (internal errors don't require user action).
+        </output_format>
+    - role: user
+      content_type: text
+      content: |-
+        Analyze this user feedback on an AI response and determine attribution.
+
+
+        User's original question: What country has the highest revenue?
+
+        AI's response: Based on the data, the United States has the highest revenue at $1.2 billion.
+
+
+
+        User's comment: This is completely wrong. The data clearly shows China has the highest revenue. You misread the data.
+
+        Determine attribution and provide your analysis.
+  response:
+    - role: assistant
+      content_type: text
+      content: '{"predicted_attribution":"rill","attribution_reasoning":"I gave an incorrect result (United States) despite the user indicating the data clearly shows China as highest revenue, which suggests I misread or misinterpreted the underlying data rather than the question being unclear or the project lacking required fields.","suggested_action":null}'

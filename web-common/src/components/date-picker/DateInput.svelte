@@ -168,11 +168,7 @@
             />
           </button>
         </Tooltip.Trigger>
-        <Tooltip.Content
-          side="top"
-          sideOffset={10}
-          class="bg-gray-700 text-surface shadow-md"
-        >
+        <Tooltip.Content side="top" sideOffset={10} class="shadow-md">
           {#if errorType === ErrorType.OUT_OF_RANGE}
             Date is out of range. Click to reset.
           {:else}
@@ -186,7 +182,7 @@
 
 <style lang="postcss">
   .input-wrapper {
-    @apply h-8 px-2 w-full rounded-md border border-gray-300 flex bg-surface;
+    @apply h-8 px-2 w-full rounded-md border flex bg-input;
     @apply items-center justify-between;
   }
 
