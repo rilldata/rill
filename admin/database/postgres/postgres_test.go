@@ -405,14 +405,14 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "internal", proj3.Name)
 
 	// fetch projects without name filter
-	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, "", 2)
+	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, false, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, projs[1].Name, 2)
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, false, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
