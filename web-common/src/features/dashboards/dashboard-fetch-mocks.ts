@@ -198,6 +198,9 @@ export class DashboardFetchMocks {
 
     if (service === "RuntimeService" && method === "GetExplore") {
       responseData = this.responses.get(`resources__explore__${parsed.name}`);
+    } else if (service === "RuntimeService" && method === "GetResource") {
+      const name = parsed.name?.name;
+      responseData = this.responses.get(`resource__${name}`);
     } else if (
       service === "QueryService" &&
       method === "MetricsViewTimeRange"
