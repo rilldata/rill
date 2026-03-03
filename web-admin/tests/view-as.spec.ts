@@ -2,8 +2,6 @@ import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
 test.describe("View As", () => {
-  test.describe.configure({ mode: "serial" });
-
   const TEST_PROJECT_URL = "/e2e/openrtb";
   const TEST_DASHBOARD_URL = "/e2e/openrtb/explore/auction_explore";
   const DIFFERENT_PROJECT_URL = "/e2e/AdBids";
@@ -236,18 +234,22 @@ test.describe("View As", () => {
     const newUserItems = adminPage.locator('[role="option"]');
     const userCount = await newUserItems.count();
 
-    if (userCount > 1) {
-      // Select a different user (second one)
-      const secondUser = newUserItems.nth(1);
-      const secondUserEmail = await secondUser.textContent();
-      await secondUser.click();
+    // Skip if only one user exists - the core assertion requires multiple users
+    test.skip(
+      userCount <= 1,
+      "Test requires multiple users in the project to verify user switching",
+    );
 
-      // Verify the chip now shows the new user
-      await expect(adminPage.getByText("Viewing as")).toBeVisible();
-      await expect(
-        adminPage.getByText(secondUserEmail?.trim() ?? ""),
-      ).toBeVisible();
-    }
+    // Select a different user (second one)
+    const secondUser = newUserItems.nth(1);
+    const secondUserEmail = await secondUser.textContent();
+    await secondUser.click();
+
+    // Verify the chip now shows the new user
+    await expect(adminPage.getByText("Viewing as")).toBeVisible();
+    await expect(
+      adminPage.getByText(secondUserEmail?.trim() ?? ""),
+    ).toBeVisible();
   });
 
   // This test requires a viewer user to be set up in the e2e environment.

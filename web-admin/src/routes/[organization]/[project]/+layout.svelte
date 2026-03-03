@@ -49,9 +49,8 @@
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
-    createViewAsCredentialsQuery,
-    createViewAsProjectQuery,
-    computeEffectivePermissions,
+    createViewAsState,
+    getEffectivePermissions,
   } from "@rilldata/web-admin/features/view-as-user/view-as-project-permissions";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
@@ -132,28 +131,17 @@
   $: projectQuery = onPublicURLPage ? tokenProjectQuery : cookieProjectQuery;
 
   /**
-   * View As query chain (shared selectors).
-   * GetDeploymentCredentials → GetProjectWithBearerToken → effective permissions
+   * View As state (compound hook).
+   * Encapsulates: viewAsUserStore → GetDeploymentCredentials → GetProjectWithBearerToken
    */
-  $: mockedUserId = $viewAsUserStore?.id;
-  $: mockedUserDeploymentCredentialsQuery = createViewAsCredentialsQuery(
-    organization,
-    project,
-    mockedUserId,
-  );
-  $: ({ data: mockedUserDeploymentCredentials } =
-    $mockedUserDeploymentCredentialsQuery);
-  $: mockedUserProjectQuery = createViewAsProjectQuery(
-    organization,
-    project,
-    mockedUserDeploymentCredentials?.accessToken,
-  );
+  $: viewAsState = createViewAsState(organization, project);
+  $: ({ mockedUserId, deploymentCredentials: mockedUserDeploymentCredentials } =
+    $viewAsState);
 
   $: ({ data: projectData, error: projectError } = $projectQuery);
 
-  $: effectiveProjectPermissions = computeEffectivePermissions(
-    mockedUserId,
-    $mockedUserProjectQuery.data?.projectPermissions,
+  $: effectiveProjectPermissions = getEffectivePermissions(
+    $viewAsState,
     projectData?.projectPermissions,
   );
 
