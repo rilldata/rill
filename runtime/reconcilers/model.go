@@ -376,7 +376,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			rowsAdded = newRowsTotal
 			bytesAdded = newBytesTotal
 		}
-		if r.C.Activity != nil {
+		if r.C.Activity != nil && statsErr == nil {
 			r.C.Activity.RecordMetric(ctx, "model_reconcile_elapsed_ms", float64(execRes.ExecDuration.Milliseconds()),
 				attribute.String("model", n.Name),
 				attribute.String("input_connector", model.Spec.InputConnector),
@@ -389,7 +389,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				attribute.Int64("bytes_total", newBytesTotal),
 			)
 		}
-
 	}
 
 	// If the build failed, clear the state only if we're not staging changes
@@ -709,8 +708,12 @@ func (r *ModelReconciler) updateStateAfterExecution(
 	} else {
 		model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 	}
-	model.State.RowsTotal = rowsTotal
-	model.State.BytesTotal = bytesTotal
+	if rowsTotal > 0 {
+		model.State.RowsTotal = rowsTotal
+	}
+	if bytesTotal > 0 {
+		model.State.BytesTotal = bytesTotal
+	}
 
 	return r.updateStateWithResult(ctx, self, execRes)
 }
