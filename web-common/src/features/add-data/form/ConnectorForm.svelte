@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { getConnectorYamlPreview } from "./yaml-preview.ts";
-  import AddDataFormStructure from "@rilldata/web-common/features/welcome/new-sources/AddDataFormStructure.svelte";
+  import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { submitAddConnectorForm } from "@rilldata/web-common/features/sources/modal/submitAddDataForm.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 

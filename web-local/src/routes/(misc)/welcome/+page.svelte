@@ -3,8 +3,8 @@
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import { fly } from "svelte/transition";
-  import OnboardingGenerateSampleData from "@rilldata/web-common/features/welcome/OnboardingGenerateSampleData.svelte";
-  import ConnectYourDataSmall from "@rilldata/web-common/features/welcome/ConnectYourDataSmall.svelte";
+  import OnboardingGenerateSampleData from "@rilldata/web-common/features/add-data/OnboardingGenerateSampleData.svelte";
+  import ConnectYourDataSmall from "@rilldata/web-common/features/add-data/ConnectYourDataSmall.svelte";
 </script>
 
 <div class="flex size-full overflow-hidden">

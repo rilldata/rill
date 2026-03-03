@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import NewSourceSelector from "@rilldata/web-common/features/welcome/new-sources/NewSourceSelector.svelte";
+  import NewSourceSelector from "@rilldata/web-common/features/add-data/form/NewSourceSelector.svelte";
 </script>
 
 <div class="min-w-[900px]">

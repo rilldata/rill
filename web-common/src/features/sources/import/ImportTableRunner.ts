@@ -33,6 +33,7 @@ export class ImportTableRunner {
       const filePath = getFileAPIPathFromNameAndType(
         this.name,
         EntityType.Model,
+        true,
       );
 
       await runtimeServicePutFile(this.instanceId, {

@@ -137,28 +137,37 @@
   );
 </script>
 
-<form use:enhance on:submit|preventDefault={submit} id={FormId}>
-  <Input
-    id="name"
-    label="Name"
-    bind:value={$form["name"]}
-    onInput={() => (nameChangedDirectly = true)}
-  />
-  <div>Pick a table or Input your file SQL to power your first dashboard</div>
-  <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
-    {#each modeOptions as option (option.value)}
-      <TabsContent value={option.value} />
-    {/each}
-  </Tabs>
+<form
+  use:enhance
+  on:submit|preventDefault={submit}
+  id={FormId}
+  class="flex flex-col gap-1"
+>
+  <div class="flex flex-col gap-2 px-6 pt-2">
+    <Input
+      id="name"
+      label="Name"
+      bind:value={$form["name"]}
+      onInput={() => (nameChangedDirectly = true)}
+    />
+    <div>Pick a table or Input your file SQL to power your first dashboard</div>
+    <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
+      {#each modeOptions as option (option.value)}
+        <TabsContent value={option.value} />
+      {/each}
+    </Tabs>
+  </div>
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
-      <div class="flex flex-row gap-2 w-full">
-        <DatabaseExplorer
-          {instanceId}
-          connector={analyzedConnector}
-          store={connectorExplorerStore}
-        />
-        <div class="bg-surface-subtle">
+      <div class="flex flex-row w-full border-t">
+        <div class="grow border-r">
+          <DatabaseExplorer
+            {instanceId}
+            connector={analyzedConnector}
+            store={connectorExplorerStore}
+          />
+        </div>
+        <div class="bg-surface-subtle w-[40%] p-2">
           {#if $form["table"]}
             <TableSchema
               connector={connectorName}
@@ -172,10 +181,12 @@
       </div>
     {/if}
   {:else if $form["mode"] === "sql"}
-    <Input id="sql" label="SQL" bind:value={$form["sql"]} />
+    <div class="px-6">
+      <Input id="sql" label="SQL" bind:value={$form["sql"]} />
+    </div>
   {/if}
 
-  <div class="flex flex-row mt-4 gap-2">
+  <div class="flex flex-row px-6 py-4 gap-2 border-t">
     <Button onClick={() => window.history.back()} type="secondary">Back</Button>
     <div class="grow" />
     <Button onClick={submit} type="primary">Generate dashboard with AI</Button>

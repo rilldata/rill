@@ -10,38 +10,42 @@
 
   export let runner: ImportTableRunner;
   const { mode } = runner;
+
+  const Steps = [
+    {
+      mode: ImportTableMode.CreateModel,
+      pendingLabel: "Ingesting data...",
+      doneLabel: "Ingested data",
+    },
+    {
+      mode: ImportTableMode.CreateMetrics,
+      pendingLabel: "Creating Metrics View...",
+      doneLabel: "Created Metrics View",
+    },
+    {
+      mode: ImportTableMode.CreateExplore,
+      pendingLabel: "Generating Explore dashboard...",
+      doneLabel: "Generated Explore dashboard",
+    },
+  ];
 </script>
 
-<div class="flex flex-col gap-4">
-  <Spinner status={EntityStatus.Running} size="32px" />
-  <div>Creating your dashboard</div>
-  <div class="status">
-    {#if $mode > ImportTableMode.CreateModel}
-      <CheckIcon size="14px" />
-      <div>Ingested data</div>
-    {:else}
-      <LoadingSpinner size="14px" />
-      <div>Ingesting data...</div>
-    {/if}
+<div class="flex flex-col gap-4 p-6 mx-auto w-fit">
+  <div class="flex justify-center">
+    <Spinner status={EntityStatus.Running} size="32px" />
   </div>
-  <div class="status">
-    {#if $mode > ImportTableMode.CreateMetrics}
-      <CheckIcon size="14px" />
-      <div>Created Metrics View</div>
-    {:else}
-      <LoadingSpinner size="14px" />
-      <div>Creating Metrics View...</div>
-    {/if}
-  </div>
-  <div class="status">
-    {#if $mode > ImportTableMode.CreateExplore}
-      <CheckIcon size="14px" />
-      <div>Generated Explore dashboard</div>
-    {:else}
-      <LoadingSpinner size="14px" />
-      <div>Generating Explore dashboard...</div>
-    {/if}
-  </div>
+  <div class="text-center">Creating your dashboard</div>
+  {#each Steps as step (step.mode)}
+    <div class="status">
+      {#if $mode > step.mode}
+        <CheckIcon size="14px" />
+        <div>{step.doneLabel}</div>
+      {:else}
+        <LoadingSpinner size="14px" />
+        <div>{step.pendingLabel}</div>
+      {/if}
+    </div>
+  {/each}
 </div>
 
 <style lang="postcss">

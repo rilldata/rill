@@ -3,7 +3,7 @@
     getConnectorSchema,
     isMultiStepConnector,
   } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-  import ConnectorForm from "@rilldata/web-common/features/welcome/new-sources/ConnectorForm.svelte";
+  import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
   import type { LayoutData } from "./$types";
   import { goto } from "$app/navigation";
 

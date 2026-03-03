@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import { defaultFormLabels } from "@rilldata/web-common/features/welcome/new-sources/form-labels.ts";
+  import { defaultFormLabels } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import type { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import YamlPreview from "@rilldata/web-common/features/sources/modal/YamlPreview.svelte";
