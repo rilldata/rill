@@ -1,6 +1,9 @@
 package user
 
 import (
+	"strings"
+
+	"github.com/rilldata/rill/cli/cmd/user"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -27,6 +30,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectName = args[1]
 			}
 
+			pageToken = strings.TrimPrefix(pageToken, user.UserTokenPrefix)
 			if projectName != "" {
 				members, err := client.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{
 					Org:                  orgName,

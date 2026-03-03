@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	userTokenPrefix   = "usr" // User token prefix
+	UserTokenPrefix   = "usr" // User token prefix
 	inviteTokenPrefix = "inv" // Invite token prefix
 )
 
@@ -29,8 +29,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 			} else if projectName != "" {
-				if strings.HasPrefix(pageToken, userTokenPrefix) {
-					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, userTokenPrefix), pageSize)
+				if strings.HasPrefix(pageToken, UserTokenPrefix) {
+					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, UserTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
@@ -51,8 +51,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 				}
 			} else {
-				if strings.HasPrefix(pageToken, userTokenPrefix) {
-					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, userTokenPrefix), pageSize)
+				if strings.HasPrefix(pageToken, UserTokenPrefix) {
+					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, UserTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
