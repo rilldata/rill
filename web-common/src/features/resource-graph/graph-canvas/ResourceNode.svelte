@@ -100,8 +100,8 @@
       : null
   ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
-  $: filePath =
-    data?.resource?.meta?.filePaths?.[0]?.replace(/^\//, "") ?? null;
+  $: rawFilePath = data?.resource?.meta?.filePaths?.[0] ?? null;
+  $: filePath = rawFilePath?.replace(/^\//, "") ?? null;
   $: checkTooltip =
     testCount === 0
       ? "No checks"
@@ -121,8 +121,6 @@
   ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
   const { fitView } = useSvelteFlow();
-
-  $: rawFilePath = data?.resource?.meta?.filePaths?.[0] ?? null;
 
   function navigateToFile() {
     if (!rawFilePath) return;
@@ -396,14 +394,6 @@
 
   .node-status-icon {
     @apply flex-shrink-0 flex items-center;
-  }
-
-  .node-status-icon.error {
-    @apply text-red-500;
-  }
-
-  .node-status-icon.warned {
-    @apply text-amber-500;
   }
 
   .node-status-icon.pending {

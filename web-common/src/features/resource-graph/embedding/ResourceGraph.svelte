@@ -416,6 +416,7 @@
   // the user scrolls to them, avoiding visible pop-in.
   const LAZY_ROOT_MARGIN = "200px";
   let visibleGroupIds = new Set<string>();
+  let prevGroupIdKey = "";
 
   function lazyObserve(node: HTMLElement, groupId: string) {
     const observer = new IntersectionObserver(
@@ -434,9 +435,13 @@
     };
   }
 
-  // Reset visible set when groups change (e.g., filter applied)
-  $: if (visibleResourceGroups) {
-    visibleGroupIds = new Set<string>();
+  // Reset visible set only when the set of group IDs changes (not on resource-content updates)
+  $: {
+    const key = visibleResourceGroups.map((g) => g.id).join(",");
+    if (key !== prevGroupIdKey) {
+      prevGroupIdKey = key;
+      visibleGroupIds = new Set<string>();
+    }
   }
 
   // Cleanup timer on component destroy
