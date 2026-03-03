@@ -19,6 +19,13 @@ export const PREVIEW_ALLOWED_PREFIXES = [
   "/deploy",
 ] as const;
 
+/**
+ * Note: isPreviewRoute and isDeveloperRoute are intentionally not exhaustive.
+ * Routes like /explore, /canvas, and /deploy are shared between modes and
+ * match neither; they preserve the current mode without triggering a switch.
+ * When adding new routes, decide whether they belong to a specific mode or
+ * are shared, and update the appropriate prefix list if needed.
+ */
 export function isPreviewRoute(pathname: string): boolean {
   return PREVIEW_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }

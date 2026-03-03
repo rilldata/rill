@@ -162,15 +162,9 @@
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if route.id?.includes("explore")}
-      <ExplorePreviewCTAs
-        exploreName={dashboardName}
-        inPreviewMode={previewMode}
-      />
+      <ExplorePreviewCTAs exploreName={dashboardName} />
     {:else if route.id?.includes("canvas")}
-      <CanvasPreviewCTAs
-        canvasName={dashboardName}
-        inPreviewMode={previewMode}
-      />
+      <CanvasPreviewCTAs />
     {:else if showDeveloperChat && !previewMode}
       <ChatToggle />
     {/if}

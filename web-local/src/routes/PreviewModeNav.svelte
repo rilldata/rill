@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { tick } from "svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import LocalProjectStatusIndicator from "./LocalProjectStatusIndicator.svelte";
 
@@ -35,7 +36,7 @@
   }
 
   $: if (selectedIndex >= 0 && tabElements.length) {
-    updateIndicator();
+    tick().then(updateIndicator);
   }
 </script>
 

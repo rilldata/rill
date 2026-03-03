@@ -104,8 +104,17 @@
             <div class="info-row">
               <span class="info-label">Status</span>
               <span class="info-value flex items-center gap-2">
-                <span class="status-dot bg-green-500"></span>
-                Running
+                {#if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
+                  <span class="status-dot bg-gray-400"></span>
+                  Loading
+                {:else if totalErrors > 0}
+                  <span class="status-dot bg-red-500"></span>
+                  {totalErrors}
+                  {totalErrors === 1 ? "error" : "errors"}
+                {:else}
+                  <span class="status-dot bg-green-500"></span>
+                  Running
+                {/if}
               </span>
             </div>
             <div class="info-row">
