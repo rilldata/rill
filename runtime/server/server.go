@@ -36,7 +36,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
+var ErrForbidden = status.Error(codes.PermissionDenied, "action not allowed")
 
 type Options struct {
 	HTTPPort        int

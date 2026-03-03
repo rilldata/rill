@@ -16,11 +16,11 @@
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import {
-    useCreateMetricsViewFromTableUIAction,
+    createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewWithCanvasAndExploreUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, developerChat } = featureFlags;
 
   export let sourcePath: string | null;
 
@@ -37,30 +37,17 @@
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
-  // When generateCanvas is enabled, create both explore and canvas dashboards
-  // and navigate to canvas (with fallback to explore on failure)
   $: createDashboardFromTable =
     sourcePath !== null
-      ? $generateCanvas
-        ? useCreateMetricsViewWithCanvasAndExploreUIAction(
-            instanceId,
-            sinkConnector as string,
-            "",
-            "",
-            sourceName,
-            BehaviourEventMedium.Button,
-            MetricsEventSpace.Modal,
-          )
-        : useCreateMetricsViewFromTableUIAction(
-            instanceId,
-            sinkConnector as string,
-            "",
-            "",
-            sourceName,
-            true,
-            BehaviourEventMedium.Button,
-            MetricsEventSpace.Modal,
-          )
+      ? useCreateMetricsViewWithCanvasAndExploreUIAction(
+          instanceId,
+          sinkConnector as string,
+          "",
+          "",
+          sourceName,
+          BehaviourEventMedium.Button,
+          MetricsEventSpace.Modal,
+        )
       : null;
 
   function close() {
@@ -78,7 +65,19 @@
     // for type narrowing and just in case.
     if (createDashboardFromTable === null) return;
     close();
-    await createDashboardFromTable();
+
+    // Use developer agent if enabled, otherwise fall back to RPC
+    if ($developerChat) {
+      await createCanvasDashboardFromTableWithAgent(
+        instanceId,
+        sinkConnector as string,
+        "",
+        "",
+        sourceName,
+      );
+    } else {
+      await createDashboardFromTable();
+    }
   }
 </script>
 

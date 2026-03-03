@@ -38,6 +38,8 @@ Two deployment modes share the same codebase:
 - **Test frontend (unit)**: `npm run test -w web-common` (fast, use for tight feedback loops)
 - **Test frontend (e2e)**: `npm run test -w web-local` or `npm run test -w web-admin` (Playwright, slow)
 - **Lint/format frontend**: `npm run quality`
+- **Regenerate docs**: `make docs.generate` (run after changes to `proto/`, `cli/` or `runtime/parser`)
+- **Regenerate API bindings:** `make proto.generate` (run after changes to `proto/`)
 
 ### Adding or Changing APIs
 
@@ -58,9 +60,10 @@ Frontend API clients are auto-generated from proto definitions using **Orval**. 
 General rules for writing Go code:
 
 - Write Go code in the style of Uber's Go style guide.
-- Use `golangci-lint` for linting.
+- Use `golangci-lint` for linting. After making Go changes, run `golangci-lint run ./path/to/package/` on the affected packages to catch issues before committing.
 - Non-trivial directories should have a `README.md`. If a directory has a README, always read it before making changes in that directory.
 - Functions should be sorted roughly in call order; functions should be grouped by receiver; plain utility functions belong towards the end of a file.
+- When adding a field to a struct or interface, don't automatically put at it at the end of the field list, instead put it where it makes the most sense (i.e. grouped with related fields and higher up than less important fields).
 - Prefer colons or semi-colons in code comments instead of hyphens or dashes. This keeps comments shorter, which makes them more readable in a monospace font.
 - Before adding a dependency, check for newer major versions. Major versions 2+ require the `/vN` suffix in the import path (e.g., `go get github.com/foo/bar/v3@latest`). Without the suffix, `go get` only fetches v1.x.
 - Avoid short utility functions that are only used once; it is usually more readable to inline these in their parent function.
