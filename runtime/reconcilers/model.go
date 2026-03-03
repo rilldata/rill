@@ -351,53 +351,45 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the build succeeded, update the model's state accordingly
 	if execErr == nil {
-		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
-
 		// Query output table stats and emit telemetry
 		newRowsTotal, newBytesTotal, statsErr := r.queryOutputTableStats(ctx, execRes.Connector, execRes.Table)
 		if statsErr != nil {
 			r.C.Logger.Warn("failed to query output table stats", zap.String("model", n.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
-		} else {
-			// Compute rows/bytes added
-			var rowsAdded, bytesAdded int64
-			if firstRunIncremental {
-				rowsAdded = max(newRowsTotal - oldRowsTotal, 0)
-				bytesAdded = max(newBytesTotal - oldBytesTotal, 0)
-			} else {
-				rowsAdded = newRowsTotal
-				bytesAdded = newBytesTotal
-			}
-
-			// Persist updated totals
-			model.State.RowsTotal = newRowsTotal
-			model.State.BytesTotal = newBytesTotal
-			err = r.C.UpdateState(ctx, self.Meta.Name, self)
-			if err != nil {
-				return runtime.ReconcileResult{Err: err}
-			}
-
-			// Emit telemetry
-			runType := "full"
-			if firstRunIncremental {
-				runType = "incremental"
-			}
-			if r.C.Activity != nil {
-				r.C.Activity.RecordMetric(ctx, "model_reconcile_elapsed_ms", float64(execRes.ExecDuration.Milliseconds()),
-					attribute.String("model", n.Name),
-					attribute.String("input_connector", model.Spec.InputConnector),
-					attribute.String("output_connector", model.Spec.OutputConnector),
-					attribute.String("run_type", runType),
-					attribute.Int("partitions_processed", partitionsProcessed),
-					attribute.Int64("rows_added", rowsAdded),
-					attribute.Int64("rows_total", newRowsTotal),
-					attribute.Int64("bytes_added", bytesAdded),
-					attribute.Int64("bytes_total", newBytesTotal),
-				)
-			}
 		}
+
+		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes, newRowsTotal, newBytesTotal)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+
+		// Emit telemetry
+		runType := "full"
+		if firstRunIncremental {
+			runType = "incremental"
+		}
+		// Compute rows/bytes added
+		var rowsAdded, bytesAdded int64
+		if firstRunIncremental {
+			rowsAdded = max(newRowsTotal-oldRowsTotal, 0)
+			bytesAdded = max(newBytesTotal-oldBytesTotal, 0)
+		} else {
+			rowsAdded = newRowsTotal
+			bytesAdded = newBytesTotal
+		}
+		if r.C.Activity != nil {
+			r.C.Activity.RecordMetric(ctx, "model_reconcile_elapsed_ms", float64(execRes.ExecDuration.Milliseconds()),
+				attribute.String("model", n.Name),
+				attribute.String("input_connector", model.Spec.InputConnector),
+				attribute.String("output_connector", model.Spec.OutputConnector),
+				attribute.String("run_type", runType),
+				attribute.Int("partitions_processed", partitionsProcessed),
+				attribute.Int64("rows_added", rowsAdded),
+				attribute.Int64("rows_total", newRowsTotal),
+				attribute.Int64("bytes_added", bytesAdded),
+				attribute.Int64("bytes_total", newBytesTotal),
+			)
+		}
+
 	}
 
 	// If the build failed, clear the state only if we're not staging changes
@@ -700,6 +692,7 @@ func (r *ModelReconciler) updateStateAfterExecution(
 	incrementalStateSchema *runtimev1.StructType,
 	partitionsHaveErrors, firstRunIncremental bool,
 	execRes *drivers.ModelResult,
+	rowsTotal, bytesTotal int64,
 ) error {
 	model.State.ExecutorConnector = executorConnector
 	model.State.SpecHash = specHash
@@ -716,6 +709,8 @@ func (r *ModelReconciler) updateStateAfterExecution(
 	} else {
 		model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 	}
+	model.State.RowsTotal = rowsTotal
+	model.State.BytesTotal = bytesTotal
 
 	return r.updateStateWithResult(ctx, self, execRes)
 }
@@ -1217,7 +1212,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		totalPartitionsProcessed.Add(1)
 
 		// also update the model state so that if there are errors in subsequent partitions the model state will reflect that some partitions have succeeded
-		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res)
+		newRowsTotal, newBytesTotal, statsErr := r.queryOutputTableStats(ctx, res.Connector, res.Table)
+		if statsErr != nil {
+			r.C.Logger.Warn("failed to query output table stats", zap.String("model", self.Meta.Name.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
+		}
+		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res, newRowsTotal, newBytesTotal)
 		if err != nil {
 			return "", nil, false, 0, err
 		}
