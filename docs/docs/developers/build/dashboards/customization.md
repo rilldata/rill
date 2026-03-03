@@ -78,16 +78,74 @@ defaults:
   time_range: P7D
   comparison_mode: time
   filters:
-    sales_metrics: "region IN ('US', 'CA', 'UK')"
-    orders_metrics: "status = 'completed' AND amount > 100"
+    sales_metrics: (region IN ('US', 'CA', 'UK'))
+    orders_metrics: (status IN (SELECT status FROM metrics_view HAVING amount > 10))
 ```
 
 The filter expression syntax supports:
+
+**Comparison operators:**
 - Equality: `dimension = 'value'`
+- Inequality: `dimension != 'value'` or `dimension <> 'value'`
+- Comparisons: `measure > 100`, `measure >= 50`, `measure < 200`, `measure <= 500`
+
+**List operators:**
 - IN lists: `dimension IN ('value1', 'value2')`
-- Comparisons: `measure > 100`, `measure >= 50`
-- Logical operators: `AND`, `OR`
-- Combinations: `country IN ('US', 'CA') AND revenue > 1000`
+- NOT IN lists: `dimension NOT IN ('value1', 'value2')`
+
+**Pattern matching:**
+- LIKE: `dimension LIKE 'prefix%'`
+- NOT LIKE: `dimension NOT LIKE '%test%'`
+- ILIKE (case-insensitive): `dimension ILIKE '%search%'`
+- NOT ILIKE: `dimension NOT ILIKE '%excluded%'`
+
+**Null checks:**
+- `dimension IS NULL`
+- `dimension IS NOT NULL`
+
+**Date operations:**
+- Date arithmetic: `time >= '2024-01-01' + INTERVAL 1 DAY`
+- Range: `time BETWEEN '2024-01-01' AND '2024-06-30'`
+
+**Logical operators:**
+- `AND`, `OR`
+- Parentheses for grouping: `(country = 'US' OR country = 'CA') AND revenue > 1000`
+
+**Subqueries:**
+- `dimension IN (SELECT dimension FROM metrics_view HAVING measure > 10)`
+- With WHERE clause: `dimension IN (SELECT dim FROM mv WHERE country = 'US' HAVING count > 10)`
+
+#### Examples
+
+Simple filter on a single dimension:
+```yaml
+defaults:
+  filter: "country = 'US'"
+```
+
+Multiple conditions combined:
+```yaml
+defaults:
+  filter: "country IN ('US', 'CA', 'UK') AND status = 'completed'"
+```
+
+Excluding values:
+```yaml
+defaults:
+  filter: "category NOT IN ('Test', 'Internal') AND revenue > 0"
+```
+
+Pattern matching:
+```yaml
+defaults:
+  filter: "domain ILIKE '%example.com'"
+```
+
+Using a subquery to filter by top-performing values:
+```yaml
+defaults:
+  filter: "campaign IN (SELECT campaign FROM ad_metrics HAVING total_spend > 1000)"
+```
 
 ## Time Ranges
 
