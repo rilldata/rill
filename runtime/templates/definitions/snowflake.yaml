@@ -1,0 +1,13 @@
+name: snowflake
+display_name: "Snowflake"
+driver: snowflake
+tags: ["snowflake", "warehouse", "source", "connector"]
+files:
+  - name: connector
+    path_template: "connectors/[[ .connector_name ]].yaml"
+    code_template: |
+      # Connector YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/snowflake
+      type: connector
+      driver: snowflake
+      [[ renderProps .props ]]

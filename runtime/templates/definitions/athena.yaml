@@ -1,0 +1,13 @@
+name: athena
+display_name: "Amazon Athena"
+driver: athena
+tags: ["athena", "aws", "warehouse", "source", "connector"]
+files:
+  - name: connector
+    path_template: "connectors/[[ .connector_name ]].yaml"
+    code_template: |
+      # Connector YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/athena
+      type: connector
+      driver: athena
+      [[ renderProps .props ]]

@@ -1,0 +1,15 @@
+name: local-file-duckdb
+display_name: "Local File (DuckDB)"
+driver: local_file
+olap: duckdb
+tags: ["local-file", "file", "file-store", "duckdb", "source"]
+files:
+  - name: model
+    path_template: "models/[[ .model_name ]].yaml"
+    code_template: |
+      # Model YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/olap/duckdb
+      type: model
+      connector: duckdb
+      sql: |
+        [[ .sql ]]

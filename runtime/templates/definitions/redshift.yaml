@@ -1,0 +1,13 @@
+name: redshift
+display_name: "Amazon Redshift"
+driver: redshift
+tags: ["redshift", "aws", "warehouse", "source", "connector"]
+files:
+  - name: connector
+    path_template: "connectors/[[ .connector_name ]].yaml"
+    code_template: |
+      # Connector YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/redshift
+      type: connector
+      driver: redshift
+      [[ renderProps .props ]]

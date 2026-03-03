@@ -1,0 +1,20 @@
+name: redshift-model
+display_name: "Amazon Redshift"
+driver: redshift
+tags: ["redshift", "aws", "warehouse", "source", "model"]
+files:
+  - name: model
+    path_template: "models/[[ .model_name ]].yaml"
+    code_template: |
+      # Model YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/redshift
+      type: model
+      [[ if .connector_name -]]
+      connector: "[[ .connector_name ]]"
+      [[ end -]]
+      materialize: true
+      [[ renderProps .source_props -]]
+      [[ if .sql -]]
+      sql: |
+        [[ .sql | indent 2 ]]
+      [[ end ]]

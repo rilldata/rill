@@ -1,0 +1,13 @@
+name: bigquery
+display_name: "BigQuery"
+driver: bigquery
+tags: ["bigquery", "google", "warehouse", "source", "connector"]
+files:
+  - name: connector
+    path_template: "connectors/[[ .connector_name ]].yaml"
+    code_template: |
+      # Connector YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/bigquery
+      type: connector
+      driver: bigquery
+      [[ renderProps .props ]]

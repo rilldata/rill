@@ -1,0 +1,13 @@
+name: gcs
+display_name: "Google Cloud Storage"
+driver: gcs
+tags: ["gcs", "google", "object-storage", "source", "connector"]
+files:
+  - name: connector
+    path_template: "connectors/[[ .connector_name ]].yaml"
+    code_template: |
+      # Connector YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/gcs
+      type: connector
+      driver: gcs
+      [[ renderProps .props ]]

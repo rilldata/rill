@@ -1,0 +1,23 @@
+name: snowflake-model
+display_name: "Snowflake"
+driver: snowflake
+tags: ["snowflake", "warehouse", "source", "model"]
+files:
+  - name: model
+    path_template: "models/[[ .model_name ]].yaml"
+    code_template: |
+      # Model YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/snowflake
+      type: model
+      [[ if .connector_name -]]
+      connector: "[[ .connector_name ]]"
+      [[ end -]]
+      materialize: true
+      [[ renderProps .source_props -]]
+      [[ if .sql -]]
+      sql: |
+        [[ .sql | indent 2 ]]
+      [[ end -]]
+      dev:
+        sql: |
+          select * from {{ ref "self" }} limit 10000

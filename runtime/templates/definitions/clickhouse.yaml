@@ -1,0 +1,13 @@
+name: clickhouse
+display_name: "ClickHouse"
+driver: clickhouse
+tags: ["clickhouse", "olap", "analytics", "connector"]
+files:
+  - name: connector
+    path_template: "connectors/[[ .connector_name ]].yaml"
+    code_template: |
+      # Connector YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/olap/clickhouse
+      type: connector
+      driver: clickhouse
+      [[ renderProps .props ]]

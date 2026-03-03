@@ -36,6 +36,7 @@ import type {
   RuntimeServiceEditInstanceBody,
   RuntimeServiceForkConversationBody,
   RuntimeServiceGenerateCanvasFileBody,
+  RuntimeServiceGenerateFileBody,
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
   RuntimeServiceGenerateResolverBody,
@@ -56,6 +57,7 @@ import type {
   RuntimeServiceListGitCommitsParams,
   RuntimeServiceListInstancesParams,
   RuntimeServiceListResourcesParams,
+  RuntimeServiceListTemplatesParams,
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceReloadConfigBody,
@@ -82,6 +84,7 @@ import type {
   V1EditInstanceResponse,
   V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
+  V1GenerateFileResponse,
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
@@ -112,6 +115,7 @@ import type {
   V1ListInstancesResponse,
   V1ListNotifierConnectorsResponse,
   V1ListResourcesResponse,
+  V1ListTemplatesResponse,
   V1ListToolsResponse,
   V1PingResponse,
   V1PutFileResponse,
@@ -2959,6 +2963,93 @@ export function createRuntimeServiceWatchFiles<
 }
 
 /**
+ * @summary GenerateFile renders a template with properties and optionally writes the resulting files
+ */
+export const runtimeServiceGenerateFile = (
+  instanceId: string,
+  runtimeServiceGenerateFileBody: RuntimeServiceGenerateFileBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GenerateFileResponse>({
+    url: `/v1/instances/${instanceId}/generate/file`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateFileBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGenerateFileMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateFileBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGenerateFile>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGenerateFileBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGenerateFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateFile>>,
+    { instanceId: string; data: RuntimeServiceGenerateFileBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateFile(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGenerateFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateFile>>
+>;
+export type RuntimeServiceGenerateFileMutationBody =
+  RuntimeServiceGenerateFileBody;
+export type RuntimeServiceGenerateFileMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GenerateFile renders a template with properties and optionally writes the resulting files
+ */
+export const createRuntimeServiceGenerateFile = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGenerateFile>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGenerateFileBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGenerateFile>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGenerateFileBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceGenerateFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
  */
 export const runtimeServiceGenerateRenderer = (
@@ -5364,6 +5455,100 @@ export function createRuntimeServicePing<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getRuntimeServicePingQueryOptions(options);
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary ListTemplates returns available template definitions for generating project files
+ */
+export const runtimeServiceListTemplates = (
+  params?: RuntimeServiceListTemplatesParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListTemplatesResponse>({
+    url: `/v1/templates`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceListTemplatesQueryKey = (
+  params?: RuntimeServiceListTemplatesParams,
+) => {
+  return [`/v1/templates`, ...(params ? [params] : [])] as const;
+};
+
+export const getRuntimeServiceListTemplatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListTemplates>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  params?: RuntimeServiceListTemplatesParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListTemplates>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getRuntimeServiceListTemplatesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListTemplates>>
+  > = ({ signal }) => runtimeServiceListTemplates(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListTemplates>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListTemplatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListTemplates>>
+>;
+export type RuntimeServiceListTemplatesQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ListTemplates returns available template definitions for generating project files
+ */
+
+export function createRuntimeServiceListTemplates<
+  TData = Awaited<ReturnType<typeof runtimeServiceListTemplates>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  params?: RuntimeServiceListTemplatesParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListTemplates>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListTemplatesQueryOptions(
+    params,
+    options,
+  );
 
   const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
     TData,

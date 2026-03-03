@@ -1,0 +1,13 @@
+name: starrocks
+display_name: "StarRocks"
+driver: starrocks
+tags: ["starrocks", "olap", "analytics", "connector"]
+files:
+  - name: connector
+    path_template: "connectors/[[ .connector_name ]].yaml"
+    code_template: |
+      # Connector YAML
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/olap/starrocks
+      type: connector
+      driver: starrocks
+      [[ renderProps .props ]]

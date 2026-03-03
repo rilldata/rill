@@ -1065,6 +1065,13 @@ export interface V1GenerateCanvasFileResponse {
   aiSucceeded?: boolean;
 }
 
+export type V1GenerateFileResponseEnvVars = { [key: string]: string };
+
+export interface V1GenerateFileResponse {
+  files?: V1GeneratedFile[];
+  envVars?: V1GenerateFileResponseEnvVars;
+}
+
 export interface V1GenerateMetricsViewFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -1095,6 +1102,14 @@ export interface V1GenerateTemplateResponse {
   envVars?: V1GenerateTemplateResponseEnvVars;
   resourceType?: string;
   driver?: string;
+}
+
+/**
+ * GeneratedFile is a single rendered output file.
+ */
+export interface V1GeneratedFile {
+  path?: string;
+  blob?: string;
 }
 
 export interface V1GetConversationResponse {
@@ -1339,6 +1354,10 @@ export interface V1ListResourcesResponse {
 export interface V1ListTablesResponse {
   tables?: V1TableInfo[];
   nextPageToken?: string;
+}
+
+export interface V1ListTemplatesResponse {
+  templates?: V1Template[];
 }
 
 export interface V1ListToolsResponse {
@@ -2493,6 +2512,26 @@ export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
 }
 
+/**
+ * Template describes a declarative template for generating project files.
+ */
+export interface V1Template {
+  name?: string;
+  displayName?: string;
+  driver?: string;
+  olap?: string;
+  tags?: string[];
+  files?: V1TemplateFile[];
+}
+
+/**
+ * TemplateFile describes a single output file within a template.
+ */
+export interface V1TemplateFile {
+  name?: string;
+  pathPattern?: string;
+}
+
 export interface V1Theme {
   spec?: V1ThemeSpec;
   state?: V1ThemeState;
@@ -2826,6 +2865,18 @@ export type RuntimeServiceWatchFilesParams = {
 export type RuntimeServiceWatchFiles200 = {
   result?: V1WatchFilesResponse;
   error?: RpcStatus;
+};
+
+export type RuntimeServiceGenerateFileBodyProperties = {
+  [key: string]: unknown;
+};
+
+export type RuntimeServiceGenerateFileBody = {
+  templateName?: string;
+  output?: string;
+  properties?: RuntimeServiceGenerateFileBodyProperties;
+  connectorName?: string;
+  preview?: boolean;
 };
 
 export type RuntimeServiceGenerateRendererBodyResolverProperties = {
@@ -3373,4 +3424,11 @@ If the connector supports schema/database names, it searches against both the pl
   searchPattern?: string;
   pageSize?: number;
   pageToken?: string;
+};
+
+export type RuntimeServiceListTemplatesParams = {
+  /**
+   * Optional tag filter; only templates matching ALL tags are returned.
+   */
+  tags?: string[];
 };

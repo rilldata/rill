@@ -43,6 +43,8 @@ const (
 	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
 	RuntimeService_GenerateRenderer_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
 	RuntimeService_GenerateTemplate_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateTemplate"
+	RuntimeService_ListTemplates_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListTemplates"
+	RuntimeService_GenerateFile_FullMethodName            = "/rill.runtime.v1.RuntimeService/GenerateFile"
 	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
 	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
 	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
@@ -132,6 +134,10 @@ type RuntimeServiceClient interface {
 	GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error)
 	// GenerateTemplate generates a connector or model YAML file from structured form data
 	GenerateTemplate(ctx context.Context, in *GenerateTemplateRequest, opts ...grpc.CallOption) (*GenerateTemplateResponse, error)
+	// ListTemplates returns available template definitions for generating project files
+	ListTemplates(ctx context.Context, in *ListTemplatesRequest, opts ...grpc.CallOption) (*ListTemplatesResponse, error)
+	// GenerateFile renders a template with properties and optionally writes the resulting files
+	GenerateFile(ctx context.Context, in *GenerateFileRequest, opts ...grpc.CallOption) (*GenerateFileResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -453,6 +459,26 @@ func (c *runtimeServiceClient) GenerateTemplate(ctx context.Context, in *Generat
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenerateTemplateResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GenerateTemplate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListTemplates(ctx context.Context, in *ListTemplatesRequest, opts ...grpc.CallOption) (*ListTemplatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTemplatesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListTemplates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GenerateFile(ctx context.Context, in *GenerateFileRequest, opts ...grpc.CallOption) (*GenerateFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateFileResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GenerateFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -843,6 +869,10 @@ type RuntimeServiceServer interface {
 	GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error)
 	// GenerateTemplate generates a connector or model YAML file from structured form data
 	GenerateTemplate(context.Context, *GenerateTemplateRequest) (*GenerateTemplateResponse, error)
+	// ListTemplates returns available template definitions for generating project files
+	ListTemplates(context.Context, *ListTemplatesRequest) (*ListTemplatesResponse, error)
+	// GenerateFile renders a template with properties and optionally writes the resulting files
+	GenerateFile(context.Context, *GenerateFileRequest) (*GenerateFileResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -992,6 +1022,12 @@ func (UnimplementedRuntimeServiceServer) GenerateRenderer(context.Context, *Gene
 }
 func (UnimplementedRuntimeServiceServer) GenerateTemplate(context.Context, *GenerateTemplateRequest) (*GenerateTemplateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateTemplate not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListTemplates(context.Context, *ListTemplatesRequest) (*ListTemplatesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTemplates not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GenerateFile(context.Context, *GenerateFileRequest) (*GenerateFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateFile not implemented")
 }
 func (UnimplementedRuntimeServiceServer) QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryResolver not implemented")
@@ -1525,6 +1561,42 @@ func _RuntimeService_GenerateTemplate_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GenerateTemplate(ctx, req.(*GenerateTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTemplatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListTemplates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListTemplates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListTemplates(ctx, req.(*ListTemplatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GenerateFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GenerateFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GenerateFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GenerateFile(ctx, req.(*GenerateFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2146,6 +2218,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateTemplate",
 			Handler:    _RuntimeService_GenerateTemplate_Handler,
+		},
+		{
+			MethodName: "ListTemplates",
+			Handler:    _RuntimeService_ListTemplates_Handler,
+		},
+		{
+			MethodName: "GenerateFile",
+			Handler:    _RuntimeService_GenerateFile_Handler,
 		},
 		{
 			MethodName: "QueryResolver",
