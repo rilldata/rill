@@ -283,7 +283,7 @@
         cellType="comparison"
       >
         <PercentageChange
-          value={formattedPctOfTotal}
+          value={pctOfTotals[measureName]}
           color="text-fg-secondary"
         />
         {#if showZigZags[measureName]}

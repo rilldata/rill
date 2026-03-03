@@ -119,6 +119,18 @@ describe("format-measure-value with d3_locale", () => {
     expect(formatter(89)).toBe("$89.00");
   });
 
+  it("should keep humanized abbreviations for tooltip non-currency values", () => {
+    const measure: MetricsViewSpecMeasure = {
+      name: "tooltip_humanize",
+      expression: "COUNT(*)",
+      formatPreset: FormatPreset.HUMANIZE,
+    };
+
+    const formatter = createMeasureValueFormatter(measure, "tooltip");
+
+    expect(formatter(1149)).toBe("1.1k");
+  });
+
   it("should apply custom thousand separators with non-currency formats", () => {
     const measure: MetricsViewSpecMeasure = {
       name: "test_measure",

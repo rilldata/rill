@@ -71,7 +71,8 @@ export function humanizeDataType(
       currencyUsd: tooltipCurrencyOptions(NumberKind.DOLLAR),
       currencyEur: tooltipCurrencyOptions(NumberKind.EURO),
       percent: tooltipPercentOptions,
-      humanize: tooltipNoFormattingOptions,
+      // Keep non-currency tooltips consistent with existing humanized UI copy.
+      humanize: defaultGenericNumOptions,
     },
     "big-number": {
       none: bigNumDefaultFormattingOptions,
