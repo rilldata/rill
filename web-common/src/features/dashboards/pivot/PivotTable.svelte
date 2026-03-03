@@ -14,6 +14,7 @@
     isElement,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import { getCellTooltipValue } from "@rilldata/web-common/features/dashboards/pivot/pivot-tooltip-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import {
     type ExpandedState,
@@ -284,7 +285,7 @@
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !td) return;
 
-    const value = td.dataset.tooltipValue ?? td.dataset.value;
+    const value = getTooltipValue(td);
     const rowHeader = td.dataset.rowheader === "true";
 
     if (value === undefined || rowHeader) return;
@@ -300,6 +301,31 @@
       value,
     };
     hoverPosition = td.getBoundingClientRect();
+  }
+
+  function getTooltipValue(td: HTMLElement): string | undefined {
+    // Fast path: use precomputed tooltip value if present.
+    if (td.dataset.tooltipValue !== undefined) return td.dataset.tooltipValue;
+
+    const rowId = td.dataset.rowid;
+    const columnId = td.dataset.columnid;
+
+    if (rowId && columnId) {
+      const row = $table.getRow(rowId);
+      const cell = row?.getAllCells().find((rowCell) => rowCell.column.id === columnId);
+
+      if (cell) {
+        const formattedTooltipValue = getCellTooltipValue(cell, measures);
+        if (formattedTooltipValue !== undefined && formattedTooltipValue !== null) {
+          const stringValue = String(formattedTooltipValue);
+          // Cache it on the DOM node so subsequent hovers are immediate.
+          td.dataset.tooltipValue = stringValue;
+          return stringValue;
+        }
+      }
+    }
+
+    return td.dataset.value;
   }
 </script>
 

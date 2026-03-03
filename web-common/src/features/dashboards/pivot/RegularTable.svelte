@@ -281,6 +281,13 @@
     }
   }
 
+  $: {
+    if (table && (formatter || tooltipFormatter)) {
+      // Ensure tooltip/data formatting callbacks are applied before first hover.
+      table.draw();
+    }
+  }
+
   const handlerCache = new Map();
   function addHandler(type: string, handler: (evt: MouseEvent) => any) {
     table?.addEventListener(type, handler);
