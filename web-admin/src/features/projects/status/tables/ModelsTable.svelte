@@ -8,10 +8,10 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { compareSizes } from "./utils";
   import ModelSizeCell from "./ModelSizeCell.svelte";
-  import NameCell from "../resource-table/NameCell.svelte";
+  import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import MaterializationCell from "./MaterializationCell.svelte";
   import ModelActionsCell from "./ModelActionsCell.svelte";
-  import ResourceErrorMessage from "../resource-table/ResourceErrorMessage.svelte";
+  import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
 
   export let tables: V1OlapTableInfo[] = [];
   export let isView: Map<string, boolean> = new Map();
