@@ -82,6 +82,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 ## Databases
 ### MySQL
+### Oracle
 ### PostgreSQL
 ### SQLite
 
@@ -93,6 +94,14 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     link="/developers/build/connectors/data-source/mysql"
     linkLabel="Learn more"
     referenceLink="mysql"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Oracle.svg" alt="Oracle" />}
+    header="Oracle"
+    content="Connect to Oracle databases with support for service name and connection string authentication."
+    link="/developers/build/connectors/data-source/oracle"
+    linkLabel="Learn more"
+    referenceLink="oracle"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Postgres.svg" alt="PostgreSQL" />}

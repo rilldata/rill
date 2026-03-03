@@ -214,6 +214,7 @@ const (
 	DialectRedshift
 	DialectMySQL
 	DialectPostgres
+	DialectOracle
 )
 
 func (d Dialect) String() string {
@@ -242,6 +243,8 @@ func (d Dialect) String() string {
 		return "mysql"
 	case DialectPostgres:
 		return "postgres"
+	case DialectOracle:
+		return "oracle"
 	default:
 		panic("not implemented")
 	}
@@ -305,7 +308,7 @@ func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 
 func (d Dialect) SupportsILike() bool {
 	// StarRocks uses MySQL syntax which doesn't support ILIKE
-	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks
+	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks && d != DialectOracle
 }
 
 // GetCastExprForLike returns the cast expression for use in a LIKE or ILIKE condition, or an empty string if no cast is necessary.
