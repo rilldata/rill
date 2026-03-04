@@ -9,7 +9,7 @@ export const addSourceModal = (() => {
     },
     close: () => {
       const state = { step: 0, connector: null, requestConnector: false };
-      window.history.pushState(state, "", "");
+      window.history.replaceState(state, "", "");
       dispatchEvent(new PopStateEvent("popstate", { state: state }));
       resetConnectorStep();
     },

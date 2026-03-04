@@ -29,6 +29,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "OpenAI",
 	Description: "Connect to OpenAI's API for language models.",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/services/openai",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "api_key",

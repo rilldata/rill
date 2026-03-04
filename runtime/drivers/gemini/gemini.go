@@ -28,6 +28,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Gemini",
 	Description: "Connect to Google's Gemini API for language models.",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/services/gemini",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "api_key",
