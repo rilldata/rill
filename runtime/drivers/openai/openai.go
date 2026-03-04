@@ -59,7 +59,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "Reasoning Effort",
-			Description: "Constrains effort on reasoning for reasoning models. Supported values: 'none', 'minimal', 'low', 'medium', 'high', 'xhigh'.",
+			Description: "Constrains effort on reasoning for reasoning models.",
 		},
 		{
 			Key:         "base_url",
