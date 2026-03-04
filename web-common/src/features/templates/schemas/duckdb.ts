@@ -1,3 +1,5 @@
+import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
+import DuckDBIcon from "../../../components/icons/connectors/DuckDBIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const duckdbSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const duckdbSchema: MultiStepFormSchema = {
   type: "object",
   title: "DuckDB",
   "x-category": "olap",
+  "x-icon": DuckDB,
+  "x-small-icon": DuckDBIcon,
   "x-button-labels": {
     connector_type: {
       "rill-managed": { idle: "Connect", loading: "Connecting..." },

@@ -1,3 +1,7 @@
+import type { ComponentType, SvelteComponent } from "svelte";
+
+export type ConnectorIcon = ComponentType<SvelteComponent>;
+
 export type JSONSchemaVisibleIfValue =
   | string
   | number
@@ -148,6 +152,10 @@ export type JSONSchemaObject = {
    * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
    */
   "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
+  /** Full-size icon component for the connector (used in add-data grid). */
+  "x-icon"?: ConnectorIcon;
+  /** Small icon component for the connector (used in nav, cards, dialogs). */
+  "x-small-icon"?: ConnectorIcon;
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;

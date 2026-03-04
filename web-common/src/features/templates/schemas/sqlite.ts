@@ -1,3 +1,4 @@
+import SQLite from "../../../components/icons/connectors/SQLite.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const sqliteSchema: MultiStepFormSchema = {
@@ -5,6 +6,7 @@ export const sqliteSchema: MultiStepFormSchema = {
   type: "object",
   title: "SQLite",
   "x-category": "sqlStore",
+  "x-icon": SQLite,
   properties: {
     db: {
       type: "string",

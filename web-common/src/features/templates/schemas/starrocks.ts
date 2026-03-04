@@ -1,3 +1,5 @@
+import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
+import StarRocksIcon from "../../../components/icons/connectors/StarRocksIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const starrocksSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const starrocksSchema: MultiStepFormSchema = {
   type: "object",
   title: "StarRocks",
   "x-category": "olap",
+  "x-icon": StarRocks,
+  "x-small-icon": StarRocksIcon,
   "x-form-height": "tall",
   properties: {
     connection_mode: {

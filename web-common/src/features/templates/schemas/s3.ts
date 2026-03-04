@@ -1,3 +1,5 @@
+import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+import AmazonS3Icon from "../../../components/icons/connectors/AmazonS3Icon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const s3Schema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const s3Schema: MultiStepFormSchema = {
   type: "object",
   title: "Amazon S3",
   "x-category": "objectStore",
+  "x-icon": AmazonS3,
+  "x-small-icon": AmazonS3Icon,
   properties: {
     auth_method: {
       type: "string",

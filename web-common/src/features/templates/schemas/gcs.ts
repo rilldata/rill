@@ -1,3 +1,4 @@
+import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const gcsSchema: MultiStepFormSchema = {
@@ -5,6 +6,7 @@ export const gcsSchema: MultiStepFormSchema = {
   type: "object",
   title: "Google Cloud Storage",
   "x-category": "objectStore",
+  "x-icon": GoogleCloudStorage,
   properties: {
     auth_method: {
       type: "string",

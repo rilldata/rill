@@ -1,3 +1,5 @@
+import MySQL from "../../../components/icons/connectors/MySQL.svelte";
+import MySqlIcon from "../../../components/icons/connectors/MySqlIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const mysqlSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const mysqlSchema: MultiStepFormSchema = {
   type: "object",
   title: "MySQL",
   "x-category": "sqlStore",
+  "x-icon": MySQL,
+  "x-small-icon": MySqlIcon,
   properties: {
     connection_mode: {
       type: "string",

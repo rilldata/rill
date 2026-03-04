@@ -1,3 +1,5 @@
+import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
+import ApachePinotIcon from "../../../components/icons/connectors/ApachePinotIcon.svelte";
 import type { MultiStepFormSchema } from "./types";
 
 export const pinotSchema: MultiStepFormSchema = {
@@ -5,6 +7,8 @@ export const pinotSchema: MultiStepFormSchema = {
   type: "object",
   title: "Apache Pinot",
   "x-category": "olap",
+  "x-icon": ApachePinot,
+  "x-small-icon": ApachePinotIcon,
   properties: {
     connection_mode: {
       type: "string",
