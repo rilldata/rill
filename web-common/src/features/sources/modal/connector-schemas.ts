@@ -11,84 +11,25 @@ import type {
 import { SOURCES, OLAP_ENGINES } from "./constants";
 import { derived, type Readable } from "svelte/store";
 
-import AmazonAthena from "../../../components/icons/connectors/AmazonAthena.svelte";
-import AmazonRedshift from "../../../components/icons/connectors/AmazonRedshift.svelte";
-import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
-import AmazonS3Icon from "../../../components/icons/connectors/AmazonS3Icon.svelte";
-import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
-import ApacheDruidIcon from "../../../components/icons/connectors/ApacheDruidIcon.svelte";
-import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
-import ApachePinotIcon from "../../../components/icons/connectors/ApachePinotIcon.svelte";
-import AthenaIcon from "../../../components/icons/connectors/AthenaIcon.svelte";
-import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
-import ClickHouseCloudIcon from "../../../components/icons/connectors/ClickHouseCloudIcon.svelte";
-import ClickHouseIcon from "../../../components/icons/connectors/ClickHouseIcon.svelte";
-import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
-import DuckDBIcon from "../../../components/icons/connectors/DuckDBIcon.svelte";
-import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
-import GoogleBigQueryIcon from "../../../components/icons/connectors/GoogleBigQueryIcon.svelte";
-import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
-import HTTPS from "../../../components/icons/connectors/HTTPS.svelte";
-import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
-import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
-import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
-import MotherDuckIcon from "../../../components/icons/connectors/MotherDuckIcon.svelte";
-import MySQL from "../../../components/icons/connectors/MySQL.svelte";
-import MySqlIcon from "../../../components/icons/connectors/MySqlIcon.svelte";
-import Postgres from "../../../components/icons/connectors/Postgres.svelte";
-import PostgresIcon from "../../../components/icons/connectors/PostgresIcon.svelte";
-import RedshiftIcon from "../../../components/icons/connectors/RedshiftIcon.svelte";
-import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
-import SalesforceIcon from "../../../components/icons/connectors/SalesforceIcon.svelte";
-import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
-import SnowflakeIcon from "../../../components/icons/connectors/SnowflakeIcon.svelte";
-import SQLite from "../../../components/icons/connectors/SQLite.svelte";
-import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
-import StarRocksIcon from "../../../components/icons/connectors/StarRocksIcon.svelte";
-
 export type ConnectorIcon = ComponentType<SvelteComponent>;
 
 /**
- * Flat registry of all connector icon components, keyed by the string name
- * used in template JSON definitions (x-icon / x-small-icon).
- * Adding a new connector icon: import the component above and add an entry here.
+ * Auto-discovered icon components from the connectors icon directory.
+ * Keyed by filename (without .svelte extension), matching the x-icon / x-small-icon
+ * strings in template JSON definitions.
+ * To add a new icon: just drop a .svelte file in the connectors icon directory
+ * and reference its name in the template JSON.
  */
-const ICON_COMPONENTS: Record<string, ConnectorIcon> = {
-  AmazonAthena,
-  AmazonRedshift,
-  AmazonS3,
-  AmazonS3Icon,
-  ApacheDruid,
-  ApacheDruidIcon,
-  ApachePinot,
-  ApachePinotIcon,
-  AthenaIcon,
-  ClickHouse,
-  ClickHouseCloudIcon,
-  ClickHouseIcon,
-  DuckDB,
-  DuckDBIcon,
-  GoogleBigQuery,
-  GoogleBigQueryIcon,
-  GoogleCloudStorage,
-  HTTPS,
-  LocalFile,
-  MicrosoftAzureBlobStorage,
-  MotherDuck,
-  MotherDuckIcon,
-  MySQL,
-  MySqlIcon,
-  Postgres,
-  PostgresIcon,
-  RedshiftIcon,
-  Salesforce,
-  SalesforceIcon,
-  Snowflake,
-  SnowflakeIcon,
-  SQLite,
-  StarRocks,
-  StarRocksIcon,
-};
+const iconModules = import.meta.glob<{ default: ConnectorIcon }>(
+  "../../../components/icons/connectors/*.svelte",
+  { eager: true },
+);
+
+const ICON_COMPONENTS: Record<string, ConnectorIcon> = {};
+for (const [path, mod] of Object.entries(iconModules)) {
+  const name = path.match(/\/([^/]+)\.svelte$/)?.[1];
+  if (name) ICON_COMPONENTS[name] = mod.default;
+}
 
 const SOURCES_SET = new Set(SOURCES);
 const OLAP_SET = new Set(OLAP_ENGINES);
@@ -362,7 +303,8 @@ function rebuildIconMaps() {
   }
 
   // ClickHouse Cloud uses a distinct icon determined by getConnectorIconKey()
-  smallIcons["clickhousecloud"] = ClickHouseCloudIcon;
+  const chCloudIcon = ICON_COMPONENTS["ClickHouseCloudIcon"];
+  if (chCloudIcon) smallIcons["clickhousecloud"] = chCloudIcon;
 
   ICONS = icons;
   connectorIconMapping = smallIcons;

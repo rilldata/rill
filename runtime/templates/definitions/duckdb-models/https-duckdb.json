@@ -11,6 +11,7 @@
     "type": "object",
     "x-category": "fileStore",
     "x-icon": "HTTPS",
+    "x-small-icon": "HTTPSIcon",
     "x-button-labels": {
       "*": { "*": { "idle": "Continue", "loading": "Continuing..." } }
     },

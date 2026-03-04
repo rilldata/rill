@@ -11,6 +11,7 @@
     "type": "object",
     "x-category": "objectStore",
     "x-icon": "MicrosoftAzureBlobStorage",
+    "x-small-icon": "MicrosoftAzureBlobStorageIcon",
     "properties": {
       "auth_method": {
         "type": "string",

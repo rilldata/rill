@@ -10,6 +10,7 @@
     "type": "object",
     "x-category": "objectStore",
     "x-icon": "GoogleCloudStorage",
+    "x-small-icon": "GoogleCloudStorageIcon",
     "properties": {
       "key_id": {
         "type": "string",

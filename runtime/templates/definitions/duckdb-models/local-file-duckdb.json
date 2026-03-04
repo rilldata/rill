@@ -11,6 +11,7 @@
     "type": "object",
     "x-category": "fileStore",
     "x-icon": "LocalFile",
+    "x-small-icon": "LocalFileIcon",
     "properties": {
       "path": {
         "type": "string",

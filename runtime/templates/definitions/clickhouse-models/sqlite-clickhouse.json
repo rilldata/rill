@@ -10,6 +10,7 @@
     "type": "object",
     "x-category": "sqlStore",
     "x-icon": "SQLite",
+    "x-small-icon": "SQLiteIcon",
     "properties": {
       "db": {
         "type": "string",

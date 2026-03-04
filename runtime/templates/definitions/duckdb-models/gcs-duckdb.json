@@ -11,6 +11,7 @@
     "type": "object",
     "x-category": "objectStore",
     "x-icon": "GoogleCloudStorage",
+    "x-small-icon": "GoogleCloudStorageIcon",
     "properties": {
       "auth_method": {
         "type": "string",

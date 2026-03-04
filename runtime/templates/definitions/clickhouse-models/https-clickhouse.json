@@ -10,6 +10,7 @@
     "type": "object",
     "x-category": "fileStore",
     "x-icon": "HTTPS",
+    "x-small-icon": "HTTPSIcon",
     "properties": {
       "path": {
         "type": "string",

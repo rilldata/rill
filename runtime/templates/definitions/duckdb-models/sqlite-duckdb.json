@@ -11,6 +11,7 @@
     "type": "object",
     "x-category": "source_only",
     "x-icon": "SQLite",
+    "x-small-icon": "SQLiteIcon",
     "properties": {
       "db": {
         "type": "string",
