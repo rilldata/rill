@@ -25,6 +25,7 @@ export interface ConnectorInfo {
   name: string;
   displayName: string;
   category: ConnectorCategory;
+  docsUrl?: string;
 }
 
 /**
@@ -36,10 +37,15 @@ export interface ConnectorInfo {
  * we inject `title` from the template's display_name so existing consumers
  * that read schema.title continue to work.
  */
+interface RegistryEntry {
+  schema: MultiStepFormSchema;
+  docsUrl?: string;
+}
+
 function buildSchemaRegistry(
   templates: V1Template[],
-): Record<string, MultiStepFormSchema> {
-  const schemas: Record<string, MultiStepFormSchema> = {};
+): Record<string, RegistryEntry> {
+  const entries: Record<string, RegistryEntry> = {};
 
   for (const t of templates) {
     if (!t.jsonSchema || !t.driver) continue;
@@ -48,23 +54,29 @@ function buildSchemaRegistry(
 
     // Sources: pick the DuckDB-model template (has full connector+source form schema)
     if (SOURCES_SET.has(key) && t.olap === "duckdb") {
-      schemas[key] = {
-        ...t.jsonSchema,
-        title: t.displayName,
-      } as unknown as MultiStepFormSchema;
+      entries[key] = {
+        schema: {
+          ...t.jsonSchema,
+          title: t.displayName,
+        } as unknown as MultiStepFormSchema,
+        docsUrl: t.docsUrl,
+      };
       continue;
     }
 
     // OLAP engines: pick the OLAP connector template (no olap set)
     if (OLAP_SET.has(key) && (!t.olap || t.olap === "")) {
-      schemas[key] = {
-        ...t.jsonSchema,
-        title: t.displayName,
-      } as unknown as MultiStepFormSchema;
+      entries[key] = {
+        schema: {
+          ...t.jsonSchema,
+          title: t.displayName,
+        } as unknown as MultiStepFormSchema,
+        docsUrl: t.docsUrl,
+      };
     }
   }
 
-  return schemas;
+  return entries;
 }
 
 /**
@@ -82,17 +94,20 @@ export function createConnectorSchemas() {
   const connectors: Readable<ConnectorInfo[]> = derived(query, ($q) => {
     if (!$q.data?.templates) return [];
 
-    const schemas = buildSchemaRegistry($q.data.templates);
+    const entries = buildSchemaRegistry($q.data.templates);
 
     // Populate module-level cache for sync access by child components
-    schemasCache = schemas;
+    schemasCache = Object.fromEntries(
+      Object.entries(entries).map(([k, v]) => [k, v.schema]),
+    );
 
     return [...SOURCES, ...OLAP_ENGINES]
-      .filter((name) => schemas[name]?.["x-category"])
+      .filter((name) => entries[name]?.schema["x-category"])
       .map((name) => ({
         name,
-        displayName: schemas[name].title ?? name,
-        category: schemas[name]["x-category"] as ConnectorCategory,
+        displayName: entries[name].schema.title ?? name,
+        category: entries[name].schema["x-category"] as ConnectorCategory,
+        docsUrl: entries[name].docsUrl,
       }));
   });
 

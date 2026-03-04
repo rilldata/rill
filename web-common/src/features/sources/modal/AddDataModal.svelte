@@ -60,6 +60,7 @@
     return {
       name: backendName,
       displayName: info.displayName,
+      docsUrl: info.docsUrl,
       implementsObjectStore: category === "objectStore",
       implementsOlap: category === "olap",
       implementsSqlStore: category === "sqlStore",

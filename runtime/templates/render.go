@@ -85,6 +85,7 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 	// Basic fields
 	data["driver"] = input.Template.Driver
 	data["connector_name"] = input.ConnectorName
+	data["docs_url"] = input.Template.DocsURL
 
 	// Derive model_name from the "name" property if present
 	if name, ok := input.Properties["name"]; ok && !isEmpty(name) {

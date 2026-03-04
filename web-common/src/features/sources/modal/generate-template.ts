@@ -8,6 +8,9 @@ import {
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import { replaceOrAddEnvVariable } from "../../connectors/code-utils";
+import { OLAP_ENGINES } from "./constants";
+
+const OLAP_SET = new Set(OLAP_ENGINES);
 
 /**
  * Map the instance's OLAP connector to the template OLAP suffix.
@@ -22,15 +25,13 @@ function normalizeOlapForTemplate(olapConnector: string): string {
 const olapCache = new Map<string, string>();
 
 /**
- * Resolve the template name from (driver, resourceType, olap).
- * Connectors use the driver name; models use "{driver}-{olap}".
+ * Resolve the template name from (driver, olap).
+ * OLAP engine connectors have standalone templates (e.g., "clickhouse").
+ * Source connectors use combined templates (e.g., "s3-duckdb", "athena-duckdb")
+ * regardless of whether we're rendering the connector or model output.
  */
-function resolveTemplateName(
-  driver: string,
-  resourceType: string,
-  olap: string,
-): string {
-  if (resourceType === "connector") return driver;
+function resolveTemplateName(driver: string, olap: string): string {
+  if (OLAP_SET.has(driver)) return driver;
   return `${driver}-${olap}`;
 }
 
@@ -51,10 +52,9 @@ export async function generateTemplate(
     connectorName?: string;
   },
 ): Promise<{ blob: string; envVars: Record<string, string> }> {
-  // Resolve OLAP for model templates (connectors don't need it).
-  // Cached per instance since OLAP doesn't change during a session.
+  // Resolve OLAP; cached per instance since it doesn't change during a session.
   let olap = "duckdb";
-  if (opts.resourceType === "model") {
+  if (!OLAP_SET.has(opts.driver)) {
     const cached = olapCache.get(instanceId);
     if (cached) {
       olap = cached;
@@ -67,11 +67,7 @@ export async function generateTemplate(
     }
   }
 
-  const templateName = resolveTemplateName(
-    opts.driver,
-    opts.resourceType,
-    olap,
-  );
+  const templateName = resolveTemplateName(opts.driver, olap);
 
   const response = await runtimeServiceGenerateFile(instanceId, {
     templateName,

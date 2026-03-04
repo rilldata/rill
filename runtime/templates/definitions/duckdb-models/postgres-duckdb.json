@@ -112,7 +112,7 @@
     {
       "name": "connector",
       "path_template": "connectors/[[ .connector_name ]].yaml",
-      "code_template": "type: connector\ndriver: postgres\n[[ renderProps .config_props ]]\n"
+      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: postgres\n[[ renderProps .config_props ]]\n"
     },
     {
       "name": "model",
