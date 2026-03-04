@@ -165,11 +165,18 @@ export function isMultiStepConnector(
 
 /**
  * Determine if a connector supports explorer mode (SQL query interface).
- * SQL stores and warehouses can browse tables and write custom queries.
+ * Only true when the schema category allows it AND there are actual
+ * explorer-step fields defined. This prevents connectors like SQLite
+ * and Salesforce (which have no explorer fields) from triggering the
+ * multi-step flow unnecessarily.
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
+  if (!schema?.properties) return false;
   const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse";
+  if (category !== "sqlStore" && category !== "warehouse") return false;
+  return Object.values(schema.properties).some(
+    (p) => p["x-step"] === "explorer",
+  );
 }
 
 /**

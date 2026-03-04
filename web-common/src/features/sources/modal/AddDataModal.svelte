@@ -155,16 +155,15 @@
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
-  // FIXME: excluding salesforce until we implement the table discovery APIs
+  $: selectedSchema = getConnectorSchema(
+    selectedSchemaName ?? selectedConnector?.name ?? "",
+  );
   $: isConnectorType =
     selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
-    (selectedConnector?.implementsWarehouse &&
-      selectedConnector?.name !== "salesforce") ||
-    isMultiStepConnectorSchema(
-      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
-    );
+    selectedConnector?.implementsWarehouse ||
+    isMultiStepConnectorSchema(selectedSchema);
 </script>
 
 {#if step >= 1 || $duplicateSourceName}

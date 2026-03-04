@@ -9,7 +9,8 @@
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "warehouse",
+    "x-category": "source_only",
+    "x-form-height": "tall",
     "properties": {
       "soql": {
         "type": "string",
@@ -36,8 +37,7 @@
         "type": "string",
         "title": "Username",
         "description": "Salesforce username (usually an email)",
-        "x-placeholder": "user@example.com",
-        "x-step": "connector"
+        "x-placeholder": "user@example.com"
       },
       "password": {
         "type": "string",
@@ -45,8 +45,7 @@
         "description": "Salesforce password, optionally followed by security token if required",
         "x-placeholder": "your_password_or_password+token",
         "x-secret": true,
-        "x-env-var": "SALESFORCE_PASSWORD",
-        "x-step": "connector"
+        "x-env-var": "SALESFORCE_PASSWORD"
       },
       "key": {
         "type": "string",
@@ -55,29 +54,26 @@
         "x-display": "textarea",
         "x-placeholder": "your_private_key",
         "x-secret": true,
-        "x-env-var": "SALESFORCE_KEY",
-        "x-step": "connector"
+        "x-env-var": "SALESFORCE_KEY"
       },
       "client_id": {
         "type": "string",
         "title": "Connected App Client ID",
         "description": "Client ID (consumer key) for JWT auth",
-        "x-placeholder": "Connected App client ID",
-        "x-step": "connector"
+        "x-placeholder": "Connected App client ID"
       },
       "endpoint": {
         "type": "string",
         "title": "Login endpoint",
         "description": "Salesforce login URL (e.g., login.salesforce.com or test.salesforce.com)",
-        "x-placeholder": "login.salesforce.com",
-        "x-step": "connector"
+        "x-placeholder": "login.salesforce.com"
       },
       "name": {
         "type": "string",
         "title": "Source name",
         "description": "Name for the source",
         "x-placeholder": "my_new_source",
-        "x-step": "explorer"
+        "x-step": "source"
       }
     },
     "required": ["soql", "sobject", "name"],
@@ -101,11 +97,6 @@
     ]
   },
   "files": [
-    {
-      "name": "connector",
-      "path_template": "connectors/[[ .connector_name ]].yaml",
-      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: salesforce\n[[ renderProps .config_props ]]\n"
-    },
     {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",

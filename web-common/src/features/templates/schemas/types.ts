@@ -97,7 +97,8 @@ export type ConnectorCategory =
   | "olap"
   | "objectStore"
   | "fileStore"
-  | "warehouse";
+  | "warehouse"
+  | "source_only";
 
 export type ButtonLabels = {
   idle: string;
