@@ -4,7 +4,6 @@
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
@@ -17,13 +16,13 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeploymentCredentials,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
     type V1Organization,
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import { createViewAsState } from "../../features/view-as-user/view-as-project-permissions";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
@@ -72,42 +71,22 @@
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
 
-  // When "View As" is active, fetch deployment credentials for the mocked user.
+  // View As state (compound hook).
   // TanStack Query deduplicates by query key, so if the project layout already
   // ran this query, we get instant cache hits with zero extra network calls.
-  $: mockedUserId = $viewAsUserStore?.id;
-
-  $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
-    organization,
-    project,
-    { userId: mockedUserId },
-    {
-      query: {
-        enabled: !!mockedUserId && !!organization && !!project,
-      },
-    },
-  );
-
-  $: mockedProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    $mockedCredentialsQuery.data?.accessToken ?? "",
-    undefined,
-    {
-      query: {
-        enabled: !!$mockedCredentialsQuery.data?.accessToken,
-      },
-    },
-  );
+  $: viewAsState = createViewAsState(organization ?? "", project ?? "");
+  $: viewAsPermissions = $viewAsState.projectPermissions;
 
   // Use effective permissions when "View As" is active (from server)
   // Otherwise fall back to the props passed from the root layout
   $: effectiveManageProjectMembers =
-    $mockedProjectQuery.data?.projectPermissions?.manageProjectMembers ??
-    manageProjectMembers;
+    $viewAsState.mockedUserId && viewAsPermissions
+      ? viewAsPermissions.manageProjectMembers
+      : manageProjectMembers;
   $: effectiveCreateMagicAuthTokens =
-    $mockedProjectQuery.data?.projectPermissions?.createMagicAuthTokens ??
-    createMagicAuthTokens;
+    $viewAsState.mockedUserId && viewAsPermissions
+      ? viewAsPermissions.createMagicAuthTokens
+      : createMagicAuthTokens;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";

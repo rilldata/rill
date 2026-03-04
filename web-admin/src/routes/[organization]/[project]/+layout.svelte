@@ -32,7 +32,6 @@
   import {
     V1DeploymentStatus,
     createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
     type RpcStatus,
     type V1GetProjectResponse,
@@ -49,6 +48,10 @@
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import {
+    createViewAsState,
+    getEffectivePermissions,
+  } from "@rilldata/web-admin/features/view-as-user/view-as-project-permissions";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
@@ -128,51 +131,19 @@
   $: projectQuery = onPublicURLPage ? tokenProjectQuery : cookieProjectQuery;
 
   /**
-   * `GetDeploymentCredentials`
-   * This returns the deployment credentials for mocked/simulated users (aka the "View As" functionality).
+   * View As state (compound hook).
+   * Encapsulates: viewAsUserStore → GetDeploymentCredentials → GetProjectWithBearerToken
    */
-  $: mockedUserId = $viewAsUserStore?.id;
-  $: mockedUserDeploymentCredentialsQuery =
-    createAdminServiceGetDeploymentCredentials(
-      organization,
-      project,
-      { userId: mockedUserId },
-      {
-        query: {
-          enabled: !!mockedUserId,
-        },
-      },
-    );
-  $: ({ data: mockedUserDeploymentCredentials } =
-    $mockedUserDeploymentCredentialsQuery);
-
-  /**
-   * When "View As" is active, fetch the project using the mocked user's JWT.
-   * This returns the impersonated user's `projectPermissions` from the server.
-   */
-  $: mockedUserProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    mockedUserDeploymentCredentials?.accessToken ?? "",
-    undefined,
-    {
-      query: {
-        enabled: !!mockedUserDeploymentCredentials?.accessToken,
-      },
-    },
-  );
+  $: viewAsState = createViewAsState(organization, project);
+  $: ({ mockedUserId, deploymentCredentials: mockedUserDeploymentCredentials } =
+    $viewAsState);
 
   $: ({ data: projectData, error: projectError } = $projectQuery);
 
-  /**
-   * Compute effective project permissions.
-   * When "View As" is active, use the impersonated user's permissions (from server).
-   * Otherwise, use the actual user's permissions.
-   */
-  $: effectiveProjectPermissions =
-    mockedUserId && $mockedUserProjectQuery.data?.projectPermissions
-      ? $mockedUserProjectQuery.data.projectPermissions
-      : projectData?.projectPermissions;
+  $: effectiveProjectPermissions = getEffectivePermissions(
+    $viewAsState,
+    projectData?.projectPermissions,
+  );
 
   $: deploymentStatus = projectData?.deployment?.status;
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
