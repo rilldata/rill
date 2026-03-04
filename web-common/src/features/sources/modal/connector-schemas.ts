@@ -106,20 +106,24 @@ export function isMultiStepConnector(
 
 /**
  * Determine if a connector supports explorer mode (SQL query interface).
- * SQL stores and warehouses can browse tables and write custom queries.
+ * SQL stores, warehouses, and OLAP engines can browse tables and write custom queries.
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse";
+  return (
+    category === "sqlStore" || category === "warehouse" || category === "olap"
+  );
 }
+
+// Form height CSS classes for modals
+export const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
+export const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
 
 /**
  * Get the form height CSS class for a connector's add data modal.
  * Some connectors with more fields use a taller form.
  */
 export function getFormHeight(schema: MultiStepFormSchema | null): string {
-  const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
-  const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
   return schema?.["x-form-height"] === "tall"
     ? FORM_HEIGHT_TALL
     : FORM_HEIGHT_DEFAULT;

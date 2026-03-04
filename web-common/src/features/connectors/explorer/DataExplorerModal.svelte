@@ -1,0 +1,288 @@
+<script lang="ts">
+  import * as Dialog from "@rilldata/web-common/components/dialog";
+  import { Button } from "@rilldata/web-common/components/button";
+  import { Wand2, Search } from "lucide-svelte";
+  import { onDestroy } from "svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import {
+    createRuntimeServiceAnalyzeConnectors,
+    type V1AnalyzedConnector,
+  } from "../../../runtime-client";
+  import DatabaseExplorer from "./DatabaseExplorer.svelte";
+  import { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { featureFlags } from "../../feature-flags";
+  import { dataExplorerStore } from "./data-explorer-store";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { connectorIconMapping } from "../connector-icon-mapping";
+  import {
+    getConnectorIconKey,
+    getEffectiveDriverName,
+  } from "../connectors-utils";
+  import { FORM_HEIGHT_DEFAULT } from "../../sources/modal/connector-schemas";
+
+  const { ai } = featureFlags;
+  $: ({ instanceId } = $runtime);
+  $: ({ open, connector: initialConnector } = $dataExplorerStore);
+
+  let selectedConnector: V1AnalyzedConnector | null = null;
+
+  $: driverName = initialConnector
+    ? getEffectiveDriverName(initialConnector)
+    : null;
+
+  function isMatchingConnector(c: V1AnalyzedConnector): boolean {
+    return getEffectiveDriverName(c) === driverName;
+  }
+
+  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
+    query: {
+      enabled: open && !!driverName,
+      select: (data) => {
+        if (!data?.connectors || !driverName) return [];
+        return data.connectors
+          .filter(isMatchingConnector)
+          .sort((a, b) => (a?.name ?? "").localeCompare(b?.name ?? ""));
+      },
+    },
+  });
+
+  $: sameDriverConnectors = $connectorsQuery.data ?? [];
+
+  $: if (open && sameDriverConnectors.length > 0) {
+    const isCurrentValid =
+      selectedConnector &&
+      sameDriverConnectors.some((c) => c.name === selectedConnector?.name);
+    if (!isCurrentValid) {
+      selectedConnector =
+        sameDriverConnectors.find((c) => c.name === initialConnector?.name) ??
+        sameDriverConnectors[0];
+    }
+  }
+
+  let lastToggledTable: {
+    connector: string;
+    database: string;
+    databaseSchema: string;
+    table: string;
+  } | null = null;
+
+  let isGenerating = false;
+  let generateError: string | null = null;
+  let searchInput = "";
+  let searchQuery = "";
+  let searchTimeout: ReturnType<typeof setTimeout>;
+
+  function updateSearch(value: string) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      searchQuery = value;
+    }, 200);
+  }
+
+  onDestroy(() => clearTimeout(searchTimeout));
+
+  $: updateSearch(searchInput);
+
+  const selectionStore = new ConnectorExplorerStore(
+    {
+      allowSelectTable: true,
+      allowContextMenu: false,
+      allowNavigateToTable: false,
+      allowShowSchema: true,
+      localStorage: false,
+    },
+    (connectorName, database, schema, table) => {
+      if (table) {
+        lastToggledTable = {
+          connector: connectorName,
+          database: database ?? "",
+          databaseSchema: schema ?? "",
+          table,
+        };
+      }
+    },
+  );
+
+  // Derive selectedTable from the store's selectedKey so that deselecting
+  // a table (selectedKey becomes null) also clears selectedTable.
+  $: selectionStoreState = selectionStore.store;
+  $: storeSelectedKey = $selectionStoreState.selectedKey;
+  $: selectedTable = storeSelectedKey ? lastToggledTable : null;
+
+  function handleClose() {
+    clearTimeout(searchTimeout);
+    dataExplorerStore.close();
+    lastToggledTable = null;
+    selectedConnector = null;
+    isGenerating = false;
+    generateError = null;
+    searchInput = "";
+    searchQuery = "";
+    selectionStore.clearSelection();
+    selectionStore.store.update((state) => ({ ...state, expandedItems: {} }));
+  }
+
+  function handleSelectConnector(connector: V1AnalyzedConnector) {
+    selectedConnector = connector;
+    lastToggledTable = null;
+    searchInput = "";
+    searchQuery = "";
+    selectionStore.clearSelection();
+    selectionStore.store.update((state) => ({ ...state, expandedItems: {} }));
+  }
+
+  async function handleGenerateMetrics() {
+    if (!selectedTable) return;
+
+    generateError = null;
+    isGenerating = true;
+    try {
+      await generateMetricsFromTable(
+        instanceId,
+        selectedTable.connector,
+        selectedTable.database,
+        selectedTable.databaseSchema,
+        selectedTable.table,
+        false, // createExplore - only create metrics view
+        true, // isOlapConnector
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.Modal,
+      );
+      handleClose();
+    } catch (error) {
+      console.error("Failed to generate metrics:", error);
+      generateError = "Failed to generate metrics. Please try again.";
+    } finally {
+      isGenerating = false;
+    }
+  }
+
+  $: displayIcon = initialConnector
+    ? connectorIconMapping[getConnectorIconKey(initialConnector)]
+    : null;
+  $: driverDisplayName =
+    initialConnector?.driver?.displayName ??
+    initialConnector?.driver?.name ??
+    "OLAP";
+</script>
+
+<Dialog.Root
+  {open}
+  onOpenChange={(isOpen) => {
+    if (!isOpen) handleClose();
+  }}
+>
+  <Dialog.Content class="max-w-5xl p-0 gap-0 overflow-hidden">
+    <Dialog.Title class="p-4 border-b border-border">
+      <div class="flex items-center gap-2">
+        {#if displayIcon}
+          <svelte:component this={displayIcon} size="18px" />
+        {/if}
+        <span class="text-lg font-semibold">{driverDisplayName}</span>
+      </div>
+    </Dialog.Title>
+
+    <div class="flex {FORM_HEIGHT_DEFAULT}">
+      <!-- Left panel: Connector list -->
+      <div
+        class="w-64 border-r border-border overflow-y-auto flex-shrink-0 bg-surface-subtle"
+      >
+        <div class="p-4">
+          <div class="text-sm font-semibold text-fg-primary">
+            Existing connectors
+          </div>
+          <div class="text-xs text-fg-muted mt-1">
+            Choose data from an existing connection or create a new connector.
+          </div>
+
+          <div class="flex flex-col gap-2 mt-4">
+            {#each sameDriverConnectors as conn (conn.name)}
+              {@const isSelected = selectedConnector?.name === conn.name}
+              <button
+                class="w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 {isSelected
+                  ? 'border border-accent-primary bg-surface-active'
+                  : 'border border-transparent hover:bg-surface-hover'}"
+                on:click={() => handleSelectConnector(conn)}
+              >
+                <span
+                  class="shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center {isSelected
+                    ? 'border-primary-500'
+                    : 'border-gray-300 dark:border-gray-600'}"
+                >
+                  {#if isSelected}
+                    <span class="w-2 h-2 rounded-full bg-primary-500"></span>
+                  {/if}
+                </span>
+                <span class="truncate">{conn.name}</span>
+              </button>
+            {/each}
+            {#if sameDriverConnectors.length === 0}
+              <div class="text-sm text-fg-secondary">No connectors found</div>
+            {/if}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right panel: Table browser -->
+      <div class="flex-1 flex flex-col overflow-hidden p-4 gap-3">
+        <div>
+          <div class="text-sm font-semibold text-fg-primary">Data explorer</div>
+          <div class="text-xs text-fg-muted mt-1">
+            Pick a table to explore your data.
+          </div>
+        </div>
+
+        <div class="relative flex items-center border border-border rounded-md">
+          <Search size="14" class="absolute left-3 text-fg-muted" />
+          <input
+            type="text"
+            placeholder="Search"
+            bind:value={searchInput}
+            class="w-full pl-8 pr-3 py-1.5 bg-transparent border-none rounded-md text-sm text-fg-primary placeholder:text-fg-muted focus:outline-none"
+          />
+        </div>
+
+        <div
+          class="flex-1 overflow-y-auto border border-border rounded-lg min-h-0"
+          style="--explorer-indent-offset: -14px"
+        >
+          {#if selectedConnector}
+            <DatabaseExplorer
+              {instanceId}
+              connector={selectedConnector}
+              store={selectionStore}
+              searchPattern={searchQuery}
+            />
+          {/if}
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-border flex items-center">
+      <Button type="secondary" onClick={handleClose}>Close</Button>
+
+      <div class="ml-auto flex items-center gap-2">
+        {#if generateError}
+          <span class="text-sm text-destructive">{generateError}</span>
+        {/if}
+
+        <Button
+          type="primary"
+          disabled={!selectedTable || isGenerating}
+          loading={isGenerating}
+          loadingCopy="Generating..."
+          onClick={handleGenerateMetrics}
+        >
+          <span class="flex items-center gap-1.5">
+            {#if $ai}
+              <Wand2 size="14" />
+            {/if}
+            Generate Metrics{#if $ai}{" "}with AI{/if}
+          </span>
+        </Button>
+      </div>
+    </div>
+  </Dialog.Content>
+</Dialog.Root>

@@ -16,11 +16,14 @@
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
+  export let searchPattern: string = "";
+  export let autoExpandOnSearch: boolean = true;
 
   $: connectorName = connector?.name as string;
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
+  $: effectiveExpanded = expanded || (!!searchPattern && autoExpandOnSearch);
 
   $: tablesQuery = useInfiniteListTables(
     instanceId,
@@ -28,7 +31,8 @@
     database,
     databaseSchema,
     100,
-    expanded,
+    effectiveExpanded,
+    searchPattern,
   );
 
   $: ({
@@ -64,12 +68,15 @@
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
   <button
-    class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
-    class:open={expanded}
+    class="database-schema-entry-header"
+    style="padding-left: calc({database
+      ? 40
+      : 22}px + var(--explorer-indent-offset, 0px))"
+    class:open={effectiveExpanded}
     on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
-      className="transform transition-transform text-fg-secondary {expanded
+      className="transform transition-transform text-fg-secondary {effectiveExpanded
         ? 'rotate-0'
         : '-rotate-90'}"
       size="14px"
@@ -87,25 +94,41 @@
     </span>
   </button>
 
-  {#if expanded}
+  {#if effectiveExpanded}
     {#if error && (!typedData || typedData.length === 0)}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         Error: {error.message}
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         Loading tables...
       </div>
-    {:else if connector?.errorMessage}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        {connector.errorMessage}
-      </div>
     {:else if !connector.driver || !connector.driver.name}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         Connector not found
       </div>
     {:else if !typedData || typedData.length === 0}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         No tables found
       </div>
     {:else if typedData.length > 0}
@@ -126,13 +149,17 @@
             {databaseSchema}
             table={tableInfo.name}
             {store}
+            {searchPattern}
           />
         {/each}
       </ol>
 
       {#if hasNextPage}
         <div
-          class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}"
+          class="load-more"
+          style="padding-left: calc({database
+            ? 78
+            : 60}px + var(--explorer-indent-offset, 0px))"
           bind:this={loadMoreContainer}
         >
           {#if error}
