@@ -1,6 +1,6 @@
 {
   "name": "postgres-duckdb",
-  "display_name": "Postgres (DuckDB)",
+  "display_name": "Postgres",
   "description": "Query PostgreSQL databases and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/postgres",
   "driver": "postgres",

@@ -1,6 +1,6 @@
 {
   "name": "athena-duckdb",
-  "display_name": "Amazon Athena (DuckDB)",
+  "display_name": "Amazon Athena",
   "description": "Query Amazon Athena and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/athena",
   "driver": "athena",

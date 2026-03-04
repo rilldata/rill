@@ -1,6 +1,6 @@
 {
   "name": "https-clickhouse",
-  "display_name": "HTTPS (ClickHouse)",
+  "display_name": "HTTPS",
   "description": "Read files from HTTP/HTTPS URLs into ClickHouse",
   "driver": "https",
   "olap": "clickhouse",

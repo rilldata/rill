@@ -1,6 +1,6 @@
 {
   "name": "azure-clickhouse",
-  "display_name": "Azure Blob Storage (ClickHouse)",
+  "display_name": "Azure Blob Storage",
   "description": "Read Azure Blob Storage files into ClickHouse using table functions",
   "driver": "azure",
   "olap": "clickhouse",

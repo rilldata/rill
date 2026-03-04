@@ -1,6 +1,6 @@
 {
   "name": "mysql-clickhouse",
-  "display_name": "MySQL (ClickHouse)",
+  "display_name": "MySQL",
   "description": "Read MySQL tables into ClickHouse using table functions",
   "driver": "mysql",
   "olap": "clickhouse",

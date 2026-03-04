@@ -1,6 +1,6 @@
 {
   "name": "bigquery-duckdb",
-  "display_name": "BigQuery (DuckDB)",
+  "display_name": "BigQuery",
   "description": "Query Google BigQuery and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/bigquery",
   "driver": "bigquery",

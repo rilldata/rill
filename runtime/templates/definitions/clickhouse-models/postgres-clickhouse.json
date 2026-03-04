@@ -1,6 +1,6 @@
 {
   "name": "postgres-clickhouse",
-  "display_name": "PostgreSQL (ClickHouse)",
+  "display_name": "PostgreSQL",
   "description": "Read PostgreSQL tables into ClickHouse using table functions",
   "driver": "postgres",
   "olap": "clickhouse",

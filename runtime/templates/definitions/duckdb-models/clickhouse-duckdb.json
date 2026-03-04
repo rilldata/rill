@@ -1,6 +1,6 @@
 {
   "name": "clickhouse-duckdb",
-  "display_name": "ClickHouse (DuckDB)",
+  "display_name": "ClickHouse",
   "description": "Query ClickHouse tables and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/clickhouse",
   "driver": "clickhouse",

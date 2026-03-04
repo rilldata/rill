@@ -1,6 +1,6 @@
 {
   "name": "gcs-clickhouse",
-  "display_name": "GCS (ClickHouse)",
+  "display_name": "GCS",
   "description": "Read GCS files into ClickHouse using table functions (HMAC keys)",
   "driver": "gcs",
   "olap": "clickhouse",

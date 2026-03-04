@@ -1,6 +1,6 @@
 {
   "name": "iceberg-duckdb",
-  "display_name": "Iceberg (DuckDB)",
+  "display_name": "Iceberg",
   "description": "Query Apache Iceberg tables using DuckDB's iceberg extension",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/iceberg",
   "driver": "",

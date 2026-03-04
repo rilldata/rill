@@ -1,6 +1,6 @@
 {
   "name": "sqlite-duckdb",
-  "display_name": "SQLite (DuckDB)",
+  "display_name": "SQLite",
   "description": "Read SQLite tables into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/sqlite",
   "driver": "sqlite",

@@ -1,6 +1,6 @@
 {
   "name": "gcs-duckdb",
-  "display_name": "GCS (DuckDB)",
+  "display_name": "GCS",
   "description": "Read files from Google Cloud Storage into DuckDB using the appropriate file reader",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
   "driver": "gcs",

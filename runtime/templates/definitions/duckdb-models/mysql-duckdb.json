@@ -1,6 +1,6 @@
 {
   "name": "mysql-duckdb",
-  "display_name": "MySQL (DuckDB)",
+  "display_name": "MySQL",
   "description": "Query MySQL databases and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/mysql",
   "driver": "mysql",

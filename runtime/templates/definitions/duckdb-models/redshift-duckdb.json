@@ -1,6 +1,6 @@
 {
   "name": "redshift-duckdb",
-  "display_name": "Amazon Redshift (DuckDB)",
+  "display_name": "Amazon Redshift",
   "description": "Query Amazon Redshift and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/redshift",
   "driver": "redshift",

@@ -1,6 +1,6 @@
 {
   "name": "local_file-duckdb",
-  "display_name": "Local File (DuckDB)",
+  "display_name": "Local File",
   "description": "Read local files into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/duckdb",
   "driver": "local_file",

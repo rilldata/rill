@@ -1,6 +1,6 @@
 {
   "name": "snowflake-duckdb",
-  "display_name": "Snowflake (DuckDB)",
+  "display_name": "Snowflake",
   "description": "Query Snowflake data warehouses and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/snowflake",
   "driver": "snowflake",

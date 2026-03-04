@@ -1,6 +1,6 @@
 {
   "name": "salesforce-duckdb",
-  "display_name": "Salesforce (DuckDB)",
+  "display_name": "Salesforce",
   "description": "Query Salesforce objects and ingest into DuckDB",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/salesforce",
   "driver": "salesforce",

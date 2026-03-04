@@ -1,6 +1,6 @@
 {
   "name": "s3-clickhouse",
-  "display_name": "S3 (ClickHouse)",
+  "display_name": "S3",
   "description": "Read S3 files into ClickHouse using table functions",
   "driver": "s3",
   "olap": "clickhouse",

@@ -1,6 +1,6 @@
 {
   "name": "local-file-clickhouse",
-  "display_name": "Local File (ClickHouse)",
+  "display_name": "Local File",
   "description": "Read local files into ClickHouse",
   "driver": "local_file",
   "olap": "clickhouse",
