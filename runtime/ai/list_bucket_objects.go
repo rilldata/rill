@@ -3,10 +3,12 @@ package ai
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 const ListBucketObjectsName = "list_bucket_objects"
@@ -20,7 +22,7 @@ var _ Tool[*ListBucketObjectsArgs, *ListBucketObjectsResult] = (*ListBucketObjec
 type ListBucketObjectsArgs struct {
 	Connector string `json:"connector" jsonschema:"The name of an object store connector (e.g., s3, gcs, azure)."`
 	Bucket    string `json:"bucket" jsonschema:"The bucket name to list objects from."`
-	Path      string `json:"path,omitempty" jsonschema:"Optional path prefix to list objects under. Defaults to root."`
+	Path      string `json:"path,omitempty" jsonschema:"Optional path prefix or glob pattern to list objects under. Supports glob patterns like 'dir/*' or 'dir/**/*.csv'. Defaults to root."`
 	PageSize  int    `json:"page_size,omitempty" jsonschema:"Maximum number of objects to return. Defaults to 10."`
 	PageToken string `json:"page_token,omitempty" jsonschema:"Token for pagination. Use next_page_token from previous response to get next page."`
 }
@@ -82,8 +84,14 @@ func (t *ListBucketObjects) Handler(ctx context.Context, args *ListBucketObjects
 		pageSize = 10
 	}
 
-	// List objects
-	objects, nextToken, err := os.ListObjects(ctx, args.Bucket, args.Path, "/", uint32(pageSize), args.PageToken)
+	// Use glob listing if the path contains glob characters; otherwise use prefix listing.
+	var objects []drivers.ObjectStoreEntry
+	var nextToken string
+	if strings.ContainsAny(args.Path, "*?[{") {
+		objects, nextToken, err = os.ListObjectsForGlob(ctx, args.Bucket, args.Path, uint32(pageSize), args.PageToken)
+	} else {
+		objects, nextToken, err = os.ListObjects(ctx, args.Bucket, args.Path, "/", uint32(pageSize), args.PageToken)
+	}
 	if err != nil {
 		return nil, err
 	}
