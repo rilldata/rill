@@ -4,7 +4,7 @@
   import {
     ImportTableMode,
     type ImportTableRunner,
-  } from "@rilldata/web-common/features/sources/import/ImportTableRunner.ts";
+  } from "@rilldata/web-common/features/add-data/import/ImportTableRunner.ts";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { CheckIcon } from "lucide-svelte";
 

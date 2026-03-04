@@ -10,7 +10,6 @@ export function load({ params }) {
   const connectorDriver = connectorInfo
     ? toConnectorDriver(connectorInfo)
     : null;
-  console.log(connectorDriver, connectorInfo);
 
   return {
     connectorName,

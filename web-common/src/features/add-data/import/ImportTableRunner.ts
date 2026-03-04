@@ -56,7 +56,7 @@ export class ImportTableRunner {
         this.instanceId,
         this.connectorTableEntry.connector,
         this.connectorTableEntry.database,
-        "",
+        this.connectorTableEntry.schema,
         this.name,
         true,
         BehaviourEventMedium.Button,

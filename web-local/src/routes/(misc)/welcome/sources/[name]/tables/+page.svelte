@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
-  import ImportTableForm from "@rilldata/web-common/features/sources/import/ImportTableForm.svelte";
+  import ImportTableForm from "@rilldata/web-common/features/add-data/import/ImportTableForm.svelte";
   import type { ConnectorTableEntry } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
 
   export let data: PageData;

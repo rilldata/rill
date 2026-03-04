@@ -11,10 +11,14 @@ import {
   runtimeServiceGetResource,
   type RpcStatus,
   createRuntimeServiceAnalyzeConnectors,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
+  runtimeServiceAnalyzeConnectors,
+  type V1AnalyzeConnectorsResponse,
 } from "../../runtime-client";
 import { connectorServiceListTables } from "../../runtime-client/gen/connector-service/connector-service";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 /**
  * Creates query options for checking modeling support of a connector
@@ -252,4 +256,10 @@ export function getAnalyzedConnectors(instanceId: string, olapOnly: boolean) {
       },
     },
   });
+}
+
+export function fetchAnalyzeConnectors(instanceId: string) {
+  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const resp = queryClient.getQueryData<V1AnalyzeConnectorsResponse>(queryKey);
+  return resp?.connectors ?? [];
 }

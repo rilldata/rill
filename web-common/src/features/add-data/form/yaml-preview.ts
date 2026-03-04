@@ -7,6 +7,11 @@ import {
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import { compileConnectorYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import {
+  compileSourceYAML,
+  prepareSourceFormData,
+} from "@rilldata/web-common/features/sources/sourceUtils.ts";
+import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 
 export function getConnectorYamlPreview({
   connector,
@@ -44,4 +49,45 @@ export function getConnectorYamlPreview({
   });
 
   return yamlPreview;
+}
+
+export function getSourceYamlPreview({
+  connector,
+  schema,
+  formValues,
+  existingEnvBlob,
+}: {
+  connector: V1ConnectorDriver;
+  schema: MultiStepFormSchema | null;
+  formValues: Record<string, unknown>;
+  existingEnvBlob: string | null;
+}) {
+  const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+    connector,
+    formValues,
+    {
+      connectorInstanceName: connector.name,
+    },
+  );
+  const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+  const rewrittenSchema = getConnectorSchema(rewrittenConnector.name ?? "");
+  const rewrittenSecretKeys = rewrittenSchema
+    ? getSchemaSecretKeys(rewrittenSchema, { step: "source" })
+    : undefined;
+  const rewrittenStringKeys = rewrittenSchema
+    ? getSchemaStringKeys(rewrittenSchema, { step: "source" })
+    : undefined;
+  if (isRewrittenToDuckDb) {
+    return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
+      secretKeys: rewrittenSecretKeys,
+      stringKeys: rewrittenStringKeys,
+      originalDriverName: connector.name || undefined,
+    });
+  }
+  return getConnectorYamlPreview({
+    connector,
+    schema,
+    formValues: rewrittenFormValues,
+    existingEnvBlob,
+  });
 }

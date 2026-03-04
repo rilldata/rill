@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from "./$types";
-  import ImportTableStatus from "@rilldata/web-common/features/sources/import/ImportTableStatus.svelte";
+  import ImportTableStatus from "@rilldata/web-common/features/add-data/import/ImportTableStatus.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.ts";
 
   export let data: PageData;

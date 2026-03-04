@@ -2,7 +2,7 @@
   import { connectors } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
-  export let startConnectorSelection: (name: string) => void;
+  export let onSelect: (name: string) => void;
 </script>
 
 <div class="source-selector">
@@ -14,7 +14,7 @@
       {@const icon = connectorIconMapping[connector.name]}
       <button
         class="source-selector-cell"
-        on:click={() => startConnectorSelection(connector.name)}
+        on:click={() => onSelect(connector.name)}
       >
         <svelte:component this={icon} size="24px" />
         <span class="text-sm">{connector.displayName}</span>
@@ -25,8 +25,6 @@
 
 <style lang="postcss">
   .source-selector {
-    @apply flex flex-col gap-y-4 w-full;
-    @apply bg-surface-background border rounded-lg shadow-sm;
   }
 
   .source-selector-header {

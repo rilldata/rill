@@ -1,4 +1,4 @@
-import { ImportTableRunner } from "@rilldata/web-common/features/sources/import/ImportTableRunner.ts";
+import { ImportTableRunner } from "@rilldata/web-common/features/add-data/import/ImportTableRunner.ts";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";

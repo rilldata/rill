@@ -19,12 +19,12 @@
     isMultiStepConnector(
       getConnectorSchema(connectorName ?? connectorDriver?.name ?? ""),
     );
+  $: console.log(isConnectorType, connectorDriver);
 </script>
 
 {#if connectorDriver}
   <ConnectorForm
     connector={connectorDriver}
-    formType={isConnectorType ? "connector" : "source"}
     onSubmit={() => void goto(`/welcome/sources/${connectorName}/tables`)}
     onBack={() => window.history.back()}
   />

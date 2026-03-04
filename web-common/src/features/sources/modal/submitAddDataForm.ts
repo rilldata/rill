@@ -430,7 +430,8 @@ export async function submitAddSourceForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
-): Promise<void> {
+  shouldNavigate: boolean = true,
+) {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
   const newSourceName = formValues.name as string;
@@ -530,5 +531,6 @@ export async function submitAddSourceForm(
     throw new Error(errorMessage);
   }
 
-  await goto(`/files/${newSourceFilePath}`);
+  if (shouldNavigate) await goto(`/files/${newSourceFilePath}`);
+  return newSourceName;
 }
