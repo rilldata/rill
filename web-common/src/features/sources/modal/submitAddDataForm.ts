@@ -552,8 +552,7 @@ export async function submitAddSourceForm(
     await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     const errorDetails = (error as any).details;
     throw {
-      message:
-        (error as any).message || "Unable to establish a connection",
+      message: (error as any).message || "Unable to establish a connection",
       details:
         errorDetails && errorDetails !== (error as any).message
           ? errorDetails

@@ -6,7 +6,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     sourceIngestionTracker,
-    type SlowIngestionState,
+    type IngestionState,
   } from "@rilldata/web-common/features/sources/sources-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -29,14 +29,13 @@
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
   const { ai, developerChat } = featureFlags;
-  const slowIngestion = sourceIngestionTracker.slowIngestion;
+  const ingestionState = sourceIngestionTracker.ingestionState;
 
-  $: state = $slowIngestion as SlowIngestionState;
+  $: state = $ingestionState as IngestionState;
   $: open = state !== null;
   $: filePath = state?.filePath ?? "";
   $: sourceName = extractFileName(filePath);
-  $: errorMessage =
-    state?.status === "failed" ? state.error : "";
+  $: errorMessage = state?.status === "failed" ? state.error : "";
 
   $: ({ instanceId } = $runtime);
 
@@ -49,18 +48,17 @@
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
-  $: createDashboardFromTable =
-    filePath
-      ? useCreateMetricsViewWithCanvasAndExploreUIAction(
-          instanceId,
-          sinkConnector as string,
-          "",
-          "",
-          sourceName,
-          BehaviourEventMedium.Button,
-          MetricsEventSpace.Modal,
-        )
-      : null;
+  $: createDashboardFromTable = filePath
+    ? useCreateMetricsViewWithCanvasAndExploreUIAction(
+        instanceId,
+        sinkConnector as string,
+        "",
+        "",
+        sourceName,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.Modal,
+      )
+    : null;
 
   function close() {
     sourceIngestionTracker.dismiss();

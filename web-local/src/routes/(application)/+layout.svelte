@@ -2,10 +2,6 @@
   import AddDataModal from "@rilldata/web-common/features/sources/modal/AddDataModal.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import IngestionProgressModal from "@rilldata/web-common/features/sources/modal/IngestionProgressModal.svelte";
-  import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
-  import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
-
-  const ingestedPath = sourceIngestionTracker.ingestedPath;
 
   let showDropOverlay = false;
 
@@ -34,5 +30,4 @@
 {/if}
 
 <AddDataModal />
-<SourceImportedModal sourcePath={$ingestedPath} />
 <IngestionProgressModal />
