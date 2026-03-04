@@ -425,6 +425,7 @@ type traceError struct {
 	collector *observability.RequestScopedCollector
 }
 
+// Error and Unwrap implement the error interface and allow errors.Is and errors.As to work with traceError.
 func (e *traceError) Error() string { return e.err.Error() }
 func (e *traceError) Unwrap() error { return e.err }
 
