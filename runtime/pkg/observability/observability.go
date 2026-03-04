@@ -97,7 +97,7 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		otel.SetMeterProvider(meterProvider)
 	}
 
-	queryLogProcessor := NewRequestScopedSpanProcessor()
+	requestScopedProcessor := NewRequestScopedSpanProcessor()
 
 	// Create global traces exporter
 	var tracerProvider *trace.TracerProvider
@@ -113,7 +113,7 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithResource(res),
 			trace.WithSpanProcessor(bsp),
-			trace.WithSpanProcessor(queryLogProcessor),
+			trace.WithSpanProcessor(requestScopedProcessor),
 		)
 	case FileBasedExporter:
 		exp, err := NewFileExporter()
@@ -125,14 +125,14 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithResource(res),
 			trace.WithSpanProcessor(bsp),
-			trace.WithSpanProcessor(queryLogProcessor),
+			trace.WithSpanProcessor(requestScopedProcessor),
 		)
 	case NoopExporter:
 		// Create a TracerProvider with just the request-scoped processor so that spans are captured even without a downstream exporter.
 		tracerProvider = trace.NewTracerProvider(
 			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithResource(res),
-			trace.WithSpanProcessor(queryLogProcessor),
+			trace.WithSpanProcessor(requestScopedProcessor),
 		)
 	default:
 		panic(fmt.Errorf("unexpected traces exporter %q", opts.TracesExporter))

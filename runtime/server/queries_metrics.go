@@ -24,23 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// traceError wraps an error with trace data collected during request execution.
-// It is handled by mapGRPCError, which attaches the trace as gRPC error details after normal error mapping is applied.
-type traceError struct {
-	err       error
-	collector *observability.RequestScopedCollector
-}
-
-// Error returns the error message of the underlying error.
-func (e *traceError) Error() string {
-	return e.err.Error()
-}
-
-// Unwrap allows errors.Is and errors.As to work with traceError, by unwrapping to the underlying error.
-func (e *traceError) Unwrap() error {
-	return e.err
-}
-
 // MetricsViewAggregation implements QueryService.
 func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.MetricsViewAggregationRequest) (*runtimev1.MetricsViewAggregationResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -802,19 +785,6 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, mv.State, nil
-}
-
-// canTrace returns true for Rill Developer (SkipChecks=true) and project admins (EditInstance),
-func canTrace(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.EditInstance)
-}
-
-// withTrace wraps an error with trace data if a collector is present.
-func withTrace(err error, collector *observability.RequestScopedCollector) error {
-	if collector == nil {
-		return err
-	}
-	return &traceError{err: err, collector: collector}
 }
 
 func valOrNullTime(v time.Time) *timestamppb.Timestamp {

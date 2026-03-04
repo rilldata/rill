@@ -61,18 +61,20 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	// Start a span covering connection acquisition and query execution
-	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("olap", "pinot")))
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "pinot")))
 
 	start := time.Now()
 	defer func() {
 		totalLatency := time.Since(start).Milliseconds()
 		cancelled := errors.Is(outErr, context.Canceled)
-		failed := outErr != nil
-		span.SetAttributes(
+		spanAttrs := []attribute.KeyValue{
 			attribute.Int64("total_latency_ms", totalLatency),
 			attribute.Bool("cancelled", cancelled),
-			attribute.Bool("failed", failed),
-		)
+		}
+		if outErr != nil {
+			spanAttrs = append(spanAttrs, attribute.String("error", outErr.Error()))
+		}
+		span.SetAttributes(spanAttrs...)
 		span.End()
 	}()
 

@@ -417,3 +417,26 @@ func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequ
 		Jwt: jwt,
 	}, nil
 }
+
+// traceError wraps an error with trace data collected during request execution.
+// It is handled by mapGRPCError, which attaches the trace as gRPC error details after normal error mapping is applied.
+type traceError struct {
+	err       error
+	collector *observability.RequestScopedCollector
+}
+
+func (e *traceError) Error() string { return e.err.Error() }
+func (e *traceError) Unwrap() error { return e.err }
+
+// withTrace wraps an error with trace data if a collector is present.
+func withTrace(err error, collector *observability.RequestScopedCollector) error {
+	if collector == nil {
+		return err
+	}
+	return &traceError{err: err, collector: collector}
+}
+
+// canTrace returns true for Rill Developer (SkipChecks=true) and project admins (ReadInstance).
+func canTrace(claims *runtime.SecurityClaims) bool {
+	return claims.Can(runtime.ReadInstance)
+}
