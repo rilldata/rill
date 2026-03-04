@@ -80,7 +80,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByType(MessageTypeCall), FilterByTool(DeveloperAgentName)))...)
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
 
 	// Run an LLM tool call loop
 	var response string
