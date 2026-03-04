@@ -433,7 +433,7 @@ export async function submitAddConnectorForm(
 
 // How long to wait before showing the loading modal.
 // Set to 0 for testing (shows immediately); use 10_000 for production.
-const SLOW_IMPORT_THRESHOLD_MS = 0;
+const SLOW_IMPORT_THRESHOLD_MS = 5000;
 
 export async function submitAddSourceForm(
   queryClient: QueryClient,
