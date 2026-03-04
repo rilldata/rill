@@ -2,13 +2,14 @@
   "name": "sqlite-clickhouse",
   "display_name": "SQLite",
   "description": "Read SQLite tables into ClickHouse",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/sqlite",
   "driver": "sqlite",
   "olap": "clickhouse",
   "tags": ["sqlite", "database", "clickhouse", "source"],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "sqlStore",
+    "x-category": "source_only",
     "x-icon": "SQLite",
     "x-small-icon": "SQLiteIcon",
     "properties": {
@@ -16,23 +17,20 @@
         "type": "string",
         "title": "Database file",
         "description": "Path to SQLite db file",
-        "x-placeholder": "/path/to/sqlite.db",
-        "x-step": "source"
+        "x-placeholder": "/path/to/sqlite.db"
       },
       "table": {
         "type": "string",
         "title": "Table",
         "description": "SQLite table name",
-        "x-placeholder": "table",
-        "x-step": "source"
+        "x-placeholder": "table"
       },
       "name": {
         "type": "string",
         "title": "Model name",
         "description": "Name for the source model",
         "pattern": "^[a-zA-Z0-9_]+$",
-        "x-placeholder": "my_model",
-        "x-step": "explorer"
+        "x-placeholder": "my_model"
       }
     },
     "required": ["db", "table", "name"]
