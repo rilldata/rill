@@ -1,0 +1,27 @@
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
+import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper.js";
+import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client/query-options";
+import { error } from "@sveltejs/kit";
+
+export async function load({ params, parent }) {
+  const { runtime } = await parent();
+
+  const apiData = await queryClient
+    .fetchQuery(
+      getRuntimeServiceGetResourceQueryOptions(runtime, {
+        "name.kind": ResourceKind.API,
+        "name.name": params.api,
+      }),
+    )
+    .catch((e) => {
+      if (!isHTTPError(e)) {
+        throw error(500, "Error fetching API");
+      }
+      throw error(e.response.status, e.response.data.message);
+    });
+
+  return {
+    api: apiData.resource,
+  };
+}

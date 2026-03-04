@@ -5202,6 +5202,20 @@ export class API extends Message<API> {
  */
 export class APISpec extends Message<APISpec> {
   /**
+   * User-facing name
+   *
+   * @generated from field: string display_name = 12;
+   */
+  displayName = "";
+
+  /**
+   * User-facing description
+   *
+   * @generated from field: string description = 13;
+   */
+  description = "";
+
+  /**
    * @generated from field: string resolver = 1;
    */
   resolver = "";
@@ -5254,6 +5268,8 @@ export class APISpec extends Message<APISpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.APISpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 12, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
