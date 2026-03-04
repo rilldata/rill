@@ -76,7 +76,7 @@ func TestListBucketObjects(t *testing.T) {
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListBucketObjectsName, &res, &ai.ListBucketObjectsArgs{
 			Connector: "s3",
 			Bucket:    "integration-test.rilldata.com",
-			Path:      "glob_test/y=*",
+			Path:      "glob_test/y=*/*",
 			PageSize:  100,
 		})
 		require.NoError(t, err)
