@@ -19,13 +19,15 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
-    connectors,
+    createConnectorSchemas,
     getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
     isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
+
+  const { connectors: connectorsStore } = createConnectorSchemas();
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
@@ -35,9 +37,9 @@
   let requestConnector = false;
   let isSubmittingForm = false;
 
-  // Filter connectors by category from JSON schemas
-  $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
-  $: olapConnectors = connectors.filter((c) => c.category === "olap");
+  // Filter connectors by category from API-served schemas
+  $: sourceConnectors = $connectorsStore.filter((c) => c.category !== "olap");
+  $: olapConnectors = $connectorsStore.filter((c) => c.category === "olap");
 
   // Get the form width class for the selected connector
   $: selectedSchema = selectedSchemaName

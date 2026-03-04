@@ -6735,6 +6735,39 @@ func (m *Template) validate(all bool) error {
 
 	}
 
+	if all {
+		switch v := interface{}(m.GetJsonSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TemplateValidationError{
+					field:  "JsonSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TemplateValidationError{
+					field:  "JsonSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetJsonSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TemplateValidationError{
+				field:  "JsonSchema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Description
+
+	// no validation rules for DocsUrl
+
 	if len(errors) > 0 {
 		return TemplateMultiError(errors)
 	}

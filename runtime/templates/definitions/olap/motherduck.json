@@ -1,0 +1,46 @@
+{
+  "name": "motherduck",
+  "display_name": "MotherDuck",
+  "description": "Connect to a MotherDuck OLAP engine",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/motherduck",
+  "driver": "motherduck",
+  "tags": ["motherduck", "duckdb", "olap", "connector"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "olap",
+    "properties": {
+      "path": {
+        "type": "string",
+        "title": "Path",
+        "description": "MotherDuck database path (prefix with md:)",
+        "x-placeholder": "md:my_db",
+        "x-step": "connector"
+      },
+      "token": {
+        "type": "string",
+        "title": "Token",
+        "description": "MotherDuck token",
+        "x-placeholder": "your_motherduck_token",
+        "x-secret": true,
+        "x-env-var": "MOTHERDUCK_TOKEN",
+        "x-step": "connector"
+      },
+      "schema_name": {
+        "type": "string",
+        "title": "Schema name",
+        "description": "Default schema to use",
+        "x-placeholder": "main",
+        "x-step": "connector"
+      }
+    },
+    "required": ["path", "token", "schema_name"]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "# Connector YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/olap/motherduck\ntype: connector\ndriver: motherduck\n[[ renderProps .props ]]\n"
+    }
+  ]
+}

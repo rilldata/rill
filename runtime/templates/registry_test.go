@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestNewRegistry(t *testing.T) {
@@ -21,7 +22,7 @@ func TestRegistryGet(t *testing.T) {
 	require.NoError(t, err)
 
 	// Known templates exist
-	for _, name := range []string{"s3", "gcs", "clickhouse", "s3-duckdb", "iceberg-duckdb", "snowflake-duckdb"} {
+	for _, name := range []string{"clickhouse", "s3-duckdb", "gcs-duckdb", "iceberg-duckdb", "snowflake-duckdb"} {
 		t.Run(name, func(t *testing.T) {
 			tmpl, ok := r.Get(name)
 			require.True(t, ok, "template %q should exist", name)
@@ -64,10 +65,10 @@ func TestRegistryLookupByDriver(t *testing.T) {
 	r, err := NewRegistry()
 	require.NoError(t, err)
 
-	// Connector lookup: driver name = template name
+	// Connector lookup: combined templates (s3-duckdb has connector file)
 	tmpl, ok := r.LookupByDriver("s3", "connector")
 	require.True(t, ok)
-	require.Equal(t, "s3", tmpl.Name)
+	require.Equal(t, "s3-duckdb", tmpl.Name)
 
 	// Model lookup for object stores: driver-duckdb
 	tmpl, ok = r.LookupByDriver("s3", "model")
@@ -109,4 +110,48 @@ func TestRegistryAllDefinitionsValid(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRegistryTemplatesWithJSONSchemaValid(t *testing.T) {
+	r, err := NewRegistry()
+	require.NoError(t, err)
+
+	var found int
+	for _, tmpl := range r.List() {
+		if tmpl.JSONSchema == nil {
+			continue
+		}
+		found++
+		t.Run(tmpl.Name, func(t *testing.T) {
+			// Schema must be an object type
+			typ, ok := tmpl.JSONSchema["type"]
+			require.True(t, ok, "json_schema must have a type field")
+			require.Equal(t, "object", typ)
+
+			// Schema must have properties
+			propsRaw, ok := tmpl.JSONSchema["properties"]
+			require.True(t, ok, "json_schema must have properties")
+			propsMap, ok := propsRaw.(map[string]any)
+			require.True(t, ok, "properties must be a map")
+			require.Greater(t, len(propsMap), 0, "properties must not be empty")
+
+			// Each property with x-secret must have x-env-var
+			for key, propRaw := range propsMap {
+				prop, ok := propRaw.(map[string]any)
+				if !ok {
+					continue
+				}
+				if secret, _ := prop["x-secret"].(bool); secret {
+					envVar, hasEnvVar := prop["x-env-var"]
+					require.True(t, hasEnvVar, "property %q has x-secret but no x-env-var", key)
+					require.NotEmpty(t, envVar, "x-env-var for %q must not be empty", key)
+				}
+			}
+
+			// Verify structpb conversion works (catches int vs float64 issues)
+			_, err := structpb.NewStruct(tmpl.JSONSchema)
+			require.NoError(t, err, "json_schema for %q must be convertible to protobuf Struct", tmpl.Name)
+		})
+	}
+	require.Greater(t, found, 0, "expected at least one template with json_schema")
 }

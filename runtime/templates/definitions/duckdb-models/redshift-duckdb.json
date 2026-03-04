@@ -1,0 +1,90 @@
+{
+  "name": "redshift-duckdb",
+  "display_name": "Amazon Redshift (DuckDB)",
+  "description": "Query Amazon Redshift and ingest into DuckDB",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/redshift",
+  "driver": "redshift",
+  "olap": "duckdb",
+  "tags": ["redshift", "aws", "warehouse", "duckdb", "source", "connector"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "warehouse",
+    "properties": {
+      "aws_access_key_id": {
+        "type": "string",
+        "title": "AWS access key ID",
+        "description": "AWS access key ID",
+        "x-placeholder": "your_access_key_id",
+        "x-secret": true,
+        "x-env-var": "AWS_ACCESS_KEY_ID",
+        "x-step": "connector"
+      },
+      "aws_secret_access_key": {
+        "type": "string",
+        "title": "AWS secret access key",
+        "description": "AWS secret access key",
+        "x-placeholder": "your_secret_access_key",
+        "x-secret": true,
+        "x-env-var": "AWS_SECRET_ACCESS_KEY",
+        "x-step": "connector"
+      },
+      "region": {
+        "type": "string",
+        "title": "AWS region",
+        "description": "AWS region (e.g. us-east-1)",
+        "x-placeholder": "us-east-1",
+        "x-step": "connector"
+      },
+      "database": {
+        "type": "string",
+        "title": "Database",
+        "description": "Redshift database name",
+        "x-placeholder": "dev",
+        "x-step": "connector"
+      },
+      "workgroup": {
+        "type": "string",
+        "title": "Workgroup",
+        "description": "Redshift Serverless workgroup name",
+        "x-placeholder": "default",
+        "x-step": "connector"
+      },
+      "cluster_identifier": {
+        "type": "string",
+        "title": "Cluster identifier",
+        "description": "Redshift cluster identifier (use when not using serverless)",
+        "x-placeholder": "redshift-cluster-1",
+        "x-step": "connector"
+      },
+      "sql": {
+        "type": "string",
+        "title": "SQL",
+        "description": "SQL query to run against your warehouse",
+        "x-placeholder": "Input SQL",
+        "x-step": "explorer"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": ["aws_access_key_id", "aws_secret_access_key", "database", "sql", "name"]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "type: connector\ndriver: redshift\n[[ renderProps .config_props ]]\n"
+    },
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/redshift\ntype: model\n[[ if .connector_name -]]\nconnector: \"[[ .connector_name ]]\"\n[[ end -]]\nmaterialize: true\n[[ if .sql -]]\nsql: |\n  [[ .sql | indent 2 ]]\n[[ end ]]\n"
+    }
+  ]
+}

@@ -2,12 +2,11 @@ package templates
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"sort"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 //go:embed definitions
@@ -29,7 +28,7 @@ func NewRegistry() (*Registry, error) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".yaml") {
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".json") {
 			return nil
 		}
 
@@ -39,7 +38,7 @@ func NewRegistry() (*Registry, error) {
 		}
 
 		var t Template
-		if err := yaml.Unmarshal(data, &t); err != nil {
+		if err := json.Unmarshal(data, &t); err != nil {
 			return fmt.Errorf("parsing template %s: %w", path, err)
 		}
 
@@ -103,7 +102,11 @@ func (r *Registry) Get(name string) (*Template, bool) {
 func (r *Registry) LookupByDriver(driver, resourceType string) (*Template, bool) {
 	switch resourceType {
 	case "connector":
-		// Connector templates are named after the driver
+		// Combined templates (e.g. s3-duckdb) contain both connector and model files.
+		// Check for a combined template first; fall back to standalone connector template.
+		if t, ok := r.Get(driver + "-duckdb"); ok && hasFileNamed(t, "connector") {
+			return t, true
+		}
 		return r.Get(driver)
 	case "model":
 		// Model templates use the pattern driver-{olap} (e.g. s3-duckdb, s3-clickhouse).
@@ -111,6 +114,16 @@ func (r *Registry) LookupByDriver(driver, resourceType string) (*Template, bool)
 		return r.Get(driver + "-duckdb")
 	}
 	return nil, false
+}
+
+// hasFileNamed returns true if the template has a file entry with the given name.
+func hasFileNamed(t *Template, name string) bool {
+	for _, f := range t.Files {
+		if f.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // matchesAllTags returns true if the template's tags contain all of the required tags.

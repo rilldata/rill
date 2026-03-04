@@ -1,52 +1,25 @@
+import {
+  createRuntimeServiceListTemplates,
+  type V1Template,
+} from "../../../runtime-client";
 import type {
   ConnectorCategory,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
-import { athenaSchema } from "../../templates/schemas/athena";
-import { azureSchema } from "../../templates/schemas/azure";
-import { bigquerySchema } from "../../templates/schemas/bigquery";
-import { clickhouseSchema } from "../../templates/schemas/clickhouse";
-import { gcsSchema } from "../../templates/schemas/gcs";
-import { mysqlSchema } from "../../templates/schemas/mysql";
-import { postgresSchema } from "../../templates/schemas/postgres";
-import { redshiftSchema } from "../../templates/schemas/redshift";
-import { salesforceSchema } from "../../templates/schemas/salesforce";
-import { snowflakeSchema } from "../../templates/schemas/snowflake";
-import { sqliteSchema } from "../../templates/schemas/sqlite";
-import { localFileSchema } from "../../templates/schemas/local_file";
-import { duckdbSchema } from "../../templates/schemas/duckdb";
-import { httpsSchema } from "../../templates/schemas/https";
-import { motherduckSchema } from "../../templates/schemas/motherduck";
-import { druidSchema } from "../../templates/schemas/druid";
-import { pinotSchema } from "../../templates/schemas/pinot";
-import { s3Schema } from "../../templates/schemas/s3";
-import { starrocksSchema } from "../../templates/schemas/starrocks";
 import { SOURCES, OLAP_ENGINES } from "./constants";
+import { derived, type Readable } from "svelte/store";
 
-export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
-  athena: athenaSchema,
-  bigquery: bigquerySchema,
-  clickhouse: clickhouseSchema,
-  mysql: mysqlSchema,
-  postgres: postgresSchema,
-  redshift: redshiftSchema,
-  salesforce: salesforceSchema,
-  snowflake: snowflakeSchema,
-  sqlite: sqliteSchema,
-  motherduck: motherduckSchema,
-  duckdb: duckdbSchema,
-  druid: druidSchema,
-  pinot: pinotSchema,
-  starrocks: starrocksSchema,
-  local_file: localFileSchema,
-  https: httpsSchema,
-  s3: s3Schema,
-  gcs: gcsSchema,
-  azure: azureSchema,
-};
+const SOURCES_SET = new Set(SOURCES);
+const OLAP_SET = new Set(OLAP_ENGINES);
+
+// Module-level cache populated when the TanStack Query resolves.
+// Safe because AddDataModal (the entry point) subscribes to the query
+// and renders the connector grid (step 1) first; by the time step 2
+// needs getConnectorSchema(), the cache is populated.
+let schemasCache: Record<string, MultiStepFormSchema> = {};
 
 /**
- * Connector information derived from JSON schemas.
+ * Connector information derived from API templates.
  */
 export interface ConnectorInfo {
   name: string;
@@ -55,30 +28,103 @@ export interface ConnectorInfo {
 }
 
 /**
- * All connectors enumerated from JSON schemas, sorted by display order.
+ * Build the schema registry from ListTemplates API response.
+ * For source drivers: uses the {driver}-duckdb template's json_schema.
+ * For OLAP engines: uses the OLAP connector template's json_schema.
+ *
+ * The json_schema from the API is identical to the former TypeScript schemas;
+ * we inject `title` from the template's display_name so existing consumers
+ * that read schema.title continue to work.
  */
-export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
-  .filter((name) => multiStepFormSchemas[name]?.["x-category"])
-  .map((name) => {
-    const schema = multiStepFormSchemas[name];
-    return {
-      name,
-      displayName: schema.title ?? name,
-      category: schema["x-category"] as ConnectorCategory,
-    };
+function buildSchemaRegistry(
+  templates: V1Template[],
+): Record<string, MultiStepFormSchema> {
+  const schemas: Record<string, MultiStepFormSchema> = {};
+
+  for (const t of templates) {
+    if (!t.jsonSchema || !t.driver) continue;
+
+    const key = t.driver;
+
+    // Sources: pick the DuckDB-model template (has full connector+source form schema)
+    if (SOURCES_SET.has(key) && t.olap === "duckdb") {
+      schemas[key] = {
+        ...t.jsonSchema,
+        title: t.displayName,
+      } as unknown as MultiStepFormSchema;
+      continue;
+    }
+
+    // OLAP engines: pick the OLAP connector template (no olap set)
+    if (OLAP_SET.has(key) && (!t.olap || t.olap === "")) {
+      schemas[key] = {
+        ...t.jsonSchema,
+        title: t.displayName,
+      } as unknown as MultiStepFormSchema;
+    }
+  }
+
+  return schemas;
+}
+
+/**
+ * Create a TanStack Query that fetches templates and provides the schema registry.
+ * Call this once in AddDataModal (the modal entry point).
+ *
+ * Returns a reactive `connectors` store (for the connector grid) and the
+ * underlying query (for loading/error state).
+ * As a side effect, populates the module-level schemasCache so that
+ * getConnectorSchema() works synchronously in child components.
+ */
+export function createConnectorSchemas() {
+  const query = createRuntimeServiceListTemplates();
+
+  const connectors: Readable<ConnectorInfo[]> = derived(query, ($q) => {
+    if (!$q.data?.templates) return [];
+
+    const schemas = buildSchemaRegistry($q.data.templates);
+
+    // Populate module-level cache for sync access by child components
+    schemasCache = schemas;
+
+    return [...SOURCES, ...OLAP_ENGINES]
+      .filter((name) => schemas[name]?.["x-category"])
+      .map((name) => ({
+        name,
+        displayName: schemas[name].title ?? name,
+        category: schemas[name]["x-category"] as ConnectorCategory,
+      }));
   });
 
+  return { query, connectors };
+}
+
+/**
+ * Directly populate the schema cache.
+ * Used in tests and for non-component contexts where the TanStack Query
+ * is not available.
+ */
+export function populateSchemaCache(
+  schemas: Record<string, MultiStepFormSchema>,
+) {
+  schemasCache = schemas;
+}
+
+/**
+ * Get the schema for a connector by name.
+ * Reads from the cache populated by createConnectorSchemas().
+ */
 export function getConnectorSchema(
   connectorName: string,
 ): MultiStepFormSchema | null {
-  const schema =
-    multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
+  const schema = schemasCache[connectorName];
   return schema?.properties ? schema : null;
 }
 
 /**
  * Get the backend driver name for a given schema name.
- * Returns x-driver if specified, otherwise returns the schema name.
+ * With API-driven schemas, the key is already the driver name.
+ * Falls back to x-driver if specified (for future use).
  */
 export function getBackendConnectorName(schemaName: string): string {
   const schema = getConnectorSchema(schemaName);

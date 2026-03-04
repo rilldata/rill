@@ -62,9 +62,7 @@ export async function generateTemplate(
       const resp = await runtimeServiceGetInstance(instanceId, {
         sensitive: false,
       });
-      olap = normalizeOlapForTemplate(
-        resp.instance?.olapConnector ?? "duckdb",
-      );
+      olap = normalizeOlapForTemplate(resp.instance?.olapConnector ?? "duckdb");
       olapCache.set(instanceId, olap);
     }
   }

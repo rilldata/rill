@@ -2513,6 +2513,12 @@ export interface V1TableRowsResponse {
 }
 
 /**
+ * JSON Schema for form generation and property metadata.
+Present for self-contained templates; absent for legacy templates that use DriverSpec.
+ */
+export type V1TemplateJsonSchema = { [key: string]: unknown };
+
+/**
  * Template describes a declarative template for generating project files.
  */
 export interface V1Template {
@@ -2522,6 +2528,13 @@ export interface V1Template {
   olap?: string;
   tags?: string[];
   files?: V1TemplateFile[];
+  /** JSON Schema for form generation and property metadata.
+Present for self-contained templates; absent for legacy templates that use DriverSpec. */
+  jsonSchema?: V1TemplateJsonSchema;
+  /** Short description of the template. */
+  description?: string;
+  /** Link to documentation. */
+  docsUrl?: string;
 }
 
 /**

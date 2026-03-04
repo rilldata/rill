@@ -1,0 +1,56 @@
+{
+  "name": "azure-clickhouse",
+  "display_name": "Azure Blob Storage (ClickHouse)",
+  "description": "Read Azure Blob Storage files into ClickHouse using table functions",
+  "driver": "azure",
+  "olap": "clickhouse",
+  "tags": ["azure", "microsoft", "object-storage", "clickhouse", "source"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "objectStore",
+    "properties": {
+      "azure_storage_account": {
+        "type": "string",
+        "title": "Storage account",
+        "description": "Azure storage account name",
+        "x-placeholder": "mystorageaccount",
+        "x-step": "connector"
+      },
+      "azure_storage_key": {
+        "type": "string",
+        "title": "Storage key",
+        "description": "Azure storage account key",
+        "x-placeholder": "Enter storage key",
+        "x-secret": true,
+        "x-env-var": "AZURE_STORAGE_KEY",
+        "x-step": "connector"
+      },
+      "path": {
+        "type": "string",
+        "title": "Azure URI",
+        "description": "Path to your Azure container and blob",
+        "pattern": "^azure://[^/]+(/.*)?$",
+        "errorMessage": { "pattern": "Must be an Azure URI (e.g. azure://container/path)" },
+        "x-placeholder": "azure://container/path",
+        "x-step": "source"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": ["azure_storage_account", "azure_storage_key", "path", "name"]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  [[ .sql ]]\n"
+    }
+  ]
+}

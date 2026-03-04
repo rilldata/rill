@@ -1,0 +1,45 @@
+{
+  "name": "sqlite-clickhouse",
+  "display_name": "SQLite (ClickHouse)",
+  "description": "Read SQLite tables into ClickHouse",
+  "driver": "sqlite",
+  "olap": "clickhouse",
+  "tags": ["sqlite", "database", "clickhouse", "source"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "sqlStore",
+    "properties": {
+      "db": {
+        "type": "string",
+        "title": "Database file",
+        "description": "Path to SQLite db file",
+        "x-placeholder": "/path/to/sqlite.db",
+        "x-step": "source"
+      },
+      "table": {
+        "type": "string",
+        "title": "Table",
+        "description": "SQLite table name",
+        "x-placeholder": "table",
+        "x-step": "source"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": ["db", "table", "name"]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  [[ .sql ]]\n"
+    }
+  ]
+}

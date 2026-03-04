@@ -1,0 +1,78 @@
+{
+  "name": "mysql-clickhouse",
+  "display_name": "MySQL (ClickHouse)",
+  "description": "Read MySQL tables into ClickHouse using table functions",
+  "driver": "mysql",
+  "olap": "clickhouse",
+  "tags": ["mysql", "database", "clickhouse", "source"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "sqlStore",
+    "properties": {
+      "host": {
+        "type": "string",
+        "title": "Host",
+        "description": "MySQL server hostname or IP",
+        "x-placeholder": "localhost",
+        "x-step": "connector"
+      },
+      "port": {
+        "type": "string",
+        "title": "Port",
+        "description": "MySQL server port",
+        "pattern": "^\\d+$",
+        "errorMessage": { "pattern": "Port must be a number" },
+        "default": "3306",
+        "x-placeholder": "3306",
+        "x-step": "connector"
+      },
+      "database": {
+        "type": "string",
+        "title": "Database",
+        "description": "Database name",
+        "x-placeholder": "my_database",
+        "x-step": "connector"
+      },
+      "table": {
+        "type": "string",
+        "title": "Table",
+        "description": "Table name to query",
+        "x-placeholder": "my_table",
+        "x-step": "source"
+      },
+      "user": {
+        "type": "string",
+        "title": "Username",
+        "description": "MySQL user",
+        "x-placeholder": "mysql",
+        "x-step": "connector"
+      },
+      "password": {
+        "type": "string",
+        "title": "Password",
+        "description": "MySQL password",
+        "x-placeholder": "your_password",
+        "x-secret": true,
+        "x-env-var": "MYSQL_PASSWORD",
+        "x-step": "connector"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": ["host", "database", "table", "user", "name"]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  [[ .sql ]]\n"
+    }
+  ]
+}

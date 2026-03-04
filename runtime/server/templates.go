@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ListTemplates returns available template definitions, optionally filtered by tags.
@@ -28,13 +29,25 @@ func (s *Server) ListTemplates(ctx context.Context, req *runtimev1.ListTemplates
 				PathPattern: f.PathTemplate,
 			}
 		}
+		var schemaPb *structpb.Struct
+		if t.JSONSchema != nil {
+			var err error
+			schemaPb, err = structpb.NewStruct(t.JSONSchema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "converting schema for %q: %s", t.Name, err)
+			}
+		}
+
 		pbs[i] = &runtimev1.Template{
 			Name:        t.Name,
 			DisplayName: t.DisplayName,
+			Description: t.Description,
+			DocsUrl:     t.DocsURL,
 			Driver:      t.Driver,
 			Olap:        t.OLAP,
 			Tags:        t.Tags,
 			Files:       files,
+			JsonSchema:  schemaPb,
 		}
 	}
 
@@ -62,9 +75,9 @@ func (s *Server) GenerateFile(ctx context.Context, req *runtimev1.GenerateFileRe
 		return nil, status.Errorf(codes.InvalidArgument, "unknown template %q", req.TemplateName)
 	}
 
-	// Look up driver spec (nil for driverless templates like iceberg-duckdb)
+	// Look up driver spec; skip when template has its own JSON Schema (self-contained)
 	var driverSpec *drivers.Spec
-	if tmpl.Driver != "" {
+	if tmpl.JSONSchema == nil && tmpl.Driver != "" {
 		drv, ok := drivers.Connectors[tmpl.Driver]
 		if !ok {
 			return nil, status.Errorf(codes.Internal, "template %q references unknown driver %q", req.TemplateName, tmpl.Driver)

@@ -1,0 +1,58 @@
+{
+  "name": "https-duckdb",
+  "display_name": "HTTPS (DuckDB)",
+  "description": "Read files from an HTTP/HTTPS URL into DuckDB using the appropriate file reader",
+  "docs_url": "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
+  "driver": "https",
+  "olap": "duckdb",
+  "tags": ["https", "http", "url", "file-store", "duckdb", "source", "connector"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "fileStore",
+    "x-button-labels": {
+      "*": { "*": { "idle": "Continue", "loading": "Continuing..." } }
+    },
+    "properties": {
+      "headers": {
+        "title": "Headers",
+        "description": "HTTP headers to include in the request",
+        "x-display": "key-value",
+        "x-placeholder": "Header name",
+        "x-hint": "e.g. Authorization: Bearer <token>",
+        "x-step": "connector"
+      },
+      "path": {
+        "type": "string",
+        "title": "URI",
+        "description": "HTTP/HTTPS URL to the remote file",
+        "pattern": "^https?://.+",
+        "errorMessage": {
+          "pattern": "URI must start with http:// or https://"
+        },
+        "x-placeholder": "https://example.com/file.csv",
+        "x-step": "source"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name of the model",
+        "x-placeholder": "my_new_model",
+        "x-step": "source"
+      }
+    },
+    "required": ["path", "name"]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "type: connector\ndriver: https\n[[ renderProps .config_props ]]\n"
+    },
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "type: model\nconnector: duckdb\n[[ if .create_secrets_from_connectors -]]\ncreate_secrets_from_connectors: \"[[ .create_secrets_from_connectors ]]\"\n[[ end -]]\nsql: |\n  [[ .sql ]]\n"
+    }
+  ]
+}

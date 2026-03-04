@@ -98,8 +98,41 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		}
 	}
 
+	// Schema-based path: extract property metadata from JSON Schema
+	if input.Template.JSONSchema != nil {
+		allProps := processPropertiesFromSchema(
+			input.Template.JSONSchema,
+			input.Template.Driver,
+			input.Properties,
+			existingEnv,
+			envVars,
+		)
+
+		// Split by x-step so connector and model files get the right properties
+		configProps, sourceProps := splitPropsByStep(allProps, input.Template.JSONSchema)
+		data["props"] = configProps
+		data["config_props"] = configProps
+		data["source_props"] = sourceProps
+
+		// Compute derived fields (SQL, create_secrets_from_connectors) based on template metadata
+		if input.Template.OLAP == "duckdb" && input.Template.Driver != "" {
+			if err := applyDuckDBDerivedFieldsForSchema(input, data); err != nil {
+				return nil, err
+			}
+		}
+
+		// ClickHouse rewrite: compute SQL from properties using ClickHouse table functions
+		if input.Template.OLAP == "clickhouse" && input.Template.Driver != "" {
+			if err := applyClickHouseDerivedFields(input, data, configProps); err != nil {
+				return nil, err
+			}
+		}
+
+		return data, nil
+	}
+
 	if input.DriverSpec == nil {
-		// Driverless template (e.g. iceberg-duckdb): pass properties as-is
+		// Driverless template without schema: pass properties as-is
 		return data, nil
 	}
 
@@ -152,7 +185,12 @@ func processProperties(
 
 		// Handle map-typed properties (e.g. headers)
 		if mapVal, isMap := val.(map[string]any); isMap {
-			headerProps := processHeaders(mapVal, connectorName, existingEnv, envVars)
+			// Use connector name for header env var naming; fall back to driver name
+			headerIdent := connectorName
+			if headerIdent == "" {
+				headerIdent = driverName
+			}
+			headerProps := processHeaders(mapVal, headerIdent, existingEnv, envVars)
 			result = append(result, headerProps...)
 			continue
 		}
@@ -182,6 +220,135 @@ func processProperties(
 		}
 	}
 	return result
+}
+
+// processPropertiesFromSchema pre-processes properties using JSON Schema metadata instead of drivers.PropertySpec.
+// Fields with "x-secret": true are extracted to env vars; "x-ui-only": true fields are skipped.
+// Quoting is determined by the schema "type" field (number/boolean unquoted; everything else quoted).
+func processPropertiesFromSchema(
+	schema map[string]any,
+	driverName string,
+	rawProps map[string]any,
+	existingEnv map[string]bool,
+	envVars map[string]string,
+) []ProcessedProp {
+	propsMap := schemaProperties(schema)
+	if len(propsMap) == 0 {
+		return nil
+	}
+
+	// Sort keys for deterministic output
+	keys := make([]string, 0, len(propsMap))
+	for k := range propsMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var result []ProcessedProp
+	for _, key := range keys {
+		prop := propsMap[key]
+
+		// Skip UI-only fields (e.g. auth_method radio buttons)
+		if schemaFieldBool(prop, "x-ui-only") {
+			continue
+		}
+
+		val, ok := rawProps[key]
+		if !ok || isEmpty(val) {
+			continue
+		}
+
+		// Skip managed: false for ClickHouse (it's the default)
+		if key == "managed" && !toBool(val) {
+			continue
+		}
+
+		// Handle map-typed properties (e.g. headers)
+		if mapVal, isMap := val.(map[string]any); isMap {
+			headerIdent := driverName
+			headerProps := processHeaders(mapVal, headerIdent, existingEnv, envVars)
+			result = append(result, headerProps...)
+			continue
+		}
+
+		strVal := fmt.Sprintf("%v", val)
+
+		if schemaFieldBool(prop, "x-secret") {
+			envName := ResolveEnvVarNameForKey(driverName, key, schemaFieldString(prop, "x-env-var"), existingEnv)
+			existingEnv[envName] = true
+			envVars[envName] = strVal
+			result = append(result, ProcessedProp{
+				Key:    key,
+				Value:  fmt.Sprintf("{{ .env.%s }}", envName),
+				Quoted: true,
+			})
+		} else {
+			propType := schemaFieldString(prop, "type")
+			quoted := propType != "number" && propType != "boolean"
+			result = append(result, ProcessedProp{
+				Key:    key,
+				Value:  strVal,
+				Quoted: quoted,
+			})
+		}
+	}
+	return result
+}
+
+// splitPropsByStep separates processed props into connector-step and source-step slices
+// based on the x-step field in the JSON Schema. Props without x-step go into both.
+func splitPropsByStep(props []ProcessedProp, schema map[string]any) (configProps, sourceProps []ProcessedProp) {
+	propsMap := schemaProperties(schema)
+	for _, p := range props {
+		step := ""
+		if propSchema, ok := propsMap[p.Key]; ok {
+			step = schemaFieldString(propSchema, "x-step")
+		}
+		switch step {
+		case "connector":
+			configProps = append(configProps, p)
+		case "source":
+			sourceProps = append(sourceProps, p)
+		case "explorer":
+			// Explorer-step props are accessed directly as template variables (e.g. .sql, .name);
+			// they are excluded from renderProps output to avoid duplication.
+		default:
+			configProps = append(configProps, p)
+			sourceProps = append(sourceProps, p)
+		}
+	}
+	return
+}
+
+// schemaProperties extracts the "properties" map from a JSON Schema object.
+func schemaProperties(schema map[string]any) map[string]map[string]any {
+	raw, ok := schema["properties"]
+	if !ok {
+		return nil
+	}
+	outer, ok := raw.(map[string]any)
+	if !ok {
+		return nil
+	}
+	result := make(map[string]map[string]any, len(outer))
+	for k, v := range outer {
+		if prop, ok := v.(map[string]any); ok {
+			result[k] = prop
+		}
+	}
+	return result
+}
+
+// schemaFieldBool returns the bool value of a field in a schema property map.
+func schemaFieldBool(prop map[string]any, key string) bool {
+	v, _ := prop[key].(bool)
+	return v
+}
+
+// schemaFieldString returns the string value of a field in a schema property map.
+func schemaFieldString(prop map[string]any, key string) string {
+	v, _ := prop[key].(string)
+	return v
 }
 
 // processHeaders processes a map of header key-value pairs, extracting sensitive values.
@@ -223,6 +390,42 @@ func processHeaders(headers map[string]any, connectorName string, existingEnv ma
 		Value:  "\n" + strings.Join(headerLines, "\n"),
 		Quoted: false, // The value is a nested YAML mapping, not a scalar
 	}}
+}
+
+// applyDuckDBDerivedFieldsForSchema computes DuckDB-specific derived fields for schema-based templates.
+// Uses the template's driver name and JSON Schema x-category instead of DriverSpec.
+func applyDuckDBDerivedFieldsForSchema(input *RenderInput, data map[string]any) error {
+	category := schemaFieldString(input.Template.JSONSchema, "x-category")
+
+	// Special case for sqlite: uses db+table instead of path
+	if input.Template.Driver == "sqlite" {
+		db := strVal(input.Properties["db"])
+		table := strVal(input.Properties["table"])
+		if db == "" || table == "" {
+			return nil
+		}
+		data["sql"] = fmt.Sprintf("SELECT * FROM sqlite_scan('%s', '%s');", db, table)
+		return nil
+	}
+
+	path := strVal(input.Properties["path"])
+
+	// Path may be empty when rendering only the connector output; skip derivation.
+	if path == "" {
+		return nil
+	}
+
+	if input.ConnectorName != "" {
+		data["create_secrets_from_connectors"] = input.ConnectorName
+	}
+
+	switch {
+	case category == "objectStore": // s3, gcs, azure
+		data["sql"] = BuildDuckDBQuery(path, false)
+	case category == "fileStore" || input.Template.Driver == "https":
+		data["sql"] = BuildDuckDBQuery(path, true)
+	}
+	return nil
 }
 
 // applyDuckDBDerivedFields computes DuckDB-specific derived fields (SQL, create_secrets_from_connectors).

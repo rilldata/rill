@@ -7854,6 +7854,17 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TemplateFile'
+      jsonSchema:
+        type: object
+        description: |-
+          JSON Schema for form generation and property metadata.
+          Present for self-contained templates; absent for legacy templates that use DriverSpec.
+      description:
+        type: string
+        description: Short description of the template.
+      docsUrl:
+        type: string
+        description: Link to documentation.
     description: Template describes a declarative template for generating project files.
   v1TemplateFile:
     type: object

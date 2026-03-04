@@ -115,7 +115,7 @@ func TestGenerateTemplate(t *testing.T) {
 				"type: connector",
 				"driver: clickhouse",
 				`host: "ch.example.com"`,
-				"port: 9000",
+				"port: \"9000\"",
 				`{{ .env.CLICKHOUSE_PASSWORD }}`,
 				"# Connector YAML",
 			},
@@ -228,7 +228,7 @@ func TestGenerateTemplate(t *testing.T) {
 			},
 			wantContains: []string{
 				"type: model",
-				`connector: "duckdb"`,
+				"connector: duckdb",
 				"read_parquet",
 				`create_secrets_from_connectors: "my_s3"`,
 			},

@@ -1,0 +1,89 @@
+{
+  "name": "druid",
+  "display_name": "Druid",
+  "description": "Connect to an Apache Druid OLAP engine",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/druid",
+  "driver": "druid",
+  "tags": ["druid", "olap", "analytics", "connector"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "olap",
+    "properties": {
+      "connection_mode": {
+        "type": "string",
+        "title": "Connection method",
+        "enum": ["parameters", "dsn"],
+        "default": "parameters",
+        "x-display": "tabs",
+        "x-enum-labels": ["Enter parameters", "Enter connection string"],
+        "x-ui-only": true,
+        "x-tab-group": {
+          "parameters": ["host", "port", "username", "password", "ssl"],
+          "dsn": ["dsn"]
+        },
+        "x-step": "connector"
+      },
+      "dsn": {
+        "type": "string",
+        "title": "Connection string",
+        "description": "Full Druid SQL/Avatica endpoint",
+        "x-placeholder": "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=user&avaticaPassword=pass",
+        "x-secret": true,
+        "x-env-var": "DRUID_DSN",
+        "x-step": "connector"
+      },
+      "host": {
+        "type": "string",
+        "title": "Host",
+        "description": "Druid host or IP",
+        "x-placeholder": "localhost",
+        "x-step": "connector"
+      },
+      "port": {
+        "type": "string",
+        "title": "Port",
+        "description": "Druid port",
+        "pattern": "^\\d+$",
+        "errorMessage": { "pattern": "Port must be a number" },
+        "x-placeholder": "8888",
+        "x-step": "connector"
+      },
+      "username": {
+        "type": "string",
+        "title": "Username",
+        "description": "Druid username",
+        "x-placeholder": "default",
+        "x-step": "connector"
+      },
+      "password": {
+        "type": "string",
+        "title": "Password",
+        "description": "Druid password",
+        "x-placeholder": "password",
+        "x-secret": true,
+        "x-env-var": "DRUID_PASSWORD",
+        "x-step": "connector"
+      },
+      "ssl": {
+        "type": "boolean",
+        "title": "SSL",
+        "description": "Use SSL for the connection",
+        "default": true,
+        "x-step": "connector"
+      }
+    },
+    "required": [],
+    "oneOf": [
+      { "title": "Use connection string", "required": ["dsn"] },
+      { "title": "Use individual parameters", "required": ["host", "ssl"] }
+    ]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "# Connector YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/olap/druid\ntype: connector\ndriver: druid\n[[ renderProps .props ]]\n"
+    }
+  ]
+}

@@ -11,20 +11,13 @@ func TestRenderConnectorTemplate(t *testing.T) {
 	registry, err := NewRegistry()
 	require.NoError(t, err)
 
-	tmpl, ok := registry.Get("s3")
+	// s3-duckdb is a combined template with both connector and model files
+	tmpl, ok := registry.Get("s3-duckdb")
 	require.True(t, ok)
 
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "connector",
-		DriverSpec: &drivers.Spec{
-			DocsURL: "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
-			ConfigProperties: []*drivers.PropertySpec{
-				{Key: "aws_access_key_id", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_ACCESS_KEY_ID"},
-				{Key: "aws_secret_access_key", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_SECRET_ACCESS_KEY"},
-				{Key: "region", Type: drivers.StringPropertyType},
-			},
-		},
 		Properties: map[string]any{
 			"aws_access_key_id":     "AKIAIOSFODNN7EXAMPLE",
 			"aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
@@ -44,6 +37,10 @@ func TestRenderConnectorTemplate(t *testing.T) {
 	require.Contains(t, blob, `region: "us-east-1"`)
 	require.NotContains(t, blob, "AKIAIOSFODNN7EXAMPLE")
 
+	// Connector output should NOT contain source-step properties
+	require.NotContains(t, blob, "path")
+	require.NotContains(t, blob, "name")
+
 	// Verify env vars extracted
 	require.Equal(t, "AKIAIOSFODNN7EXAMPLE", result.EnvVars["AWS_ACCESS_KEY_ID"])
 	require.Equal(t, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", result.EnvVars["AWS_SECRET_ACCESS_KEY"])
@@ -59,16 +56,10 @@ func TestRenderDuckDBModelTemplate(t *testing.T) {
 	tmpl, ok := registry.Get("s3-duckdb")
 	require.True(t, ok)
 
+	// s3-duckdb has json_schema; no DriverSpec needed
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
-		DriverSpec: &drivers.Spec{
-			ImplementsObjectStore: true,
-			SourceProperties: []*drivers.PropertySpec{
-				{Key: "path", Type: drivers.StringPropertyType},
-				{Key: "name", Type: drivers.StringPropertyType},
-			},
-		},
 		Properties: map[string]any{
 			"path": "s3://my-bucket/data/*.parquet",
 			"name": "my_model",
@@ -120,7 +111,7 @@ func TestRenderWarehouseModelTemplate(t *testing.T) {
 	require.Contains(t, blob, `connector: "my_snowflake"`)
 	require.Contains(t, blob, "materialize: true")
 	require.Contains(t, blob, "SELECT * FROM my_table")
-	require.Contains(t, blob, `select * from {{ ref "self" }} limit 10000`)
+	require.Contains(t, blob, "SELECT * FROM my_table limit 10000")
 
 	require.Equal(t, "models/snowflake_data.yaml", result.Files[0].Path)
 }
@@ -283,7 +274,8 @@ func TestRenderEnvVarConflict(t *testing.T) {
 	registry, err := NewRegistry()
 	require.NoError(t, err)
 
-	tmpl, ok := registry.Get("s3")
+	// s3-duckdb is a combined template with json_schema
+	tmpl, ok := registry.Get("s3-duckdb")
 	require.True(t, ok)
 
 	// Pre-populate existing env to force conflict
@@ -295,12 +287,6 @@ func TestRenderEnvVarConflict(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "connector",
-		DriverSpec: &drivers.Spec{
-			ConfigProperties: []*drivers.PropertySpec{
-				{Key: "aws_access_key_id", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_ACCESS_KEY_ID"},
-				{Key: "aws_secret_access_key", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_SECRET_ACCESS_KEY"},
-			},
-		},
 		Properties: map[string]any{
 			"aws_access_key_id":     "AKIA_NEW",
 			"aws_secret_access_key": "SECRET_NEW",
@@ -413,7 +399,7 @@ func TestRenderLocalFileDuckDB(t *testing.T) {
 	registry, err := NewRegistry()
 	require.NoError(t, err)
 
-	tmpl, ok := registry.Get("local-file-duckdb")
+	tmpl, ok := registry.Get("local_file-duckdb")
 	require.True(t, ok)
 
 	result, err := Render(&RenderInput{
@@ -473,4 +459,176 @@ func TestRenderSQLiteDuckDB(t *testing.T) {
 	require.Contains(t, blob, "sqlite_scan")
 	require.Contains(t, blob, "/data/app.db")
 	require.Contains(t, blob, "users")
+}
+
+// --- Schema-based template tests ---
+
+func TestRenderIcebergDuckDBWithSchema(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+
+	tmpl, ok := registry.Get("iceberg-duckdb")
+	require.True(t, ok)
+	require.NotNil(t, tmpl.JSONSchema, "iceberg-duckdb should have json_schema")
+
+	result, err := Render(&RenderInput{
+		Template:   tmpl,
+		Output:     "model",
+		DriverSpec: nil, // no driver needed; schema-based
+		Properties: map[string]any{
+			"aws_access_key_id":     "AKIAEXAMPLE",
+			"aws_secret_access_key": "wJalrXUtnFEMI/EXAMPLEKEY",
+			"aws_region":            "us-west-2",
+			"path":                  "s3://my-iceberg-bucket/warehouse/my_table",
+			"name":                  "iceberg_test",
+		},
+		ExistingEnv: make(map[string]bool),
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Files, 1)
+
+	blob := result.Files[0].Blob
+	require.Contains(t, blob, "type: model")
+	require.Contains(t, blob, "iceberg_scan")
+	require.Contains(t, blob, "s3://my-iceberg-bucket/warehouse/my_table")
+
+	// Verify path uses model_name from "name" property
+	require.Equal(t, "models/iceberg_test.yaml", result.Files[0].Path)
+
+	// Verify secret extraction via JSON Schema
+	require.Equal(t, "AKIAEXAMPLE", result.EnvVars["AWS_ACCESS_KEY_ID"])
+	require.Equal(t, "wJalrXUtnFEMI/EXAMPLEKEY", result.EnvVars["AWS_SECRET_ACCESS_KEY"])
+
+	// Raw secrets should NOT appear in the blob
+	require.NotContains(t, blob, "AKIAEXAMPLE")
+	require.NotContains(t, blob, "wJalrXUtnFEMI/EXAMPLEKEY")
+}
+
+func TestRenderSchemaEnvVarConflict(t *testing.T) {
+	tmpl := &Template{
+		Name:        "test-schema",
+		DisplayName: "Test Schema",
+		Tags:        []string{"test"},
+		JSONSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"api_key": map[string]any{
+					"type":      "string",
+					"x-secret":  true,
+					"x-env-var": "MY_API_KEY",
+				},
+			},
+		},
+		Files: []File{
+			{
+				Name:         "connector",
+				PathTemplate: "connectors/test.yaml",
+				CodeTemplate: "type: connector\n[[ renderProps .props ]]",
+			},
+		},
+	}
+
+	// Pre-populate existing env to force conflict
+	existingEnv := map[string]bool{"MY_API_KEY": true}
+
+	result, err := Render(&RenderInput{
+		Template:    tmpl,
+		Properties:  map[string]any{"api_key": "secret123"},
+		ExistingEnv: existingEnv,
+	})
+	require.NoError(t, err)
+
+	// Should use MY_API_KEY_1 due to conflict
+	require.Contains(t, result.EnvVars, "MY_API_KEY_1")
+	require.Equal(t, "secret123", result.EnvVars["MY_API_KEY_1"])
+	require.Contains(t, result.Files[0].Blob, "MY_API_KEY_1")
+}
+
+func TestRenderSchemaUIOnlyFieldsSkipped(t *testing.T) {
+	tmpl := &Template{
+		Name:        "test-ui-only",
+		DisplayName: "Test UI Only",
+		Tags:        []string{"test"},
+		JSONSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"auth_method": map[string]any{
+					"type":      "string",
+					"x-ui-only": true,
+				},
+				"host": map[string]any{
+					"type": "string",
+				},
+			},
+		},
+		Files: []File{
+			{
+				Name:         "connector",
+				PathTemplate: "connectors/test.yaml",
+				CodeTemplate: "type: connector\n[[ renderProps .props ]]",
+			},
+		},
+	}
+
+	result, err := Render(&RenderInput{
+		Template: tmpl,
+		Properties: map[string]any{
+			"auth_method": "access_keys",
+			"host":        "example.com",
+		},
+		ExistingEnv: make(map[string]bool),
+	})
+	require.NoError(t, err)
+
+	blob := result.Files[0].Blob
+	require.Contains(t, blob, "host")
+	require.NotContains(t, blob, "auth_method")
+}
+
+func TestRenderSchemaPropertyTypes(t *testing.T) {
+	tmpl := &Template{
+		Name:        "test-types",
+		DisplayName: "Test Types",
+		Tags:        []string{"test"},
+		JSONSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"host": map[string]any{
+					"type": "string",
+				},
+				"port": map[string]any{
+					"type": "number",
+				},
+				"ssl": map[string]any{
+					"type": "boolean",
+				},
+			},
+		},
+		Files: []File{
+			{
+				Name:         "connector",
+				PathTemplate: "connectors/test.yaml",
+				CodeTemplate: "type: connector\n[[ renderProps .props ]]",
+			},
+		},
+	}
+
+	result, err := Render(&RenderInput{
+		Template: tmpl,
+		Properties: map[string]any{
+			"host": "example.com",
+			"port": "9440",
+			"ssl":  "true",
+		},
+		ExistingEnv: make(map[string]bool),
+	})
+	require.NoError(t, err)
+
+	blob := result.Files[0].Blob
+	// Strings should be quoted
+	require.Contains(t, blob, `host: "example.com"`)
+	// Numbers should not be quoted
+	require.Contains(t, blob, "port: 9440")
+	// Booleans should not be quoted
+	require.Contains(t, blob, "ssl: true")
 }

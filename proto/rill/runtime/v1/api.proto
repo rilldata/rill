@@ -804,6 +804,13 @@ message Template {
   string olap = 4;
   repeated string tags = 5;
   repeated TemplateFile files = 6;
+  // JSON Schema for form generation and property metadata.
+  // Present for self-contained templates; absent for legacy templates that use DriverSpec.
+  google.protobuf.Struct json_schema = 7;
+  // Short description of the template.
+  string description = 8;
+  // Link to documentation.
+  string docs_url = 9;
 }
 
 // TemplateFile describes a single output file within a template.

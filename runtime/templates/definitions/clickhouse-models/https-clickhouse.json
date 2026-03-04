@@ -1,0 +1,40 @@
+{
+  "name": "https-clickhouse",
+  "display_name": "HTTPS (ClickHouse)",
+  "description": "Read files from HTTP/HTTPS URLs into ClickHouse",
+  "driver": "https",
+  "olap": "clickhouse",
+  "tags": ["https", "http", "url", "clickhouse", "source"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "fileStore",
+    "properties": {
+      "path": {
+        "type": "string",
+        "title": "URL",
+        "description": "HTTP(S) URL to the file",
+        "pattern": "^https?://.+",
+        "errorMessage": { "pattern": "Must be a valid HTTP(S) URL" },
+        "x-placeholder": "https://example.com/data.csv",
+        "x-step": "source"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": ["path", "name"]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  [[ .sql ]]\n"
+    }
+  ]
+}

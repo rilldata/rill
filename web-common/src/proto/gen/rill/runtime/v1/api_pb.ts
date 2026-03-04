@@ -2794,6 +2794,28 @@ export class Template extends Message$1<Template> {
    */
   files: TemplateFile[] = [];
 
+  /**
+   * JSON Schema for form generation and property metadata.
+   * Present for self-contained templates; absent for legacy templates that use DriverSpec.
+   *
+   * @generated from field: google.protobuf.Struct json_schema = 7;
+   */
+  jsonSchema?: Struct;
+
+  /**
+   * Short description of the template.
+   *
+   * @generated from field: string description = 8;
+   */
+  description = "";
+
+  /**
+   * Link to documentation.
+   *
+   * @generated from field: string docs_url = 9;
+   */
+  docsUrl = "";
+
   constructor(data?: PartialMessage<Template>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2808,6 +2830,9 @@ export class Template extends Message$1<Template> {
     { no: 4, name: "olap", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "files", kind: "message", T: TemplateFile, repeated: true },
+    { no: 7, name: "json_schema", kind: "message", T: Struct },
+    { no: 8, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Template {
