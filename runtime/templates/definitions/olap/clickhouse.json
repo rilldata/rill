@@ -23,15 +23,16 @@
       "deployment_type": {
         "type": "string",
         "title": "Connection type",
-        "enum": ["cloud", "playground", "self-managed"],
+        "enum": ["cloud", "playground", "self-managed", "rill-managed"],
         "default": "cloud",
         "x-display": "select",
         "x-select-style": "rich",
-        "x-enum-labels": ["ClickHouse Cloud", "ClickHouse Playground", "Self Managed"],
+        "x-enum-labels": ["ClickHouse Cloud", "ClickHouse Playground", "Self Managed", "Rill-Managed"],
         "x-enum-descriptions": [
           "Connect to your ClickHouse Cloud instance",
           "Free public instance for testing and demos",
-          "Connect to your own self-hosted server"
+          "Connect to your own self-hosted server",
+          "Rill-managed ClickHouse infrastructure"
         ],
         "x-ui-only": true,
         "x-grouped-fields": {

@@ -123,7 +123,7 @@ function buildSchemaRegistry(
 export function createConnectorSchemas(instanceId: string) {
   const templatesQuery = createRuntimeServiceListTemplates();
   const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
-    sensitive: false,
+    sensitive: true,
   });
 
   const connectors: Readable<ConnectorInfo[]> = derived(

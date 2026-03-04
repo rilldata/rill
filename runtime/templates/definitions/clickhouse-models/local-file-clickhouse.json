@@ -2,13 +2,14 @@
   "name": "local-file-clickhouse",
   "display_name": "Local File",
   "description": "Read local files into ClickHouse",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/duckdb",
   "driver": "local_file",
   "olap": "clickhouse",
   "tags": ["local", "file", "clickhouse", "source"],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "fileStore",
+    "x-category": "source_only",
     "x-icon": "LocalFile",
     "x-small-icon": "LocalFileIcon",
     "properties": {
@@ -16,16 +17,14 @@
         "type": "string",
         "title": "Path",
         "description": "Local file path or glob (relative to project root)",
-        "x-placeholder": "data/*.parquet",
-        "x-step": "source"
+        "x-placeholder": "data/*.parquet"
       },
       "name": {
         "type": "string",
         "title": "Model name",
         "description": "Name for the source model",
         "pattern": "^[a-zA-Z0-9_]+$",
-        "x-placeholder": "my_model",
-        "x-step": "explorer"
+        "x-placeholder": "my_model"
       }
     },
     "required": ["path", "name"]

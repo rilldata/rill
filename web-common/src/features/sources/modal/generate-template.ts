@@ -52,7 +52,7 @@ export async function generateTemplate(
       olap = cached;
     } else {
       const resp = await runtimeServiceGetInstance(instanceId, {
-        sensitive: false,
+        sensitive: true,
       });
       olap = normalizeOlapForTemplate(resp.instance?.olapConnector ?? "duckdb");
       olapCache.set(instanceId, olap);

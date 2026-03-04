@@ -2,13 +2,14 @@
   "name": "gcs-clickhouse",
   "display_name": "GCS",
   "description": "Read GCS files into ClickHouse using table functions (HMAC keys)",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
   "driver": "gcs",
   "olap": "clickhouse",
   "tags": ["gcs", "google", "object-storage", "clickhouse", "source"],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "objectStore",
+    "x-category": "source_only",
     "x-icon": "GoogleCloudStorage",
     "x-small-icon": "GoogleCloudStorageIcon",
     "properties": {
@@ -18,8 +19,7 @@
         "description": "GCS HMAC access key ID",
         "x-placeholder": "Enter HMAC access key",
         "x-secret": true,
-        "x-env-var": "GCS_KEY_ID",
-        "x-step": "connector"
+        "x-env-var": "GCS_KEY_ID"
       },
       "secret": {
         "type": "string",
@@ -27,8 +27,7 @@
         "description": "GCS HMAC secret key",
         "x-placeholder": "Enter HMAC secret",
         "x-secret": true,
-        "x-env-var": "GCS_SECRET",
-        "x-step": "connector"
+        "x-env-var": "GCS_SECRET"
       },
       "path": {
         "type": "string",
@@ -36,16 +35,14 @@
         "description": "Path to your GCS bucket or prefix",
         "pattern": "^gs://[^/]+(/.*)?$",
         "errorMessage": { "pattern": "Must be a GCS URI (e.g. gs://bucket/path)" },
-        "x-placeholder": "gs://bucket/path",
-        "x-step": "source"
+        "x-placeholder": "gs://bucket/path"
       },
       "name": {
         "type": "string",
         "title": "Model name",
         "description": "Name for the source model",
         "pattern": "^[a-zA-Z0-9_]+$",
-        "x-placeholder": "my_model",
-        "x-step": "explorer"
+        "x-placeholder": "my_model"
       }
     },
     "required": ["key_id", "secret", "path", "name"]
