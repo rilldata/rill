@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -145,11 +144,20 @@ func (s *Server) GenerateFile(ctx context.Context, req *runtimev1.GenerateFileRe
 	}, nil
 }
 
-// appendEnvVar appends or updates an env var in .env content.
+// appendEnvVar updates an existing env var or appends a new one.
+// If the key already exists, its value is replaced in-place.
 func appendEnvVar(content, key, value string) string {
-	// Simple append; the frontend already handles deduplication
+	prefix := key + "="
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, prefix) {
+			lines[i] = prefix + value
+			return strings.Join(lines, "\n")
+		}
+	}
+	// Key not found; append
 	if content != "" && content[len(content)-1] != '\n' {
 		content += "\n"
 	}
-	return fmt.Sprintf("%s%s=%s\n", content, key, value)
+	return content + prefix + value + "\n"
 }

@@ -21,7 +21,7 @@ func TestRegistryGet(t *testing.T) {
 	require.NoError(t, err)
 
 	// Known templates exist
-	for _, name := range []string{"s3", "gcs", "clickhouse", "s3-duckdb", "iceberg-duckdb", "snowflake-model"} {
+	for _, name := range []string{"s3", "gcs", "clickhouse", "s3-duckdb", "iceberg-duckdb", "snowflake-duckdb"} {
 		t.Run(name, func(t *testing.T) {
 			tmpl, ok := r.Get(name)
 			require.True(t, ok, "template %q should exist", name)
@@ -74,10 +74,10 @@ func TestRegistryLookupByDriver(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "s3-duckdb", tmpl.Name)
 
-	// Model lookup for warehouses: driver-model
+	// Model lookup for warehouses: driver-duckdb
 	tmpl, ok = r.LookupByDriver("snowflake", "model")
 	require.True(t, ok)
-	require.Equal(t, "snowflake-model", tmpl.Name)
+	require.Equal(t, "snowflake-duckdb", tmpl.Name)
 }
 
 func TestRegistryTemplatesSorted(t *testing.T) {

@@ -106,15 +106,9 @@ func (r *Registry) LookupByDriver(driver, resourceType string) (*Template, bool)
 		// Connector templates are named after the driver
 		return r.Get(driver)
 	case "model":
-		// Model templates: try driver-duckdb first (DuckDB rewrite), then driver-model
-		if t, ok := r.Get(driver + "-duckdb"); ok {
-			return t, true
-		}
-		if t, ok := r.Get(driver + "-model"); ok {
-			return t, true
-		}
-		// Fallback: the driver itself might handle models (e.g. clickhouse-model)
-		return nil, false
+		// Model templates use the pattern driver-{olap} (e.g. s3-duckdb, s3-clickhouse).
+		// LookupByDriver defaults to DuckDB; for other OLAPs use Get() directly.
+		return r.Get(driver + "-duckdb")
 	}
 	return nil, false
 }

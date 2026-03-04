@@ -1,13 +1,14 @@
-name: postgres-model
-display_name: "Postgres"
-driver: postgres
-tags: ["postgres", "postgresql", "database", "source", "model"]
+name: redshift-duckdb
+display_name: "Amazon Redshift (DuckDB)"
+driver: redshift
+olap: duckdb
+tags: ["redshift", "aws", "warehouse", "duckdb", "source", "model"]
 files:
   - name: model
     path_template: "models/[[ .model_name ]].yaml"
     code_template: |
       # Model YAML
-      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/postgres
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/redshift
       type: model
       [[ if .connector_name -]]
       connector: "[[ .connector_name ]]"
@@ -17,7 +18,4 @@ files:
       [[ if .sql -]]
       sql: |
         [[ .sql | indent 2 ]]
-      [[ end -]]
-      dev:
-        sql: |
-          select * from {{ ref "self" }} limit 10000
+      [[ end ]]

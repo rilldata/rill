@@ -46,7 +46,10 @@ func Render(input *RenderInput) (*RenderOutput, error) {
 	existingEnv := cloneEnvMap(input.ExistingEnv)
 
 	// Build the template data context
-	data := buildTemplateData(input, existingEnv, envVars)
+	data, err := buildTemplateData(input, existingEnv, envVars)
+	if err != nil {
+		return nil, err
+	}
 
 	// Render each matching file
 	var files []RenderedFile
@@ -76,7 +79,7 @@ func Render(input *RenderInput) (*RenderOutput, error) {
 
 // buildTemplateData creates the data map passed to Go templates.
 // It pre-processes properties: extracts secrets, filters empties, adds derived fields.
-func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars map[string]string) map[string]any {
+func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars map[string]string) (map[string]any, error) {
 	data := make(map[string]any)
 
 	// Basic fields
@@ -97,7 +100,7 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 
 	if input.DriverSpec == nil {
 		// Driverless template (e.g. iceberg-duckdb): pass properties as-is
-		return data
+		return data, nil
 	}
 
 	// Process config properties (for connector outputs)
@@ -111,19 +114,23 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 
 	// DuckDB rewrite: compute SQL from path for object store, file store, and sqlite drivers
 	if input.Template.OLAP == "duckdb" && input.Template.Driver != "" {
-		applyDuckDBDerivedFields(input, data)
+		if err := applyDuckDBDerivedFields(input, data); err != nil {
+			return nil, err
+		}
 	}
 
 	// ClickHouse rewrite: compute SQL from properties using ClickHouse table functions
 	if input.Template.OLAP == "clickhouse" && input.Template.Driver != "" {
-		applyClickHouseDerivedFields(input, data, configProps)
+		if err := applyClickHouseDerivedFields(input, data, configProps); err != nil {
+			return nil, err
+		}
 	}
 
 	// Special flags
 	data["no_dev"] = input.Template.Driver == "redshift"
 	data["materialize"] = input.Template.Driver != "duckdb" && input.Template.Driver != "motherduck"
 
-	return data
+	return data, nil
 }
 
 // processProperties pre-processes a list of PropertySpecs against raw form values.
@@ -219,36 +226,49 @@ func processHeaders(headers map[string]any, connectorName string, existingEnv ma
 }
 
 // applyDuckDBDerivedFields computes DuckDB-specific derived fields (SQL, create_secrets_from_connectors).
-func applyDuckDBDerivedFields(input *RenderInput, data map[string]any) {
+func applyDuckDBDerivedFields(input *RenderInput, data map[string]any) error {
 	spec := input.DriverSpec
 	path := strVal(input.Properties["path"])
 
 	switch {
 	case spec.ImplementsObjectStore: // s3, gcs, azure
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for %s DuckDB model", input.Template.Driver)
+		}
 		if input.ConnectorName != "" {
 			data["create_secrets_from_connectors"] = input.ConnectorName
 		}
 		data["sql"] = BuildDuckDBQuery(path, false)
 
 	case input.Template.Driver == "https":
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for HTTPS DuckDB model")
+		}
 		if input.ConnectorName != "" {
 			data["create_secrets_from_connectors"] = input.ConnectorName
 		}
 		data["sql"] = BuildDuckDBQuery(path, true)
 
 	case spec.ImplementsFileStore: // local_file
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for local file DuckDB model")
+		}
 		data["sql"] = BuildDuckDBQuery(path, false)
 
 	case input.Template.Driver == "sqlite":
 		db := strVal(input.Properties["db"])
 		table := strVal(input.Properties["table"])
+		if db == "" || table == "" {
+			return fmt.Errorf("missing required properties \"db\" and \"table\" for SQLite DuckDB model")
+		}
 		data["sql"] = fmt.Sprintf("SELECT * FROM sqlite_scan('%s', '%s');", db, table)
 	}
+	return nil
 }
 
 // applyClickHouseDerivedFields computes ClickHouse-specific SQL using native table functions.
 // ClickHouse models embed credentials directly in the SQL as env var references.
-func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, configProps []ProcessedProp) {
+func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, configProps []ProcessedProp) error {
 	path := strVal(input.Properties["path"])
 
 	// Build a lookup of processed config prop values by key (env var refs for secrets)
@@ -259,14 +279,23 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 
 	switch input.Template.Driver {
 	case "s3":
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for S3 ClickHouse model")
+		}
 		data["sql"] = BuildClickHouseObjectStoreQuery("s3", path,
 			propVal["aws_access_key_id"], propVal["aws_secret_access_key"])
 
 	case "gcs":
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for GCS ClickHouse model")
+		}
 		data["sql"] = BuildClickHouseObjectStoreQuery("gcs", path,
 			propVal["key_id"], propVal["secret"])
 
 	case "azure":
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for Azure ClickHouse model")
+		}
 		container, blobPath := parseAzurePath(path)
 		endpoint := fmt.Sprintf("https://%s.blob.core.windows.net",
 			strVal(input.Properties["azure_storage_account"]))
@@ -275,6 +304,9 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 
 	case "mysql":
 		host := strVal(input.Properties["host"])
+		if host == "" {
+			return fmt.Errorf("missing required property \"host\" for MySQL ClickHouse model")
+		}
 		port := strVal(input.Properties["port"])
 		if port == "" {
 			port = "3306"
@@ -286,6 +318,9 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 
 	case "postgres":
 		host := strVal(input.Properties["host"])
+		if host == "" {
+			return fmt.Errorf("missing required property \"host\" for Postgres ClickHouse model")
+		}
 		port := strVal(input.Properties["port"])
 		if port == "" {
 			port = "5432"
@@ -296,16 +331,26 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 			propVal["user"], propVal["password"])
 
 	case "https":
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for HTTPS ClickHouse model")
+		}
 		data["sql"] = BuildClickHouseURLQuery(path)
 
 	case "local_file":
+		if path == "" {
+			return fmt.Errorf("missing required property \"path\" for local file ClickHouse model")
+		}
 		data["sql"] = BuildClickHouseFileQuery(path)
 
 	case "sqlite":
-		data["sql"] = BuildClickHouseSQLiteQuery(
-			strVal(input.Properties["db"]),
-			strVal(input.Properties["table"]))
+		db := strVal(input.Properties["db"])
+		table := strVal(input.Properties["table"])
+		if db == "" || table == "" {
+			return fmt.Errorf("missing required properties \"db\" and \"table\" for SQLite ClickHouse model")
+		}
+		data["sql"] = BuildClickHouseSQLiteQuery(db, table)
 	}
+	return nil
 }
 
 // parseAzurePath parses "azure://container/blob/path" into container and blob path.

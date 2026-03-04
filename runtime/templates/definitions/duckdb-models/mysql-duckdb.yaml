@@ -1,7 +1,8 @@
-name: mysql-model
-display_name: "MySQL"
+name: mysql-duckdb
+display_name: "MySQL (DuckDB)"
 driver: mysql
-tags: ["mysql", "database", "source", "model"]
+olap: duckdb
+tags: ["mysql", "database", "duckdb", "source", "model"]
 files:
   - name: model
     path_template: "models/[[ .model_name ]].yaml"

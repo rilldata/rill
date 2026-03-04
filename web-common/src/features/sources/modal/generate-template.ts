@@ -1,18 +1,46 @@
 import type { QueryClient } from "@tanstack/query-core";
 import { get } from "svelte/store";
 import {
-  type V1GenerateTemplateResponse,
   getRuntimeServiceGetFileQueryKey,
-  runtimeServiceGenerateTemplate,
+  runtimeServiceGenerateFile,
   runtimeServiceGetFile,
+  runtimeServiceGetInstance,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import { replaceOrAddEnvVariable } from "../../connectors/code-utils";
 
 /**
- * Call the GenerateTemplate RPC to produce YAML + env var names from
- * structured form data. The backend handles DuckDB rewrites, env var
- * naming/conflict resolution, and YAML formatting.
+ * Map the instance's OLAP connector to the template OLAP suffix.
+ * Only ClickHouse has its own model templates; everything else uses DuckDB.
+ */
+function normalizeOlapForTemplate(olapConnector: string): string {
+  if (olapConnector === "clickhouse") return "clickhouse";
+  return "duckdb";
+}
+
+// Cache OLAP per instance to avoid a network call on every YAML preview keystroke.
+const olapCache = new Map<string, string>();
+
+/**
+ * Resolve the template name from (driver, resourceType, olap).
+ * Connectors use the driver name; models use "{driver}-{olap}".
+ */
+function resolveTemplateName(
+  driver: string,
+  resourceType: string,
+  olap: string,
+): string {
+  if (resourceType === "connector") return driver;
+  return `${driver}-${olap}`;
+}
+
+/**
+ * Call the GenerateFile RPC to produce YAML + env var names from
+ * structured form data. The backend handles rewrites, env var
+ * naming/conflict resolution, and YAML formatting via declarative templates.
+ *
+ * Uses preview mode so the server renders without writing files;
+ * the caller handles file writing and reconciliation.
  */
 export async function generateTemplate(
   instanceId: string,
@@ -22,19 +50,50 @@ export async function generateTemplate(
     properties: Record<string, unknown>;
     connectorName?: string;
   },
-): Promise<V1GenerateTemplateResponse> {
-  return runtimeServiceGenerateTemplate(instanceId, {
-    resourceType: opts.resourceType,
-    driver: opts.driver,
+): Promise<{ blob: string; envVars: Record<string, string> }> {
+  // Resolve OLAP for model templates (connectors don't need it).
+  // Cached per instance since OLAP doesn't change during a session.
+  let olap = "duckdb";
+  if (opts.resourceType === "model") {
+    const cached = olapCache.get(instanceId);
+    if (cached) {
+      olap = cached;
+    } else {
+      const resp = await runtimeServiceGetInstance(instanceId, {
+        sensitive: false,
+      });
+      olap = normalizeOlapForTemplate(
+        resp.instance?.olapConnector ?? "duckdb",
+      );
+      olapCache.set(instanceId, olap);
+    }
+  }
+
+  const templateName = resolveTemplateName(
+    opts.driver,
+    opts.resourceType,
+    olap,
+  );
+
+  const response = await runtimeServiceGenerateFile(instanceId, {
+    templateName,
+    output: opts.resourceType,
     properties: opts.properties,
     connectorName: opts.connectorName,
+    preview: true,
   });
+
+  // Flatten to match the interface callers expect
+  return {
+    blob: response.files?.[0]?.blob ?? "",
+    envVars: response.envVars ?? {},
+  };
 }
 
 /**
- * Merge env vars returned by the GenerateTemplate RPC into the existing
- * `.env` file. The backend already resolved names and conflict suffixes,
- * so this is a straight key=value merge.
+ * Merge env vars returned by GenerateFile into the existing `.env` file.
+ * The backend already resolved names and conflict suffixes, so this is
+ * a straight key=value merge.
  *
  * Returns the updated blob and the original blob (for rollback).
  */

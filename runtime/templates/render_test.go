@@ -94,7 +94,7 @@ func TestRenderWarehouseModelTemplate(t *testing.T) {
 	registry, err := NewRegistry()
 	require.NoError(t, err)
 
-	tmpl, ok := registry.Get("snowflake-model")
+	tmpl, ok := registry.Get("snowflake-duckdb")
 	require.True(t, ok)
 
 	result, err := Render(&RenderInput{
@@ -129,7 +129,7 @@ func TestRenderRedshiftModelNoDevSection(t *testing.T) {
 	registry, err := NewRegistry()
 	require.NoError(t, err)
 
-	tmpl, ok := registry.Get("redshift-model")
+	tmpl, ok := registry.Get("redshift-duckdb")
 	require.True(t, ok)
 
 	result, err := Render(&RenderInput{

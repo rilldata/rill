@@ -1,14 +1,14 @@
-name: athena-model
-display_name: "Amazon Athena"
-driver: athena
-tags: ["athena", "aws", "warehouse", "source", "model"]
+name: postgres-duckdb
+display_name: "Postgres (DuckDB)"
+driver: postgres
+olap: duckdb
+tags: ["postgres", "postgresql", "database", "duckdb", "source", "model"]
 files:
   - name: model
     path_template: "models/[[ .model_name ]].yaml"
     code_template: |
       # Model YAML
-      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/athena
-      
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/postgres
       type: model
       [[ if .connector_name -]]
       connector: "[[ .connector_name ]]"

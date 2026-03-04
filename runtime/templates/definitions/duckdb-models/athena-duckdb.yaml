@@ -1,13 +1,15 @@
-name: bigquery-model
-display_name: "BigQuery"
-driver: bigquery
-tags: ["bigquery", "google", "warehouse", "source", "model"]
+name: athena-duckdb
+display_name: "Amazon Athena (DuckDB)"
+driver: athena
+olap: duckdb
+tags: ["athena", "aws", "warehouse", "duckdb", "source", "model"]
 files:
   - name: model
     path_template: "models/[[ .model_name ]].yaml"
     code_template: |
       # Model YAML
-      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/bigquery
+      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/athena
+      
       type: model
       [[ if .connector_name -]]
       connector: "[[ .connector_name ]]"
