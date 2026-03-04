@@ -2,7 +2,7 @@ import {
   queryServiceMetricsViewTimeRanges,
   queryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { getLocalRuntimeClient } from "./local-runtime-config";
+import { getLocalRuntimeClient } from "./runtime-client";
 import { Interval, DateTime, type DateTimeUnit } from "luxon";
 import { GrainAliasToOrder } from "@rilldata/web-common/lib/time/new-grains";
 

@@ -3,7 +3,7 @@ import {
   setLastConversationId,
 } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
 import { getFeatureFlags } from "@rilldata/web-common/features/feature-flags.js";
-import { createRuntimeClientFromLayout } from "@rilldata/web-admin/lib/runtime-client-utils";
+import { getCloudRuntimeClient } from "@rilldata/web-admin/lib/runtime-client";
 import { redirect } from "@sveltejs/kit";
 
 export const load = async ({
@@ -13,7 +13,7 @@ export const load = async ({
   parent,
 }) => {
   const { runtime } = await parent();
-  const client = createRuntimeClientFromLayout(runtime);
+  const client = getCloudRuntimeClient(runtime);
 
   const fetchedFeatureFlags = await getFeatureFlags(client);
 

@@ -9,7 +9,7 @@ import {
 } from "@rilldata/web-common/runtime-client/index.js";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
-import { getLocalRuntimeClient } from "../lib/local-runtime-config";
+import { getLocalRuntimeClient } from "../lib/runtime-client";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";

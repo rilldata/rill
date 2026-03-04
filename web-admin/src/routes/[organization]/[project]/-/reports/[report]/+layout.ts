@@ -4,11 +4,11 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 import { ConnectError } from "@connectrpc/connect";
-import { createRuntimeClientFromLayout } from "@rilldata/web-admin/lib/runtime-client-utils";
+import { getCloudRuntimeClient } from "@rilldata/web-admin/lib/runtime-client";
 
 export async function load({ params, parent }) {
   const { runtime } = await parent();
-  const client = createRuntimeClientFromLayout(runtime);
+  const client = getCloudRuntimeClient(runtime);
 
   const reportData = await queryClient
     .fetchQuery(

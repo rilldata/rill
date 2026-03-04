@@ -1,5 +1,5 @@
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
-import { getLocalRuntimeClient } from "../../../../lib/local-runtime-config";
+import { getLocalRuntimeClient } from "../../../../lib/runtime-client";
 import { error } from "@sveltejs/kit";
 
 export const load = async ({ params, depends }) => {

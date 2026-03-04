@@ -1,4 +1,4 @@
-import { getLocalRuntimeClient } from "../../../../../../../../../lib/local-runtime-config";
+import { getLocalRuntimeClient } from "../../../../../../../../../lib/runtime-client";
 import { maybeGetMetricsResolverQueryFromMessage } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 import { openQuery } from "@rilldata/web-common/features/explore-mappers/open-query.ts";
 

@@ -3,8 +3,13 @@
   import { onDestroy, setContext } from "svelte";
   import { featureFlags } from "../../features/feature-flags";
   import { invalidateRuntimeQueries } from "../invalidation";
-  import { RUNTIME_CONTEXT_KEY, runtimeClientStore } from "./context";
-  import { RuntimeClient, type AuthContext } from "./runtime-client";
+  import {
+    getRuntimeClient,
+    evictRuntimeClient,
+    RUNTIME_CONTEXT_KEY,
+    runtimeClientStore,
+  } from "./context";
+  import type { AuthContext } from "./runtime-client";
 
   const queryClient = useQueryClient();
 
@@ -13,8 +18,9 @@
   export let jwt: string | undefined = undefined;
   export let authContext: AuthContext = "user";
 
-  // Created once per mount. If host/instanceId change, the parent's {#key} re-mounts us.
-  const client = new RuntimeClient({ host, instanceId, jwt, authContext });
+  // Returns a cached instance if a load function already created one for this host+instanceId.
+  // If host/instanceId change, the parent's {#key} re-mounts us.
+  const client = getRuntimeClient({ host, instanceId, jwt, authContext });
   setContext(RUNTIME_CONTEXT_KEY, client);
   runtimeClientStore.set(client);
   featureFlags.setRuntimeClient(client);
@@ -29,6 +35,7 @@
   onDestroy(() => {
     featureFlags.clearRuntimeClient();
     runtimeClientStore.update((c) => (c === client ? null : c));
+    evictRuntimeClient(client);
     client.dispose();
   });
 </script>
