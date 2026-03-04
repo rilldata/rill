@@ -333,7 +333,7 @@ func mapGRPCError(err error) error {
 	}
 	// Extract trace data if present (will be attached after error mapping)
 	var te *traceError
-	hasTrace := errors.As(err, &te)
+	errors.As(err, &te)
 
 	if errors.Is(err, context.DeadlineExceeded) {
 		err = status.Error(codes.DeadlineExceeded, err.Error())
@@ -348,7 +348,7 @@ func mapGRPCError(err error) error {
 	}
 
 	// Attach trace details to the gRPC status after error mapping
-	if hasTrace {
+	if te != nil {
 		t := te.collector.ToProto()
 		if t != nil {
 			st, ok := status.FromError(err)
