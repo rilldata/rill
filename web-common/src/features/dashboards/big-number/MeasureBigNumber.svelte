@@ -196,7 +196,7 @@
                 }}
                 on:mouseleave={() => {
                   tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? "no data";
+                    measureValueFormatterTooltip(value) ?? "no data";
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
