@@ -48,7 +48,7 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  const { ai, generateCanvas, developerChat } = featureFlags;
+  const { ai, developerChat } = featureFlags;
 
   $: sourceQuery = fileArtifact.getResource(queryClient);
   let source: V1Source | undefined;
@@ -217,28 +217,26 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
-{#if $generateCanvas}
-  <NavigationMenuItem
-    disabled={disableCreateDashboard}
-    on:click={onGenerateCanvasDashboard}
-  >
-    <CanvasIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate Canvas Dashboard
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-    <svelte:fragment slot="description">
-      {#if $sourceHasError}
-        Source has errors
-      {:else if !sourceIsIdle}
-        Source is being ingested
-      {/if}
-    </svelte:fragment>
-  </NavigationMenuItem>
-{/if}
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={onGenerateCanvasDashboard}
+>
+  <CanvasIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate Canvas Dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $sourceHasError}
+      Source has errors
+    {:else if !sourceIsIdle}
+      Source is being ingested
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}

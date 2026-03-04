@@ -25,7 +25,7 @@
   import { createAndPreviewExplore } from "./create-and-preview-explore";
 
   const runtimeClient = useRuntimeClient();
-  const { ai, generateCanvas, developerChat } = featureFlags;
+  const { ai, developerChat } = featureFlags;
 
   export let filePath: string;
 
@@ -104,7 +104,7 @@
     <GitBranch slot="icon" size="14px" />
     View DAG graph
   </NavigationMenuItem>
-  {#if resource && $generateCanvas}
+  {#if resource}
     <NavigationMenuItem
       disabled={!metricsViewName}
       on:click={handleCreateCanvasDashboard}
