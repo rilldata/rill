@@ -114,7 +114,7 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		applyDuckDBDerivedFields(input, data)
 	}
 
-	// ClickHouse rewrite: compute SQL using ClickHouse table functions
+	// ClickHouse rewrite: compute SQL from properties using ClickHouse table functions
 	if input.Template.OLAP == "clickhouse" && input.Template.Driver != "" {
 		applyClickHouseDerivedFields(input, data, configProps)
 	}
@@ -247,12 +247,11 @@ func applyDuckDBDerivedFields(input *RenderInput, data map[string]any) {
 }
 
 // applyClickHouseDerivedFields computes ClickHouse-specific SQL using native table functions.
-// ClickHouse models don't use separate connectors; credentials are embedded in the SQL
-// as Rill env var references (e.g. {{ .env.AWS_ACCESS_KEY_ID }}).
+// ClickHouse models embed credentials directly in the SQL as env var references.
 func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, configProps []ProcessedProp) {
 	path := strVal(input.Properties["path"])
 
-	// Build a lookup of processed config prop values by key (includes env var references for secrets)
+	// Build a lookup of processed config prop values by key (env var refs for secrets)
 	propVal := make(map[string]string, len(configProps))
 	for _, p := range configProps {
 		propVal[p.Key] = p.Value
@@ -260,22 +259,19 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 
 	switch input.Template.Driver {
 	case "s3":
-		keyRef := propVal["aws_access_key_id"]
-		secretRef := propVal["aws_secret_access_key"]
-		data["sql"] = BuildClickHouseObjectStoreQuery("s3", path, keyRef, secretRef)
+		data["sql"] = BuildClickHouseObjectStoreQuery("s3", path,
+			propVal["aws_access_key_id"], propVal["aws_secret_access_key"])
 
 	case "gcs":
-		// GCS on ClickHouse uses S3-compatible HMAC keys
-		keyRef := propVal["key_id"]
-		secretRef := propVal["secret"]
-		data["sql"] = BuildClickHouseObjectStoreQuery("gcs", path, keyRef, secretRef)
+		data["sql"] = BuildClickHouseObjectStoreQuery("gcs", path,
+			propVal["key_id"], propVal["secret"])
 
 	case "azure":
-		account := propVal["azure_storage_account"]
-		key := propVal["azure_storage_key"]
 		container, blobPath := parseAzurePath(path)
-		endpoint := fmt.Sprintf("https://%s.blob.core.windows.net", strVal(input.Properties["azure_storage_account"]))
-		data["sql"] = BuildClickHouseAzureQuery(endpoint, container, blobPath, account, key)
+		endpoint := fmt.Sprintf("https://%s.blob.core.windows.net",
+			strVal(input.Properties["azure_storage_account"]))
+		data["sql"] = BuildClickHouseAzureQuery(endpoint, container, blobPath,
+			propVal["azure_storage_account"], propVal["azure_storage_key"])
 
 	case "mysql":
 		host := strVal(input.Properties["host"])
@@ -283,11 +279,10 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 		if port == "" {
 			port = "3306"
 		}
-		db := strVal(input.Properties["database"])
-		table := strVal(input.Properties["table"])
-		user := propVal["user"]
-		pass := propVal["password"]
-		data["sql"] = BuildClickHouseDatabaseQuery("mysql", host+":"+port, db, table, user, pass)
+		data["sql"] = BuildClickHouseDatabaseQuery("mysql", host+":"+port,
+			strVal(input.Properties["database"]),
+			strVal(input.Properties["table"]),
+			propVal["user"], propVal["password"])
 
 	case "postgres":
 		host := strVal(input.Properties["host"])
@@ -295,11 +290,10 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 		if port == "" {
 			port = "5432"
 		}
-		db := strVal(input.Properties["dbname"])
-		table := strVal(input.Properties["table"])
-		user := propVal["user"]
-		pass := propVal["password"]
-		data["sql"] = BuildClickHouseDatabaseQuery("postgresql", host+":"+port, db, table, user, pass)
+		data["sql"] = BuildClickHouseDatabaseQuery("postgresql", host+":"+port,
+			strVal(input.Properties["dbname"]),
+			strVal(input.Properties["table"]),
+			propVal["user"], propVal["password"])
 
 	case "https":
 		data["sql"] = BuildClickHouseURLQuery(path)
@@ -308,9 +302,9 @@ func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, confi
 		data["sql"] = BuildClickHouseFileQuery(path)
 
 	case "sqlite":
-		db := strVal(input.Properties["db"])
-		table := strVal(input.Properties["table"])
-		data["sql"] = BuildClickHouseSQLiteQuery(db, table)
+		data["sql"] = BuildClickHouseSQLiteQuery(
+			strVal(input.Properties["db"]),
+			strVal(input.Properties["table"]))
 	}
 }
 

@@ -169,12 +169,8 @@ func TestRenderIcebergDuckDB(t *testing.T) {
 		Output:     "model",
 		DriverSpec: nil, // driverless
 		Properties: map[string]any{
-			"aws_access_key_id":     "AKIA123",
-			"aws_secret_access_key": "secret456",
-			"aws_region":            "us-west-2",
-			"bucket":                "my-iceberg-bucket",
-			"path":                  "warehouse/my_table",
-			"name":                  "iceberg_data",
+			"path": "s3://my-iceberg-bucket/warehouse/my_table",
+			"name": "iceberg_data",
 		},
 		ExistingEnv: make(map[string]bool),
 	})
@@ -183,16 +179,104 @@ func TestRenderIcebergDuckDB(t *testing.T) {
 
 	blob := result.Files[0].Blob
 	require.Contains(t, blob, "type: model")
-	require.Contains(t, blob, "materialize: true")
-	require.Contains(t, blob, "INSTALL ICEBERG")
-	require.Contains(t, blob, "LOAD ICEBERG")
-	require.Contains(t, blob, "KEY_ID 'AKIA123'")
-	require.Contains(t, blob, "SECRET 'secret456'")
-	require.Contains(t, blob, "REGION 'us-west-2'")
 	require.Contains(t, blob, "iceberg_scan")
 	require.Contains(t, blob, "s3://my-iceberg-bucket/warehouse/my_table")
 
 	require.Equal(t, "models/iceberg_data.yaml", result.Files[0].Path)
+}
+
+func TestRenderS3ClickHouseModel(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+
+	tmpl, ok := registry.Get("s3-clickhouse")
+	require.True(t, ok)
+
+	result, err := Render(&RenderInput{
+		Template: tmpl,
+		Output:   "model",
+		DriverSpec: &drivers.Spec{
+			ImplementsObjectStore: true,
+			ConfigProperties: []*drivers.PropertySpec{
+				{Key: "aws_access_key_id", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_ACCESS_KEY_ID"},
+				{Key: "aws_secret_access_key", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_SECRET_ACCESS_KEY"},
+			},
+			SourceProperties: []*drivers.PropertySpec{
+				{Key: "path", Type: drivers.StringPropertyType},
+			},
+		},
+		Properties: map[string]any{
+			"aws_access_key_id":     "AKIAIOSFODNN7EXAMPLE",
+			"aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+			"path":                  "s3://my-bucket/data/events.parquet",
+			"name":                  "s3_events",
+		},
+		ExistingEnv: make(map[string]bool),
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Files, 1)
+
+	blob := result.Files[0].Blob
+	require.Contains(t, blob, "type: model")
+	require.Contains(t, blob, "connector: clickhouse")
+	require.Contains(t, blob, "materialize: true")
+	// SQL should show the s3() function with env var refs
+	require.Contains(t, blob, "FROM s3(")
+	require.Contains(t, blob, "s3://my-bucket/data/events.parquet")
+	require.Contains(t, blob, "{{ .env.AWS_ACCESS_KEY_ID }}")
+	require.Contains(t, blob, "{{ .env.AWS_SECRET_ACCESS_KEY }}")
+	require.Contains(t, blob, "Parquet")
+	// Raw secrets should NOT appear in the blob
+	require.NotContains(t, blob, "AKIAIOSFODNN7EXAMPLE")
+
+	// Env vars should be extracted
+	require.Equal(t, "AKIAIOSFODNN7EXAMPLE", result.EnvVars["AWS_ACCESS_KEY_ID"])
+
+	require.Equal(t, "models/s3_events.yaml", result.Files[0].Path)
+}
+
+func TestRenderMySQLClickHouseModel(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+
+	tmpl, ok := registry.Get("mysql-clickhouse")
+	require.True(t, ok)
+
+	result, err := Render(&RenderInput{
+		Template: tmpl,
+		Output:   "model",
+		DriverSpec: &drivers.Spec{
+			ConfigProperties: []*drivers.PropertySpec{
+				{Key: "host", Type: drivers.StringPropertyType},
+				{Key: "port", Type: drivers.NumberPropertyType},
+				{Key: "user", Type: drivers.StringPropertyType},
+				{Key: "password", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "MYSQL_PASSWORD"},
+				{Key: "database", Type: drivers.StringPropertyType},
+			},
+		},
+		Properties: map[string]any{
+			"host":     "db.example.com",
+			"port":     "3306",
+			"user":     "myuser",
+			"password": "secret123",
+			"database": "mydb",
+			"table":    "events",
+			"name":     "mysql_events",
+		},
+		ExistingEnv: make(map[string]bool),
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Files, 1)
+
+	blob := result.Files[0].Blob
+	require.Contains(t, blob, "connector: clickhouse")
+	require.Contains(t, blob, "FROM mysql(")
+	require.Contains(t, blob, "db.example.com:3306")
+	require.Contains(t, blob, "mydb")
+	require.Contains(t, blob, "events")
+	require.Contains(t, blob, "myuser")
+	require.Contains(t, blob, "{{ .env.MYSQL_PASSWORD }}")
+	require.NotContains(t, blob, "secret123")
 }
 
 func TestRenderEnvVarConflict(t *testing.T) {

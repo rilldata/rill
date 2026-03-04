@@ -7,10 +7,6 @@ files:
   - name: model
     path_template: "models/[[ .model_name ]].yaml"
     code_template: |
-      # Model YAML
-      # Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/iceberg
       type: model
-      [[ if .create_secrets_from_connectors -]]
-      create_secrets_from_connectors: "[[ .create_secrets_from_connectors ]]"
       sql: |
         SELECT * FROM iceberg_scan('[[ .path ]]');
