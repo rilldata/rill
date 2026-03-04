@@ -33,7 +33,7 @@
     {
       route: `/${organization}/${project}/-/query`,
       label: "Query",
-      hasPermission: false,
+      hasPermission: true,
     },
     {
       route: `/${organization}/${project}/-/reports`,
