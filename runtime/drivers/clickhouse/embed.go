@@ -353,6 +353,9 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 
     <mlock_executable>true</mlock_executable>
 
+    <!-- Disable cgroup memory observer; it causes errors on WSL where cgroup files are unavailable -->
+    <cgroups_memory_usage_observer_wait_time>0</cgroups_memory_usage_observer_wait_time>
+
     <users>
         <default>
             <password></password>
