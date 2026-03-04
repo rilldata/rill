@@ -142,6 +142,7 @@ export async function fetchProjectDeploymentDetails(
       instanceId: projResp.deployment?.runtimeInstanceId,
       jwt: {
         token: projResp.jwt,
+        receivedAt: Date.now(),
         authContext: token ? "magic" : "user",
       },
     },
