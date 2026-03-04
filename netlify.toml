@@ -12,13 +12,13 @@
     Content-Security-Policy = """\
       default-src 'self'; \
       script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com; \
-      style-src 'self' 'unsafe-inline'; \
+      style-src 'self' 'unsafe-inline' https://*.usepylon.com; \
       img-src https: data: blob:; \
       frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
       frame-ancestors 'self'; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
@@ -42,7 +42,7 @@
       frame-ancestors https:; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
 
@@ -59,6 +59,6 @@
       frame-ancestors https:; \
       form-action 'self'; \
       object-src 'none'; \
-      connect-src 'self' https://*.rilldata.com https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
+      connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """

@@ -574,6 +574,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			content := "<redacted>"
+			if msg.ContentType == MessageContentTypeError {
+				content = msg.Content
+			}
 			s.activity.Record(ctx, activity.EventTypeLog, "ai_message",
 				attribute.String("message_id", msg.ID),
 				attribute.String("parent_message_id", msg.ParentID),
@@ -582,6 +586,7 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 				attribute.String("message_type", string(msg.Type)),
 				attribute.String("tool", msg.Tool),
 				attribute.String("content_type", string(msg.ContentType)),
+				attribute.String("content", content),
 			)
 		}
 		s.messagesDirty = false

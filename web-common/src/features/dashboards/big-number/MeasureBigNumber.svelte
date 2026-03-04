@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
@@ -11,7 +11,11 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import {
+    type MetricsViewSpecMeasure,
+    createQueryServiceMetricsViewAggregation,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     crossfade,
@@ -20,15 +24,91 @@
     type FlyParams,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
+  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let measure: MetricsViewSpecMeasure;
-  export let value: number | null;
-  export let comparisonValue: number | undefined = undefined;
-  export let showComparison = false;
-  export let status: EntityStatus;
-  export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+  export let instanceId: string;
+  export let metricsViewName: string;
+  export let where: V1Expression | undefined = undefined;
+  export let timeDimension: string | undefined = undefined;
+  export let timeStart: string | undefined = undefined;
+  export let timeEnd: string | undefined = undefined;
+  export let comparisonTimeStart: string | undefined = undefined;
+  export let comparisonTimeEnd: string | undefined = undefined;
+  export let showComparison = false;
+  export let ready: boolean = true;
+
+  $: measureName = measure.name ?? "";
+
+  // Primary totals query
+  $: primaryQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      measures: [{ name: measureName }],
+      where,
+      timeRange: {
+        start: timeStart,
+        end: timeEnd,
+        timeDimension,
+      },
+    },
+    {
+      query: {
+        enabled: ready && (!!timeStart || !timeDimension) && !!measureName,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
+    },
+  );
+
+  // Comparison totals query
+  $: comparisonQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      measures: [{ name: measureName }],
+      where,
+      timeRange: {
+        start: comparisonTimeStart,
+        end: comparisonTimeEnd,
+        timeDimension,
+      },
+    },
+    {
+      query: {
+        enabled:
+          ready && showComparison && !!comparisonTimeStart && !!measureName,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
+    },
+  );
+
+  // Derive value, comparisonValue, status, errorMessage from queries
+  $: value =
+    ($primaryQuery.data?.data?.[0]?.[measureName] as number | null) ?? null;
+  $: comparisonValue = showComparison
+    ? ($comparisonQuery.data?.data?.[0]?.[measureName] as number | undefined)
+    : undefined;
+
+  $: isFetching =
+    $primaryQuery.isFetching || (showComparison && $comparisonQuery.isFetching);
+  $: isError = $primaryQuery.isError || $comparisonQuery.isError;
+
+  $: status = isError
+    ? EntityStatus.Error
+    : isFetching
+      ? EntityStatus.Running
+      : EntityStatus.Idle;
+
+  $: errorMessage = isError
+    ? (($primaryQuery.error as any)?.response?.data?.message ??
+      ($comparisonQuery.error as any)?.response?.data?.message ??
+      undefined)
+    : undefined;
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -249,7 +329,7 @@
 <style lang="postcss">
   .big-number {
     @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
-    @apply items-start flex flex-col text-left;
+    @apply items-start flex flex-col text-left flex-none;
     min-height: 85px;
   }
 
