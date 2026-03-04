@@ -7,12 +7,12 @@ import { getConnectorSchema, hasExplorerStep } from "./connector-schemas";
 
 export const addSourceModal = (() => {
   return {
-    open: (connectorName?: string, connectorInstanceName?: string) => {
+    open: (schemaName?: string, connectorInstanceName?: string) => {
       // If connector is pre-selected, skip to the appropriate step (source or explorer)
       // This assumes the connector is already configured (e.g., gcs.yaml exists)
-      if (connectorName) {
+      if (schemaName) {
         // Determine which step to skip to based on connector type
-        const schema = getConnectorSchema(connectorName);
+        const schema = getConnectorSchema(schemaName);
         const hasExplorer = hasExplorerStep(schema);
         // For connectors with explorer step (warehouses/databases), skip to explorer
         // For multi-step connectors (object stores), skip to source
@@ -29,8 +29,8 @@ export const addSourceModal = (() => {
       }
 
       const state = {
-        step: connectorName ? 2 : 1, // Always skip to step 2 if connector is pre-selected
-        connector: connectorName ?? null,
+        step: schemaName ? 2 : 1, // Always skip to step 2 if connector is pre-selected
+        connector: schemaName ?? null,
         connectorInstanceName: connectorInstanceName ?? null,
         requestConnector: false,
       };

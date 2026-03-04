@@ -169,7 +169,7 @@ async function saveConnectorWithoutTest(
     await updateDotEnvWithSecrets(queryClient, connector, formValues, {
       secretKeys: schemaSecretKeys,
       schema: schema ?? undefined,
-      preReadBlob: existingEnvBlob,
+      existingEnvBlob: existingEnvBlob,
     });
 
   await runtimeServicePutFile(resolvedInstanceId, {

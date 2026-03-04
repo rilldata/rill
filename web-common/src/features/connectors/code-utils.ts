@@ -262,19 +262,19 @@ export async function updateDotEnvWithSecrets(
   opts?: {
     secretKeys?: string[];
     schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
-    // Pre-read .env blob to use instead of reading from disk.
+    // Existing .env blob to use instead of reading from disk.
     // Use this when a concurrent operation (e.g. Test and Connect) may have
     // already modified .env; passing the original blob avoids generating
     // duplicate suffixed env var names.
-    preReadBlob?: string;
+    existingEnvBlob?: string;
   },
 ): Promise<{ newBlob: string; originalBlob: string }> {
   let blob: string;
   let originalBlob: string;
 
-  if (opts?.preReadBlob !== undefined) {
-    blob = opts.preReadBlob;
-    originalBlob = opts.preReadBlob;
+  if (opts?.existingEnvBlob !== undefined) {
+    blob = opts.existingEnvBlob;
+    originalBlob = opts.existingEnvBlob;
   } else {
     const instanceId = get(runtime).instanceId;
 

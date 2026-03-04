@@ -2,6 +2,7 @@ import type {
   ConnectorCategory,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
+import type { ConnectorStep } from "./connectorStepStore";
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
@@ -166,7 +167,7 @@ export const SKIP_LINK_EXCLUDED_CONNECTORS = ["salesforce", "sqlite"];
  * @param implementsOlap - Whether the connector is an OLAP engine
  */
 export function shouldShowSkipLink(
-  step: string,
+  step: ConnectorStep,
   connectorName: string | undefined,
   connectorInstanceName: string | null,
   implementsOlap: boolean | undefined,
