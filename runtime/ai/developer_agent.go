@@ -159,9 +159,6 @@ The user has configured global additional instructions for you. They may not rel
 For context, here are some details about the project's default OLAP connector: {{ .default_olap_info }}.
 Note that you can only use it in model resources if it is not readonly.
 
-Call "navigate" tool for the main file created/edited (not if it is deleted) in the conversation. Use kind "file" and pass the written file path.
-Prefer dashboard or metrics view files over other files.
-
 Task: {{ .prompt }}
 `, data)
 }
