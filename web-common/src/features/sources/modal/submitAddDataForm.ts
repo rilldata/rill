@@ -423,6 +423,10 @@ export async function submitAddConnectorForm(
   return resolvedConnectorName;
 }
 
+// How long to wait before showing the loading modal.
+// Set to 0 for testing (shows immediately); use 10_000 for production.
+const SLOW_IMPORT_THRESHOLD_MS = 0;
+
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -492,40 +496,61 @@ export async function submitAddSourceForm(
     createOnly: false,
   });
 
-  // Wait for source resource-level reconciliation
-  // This must happen after .env reconciliation since sources depend on secrets
-  try {
+  // Reconciliation + error check as a single promise
+  const reconcilePromise = (async () => {
     await waitForResourceReconciliation(
       instanceId,
       newSourceName,
       ResourceKind.Model,
     );
-  } catch (error) {
-    // The source file was already created, so we need to delete it
+    const errorMessage = await fileArtifacts.checkFileErrors(
+      queryClient,
+      instanceId,
+      newSourceFilePath,
+    );
+    if (errorMessage) throw new Error(errorMessage);
+  })();
+
+  // Race reconciliation against the slow-import threshold
+  const timeoutSymbol = Symbol("timeout");
+  const result = await Promise.race([
+    reconcilePromise.then(() => "done" as const),
+    reconcilePromise.catch((e) => ({ error: e })),
+    new Promise<typeof timeoutSymbol>((resolve) =>
+      setTimeout(() => resolve(timeoutSymbol), SLOW_IMPORT_THRESHOLD_MS),
+    ),
+  ]);
+
+  if (result === timeoutSymbol) {
+    // Slow path: show loading modal, continue reconciliation in background
+    const filePath = `/${newSourceFilePath}`;
+    sourceIngestionTracker.trackLoading(filePath);
+    await goto(`/files/${newSourceFilePath}`);
+
+    // Background: on error, surface via the loading modal (no rollback;
+    // the user can fix the YAML from the workspace)
+    reconcilePromise.catch((error) => {
+      const message =
+        (error as any)?.message || "Unable to establish a connection";
+      sourceIngestionTracker.trackFailed(filePath, message);
+    });
+    return;
+  }
+
+  // Fast path: reconciliation settled before the timeout
+  if (typeof result === "object" && "error" in result) {
+    const error = result.error;
     sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
     await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     const errorDetails = (error as any).details;
-
     throw {
-      message: error.message || "Unable to establish a connection",
+      message:
+        (error as any).message || "Unable to establish a connection",
       details:
-        errorDetails && errorDetails !== error.message
+        errorDetails && errorDetails !== (error as any).message
           ? errorDetails
           : undefined,
     };
-  }
-
-  // Check for file errors
-  // If the model file has errors, rollback the changes
-  const errorMessage = await fileArtifacts.checkFileErrors(
-    queryClient,
-    instanceId,
-    newSourceFilePath,
-  );
-  if (errorMessage) {
-    sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-    throw new Error(errorMessage);
   }
 
   await goto(`/files/${newSourceFilePath}`);

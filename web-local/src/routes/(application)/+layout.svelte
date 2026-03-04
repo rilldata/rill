@@ -1,6 +1,7 @@
 <script lang="ts">
   import AddDataModal from "@rilldata/web-common/features/sources/modal/AddDataModal.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
+  import IngestionProgressModal from "@rilldata/web-common/features/sources/modal/IngestionProgressModal.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
 
@@ -34,3 +35,4 @@
 
 <AddDataModal />
 <SourceImportedModal sourcePath={$ingestedPath} />
+<IngestionProgressModal />
