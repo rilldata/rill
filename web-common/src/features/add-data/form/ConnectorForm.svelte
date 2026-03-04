@@ -42,6 +42,7 @@
         connectorDriver,
         form.data,
         false,
+        false,
       );
       onSubmit(connectorName);
     },
@@ -58,4 +59,10 @@
   });
 </script>
 
-<AddDataFormStructure {schema} {superFormsParams} {yamlPreview} {onBack} />
+<AddDataFormStructure
+  {schema}
+  {superFormsParams}
+  {yamlPreview}
+  step="connector"
+  {onBack}
+/>

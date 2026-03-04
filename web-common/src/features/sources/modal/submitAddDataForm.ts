@@ -212,6 +212,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
+  shouldNavigate: boolean = true,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -377,7 +378,7 @@ export async function submitAddConnectorForm(
       }
 
       // Go to the new connector file
-      await goto(`/files/${newConnectorFilePath}`);
+      if (shouldNavigate) await goto(`/files/${newConnectorFilePath}`);
       return newConnectorName;
     } catch (error) {
       // If the operation was aborted, don't treat it as an error

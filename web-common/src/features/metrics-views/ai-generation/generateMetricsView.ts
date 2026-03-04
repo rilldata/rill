@@ -64,8 +64,6 @@ export function useCreateMetricsViewFromTableUIAction(
   createExplore: boolean,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
-  onCreatingExplore: () => void = () => {},
-  showOverlay: boolean = true,
 ) {
   const isAiEnabled = get(featureFlags.ai);
 
@@ -73,19 +71,17 @@ export function useCreateMetricsViewFromTableUIAction(
   return async () => {
     const abortController = new AbortController();
 
-    if (showOverlay) {
-      overlay.set({
-        title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your ${createExplore ? "dashboard" : "metrics"}`,
-        detail: {
-          component: OptionToCancelAIGeneration,
-          props: {
-            onCancel: () => {
-              abortController.abort("AI generation cancelled by user");
-            },
+    overlay.set({
+      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your ${createExplore ? "dashboard" : "metrics"}`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("AI generation cancelled by user");
           },
         },
-      });
-    }
+      },
+    });
 
     // Get a unique name
     const newMetricsViewName = getName(
@@ -158,7 +154,6 @@ export function useCreateMetricsViewFromTableUIAction(
         throw new Error("Failed to create a Metrics View resource");
       }
 
-      onCreatingExplore();
       // Create the Explore file, and navigate to it
       await createAndPreviewExplore(queryClient, instanceId, resource);
     } catch (err) {

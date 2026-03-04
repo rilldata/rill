@@ -8,11 +8,13 @@
   import JSONSchemaFormRenderer from "@rilldata/web-common/features/templates/JSONSchemaFormRenderer.svelte";
   import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
   import { getFormHeight } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+  import { processFileContent } from "@rilldata/web-common/features/templates/file-encoding.ts";
 
   export let schema: MultiStepFormSchema | null;
   export let superFormsParams: ReturnType<typeof createConnectorForm>;
   export let labels = defaultFormLabels;
   export let yamlPreview: string;
+  export let step: "connector" | "source";
   export let onBack: () => void;
 
   const formHeight = getFormHeight(schema);
@@ -25,10 +27,40 @@
 
   $: error = $errors._errors?.[0]; // TODO
 
-  function onStringInputChange() {}
+  function onStringInputChange() {
+    // TODO
+  }
 
-  function handleFileUpload() {
-    return Promise.resolve("");
+  async function handleFileUpload(
+    file: File,
+    fieldKey?: string,
+  ): Promise<string> {
+    const content = await file.text();
+
+    if (fieldKey) {
+      const field = schema?.properties?.[fieldKey];
+      if (field?.["x-file-encoding"]) {
+        const result = processFileContent(content, field);
+
+        if (Object.keys(result.extractedValues).length > 0) {
+          form.update(
+            ($form) => {
+              for (const [key, value] of Object.entries(
+                result.extractedValues,
+              )) {
+                $form[key] = value;
+              }
+              return $form;
+            },
+            { taint: false },
+          );
+        }
+
+        return result.encodedContent;
+      }
+    }
+
+    return content;
   }
 </script>
 
@@ -44,7 +76,7 @@
       >
         <JSONSchemaFormRenderer
           {schema}
-          step={"connector"}
+          {step}
           {form}
           {errors}
           {onStringInputChange}

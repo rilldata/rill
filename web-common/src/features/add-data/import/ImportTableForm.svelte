@@ -8,10 +8,7 @@
   import DatabaseExplorer from "@rilldata/web-common/features/connectors/explorer/DatabaseExplorer.svelte";
   import TableSchema from "@rilldata/web-common/features/connectors/explorer/TableSchema.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-  import {
-    ConnectorExplorerStore,
-    type ConnectorTableEntry,
-  } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
+  import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
@@ -20,16 +17,15 @@
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { compileSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import { get } from "svelte/store";
+  import { ImportTableRunner } from "@rilldata/web-common/features/add-data/import/ImportTableRunner.ts";
 
   export let connectorName: string;
   export let connectorDriver: V1ConnectorDriver;
-  export let onCreate: (
-    name: string,
-    tableEntry: ConnectorTableEntry,
-    yaml: string,
-  ) => void;
+  export let onSubmit: (runner: ImportTableRunner) => void;
 
   const FormId = "import-table-form";
+
+  $: ({ instanceId } = $runtime);
 
   const modeOptions = [
     {
@@ -88,16 +84,19 @@
           connectorInstanceName: connectorName,
         },
       );
-      onCreate(
-        values.name,
-        get(connectorExplorerStore.selectedTableStore),
-        yaml,
+      onSubmit(
+        new ImportTableRunner(
+          instanceId,
+          values.name,
+          get(connectorExplorerStore.selectedTableStore),
+          yaml,
+          null,
+        ),
       );
     },
     validationMethod: "onsubmit",
   });
 
-  $: ({ instanceId } = $runtime);
   $: connectors = getAnalyzedConnectors(instanceId, false);
   $: analyzedConnector = $connectors.data?.connectors?.find(
     (c) => c.name === connectorName,

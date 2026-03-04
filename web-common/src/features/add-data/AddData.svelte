@@ -11,6 +11,8 @@
   import SourceForm from "@rilldata/web-common/features/add-data/form/SourceForm.svelte";
   import ImportTableForm from "@rilldata/web-common/features/add-data/import/ImportTableForm.svelte";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import { ImportTableRunner } from "./import/ImportTableRunner";
+  import ImportTableStatus from "@rilldata/web-common/features/add-data/import/ImportTableStatus.svelte";
 
   export let initSchemaName: string | null = null;
   export let initConnectorName: string | null = null;
@@ -34,15 +36,22 @@
   $: connectorName = $connectorNameStore;
 
   $: displayIcon =
-    connectorIconMapping[connectorName] ??
+    connectorIconMapping[connectorName ?? ""] ??
     connectorIconMapping[connectorDriver?.name ?? ""];
   $: displayName = connectorDriver?.displayName ?? connectorName;
+
+  let runner: ImportTableRunner | null = null;
+  function setAndStartImport(newRunner: ImportTableRunner) {
+    manager.startImport();
+    runner = newRunner;
+    void runner.run();
+  }
 </script>
 
 <div
   class="flex flex-col gap-y-4 w-full bg-surface-background border rounded-lg shadow-sm;"
 >
-  {#if displayName}
+  {#if displayName && step !== AddDataStep.Import}
     <div class="flex flex-row items-center px-6 py-4 gap-1 border-b">
       {#if displayIcon}
         <svelte:component this={displayIcon} size="18px" />
@@ -59,7 +68,7 @@
       <ConnectorForm
         {connectorDriver}
         onSubmit={(newConnectorName) =>
-          manager.selectConnector(schemaName, newConnectorName)}
+          void manager.selectConnector(schemaName ?? "", newConnectorName)}
         onBack={() => window.history.back()}
       />
     {:else}
@@ -71,7 +80,7 @@
         {connectorDriver}
         {schemaName}
         {connectorName}
-        onSubmit={() => {}}
+        onSubmit={setAndStartImport}
         onBack={() => window.history.back()}
       />
     {:else}
@@ -79,9 +88,19 @@
     {/if}
   {:else if step === AddDataStep.Explorer}
     {#if connectorDriver && connectorName}
-      <ImportTableForm {connectorDriver} {connectorName} onCreate={() => {}} />
+      <ImportTableForm
+        {connectorDriver}
+        {connectorName}
+        onSubmit={setAndStartImport}
+      />
     {:else}
       <div>Missing connector driver or connector name (TODO)</div>
+    {/if}
+  {:else if step === AddDataStep.Import}
+    {#if runner}
+      <ImportTableStatus {runner} onBack={() => window.history.back()} />
+    {:else}
+      <div>Missing runner (TODO)</div>
     {/if}
   {/if}
 </div>

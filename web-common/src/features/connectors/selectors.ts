@@ -258,8 +258,11 @@ export function getAnalyzedConnectors(instanceId: string, olapOnly: boolean) {
   });
 }
 
-export function fetchAnalyzeConnectors(instanceId: string) {
+export async function fetchAnalyzeConnectors(instanceId: string) {
   const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
-  const resp = queryClient.getQueryData<V1AnalyzeConnectorsResponse>(queryKey);
+  const resp = await queryClient.fetchQuery({
+    queryKey,
+    queryFn: () => runtimeServiceAnalyzeConnectors(instanceId),
+  });
   return resp?.connectors ?? [];
 }

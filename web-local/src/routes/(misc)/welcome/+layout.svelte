@@ -1,9 +1,5 @@
-<script>
-  import { fly } from "svelte/transition";
-</script>
-
 <div class="flex size-full overflow-hidden">
-  <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
+  <div class="scroll">
     <div class="wrapper column p-10 2xl:py-16">
       <slot />
     </div>

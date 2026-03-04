@@ -23,7 +23,6 @@ import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
 import { supabaseSchema } from "../../templates/schemas/supabase";
 import { SOURCES, OLAP_ENGINES } from "./constants";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -85,27 +84,6 @@ export function getConnectorSchema(
 export function getBackendConnectorName(schemaName: string): string {
   const schema = getConnectorSchema(schemaName);
   return schema?.["x-driver"] ?? schemaName;
-}
-
-/**
- * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
- * Derives implements* flags from the schema's x-category.
- * Uses x-driver for the name when specified.
- */
-export function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
-  const schema = getConnectorSchema(info.name);
-  const category = schema?.["x-category"];
-  const backendName = getBackendConnectorName(info.name);
-
-  return {
-    name: backendName,
-    displayName: info.displayName,
-    implementsObjectStore: category === "objectStore",
-    implementsOlap: category === "olap",
-    implementsSqlStore: category === "sqlStore",
-    implementsWarehouse: category === "warehouse",
-    implementsFileStore: category === "fileStore",
-  };
 }
 
 /**

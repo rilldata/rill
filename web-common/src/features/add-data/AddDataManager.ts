@@ -1,13 +1,13 @@
 import { pushState, replaceState } from "$app/navigation";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
+  type ConnectorInfo,
   connectors,
   getBackendConnectorName,
   getConnectorSchema,
-  toConnectorDriver,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 export enum AddDataStep {
   Select,
@@ -29,7 +29,7 @@ export class AddDataManager {
     connectorName: string | null,
   ) {
     if (connectorName && schemaName) {
-      this.selectConnector(schemaName, connectorName, true);
+      void this.selectConnector(schemaName, connectorName, true);
     } else if (schemaName) {
       this.selectSchemaName(schemaName, true);
     } else {
@@ -51,12 +51,12 @@ export class AddDataManager {
     else pushState("", state);
   }
 
-  public selectConnector(
+  public async selectConnector(
     schemaName: string,
     connectorName: string,
     shouldReplaceState = false,
   ) {
-    const connectorDriver = connectorDriverForConnector(
+    const connectorDriver = await connectorDriverForConnector(
       this.instanceId,
       connectorName,
     );
@@ -72,6 +72,17 @@ export class AddDataManager {
     else pushState("", state);
   }
 
+  public startImport() {
+    const schemaName = get(this.schemaNameStore);
+    const connectorName = get(this.connectorNameStore);
+    if (!schemaName || !connectorName) return;
+    pushState("", {
+      step: AddDataStep.Import,
+      schema: schemaName,
+      connector: connectorName,
+    });
+  }
+
   public applyState(state: any) {
     if (typeof state.step !== "number") return;
     const step = state.step as AddDataStep;
@@ -79,7 +90,7 @@ export class AddDataManager {
     const connectorName = state.connector as string | undefined;
 
     if (connectorName && schemaName) {
-      this.setConnectorStep(step, schemaName, connectorName);
+      void this.setConnectorStep(step, schemaName, connectorName);
     } else if (schemaName) {
       this.setSchemaStep(step, schemaName);
     } else {
@@ -99,12 +110,12 @@ export class AddDataManager {
     this.stepStore.set(step);
   }
 
-  private setConnectorStep(
+  private async setConnectorStep(
     step: AddDataStep,
     schemaName: string,
     connectorName: string,
   ) {
-    const connectorDriver = connectorDriverForConnector(
+    const connectorDriver = await connectorDriverForConnector(
       this.instanceId,
       connectorName,
     );
@@ -136,13 +147,22 @@ export function getPageStateForAddData(schemaName: string | null) {
 function connectorDriverForSchema(schemaName: string) {
   const connectorInfo = connectors.find((c) => c.name === schemaName);
   if (!connectorInfo) return null;
-  const schema = getConnectorSchema(connectorInfo.name);
+  return toConnectorDriver(connectorInfo);
+}
+
+/**
+ * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
+ * Derives implements* flags from the schema's x-category.
+ * Uses x-driver for the name when specified.
+ */
+export function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
+  const schema = getConnectorSchema(info.name);
   const category = schema?.["x-category"];
-  const backendName = getBackendConnectorName(connectorInfo.name);
+  const backendName = getBackendConnectorName(info.name);
 
   return {
     name: backendName,
-    displayName: connectorInfo.displayName,
+    displayName: info.displayName,
     implementsObjectStore: category === "objectStore",
     implementsOlap: category === "olap",
     implementsSqlStore: category === "sqlStore",
@@ -151,11 +171,11 @@ function connectorDriverForSchema(schemaName: string) {
   };
 }
 
-function connectorDriverForConnector(
+async function connectorDriverForConnector(
   instanceId: string,
   connectorName: string,
 ) {
-  const runtimeConnectors = fetchAnalyzeConnectors(instanceId);
+  const runtimeConnectors = await fetchAnalyzeConnectors(instanceId);
   const connectorDriver = runtimeConnectors.find(
     (r) => r.name === connectorName,
   )?.driver;

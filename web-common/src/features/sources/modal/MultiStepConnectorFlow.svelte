@@ -54,7 +54,6 @@
   let activeSchema: MultiStepFormSchema | null = null;
   let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
   let selectedAuthMethod = "";
-  $: console.log(stepState);
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
 

@@ -244,19 +244,20 @@ export class AddDataFormManager {
     return "Test and Add data";
   }
 
-  makeOnUpdate({
-    onClose,
-    queryClient,
-    getSelectedAuthMethod,
-    setParamsError,
-    setShowSaveAnyway,
-  }: {
+  makeOnUpdate(args: {
     onClose: () => void;
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
     setShowSaveAnyway?: (value: boolean) => void;
   }) {
+    const {
+      onClose,
+      queryClient,
+      getSelectedAuthMethod,
+      setParamsError,
+      setShowSaveAnyway,
+    } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
@@ -499,13 +500,7 @@ export class AddDataFormManager {
    * Compute YAML preview for the current form state.
    * Schema conditionals handle connector-specific requirements.
    */
-  computeYamlPreview({
-    stepState,
-    isMultiStepConnector,
-    isConnectorForm,
-    formValues,
-    existingEnvBlob,
-  }: {
+  computeYamlPreview(ctx: {
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
@@ -513,6 +508,13 @@ export class AddDataFormManager {
     existingEnvBlob?: string;
   }): string {
     const connector = this.connector;
+    const {
+      stepState,
+      isMultiStepConnector,
+      isConnectorForm,
+      formValues,
+      existingEnvBlob,
+    } = ctx;
 
     const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
