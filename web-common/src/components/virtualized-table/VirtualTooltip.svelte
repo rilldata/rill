@@ -25,7 +25,7 @@
 </script>
 
 <aside
-  class="w-fit h-fit absolute -translate-x-1/2 -translate-y-full z-[1000]"
+  class="w-fit h-fit absolute -translate-x-1/2 -translate-y-full z-[1000] pointer-events-none"
   use:portal
   style:top="{hoverPosition.top - 8}px"
   style:left="{hoverPosition.left + hoverPosition.width / 2}px"
@@ -61,7 +61,7 @@
           {#if isClipboardApiSupported()}
             <div>
               <StackingWord key="shift">Copy</StackingWord>
-              {hovering.isHeader ? "column name" : "this value"} to clipboard
+              {hovering.isHeader ? "column name to clipboard" : "to clipboard"}
             </div>
             <Shortcut>
               <span style="font-family: var(--system);">⇧</span> + Click

@@ -11,6 +11,7 @@
     calculateMeasureWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
+  import { getCellTooltipValue } from "@rilldata/web-common/features/dashboards/pivot/pivot-tooltip-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
@@ -77,8 +78,9 @@
   }, 0);
 
   function getMeasureColumn(headerColumn: Column<PivotDataRow>) {
-    const columnId = headerColumn.id;
-    return measures.find((m) => m.name === columnId);
+    const columnName =
+      (headerColumn.columnDef as { name?: string }).name ?? headerColumn.id;
+    return measures.find((m) => m.name === columnName);
   }
 
   function isCellActive(cell: Cell<PivotDataRow, unknown>) {
@@ -200,6 +202,7 @@
             class:border-r={hasBorderRight(cell.column.id)}
             class:total-label={cell.getValue() === "Total"}
             data-value={cell.getValue()}
+            data-tooltip-value={getCellTooltipValue(cell, measures)}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}

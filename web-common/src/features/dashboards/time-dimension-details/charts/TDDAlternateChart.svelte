@@ -177,6 +177,7 @@
     isTimeComparison,
     selectedValues,
     timeGrain,
+    (value: number) => tooltipMeasureFormatter(value),
   );
 
   const updateAdaptiveScrubRange = (() => {
@@ -250,16 +251,27 @@
     },
   };
 
-  $: measureFormatter = createMeasureValueFormatter<null | undefined>(
+  $: tooltipMeasureFormatter = createMeasureValueFormatter<null | undefined>(
     measure as MetricsViewSpecMeasure,
+    "tooltip",
   );
 
-  function vegaCustomFormatter(val) {
-    return measureFormatter(val);
+  $: axisMeasureFormatter = createMeasureValueFormatter<null | undefined>(
+    measure as MetricsViewSpecMeasure,
+    "axis",
+  );
+
+  function vegaTooltipMeasureFormatter(val) {
+    return tooltipMeasureFormatter(val);
+  }
+
+  function vegaAxisMeasureFormatter(val) {
+    return axisMeasureFormatter(val);
   }
 
   const expressionFunctions = {
-    measureFormatter: { fn: vegaCustomFormatter },
+    tooltipMeasureFormatter: { fn: vegaTooltipMeasureFormatter },
+    axisMeasureFormatter: { fn: vegaAxisMeasureFormatter },
   };
 </script>
 

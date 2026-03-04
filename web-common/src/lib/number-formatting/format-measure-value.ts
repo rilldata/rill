@@ -71,7 +71,8 @@ export function humanizeDataType(
       currencyUsd: tooltipCurrencyOptions(NumberKind.DOLLAR),
       currencyEur: tooltipCurrencyOptions(NumberKind.EURO),
       percent: tooltipPercentOptions,
-      humanize: tooltipNoFormattingOptions,
+      // Keep non-currency tooltips consistent with existing humanized UI copy.
+      humanize: defaultGenericNumOptions,
     },
     "big-number": {
       none: bigNumDefaultFormattingOptions,
@@ -249,6 +250,17 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
                 string,
                 string,
               ];
+              if (isTooltip) {
+                const sign = value < 0 ? "-" : "";
+                const humanized = humanizer(
+                  Math.abs(value),
+                  FormatPreset.CURRENCY_USD,
+                );
+                const unsignedNumber = humanized.startsWith("$")
+                  ? humanized.slice(1)
+                  : humanized;
+                return `${sign}${currency[0]}${unsignedNumber}${currency[1]}`;
+              }
               // Use custom currency symbol from locale
               const humanized = humanizer(value, FormatPreset.HUMANIZE);
               return `${currency[0]}${humanized}${currency[1]}`;

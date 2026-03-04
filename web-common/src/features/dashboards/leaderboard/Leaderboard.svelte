@@ -13,6 +13,7 @@
     createQueryServiceMetricsViewAggregation,
     V1Operation,
   } from "@rilldata/web-common/runtime-client";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { onMount } from "svelte";
   import {
     getComparisonRequestMeasures,
@@ -120,6 +121,13 @@
 
   $: leaderboardMeasureNames = leaderboardMeasures.map(
     (measure) => measure.name!,
+  );
+
+  $: tooltipFormatters = Object.fromEntries(
+    leaderboardMeasures.map((measure) => [
+      measure.name!,
+      createMeasureValueFormatter<null | undefined>(measure, "tooltip"),
+    ]),
   );
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
@@ -386,6 +394,7 @@
             {toggleDimensionValueSelection}
             {leaderboardSortByMeasureName}
             {formatters}
+            {tooltipFormatters}
             {dimensionColumnWidth}
             {maxValues}
           />
@@ -409,6 +418,7 @@
           {toggleDimensionValueSelection}
           {leaderboardSortByMeasureName}
           {formatters}
+          {tooltipFormatters}
           {dimensionColumnWidth}
           {maxValues}
         />

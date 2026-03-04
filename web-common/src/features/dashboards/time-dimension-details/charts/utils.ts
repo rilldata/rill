@@ -32,7 +32,7 @@ export function getVegaLiteSpecForTDD(
     {
       name: expandedMeasureName,
       label: measureLabel,
-      formatterFunction: "measureFormatter",
+      formatterFunction: "tooltipMeasureFormatter",
     },
   ];
 
@@ -53,7 +53,7 @@ export function getVegaLiteSpecForTDD(
     measureFields.push({
       name: `comparison.${expandedMeasureName}`,
       label: `comparison.${measureLabel}`,
-      formatterFunction: "measureFormatter",
+      formatterFunction: "tooltipMeasureFormatter",
     });
   } else if (isDimensional) {
     nominalFields = [

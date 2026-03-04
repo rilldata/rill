@@ -14,6 +14,7 @@
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
 
   export let value: string;
+  export let tooltipValue: string | number | null | undefined = undefined;
   export let dataType: string;
   export let cellType: "dimension" | "measure" | "comparison";
   export let className: string = "";
@@ -94,14 +95,14 @@
     >
       <FormattedDataType
         customStyle="font-semibold !text-fg-inverse"
-        isNull={value === null || value === undefined}
+        isNull={(tooltipValue ?? value) === null ||
+          (tooltipValue ?? value) === undefined}
         type={dataType}
-        {value}
+        value={tooltipValue ?? value}
       />
       <div class="flex flex-row gap-x-6 items-baseline text-fg-muted">
         <div>
-          <StackingWord key="shift">Copy</StackingWord>
-          this value to clipboard
+          <StackingWord key="shift">Copy</StackingWord> to clipboard
         </div>
         <Shortcut>
           <span style="font-family: var(--system);">⇧</span> + Click

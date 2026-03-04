@@ -122,7 +122,7 @@ export function patchSpecForTDD(
     formatType: "time",
     format: timeLabelFormat,
   };
-  yEncoding.axis = { title: "", formatType: "measureFormatter" };
+  yEncoding.axis = { title: "", formatType: "axisMeasureFormatter" };
 
   // Set timeUnit for x-axis using timeGrain
   const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];

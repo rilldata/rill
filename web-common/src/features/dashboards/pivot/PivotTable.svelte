@@ -14,6 +14,7 @@
     isElement,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import { getCellTooltipValue } from "@rilldata/web-common/features/dashboards/pivot/pivot-tooltip-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import {
     type ExpandedState,
@@ -191,12 +192,15 @@
     value: string | number | null;
   };
 
-  function onCellClick(e: MouseEvent) {
-    if (!(e.target instanceof HTMLElement)) return;
+  function getTargetTableCell(target: EventTarget | null): HTMLElement | null {
+    if (!isElement(target)) return null;
+    const td = target.closest("td");
+    return td instanceof HTMLElement ? td : null;
+  }
 
-    // Find the closest td element that has the data attributes
-    const td = e.target.closest("td");
-    if (!td || !(td instanceof HTMLElement)) return;
+  function onCellClick(e: MouseEvent) {
+    const td = getTargetTableCell(e.target);
+    if (!td) return;
 
     const rowId = td.dataset.rowid;
     const columnId = td.dataset.columnid;
@@ -251,9 +255,9 @@
   }
 
   function handleClick(e: MouseEvent) {
-    if (!isElement(e.target)) return;
-
-    const value = e.target.dataset.value;
+    const td = getTargetTableCell(e.target);
+    if (!td) return;
+    const value = td.dataset.value;
     if (value === undefined) return;
 
     copyToClipboard(value);
@@ -277,16 +281,17 @@
   }
 
   function handleTooltip(e: MouseEvent) {
+    const td = getTargetTableCell(e.target);
     // Element is not a cell or we haven't left the cell for the current tooltip
-    if (!leftCell || !(e.target instanceof HTMLElement)) return;
+    if (!leftCell || !td) return;
 
-    const value = e.target.dataset.value;
-    const rowHeader = e.target.dataset.rowheader === "true";
+    const value = getTooltipValue(td);
+    const rowHeader = td.dataset.rowheader === "true";
 
     if (value === undefined || rowHeader) return;
 
     leftCell = false;
-    e.target.addEventListener("mouseleave", () => (leftCell = true), {
+    td.addEventListener("mouseleave", () => (leftCell = true), {
       once: true,
     });
 
@@ -295,7 +300,32 @@
     hovering = {
       value,
     };
-    hoverPosition = e.target.getBoundingClientRect();
+    hoverPosition = td.getBoundingClientRect();
+  }
+
+  function getTooltipValue(td: HTMLElement): string | undefined {
+    // Fast path: use precomputed tooltip value if present.
+    if (td.dataset.tooltipValue !== undefined) return td.dataset.tooltipValue;
+
+    const rowId = td.dataset.rowid;
+    const columnId = td.dataset.columnid;
+
+    if (rowId && columnId) {
+      const row = $table.getRow(rowId);
+      const cell = row?.getAllCells().find((rowCell) => rowCell.column.id === columnId);
+
+      if (cell) {
+        const formattedTooltipValue = getCellTooltipValue(cell, measures);
+        if (formattedTooltipValue !== undefined && formattedTooltipValue !== null) {
+          const stringValue = String(formattedTooltipValue);
+          // Cache it on the DOM node so subsequent hovers are immediate.
+          td.dataset.tooltipValue = stringValue;
+          return stringValue;
+        }
+      }
+    }
+
+    return td.dataset.value;
   }
 </script>
 

@@ -167,7 +167,7 @@
   $: cursorStyle = scrubController.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
-  $: measureFormatter = createMeasureValueFormatter(measure);
+  $: measureFormatter = createMeasureValueFormatter(measure, "tooltip");
   $: valueFormatter = (value: number | null): string => {
     if (value === null) return "\u2013";
     return measureFormatter(value);
