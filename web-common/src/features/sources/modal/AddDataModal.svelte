@@ -28,10 +28,13 @@
   } from "./connector-schemas";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let selectedSchemaName: string | null = null;
+  let pendingConnectorName: string | null = null;
+  let connectorInstanceName: string | null = null;
   let requestConnector = false;
   let isSubmittingForm = false;
 
@@ -68,10 +71,29 @@
 
   onMount(() => {
     function listen(e: PopStateEvent) {
-      step = e.state?.step ?? 0;
+      const stateStep = e.state?.step ?? 0;
       requestConnector = e.state?.requestConnector ?? false;
-      selectedConnector = e.state?.selectedConnector ?? null;
-      selectedSchemaName = e.state?.schemaName ?? null;
+      connectorInstanceName = e.state?.connectorInstanceName ?? null;
+
+      // Handle both full connector object and connector name string
+      if (e.state?.selectedConnector) {
+        selectedConnector = e.state.selectedConnector;
+        selectedSchemaName = e.state?.schemaName ?? null;
+        pendingConnectorName = null;
+        // If connector is provided, always go to step 2 (Import Data flow)
+        step = e.state?.connectorInstanceName ? 2 : stateStep;
+      } else if (e.state?.connector) {
+        // Store the connector name to resolve when connectors finish loading.
+        // The reactive block below handles the actual resolution.
+        pendingConnectorName = e.state.connector;
+        selectedSchemaName = e.state.connector;
+        step = 2;
+      } else {
+        selectedConnector = null;
+        selectedSchemaName = null;
+        pendingConnectorName = null;
+        step = stateStep;
+      }
     }
     window.addEventListener("popstate", listen);
 
@@ -80,14 +102,34 @@
     };
   });
 
+  // Handle pending connector name when connectors finish loading
+  // When connector is provided via Import Data button, ensure step stays at 2
+  $: if (pendingConnectorName && connectors.length > 0) {
+    const found = connectors.find((c) => c.name === pendingConnectorName);
+    if (found) {
+      selectedConnector = toConnectorDriver(found);
+      selectedSchemaName = pendingConnectorName;
+      pendingConnectorName = null;
+      // Ensure step stays at 2 for Import Data flow
+      step = 2;
+    } else {
+      // Connector not found (e.g., deleted); clear pending state and reset
+      pendingConnectorName = null;
+      step = 0;
+    }
+  }
+
   function goToConnectorForm(connectorInfo: ConnectorInfo) {
     // Reset multi-step state (auth selection, connector config) when switching connectors.
     resetConnectorStep();
+    // Clear pending resolution so the reactive block doesn't fight with this navigation.
+    pendingConnectorName = null;
 
     const state = {
       step: 2,
       selectedConnector: toConnectorDriver(connectorInfo),
       schemaName: connectorInfo.name,
+      connectorInstanceName: null,
       requestConnector: false,
     };
     window.history.pushState(state, "", "");
@@ -101,6 +143,9 @@
   }
 
   function back() {
+    // Clear pending resolution so the reactive block doesn't fight with back navigation.
+    pendingConnectorName = null;
+
     // Try to go back in browser history
     if (window.history.length > 1) {
       window.history.back();
@@ -115,6 +160,7 @@
       step: 0,
       selectedConnector: null,
       schemaName: null,
+      connectorInstanceName: null,
       requestConnector: false,
     };
     window.history.pushState(state, "", "");
@@ -238,7 +284,12 @@
         </div>
       {/if}
 
-      {#if step === 2 && selectedConnector && selectedSchemaName}
+      {#if step === 2 && pendingConnectorName && !selectedConnector}
+        <!-- Loading state while waiting for connector to be resolved -->
+        <div class="p-6 flex items-center justify-center">
+          <LoadingSpinner size="24px" />
+        </div>
+      {:else if step === 2 && selectedConnector && selectedSchemaName}
         {@const schema = getConnectorSchema(selectedSchemaName)}
         {@const displayIcon =
           connectorIconMapping[selectedSchemaName] ??
@@ -270,6 +321,7 @@
             connector={selectedConnector}
             schemaName={selectedSchemaName}
             formType={isConnectorType ? "connector" : "source"}
+            {connectorInstanceName}
             onClose={resetModal}
             onCloseAfterNavigation={resetModalQuietly}
             onBack={back}
