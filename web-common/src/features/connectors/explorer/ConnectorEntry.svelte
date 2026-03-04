@@ -7,7 +7,7 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
-  import { connectorIconMapping } from "../connector-icon-mapping";
+  import { connectorIconMapping } from "../../sources/modal/connector-schemas";
   import { getConnectorIconKey } from "../connectors-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 

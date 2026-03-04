@@ -1,4 +1,6 @@
+import type { ComponentType, SvelteComponent } from "svelte";
 import {
+  createRuntimeServiceGetInstance,
   createRuntimeServiceListTemplates,
   type V1Template,
 } from "../../../runtime-client";
@@ -8,6 +10,85 @@ import type {
 } from "../../templates/schemas/types";
 import { SOURCES, OLAP_ENGINES } from "./constants";
 import { derived, type Readable } from "svelte/store";
+
+import AmazonAthena from "../../../components/icons/connectors/AmazonAthena.svelte";
+import AmazonRedshift from "../../../components/icons/connectors/AmazonRedshift.svelte";
+import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+import AmazonS3Icon from "../../../components/icons/connectors/AmazonS3Icon.svelte";
+import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
+import ApacheDruidIcon from "../../../components/icons/connectors/ApacheDruidIcon.svelte";
+import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
+import ApachePinotIcon from "../../../components/icons/connectors/ApachePinotIcon.svelte";
+import AthenaIcon from "../../../components/icons/connectors/AthenaIcon.svelte";
+import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
+import ClickHouseCloudIcon from "../../../components/icons/connectors/ClickHouseCloudIcon.svelte";
+import ClickHouseIcon from "../../../components/icons/connectors/ClickHouseIcon.svelte";
+import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
+import DuckDBIcon from "../../../components/icons/connectors/DuckDBIcon.svelte";
+import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
+import GoogleBigQueryIcon from "../../../components/icons/connectors/GoogleBigQueryIcon.svelte";
+import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
+import HTTPS from "../../../components/icons/connectors/HTTPS.svelte";
+import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
+import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
+import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
+import MotherDuckIcon from "../../../components/icons/connectors/MotherDuckIcon.svelte";
+import MySQL from "../../../components/icons/connectors/MySQL.svelte";
+import MySqlIcon from "../../../components/icons/connectors/MySqlIcon.svelte";
+import Postgres from "../../../components/icons/connectors/Postgres.svelte";
+import PostgresIcon from "../../../components/icons/connectors/PostgresIcon.svelte";
+import RedshiftIcon from "../../../components/icons/connectors/RedshiftIcon.svelte";
+import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
+import SalesforceIcon from "../../../components/icons/connectors/SalesforceIcon.svelte";
+import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
+import SnowflakeIcon from "../../../components/icons/connectors/SnowflakeIcon.svelte";
+import SQLite from "../../../components/icons/connectors/SQLite.svelte";
+import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
+import StarRocksIcon from "../../../components/icons/connectors/StarRocksIcon.svelte";
+
+export type ConnectorIcon = ComponentType<SvelteComponent>;
+
+/**
+ * Flat registry of all connector icon components, keyed by the string name
+ * used in template JSON definitions (x-icon / x-small-icon).
+ * Adding a new connector icon: import the component above and add an entry here.
+ */
+const ICON_COMPONENTS: Record<string, ConnectorIcon> = {
+  AmazonAthena,
+  AmazonRedshift,
+  AmazonS3,
+  AmazonS3Icon,
+  ApacheDruid,
+  ApacheDruidIcon,
+  ApachePinot,
+  ApachePinotIcon,
+  AthenaIcon,
+  ClickHouse,
+  ClickHouseCloudIcon,
+  ClickHouseIcon,
+  DuckDB,
+  DuckDBIcon,
+  GoogleBigQuery,
+  GoogleBigQueryIcon,
+  GoogleCloudStorage,
+  HTTPS,
+  LocalFile,
+  MicrosoftAzureBlobStorage,
+  MotherDuck,
+  MotherDuckIcon,
+  MySQL,
+  MySqlIcon,
+  Postgres,
+  PostgresIcon,
+  RedshiftIcon,
+  Salesforce,
+  SalesforceIcon,
+  Snowflake,
+  SnowflakeIcon,
+  SQLite,
+  StarRocks,
+  StarRocksIcon,
+};
 
 const SOURCES_SET = new Set(SOURCES);
 const OLAP_SET = new Set(OLAP_ENGINES);
@@ -29,8 +110,17 @@ export interface ConnectorInfo {
 }
 
 /**
+ * Map the instance's OLAP connector to the template OLAP suffix.
+ * Only ClickHouse has its own model templates; everything else uses DuckDB.
+ */
+export function normalizeOlapForTemplate(olapConnector: string): string {
+  if (olapConnector === "clickhouse") return "clickhouse";
+  return "duckdb";
+}
+
+/**
  * Build the schema registry from ListTemplates API response.
- * For source drivers: uses the {driver}-duckdb template's json_schema.
+ * For source drivers: uses the {driver}-{olap} template's json_schema.
  * For OLAP engines: uses the OLAP connector template's json_schema.
  *
  * The json_schema from the API is identical to the former TypeScript schemas;
@@ -44,6 +134,7 @@ interface RegistryEntry {
 
 function buildSchemaRegistry(
   templates: V1Template[],
+  olap: string,
 ): Record<string, RegistryEntry> {
   const entries: Record<string, RegistryEntry> = {};
 
@@ -52,8 +143,8 @@ function buildSchemaRegistry(
 
     const key = t.driver;
 
-    // Sources: pick the DuckDB-model template (has full connector+source form schema)
-    if (SOURCES_SET.has(key) && t.olap === "duckdb") {
+    // Sources: pick the template matching the instance's OLAP
+    if (SOURCES_SET.has(key) && t.olap === olap) {
       entries[key] = {
         schema: {
           ...t.jsonSchema,
@@ -88,30 +179,40 @@ function buildSchemaRegistry(
  * As a side effect, populates the module-level schemasCache so that
  * getConnectorSchema() works synchronously in child components.
  */
-export function createConnectorSchemas() {
-  const query = createRuntimeServiceListTemplates();
-
-  const connectors: Readable<ConnectorInfo[]> = derived(query, ($q) => {
-    if (!$q.data?.templates) return [];
-
-    const entries = buildSchemaRegistry($q.data.templates);
-
-    // Populate module-level cache for sync access by child components
-    schemasCache = Object.fromEntries(
-      Object.entries(entries).map(([k, v]) => [k, v.schema]),
-    );
-
-    return [...SOURCES, ...OLAP_ENGINES]
-      .filter((name) => entries[name]?.schema["x-category"])
-      .map((name) => ({
-        name,
-        displayName: entries[name].schema.title ?? name,
-        category: entries[name].schema["x-category"] as ConnectorCategory,
-        docsUrl: entries[name].docsUrl,
-      }));
+export function createConnectorSchemas(instanceId: string) {
+  const templatesQuery = createRuntimeServiceListTemplates();
+  const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+    sensitive: false,
   });
 
-  return { query, connectors };
+  const connectors: Readable<ConnectorInfo[]> = derived(
+    [templatesQuery, instanceQuery],
+    ([$tq, $iq]) => {
+      if (!$tq.data?.templates) return [];
+
+      const olap = normalizeOlapForTemplate(
+        $iq.data?.instance?.olapConnector ?? "duckdb",
+      );
+      const entries = buildSchemaRegistry($tq.data.templates, olap);
+
+      // Populate module-level cache for sync access by child components
+      schemasCache = Object.fromEntries(
+        Object.entries(entries).map(([k, v]) => [k, v.schema]),
+      );
+      rebuildIconMaps();
+
+      return [...SOURCES, ...OLAP_ENGINES]
+        .filter((name) => entries[name]?.schema["x-category"])
+        .map((name) => ({
+          name,
+          displayName: entries[name].schema.title ?? name,
+          category: entries[name].schema["x-category"] as ConnectorCategory,
+          docsUrl: entries[name].docsUrl,
+        }));
+    },
+  );
+
+  return { query: templatesQuery, connectors };
 }
 
 /**
@@ -123,6 +224,7 @@ export function populateSchemaCache(
   schemas: Record<string, MultiStepFormSchema>,
 ) {
   schemasCache = schemas;
+  rebuildIconMaps();
 }
 
 /**
@@ -198,3 +300,75 @@ export function getFormHeight(schema: MultiStepFormSchema | null): string {
 export function getFormWidth(schema: MultiStepFormSchema | null): string {
   return schema?.["x-form-width"] === "wide" ? "max-w-5xl" : "max-w-4xl";
 }
+
+/**
+ * Resolve an icon component name from a schema's x-icon or x-small-icon field.
+ */
+function resolveIcon(name: string | undefined): ConnectorIcon | undefined {
+  if (!name) return undefined;
+  return ICON_COMPONENTS[name];
+}
+
+/**
+ * Get the full-size icon for a connector (used in add-data grid).
+ * Reads x-icon from the connector's cached schema.
+ */
+export function getConnectorIcon(
+  connectorName: string,
+): ConnectorIcon | undefined {
+  const schema = schemasCache[connectorName];
+  return resolveIcon(schema?.["x-icon"] as string);
+}
+
+/**
+ * Get the small icon for a connector (used in nav, cards, dialog headers).
+ * Reads x-small-icon from the schema, falling back to x-icon.
+ */
+export function getConnectorSmallIcon(
+  connectorName: string,
+): ConnectorIcon | undefined {
+  const schema = schemasCache[connectorName];
+  return (
+    resolveIcon(schema?.["x-small-icon"] as string) ??
+    resolveIcon(schema?.["x-icon"] as string)
+  );
+}
+
+/**
+ * Full-size icon components keyed by connector name.
+ * Derived from schemas; populated when createConnectorSchemas() resolves.
+ */
+export let ICONS: Record<string, ConnectorIcon> = {};
+
+/**
+ * Small icon components keyed by connector name.
+ * Derived from schemas; populated when createConnectorSchemas() resolves.
+ * Falls back to x-icon when x-small-icon is not defined.
+ * Includes clickhousecloud as a special case (distinct icon for managed ClickHouse).
+ */
+export let connectorIconMapping: Record<string, ConnectorIcon> = {};
+
+function rebuildIconMaps() {
+  const icons: Record<string, ConnectorIcon> = {};
+  const smallIcons: Record<string, ConnectorIcon> = {};
+
+  for (const [name, schema] of Object.entries(schemasCache)) {
+    const icon = resolveIcon(schema?.["x-icon"] as string);
+    if (icon) icons[name] = icon;
+
+    const smallIcon =
+      resolveIcon(schema?.["x-small-icon"] as string) ?? icon;
+    if (smallIcon) smallIcons[name] = smallIcon;
+  }
+
+  // ClickHouse Cloud uses a distinct icon determined by getConnectorIconKey()
+  smallIcons["clickhousecloud"] = ClickHouseCloudIcon;
+
+  ICONS = icons;
+  connectorIconMapping = smallIcons;
+}
+
+export const connectorLabelMapping: Record<string, string> = {
+  duckdb: "DuckDB",
+  clickhouse: "ClickHouse",
+};

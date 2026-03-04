@@ -8,18 +8,10 @@ import {
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import { replaceOrAddEnvVariable } from "../../connectors/code-utils";
+import { normalizeOlapForTemplate } from "./connector-schemas";
 import { OLAP_ENGINES } from "./constants";
 
 const OLAP_SET = new Set(OLAP_ENGINES);
-
-/**
- * Map the instance's OLAP connector to the template OLAP suffix.
- * Only ClickHouse has its own model templates; everything else uses DuckDB.
- */
-function normalizeOlapForTemplate(olapConnector: string): string {
-  if (olapConnector === "clickhouse") return "clickhouse";
-  return "duckdb";
-}
 
 // Cache OLAP per instance to avoid a network call on every YAML preview keystroke.
 const olapCache = new Map<string, string>();

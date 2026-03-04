@@ -9,6 +9,7 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "fileStore",
+    "x-icon": "HTTPS",
     "properties": {
       "path": {
         "type": "string",

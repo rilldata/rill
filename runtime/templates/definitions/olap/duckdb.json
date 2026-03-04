@@ -9,6 +9,8 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "olap",
+    "x-icon": "DuckDB",
+    "x-small-icon": "DuckDBIcon",
     "x-button-labels": {
       "connector_type": {
         "rill-managed": { "idle": "Connect", "loading": "Connecting..." }

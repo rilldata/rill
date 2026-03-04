@@ -10,6 +10,8 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "warehouse",
+    "x-icon": "AmazonRedshift",
+    "x-small-icon": "RedshiftIcon",
     "properties": {
       "aws_access_key_id": {
         "type": "string",

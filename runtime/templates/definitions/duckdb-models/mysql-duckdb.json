@@ -10,6 +10,8 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "sqlStore",
+    "x-icon": "MySQL",
+    "x-small-icon": "MySqlIcon",
     "properties": {
       "connection_mode": {
         "type": "string",

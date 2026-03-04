@@ -10,6 +10,8 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "warehouse",
+    "x-icon": "GoogleBigQuery",
+    "x-small-icon": "GoogleBigQueryIcon",
     "properties": {
       "google_application_credentials": {
         "type": "string",

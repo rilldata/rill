@@ -19,13 +19,12 @@
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
   import { onDestroy } from "svelte";
-  import { getConnectorSchema } from "./connector-schemas";
+  import { getConnectorSchema, ICONS } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
-  import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;

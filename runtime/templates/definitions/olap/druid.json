@@ -9,6 +9,8 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "olap",
+    "x-icon": "ApacheDruid",
+    "x-small-icon": "ApacheDruidIcon",
     "properties": {
       "connection_mode": {
         "type": "string",

@@ -144,6 +144,10 @@ export type JSONSchemaObject = {
    * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
    */
   "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
+  /** Full-size icon name (resolved to a Svelte component by ICON_COMPONENTS registry). */
+  "x-icon"?: string;
+  /** Small icon name (resolved to a Svelte component by ICON_COMPONENTS registry). */
+  "x-small-icon"?: string;
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;
