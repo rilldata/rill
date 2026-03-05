@@ -94,16 +94,16 @@
   let sidebarWidth = 260;
 
   // Subscribe to notebook state at top level (Svelte requires $store at top level)
-  $: cells = notebook ? $notebook.cells : [];
+  $: cells = $notebook?.cells ?? [];
 
   // Derived stores for the focused cell (forwarded to inspector)
   $: focusedSchema = notebook?.focusedSchema;
   $: focusedRowCount = notebook?.focusedRowCount;
   $: focusedExecutionTimeMs = notebook?.focusedExecutionTimeMs;
-  $: focusedSchemaValue = focusedSchema ? $focusedSchema : null;
-  $: focusedRowCountValue = focusedRowCount ? $focusedRowCount : 0;
+  $: focusedSchemaValue = focusedSchema ? $focusedSchema ?? null : null;
+  $: focusedRowCountValue = focusedRowCount ? $focusedRowCount ?? 0 : 0;
   $: focusedExecutionTimeMsValue = focusedExecutionTimeMs
-    ? $focusedExecutionTimeMs
+    ? $focusedExecutionTimeMs ?? null
     : null;
 
   function handleAddCell() {
