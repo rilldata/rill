@@ -103,6 +103,7 @@
       </button>
 
       <ConnectorSelector
+        id="connector-{cellId}"
         value={cell.connector}
         onChange={handleConnectorChange}
       />
@@ -121,7 +122,7 @@
 
       {#if cell.limit === undefined}
         <span class="limit-warning">
-          No limit; large queries may be slow and costly.
+          Configure via `rill.interactive_sql_row_limit` in env, default is 1000. Large queries may be slow and costly.
         </span>
       {/if}
 

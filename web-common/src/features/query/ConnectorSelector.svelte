@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
 
+  export let id: string = "connector-selector";
   export let value: string = "";
   export let onChange: (connector: string) => void = () => {};
 
@@ -50,7 +51,7 @@
 </script>
 
 <Select
-  id="connector-selector"
+  {id}
   ariaLabel="Select connector"
   size="sm"
   {value}
