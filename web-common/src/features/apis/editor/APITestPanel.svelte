@@ -5,7 +5,10 @@
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { PlusIcon, PlayIcon, ChevronDownIcon, CopyIcon } from "lucide-svelte";
+  import { tick } from "svelte";
   import APIResponsePreview from "./APIResponsePreview.svelte";
   import type { Arg } from "./types";
 
@@ -21,12 +24,13 @@
   let isLoading = false;
   let previewHeight = 200;
 
-  // Clear response when switching to a different API
-  $: apiName, resetResponse();
-  function resetResponse() {
+  // Clear response and args when switching to a different API
+  $: apiName, resetState();
+  function resetState() {
     apiResponse = null;
     responseError = null;
     isLoading = false;
+    args = [];
   }
 
   $: baseUrl = `${host}/v1/instances/${instanceId}/api/${apiName}`;
@@ -85,25 +89,16 @@
       } else {
         e.preventDefault();
         addArg();
-        // Focus the new row's key input after Svelte updates the DOM
-        requestAnimationFrame(() => {
+        // Focus the new row's key input after Svelte updates the DOM.
+        // Each arg row contributes 2 <input> elements (key + value),
+        // so length - 2 targets the new row's key input.
+        tick().then(() => {
           const updatedInputs = Array.from(
             container.querySelectorAll<HTMLInputElement>("input"),
           );
           updatedInputs[updatedInputs.length - 2]?.focus();
         });
       }
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !isDisabled) {
-      // Don't fire when focus is in a dialog, modal, or navigation sidebar
-      const target = e.target as HTMLElement;
-      if (target?.closest?.('[role="dialog"], nav, [role="alertdialog"]'))
-        return;
-      e.preventDefault();
-      testAPI();
     }
   }
 
@@ -136,8 +131,6 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
-
 <div
   class="preview-panel"
   style:height="{previewHeight}px"
@@ -153,9 +146,12 @@
     </div>
 
     <div class="flex items-center gap-x-2 shrink-0">
-      <Button type="text" compact small onClick={handleCopyUrl}>
-        <CopyIcon size="10px" />
-      </Button>
+      <Tooltip distance={8}>
+        <Button type="text" compact small onClick={handleCopyUrl}>
+          <CopyIcon size="10px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">Copy URL</TooltipContent>
+      </Tooltip>
 
       <DropdownMenu.Root closeOnItemClick={false}>
         <DropdownMenu.Trigger asChild let:builder>

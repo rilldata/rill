@@ -88,12 +88,17 @@
   <div class="response-header">
     <span class="header-label">Response Preview</span>
     {#if response && response.length > 0}
-      <IconSwitcher
-        fields={viewModeOptions}
-        selected={viewMode}
-        onClick={handleViewModeChange}
-        small
-      />
+      <div class="flex items-center gap-x-2">
+        <span class="text-[11px] text-fg-muted"
+          >{response.length} {response.length === 1 ? "row" : "rows"}</span
+        >
+        <IconSwitcher
+          fields={viewModeOptions}
+          selected={viewMode}
+          onClick={handleViewModeChange}
+          small
+        />
+      </div>
     {/if}
   </div>
   <div class="response-content">
