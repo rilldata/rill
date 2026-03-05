@@ -6,9 +6,11 @@ import {
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   computePercentOfTotal,
+  estimateColumnSizes,
   updateFilterOnSearch,
 } from "./dimension-table-utils";
 import { describe, it, expect } from "vitest";
+import { DIMENSION_TABLE_CONFIG } from "./DimensionTableConfig";
 
 describe("updateFilterOnSearch", () => {
   it("should return the filter set with search text for an empty filter", () => {
@@ -129,5 +131,41 @@ describe("computePercentOfTotal", () => {
     }));
 
     expect(computedValues).toEqual(expected);
+  });
+});
+
+describe("estimateColumnSizes", () => {
+  it("expands comparison columns to fit longer formatted values", () => {
+    const columns = [
+      { name: "org", type: "VARCHAR" },
+      { name: "cost_delta", type: "RILL_CHANGE" },
+      { name: "cost", type: "INT" },
+    ];
+
+    const sizes = estimateColumnSizes(
+      columns,
+      { org: 8, cost_delta: 12, cost: 5 },
+      1200,
+      { ...DIMENSION_TABLE_CONFIG },
+    );
+
+    expect(sizes[1]).toBeGreaterThan(DIMENSION_TABLE_CONFIG.comparisonColumnWidth);
+  });
+
+  it("keeps comparison columns at the default minimum when values are short", () => {
+    const columns = [
+      { name: "org", type: "VARCHAR" },
+      { name: "cost_delta", type: "RILL_CHANGE" },
+      { name: "cost", type: "INT" },
+    ];
+
+    const sizes = estimateColumnSizes(
+      columns,
+      { org: 8, cost_delta: 2, cost: 5 },
+      1200,
+      { ...DIMENSION_TABLE_CONFIG },
+    );
+
+    expect(sizes[1]).toBe(DIMENSION_TABLE_CONFIG.comparisonColumnWidth);
   });
 });

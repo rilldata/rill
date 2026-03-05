@@ -182,13 +182,22 @@ export function estimateColumnSizes(
   config: DimensionTableConfig,
 ): number[] {
   const estimatedColumnSizes = columns.map((column, i) => {
-    if (column.name.includes("delta")) return config.comparisonColumnWidth;
-    if (column.name.includes("percent_of_total"))
-      return config.comparisonColumnWidth;
-    if (i != 0) return config.defaultColumnWidth;
-
     const largestStringLength =
-      columnWidths[column.name] * CHARACTER_WIDTH + CHARACTER_X_PAD;
+      (columnWidths[column.name] ?? 0) * CHARACTER_WIDTH + CHARACTER_X_PAD;
+
+    if (
+      column.name.includes("delta") ||
+      column.name.includes("percent_of_total")
+    ) {
+      return largestStringLength
+        ? Math.min(
+            config.maxColumnWidth,
+            Math.max(config.comparisonColumnWidth, largestStringLength),
+          )
+        : config.comparisonColumnWidth;
+    }
+
+    if (i != 0) return config.defaultColumnWidth;
 
     /** The header width is largely a function of the total number of characters in the column.*/
     const headerWidth =
