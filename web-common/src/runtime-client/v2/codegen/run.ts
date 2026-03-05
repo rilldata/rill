@@ -79,4 +79,6 @@ console.log(`Output: ${outDir}`);
 
 // Format generated files with prettier
 console.log(`\nFormatting with prettier...`);
-execSync(`npx prettier --write "${outDir}/*.ts"`, { stdio: "inherit" });
+execSync("npx", ["prettier", "--write", `${outDir}/*.ts`], {
+  stdio: "inherit",
+});
