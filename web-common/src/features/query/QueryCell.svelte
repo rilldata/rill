@@ -33,7 +33,7 @@
 
   $: schema = cell?.result?.schema ?? null;
   $: data = cell?.result?.data ?? null;
-  $: rowCount = cell?.result?.data?.length ?? 0;
+  $: rowCount = (cell?.result?.data?.length || cell?.lastRowCount) ?? 0;
   $: hasSql = (cell?.sql ?? "").trim().length > 0;
 
   function handleRun(e?: CustomEvent<{ selectedText?: string }>) {

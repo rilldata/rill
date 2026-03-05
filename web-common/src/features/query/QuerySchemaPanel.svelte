@@ -5,7 +5,9 @@
   import InspectorHeaderGrid from "@rilldata/web-common/layout/inspector/InspectorHeaderGrid.svelte";
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import type { V1StructType } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceTableColumns } from "@rilldata/web-common/runtime-client";
   import { useGetTable } from "@rilldata/web-common/features/connectors/selectors";
+  import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
@@ -15,7 +17,7 @@
   export let rowCount: number;
   export let executionTimeMs: number | null;
 
-  /** When set, shows table schema for the selected table instead of query results */
+  /** When set, shows table profiling for the selected table instead of query results */
   export let selectedTable: {
     connector: string;
     database: string;
@@ -25,25 +27,48 @@
 
   $: ({ instanceId } = $runtime);
 
-  // Fetch table schema when a table is selected from the data explorer
-  $: tableQuery = selectedTable
-    ? useGetTable(
+  // Try profiling API first (works in dev deployments)
+  $: profilingQuery = selectedTable
+    ? createQueryServiceTableColumns(
         instanceId,
-        selectedTable.connector,
-        selectedTable.database,
-        selectedTable.databaseSchema,
         selectedTable.objectName,
+        {
+          connector: selectedTable.connector,
+          database: selectedTable.database,
+          databaseSchema: selectedTable.databaseSchema,
+        },
       )
     : null;
 
-  $: tableColumns = $tableQuery?.data?.schema
-    ? Object.entries($tableQuery.data.schema).map(([name, type]) => ({
+  $: profilingAvailable =
+    $profilingQuery?.isSuccess &&
+    ($profilingQuery?.data?.profileColumns?.length ?? 0) > 0;
+  $: profilingError = $profilingQuery?.isError;
+
+  // Fallback: use ConnectorService GetTable (always works)
+  $: fallbackQuery =
+    selectedTable && profilingError
+      ? useGetTable(
+          instanceId,
+          selectedTable.connector,
+          selectedTable.database,
+          selectedTable.databaseSchema,
+          selectedTable.objectName,
+        )
+      : null;
+
+  $: fallbackColumns = $fallbackQuery?.data?.schema
+    ? Object.entries($fallbackQuery.data.schema).map(([name, type]) => ({
         name,
         type: type as string,
       }))
     : [];
-  $: tableLoading = $tableQuery?.isLoading ?? false;
-  $: tableError = $tableQuery?.error;
+  $: fallbackLoading = $fallbackQuery?.isLoading ?? false;
+
+  // Column count: from profiling or fallback
+  $: tableColumnCount = profilingAvailable
+    ? ($profilingQuery?.data?.profileColumns?.length ?? 0)
+    : fallbackColumns.length;
 
   let showColumns = true;
   let showTableColumns = true;
@@ -84,8 +109,8 @@
           {/if}
         </svelte:fragment>
         <svelte:fragment slot="bottom-right">
-          {#if tableColumns.length > 0}
-            {formatInteger(tableColumns.length)} {tableColumns.length === 1
+          {#if tableColumnCount > 0}
+            {formatInteger(tableColumnCount)} {tableColumnCount === 1
               ? "column"
               : "columns"}
           {/if}
@@ -94,49 +119,58 @@
 
       <hr />
 
-      <div>
-        <div class="px-4">
-          <CollapsibleSectionTitle
-            tooltipText="table columns"
-            bind:active={showTableColumns}
-          >
-            Columns
-          </CollapsibleSectionTitle>
-        </div>
-
-        {#if showTableColumns}
-          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-            {#if tableLoading}
-              <p class="px-4 py-2 text-fg-secondary text-xs">Loading...</p>
-            {:else if tableError}
-              <p class="px-4 py-2 text-red-500 text-xs">
-                {tableError?.response?.data?.message || tableError?.message}
-              </p>
-            {:else if tableColumns.length > 0}
-              <ul class="flex flex-col">
-                {#each tableColumns as column (column.name)}
-                  <li class="column-row">
-                    <DataTypeIcon
-                      type={prettyPrintType(column.type)}
-                      suppressTooltip
-                    />
-                    <span class="truncate text-xs font-mono" title={column.name}>
-                      {column.name}
-                    </span>
-                    <span
-                      class="text-fg-secondary text-[10px] ml-auto flex-none uppercase"
-                    >
-                      {prettyPrintType(column.type)}
-                    </span>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="px-4 py-2 text-fg-secondary text-xs">No columns found</p>
-            {/if}
+      {#if profilingAvailable}
+        <!-- Full RD-style profiling with graphs, stats, sample data -->
+        <ColumnProfile
+          connector={selectedTable.connector}
+          database={selectedTable.database}
+          databaseSchema={selectedTable.databaseSchema}
+          objectName={selectedTable.objectName}
+        />
+      {:else if $profilingQuery?.isLoading}
+        <p class="px-4 py-2 text-fg-secondary text-xs">Loading...</p>
+      {:else}
+        <!-- Fallback: simple column list -->
+        <div>
+          <div class="px-4">
+            <CollapsibleSectionTitle
+              tooltipText="table columns"
+              bind:active={showTableColumns}
+            >
+              Columns
+            </CollapsibleSectionTitle>
           </div>
-        {/if}
-      </div>
+
+          {#if showTableColumns}
+            <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+              {#if fallbackLoading}
+                <p class="px-4 py-2 text-fg-secondary text-xs">Loading...</p>
+              {:else if fallbackColumns.length > 0}
+                <ul class="flex flex-col">
+                  {#each fallbackColumns as column (column.name)}
+                    <li class="column-row">
+                      <DataTypeIcon
+                        type={prettyPrintType(column.type)}
+                        suppressTooltip
+                      />
+                      <span class="truncate text-xs font-mono" title={column.name}>
+                        {column.name}
+                      </span>
+                      <span
+                        class="text-fg-secondary text-[10px] ml-auto flex-none uppercase"
+                      >
+                        {prettyPrintType(column.type)}
+                      </span>
+                    </li>
+                  {/each}
+                </ul>
+              {:else}
+                <p class="px-4 py-2 text-fg-secondary text-xs">No columns found</p>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
     {:else if schema}
       <InspectorHeaderGrid>
         <svelte:fragment slot="top-left">

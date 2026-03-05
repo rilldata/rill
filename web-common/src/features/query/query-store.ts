@@ -5,7 +5,6 @@ import { runtimeServiceQueryResolver } from "@rilldata/web-common/runtime-client
 import type {
   V1QueryResolverResponse,
   V1StructType,
-  V1QueryResolverResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 
 export interface CellState {
@@ -17,6 +16,7 @@ export interface CellState {
   result: V1QueryResolverResponse | null;
   error: string | null;
   executionTimeMs: number | null;
+  lastRowCount: number | null; // persisted row count from last execution
   collapsed: boolean;
 }
 
@@ -34,6 +34,9 @@ interface PersistedCell {
   connector: string;
   limit: number | undefined;
   collapsed: boolean;
+  resultSchema: V1StructType | null;
+  resultRowCount: number | null;
+  executionTimeMs: number | null;
 }
 
 function loadPersistedCells(): PersistedCell[] | null {
@@ -57,17 +60,29 @@ const debouncedSave = debounce((cells: CellState[]) => {
     connector: c.connector,
     limit: c.limit,
     collapsed: c.collapsed,
+    resultSchema: c.result?.schema ?? null,
+    resultRowCount: c.result?.data?.length ?? null,
+    executionTimeMs: c.executionTimeMs,
   }));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
 }, 500);
 
 function hydrateCell(p: PersistedCell): CellState {
+  // Restore schema into a minimal result so the inspector can display it
+  const hasSchema = p.resultSchema && p.resultSchema.fields?.length;
   return {
-    ...p,
+    id: p.id,
+    sql: p.sql,
+    connector: p.connector,
+    limit: p.limit,
+    collapsed: p.collapsed,
     isExecuting: false,
-    result: null,
+    result: hasSchema
+      ? { schema: p.resultSchema!, data: [] }
+      : null,
     error: null,
-    executionTimeMs: null,
+    executionTimeMs: p.executionTimeMs ?? null,
+    lastRowCount: p.resultRowCount ?? null,
   };
 }
 
@@ -81,6 +96,7 @@ function createDefaultCell(connector: string): CellState {
     result: null,
     error: null,
     executionTimeMs: null,
+    lastRowCount: null,
     collapsed: false,
   };
 }
@@ -217,6 +233,7 @@ function createNotebookStore(defaultConnector: string) {
           result: response,
           error: null,
           executionTimeMs: elapsed,
+          lastRowCount: response.data?.length ?? 0,
         })),
       );
     } catch (err: unknown) {
@@ -251,7 +268,12 @@ function createNotebookStore(defaultConnector: string) {
   const focusedData = derived(focusedCell, ($c) => $c?.result?.data ?? null);
   const focusedRowCount = derived(
     focusedCell,
-    ($c) => $c?.result?.data?.length ?? 0,
+    ($c) => {
+      // Use live data length if available; fall back to persisted row count
+      const liveCount = $c?.result?.data?.length;
+      if (liveCount !== undefined && liveCount > 0) return liveCount;
+      return $c?.lastRowCount ?? 0;
+    },
   );
   const focusedExecutionTimeMs = derived(
     focusedCell,
