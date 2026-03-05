@@ -12,7 +12,7 @@
   export let project: string;
   export let pathname: string;
 
-  const { chat, reports, alerts } = featureFlags;
+  const { chat, queryEditor, reports, alerts } = featureFlags;
 
   $: tabs = [
     {
@@ -33,7 +33,7 @@
     {
       route: `/${organization}/${project}/-/query`,
       label: "Query",
-      hasPermission: true,
+      hasPermission: $queryEditor,
     },
     {
       route: `/${organization}/${project}/-/reports`,

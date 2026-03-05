@@ -127,8 +127,8 @@
 
       {#if cell.limit === undefined}
         <span class="limit-warning">
-          Configure via `rill.interactive_sql_row_limit` in env, default is
-          10,000. Large queries may be slow and costly.
+          Server default (10,000 rows) applies. Adjustable via
+          rill.interactive_sql_row_limit.
         </span>
       {/if}
 

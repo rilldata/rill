@@ -25,6 +25,7 @@ import { createNotebook, type NotebookState } from "./query-store";
 // =============================================================================
 
 const DEFAULT_CONNECTOR = "duckdb";
+const PROJECT_ID = "test-org/test-project";
 const INSTANCE_ID = "test-instance";
 
 // =============================================================================
@@ -55,7 +56,7 @@ describe("createNotebook", () => {
 
   describe("initial state", () => {
     it("creates with 1 default cell using the given connector", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const state = getState(store);
 
       expect(state.cells).toHaveLength(1);
@@ -70,7 +71,7 @@ describe("createNotebook", () => {
     });
 
     it("focuses the first cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const state = getState(store);
 
       expect(state.focusedCellId).toBe(state.cells[0].id);
@@ -83,7 +84,7 @@ describe("createNotebook", () => {
 
   describe("addCell", () => {
     it("appends a new cell and focuses it", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const newId = store.addCell();
       const state = getState(store);
 
@@ -93,7 +94,7 @@ describe("createNotebook", () => {
     });
 
     it("returns the new cell id", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const newId = store.addCell();
 
       expect(typeof newId).toBe("string");
@@ -101,7 +102,7 @@ describe("createNotebook", () => {
     });
 
     it("uses the default connector when none is specified", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       store.addCell();
       const state = getState(store);
 
@@ -109,7 +110,7 @@ describe("createNotebook", () => {
     });
 
     it("uses a custom connector when specified", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       store.addCell("clickhouse");
       const state = getState(store);
 
@@ -123,7 +124,7 @@ describe("createNotebook", () => {
 
   describe("removeCell", () => {
     it("removes the specified cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const id1 = getState(store).cells[0].id;
       const id2 = store.addCell();
 
@@ -135,7 +136,7 @@ describe("createNotebook", () => {
     });
 
     it("cannot remove the last remaining cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const onlyId = getState(store).cells[0].id;
 
       store.removeCell(onlyId);
@@ -146,7 +147,7 @@ describe("createNotebook", () => {
     });
 
     it("moves focus to the previous cell when removing the focused cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       getState(store).cells[0].id;
       const id2 = store.addCell();
       const id3 = store.addCell();
@@ -159,7 +160,7 @@ describe("createNotebook", () => {
     });
 
     it("moves focus to first cell when removing the first focused cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const id1 = getState(store).cells[0].id;
       const id2 = store.addCell();
 
@@ -172,7 +173,7 @@ describe("createNotebook", () => {
     });
 
     it("does not change focus when removing an unfocused cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const id1 = getState(store).cells[0].id;
       store.addCell();
       const id3 = store.addCell();
@@ -191,7 +192,7 @@ describe("createNotebook", () => {
 
   describe("setCellSql", () => {
     it("updates the SQL of the specified cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.setCellSql(cellId, "SELECT 1");
@@ -207,7 +208,7 @@ describe("createNotebook", () => {
 
   describe("setCellConnector", () => {
     it("updates the connector of the specified cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.setCellConnector(cellId, "postgres");
@@ -223,7 +224,7 @@ describe("createNotebook", () => {
 
   describe("setCellLimit", () => {
     it("sets the limit to the provided value", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.setCellLimit(cellId, 50);
@@ -233,7 +234,7 @@ describe("createNotebook", () => {
     });
 
     it("clamps to a minimum of 1", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.setCellLimit(cellId, 0);
@@ -243,7 +244,7 @@ describe("createNotebook", () => {
     });
 
     it("clamps negative values to 1", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.setCellLimit(cellId, -10);
@@ -253,7 +254,7 @@ describe("createNotebook", () => {
     });
 
     it("sets undefined for no limit", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.setCellLimit(cellId, undefined);
@@ -269,7 +270,7 @@ describe("createNotebook", () => {
 
   describe("toggleCellCollapsed", () => {
     it("toggles collapsed from false to true", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.toggleCellCollapsed(cellId);
@@ -278,7 +279,7 @@ describe("createNotebook", () => {
     });
 
     it("toggles collapsed back to false", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
 
       store.toggleCellCollapsed(cellId);
@@ -294,7 +295,7 @@ describe("createNotebook", () => {
 
   describe("setFocusedCell", () => {
     it("changes the focused cell", () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const id1 = getState(store).cells[0].id;
       store.addCell();
 
@@ -310,7 +311,7 @@ describe("createNotebook", () => {
 
   describe("executeCellQuery", () => {
     it("sets result and hasExecuted on success", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT 1");
 
@@ -332,7 +333,7 @@ describe("createNotebook", () => {
     });
 
     it("sets isExecuting to true while query is in flight", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT 1");
 
@@ -356,7 +357,7 @@ describe("createNotebook", () => {
     });
 
     it("sets error and hasExecuted on failure", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT bad_column");
 
@@ -373,7 +374,7 @@ describe("createNotebook", () => {
     });
 
     it("extracts error message from response.data.message", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT 1");
 
@@ -388,7 +389,7 @@ describe("createNotebook", () => {
     });
 
     it("does nothing when cell SQL is empty", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       // SQL is "" by default
 
@@ -399,7 +400,7 @@ describe("createNotebook", () => {
     });
 
     it("does nothing when cell SQL is only whitespace", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "   ");
 
@@ -409,7 +410,7 @@ describe("createNotebook", () => {
     });
 
     it("uses sqlOverride instead of cell SQL when provided", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT original");
 
@@ -431,7 +432,7 @@ describe("createNotebook", () => {
     });
 
     it("passes connector and limit in the request body", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT 1");
       store.setCellLimit(cellId, 25);
@@ -457,7 +458,7 @@ describe("createNotebook", () => {
     });
 
     it("omits limit from the request when cell limit is undefined", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT 1");
       store.setCellLimit(cellId, undefined);
@@ -474,7 +475,7 @@ describe("createNotebook", () => {
     });
 
     it("focuses the executed cell", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const id1 = getState(store).cells[0].id;
       store.addCell();
 
@@ -491,11 +492,72 @@ describe("createNotebook", () => {
     });
 
     it("does nothing for a nonexistent cell id", async () => {
-      const store = createNotebook(DEFAULT_CONNECTOR);
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
 
       await store.executeCellQuery("nonexistent-id", INSTANCE_ID);
 
       expect(runtimeServiceQueryResolver).not.toHaveBeenCalled();
+    });
+
+    it("skips execution when the cell is already executing", async () => {
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
+      const cellId = getState(store).cells[0].id;
+      store.setCellSql(cellId, "SELECT 1");
+
+      let resolveQuery!: (value: unknown) => void;
+      vi.mocked(runtimeServiceQueryResolver).mockReturnValue(
+        new Promise((resolve) => {
+          resolveQuery = resolve;
+        }),
+      );
+
+      // Fire first execution (will be in-flight)
+      const first = store.executeCellQuery(cellId, INSTANCE_ID);
+      expect(getState(store).cells[0].isExecuting).toBe(true);
+
+      // Second call while first is in-flight should be a no-op
+      await store.executeCellQuery(cellId, INSTANCE_ID);
+      expect(runtimeServiceQueryResolver).toHaveBeenCalledTimes(1);
+
+      resolveQuery({ schema: null, data: [] });
+      await first;
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Per-project localStorage isolation
+  // ---------------------------------------------------------------------------
+
+  describe("per-project localStorage", () => {
+    it("persists to a project-scoped key", () => {
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
+      const cellId = getState(store).cells[0].id;
+      store.setCellSql(cellId, "SELECT 1");
+
+      const stored = localStorage.getItem(`rill:query-notebook:${PROJECT_ID}`);
+      expect(stored).not.toBeNull();
+      const parsed = JSON.parse(stored!);
+      expect(parsed[0].sql).toBe("SELECT 1");
+    });
+
+    it("isolates state between different projects", () => {
+      const storeA = createNotebook(DEFAULT_CONNECTOR, "org/project-a");
+      const cellA = getState(storeA).cells[0].id;
+      storeA.setCellSql(cellA, "SELECT a");
+
+      const storeB = createNotebook(DEFAULT_CONNECTOR, "org/project-b");
+      const cellB = getState(storeB).cells[0].id;
+      storeB.setCellSql(cellB, "SELECT b");
+
+      const storedA = JSON.parse(
+        localStorage.getItem("rill:query-notebook:org/project-a")!,
+      );
+      const storedB = JSON.parse(
+        localStorage.getItem("rill:query-notebook:org/project-b")!,
+      );
+
+      expect(storedA[0].sql).toBe("SELECT a");
+      expect(storedB[0].sql).toBe("SELECT b");
     });
   });
 });

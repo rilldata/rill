@@ -12,6 +12,8 @@
 
   const WORKSPACE_KEY = "__query_console__";
 
+  export let projectId = "";
+
   $: ({ instanceId } = $runtime);
 
   // Get default OLAP connector for new cells
@@ -21,10 +23,10 @@
   $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
 
   // Create notebook store once we have the default connector
-  let notebook = createNotebook("");
+  let notebook = createNotebook("", "");
   let initialized = false;
   $: if (olapConnector && !initialized) {
-    notebook = createNotebook(olapConnector);
+    notebook = createNotebook(olapConnector, projectId);
     initialized = true;
   }
 

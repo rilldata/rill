@@ -65,6 +65,7 @@ class FeatureFlags {
   dashboardChat = new FeatureFlag("user", false);
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
+  queryEditor = new FeatureFlag("user", true);
   stickyDashboardState = new FeatureFlag("user", false);
 
   constructor() {

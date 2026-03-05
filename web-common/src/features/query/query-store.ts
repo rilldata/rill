@@ -27,7 +27,7 @@ export interface NotebookState {
 }
 
 const DEFAULT_LIMIT = 100;
-const STORAGE_KEY = "rill:query-notebook";
+const STORAGE_KEY_PREFIX = "rill:query-notebook";
 
 interface PersistedCell {
   id: string;
@@ -40,10 +40,14 @@ interface PersistedCell {
   executionTimeMs: number | null;
 }
 
-function loadPersistedCells(): PersistedCell[] | null {
+function storageKey(projectId: string): string {
+  return projectId ? `${STORAGE_KEY_PREFIX}:${projectId}` : STORAGE_KEY_PREFIX;
+}
+
+function loadPersistedCells(projectId: string): PersistedCell[] | null {
   if (!browser) return null;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey(projectId));
     if (!stored) return null;
     const parsed = JSON.parse(stored);
     if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -53,7 +57,7 @@ function loadPersistedCells(): PersistedCell[] | null {
   return null;
 }
 
-function saveToLocalStorage(cells: CellState[]) {
+function saveToLocalStorage(projectId: string, cells: CellState[]) {
   if (!browser) return;
   const persisted: PersistedCell[] = cells.map((c) => ({
     id: c.id,
@@ -65,7 +69,7 @@ function saveToLocalStorage(cells: CellState[]) {
     resultRowCount: c.result?.data?.length ?? null,
     executionTimeMs: c.executionTimeMs,
   }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
+  localStorage.setItem(storageKey(projectId), JSON.stringify(persisted));
 }
 
 function hydrateCell(p: PersistedCell): CellState {
@@ -113,8 +117,8 @@ function updateCell(
   };
 }
 
-function createNotebookStore(defaultConnector: string) {
-  const persisted = loadPersistedCells();
+function createNotebookStore(defaultConnector: string, projectId: string) {
+  const persisted = loadPersistedCells(projectId);
   const initialCells = persisted
     ? persisted.map(hydrateCell)
     : [createDefaultCell(defaultConnector)];
@@ -127,7 +131,7 @@ function createNotebookStore(defaultConnector: string) {
   // Only persist when we have a real connector (skip the throwaway initial store)
   if (defaultConnector) {
     const debouncedSave = debounce(
-      (cells: CellState[]) => saveToLocalStorage(cells),
+      (cells: CellState[]) => saveToLocalStorage(projectId, cells),
       500,
     );
     state.subscribe(($s) => debouncedSave($s.cells));
@@ -197,7 +201,7 @@ function createNotebookStore(defaultConnector: string) {
   ) {
     const current = get(state);
     const cell = current.cells.find((c) => c.id === cellId);
-    if (!cell) return;
+    if (!cell || cell.isExecuting) return;
 
     const sqlToRun = (sqlOverride ?? cell.sql).trim();
     if (!sqlToRun) return;
@@ -305,6 +309,9 @@ function createNotebookStore(defaultConnector: string) {
 
 export type NotebookStore = ReturnType<typeof createNotebookStore>;
 
-export function createNotebook(defaultConnector: string): NotebookStore {
-  return createNotebookStore(defaultConnector);
+export function createNotebook(
+  defaultConnector: string,
+  projectId: string,
+): NotebookStore {
+  return createNotebookStore(defaultConnector, projectId);
 }
