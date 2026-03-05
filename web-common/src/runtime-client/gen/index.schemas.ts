@@ -1088,6 +1088,10 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
+export interface V1GetAIMessageResponse {
+  message?: V1Message;
+}
+
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
@@ -1923,6 +1927,10 @@ This is not the time it took to refresh the model which also includes other stuf
   totalExecutionDurationMs?: string;
   /** latest_execution_duration_ms is the time user queries took to execute in the last successful refresh. */
   latestExecutionDurationMs?: string;
+  /** rows_total is the total number of rows in the model's output table. */
+  rowsTotal?: string;
+  /** bytes_total is the total size in bytes of the model's output table. */
+  bytesTotal?: string;
 }
 
 export type V1ModelTestResolverProperties = { [key: string]: unknown };
@@ -2727,8 +2735,15 @@ export type ConnectorServiceListBucketsParams = {
 };
 
 export type ConnectorServiceListObjectsParams = {
+  /**
+   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
+   */
   path?: string;
   delimiter?: string;
+  /**
+   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
+   */
+  glob?: string;
   pageSize?: number;
   pageToken?: string;
 };

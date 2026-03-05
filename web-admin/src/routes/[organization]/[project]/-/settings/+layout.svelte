@@ -46,7 +46,7 @@
       {navItems}
       minWidth="180px"
     />
-    <div class="flex flex-col gap-y-6 w-full">
+    <div class="flex flex-col gap-y-6 w-full min-w-0">
       <slot />
     </div>
   </div>

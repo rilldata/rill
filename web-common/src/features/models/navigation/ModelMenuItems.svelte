@@ -21,11 +21,12 @@
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import {
+    createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewFromTableUIAction,
     useCreateMetricsViewWithCanvasUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, developerChat } = featureFlags;
   const queryClient = useQueryClient();
 
   export let filePath: string;
@@ -112,6 +113,21 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
+
+  async function onGenerateCanvasDashboard() {
+    // Use developer agent if enabled, otherwise fall back to RPC
+    if ($developerChat) {
+      await createCanvasDashboardFromTableWithAgent(
+        instanceId,
+        connector as string,
+        "",
+        "",
+        tableName,
+      );
+    } else {
+      await createCanvasDashboardFromTable();
+    }
+  }
 </script>
 
 <NavigationMenuItem on:click={viewGraph}>
@@ -145,28 +161,26 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
-{#if $generateCanvas}
-  <NavigationMenuItem
-    disabled={disableCreateDashboard}
-    on:click={createCanvasDashboardFromTable}
-  >
-    <CanvasIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate Canvas Dashboard
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-    <svelte:fragment slot="description">
-      {#if $modelHasError}
-        Model has errors
-      {:else if !modelIsIdle}
-        Dependencies are being reconciled.
-      {/if}
-    </svelte:fragment>
-  </NavigationMenuItem>
-{/if}
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={onGenerateCanvasDashboard}
+>
+  <CanvasIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate Canvas Dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $modelHasError}
+      Model has errors
+    {:else if !modelIsIdle}
+      Dependencies are being reconciled.
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
