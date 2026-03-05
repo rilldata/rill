@@ -49,23 +49,33 @@ func TestMatchesExtCompound(t *testing.T) {
 	require.False(t, matchesExt("data.xyz", ".csv", ".json"))
 }
 
-func TestClickhouseHeaders(t *testing.T) {
-	// With headers: produces headers() syntax
+func TestClickhouseURLSuffix(t *testing.T) {
 	props := []ProcessedProp{
 		{Key: "headers", Value: "\n  Authorization: \"Bearer {{ .env.connector.https.authorization }}\"\n  X-API-Key: \"{{ .env.connector.https.x_api_key }}\"", Quoted: false},
 	}
-	result := clickhouseHeaders(props)
+
+	// CSV URL with headers: includes format and headers()
+	result := clickhouseURLSuffix("https://example.com/data.csv", props)
+	require.Contains(t, result, "CSVWithNames")
 	require.Contains(t, result, "headers(")
 	require.Contains(t, result, "'Authorization'='Bearer {{ .env.connector.https.authorization }}'")
 	require.Contains(t, result, "'X-API-Key'='{{ .env.connector.https.x_api_key }}'")
 
-	// No headers prop: returns empty
+	// Parquet URL with headers
+	result = clickhouseURLSuffix("https://example.com/data.parquet", props)
+	require.Contains(t, result, "Parquet")
+	require.Contains(t, result, "headers(")
+
+	// JSON URL with headers
+	result = clickhouseURLSuffix("https://example.com/data.ndjson", props)
+	require.Contains(t, result, "JSONEachRow")
+
+	// No headers: returns empty (ClickHouse auto-detects)
 	noHeaders := []ProcessedProp{
 		{Key: "path", Value: "https://example.com", Quoted: true},
 	}
-	require.Equal(t, "", clickhouseHeaders(noHeaders))
+	require.Equal(t, "", clickhouseURLSuffix("https://example.com/data.csv", noHeaders))
 
 	// Nil/wrong type: returns empty
-	require.Equal(t, "", clickhouseHeaders(nil))
-	require.Equal(t, "", clickhouseHeaders("not a slice"))
+	require.Equal(t, "", clickhouseURLSuffix("https://example.com/data.csv", nil))
 }

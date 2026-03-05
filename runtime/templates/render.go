@@ -174,8 +174,16 @@ func processPropertiesFromSchema(
 			continue
 		}
 
-		// Handle map-typed properties (e.g. headers)
-		if mapVal, isMap := val.(map[string]any); isMap {
+		// Handle map-typed properties (e.g. headers).
+		// The frontend key-value editor sends [{key, value}, ...]; convert to a flat map.
+		mapVal, isMap := val.(map[string]any)
+		if !isMap {
+			if arrVal, isArr := val.([]any); isArr {
+				mapVal = kvArrayToMap(arrVal)
+				isMap = mapVal != nil
+			}
+		}
+		if isMap {
 			headerIdent := driverName
 			headerProps := processHeaders(mapVal, headerIdent, existingEnv, envVars)
 			result = append(result, headerProps...)
@@ -229,6 +237,27 @@ func splitPropsByStep(props []ProcessedProp, schema map[string]any) (configProps
 		}
 	}
 	return
+}
+
+// kvArrayToMap converts [{key: "k", value: "v"}, ...] (from the frontend key-value editor)
+// to map[string]any{"k": "v", ...}. Returns nil if the array is empty or not in the expected format.
+func kvArrayToMap(arr []any) map[string]any {
+	result := make(map[string]any, len(arr))
+	for _, item := range arr {
+		obj, ok := item.(map[string]any)
+		if !ok {
+			return nil
+		}
+		k, _ := obj["key"].(string)
+		v, _ := obj["value"].(string)
+		if k != "" {
+			result[k] = v
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 // schemaProperties extracts the "properties" map from a JSON Schema object.

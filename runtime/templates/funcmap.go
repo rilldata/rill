@@ -18,7 +18,7 @@ func funcMap() template.FuncMap {
 		"duckdbSQL":         duckdbSQL,
 		"azureContainer":    azureContainer,
 		"azureBlobPath":     azureBlobPath,
-		"clickhouseHeaders": clickhouseHeaders,
+		"clickhouseURLSuffix": clickhouseURLSuffix,
 	}
 }
 
@@ -126,17 +126,43 @@ func matchesExt(path string, targets ...string) bool {
 	return false
 }
 
-// clickhouseHeaders formats header ProcessedProps for ClickHouse's url() headers() syntax.
-// Produces: headers('Key1'='value1', 'Key2'='value2')
+// clickhouseURLSuffix generates additional arguments for ClickHouse's url() table function.
+// When headers are present, returns ", Format, headers('K1'='V1', 'K2'='V2')" where
+// Format is auto-detected from the URL extension. Returns empty string when no headers
+// are present (ClickHouse auto-detects everything from the URL).
+func clickhouseURLSuffix(path string, props any) string {
+	hdrs := extractClickhouseHeaders(props)
+	if hdrs == "" {
+		return ""
+	}
+	format := clickhouseFormat(path)
+	return fmt.Sprintf(",\n  %s,\n  %s\n  ", format, hdrs)
+}
+
+// clickhouseFormat maps a URL path to a ClickHouse input format name.
+func clickhouseFormat(path string) string {
+	switch {
+	case matchesExt(path, ".csv", ".txt"):
+		return "CSVWithNames"
+	case matchesExt(path, ".tsv"):
+		return "TabSeparatedWithNames"
+	case matchesExt(path, ".json", ".ndjson", ".jsonl"):
+		return "JSONEachRow"
+	case matchesExt(path, ".parquet"):
+		return "Parquet"
+	default:
+		return "JSONEachRow"
+	}
+}
+
+// extractClickhouseHeaders extracts header ProcessedProps and formats them
+// for ClickHouse's headers() syntax: headers('Key1'='value1', 'Key2'='value2').
 // Returns empty string if no headers are present.
-func clickhouseHeaders(props any) string {
+func extractClickhouseHeaders(props any) string {
 	ps, ok := props.([]ProcessedProp)
 	if !ok {
 		return ""
 	}
-	// Find the "headers" prop; its value is a YAML block like:
-	//   \n  Authorization: "Bearer {{ .env.X }}"\n  X-API-Key: "{{ .env.Y }}"
-	// We need to parse these into ClickHouse headers() key-value pairs.
 	var headerProp *ProcessedProp
 	for i := range ps {
 		if ps[i].Key == "headers" {
@@ -148,21 +174,19 @@ func clickhouseHeaders(props any) string {
 		return ""
 	}
 
-	// Parse the YAML-style header lines
+	// Parse the YAML-style header lines (e.g. "Authorization: \"Bearer {{ .env.X }}\"")
 	var pairs []string
 	for _, line := range strings.Split(headerProp.Value, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		// Each line is: Key: "value" or Key: value
 		idx := strings.IndexByte(line, ':')
 		if idx < 0 {
 			continue
 		}
 		key := strings.TrimSpace(line[:idx])
 		val := strings.TrimSpace(line[idx+1:])
-		// Strip surrounding quotes if present
 		val = strings.Trim(val, "\"")
 		pairs = append(pairs, fmt.Sprintf("'%s'='%s'", key, val))
 	}

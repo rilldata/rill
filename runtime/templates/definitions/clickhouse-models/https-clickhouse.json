@@ -14,10 +14,12 @@
     "clickhouse",
     "source"
   ],
+
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "source_only",
+
     "properties": {
       "headers": {
         "title": "Headers",
@@ -26,6 +28,7 @@
         "x-placeholder": "Header name",
         "x-hint": "e.g. Authorization: Bearer <token>"
       },
+
       "path": {
         "type": "string",
         "title": "URL",
@@ -36,6 +39,7 @@
         },
         "x-placeholder": "https://example.com/data.csv"
       },
+
       "name": {
         "type": "string",
         "title": "Model name",
@@ -44,16 +48,15 @@
         "x-placeholder": "my_model"
       }
     },
-    "required": [
-      "path",
-      "name"
-    ]
+
+    "required": ["path", "name"]
   },
+
   "files": [
     {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",
-      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  SELECT * FROM url('[[ .path ]]'[[ with clickhouseHeaders .props ]], [[ . ]][[ end ]])\n"
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\n\ntype: model\nmaterialize: true\n\nconnector: clickhouse\n\nsql: |\n  SELECT * FROM url('[[ .path ]]'[[ clickhouseURLSuffix .path .props ]])\n"
     }
   ]
 }

@@ -249,9 +249,10 @@ func TestRenderHTTPSClickHouseWithHeaders(t *testing.T) {
 		Template: tmpl,
 		Output:   "model",
 		Properties: map[string]any{
-			"headers": map[string]any{
-				"Authorization": "Bearer my-secret-token",
-				"X-API-Key":     "key123",
+			// Frontend key-value editor sends [{key, value}, ...] format
+			"headers": []any{
+				map[string]any{"key": "Authorization", "value": "Bearer my-secret-token"},
+				map[string]any{"key": "X-API-Key", "value": "key123"},
 			},
 			"path": "https://example.com/data.csv",
 			"name": "api_data",
@@ -267,6 +268,7 @@ func TestRenderHTTPSClickHouseWithHeaders(t *testing.T) {
 	require.Contains(t, blob, "connector: clickhouse")
 	require.Contains(t, blob, "url(")
 	require.Contains(t, blob, "https://example.com/data.csv")
+	require.Contains(t, blob, "CSVWithNames")
 	require.Contains(t, blob, "headers(")
 	require.Contains(t, blob, "'Authorization'=")
 	require.Contains(t, blob, "'X-API-Key'=")

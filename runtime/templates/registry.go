@@ -39,7 +39,8 @@ func NewRegistry() (*Registry, error) {
 			return fmt.Errorf("reading template %s: %w", fpath, err)
 		}
 
-		// Skip empty stub files (placeholders for future implementation)
+		// Skip stub files (placeholders for future implementation);
+		// these may be empty or contain only a "_reason" field.
 		if len(bytes.TrimSpace(data)) == 0 {
 			return nil
 		}
@@ -50,7 +51,8 @@ func NewRegistry() (*Registry, error) {
 		}
 
 		if t.Name == "" {
-			return fmt.Errorf("template %s has no name", fpath)
+			// Stub file with metadata (e.g. _reason) but no template definition; skip it
+			return nil
 		}
 
 		if _, exists := r.templates[t.Name]; exists {
