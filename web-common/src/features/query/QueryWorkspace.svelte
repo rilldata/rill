@@ -60,7 +60,7 @@
         objectName: table,
       };
     },
-    // onInsertTable: "+" button populates the focused cell
+    // onInsertTable: "+" button populates a cell with SELECT * FROM table
     (driver, connector, database, schema, table) => {
       const tableRef = makeSufficientlyQualifiedTableName(
         driver,
@@ -71,7 +71,18 @@
       const sql = `SELECT * FROM ${tableRef}`;
 
       const focusedId = $notebook.focusedCellId ?? $notebook.cells[0]?.id;
-      if (focusedId) {
+      const focusedCell = $notebook.cells.find((c) => c.id === focusedId);
+      const hasExistingSql = (focusedCell?.sql ?? "").trim().length > 0;
+
+      if (hasExistingSql) {
+        // Don't overwrite; create a new cell instead
+        const newId = notebook.addCell(connector);
+        notebook.setCellSql(newId, sql);
+        // Wait a tick for the DOM to render the new cell
+        requestAnimationFrame(() => {
+          cellRefs[newId]?.setEditorContent(sql);
+        });
+      } else if (focusedId) {
         notebook.setCellConnector(focusedId, connector);
         notebook.setCellSql(focusedId, sql);
         cellRefs[focusedId]?.setEditorContent(sql);

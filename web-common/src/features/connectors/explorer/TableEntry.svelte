@@ -184,7 +184,8 @@
     @apply text-fg-secondary bg-transparent;
   }
 
-  .table-entry-header:hover .insert-button {
+  .table-entry-header:hover .insert-button,
+  .open .insert-button {
     @apply flex;
   }
 

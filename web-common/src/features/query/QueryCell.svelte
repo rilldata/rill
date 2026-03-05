@@ -37,7 +37,7 @@
   $: hasSql = (cell?.sql ?? "").trim().length > 0;
 
   function handleRun(e?: CustomEvent<{ selectedText?: string }>) {
-    if (!cell) return;
+    if (!cell || cell.isExecuting) return;
     notebook.setFocusedCell(cellId);
     const sqlOverride = e?.detail?.selectedText;
     notebook.executeCellQuery(cellId, instanceId, sqlOverride);
@@ -45,7 +45,7 @@
   }
 
   function handleRunButton() {
-    if (!cell) return;
+    if (!cell || cell.isExecuting) return;
     notebook.setFocusedCell(cellId);
     const selectedText = editorRef?.getSelectedText();
     notebook.executeCellQuery(cellId, instanceId, selectedText);
@@ -76,6 +76,9 @@
   function handleFocus() {
     notebook.setFocusedCell(cellId);
     dispatch("focus");
+    if (!cell?.collapsed) {
+      editorRef?.focus();
+    }
   }
 </script>
 

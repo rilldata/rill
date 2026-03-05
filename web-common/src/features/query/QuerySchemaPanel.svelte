@@ -9,6 +9,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
+  import { prettyPrintType } from "./query-utils";
 
   export let filePath: string;
   export let schema: V1StructType | null;
@@ -50,12 +51,6 @@
 
   $: fields = schema?.fields ?? [];
   $: columnCount = fields.length;
-
-  function prettyPrintType(code: string | undefined): string {
-    if (!code) return "UNKNOWN";
-    const normalized = code.replace(/^CODE_/, "");
-    return normalized.startsWith("UNKNOWN(") ? "UNKNOWN" : normalized;
-  }
 
   function formatTime(ms: number): string {
     return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;

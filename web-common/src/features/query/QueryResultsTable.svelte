@@ -5,6 +5,7 @@
     V1QueryResolverResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
+  import { prettyPrintType } from "./query-utils";
 
   export let schema: V1StructType | null;
   export let data: V1QueryResolverResponseDataItem[] | null;
@@ -17,14 +18,8 @@
     if (!schema?.fields) return [];
     return schema.fields.map((field) => ({
       name: field.name ?? "",
-      type: typeCodeToString(field.type?.code),
+      type: prettyPrintType(field.type?.code),
     }));
-  }
-
-  function typeCodeToString(code: string | undefined): string {
-    if (!code) return "UNKNOWN";
-    // Strip the "CODE_" prefix for display
-    return code.replace(/^CODE_/, "");
   }
 </script>
 
