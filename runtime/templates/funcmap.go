@@ -10,14 +10,15 @@ import (
 // funcMap returns the template function map available to all template definitions.
 func funcMap() template.FuncMap {
 	return template.FuncMap{
-		"renderProps":    renderProps,
-		"indent":         indent,
-		"quote":          quote,
-		"propVal":        propVal,
-		"default":        defaultVal,
-		"duckdbSQL":      duckdbSQL,
-		"azureContainer": azureContainer,
-		"azureBlobPath":  azureBlobPath,
+		"renderProps":       renderProps,
+		"indent":            indent,
+		"quote":             quote,
+		"propVal":           propVal,
+		"default":           defaultVal,
+		"duckdbSQL":         duckdbSQL,
+		"azureContainer":    azureContainer,
+		"azureBlobPath":     azureBlobPath,
+		"clickhouseHeaders": clickhouseHeaders,
 	}
 }
 
@@ -123,6 +124,52 @@ func matchesExt(path string, targets ...string) bool {
 		}
 	}
 	return false
+}
+
+// clickhouseHeaders formats header ProcessedProps for ClickHouse's url() headers() syntax.
+// Produces: headers('Key1'='value1', 'Key2'='value2')
+// Returns empty string if no headers are present.
+func clickhouseHeaders(props any) string {
+	ps, ok := props.([]ProcessedProp)
+	if !ok {
+		return ""
+	}
+	// Find the "headers" prop; its value is a YAML block like:
+	//   \n  Authorization: "Bearer {{ .env.X }}"\n  X-API-Key: "{{ .env.Y }}"
+	// We need to parse these into ClickHouse headers() key-value pairs.
+	var headerProp *ProcessedProp
+	for i := range ps {
+		if ps[i].Key == "headers" {
+			headerProp = &ps[i]
+			break
+		}
+	}
+	if headerProp == nil {
+		return ""
+	}
+
+	// Parse the YAML-style header lines
+	var pairs []string
+	for _, line := range strings.Split(headerProp.Value, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// Each line is: Key: "value" or Key: value
+		idx := strings.IndexByte(line, ':')
+		if idx < 0 {
+			continue
+		}
+		key := strings.TrimSpace(line[:idx])
+		val := strings.TrimSpace(line[idx+1:])
+		// Strip surrounding quotes if present
+		val = strings.Trim(val, "\"")
+		pairs = append(pairs, fmt.Sprintf("'%s'='%s'", key, val))
+	}
+	if len(pairs) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("headers(%s)", strings.Join(pairs, ", "))
 }
 
 // azureContainer extracts the container name from an Azure URI like "azure://container/blob/path".

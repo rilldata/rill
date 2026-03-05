@@ -48,3 +48,24 @@ func TestMatchesExtCompound(t *testing.T) {
 	require.True(t, matchesExt("data.ndjson.gz", ".ndjson"))
 	require.False(t, matchesExt("data.xyz", ".csv", ".json"))
 }
+
+func TestClickhouseHeaders(t *testing.T) {
+	// With headers: produces headers() syntax
+	props := []ProcessedProp{
+		{Key: "headers", Value: "\n  Authorization: \"Bearer {{ .env.connector.https.authorization }}\"\n  X-API-Key: \"{{ .env.connector.https.x_api_key }}\"", Quoted: false},
+	}
+	result := clickhouseHeaders(props)
+	require.Contains(t, result, "headers(")
+	require.Contains(t, result, "'Authorization'='Bearer {{ .env.connector.https.authorization }}'")
+	require.Contains(t, result, "'X-API-Key'='{{ .env.connector.https.x_api_key }}'")
+
+	// No headers prop: returns empty
+	noHeaders := []ProcessedProp{
+		{Key: "path", Value: "https://example.com", Quoted: true},
+	}
+	require.Equal(t, "", clickhouseHeaders(noHeaders))
+
+	// Nil/wrong type: returns empty
+	require.Equal(t, "", clickhouseHeaders(nil))
+	require.Equal(t, "", clickhouseHeaders("not a slice"))
+}

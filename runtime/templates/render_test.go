@@ -238,6 +238,73 @@ func TestRenderMySQLClickHouseModel(t *testing.T) {
 	require.NotContains(t, blob, "secret123")
 }
 
+func TestRenderHTTPSClickHouseWithHeaders(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+
+	tmpl, ok := registry.Get("https-clickhouse")
+	require.True(t, ok)
+
+	result, err := Render(&RenderInput{
+		Template: tmpl,
+		Output:   "model",
+		Properties: map[string]any{
+			"headers": map[string]any{
+				"Authorization": "Bearer my-secret-token",
+				"X-API-Key":     "key123",
+			},
+			"path": "https://example.com/data.csv",
+			"name": "api_data",
+		},
+		ConnectorName: "my_https",
+		ExistingEnv:   make(map[string]bool),
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Files, 1)
+
+	blob := result.Files[0].Blob
+	require.Contains(t, blob, "type: model")
+	require.Contains(t, blob, "connector: clickhouse")
+	require.Contains(t, blob, "url(")
+	require.Contains(t, blob, "https://example.com/data.csv")
+	require.Contains(t, blob, "headers(")
+	require.Contains(t, blob, "'Authorization'=")
+	require.Contains(t, blob, "'X-API-Key'=")
+	// Raw secrets should NOT appear in the blob
+	require.NotContains(t, blob, "my-secret-token")
+	require.NotContains(t, blob, "key123")
+
+	// Env vars should be extracted for sensitive headers
+	require.Contains(t, result.EnvVars, "connector.https.authorization")
+	require.Contains(t, result.EnvVars, "connector.https.x_api_key")
+}
+
+func TestRenderHTTPSClickHouseNoHeaders(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+
+	tmpl, ok := registry.Get("https-clickhouse")
+	require.True(t, ok)
+
+	result, err := Render(&RenderInput{
+		Template: tmpl,
+		Output:   "model",
+		Properties: map[string]any{
+			"path": "https://example.com/data.csv",
+			"name": "simple_data",
+		},
+		ConnectorName: "my_https",
+		ExistingEnv:   make(map[string]bool),
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Files, 1)
+
+	blob := result.Files[0].Blob
+	require.Contains(t, blob, "url('https://example.com/data.csv')")
+	// No headers() clause when no headers provided
+	require.NotContains(t, blob, "headers(")
+}
+
 func TestRenderEnvVarConflict(t *testing.T) {
 	registry, err := NewRegistry()
 	require.NoError(t, err)

@@ -39,6 +39,11 @@ func NewRegistry() (*Registry, error) {
 			return fmt.Errorf("reading template %s: %w", fpath, err)
 		}
 
+		// Skip empty stub files (placeholders for future implementation)
+		if len(bytes.TrimSpace(data)) == 0 {
+			return nil
+		}
+
 		var t Template
 		if err := json.Unmarshal(data, &t); err != nil {
 			return fmt.Errorf("parsing template %s: %w", fpath, err)
