@@ -249,9 +249,7 @@ describe("connector-schemas", () => {
       const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
 
       for (const [, schema] of Object.entries(testSchemas)) {
-        if (
-          (schema as Record<string, unknown>)?.["x-form-height"] === "tall"
-        ) {
+        if ((schema as Record<string, unknown>)?.["x-form-height"] === "tall") {
           expect(getFormHeight(schema)).toBe(FORM_HEIGHT_TALL);
         }
       }
@@ -285,15 +283,11 @@ describe("connector-schemas", () => {
       expect(shouldShowSkipLink("connector", "clickhouse", null, true)).toBe(
         false,
       );
-      expect(shouldShowSkipLink("connector", "duckdb", null, true)).toBe(
-        false,
-      );
+      expect(shouldShowSkipLink("connector", "duckdb", null, true)).toBe(false);
     });
 
     it("returns false when not on connector step", () => {
-      expect(shouldShowSkipLink("source", "postgres", null, false)).toBe(
-        false,
-      );
+      expect(shouldShowSkipLink("source", "postgres", null, false)).toBe(false);
       expect(shouldShowSkipLink("explorer", "postgres", null, false)).toBe(
         false,
       );
