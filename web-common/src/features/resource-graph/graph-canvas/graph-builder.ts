@@ -686,38 +686,25 @@ function createSeedBasedGroups(
   const assigned = new Set<string>();
 
   for (const seedId of normalizedSeeds) {
-    // Connector seeds show the full DAG (all visible resources).
-    // Connectors are conceptually the root of the entire project graph,
-    // but sources may not have explicit refs to them, so we include everything.
-    const seedResource = resourceMap.get(seedId);
-    const seedKind = toResourceKind(seedResource?.meta?.name);
-    if (seedKind === ResourceKind.Connector) {
-      const allResources = Array.from(resourceMap.values());
-      if (!allResources.length) continue;
-      const label = seedResource?.meta?.name?.name ?? seedId;
-      const group: ResourceGraphGrouping = {
-        id: seedId,
-        resources: allResources,
-        label,
-      };
-      groups.push(group);
-      groupById.set(group.id, group);
-      graphCache.setLabel(group.id, group.label ?? group.id);
-      for (const r of allResources) {
-        const rid = createResourceId(r.meta);
-        if (rid) assigned.add(rid);
-      }
-      continue;
-    }
-
     // Directed closure: only upstream via incoming and only downstream via outgoing
     const upIds = traverseUpstream(seedId, incoming);
     const downIds = traverseDownstream(seedId, outgoing);
     const componentIds = new Set<string>([...upIds, ...downIds]);
 
+    const seedKind = toResourceKind(resourceMap.get(seedId)?.meta?.name);
     const componentResources = Array.from(componentIds)
       .map((resourceId) => resourceMap.get(resourceId))
-      .filter((res): res is V1Resource => !!res);
+      .filter((res): res is V1Resource => !!res)
+      .filter((res) => {
+        // Exclude non-seed connectors; connector info is shown as badges
+        const k = toResourceKind(res.meta?.name);
+        if (k !== ResourceKind.Connector) return true;
+        // Keep the connector if it's the seed itself
+        return (
+          seedKind === ResourceKind.Connector &&
+          createResourceId(res.meta) === seedId
+        );
+      });
     if (!componentResources.length) continue;
 
     const label = resourceMap.get(seedId)?.meta?.name?.name ?? seedId;
@@ -1130,7 +1117,7 @@ export function buildMultiTreeLayout(groups: ResourceGraphGrouping[]): {
   nodes: Node<ResourceNodeData>[];
   edges: Edge[];
 } {
-  const TREE_GAP_X = 80; // horizontal gap between trees
+  const TREE_GAP_X = 100; // horizontal gap between trees
   const TREE_GAP_Y = 200; // vertical gap between rows
   const MAX_ROW_WIDTH = 2500; // wrap to next row after this width
   const allNodes: Node<ResourceNodeData>[] = [];

@@ -392,7 +392,6 @@
     @apply flex-shrink-0 flex items-center;
   }
 
-
   .actions-trigger {
     @apply flex-shrink-0 ml-auto;
   }
