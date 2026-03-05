@@ -1,167 +1,186 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
-  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { formatInteger } from "@rilldata/web-common/lib/formatters";
+  import PlusIcon from "@rilldata/web-common/components/icons/PlusIcon.svelte";
+  import ConnectorExplorer from "@rilldata/web-common/features/connectors/explorer/ConnectorExplorer.svelte";
+  import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import {
+    createRuntimeServiceGetInstance,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import ConnectorSelector from "./ConnectorSelector.svelte";
-  import QueryEditor from "./QueryEditor.svelte";
-  import QueryResultsInspector from "./QueryResultsInspector.svelte";
-  import QueryResultsTable from "./QueryResultsTable.svelte";
-  import { createQueryConsole } from "./query-store";
+  import QueryCell from "./QueryCell.svelte";
+  import QuerySchemaPanel from "./QuerySchemaPanel.svelte";
+  import { makeSufficientlyQualifiedTableName } from "@rilldata/web-common/features/connectors/connectors-utils";
+  import { createNotebook } from "./query-store";
 
   const WORKSPACE_KEY = "__query_console__";
 
-  const queryConsole = createQueryConsole();
-
   $: ({ instanceId } = $runtime);
 
-  $: workspace = workspaces.get(WORKSPACE_KEY);
-  $: tableVisible = workspace.table.visible;
+  // Get default OLAP connector for new cells
+  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+    sensitive: true,
+  });
+  $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
 
-  // Derived state from query console
-  let sql = "";
-  let connector = "";
-  let limit = 100;
-
-  $: schema = queryConsole.schema;
-  $: data = queryConsole.data;
-  $: rowCount = queryConsole.rowCount;
-
-  function handleRun() {
-    queryConsole.setSql(sql);
-    queryConsole.setConnector(connector);
-    queryConsole.setLimit(limit);
-    queryConsole.executeQuery(instanceId);
+  // Create notebook store once we have the default connector
+  let notebook = createNotebook("");
+  let initialized = false;
+  $: if (olapConnector && !initialized) {
+    notebook = createNotebook(olapConnector);
+    initialized = true;
   }
 
-  function handleEditorChange(e: CustomEvent<string>) {
-    sql = e.detail;
+  // Track table selected from data explorer (for ColumnProfile in right panel)
+  let selectedTable: {
+    connector: string;
+    database: string;
+    databaseSchema: string;
+    objectName: string;
+  } | null = null;
+
+  // Refs to cell editors for programmatic content setting
+  let cellRefs: Record<string, QueryCell> = {};
+
+  // Data explorer sidebar
+  const explorerStore = new ConnectorExplorerStore(
+    {
+      allowNavigateToTable: false,
+      allowContextMenu: false,
+      allowShowSchema: true,
+      allowSelectTable: false,
+    },
+    // onToggleItem: show ColumnProfile when a table is expanded
+    (connector, database, schema, table) => {
+      if (!table) {
+        selectedTable = null;
+        return;
+      }
+      selectedTable = {
+        connector,
+        database: database ?? "",
+        databaseSchema: schema ?? "",
+        objectName: table,
+      };
+    },
+    // onInsertTable: "+" button populates the focused cell
+    (driver, connector, database, schema, table) => {
+      const tableRef = makeSufficientlyQualifiedTableName(
+        driver, database, schema, table,
+      );
+      const sql = `SELECT * FROM ${tableRef}`;
+
+      const focusedId = $notebook.focusedCellId ?? $notebook.cells[0]?.id;
+      if (focusedId) {
+        notebook.setCellConnector(focusedId, connector);
+        notebook.setCellSql(focusedId, sql);
+        cellRefs[focusedId]?.setEditorContent(sql);
+      }
+    },
+  );
+
+  let sidebarWidth = 260;
+
+  // Derived stores for the focused cell (forwarded to inspector)
+  $: focusedSchema = notebook.focusedSchema;
+  $: focusedRowCount = notebook.focusedRowCount;
+  $: focusedExecutionTimeMs = notebook.focusedExecutionTimeMs;
+
+  function handleAddCell() {
+    notebook.addCell(olapConnector);
   }
 
-  function handleConnectorChange(newConnector: string) {
-    connector = newConnector;
-  }
-
-  function handleLimitChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const parsed = parseInt(target.value, 10);
-    if (!isNaN(parsed) && parsed > 0) {
-      limit = parsed;
-    }
+  function handleCellRun() {
+    // Clear table selection when a query is run (show query results instead)
+    selectedTable = null;
   }
 </script>
 
-<WorkspaceContainer>
-  <header slot="header" class="query-header">
-    <div class="flex items-center gap-x-3 px-4 py-2">
-      <h2 class="text-lg font-semibold flex-none">Query</h2>
-
-      <div class="flex items-center gap-x-2 flex-none">
-        <span class="text-xs text-fg-secondary">Connector</span>
-        <ConnectorSelector
-          value={connector}
-          onChange={handleConnectorChange}
-        />
-      </div>
-
-      <div class="flex items-center gap-x-2 flex-none">
-        <span class="text-xs text-fg-secondary">Limit</span>
-        <input
-          type="number"
-          class="limit-input"
-          value={limit}
-          min="1"
-          max="10000"
-          on:change={handleLimitChange}
-        />
-      </div>
-
-      <div class="flex items-center gap-x-2 ml-auto flex-none">
-        {#if $queryConsole.isExecuting}
-          <div class="flex items-center gap-x-2 text-xs text-fg-secondary">
-            <Spinner size="14px" status={EntityStatus.Running} />
-            Running...
-          </div>
-        {:else if $queryConsole.result}
-          <span class="text-xs text-fg-secondary">
-            {formatInteger($rowCount)} {$rowCount === 1 ? "row" : "rows"}
-            {#if $queryConsole.executionTimeMs !== null}
-              in {$queryConsole.executionTimeMs < 1000
-                ? `${$queryConsole.executionTimeMs}ms`
-                : `${($queryConsole.executionTimeMs / 1000).toFixed(1)}s`}
-            {/if}
-          </span>
-        {/if}
-
-        <Button
-          type="primary"
-          onClick={handleRun}
-          disabled={$queryConsole.isExecuting || !sql.trim()}
-        >
-          Run
-        </Button>
-      </div>
+<div class="query-workspace">
+  <!-- Left Sidebar: Data Explorer -->
+  <aside class="data-explorer" style:width="{sidebarWidth}px">
+    <div class="sidebar-header">
+      <h3 class="text-xs font-semibold text-fg-secondary uppercase tracking-wide">
+        Data Explorer
+      </h3>
     </div>
-  </header>
+    <div class="sidebar-content">
+      <ConnectorExplorer store={explorerStore} />
+    </div>
+  </aside>
 
-  <div
-    slot="body"
-    class="editor-pane size-full overflow-hidden flex flex-col"
-  >
-    <WorkspaceEditorContainer error={$queryConsole.error ?? undefined}>
-      <QueryEditor
-        on:run={handleRun}
-        on:change={handleEditorChange}
-      />
-    </WorkspaceEditorContainer>
+  <Resizer
+    absolute={false}
+    direction="EW"
+    side="right"
+    min={200}
+    max={440}
+    bind:dimension={sidebarWidth}
+  />
 
-    {#if $tableVisible}
-      <WorkspaceTableContainer filePath={WORKSPACE_KEY}>
-        {#if $queryConsole.isExecuting}
-          <div class="size-full flex items-center justify-center">
-            <Spinner size="1.5em" status={EntityStatus.Running} />
-          </div>
-        {:else}
-          <QueryResultsTable schema={$schema} data={$data} />
-        {/if}
-      </WorkspaceTableContainer>
-    {/if}
+  <!-- Center: Notebook cells -->
+  <div class="notebook-area">
+    <div class="cells-container">
+      {#each $notebook.cells as cell (cell.id)}
+        <QueryCell
+          bind:this={cellRefs[cell.id]}
+          cellId={cell.id}
+          {notebook}
+          {instanceId}
+          cellCount={$notebook.cells.length}
+          on:run={handleCellRun}
+        />
+      {/each}
+
+      <button class="add-cell-button" on:click={handleAddCell}>
+        <PlusIcon size="14px" />
+        Add Cell
+      </button>
+    </div>
   </div>
 
-  <QueryResultsInspector
-    slot="inspector"
+  <!-- Right Sidebar: Schema Inspector -->
+  <QuerySchemaPanel
     filePath={WORKSPACE_KEY}
-    schema={$schema}
-    rowCount={$rowCount}
-    executionTimeMs={$queryConsole.executionTimeMs}
+    schema={$focusedSchema}
+    rowCount={$focusedRowCount}
+    executionTimeMs={$focusedExecutionTimeMs}
+    {selectedTable}
   />
-</WorkspaceContainer>
+</div>
 
 <style lang="postcss">
-  .query-header {
-    @apply border-b bg-surface-base;
+  .query-workspace {
+    @apply flex size-full overflow-hidden bg-gray-100/80;
   }
 
-  .limit-input {
-    @apply w-20 h-6 px-2 text-xs rounded border bg-input text-fg-primary;
+  .data-explorer {
+    @apply flex-none flex flex-col overflow-hidden;
+    @apply border-r bg-surface-background;
   }
 
-  .limit-input:focus {
-    @apply outline-none ring-2 ring-primary-100;
+  .sidebar-header {
+    @apply px-3 py-2 border-b;
   }
 
-  /* Hide number input spinners */
-  .limit-input::-webkit-outer-spin-button,
-  .limit-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+  .sidebar-content {
+    @apply overflow-y-auto flex-1;
   }
-  .limit-input[type="number"] {
-    -moz-appearance: textfield;
+
+  .notebook-area {
+    @apply flex-1 overflow-hidden flex flex-col min-w-0;
+  }
+
+  .cells-container {
+    @apply flex flex-col gap-y-3 p-4 overflow-y-auto h-full;
+  }
+
+  .add-cell-button {
+    @apply flex items-center gap-x-1.5 justify-center;
+    @apply w-full py-2 rounded border border-dashed;
+    @apply text-xs text-fg-secondary;
+  }
+
+  .add-cell-button:hover {
+    @apply bg-surface-subtle text-fg-primary border-solid;
   }
 </style>

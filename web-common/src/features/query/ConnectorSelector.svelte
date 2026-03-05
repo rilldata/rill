@@ -31,7 +31,9 @@
         return data.connectors
           .filter(
             (c) =>
-              c?.driver?.implementsOlap || c?.driver?.implementsSqlStore,
+              c?.driver?.implementsOlap ||
+              c?.driver?.implementsSqlStore ||
+              c?.driver?.implementsWarehouse,
           )
           .sort((a, b) =>
             (a?.name as string).localeCompare(b?.name as string),

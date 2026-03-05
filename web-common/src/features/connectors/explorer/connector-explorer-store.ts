@@ -21,6 +21,17 @@ export class ConnectorExplorerStore {
         table?: string,
       ) => void) = undefined;
 
+  /** Optional callback shown as a "+" button on table rows */
+  onInsertTable:
+    | undefined
+    | ((
+        driver: string,
+        connector: string,
+        database: string,
+        schema: string,
+        table: string,
+      ) => void) = undefined;
+
   constructor(
     {
       allowNavigateToTable = true,
@@ -38,6 +49,13 @@ export class ConnectorExplorerStore {
       schema?: string,
       table?: string,
     ) => void,
+    onInsertTable?: (
+      driver: string,
+      connector: string,
+      database: string,
+      schema: string,
+      table: string,
+    ) => void,
   ) {
     this.allowNavigateToTable = allowNavigateToTable;
     this.allowContextMenu = allowContextMenu;
@@ -45,6 +63,7 @@ export class ConnectorExplorerStore {
     this.allowSelectTable = allowSelectTable;
 
     if (onToggleItem) this.onToggleItem = onToggleItem;
+    if (onInsertTable) this.onInsertTable = onInsertTable;
 
     this.store = localStorage
       ? localStorageStore<ConnectorExplorerState>("connector-explorer-state", {

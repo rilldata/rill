@@ -2,7 +2,6 @@
   import { autocompletion } from "@codemirror/autocomplete";
   import {
     keywordCompletionSource,
-    schemaCompletionSource,
     sql,
   } from "@codemirror/lang-sql";
   import { Compartment, EditorState } from "@codemirror/state";
@@ -14,7 +13,7 @@
   export let initialValue = "";
 
   const dispatch = createEventDispatcher<{
-    run: void;
+    run: { selectedText?: string };
     change: string;
   }>();
 
@@ -30,12 +29,17 @@
     });
   }
 
-  // Cmd/Ctrl+Enter to run query
+  // Cmd/Ctrl+Enter to run query (selected text or full content)
   const runKeymap = keymap.of([
     {
       key: "Mod-Enter",
-      run: () => {
-        dispatch("run");
+      run: (view) => {
+        const sel = view.state.selection.main;
+        const hasSelection = sel.from !== sel.to;
+        const selectedText = hasSelection
+          ? view.state.sliceDoc(sel.from, sel.to)
+          : undefined;
+        dispatch("run", { selectedText });
         return true;
       },
     },
@@ -67,6 +71,20 @@
 
   export function getContent(): string {
     return editor?.state.doc.toString() ?? "";
+  }
+
+  export function getSelectedText(): string | undefined {
+    if (!editor) return undefined;
+    const sel = editor.state.selection.main;
+    if (sel.from === sel.to) return undefined;
+    return editor.state.sliceDoc(sel.from, sel.to);
+  }
+
+  export function setContent(text: string) {
+    if (!editor) return;
+    editor.dispatch({
+      changes: { from: 0, to: editor.state.doc.length, insert: text },
+    });
   }
 
   export function focus() {
