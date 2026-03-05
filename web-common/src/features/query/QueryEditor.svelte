@@ -84,6 +84,16 @@
     });
   }
 
+  export function insertAtCursor(text: string) {
+    if (!editor) return;
+    const pos = editor.state.selection.main.head;
+    editor.dispatch({
+      changes: { from: pos, insert: text },
+      selection: { anchor: pos + text.length },
+    });
+    editor.focus();
+  }
+
   export function focus() {
     editor?.focus();
   }

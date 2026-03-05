@@ -27,6 +27,11 @@
     editorRef?.setContent(text);
   }
 
+  /** Inserts text at the current cursor position */
+  export function insertAtCursor(text: string) {
+    editorRef?.insertAtCursor(text);
+  }
+
   $: cell = $notebook.cells.find((c) => c.id === cellId);
   $: isFocused = $notebook.focusedCellId === cellId;
   $: canDelete = cellCount > 1;

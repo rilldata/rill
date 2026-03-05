@@ -9,7 +9,7 @@
   import QuerySchemaPanel from "./QuerySchemaPanel.svelte";
   import { makeSufficientlyQualifiedTableName } from "@rilldata/web-common/features/connectors/connectors-utils";
   import { createNotebook, type NotebookStore } from "./query-store";
-  import { onDestroy, tick } from "svelte";
+  import { onDestroy } from "svelte";
   import { get } from "svelte/store";
 
   const WORKSPACE_KEY = "__query_console__";
@@ -72,10 +72,13 @@
         objectName: table,
       };
     },
-    // onInsertTable: "+" button populates a cell with SELECT * FROM table
-    (driver, connector, database, schema, table) => {
+    // onInsertTable: "+" button inserts SELECT * FROM table at cursor in focused cell
+    (driver, _connector, database, schema, table) => {
       if (!notebook) return;
       const state = get(notebook);
+      const focusedId = state.focusedCellId ?? state.cells[0]?.id;
+      if (!focusedId) return;
+
       const tableRef = makeSufficientlyQualifiedTableName(
         driver,
         database,
@@ -84,32 +87,24 @@
       );
       const sql = `SELECT * FROM ${tableRef}`;
 
-      const focusedId = state.focusedCellId ?? state.cells[0]?.id;
-      const focusedCell = state.cells.find((c) => c.id === focusedId);
-      const hasExistingSql = (focusedCell?.sql ?? "").trim().length > 0;
-
-      if (hasExistingSql) {
-        // Don't overwrite; create a new cell instead
-        const newId = notebook.addCell(connector);
-        notebook.setCellSql(newId, sql);
-        // Wait a tick for the DOM to render the new cell
-        tick().then(() => {
-          cellRefs[newId]?.setEditorContent(sql);
-        });
-      } else if (focusedId) {
-        notebook.setCellConnector(focusedId, connector);
-        notebook.setCellSql(focusedId, sql);
-        cellRefs[focusedId]?.setEditorContent(sql);
-      }
+      cellRefs[focusedId]?.insertAtCursor(sql);
     },
   );
 
   let sidebarWidth = 260;
 
+  // Subscribe to notebook state at top level (Svelte requires $store at top level)
+  $: cells = notebook ? $notebook.cells : [];
+
   // Derived stores for the focused cell (forwarded to inspector)
   $: focusedSchema = notebook?.focusedSchema;
   $: focusedRowCount = notebook?.focusedRowCount;
   $: focusedExecutionTimeMs = notebook?.focusedExecutionTimeMs;
+  $: focusedSchemaValue = focusedSchema ? $focusedSchema : null;
+  $: focusedRowCountValue = focusedRowCount ? $focusedRowCount : 0;
+  $: focusedExecutionTimeMsValue = focusedExecutionTimeMs
+    ? $focusedExecutionTimeMs
+    : null;
 
   function handleAddCell() {
     notebook?.addCell(olapConnector);
@@ -127,7 +122,6 @@
 </script>
 
 {#if notebook}
-  {@const nb = notebook}
   <div class="query-workspace">
     <!-- Left Sidebar: Data Explorer -->
     <aside class="data-explorer" style:width="{sidebarWidth}px">
@@ -155,13 +149,13 @@
     <!-- Center: Notebook cells -->
     <div class="notebook-area">
       <div class="cells-container">
-        {#each $nb.cells as cell (cell.id)}
+        {#each cells as cell (cell.id)}
           <QueryCell
             bind:this={cellRefs[cell.id]}
             cellId={cell.id}
-            notebook={nb}
+            {notebook}
             {instanceId}
-            cellCount={$nb.cells.length}
+            cellCount={cells.length}
             on:focus={handleCellFocus}
             on:run={handleCellRun}
           />
@@ -177,9 +171,9 @@
     <!-- Right Sidebar: Schema Inspector -->
     <QuerySchemaPanel
       filePath={WORKSPACE_KEY}
-      schema={focusedSchema ? $focusedSchema : null}
-      rowCount={focusedRowCount ? $focusedRowCount : 0}
-      executionTimeMs={focusedExecutionTimeMs ? $focusedExecutionTimeMs : null}
+      schema={focusedSchemaValue}
+      rowCount={focusedRowCountValue}
+      executionTimeMs={focusedExecutionTimeMsValue}
       {selectedTable}
     />
   </div>
