@@ -56,32 +56,31 @@
   // Templates that modify the SQL/metrics_sql value in the YAML
   const templates = [
     {
-      label: "Add filter arg",
+      label: "Filter Template",
       clause: `where dimension = '{{ .args.filter }}'`,
     },
     {
-      label: "Add limit arg",
+      label: "Limit Template",
       clause: "limit {{ .args.limit }}",
     },
     {
-      label: "Add offset arg",
+      label: "Offset Template",
       clause: "offset {{ .args.offset }}",
     },
     {
-      label: "Add sort args",
+      label: "Sort Template",
       clause: "order by {{ .args.sort }} {{ .args.order }}",
     },
     {
-      label: "Add time range args",
+      label: "Time range Template",
       clause: `where time >= '{{ .args.start }}' and time < '{{ .args.end }}'`,
     },
   ];
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
 
-  // Regex to find the FROM clause and everything after it within the SQL value.
-  // Captures: (everything up to and including FROM <table>) (trailing clauses)
-  const fromPattern = /(\bfrom\s+\S+)([\s\S]*?)(\s*$)/i;
+  // Matches FROM <table> and captures everything after it as trailing clauses
+  const fromPattern = /\bfrom\s+\S+/i;
 
   function applyTemplate(clause: string) {
     const content = $editorContent ?? "";
@@ -90,26 +89,21 @@
     const sqlKeyMatch = content.match(/^(metrics_sql|sql)\s*:/m);
     if (!sqlKeyMatch) return;
 
-    // Extract the full SQL value (handles both inline and multiline block scalar)
-    const sqlKey = sqlKeyMatch[1];
     const keyIndex = content.indexOf(sqlKeyMatch[0]);
     const afterKey = content.slice(keyIndex + sqlKeyMatch[0].length);
 
-    // Determine if it's a block scalar (| or >) or inline
+    // Determine if block scalar (| or >) or inline
     const isBlock = /^\s*\|/.test(afterKey);
 
     if (isBlock) {
-      // Block scalar: lines are indented under the key
-      // Find the block content start (after "|\n")
+      // Block scalar: collect indented lines after "|\n"
       const blockStart = afterKey.indexOf("\n") + 1;
       const fullBlockStart = keyIndex + sqlKeyMatch[0].length + blockStart;
 
-      // Collect indented lines
       const restLines = content.slice(fullBlockStart).split("\n");
       const blockLines: string[] = [];
       let blockEnd = fullBlockStart;
       for (const line of restLines) {
-        // Block continues while lines are indented or empty
         if (line.match(/^\s+\S/) || line.trim() === "") {
           blockLines.push(line);
           blockEnd += line.length + 1;
@@ -119,18 +113,19 @@
       }
 
       const blockText = blockLines.join("\n");
-      const match = blockText.match(fromPattern);
+      const match = fromPattern.exec(blockText);
       if (!match) return;
 
-      // Get the indentation from the first block line
+      // Keep everything up to and including "FROM <table>", replace rest
       const indent = blockLines[0]?.match(/^(\s+)/)?.[1] ?? "  ";
-      const newBlock = match[1] + "\n" + indent + clause;
+      const baseQuery = blockText.slice(0, match.index + match[0].length);
+      const newBlock = baseQuery + "\n" + indent + clause;
 
       const before = content.slice(0, fullBlockStart);
       const after = content.slice(blockEnd);
       updateEditorContent(before + newBlock + "\n" + after);
     } else {
-      // Inline value: sql: select ... from table where ...
+      // Inline: sql: select ... from table where ...
       const valueStart = keyIndex + sqlKeyMatch[0].length;
       const lineEnd = content.indexOf("\n", valueStart);
       const sqlValue = content.slice(
@@ -138,10 +133,13 @@
         lineEnd === -1 ? undefined : lineEnd,
       );
 
-      const match = sqlValue.match(fromPattern);
+      const match = fromPattern.exec(sqlValue);
       if (!match) return;
 
-      const newValue = " " + match[1].trim() + " " + clause;
+      // Keep everything up to and including "FROM <table>", replace rest
+      const baseQuery = sqlValue.slice(0, match.index + match[0].length);
+      const newValue = baseQuery + " " + clause;
+
       const before = content.slice(0, valueStart);
       const after = lineEnd === -1 ? "" : content.slice(lineEnd);
       updateEditorContent(before + newValue + after);
