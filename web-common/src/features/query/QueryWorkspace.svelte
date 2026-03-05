@@ -100,10 +100,10 @@
   $: focusedSchema = notebook?.focusedSchema;
   $: focusedRowCount = notebook?.focusedRowCount;
   $: focusedExecutionTimeMs = notebook?.focusedExecutionTimeMs;
-  $: focusedSchemaValue = focusedSchema ? $focusedSchema ?? null : null;
-  $: focusedRowCountValue = focusedRowCount ? $focusedRowCount ?? 0 : 0;
+  $: focusedSchemaValue = focusedSchema ? ($focusedSchema ?? null) : null;
+  $: focusedRowCountValue = focusedRowCount ? ($focusedRowCount ?? 0) : 0;
   $: focusedExecutionTimeMsValue = focusedExecutionTimeMs
-    ? $focusedExecutionTimeMs ?? null
+    ? ($focusedExecutionTimeMs ?? null)
     : null;
 
   function handleAddCell() {
