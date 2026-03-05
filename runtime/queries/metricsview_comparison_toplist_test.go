@@ -20,17 +20,12 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	// Register drivers
-	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
+
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
 func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
 	testmode.Expensive(t)
-	// Create a test ClickHouse cluster
-	dsn := testclickhouse.Start(t)
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", dsn)
-
 	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, false)
 	t.Run("testMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist", func(t *testing.T) {
 		testMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t, rt, instanceID)
@@ -68,7 +63,6 @@ func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
 }
 
 func TestMetricsViewsComparisonAgainstDuckdb(t *testing.T) {
-
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 	t.Run("testMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist", func(t *testing.T) {
 		testMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t, rt, instanceID)
