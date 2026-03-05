@@ -116,9 +116,17 @@ function createColumnDefinitionForDimensions(
           [dimensionNames[level]]: value,
         });
 
+        const dimensionPath = {
+          ...colValuePair,
+          [dimensionNames[level]]: value,
+        };
+
         return {
           header: sanitizeHeaderValue(displayValue),
           columns: nestedColumns,
+          meta: {
+            dimensionPath,
+          },
         };
       })
       .filter((column) => column.columns.length > 0);

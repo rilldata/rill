@@ -23,43 +23,37 @@ import type {
   TimeFilters,
 } from "./types";
 
-/**
- * Tracks which rows were selected via row-header clicks and which
- * individual cells were selected via data-cell clicks. Supports
- * mixed multi-select: row-header clicks and cell clicks can coexist.
- */
-export interface PivotClickSelectionState {
-  /** rowIds selected via row-header clicks */
-  rowHeaderSelections: Set<string>;
-  /** "rowId:columnId" keys selected via data-cell clicks */
-  cellSelections: Set<string>;
-  /** Whether any selection exists at all */
-  hasAnySelection: boolean;
-  /** Check if a specific row was selected via row-header click */
-  isRowHeaderSelected: (rowId: string) => boolean;
-  /** Check if a specific cell was selected via data-cell click */
-  isCellSelected: (rowId: string, columnId: string) => boolean;
-}
-
-export function createEmptyClickSelectionState(): PivotClickSelectionState {
-  return {
-    rowHeaderSelections: new Set(),
-    cellSelections: new Set(),
-    hasAnySelection: false,
-    isRowHeaderSelected: () => false,
-    isCellSelected: () => false,
-  };
-}
-
-export function cellKey(rowId: string, columnId: string): string {
-  return `${rowId}:${columnId}`;
-}
-
 export interface PivotRowSelectionState {
   /** True if at least one row dimension has active filter selections */
   hasActiveSelection: boolean;
   /** Check if a specific row (by rowId) is selected based on current filters */
   isRowSelected: (rowId: string) => boolean;
+}
+
+/**
+ * Returns the raw dimension values for a row, including time dimensions.
+ * Shared by getDimensionValuesForRow (which filters out time) and
+ * getFiltersForRowHeader (which needs time for TimeFilters).
+ */
+function getRawRowValues(
+  config: PivotDataStoreConfig,
+  rowId: string,
+  tableData: PivotDataRow[],
+): string[] {
+  const { rowDimensionNames, measureNames, isFlat } = config;
+  return isFlat
+    ? getValuesForFlatTable(
+        tableData,
+        rowDimensionNames,
+        rowId,
+        measureNames.length > 0,
+      )
+    : getValuesForExpandedKey(
+        tableData,
+        rowDimensionNames,
+        rowId,
+        measureNames.length > 0,
+      );
 }
 
 /**
@@ -72,28 +66,11 @@ export function getDimensionValuesForRow(
   rowId: string,
   tableData: PivotDataRow[],
 ): Array<{ dimensionName: string; value: string }> {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-
-  let values: string[];
-  if (isFlat) {
-    values = getValuesForFlatTable(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      measureNames.length > 0,
-    );
-  } else {
-    values = getValuesForExpandedKey(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      measureNames.length > 0,
-    );
-  }
+  const values = getRawRowValues(config, rowId, tableData);
 
   return values
     .map((value, index) => ({
-      dimensionName: rowDimensionNames[index],
+      dimensionName: config.rowDimensionNames[index],
       value,
     }))
     .filter(
@@ -180,25 +157,8 @@ export function getFiltersForRowHeader(
   rowId: string,
   tableData: PivotDataRow[],
 ): PivotFilter {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-
-  let values: string[];
-
-  if (isFlat) {
-    values = getValuesForFlatTable(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      measureNames.length > 0,
-    );
-  } else {
-    values = getValuesForExpandedKey(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      measureNames.length > 0,
-    );
-  }
+  const { rowDimensionNames } = config;
+  const values = getRawRowValues(config, rowId, tableData);
 
   const rowNestTimeFilters: TimeFilters[] = [];
   const rowNestFilters = values
@@ -232,4 +192,81 @@ export function getFiltersForRowHeader(
   const filters = mergeFilters(rowFilters, config.whereFilter);
 
   return { filters, timeRange };
+}
+
+/**
+ * Builds filters for a column dimension header click.
+ * Accepts the full dimension path (all ancestor + self dimension values)
+ * so that clicking a nested column header filters on all parent dimensions too.
+ */
+export function getFiltersForColumnHeader(
+  config: PivotDataStoreConfig,
+  dimensionPath: Record<string, string>,
+): PivotFilter {
+  const defaultTimeRange = {
+    start: config.time.timeStart,
+    end: config.time.timeEnd,
+  };
+
+  const timeFilters: TimeFilters[] = [];
+  const dimExprs = Object.entries(dimensionPath)
+    .map(([name, value]) => {
+      const expr = createInExpression(name, [value]);
+      if (isTimeDimension(name, config.time.timeDimension)) {
+        timeFilters.push({
+          timeStart: value,
+          interval: getTimeGrainFromDimension(name),
+        });
+        return null;
+      }
+      return expr;
+    })
+    .filter(Boolean) as V1Expression[];
+
+  const timeRange =
+    timeFilters.length > 0
+      ? getTimeForQuery(config.time, timeFilters)
+      : defaultTimeRange;
+
+  const dimFilter =
+    dimExprs.length > 0 ? createAndExpression(dimExprs) : undefined;
+  const filters = mergeFilters(dimFilter, config.whereFilter);
+  return { filters, timeRange };
+}
+
+// --- Merged from pivot-filter-extraction.ts ---
+
+export interface ExtractedFilter {
+  dimensionName: string;
+  values: string[];
+}
+
+/**
+ * Extracts dimension filters from a V1Expression structure.
+ * The expression is expected to be an AND operation containing IN operations.
+ */
+export function extractDimensionFiltersFromExpression(
+  filters: V1Expression | undefined,
+): ExtractedFilter[] {
+  if (!filters?.cond?.exprs) return [];
+
+  const result: ExtractedFilter[] = [];
+
+  for (const expr of filters.cond.exprs) {
+    if (expr.cond?.op === V1Operation.OPERATION_IN) {
+      const ident = expr.cond.exprs?.[0]?.ident;
+      if (!ident) continue;
+
+      const values = expr?.cond?.exprs
+        ?.slice(1)
+        .map((e) => e.val)
+        .filter((val): val is string => val !== undefined && val !== null);
+
+      if (values?.length) {
+        result.push({ dimensionName: ident, values });
+      }
+    }
+  }
+
+  return result;
 }

@@ -16,10 +16,8 @@
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
-  import type {
-    PivotClickSelectionState,
-    PivotRowSelectionState,
-  } from "./pivot-row-selection";
+  import type { PivotClickSelectionState } from "./pivot-click-selection";
+  import type { PivotRowSelectionState } from "./pivot-row-selection";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -200,9 +198,11 @@
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
       {@const isRowHeaderSelected =
         clickSelection?.isRowHeaderSelected(rowId) ?? false}
+      {@const hasClickedCell =
+        clickSelection?.hasSelectedCellInRow(rowId) ?? false}
       <tr
         class:selected-row={isSelected && isRowHeaderSelected}
-        class:dimmed-row={hasSelection && !isSelected}
+        class:dimmed-row={hasSelection && !isSelected && !hasClickedCell}
       >
         {#each cells as cell (cell.id)}
           {@const result =
@@ -214,7 +214,6 @@
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
-            class:clicked-cell={isClicked}
             class:selected-cell={isClicked}
             class:interactive-cell={(canShowDataViewer ||
               enableClickToFilter) &&
@@ -338,12 +337,8 @@
     @apply bg-primary-50;
   }
 
-  .clicked-cell {
-    @apply ring-1 ring-inset ring-primary-400;
-  }
-
   .selected-cell.cell {
-    @apply bg-primary-50;
+    @apply bg-primary-50 ring-1 ring-inset ring-primary-400;
   }
   .selected-cell.cell:hover {
     @apply bg-primary-100;
