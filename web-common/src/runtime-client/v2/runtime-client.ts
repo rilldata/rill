@@ -123,7 +123,8 @@ export class RuntimeClient {
     const deadline = Date.now() + 60_000;
     let expiresAt = this.jwtReceivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;
     while (Date.now() + JWT_EXPIRY_WARNING_WINDOW > expiresAt) {
-      if (Date.now() > deadline || this.disposed) {
+      if (this.disposed) return;
+      if (Date.now() > deadline) {
         throw new Error("Timed out waiting for a fresh JWT");
       }
       await new Promise((r) =>
