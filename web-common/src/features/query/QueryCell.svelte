@@ -87,7 +87,7 @@
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="query-cell" class:focused={isFocused} on:click={handleFocus}>
     <!-- Cell Header -->
-    <div class="cell-header">
+    <div class="cell-header" on:click|stopPropagation role="toolbar">
       <button
         class="collapse-toggle"
         on:click={() => notebook.toggleCellCollapsed(cellId)}
@@ -122,7 +122,7 @@
       {#if cell.limit === undefined}
         <span class="limit-warning">
           Configure via `rill.interactive_sql_row_limit` in env, default is
-          1000. Large queries may be slow and costly.
+          10,000. Large queries may be slow and costly.
         </span>
       {/if}
 
