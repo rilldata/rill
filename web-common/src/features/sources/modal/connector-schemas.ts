@@ -53,18 +53,19 @@ export interface ConnectorInfo {
 
 /**
  * Resolve the OLAP template suffix from the instance's OLAP connector.
- * Looks up the connector by name in the instance's connectors list to get
- * the actual driver type. Only ClickHouse has its own model templates;
- * everything else uses DuckDB.
+ * Looks up the connector by name in both the instance's connectors and
+ * project connectors lists to get the actual driver type. Project-defined
+ * connectors (e.g. from connectors/*.yaml) live in projectConnectors.
+ * Only ClickHouse has its own model templates; everything else uses DuckDB.
  */
 export function normalizeOlapForTemplate(
   olapConnectorName: string,
   connectors?: V1Connector[],
+  projectConnectors?: V1Connector[],
 ): string {
-  if (connectors) {
-    const connector = connectors.find((c) => c.name === olapConnectorName);
-    if (connector?.type === "clickhouse") return "clickhouse";
-  }
+  const allConnectors = [...(connectors ?? []), ...(projectConnectors ?? [])];
+  const connector = allConnectors.find((c) => c.name === olapConnectorName);
+  if (connector?.type === "clickhouse") return "clickhouse";
   return "duckdb";
 }
 
@@ -143,6 +144,7 @@ export function createConnectorSchemas(instanceId: string) {
       const olap = normalizeOlapForTemplate(
         $iq.data?.instance?.olapConnector ?? "duckdb",
         $iq.data?.instance?.connectors,
+        $iq.data?.instance?.projectConnectors,
       );
       const entries = buildSchemaRegistry($tq.data.templates, olap);
 

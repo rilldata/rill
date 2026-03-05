@@ -57,6 +57,7 @@ export async function generateTemplate(
       olap = normalizeOlapForTemplate(
         resp.instance?.olapConnector ?? "duckdb",
         resp.instance?.connectors,
+        resp.instance?.projectConnectors,
       );
       olapCache.set(instanceId, olap);
     }
