@@ -14,7 +14,10 @@ vi.mock("@rilldata/web-common/runtime-client", () => ({
   runtimeServiceQueryResolver: vi.fn(),
 }));
 
-import { runtimeServiceQueryResolver } from "@rilldata/web-common/runtime-client";
+import {
+  runtimeServiceQueryResolver,
+  type V1QueryResolverResponse,
+} from "@rilldata/web-common/runtime-client";
 import { createNotebook, type NotebookState } from "./query-store";
 
 // =============================================================================
@@ -314,7 +317,7 @@ describe("createNotebook", () => {
       const mockResponse = {
         schema: { fields: [{ name: "col1", type: { code: "CODE_INT32" } }] },
         data: [{ col1: 1 }],
-      };
+      } as V1QueryResolverResponse;
       vi.mocked(runtimeServiceQueryResolver).mockResolvedValue(mockResponse);
 
       await store.executeCellQuery(cellId, INSTANCE_ID);
@@ -411,7 +414,7 @@ describe("createNotebook", () => {
       store.setCellSql(cellId, "SELECT original");
 
       vi.mocked(runtimeServiceQueryResolver).mockResolvedValue({
-        schema: null,
+        schema: undefined,
         data: [],
       });
 
@@ -434,7 +437,7 @@ describe("createNotebook", () => {
       store.setCellLimit(cellId, 25);
 
       vi.mocked(runtimeServiceQueryResolver).mockResolvedValue({
-        schema: null,
+        schema: undefined,
         data: [],
       });
 
@@ -460,7 +463,7 @@ describe("createNotebook", () => {
       store.setCellLimit(cellId, undefined);
 
       vi.mocked(runtimeServiceQueryResolver).mockResolvedValue({
-        schema: null,
+        schema: undefined,
         data: [],
       });
 
@@ -478,7 +481,7 @@ describe("createNotebook", () => {
       store.setCellSql(id1, "SELECT 1");
       // id2 is focused after addCell; executing id1 should refocus it
       vi.mocked(runtimeServiceQueryResolver).mockResolvedValue({
-        schema: null,
+        schema: undefined,
         data: [],
       });
 
