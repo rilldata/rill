@@ -1083,6 +1083,11 @@ components:
             properties:
                 nextPageToken:
                     type: string
+                projectRoles:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1ProjectMemberUser'
+                    description: Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
+                    type: object
                 projects:
                     items:
                         $ref: '#/components/schemas/v1Project'
@@ -3580,6 +3585,16 @@ paths:
                   name: pageToken
                   schema:
                     type: string
+                - description: Only return projects where the user has a direct membership (exclude usergroup-inherited access).
+                  in: query
+                  name: direct
+                  schema:
+                    type: boolean
+                - description: Populate project_roles in the response.
+                  in: query
+                  name: includeRoles
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     content:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -316,7 +317,12 @@ func (r *mysqlRows) MapScan(dest map[string]any) error {
 			}
 		case *sql.NullString:
 			if valPtr.Valid {
-				dest[fieldName] = valPtr.String
+				if strings.ToUpper(r.colTypes[i].DatabaseTypeName()) == "BIT" {
+					// MySQL driver returns BIT values as raw bytes; convert to numeric string
+					dest[fieldName] = new(big.Int).SetBytes([]byte(valPtr.String)).String()
+				} else {
+					dest[fieldName] = valPtr.String
+				}
 			} else {
 				dest[fieldName] = nil
 			}

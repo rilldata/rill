@@ -92,7 +92,7 @@ export default function llmsTxtPlugin(context: LoadContext): Plugin<any> {
                 }\n\n## Documentation\n\n${docsRecords
                     .map(
                         (doc) =>
-                            `- [${doc.title}](${context.siteConfig.url}/docs/${doc.path.replace(
+                            `- [${doc.title}](${context.siteConfig.url}/${doc.path.replace(
                                 ".md",
                                 ""
                             )}): ${doc.description}`

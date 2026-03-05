@@ -1083,6 +1083,11 @@ components:
             properties:
                 nextPageToken:
                     type: string
+                projectRoles:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1ProjectMemberUser'
+                    description: Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
+                    type: object
                 projects:
                     items:
                         $ref: '#/components/schemas/v1Project'

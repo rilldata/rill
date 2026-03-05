@@ -36,9 +36,9 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-// Track connector file paths that were created via Save Anyway so
-// in-flight Test-and-Connect submissions don't roll them back.
-const savedAnywayPaths = new Set<string>();
+// Track connector file paths that were created via Save (without test) so
+// in-flight Test and Connect submissions don't roll them back.
+const savedWithoutTestPaths = new Set<string>();
 
 const connectorSubmissions = new Map<
   string,
@@ -123,12 +123,13 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
-async function saveConnectorAnyway(
+async function saveConnectorWithoutTest(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   newConnectorName: string,
   instanceId?: string,
+  existingEnvBlob?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
 
@@ -139,7 +140,7 @@ async function saveConnectorAnyway(
   );
 
   // Mark to avoid rollback by concurrent submissions
-  savedAnywayPaths.add(newConnectorFilePath);
+  savedWithoutTestPaths.add(newConnectorFilePath);
 
   const templateResponse = await generateTemplate(resolvedInstanceId, {
     resourceType: "connector",
@@ -182,6 +183,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
+  existingEnvBlob?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -201,19 +203,24 @@ export async function submitAddConnectorForm(
 
   if (existingSubmission) {
     if (saveAnyway) {
-      // If Save Anyway is clicked while Test and Connect is running,
+      // If Save is clicked while Test and Connect is running,
       // proceed immediately without waiting for the ongoing operation
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
       // Use the same connector name from the ongoing operation
       const newConnectorName = existingSubmission.connectorName;
 
-      await saveConnectorAnyway(
+      // Proceed immediately with Save logic.
+      // Pass existingEnvBlob so env var names stay consistent with what T&C used;
+      // without it, re-reading .env (which T&C already modified) would generate
+      // duplicate suffixed env var names.
+      await saveConnectorWithoutTest(
         queryClient,
         connector,
         formValues,
         newConnectorName,
         instanceId,
+        existingEnvBlob,
       );
       return newConnectorName;
     }
@@ -258,13 +265,14 @@ export async function submitAddConnectorForm(
       const connectorYamlBlob = templateResponse.blob ?? "";
 
       if (saveAnyway) {
-        // Save Anyway: bypass reconciliation entirely via centralized helper
-        await saveConnectorAnyway(
+        // Save: bypass reconciliation entirely via centralized helper
+        await saveConnectorWithoutTest(
           queryClient,
           connector,
           formValues,
           newConnectorName,
           instanceId,
+          existingEnvBlob,
         );
         return newConnectorName;
       }
@@ -333,7 +341,7 @@ export async function submitAddConnectorForm(
       }
 
       const shouldRollbackConnectorFile =
-        !savedAnywayPaths.has(newConnectorFilePath) &&
+        !savedWithoutTestPaths.has(newConnectorFilePath) &&
         (envWritten || connectorCreated);
 
       if (shouldRollbackConnectorFile) {
@@ -354,6 +362,8 @@ export async function submitAddConnectorForm(
 
       throw error;
     } finally {
+      // Mark the submission as completed but keep the connector name around
+      // so a subsequent Save can still reuse the same connector file
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
     }
   })();

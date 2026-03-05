@@ -319,6 +319,11 @@ export async function fetchResources(
   return resp.resources ?? [];
 }
 
+export type MetricsViewAndExploreSpecs = {
+  metricsViewSpecsMap: Map<string, V1MetricsViewSpec>;
+  exploreSpecsMap: Map<string, V1ExploreSpec>;
+  exploreForMetricViewsMap: Map<string, string>;
+};
 export function getMetricsViewAndExploreSpecsQueryOptions() {
   return derived(runtime, ({ instanceId }) =>
     getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
@@ -347,7 +352,7 @@ export function getMetricsViewAndExploreSpecsQueryOptions() {
             metricsViewSpecsMap,
             exploreSpecsMap,
             exploreForMetricViewsMap,
-          };
+          } satisfies MetricsViewAndExploreSpecs;
         },
       },
     }),

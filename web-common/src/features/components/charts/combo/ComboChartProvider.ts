@@ -1,9 +1,10 @@
-import type {
-  ChartDataQuery,
-  ChartDomainValues,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataQuery,
+  type ChartDomainValues,
+  type ChartFieldsMap,
+  type ChartSortDirection,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -45,7 +46,7 @@ export type ComboChartDefaultOptions = {
 };
 
 const DEFAULT_NOMINAL_LIMIT = 20;
-const DEFAULT_SORT = "-y" as ChartSortDirection;
+const DEFAULT_SORT = ChartSortType.Y_DESC as ChartSortDirection;
 
 export class ComboChartProvider {
   private spec: Readable<ComboChartSpec>;

@@ -142,44 +142,23 @@ export class AddDataFormManager {
     return hasExplorerStepSchema(schema);
   }
 
-  /**
-   * Determines whether the "Save Anyway" button should be shown for the current submission.
-   */
-  private shouldShowSaveAnywayButton(args: {
-    isConnectorForm: boolean;
-    event?:
-      | {
-          result?: Extract<ActionResult, { type: "success" | "failure" }>;
-        }
-      | undefined;
-    stepState: ConnectorStepState | undefined;
-    selectedAuthMethod?: string;
-  }): boolean {
-    const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
-
-    // Only show for connector forms (not sources)
-    if (!isConnectorForm) return false;
-
-    // Need a submission result to show the button
-    if (!event?.result) return false;
-
-    // Multi-step connectors: don't show on source/explorer step (final step)
-    if (stepState?.step === "source" || stepState?.step === "explorer")
-      return false;
-
-    // Public auth bypasses connection test, so no "Save Anyway" needed
-    if (stepState?.step === "connector" && selectedAuthMethod === "public")
-      return false;
-
-    return true;
-  }
-
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
-    if (!this.isMultiStepConnector || stepState.step !== "connector") return;
+    // Only allow skipping when on connector step
+    if (stepState.step !== "connector") return;
+    if (!this.isMultiStepConnector && !this.hasExplorerStep) return;
+
     setConnectorConfig({});
     setConnectorInstanceName(null);
-    setStep("source");
+
+    // For multi-step connectors, skip to source step
+    if (this.isMultiStepConnector) {
+      setStep("source");
+    }
+    // For connectors with explorer step (warehouses/databases), skip to explorer step
+    else {
+      setStep("explorer");
+    }
   }
 
   handleBack(onBack: () => void): void {
@@ -247,21 +226,14 @@ export class AddDataFormManager {
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
-    setShowSaveAnyway?: (value: boolean) => void;
   }) {
-    const {
-      onClose,
-      queryClient,
-      getSelectedAuthMethod,
-      setParamsError,
-      setShowSaveAnyway,
-    } = args;
+    const { onClose, queryClient, getSelectedAuthMethod, setParamsError } =
+      args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
     const isExplorer = hasExplorerStepSchema(schema);
     const isStepFlowConnector = isMultiStep || isExplorer;
-    const isConnectorForm = this.formType === "connector";
 
     return async (event: {
       form: SuperValidated<FormData, string, FormData>;
@@ -327,19 +299,6 @@ export class AddDataFormManager {
         this.errorsStore.set({});
       } else if (!event.form.valid) {
         return;
-      }
-
-      // Show "Save Anyway" when a connector test fails
-      if (
-        typeof setShowSaveAnyway === "function" &&
-        this.shouldShowSaveAnywayButton({
-          isConnectorForm,
-          event,
-          stepState,
-          selectedAuthMethod,
-        })
-      ) {
-        setShowSaveAnyway(true);
       }
 
       // --- Submission ---
@@ -587,14 +546,15 @@ export class AddDataFormManager {
   }
 
   /**
-   * Save connector anyway, returning a result object for the caller to handle.
+   * Save connector without testing the connection, returning a result object for the caller to handle.
    * Schema conditionals handle connector-specific requirements (e.g., SSL).
    */
-  async saveConnectorAnyway(args: {
+  async saveConnector(args: {
     queryClient: QueryClient;
     values: FormData;
+    existingEnvBlob?: string;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values } = args;
+    const { queryClient, values, existingEnvBlob } = args;
     const schema = getConnectorSchema(this.schemaName);
     const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
@@ -605,6 +565,7 @@ export class AddDataFormManager {
         this.connector,
         processedValues,
         true,
+        existingEnvBlob,
       );
       return { ok: true } as const;
     } catch (e) {

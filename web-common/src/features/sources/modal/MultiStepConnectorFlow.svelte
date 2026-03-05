@@ -40,7 +40,6 @@
   export let primaryLoadingCopy = "";
   export let isSubmitDisabled = true;
   export let formId = baseFormId;
-  export let shouldShowSkipLink = false;
 
   const selectedAuthMethodStore = {
     subscribe: (run: (value: string) => void) =>
@@ -188,8 +187,6 @@
           ? "Continuing..."
           : "Testing connection...";
   $: formId = baseFormId;
-  $: shouldShowSkipLink =
-    stepState.step === "connector" && formManager.isMultiStepConnector;
 </script>
 
 <AddDataFormSection
