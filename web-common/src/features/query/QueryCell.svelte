@@ -88,7 +88,12 @@
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="query-cell" class:focused={isFocused} on:click={handleFocus}>
     <!-- Cell Header -->
-    <div class="cell-header" on:click|stopPropagation role="toolbar" tabindex="-1">
+    <div
+      class="cell-header"
+      on:click|stopPropagation
+      role="toolbar"
+      tabindex="-1"
+    >
       <button
         class="collapse-toggle"
         on:click={() => notebook.toggleCellCollapsed(cellId)}
