@@ -5,12 +5,7 @@
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import {
-    PlusIcon,
-    PlayIcon,
-    ChevronDownIcon,
-    CopyIcon,
-  } from "lucide-svelte";
+  import { PlusIcon, PlayIcon, ChevronDownIcon, CopyIcon } from "lucide-svelte";
   import APIResponsePreview from "./APIResponsePreview.svelte";
   import type { Arg } from "./types";
 
@@ -104,12 +99,7 @@
   style:min-height="100px"
   style:max-height="60%"
 >
-  <Resizer
-    max={500}
-    direction="NS"
-    side="top"
-    bind:dimension={previewHeight}
-  />
+  <Resizer max={500} direction="NS" side="top" bind:dimension={previewHeight} />
 
   <div class="flex items-center gap-x-3 px-3 py-2 border-b">
     <div class="flex items-center gap-x-2 flex-1 min-w-0">

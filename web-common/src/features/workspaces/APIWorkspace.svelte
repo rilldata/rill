@@ -168,9 +168,7 @@
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="end" class="w-56">
           {#each templates as template}
-            <DropdownMenu.Item
-              on:click={() => applyTemplate(template.clause)}
-            >
+            <DropdownMenu.Item on:click={() => applyTemplate(template.clause)}>
               <span class="text-sm">{template.label}</span>
             </DropdownMenu.Item>
           {/each}
