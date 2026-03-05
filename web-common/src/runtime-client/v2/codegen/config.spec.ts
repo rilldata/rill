@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyMethod } from "./generate-query-hooks-config";
+import { classifyMethod } from "./config";
 
 describe("classifyMethod", () => {
   describe("QueryService overrides", () => {
