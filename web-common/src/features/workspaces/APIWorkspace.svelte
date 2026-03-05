@@ -1,17 +1,22 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    ResourceKind,
+    resourceIsLoading,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import APIEditor from "@rilldata/web-common/features/apis/editor/APIEditor.svelte";
-  import VisualAPIEditor from "@rilldata/web-common/features/apis/editor/VisualAPIEditor.svelte";
+  import type { Arg } from "@rilldata/web-common/features/apis/editor/types";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { ChevronDownIcon } from "lucide-svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -25,14 +30,14 @@
     fileName,
   } = fileArtifact);
 
-  $: workspace = workspaces.get(filePath);
-
   $: apiName = $resourceName?.name ?? getNameFromFile(filePath);
+  $: host = $runtime.host || "http://localhost:9009";
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: ({ data: resource } = $resourceQuery);
+  $: isReconciling = resourceIsLoading($resourceQuery.data);
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -44,9 +49,104 @@
     if (newRoute) await goto(newRoute);
   }
 
-  $: selectedView = workspace.view;
-
   $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
+
+  let args: Arg[] = [];
+
+  // Templates that modify the SQL/metrics_sql value in the YAML
+  const templates = [
+    {
+      label: "Add filter arg",
+      clause: `where dimension = '{{ .args.filter }}'`,
+    },
+    {
+      label: "Add limit arg",
+      clause: "limit {{ .args.limit }}",
+    },
+    {
+      label: "Add offset arg",
+      clause: "offset {{ .args.offset }}",
+    },
+    {
+      label: "Add sort args",
+      clause: "order by {{ .args.sort }} {{ .args.order }}",
+    },
+    {
+      label: "Add time range args",
+      clause: `where time >= '{{ .args.start }}' and time < '{{ .args.end }}'`,
+    },
+  ];
+
+  $: ({ editorContent, updateEditorContent } = fileArtifact);
+
+  // Regex to find the FROM clause and everything after it within the SQL value.
+  // Captures: (everything up to and including FROM <table>) (trailing clauses)
+  const fromPattern = /(\bfrom\s+\S+)([\s\S]*?)(\s*$)/i;
+
+  function applyTemplate(clause: string) {
+    const content = $editorContent ?? "";
+
+    // Find which SQL key is present
+    const sqlKeyMatch = content.match(/^(metrics_sql|sql)\s*:/m);
+    if (!sqlKeyMatch) return;
+
+    // Extract the full SQL value (handles both inline and multiline block scalar)
+    const sqlKey = sqlKeyMatch[1];
+    const keyIndex = content.indexOf(sqlKeyMatch[0]);
+    const afterKey = content.slice(keyIndex + sqlKeyMatch[0].length);
+
+    // Determine if it's a block scalar (| or >) or inline
+    const isBlock = /^\s*\|/.test(afterKey);
+
+    if (isBlock) {
+      // Block scalar: lines are indented under the key
+      // Find the block content start (after "|\n")
+      const blockStart = afterKey.indexOf("\n") + 1;
+      const fullBlockStart = keyIndex + sqlKeyMatch[0].length + blockStart;
+
+      // Collect indented lines
+      const restLines = content.slice(fullBlockStart).split("\n");
+      const blockLines: string[] = [];
+      let blockEnd = fullBlockStart;
+      for (const line of restLines) {
+        // Block continues while lines are indented or empty
+        if (line.match(/^\s+\S/) || line.trim() === "") {
+          blockLines.push(line);
+          blockEnd += line.length + 1;
+        } else {
+          break;
+        }
+      }
+
+      const blockText = blockLines.join("\n");
+      const match = blockText.match(fromPattern);
+      if (!match) return;
+
+      // Get the indentation from the first block line
+      const indent = blockLines[0]?.match(/^(\s+)/)?.[1] ?? "  ";
+      const newBlock = match[1] + "\n" + indent + clause;
+
+      const before = content.slice(0, fullBlockStart);
+      const after = content.slice(blockEnd);
+      updateEditorContent(before + newBlock + "\n" + after);
+    } else {
+      // Inline value: sql: select ... from table where ...
+      const valueStart = keyIndex + sqlKeyMatch[0].length;
+      const lineEnd = content.indexOf("\n", valueStart);
+      const sqlValue = content.slice(
+        valueStart,
+        lineEnd === -1 ? undefined : lineEnd,
+      );
+
+      const match = sqlValue.match(fromPattern);
+      if (!match) return;
+
+      const newValue = " " + match[1].trim() + " " + clause;
+      const before = content.slice(0, valueStart);
+      const after = lineEnd === -1 ? "" : content.slice(lineEnd);
+      updateEditorContent(before + newValue + after);
+    }
+  }
 </script>
 
 <WorkspaceContainer inspector={false}>
@@ -57,18 +157,40 @@
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
     slot="header"
-    codeToggle
     showInspectorToggle={false}
     titleInput={fileName}
-  />
+  >
+    <svelte:fragment slot="workspace-controls">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild let:builder>
+          <Button type="text" compact small builders={[builder]}>
+            Templates
+            <ChevronDownIcon size="12px" />
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end" class="w-56">
+          {#each templates as template}
+            <DropdownMenu.Item
+              on:click={() => applyTemplate(template.clause)}
+            >
+              <span class="text-sm">{template.label}</span>
+            </DropdownMenu.Item>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </svelte:fragment>
+  </WorkspaceHeader>
 
   <svelte:fragment slot="body">
-    {#if $selectedView === "code"}
-      <APIEditor bind:autoSave={$autoSave} {fileArtifact} {errors} {apiName} />
-    {:else}
-      {#key fileArtifact}
-        <VisualAPIEditor {errors} {fileArtifact} {apiName} />
-      {/key}
-    {/if}
+    <APIEditor
+      bind:autoSave={$autoSave}
+      {fileArtifact}
+      {errors}
+      {apiName}
+      {isReconciling}
+      {host}
+      {instanceId}
+      bind:args
+    />
   </svelte:fragment>
 </WorkspaceContainer>
