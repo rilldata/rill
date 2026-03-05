@@ -52,7 +52,7 @@ function loadPersistedCells(): PersistedCell[] | null {
   return null;
 }
 
-const debouncedSave = debounce((cells: CellState[]) => {
+function saveToLocalStorage(cells: CellState[]) {
   if (!browser) return;
   const persisted: PersistedCell[] = cells.map((c) => ({
     id: c.id,
@@ -65,7 +65,7 @@ const debouncedSave = debounce((cells: CellState[]) => {
     executionTimeMs: c.executionTimeMs,
   }));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
-}, 500);
+}
 
 function hydrateCell(p: PersistedCell): CellState {
   // Restore schema into a minimal result so the inspector can display it
@@ -121,8 +121,14 @@ function createNotebookStore(defaultConnector: string) {
     focusedCellId: initialCells[0]?.id ?? null,
   });
 
-  // Auto-persist cell metadata on changes
-  state.subscribe(($s) => debouncedSave($s.cells));
+  // Only persist when we have a real connector (skip the throwaway initial store)
+  if (defaultConnector) {
+    const debouncedSave = debounce(
+      (cells: CellState[]) => saveToLocalStorage(cells),
+      500,
+    );
+    state.subscribe(($s) => debouncedSave($s.cells));
+  }
 
   const { subscribe, update } = state;
 

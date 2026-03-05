@@ -94,6 +94,11 @@
     // Clear table selection when a query is run (show query results instead)
     selectedTable = null;
   }
+
+  function handleCellFocus() {
+    // Clear table selection so the right panel shows query result schema
+    selectedTable = null;
+  }
 </script>
 
 <div class="query-workspace">
@@ -130,6 +135,7 @@
           {notebook}
           {instanceId}
           cellCount={$notebook.cells.length}
+          on:focus={handleCellFocus}
           on:run={handleCellRun}
         />
       {/each}
