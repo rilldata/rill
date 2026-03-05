@@ -24,7 +24,10 @@ import { goto } from "$app/navigation";
 import { FilterState } from "./filter-state";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 import type { ParsedFilters } from "./filter-state";
-import { createAndExpression } from "../../dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  flattenInExpressionValues,
+} from "../../dashboards/stores/filter-utils";
 
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
@@ -863,6 +866,9 @@ export function flattenExpression(
 
   // Recursively flatten all nested ANDs, preserving order
   rootCond.exprs = flattenAndExprs(rootCond.exprs);
+
+  // Normalize array-valued IN/NIN expressions into individual value expressions
+  rootCond.exprs = rootCond.exprs.map(flattenInExpressionValues);
 
   return root;
 }

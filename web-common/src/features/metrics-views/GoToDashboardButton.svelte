@@ -10,13 +10,16 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
-  import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
+  import {
+    createCanvasDashboardFromMetricsView,
+    createCanvasDashboardFromMetricsViewWithAgent,
+  } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import NavigateOrDropdown from "./NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, developerChat } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: dashboardsQuery = useGetExploresForMetricsView(
@@ -28,21 +31,28 @@
 
 {#if dashboards?.length === 0}
   <div class="flex gap-2">
-    {#if $generateCanvas}
-      <Button
-        type="secondary"
-        disabled={!resource}
-        onClick={async () => {
-          if (resource?.meta?.name?.name)
+    <Button
+      type="secondary"
+      disabled={!resource}
+      onClick={async () => {
+        if (resource?.meta?.name?.name) {
+          // Use developer agent if enabled, otherwise fall back to RPC
+          if ($developerChat) {
+            createCanvasDashboardFromMetricsViewWithAgent(
+              instanceId,
+              resource.meta.name.name,
+            );
+          } else {
             await createCanvasDashboardFromMetricsView(
               instanceId,
               resource.meta.name.name,
             );
-        }}
-      >
-        Generate Canvas Dashboard{$ai ? " with AI" : ""}
-      </Button>
-    {/if}
+          }
+        }
+      }}
+    >
+      Generate Canvas Dashboard{$ai ? " with AI" : ""}
+    </Button>
     <Button
       type={$allowPrimary ? "primary" : "secondary"}
       disabled={!resource}
@@ -74,20 +84,27 @@
           {/if}
         {/each}
         <DropdownMenu.Separator />
-        {#if $generateCanvas}
-          <DropdownMenu.Item
-            on:click={async () => {
-              if (resource?.meta?.name?.name)
+        <DropdownMenu.Item
+          on:click={async () => {
+            if (resource?.meta?.name?.name) {
+              // Use developer agent if enabled, otherwise fall back to RPC
+              if ($developerChat) {
+                createCanvasDashboardFromMetricsViewWithAgent(
+                  instanceId,
+                  resource.meta.name.name,
+                );
+              } else {
                 await createCanvasDashboardFromMetricsView(
                   instanceId,
                   resource.meta.name.name,
                 );
-            }}
-          >
-            <Add />
-            Generate Canvas Dashboard{$ai ? " with AI" : ""}
-          </DropdownMenu.Item>
-        {/if}
+              }
+            }
+          }}
+        >
+          <Add />
+          Generate Canvas Dashboard{$ai ? " with AI" : ""}
+        </DropdownMenu.Item>
         <DropdownMenu.Item
           on:click={async () => {
             if (resource)

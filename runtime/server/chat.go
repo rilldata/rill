@@ -517,6 +517,37 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	serveSSEUntilClose(w, events)
 }
 
+func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRequest) (*runtimev1.GetAIMessageResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
+	}
+
+	msg, ok := session.Message(ai.FilterByID(req.MessageId))
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.MessageId)
+	}
+
+	pbMsg, err := messageToPB(session, msg)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
+	}
+
+	return &runtimev1.GetAIMessageResponse{
+		Message: pbMsg,
+	}, nil
+}
+
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
 func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1.Conversation {
 	return &runtimev1.Conversation{
