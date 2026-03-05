@@ -8,7 +8,9 @@
   import QueryCell from "./QueryCell.svelte";
   import QuerySchemaPanel from "./QuerySchemaPanel.svelte";
   import { makeSufficientlyQualifiedTableName } from "@rilldata/web-common/features/connectors/connectors-utils";
-  import { createNotebook } from "./query-store";
+  import { createNotebook, type NotebookStore } from "./query-store";
+  import { onDestroy, tick } from "svelte";
+  import { get } from "svelte/store";
 
   const WORKSPACE_KEY = "__query_console__";
 
@@ -23,12 +25,12 @@
   $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
 
   // Create notebook store once we have the default connector
-  let notebook = createNotebook("", "");
-  let initialized = false;
-  $: if (olapConnector && !initialized) {
+  let notebook: NotebookStore | null = null;
+  $: if (olapConnector && !notebook) {
     notebook = createNotebook(olapConnector, projectId);
-    initialized = true;
   }
+
+  onDestroy(() => notebook?.destroy());
 
   // Track table selected from data explorer (for ColumnProfile in right panel)
   let selectedTable: {
@@ -40,6 +42,14 @@
 
   // Refs to cell editors for programmatic content setting
   let cellRefs: Record<string, QueryCell> = {};
+
+  // Clean up stale refs when cells are removed
+  $: if (notebook) {
+    const cellIds = new Set(get(notebook).cells.map((c) => c.id));
+    for (const id of Object.keys(cellRefs)) {
+      if (!cellIds.has(id)) delete cellRefs[id];
+    }
+  }
 
   // Data explorer sidebar
   const explorerStore = new ConnectorExplorerStore(
@@ -64,6 +74,8 @@
     },
     // onInsertTable: "+" button populates a cell with SELECT * FROM table
     (driver, connector, database, schema, table) => {
+      if (!notebook) return;
+      const state = get(notebook);
       const tableRef = makeSufficientlyQualifiedTableName(
         driver,
         database,
@@ -72,8 +84,8 @@
       );
       const sql = `SELECT * FROM ${tableRef}`;
 
-      const focusedId = $notebook.focusedCellId ?? $notebook.cells[0]?.id;
-      const focusedCell = $notebook.cells.find((c) => c.id === focusedId);
+      const focusedId = state.focusedCellId ?? state.cells[0]?.id;
+      const focusedCell = state.cells.find((c) => c.id === focusedId);
       const hasExistingSql = (focusedCell?.sql ?? "").trim().length > 0;
 
       if (hasExistingSql) {
@@ -81,7 +93,7 @@
         const newId = notebook.addCell(connector);
         notebook.setCellSql(newId, sql);
         // Wait a tick for the DOM to render the new cell
-        requestAnimationFrame(() => {
+        tick().then(() => {
           cellRefs[newId]?.setEditorContent(sql);
         });
       } else if (focusedId) {
@@ -95,12 +107,12 @@
   let sidebarWidth = 260;
 
   // Derived stores for the focused cell (forwarded to inspector)
-  $: focusedSchema = notebook.focusedSchema;
-  $: focusedRowCount = notebook.focusedRowCount;
-  $: focusedExecutionTimeMs = notebook.focusedExecutionTimeMs;
+  $: focusedSchema = notebook?.focusedSchema;
+  $: focusedRowCount = notebook?.focusedRowCount;
+  $: focusedExecutionTimeMs = notebook?.focusedExecutionTimeMs;
 
   function handleAddCell() {
-    notebook.addCell(olapConnector);
+    notebook?.addCell(olapConnector);
   }
 
   function handleCellRun() {
@@ -114,61 +126,64 @@
   }
 </script>
 
-<div class="query-workspace">
-  <!-- Left Sidebar: Data Explorer -->
-  <aside class="data-explorer" style:width="{sidebarWidth}px">
-    <div class="sidebar-header">
-      <h3
-        class="text-xs font-semibold text-fg-secondary uppercase tracking-wide"
-      >
-        Data Explorer
-      </h3>
-    </div>
-    <div class="sidebar-content">
-      <ConnectorExplorer store={explorerStore} />
-    </div>
-  </aside>
+{#if notebook}
+  {@const nb = notebook}
+  <div class="query-workspace">
+    <!-- Left Sidebar: Data Explorer -->
+    <aside class="data-explorer" style:width="{sidebarWidth}px">
+      <div class="sidebar-header">
+        <h3
+          class="text-xs font-semibold text-fg-secondary uppercase tracking-wide"
+        >
+          Data Explorer
+        </h3>
+      </div>
+      <div class="sidebar-content">
+        <ConnectorExplorer store={explorerStore} />
+      </div>
+    </aside>
 
-  <Resizer
-    absolute={false}
-    direction="EW"
-    side="right"
-    min={200}
-    max={440}
-    bind:dimension={sidebarWidth}
-  />
+    <Resizer
+      absolute={false}
+      direction="EW"
+      side="right"
+      min={200}
+      max={440}
+      bind:dimension={sidebarWidth}
+    />
 
-  <!-- Center: Notebook cells -->
-  <div class="notebook-area">
-    <div class="cells-container">
-      {#each $notebook.cells as cell (cell.id)}
-        <QueryCell
-          bind:this={cellRefs[cell.id]}
-          cellId={cell.id}
-          {notebook}
-          {instanceId}
-          cellCount={$notebook.cells.length}
-          on:focus={handleCellFocus}
-          on:run={handleCellRun}
-        />
-      {/each}
+    <!-- Center: Notebook cells -->
+    <div class="notebook-area">
+      <div class="cells-container">
+        {#each $nb.cells as cell (cell.id)}
+          <QueryCell
+            bind:this={cellRefs[cell.id]}
+            cellId={cell.id}
+            notebook={nb}
+            {instanceId}
+            cellCount={$nb.cells.length}
+            on:focus={handleCellFocus}
+            on:run={handleCellRun}
+          />
+        {/each}
 
-      <button class="add-cell-button" on:click={handleAddCell}>
-        <PlusIcon size="14px" />
-        Add Cell
-      </button>
+        <button class="add-cell-button" on:click={handleAddCell}>
+          <PlusIcon size="14px" />
+          Add Cell
+        </button>
+      </div>
     </div>
+
+    <!-- Right Sidebar: Schema Inspector -->
+    <QuerySchemaPanel
+      filePath={WORKSPACE_KEY}
+      schema={focusedSchema ? $focusedSchema : null}
+      rowCount={focusedRowCount ? $focusedRowCount : 0}
+      executionTimeMs={focusedExecutionTimeMs ? $focusedExecutionTimeMs : null}
+      {selectedTable}
+    />
   </div>
-
-  <!-- Right Sidebar: Schema Inspector -->
-  <QuerySchemaPanel
-    filePath={WORKSPACE_KEY}
-    schema={$focusedSchema}
-    rowCount={$focusedRowCount}
-    executionTimeMs={$focusedExecutionTimeMs}
-    {selectedTable}
-  />
-</div>
+{/if}
 
 <style lang="postcss">
   .query-workspace {

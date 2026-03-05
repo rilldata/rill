@@ -37,20 +37,19 @@
   $: hasExecuted = cell?.hasExecuted ?? false;
   $: hasSql = (cell?.sql ?? "").trim().length > 0;
 
-  function handleRun(e?: CustomEvent<{ selectedText?: string }>) {
+  function runQuery(sqlOverride?: string) {
     if (!cell || cell.isExecuting) return;
     notebook.setFocusedCell(cellId);
-    const sqlOverride = e?.detail?.selectedText;
     notebook.executeCellQuery(cellId, instanceId, sqlOverride);
     dispatch("run");
   }
 
+  function handleRun(e: CustomEvent<{ selectedText?: string }>) {
+    runQuery(e.detail?.selectedText);
+  }
+
   function handleRunButton() {
-    if (!cell || cell.isExecuting) return;
-    notebook.setFocusedCell(cellId);
-    const selectedText = editorRef?.getSelectedText();
-    notebook.executeCellQuery(cellId, instanceId, selectedText);
-    dispatch("run");
+    runQuery(editorRef?.getSelectedText());
   }
 
   function handleChange(e: CustomEvent<string>) {

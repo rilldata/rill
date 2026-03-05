@@ -86,7 +86,7 @@ function hydrateCell(p: PersistedCell): CellState {
     error: null,
     executionTimeMs: p.executionTimeMs ?? null,
     lastRowCount: p.resultRowCount ?? null,
-    hasExecuted: false,
+    hasExecuted: !!hasSchema,
   };
 }
 
@@ -104,6 +104,25 @@ function createDefaultCell(connector: string): CellState {
     collapsed: false,
     hasExecuted: false,
   };
+}
+
+/** Extracts a human-readable message from an API or runtime error */
+function extractErrorMessage(err: unknown): string {
+  if (err && typeof err === "object") {
+    // Axios-style error with response.data.message
+    if ("response" in err) {
+      const resp = (err as Record<string, unknown>).response;
+      if (resp && typeof resp === "object" && "data" in resp) {
+        const data = (resp as Record<string, unknown>).data;
+        if (data && typeof data === "object" && "message" in data) {
+          const msg = (data as Record<string, unknown>).message;
+          if (typeof msg === "string" && msg) return msg;
+        }
+      }
+    }
+    if (err instanceof Error) return err.message;
+  }
+  return "Query execution failed";
 }
 
 function updateCell(
@@ -129,12 +148,13 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
   });
 
   // Only persist when we have a real connector (skip the throwaway initial store)
+  let unsubPersist: (() => void) | undefined;
   if (defaultConnector) {
     const debouncedSave = debounce(
       (cells: CellState[]) => saveToLocalStorage(projectId, cells),
       500,
     );
-    state.subscribe(($s) => debouncedSave($s.cells));
+    unsubPersist = state.subscribe(($s) => debouncedSave($s.cells));
   }
 
   const { subscribe, update } = state;
@@ -250,11 +270,7 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
       );
     } catch (err: unknown) {
       const elapsed = Math.round(performance.now() - startTime);
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ??
-        (err as Error)?.message ??
-        "Query execution failed";
+      const message = extractErrorMessage(err);
 
       update((s) =>
         updateCell(s, cellId, (c) => ({
@@ -282,7 +298,7 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
   const focusedRowCount = derived(focusedCell, ($c) => {
     // Use live data length if available; fall back to persisted row count
     const liveCount = $c?.result?.data?.length;
-    if (liveCount !== undefined && liveCount > 0) return liveCount;
+    if (liveCount !== undefined) return liveCount;
     return $c?.lastRowCount ?? 0;
   });
   const focusedExecutionTimeMs = derived(
@@ -290,8 +306,13 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     ($c) => $c?.executionTimeMs ?? null,
   );
 
+  function destroy() {
+    unsubPersist?.();
+  }
+
   return {
     subscribe,
+    destroy,
     addCell,
     removeCell,
     setCellSql,

@@ -560,4 +560,81 @@ describe("createNotebook", () => {
       expect(storedB[0].sql).toBe("SELECT b");
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // destroy
+  // ---------------------------------------------------------------------------
+
+  describe("destroy", () => {
+    it("stops persisting after destroy is called", () => {
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
+      const cellId = getState(store).cells[0].id;
+      store.setCellSql(cellId, "before destroy");
+
+      const key = `rill:query-notebook:${PROJECT_ID}`;
+      const before = localStorage.getItem(key);
+      expect(before).not.toBeNull();
+
+      store.destroy();
+      localStorage.removeItem(key);
+
+      store.setCellSql(cellId, "after destroy");
+      expect(localStorage.getItem(key)).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Hydration
+  // ---------------------------------------------------------------------------
+
+  describe("hydration", () => {
+    it("restores hasExecuted as true when schema was persisted", () => {
+      const key = `rill:query-notebook:${PROJECT_ID}`;
+      const persisted = [
+        {
+          id: "cell-1",
+          sql: "SELECT 1",
+          connector: DEFAULT_CONNECTOR,
+          limit: 100,
+          collapsed: false,
+          resultSchema: {
+            fields: [{ name: "col1", type: { code: "CODE_INT32" } }],
+          },
+          resultRowCount: 1,
+          executionTimeMs: 50,
+        },
+      ];
+      localStorage.setItem(key, JSON.stringify(persisted));
+
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
+      const cell = getState(store).cells[0];
+
+      expect(cell.hasExecuted).toBe(true);
+      expect(cell.result).not.toBeNull();
+      expect(cell.sql).toBe("SELECT 1");
+    });
+
+    it("restores hasExecuted as false when no schema was persisted", () => {
+      const key = `rill:query-notebook:${PROJECT_ID}`;
+      const persisted = [
+        {
+          id: "cell-2",
+          sql: "SELECT 1",
+          connector: DEFAULT_CONNECTOR,
+          limit: 100,
+          collapsed: false,
+          resultSchema: null,
+          resultRowCount: null,
+          executionTimeMs: null,
+        },
+      ];
+      localStorage.setItem(key, JSON.stringify(persisted));
+
+      const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
+      const cell = getState(store).cells[0];
+
+      expect(cell.hasExecuted).toBe(false);
+      expect(cell.result).toBeNull();
+    });
+  });
 });
