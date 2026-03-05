@@ -34,13 +34,17 @@
   $: isDisabled = hasErrors || isReconciling;
 
   function buildFullUrl(base: string, params: Arg[]): string {
-    const url = new URL(base);
-    params.forEach((arg) => {
-      if (arg.key.trim()) {
-        url.searchParams.set(arg.key, arg.value);
-      }
-    });
-    return url.toString();
+    try {
+      const url = new URL(base);
+      params.forEach((arg) => {
+        if (arg.key.trim()) {
+          url.searchParams.set(arg.key, arg.value);
+        }
+      });
+      return url.toString();
+    } catch {
+      return base;
+    }
   }
 
   function addArg() {
@@ -55,8 +59,49 @@
     copyToClipboard(fullUrl, "Copied endpoint URL to clipboard");
   }
 
+  function handleArgsKeydown(e: KeyboardEvent) {
+    if (e.key !== "Tab") return;
+
+    const container = (e.target as HTMLElement)?.closest(".args-container");
+    if (!container) return;
+
+    const inputs = Array.from(
+      container.querySelectorAll<HTMLInputElement>("input"),
+    );
+    const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+    if (currentIndex === -1) return;
+
+    if (e.shiftKey) {
+      // Shift+Tab: move to previous input, or let dropdown handle if at first
+      if (currentIndex > 0) {
+        e.preventDefault();
+        inputs[currentIndex - 1].focus();
+      }
+    } else {
+      // Tab: move to next input, or add a new arg row if at the last one
+      if (currentIndex < inputs.length - 1) {
+        e.preventDefault();
+        inputs[currentIndex + 1].focus();
+      } else {
+        e.preventDefault();
+        addArg();
+        // Focus the new row's key input after Svelte updates the DOM
+        requestAnimationFrame(() => {
+          const updatedInputs = Array.from(
+            container.querySelectorAll<HTMLInputElement>("input"),
+          );
+          updatedInputs[updatedInputs.length - 2]?.focus();
+        });
+      }
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !isDisabled) {
+      // Don't fire when focus is in a dialog, modal, or navigation sidebar
+      const target = e.target as HTMLElement;
+      if (target?.closest?.('[role="dialog"], nav, [role="alertdialog"]'))
+        return;
       e.preventDefault();
       testAPI();
     }
@@ -127,7 +172,11 @@
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="end" class="w-72 p-2">
-          <div class="flex flex-col gap-y-2">
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <div
+            class="args-container flex flex-col gap-y-2"
+            on:keydown={handleArgsKeydown}
+          >
             {#if args.length === 0}
               <p class="text-xs text-fg-muted px-1 py-2">
                 No arguments. Click "Add" below.

@@ -20,7 +20,9 @@
   ];
 
   function handleViewModeChange(id: string) {
-    viewMode = id as ViewMode;
+    if (id === "table" || id === "json") {
+      viewMode = id;
+    }
   }
 
   $: columns = extractColumns(response);
@@ -33,10 +35,29 @@
       return [{ name: "value", type: "VARCHAR" }];
     }
 
-    return Object.keys(firstRow).map((key) => ({
+    const keys = Object.keys(firstRow);
+    const sampleSize = Math.min(data.length, 10);
+
+    return keys.map((key) => ({
       name: key,
-      type: inferType(firstRow[key as keyof typeof firstRow]),
+      type: inferTypeFromSample(data, key, sampleSize),
     }));
+  }
+
+  function inferTypeFromSample(
+    rows: unknown[],
+    key: string,
+    sampleSize: number,
+  ): string {
+    for (let i = 0; i < sampleSize; i++) {
+      const row = rows[i];
+      if (typeof row !== "object" || row === null) continue;
+      const value = (row as Record<string, unknown>)[key];
+      if (value !== null && value !== undefined) {
+        return inferType(value);
+      }
+    }
+    return "VARCHAR";
   }
 
   function inferType(value: unknown): string {
