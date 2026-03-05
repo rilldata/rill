@@ -29,7 +29,7 @@ func TestObjectStore(t *testing.T) {
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
-	// t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
+	t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
 	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
 }
 
@@ -67,7 +67,7 @@ func TestObjectStoreHMAC(t *testing.T) {
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
-	// t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
+	t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
 	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
 }
 
@@ -211,10 +211,11 @@ func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket s
 func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 4, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 2, "")
 	require.NoError(t, err)
 	require.NotNil(t, objects)
-	require.Empty(t, nextToken)
+	require.Len(t, objects, 2)
+	require.NotEmpty(t, nextToken)
 }
 
 func testListObjectsNoMatch(t *testing.T, objectStore drivers.ObjectStore, bucket string) {

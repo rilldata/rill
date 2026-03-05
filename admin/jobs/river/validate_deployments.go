@@ -52,11 +52,11 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 
 	// Iterate over batches of projects and add them to the shared channel
 	limit := 100
-	afterName := ""
+	afterID := ""
 	stop := false
 	for !stop {
 		// Get batch and update iterator variables
-		projs, err := w.admin.DB.FindProjects(ctx, afterName, limit)
+		projs, err := w.admin.DB.FindProjects(ctx, afterID, limit)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 			stop = true
 		}
 		if len(projs) != 0 {
-			afterName = projs[len(projs)-1].Name
+			afterID = projs[len(projs)-1].ID
 		}
 
 		for _, proj := range projs {

@@ -64,7 +64,6 @@
     columnName,
     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
     enableProfiling,
-    active,
   );
   let fdHistogram;
   $: if (isFloat(type)) {
@@ -77,7 +76,6 @@
       columnName,
       QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
       enableProfiling,
-      active,
     );
   }
 
