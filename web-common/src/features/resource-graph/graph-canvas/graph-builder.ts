@@ -188,7 +188,8 @@ function extractResourceMetadata(
       | { materialize?: boolean }
       | undefined;
     metadata.materialize = outputProps?.materialize ?? false;
-    metadata.isMaterialized = Boolean(spec.stageConnector);
+    metadata.isMaterialized =
+      outputProps?.materialize === true || Boolean(spec.stageConnector);
     if (spec.outputConnector) metadata.outputConnector = spec.outputConnector;
     if (spec.stageConnector) metadata.stageConnector = spec.stageConnector;
 
@@ -1129,58 +1130,101 @@ export function buildMultiTreeLayout(groups: ResourceGraphGrouping[]): {
   nodes: Node<ResourceNodeData>[];
   edges: Edge[];
 } {
-  const TREE_GAP = 80; // horizontal gap between trees
+  const TREE_GAP_X = 80; // horizontal gap between trees
+  const TREE_GAP_Y = 200; // vertical gap between rows
+  const MAX_ROW_WIDTH = 2500; // wrap to next row after this width
   const allNodes: Node<ResourceNodeData>[] = [];
   const allEdges: Edge[] = [];
-  let xOffset = 0;
 
   // Track which node IDs have been seen globally to detect shared resources
   const seenNodeIds = new Set<string>();
+
+  // First pass: build each tree and compute bounding boxes
+  type TreeResult = {
+    nodes: Node<ResourceNodeData>[];
+    edges: Edge[];
+    width: number;
+    height: number;
+    minX: number;
+    minY: number;
+    prefix: string;
+  };
+  const trees: TreeResult[] = [];
 
   for (const group of groups) {
     const { nodes, edges } = buildResourceGraph(group.resources, {
       positionNs: `sprawl|${group.id}`,
       ignoreCache: true,
     });
-
     if (!nodes.length) continue;
 
-    // Check if any nodes in this tree share IDs with previous trees.
-    // If so, prefix IDs with tree group to make them unique on the canvas.
     const hasConflicts = nodes.some((n) => seenNodeIds.has(n.id));
     const prefix = hasConflicts ? `${group.id}__` : "";
+    for (const node of nodes) seenNodeIds.add(node.id);
 
-    // Find bounding box of this tree
     let minX = Infinity;
     let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
     for (const node of nodes) {
       const nx = node.position.x;
+      const ny = node.position.y;
       const nw = node.width ?? NODE_CONFIG.MIN_WIDTH;
+      const nh = node.height ?? NODE_CONFIG.DEFAULT_HEIGHT;
       if (nx < minX) minX = nx;
       if (nx + nw > maxX) maxX = nx + nw;
+      if (ny < minY) minY = ny;
+      if (ny + nh > maxY) maxY = ny + nh;
     }
 
-    // Shift nodes so the tree starts at xOffset (create new objects to avoid mutation)
-    const shift = xOffset - minX;
-    for (const node of nodes) {
-      const newId = prefix + node.id;
-      seenNodeIds.add(node.id);
+    trees.push({
+      nodes,
+      edges,
+      width: maxX - minX,
+      height: maxY - minY,
+      minX,
+      minY,
+      prefix,
+    });
+  }
+
+  // Second pass: arrange trees in rows, wrapping when exceeding MAX_ROW_WIDTH
+  let xOffset = 0;
+  let yOffset = 0;
+  let rowMaxHeight = 0;
+
+  for (const tree of trees) {
+    // Wrap to next row if this tree would exceed max width
+    if (xOffset > 0 && xOffset + tree.width > MAX_ROW_WIDTH) {
+      xOffset = 0;
+      yOffset += rowMaxHeight + TREE_GAP_Y;
+      rowMaxHeight = 0;
+    }
+
+    const shiftX = xOffset - tree.minX;
+    const shiftY = yOffset - tree.minY;
+
+    for (const node of tree.nodes) {
       allNodes.push({
         ...node,
-        id: newId,
-        position: { x: node.position.x + shift, y: node.position.y },
+        id: tree.prefix + node.id,
+        position: {
+          x: node.position.x + shiftX,
+          y: node.position.y + shiftY,
+        },
       });
     }
-    for (const edge of edges) {
+    for (const edge of tree.edges) {
       allEdges.push({
         ...edge,
-        id: prefix + edge.id,
-        source: prefix + edge.source,
-        target: prefix + edge.target,
+        id: tree.prefix + edge.id,
+        source: tree.prefix + edge.source,
+        target: tree.prefix + edge.target,
       });
     }
 
-    xOffset = xOffset + (maxX - minX) + TREE_GAP;
+    if (tree.height > rowMaxHeight) rowMaxHeight = tree.height;
+    xOffset += tree.width + TREE_GAP_X;
   }
 
   return { nodes: allNodes, edges: allEdges };

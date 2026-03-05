@@ -215,7 +215,7 @@
       {#if isSourceOrModel}
         {@const allIndicators = [
           metadata?.isMaterialized
-            ? { type: "materialized" }
+            ? { type: "table" }
             : kind === ResourceKind.Model
               ? { type: "view" }
               : null,
@@ -236,8 +236,8 @@
           </span>
           <span class="badge-group">
             {#each rightIndicators as ind}
-              {#if ind?.type === "materialized"}
-                <span class="badge" title="Materialized">Materialized</span>
+              {#if ind?.type === "table"}
+                <span class="badge" title="Table">Table</span>
               {:else if ind?.type === "view"}
                 <span class="badge" title="View">View</span>
               {:else if ind?.type === "incremental"}

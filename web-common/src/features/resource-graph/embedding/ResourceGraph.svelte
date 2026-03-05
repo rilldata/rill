@@ -271,9 +271,27 @@
   }
 
   // --- Sidebar selection state ---
+  function handleSearchComboBlur(e: FocusEvent) {
+    const related = e.relatedTarget as globalThis.Node | null;
+    if (!(e.currentTarget as globalThis.Node)?.contains(related)) {
+      resourceDropdownOpen = false;
+    }
+  }
+
   let resourceDropdownOpen = false;
   let statusDropdownOpen = false;
   let treeSearchQuery = "";
+
+  // Sync search bar with URL-selected resource on initial navigation
+  let lastSyncedGroupId: string | null = null;
+  $: if (selectedGroupId && selectedGroupId !== lastSyncedGroupId) {
+    // Extract short name from group ID (e.g. "rill.runtime.v1.Model:orders" -> "orders")
+    const name = selectedGroupId.includes(":")
+      ? selectedGroupId.split(":").pop() ?? selectedGroupId
+      : selectedGroupId;
+    treeSearchQuery = name;
+    lastSyncedGroupId = selectedGroupId;
+  }
 
   // All resources organized by kind for the tree dropdown
   type ResourceDropdownEntry = {
@@ -765,11 +783,7 @@
       <div
         class="search-combo"
         on:focusin={() => (resourceDropdownOpen = true)}
-        on:focusout={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) {
-            resourceDropdownOpen = false;
-          }
-        }}
+        on:focusout={handleSearchComboBlur}
       >
         <Search
           bind:value={treeSearchQuery}
@@ -1090,7 +1104,9 @@
 
   .combo-item {
     @apply flex w-full items-center gap-x-2 cursor-pointer rounded-sm py-1.5 px-2 text-xs text-left;
-    @apply hover:bg-popover-accent;
+     &:hover {
+      @apply bg-surface-hover;
+    }
   }
 
   .combo-separator {
