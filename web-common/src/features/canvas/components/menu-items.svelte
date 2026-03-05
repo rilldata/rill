@@ -2,6 +2,7 @@
   import type { ComponentType, SvelteComponent } from "svelte";
   import BigNumberIcon from "../icons/BigNumberIcon.svelte";
   import ChartIcon from "../icons/ChartIcon.svelte";
+  import MapIcon from "../icons/MapIcon.svelte";
   import TableIcon from "../icons/TableIcon.svelte";
   import TextIcon from "../icons/TextIcon.svelte";
   import type { CanvasComponentType } from "./types";
@@ -19,5 +20,6 @@
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "image", label: "Image", icon: ChartIcon },
     { id: "leaderboard", label: "Leaderboard", icon: TableIcon },
+    { id: "map", label: "Map", icon: MapIcon },
   ];
 </script>
