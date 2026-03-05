@@ -1,3 +1,0 @@
-{
-  "_reason": "ClickHouse sqlite() requires the .db file to be in the server's user_files directory, making local SQLite paths unusable in Rill Cloud."
-}
