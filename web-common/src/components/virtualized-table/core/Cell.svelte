@@ -23,6 +23,7 @@
   export let column;
   export let value;
   export let formattedValue: string | null = null;
+  export let tooltipFormattedValue: string | null = null;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -102,9 +103,13 @@
       : "ui-measure-bar-included";
 
   $: tooltipValue =
-    value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
-      ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
-      : value;
+    tooltipFormattedValue !== null && tooltipFormattedValue !== undefined
+      ? tooltipFormattedValue
+      : STRING_LIKES.has(type)
+        ? typeof value === "string" && value.length >= TOOLTIP_STRING_LIMIT
+          ? value.slice(0, TOOLTIP_STRING_LIMIT) + "..."
+          : value
+        : (formattedValue ?? value);
 
   $: formattedDataTypeStyle = excluded
     ? "font-normal text-fg-muted"
@@ -177,7 +182,7 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType slot="name" value={tooltipValue} />
+      <FormattedDataType slot="name" {type} value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
