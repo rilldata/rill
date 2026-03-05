@@ -9,25 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// ResolveEnvVarName determines the env var name for a secret property, resolving conflicts
-// by appending _1, _2, etc. when the base name already exists in existingEnv.
-func ResolveEnvVarName(driverName string, propSpec *drivers.PropertySpec, existingEnv map[string]bool) string {
-	var base string
-	if propSpec.EnvVarName != "" {
-		base = propSpec.EnvVarName
-	} else {
-		// Fallback: DRIVER_KEY format (SCREAMING_SNAKE_CASE)
-		base = strings.ToUpper(driverName) + "_" + strings.ToUpper(propSpec.Key)
-	}
-
-	// Check for conflicts
-	candidate := base
-	for i := 1; existingEnv[candidate]; i++ {
-		candidate = fmt.Sprintf("%s_%d", base, i)
-	}
-	return candidate
-}
-
 // ResolveEnvVarNameForKey determines the env var name for a secret property key,
 // using an explicit env var name when provided, or falling back to DRIVER_KEY format.
 // This variant does not require a *drivers.PropertySpec; used by schema-based templates.

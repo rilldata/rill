@@ -6,7 +6,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/templates"
@@ -75,17 +74,6 @@ func (s *Server) GenerateFile(ctx context.Context, req *runtimev1.GenerateFileRe
 		return nil, status.Errorf(codes.InvalidArgument, "unknown template %q", req.TemplateName)
 	}
 
-	// Look up driver spec; skip when template has its own JSON Schema (self-contained)
-	var driverSpec *drivers.Spec
-	if tmpl.JSONSchema == nil && tmpl.Driver != "" {
-		drv, ok := drivers.Connectors[tmpl.Driver]
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "template %q references unknown driver %q", req.TemplateName, tmpl.Driver)
-		}
-		spec := drv.Spec()
-		driverSpec = &spec
-	}
-
 	// Convert properties
 	var props map[string]any
 	if req.Properties != nil {
@@ -106,7 +94,6 @@ func (s *Server) GenerateFile(ctx context.Context, req *runtimev1.GenerateFileRe
 	result, err := templates.Render(&templates.RenderInput{
 		Template:      tmpl,
 		Output:        req.Output,
-		DriverSpec:    driverSpec,
 		Properties:    props,
 		ConnectorName: req.ConnectorName,
 		ExistingEnv:   existingEnv,

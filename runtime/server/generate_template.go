@@ -70,11 +70,9 @@ func (s *Server) GenerateTemplate(ctx context.Context, req *runtimev1.GenerateTe
 	}
 
 	// Render using the templates package
-	driverSpec := &spec
 	result, err := templates.Render(&templates.RenderInput{
 		Template:      tmpl,
 		Output:        req.ResourceType,
-		DriverSpec:    driverSpec,
 		Properties:    props,
 		ConnectorName: req.ConnectorName,
 		ExistingEnv:   existingEnv,

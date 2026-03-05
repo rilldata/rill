@@ -3,7 +3,6 @@ package templates
 import (
 	"testing"
 
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,7 +55,6 @@ func TestRenderDuckDBModelTemplate(t *testing.T) {
 	tmpl, ok := registry.Get("s3-duckdb")
 	require.True(t, ok)
 
-	// s3-duckdb has json_schema; no DriverSpec needed
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
@@ -91,11 +89,6 @@ func TestRenderWarehouseModelTemplate(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
-		DriverSpec: &drivers.Spec{
-			ImplementsWarehouse: true,
-			DocsURL:             "https://docs.rilldata.com/developers/build/connectors/data-source/snowflake",
-			SourceProperties:    []*drivers.PropertySpec{},
-		},
 		Properties: map[string]any{
 			"sql":  "SELECT * FROM my_table",
 			"name": "snowflake_data",
@@ -126,10 +119,6 @@ func TestRenderRedshiftModelNoDevSection(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
-		DriverSpec: &drivers.Spec{
-			ImplementsWarehouse: true,
-			SourceProperties:    []*drivers.PropertySpec{},
-		},
 		Properties: map[string]any{
 			"sql":  "SELECT * FROM my_table",
 			"name": "rs_data",
@@ -156,9 +145,8 @@ func TestRenderIcebergDuckDB(t *testing.T) {
 	require.True(t, ok)
 
 	result, err := Render(&RenderInput{
-		Template:   tmpl,
-		Output:     "model",
-		DriverSpec: nil, // driverless
+		Template: tmpl,
+		Output:   "model",
 		Properties: map[string]any{
 			"path": "s3://my-iceberg-bucket/warehouse/my_table",
 			"name": "iceberg_data",
@@ -186,16 +174,6 @@ func TestRenderS3ClickHouseModel(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
-		DriverSpec: &drivers.Spec{
-			ImplementsObjectStore: true,
-			ConfigProperties: []*drivers.PropertySpec{
-				{Key: "aws_access_key_id", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_ACCESS_KEY_ID"},
-				{Key: "aws_secret_access_key", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "AWS_SECRET_ACCESS_KEY"},
-			},
-			SourceProperties: []*drivers.PropertySpec{
-				{Key: "path", Type: drivers.StringPropertyType},
-			},
-		},
 		Properties: map[string]any{
 			"aws_access_key_id":     "AKIAIOSFODNN7EXAMPLE",
 			"aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
@@ -236,15 +214,6 @@ func TestRenderMySQLClickHouseModel(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
-		DriverSpec: &drivers.Spec{
-			ConfigProperties: []*drivers.PropertySpec{
-				{Key: "host", Type: drivers.StringPropertyType},
-				{Key: "port", Type: drivers.NumberPropertyType},
-				{Key: "user", Type: drivers.StringPropertyType},
-				{Key: "password", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "MYSQL_PASSWORD"},
-				{Key: "database", Type: drivers.StringPropertyType},
-			},
-		},
 		Properties: map[string]any{
 			"host":     "db.example.com",
 			"port":     "3306",
@@ -312,14 +281,6 @@ func TestRenderEmptyPropertiesFiltered(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "connector",
-		DriverSpec: &drivers.Spec{
-			ConfigProperties: []*drivers.PropertySpec{
-				{Key: "host", Type: drivers.StringPropertyType},
-				{Key: "port", Type: drivers.NumberPropertyType},
-				{Key: "password", Type: drivers.StringPropertyType, Secret: true, EnvVarName: "CLICKHOUSE_PASSWORD"},
-				{Key: "database", Type: drivers.StringPropertyType},
-			},
-		},
 		Properties: map[string]any{
 			"host":     "localhost",
 			"port":     9000,
@@ -405,12 +366,6 @@ func TestRenderLocalFileDuckDB(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
-		DriverSpec: &drivers.Spec{
-			ImplementsFileStore: true,
-			SourceProperties: []*drivers.PropertySpec{
-				{Key: "path", Type: drivers.StringPropertyType},
-			},
-		},
 		Properties: map[string]any{
 			"path": "data/sales.csv",
 			"name": "sales",
@@ -437,12 +392,6 @@ func TestRenderSQLiteDuckDB(t *testing.T) {
 	result, err := Render(&RenderInput{
 		Template: tmpl,
 		Output:   "model",
-		DriverSpec: &drivers.Spec{
-			SourceProperties: []*drivers.PropertySpec{
-				{Key: "db", Type: drivers.StringPropertyType},
-				{Key: "table", Type: drivers.StringPropertyType},
-			},
-		},
 		Properties: map[string]any{
 			"db":    "/data/app.db",
 			"table": "users",
@@ -472,9 +421,8 @@ func TestRenderIcebergDuckDBWithSchema(t *testing.T) {
 	require.NotNil(t, tmpl.JSONSchema, "iceberg-duckdb should have json_schema")
 
 	result, err := Render(&RenderInput{
-		Template:   tmpl,
-		Output:     "model",
-		DriverSpec: nil, // no driver needed; schema-based
+		Template: tmpl,
+		Output:   "model",
 		Properties: map[string]any{
 			"aws_access_key_id":     "AKIAEXAMPLE",
 			"aws_secret_access_key": "wJalrXUtnFEMI/EXAMPLEKEY",

@@ -6,15 +6,12 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // RenderInput contains all parameters for rendering a template.
 type RenderInput struct {
 	Template      *Template
 	Output        string         // "connector", "model", or "" for all files
-	DriverSpec    *drivers.Spec  // driver metadata; nil for driverless templates
 	Properties    map[string]any // raw form values
 	ConnectorName string         // for model outputs: the connector to reference
 	ExistingEnv   map[string]bool
@@ -117,7 +114,7 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 
 		// Compute derived fields (SQL, create_secrets_from_connectors) based on template metadata
 		if input.Template.OLAP == "duckdb" && input.Template.Driver != "" {
-			if err := applyDuckDBDerivedFieldsForSchema(input, data); err != nil {
+			if err := applyDuckDBDerivedFields(input, data); err != nil {
 				return nil, err
 			}
 		}
@@ -132,98 +129,11 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		return data, nil
 	}
 
-	if input.DriverSpec == nil {
-		// Driverless template without schema: pass properties as-is
-		return data, nil
-	}
-
-	// Process config properties (for connector outputs)
-	configProps := processProperties(input.Template.Driver, input.DriverSpec.ConfigProperties, input.Properties, existingEnv, envVars, input.ConnectorName)
-	data["props"] = configProps
-	data["config_props"] = configProps
-
-	// Process source properties (for model outputs)
-	sourceProps := processProperties(input.Template.Driver, input.DriverSpec.SourceProperties, input.Properties, existingEnv, envVars, input.ConnectorName)
-	data["source_props"] = sourceProps
-
-	// DuckDB rewrite: compute SQL from path for object store, file store, and sqlite drivers
-	if input.Template.OLAP == "duckdb" && input.Template.Driver != "" {
-		if err := applyDuckDBDerivedFields(input, data); err != nil {
-			return nil, err
-		}
-	}
-
-	// ClickHouse rewrite: compute SQL from properties using ClickHouse table functions
-	if input.Template.OLAP == "clickhouse" && input.Template.Driver != "" {
-		if err := applyClickHouseDerivedFields(input, data, configProps); err != nil {
-			return nil, err
-		}
-	}
-
-	// Special flags
-	data["no_dev"] = input.Template.Driver == "redshift"
-	data["materialize"] = input.Template.Driver != "duckdb" && input.Template.Driver != "motherduck"
-
+	// Template without schema: pass properties as-is
 	return data, nil
 }
 
-// processProperties pre-processes a list of PropertySpecs against raw form values.
-// For each property: filters empties, extracts secrets to env vars, and determines formatting.
-func processProperties(
-	driverName string,
-	specs []*drivers.PropertySpec,
-	rawProps map[string]any,
-	existingEnv map[string]bool,
-	envVars map[string]string,
-	connectorName string,
-) []ProcessedProp {
-	var result []ProcessedProp
-	for _, spec := range specs {
-		val, ok := rawProps[spec.Key]
-		if !ok || isEmpty(val) {
-			continue
-		}
-
-		// Handle map-typed properties (e.g. headers)
-		if mapVal, isMap := val.(map[string]any); isMap {
-			// Use connector name for header env var naming; fall back to driver name
-			headerIdent := connectorName
-			if headerIdent == "" {
-				headerIdent = driverName
-			}
-			headerProps := processHeaders(mapVal, headerIdent, existingEnv, envVars)
-			result = append(result, headerProps...)
-			continue
-		}
-
-		// Skip managed: false for ClickHouse (it's the default)
-		if spec.Key == "managed" && !toBool(val) {
-			continue
-		}
-
-		strVal := fmt.Sprintf("%v", val)
-		if spec.Secret {
-			envName := ResolveEnvVarName(driverName, spec, existingEnv)
-			existingEnv[envName] = true
-			envVars[envName] = strVal
-			result = append(result, ProcessedProp{
-				Key:    spec.Key,
-				Value:  fmt.Sprintf("{{ .env.%s }}", envName),
-				Quoted: true,
-			})
-		} else {
-			quoted := spec.Type != drivers.NumberPropertyType && spec.Type != drivers.BooleanPropertyType
-			result = append(result, ProcessedProp{
-				Key:    spec.Key,
-				Value:  strVal,
-				Quoted: quoted,
-			})
-		}
-	}
-	return result
-}
-
-// processPropertiesFromSchema pre-processes properties using JSON Schema metadata instead of drivers.PropertySpec.
+// processPropertiesFromSchema pre-processes properties using JSON Schema metadata.
 // Fields with "x-secret": true are extracted to env vars; "x-ui-only": true fields are skipped.
 // Quoting is determined by the schema "type" field (number/boolean unquoted; everything else quoted).
 func processPropertiesFromSchema(
@@ -393,9 +303,9 @@ func processHeaders(headers map[string]any, connectorName string, existingEnv ma
 	}}
 }
 
-// applyDuckDBDerivedFieldsForSchema computes DuckDB-specific derived fields for schema-based templates.
-// Uses the template's driver name and JSON Schema x-category instead of DriverSpec.
-func applyDuckDBDerivedFieldsForSchema(input *RenderInput, data map[string]any) error {
+// applyDuckDBDerivedFields computes DuckDB-specific derived fields.
+// Uses the template's driver name and JSON Schema x-category.
+func applyDuckDBDerivedFields(input *RenderInput, data map[string]any) error {
 	category := schemaFieldString(input.Template.JSONSchema, "x-category")
 
 	// Special case for sqlite: uses db+table instead of path
@@ -425,47 +335,6 @@ func applyDuckDBDerivedFieldsForSchema(input *RenderInput, data map[string]any) 
 		data["sql"] = BuildDuckDBQuery(path, false)
 	case category == "fileStore" || input.Template.Driver == "https":
 		data["sql"] = BuildDuckDBQuery(path, true)
-	}
-	return nil
-}
-
-// applyDuckDBDerivedFields computes DuckDB-specific derived fields (SQL, create_secrets_from_connectors).
-func applyDuckDBDerivedFields(input *RenderInput, data map[string]any) error {
-	spec := input.DriverSpec
-	path := strVal(input.Properties["path"])
-
-	switch {
-	case spec.ImplementsObjectStore: // s3, gcs, azure
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for %s DuckDB model", input.Template.Driver)
-		}
-		if input.ConnectorName != "" {
-			data["create_secrets_from_connectors"] = input.ConnectorName
-		}
-		data["sql"] = BuildDuckDBQuery(path, false)
-
-	case input.Template.Driver == "https":
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for HTTPS DuckDB model")
-		}
-		if input.ConnectorName != "" {
-			data["create_secrets_from_connectors"] = input.ConnectorName
-		}
-		data["sql"] = BuildDuckDBQuery(path, true)
-
-	case spec.ImplementsFileStore: // local_file
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for local file DuckDB model")
-		}
-		data["sql"] = BuildDuckDBQuery(path, false)
-
-	case input.Template.Driver == "sqlite":
-		db := strVal(input.Properties["db"])
-		table := strVal(input.Properties["table"])
-		if db == "" || table == "" {
-			return fmt.Errorf("missing required properties \"db\" and \"table\" for SQLite DuckDB model")
-		}
-		data["sql"] = fmt.Sprintf("SELECT * FROM sqlite_scan('%s', '%s');", db, table)
 	}
 	return nil
 }
