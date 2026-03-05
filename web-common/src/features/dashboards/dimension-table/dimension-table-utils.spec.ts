@@ -168,4 +168,21 @@ describe("estimateColumnSizes", () => {
 
     expect(sizes[1]).toBe(DIMENSION_TABLE_CONFIG.comparisonColumnWidth);
   });
+
+  it("keeps delta percentage columns compact even for longer values", () => {
+    const columns = [
+      { name: "org", type: "VARCHAR" },
+      { name: "cost_delta_perc", type: "RILL_PERCENTAGE_CHANGE" },
+      { name: "cost", type: "INT" },
+    ];
+
+    const sizes = estimateColumnSizes(
+      columns,
+      { org: 8, cost_delta_perc: 12, cost: 5 },
+      1200,
+      { ...DIMENSION_TABLE_CONFIG },
+    );
+
+    expect(sizes[1]).toBe(DIMENSION_TABLE_CONFIG.comparisonColumnWidth);
+  });
 });

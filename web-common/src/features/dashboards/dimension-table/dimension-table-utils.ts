@@ -185,10 +185,17 @@ export function estimateColumnSizes(
     const largestStringLength =
       (columnWidths[column.name] ?? 0) * CHARACTER_WIDTH + CHARACTER_X_PAD;
 
+    // Keep percentage context columns compact. They usually have short values and
+    // look visually separated from absolute delta if we auto-expand these columns.
     if (
-      column.name.includes("delta") ||
+      column.name.includes("_delta_perc") ||
       column.name.includes("percent_of_total")
     ) {
+      return config.comparisonColumnWidth;
+    }
+
+    // Only absolute delta columns should grow to avoid truncating currency-like values.
+    if (column.name.includes("_delta")) {
       return largestStringLength
         ? Math.min(
             config.maxColumnWidth,
