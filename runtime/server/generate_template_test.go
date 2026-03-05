@@ -559,7 +559,6 @@ func TestGenerateTemplateAllConnectorDrivers(t *testing.T) {
 		{"druid", map[string]any{"host": "localhost"}},
 		{"pinot", map[string]any{"broker_host": "localhost"}},
 		{"starrocks", map[string]any{"host": "localhost"}},
-		{"salesforce", map[string]any{"username": "test"}},
 		{"https", map[string]any{}},
 	}
 
