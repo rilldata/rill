@@ -18,6 +18,7 @@ export interface CellState {
   executionTimeMs: number | null;
   lastRowCount: number | null; // persisted row count from last execution
   collapsed: boolean;
+  hasExecuted: boolean; // true after query runs this session
 }
 
 export interface NotebookState {
@@ -81,6 +82,7 @@ function hydrateCell(p: PersistedCell): CellState {
     error: null,
     executionTimeMs: p.executionTimeMs ?? null,
     lastRowCount: p.resultRowCount ?? null,
+    hasExecuted: false,
   };
 }
 
@@ -96,6 +98,7 @@ function createDefaultCell(connector: string): CellState {
     executionTimeMs: null,
     lastRowCount: null,
     collapsed: false,
+    hasExecuted: false,
   };
 }
 
@@ -238,6 +241,7 @@ function createNotebookStore(defaultConnector: string) {
           error: null,
           executionTimeMs: elapsed,
           lastRowCount: response.data?.length ?? 0,
+          hasExecuted: true,
         })),
       );
     } catch (err: unknown) {
@@ -254,6 +258,7 @@ function createNotebookStore(defaultConnector: string) {
           isExecuting: false,
           error: message,
           executionTimeMs: elapsed,
+          hasExecuted: true,
         })),
       );
     }

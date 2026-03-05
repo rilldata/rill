@@ -9,6 +9,7 @@
 
   export let schema: V1StructType | null;
   export let data: V1QueryResolverResponseDataItem[] | null;
+  export let hasExecuted = false;
 
   $: columns = schemaToColumns(schema);
 
@@ -25,13 +26,13 @@
 
 {#if data && data.length > 0 && columns.length > 0}
   <PreviewTable rows={data} columnNames={columns} name="query-results" />
-{:else if data}
+{:else if hasExecuted}
   <div class="empty-state">
     <p class="text-fg-secondary text-sm">No rows returned</p>
   </div>
 {:else}
   <div class="empty-state">
-    <p class="text-fg-secondary text-sm">Run a query to see results</p>
+    <p class="text-fg-secondary text-sm">Run query to see results</p>
   </div>
 {/if}
 
