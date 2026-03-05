@@ -198,11 +198,6 @@
     <div class="title-row">
       {#if kind}<ResourceTypeBadge {kind} />{/if}
       <p class="title" title={data?.label}>{data?.label}</p>
-      {#if isPending}
-        <span class="node-status-icon pending" title="Reconciling">
-          <Clock size="10px" />
-        </span>
-      {/if}
       {#if showActions}
         <div class="actions-trigger">
           <ResourceNodeActions bind:this={actionsRef} {data} />
@@ -381,12 +376,7 @@
   }
 
   .node.pending {
-    border-color: color-mix(
-      in srgb,
-      var(--color-yellow-500) 60%,
-      var(--surface-background, #ffffff)
-    );
-    border-style: dashed;
+    opacity: 0.5;
   }
 
   /* Title row */
@@ -402,9 +392,6 @@
     @apply flex-shrink-0 flex items-center;
   }
 
-  .node-status-icon.pending {
-    @apply text-yellow-500;
-  }
 
   .actions-trigger {
     @apply flex-shrink-0 ml-auto;

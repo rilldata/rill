@@ -55,20 +55,16 @@
     },
   });
 
-  // Filter out non-OLAP connectors so only the OLAP connector appears in the graph.
+  // Keep all connectors so they appear in the dropdown for explicit selection.
   // If no explicit connector resource exists for the OLAP connector, inject a
   // synthetic one so it still appears as a node in the DAG.
   $: resources = (function (): V1Resource[] {
     const raw = $resourcesQuery.data?.resources ?? [];
-    const filtered = raw.filter((r) => {
-      if (r.meta?.name?.kind !== ResourceKind.Connector) return true;
-      return r.meta?.name?.name === olapConnectorName;
-    });
 
     // Ensure the OLAP connector is present; create a synthetic resource if needed
     if (
       olapConnectorName &&
-      !filtered.some(
+      !raw.some(
         (r) =>
           r.meta?.name?.kind === ResourceKind.Connector &&
           r.meta?.name?.name === olapConnectorName,
@@ -83,10 +79,10 @@
           reconcileStatus: "RECONCILE_STATUS_IDLE",
         },
       };
-      return [synthetic, ...filtered];
+      return [synthetic, ...raw];
     }
 
-    return filtered;
+    return raw;
   })();
   $: errorMessage = $resourcesQuery.error
     ? "Failed to load project resources."
