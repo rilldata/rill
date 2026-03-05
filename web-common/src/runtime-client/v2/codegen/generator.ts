@@ -273,7 +273,7 @@ function generateQueryMethod(ctx: MethodContext): string[] {
 }
 
 function generateInfiniteQueryMethod(ctx: MethodContext): string[] {
-  const { serviceName, m } = ctx;
+  const { m } = ctx;
   const { rawFn, keyFn, infOptsFn, infHook } = methodNames(ctx);
   const { requestType, responseType } = requestTypes(ctx);
 
