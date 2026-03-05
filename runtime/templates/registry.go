@@ -1,10 +1,12 @@
 package templates
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"path"
 	"sort"
 	"strings"
 )
@@ -24,7 +26,7 @@ func NewRegistry() (*Registry, error) {
 		templates: make(map[string]*Template),
 	}
 
-	err := fs.WalkDir(definitionsFS, "definitions", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(definitionsFS, "definitions", func(fpath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -32,22 +34,50 @@ func NewRegistry() (*Registry, error) {
 			return nil
 		}
 
-		data, err := definitionsFS.ReadFile(path)
+		data, err := definitionsFS.ReadFile(fpath)
 		if err != nil {
-			return fmt.Errorf("reading template %s: %w", path, err)
+			return fmt.Errorf("reading template %s: %w", fpath, err)
 		}
 
 		var t Template
 		if err := json.Unmarshal(data, &t); err != nil {
-			return fmt.Errorf("parsing template %s: %w", path, err)
+			return fmt.Errorf("parsing template %s: %w", fpath, err)
 		}
 
 		if t.Name == "" {
-			return fmt.Errorf("template %s has no name", path)
+			return fmt.Errorf("template %s has no name", fpath)
 		}
 
 		if _, exists := r.templates[t.Name]; exists {
-			return fmt.Errorf("duplicate template name %q in %s", t.Name, path)
+			return fmt.Errorf("duplicate template name %q in %s", t.Name, fpath)
+		}
+
+		// Resolve code_template_file references
+		dir := path.Dir(fpath)
+		for i := range t.Files {
+			if t.Files[i].CodeTemplateFile == "" {
+				continue
+			}
+			tmplPath := dir + "/" + t.Files[i].CodeTemplateFile
+			content, err := definitionsFS.ReadFile(tmplPath)
+			if err != nil {
+				return fmt.Errorf("reading code template file %s for %s: %w", tmplPath, fpath, err)
+			}
+			t.Files[i].CodeTemplate = string(content)
+		}
+
+		// Preserve JSON-defined property order (Go maps lose insertion order).
+		// Store on struct for backend use, and in the schema as []any for
+		// protobuf Struct conversion ([]string is not protobuf-compatible).
+		if t.JSONSchema != nil {
+			t.PropertyOrder = extractPropertyOrder(data)
+			if len(t.PropertyOrder) > 0 {
+				orderAny := make([]any, len(t.PropertyOrder))
+				for i, k := range t.PropertyOrder {
+					orderAny[i] = k
+				}
+				t.JSONSchema["x-property-order"] = orderAny
+			}
 		}
 
 		r.templates[t.Name] = &t
@@ -124,6 +154,53 @@ func hasFileNamed(t *Template, name string) bool {
 		}
 	}
 	return false
+}
+
+// extractPropertyOrder parses raw JSON bytes to extract the key ordering of
+// json_schema.properties. Go's map[string]any loses insertion order on unmarshal,
+// but json.Decoder preserves it.
+func extractPropertyOrder(raw []byte) []string {
+	var outer struct {
+		JSONSchema json.RawMessage `json:"json_schema"`
+	}
+	if err := json.Unmarshal(raw, &outer); err != nil || outer.JSONSchema == nil {
+		return nil
+	}
+
+	var schema struct {
+		Properties json.RawMessage `json:"properties"`
+	}
+	if err := json.Unmarshal(outer.JSONSchema, &schema); err != nil || schema.Properties == nil {
+		return nil
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(schema.Properties))
+	tok, err := dec.Token() // opening {
+	if err != nil {
+		return nil
+	}
+	if delim, ok := tok.(json.Delim); !ok || delim != '{' {
+		return nil
+	}
+
+	var keys []string
+	for dec.More() {
+		tok, err := dec.Token()
+		if err != nil {
+			break
+		}
+		key, ok := tok.(string)
+		if !ok {
+			break
+		}
+		keys = append(keys, key)
+		// Skip the property value object
+		var discard json.RawMessage
+		if err := dec.Decode(&discard); err != nil {
+			break
+		}
+	}
+	return keys
 }
 
 // matchesAllTags returns true if the template's tags contain all of the required tags.

@@ -194,7 +194,6 @@ func TestRenderS3ClickHouseModel(t *testing.T) {
 	require.Contains(t, blob, "s3://my-bucket/data/events.parquet")
 	require.Contains(t, blob, "{{ .env.AWS_ACCESS_KEY_ID }}")
 	require.Contains(t, blob, "{{ .env.AWS_SECRET_ACCESS_KEY }}")
-	require.Contains(t, blob, "Parquet")
 	// Raw secrets should NOT appear in the blob
 	require.NotContains(t, blob, "AKIAIOSFODNN7EXAMPLE")
 

@@ -167,10 +167,23 @@
     values: Record<string, unknown>,
   ) {
     const properties = currentSchema.properties ?? {};
-    return Object.entries(properties).filter(([key]) => {
+    const entries = Object.entries(properties).filter(([key]) => {
       if (!isStepMatch(currentSchema, key, currentStep)) return false;
       return isVisibleForValues(currentSchema, key, values);
     });
+
+    // Sort by x-property-order to preserve the JSON-defined field ordering
+    // (protobuf Struct deserialization does not guarantee key order).
+    const order = currentSchema["x-property-order"] as string[] | undefined;
+    if (order) {
+      const orderMap = new Map(order.map((key, i) => [key, i]));
+      entries.sort(
+        ([a], [b]) =>
+          (orderMap.get(a) ?? Infinity) - (orderMap.get(b) ?? Infinity),
+      );
+    }
+
+    return entries;
   }
 
   function matchesCondition(

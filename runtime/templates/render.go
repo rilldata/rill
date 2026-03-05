@@ -89,7 +89,15 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		data["model_name"] = fmt.Sprintf("%v", name)
 	}
 
-	// Copy all raw properties into data (pre-processed values will overwrite)
+	// Pre-populate all schema properties with empty strings so the base YAML
+	// skeleton renders cleanly even before the user fills in any values.
+	if input.Template.JSONSchema != nil {
+		for k := range schemaProperties(input.Template.JSONSchema) {
+			data[k] = ""
+		}
+	}
+
+	// Copy all raw properties into data (overwrites empty defaults above)
 	for k, v := range input.Properties {
 		if !isEmpty(v) {
 			data[k] = fmt.Sprintf("%v", v)
@@ -100,6 +108,7 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 	if input.Template.JSONSchema != nil {
 		allProps := processPropertiesFromSchema(
 			input.Template.JSONSchema,
+			input.Template.PropertyOrder,
 			input.Template.Driver,
 			input.Properties,
 			existingEnv,
@@ -111,20 +120,6 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		data["props"] = configProps
 		data["config_props"] = configProps
 		data["source_props"] = sourceProps
-
-		// Compute derived fields (SQL, create_secrets_from_connectors) based on template metadata
-		if input.Template.OLAP == "duckdb" && input.Template.Driver != "" {
-			if err := applyDuckDBDerivedFields(input, data); err != nil {
-				return nil, err
-			}
-		}
-
-		// ClickHouse rewrite: compute SQL from properties using ClickHouse table functions
-		if input.Template.OLAP == "clickhouse" && input.Template.Driver != "" {
-			if err := applyClickHouseDerivedFields(input, data, configProps); err != nil {
-				return nil, err
-			}
-		}
 
 		return data, nil
 	}
@@ -138,6 +133,7 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 // Quoting is determined by the schema "type" field (number/boolean unquoted; everything else quoted).
 func processPropertiesFromSchema(
 	schema map[string]any,
+	propertyOrder []string,
 	driverName string,
 	rawProps map[string]any,
 	existingEnv map[string]bool,
@@ -148,12 +144,16 @@ func processPropertiesFromSchema(
 		return nil
 	}
 
-	// Sort keys for deterministic output
-	keys := make([]string, 0, len(propsMap))
-	for k := range propsMap {
-		keys = append(keys, k)
+	// Use schema-defined property order if available (preserves JSON key ordering);
+	// fall back to alphabetical for deterministic output.
+	keys := propertyOrder
+	if len(keys) == 0 {
+		keys = make([]string, 0, len(propsMap))
+		for k := range propsMap {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
 	}
-	sort.Strings(keys)
 
 	var result []ProcessedProp
 	for _, key := range keys {
@@ -303,139 +303,6 @@ func processHeaders(headers map[string]any, connectorName string, existingEnv ma
 	}}
 }
 
-// applyDuckDBDerivedFields computes DuckDB-specific derived fields.
-// Uses the template's driver name and JSON Schema x-category.
-func applyDuckDBDerivedFields(input *RenderInput, data map[string]any) error {
-	category := schemaFieldString(input.Template.JSONSchema, "x-category")
-
-	// Special case for sqlite: uses db+table instead of path
-	if input.Template.Driver == "sqlite" {
-		db := strVal(input.Properties["db"])
-		table := strVal(input.Properties["table"])
-		if db == "" || table == "" {
-			return nil
-		}
-		data["sql"] = fmt.Sprintf("SELECT * FROM sqlite_scan('%s', '%s');", db, table)
-		return nil
-	}
-
-	path := strVal(input.Properties["path"])
-
-	// Path may be empty when rendering only the connector output; skip derivation.
-	if path == "" {
-		return nil
-	}
-
-	if input.ConnectorName != "" {
-		data["create_secrets_from_connectors"] = input.ConnectorName
-	}
-
-	switch {
-	case category == "objectStore": // s3, gcs, azure
-		data["sql"] = BuildDuckDBQuery(path, false)
-	case category == "fileStore" || input.Template.Driver == "https":
-		data["sql"] = BuildDuckDBQuery(path, true)
-	}
-	return nil
-}
-
-// applyClickHouseDerivedFields computes ClickHouse-specific SQL using native table functions.
-// ClickHouse models embed credentials directly in the SQL as env var references.
-func applyClickHouseDerivedFields(input *RenderInput, data map[string]any, configProps []ProcessedProp) error {
-	path := strVal(input.Properties["path"])
-
-	// Build a lookup of processed config prop values by key (env var refs for secrets)
-	propVal := make(map[string]string, len(configProps))
-	for _, p := range configProps {
-		propVal[p.Key] = p.Value
-	}
-
-	switch input.Template.Driver {
-	case "s3":
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for S3 ClickHouse model")
-		}
-		data["sql"] = BuildClickHouseObjectStoreQuery("s3", path,
-			propVal["aws_access_key_id"], propVal["aws_secret_access_key"])
-
-	case "gcs":
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for GCS ClickHouse model")
-		}
-		data["sql"] = BuildClickHouseObjectStoreQuery("gcs", path,
-			propVal["key_id"], propVal["secret"])
-
-	case "azure":
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for Azure ClickHouse model")
-		}
-		container, blobPath := parseAzurePath(path)
-		endpoint := fmt.Sprintf("https://%s.blob.core.windows.net",
-			strVal(input.Properties["azure_storage_account"]))
-		data["sql"] = BuildClickHouseAzureQuery(endpoint, container, blobPath,
-			propVal["azure_storage_account"], propVal["azure_storage_key"])
-
-	case "mysql":
-		host := strVal(input.Properties["host"])
-		if host == "" {
-			return fmt.Errorf("missing required property \"host\" for MySQL ClickHouse model")
-		}
-		port := strVal(input.Properties["port"])
-		if port == "" {
-			port = "3306"
-		}
-		data["sql"] = BuildClickHouseDatabaseQuery("mysql", host+":"+port,
-			strVal(input.Properties["database"]),
-			strVal(input.Properties["table"]),
-			propVal["user"], propVal["password"])
-
-	case "postgres":
-		host := strVal(input.Properties["host"])
-		if host == "" {
-			return fmt.Errorf("missing required property \"host\" for Postgres ClickHouse model")
-		}
-		port := strVal(input.Properties["port"])
-		if port == "" {
-			port = "5432"
-		}
-		data["sql"] = BuildClickHouseDatabaseQuery("postgresql", host+":"+port,
-			strVal(input.Properties["dbname"]),
-			strVal(input.Properties["table"]),
-			propVal["user"], propVal["password"])
-
-	case "https":
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for HTTPS ClickHouse model")
-		}
-		data["sql"] = BuildClickHouseURLQuery(path)
-
-	case "local_file":
-		if path == "" {
-			return fmt.Errorf("missing required property \"path\" for local file ClickHouse model")
-		}
-		data["sql"] = BuildClickHouseFileQuery(path)
-
-	case "sqlite":
-		db := strVal(input.Properties["db"])
-		table := strVal(input.Properties["table"])
-		if db == "" || table == "" {
-			return fmt.Errorf("missing required properties \"db\" and \"table\" for SQLite ClickHouse model")
-		}
-		data["sql"] = BuildClickHouseSQLiteQuery(db, table)
-	}
-	return nil
-}
-
-// parseAzurePath parses "azure://container/blob/path" into container and blob path.
-func parseAzurePath(path string) (container, blobPath string) {
-	path = strings.TrimPrefix(path, "azure://")
-	idx := strings.IndexByte(path, '/')
-	if idx < 0 {
-		return path, ""
-	}
-	return path[:idx], path[idx+1:]
-}
-
 // renderString renders a Go template string using [[ ]] delimiters.
 func renderString(name, tmplText string, data map[string]any) (string, error) {
 	t, err := template.New(name).
@@ -480,14 +347,6 @@ func toBool(v any) bool {
 	default:
 		return false
 	}
-}
-
-// strVal extracts a string value from an interface.
-func strVal(v any) string {
-	if v == nil {
-		return ""
-	}
-	return fmt.Sprintf("%v", v)
 }
 
 // cloneEnvMap creates a shallow copy of an env key map.

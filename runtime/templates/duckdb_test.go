@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBuildDuckDBQuery(t *testing.T) {
+func TestDuckdbSQL(t *testing.T) {
 	tests := []struct {
 		name          string
 		path          string
@@ -26,7 +26,7 @@ func TestBuildDuckDBQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildDuckDBQuery(tt.path, tt.defaultToJSON)
+			query := duckdbSQL(tt.path, tt.defaultToJSON)
 			require.Contains(t, query, tt.wantContains)
 			require.Contains(t, query, tt.path)
 		})

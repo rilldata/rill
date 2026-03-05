@@ -38,7 +38,7 @@
     {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",
-      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/sqlite\ntype: model\nconnector: duckdb\nsql: |\n  [[ .sql ]]\n"
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/sqlite\ntype: model\nconnector: duckdb\nsql: |\n  SELECT * FROM sqlite_scan('[[ .db ]]', '[[ .table ]]');\n"
     }
   ]
 }

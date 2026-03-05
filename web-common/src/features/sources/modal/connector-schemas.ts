@@ -2,6 +2,7 @@ import type { ComponentType, SvelteComponent } from "svelte";
 import {
   createRuntimeServiceGetInstance,
   createRuntimeServiceListTemplates,
+  type V1Connector,
   type V1Template,
 } from "../../../runtime-client";
 import type {
@@ -51,11 +52,19 @@ export interface ConnectorInfo {
 }
 
 /**
- * Map the instance's OLAP connector to the template OLAP suffix.
- * Only ClickHouse has its own model templates; everything else uses DuckDB.
+ * Resolve the OLAP template suffix from the instance's OLAP connector.
+ * Looks up the connector by name in the instance's connectors list to get
+ * the actual driver type. Only ClickHouse has its own model templates;
+ * everything else uses DuckDB.
  */
-export function normalizeOlapForTemplate(olapConnector: string): string {
-  if (olapConnector === "clickhouse") return "clickhouse";
+export function normalizeOlapForTemplate(
+  olapConnectorName: string,
+  connectors?: V1Connector[],
+): string {
+  if (connectors) {
+    const connector = connectors.find((c) => c.name === olapConnectorName);
+    if (connector?.type === "clickhouse") return "clickhouse";
+  }
   return "duckdb";
 }
 
@@ -133,6 +142,7 @@ export function createConnectorSchemas(instanceId: string) {
 
       const olap = normalizeOlapForTemplate(
         $iq.data?.instance?.olapConnector ?? "duckdb",
+        $iq.data?.instance?.connectors,
       );
       const entries = buildSchemaRegistry($tq.data.templates, olap);
 

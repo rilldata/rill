@@ -119,7 +119,7 @@
     {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",
-      "code_template": "type: model\nconnector: duckdb\n[[ if .create_secrets_from_connectors -]]\ncreate_secrets_from_connectors: \"[[ .create_secrets_from_connectors ]]\"\n[[ end -]]\nsql: |\n  [[ .sql ]]\n"
+      "code_template": "type: model\nconnector: duckdb\n[[ if .connector_name -]]\ncreate_secrets_from_connectors: \"[[ .connector_name ]]\"\n[[ end -]]\nsql: |\n  [[ duckdbSQL .path false ]]\n"
     }
   ]
 }
