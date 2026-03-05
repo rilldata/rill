@@ -287,7 +287,7 @@
   $: if (selectedGroupId && selectedGroupId !== lastSyncedGroupId) {
     // Extract short name from group ID (e.g. "rill.runtime.v1.Model:orders" -> "orders")
     const name = selectedGroupId.includes(":")
-      ? selectedGroupId.split(":").pop() ?? selectedGroupId
+      ? (selectedGroupId.split(":").pop() ?? selectedGroupId)
       : selectedGroupId;
     treeSearchQuery = name;
     lastSyncedGroupId = selectedGroupId;
@@ -1104,7 +1104,7 @@
 
   .combo-item {
     @apply flex w-full items-center gap-x-2 cursor-pointer rounded-sm py-1.5 px-2 text-xs text-left;
-     &:hover {
+    &:hover {
       @apply bg-surface-hover;
     }
   }
