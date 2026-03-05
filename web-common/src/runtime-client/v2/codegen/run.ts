@@ -8,7 +8,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { QueryService } from "../../../proto/gen/rill/runtime/v1/queries_connect";
@@ -79,6 +79,6 @@ console.log(`Output: ${outDir}`);
 
 // Format generated files with prettier
 console.log(`\nFormatting with prettier...`);
-execSync("npx", ["prettier", "--write", `${outDir}/*.ts`], {
+execFileSync("npx", ["prettier", "--write", `${outDir}/*.ts`], {
   stdio: "inherit",
 });
