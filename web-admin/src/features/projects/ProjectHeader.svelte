@@ -37,6 +37,7 @@
   import {
     isCanvasDashboardPage,
     isMetricsExplorerPage,
+    isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
 
@@ -64,6 +65,7 @@
 
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
+  $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -245,7 +247,7 @@
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<Header>
+<Header borderBottom={!onProjectPage}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
@@ -257,7 +259,7 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if effectiveManageProjectMembers}
+    {#if effectiveManageProjectMembers && !onMetricsExplorerPage && !onCanvasDashboardPage}
       <ShareProjectPopover
         {organization}
         {project}

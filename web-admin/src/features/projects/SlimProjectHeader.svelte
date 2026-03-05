@@ -91,7 +91,7 @@
   $: currentPath = [organization, project];
 </script>
 
-<Header>
+<Header borderBottom>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
   <Breadcrumbs {pathParts} {currentPath} />
 
