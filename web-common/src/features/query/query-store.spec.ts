@@ -144,7 +144,7 @@ describe("createNotebook", () => {
 
     it("moves focus to the previous cell when removing the focused cell", () => {
       const store = createNotebook(DEFAULT_CONNECTOR);
-      const id1 = getState(store).cells[0].id;
+      getState(store).cells[0].id;
       const id2 = store.addCell();
       const id3 = store.addCell();
 
@@ -171,7 +171,7 @@ describe("createNotebook", () => {
     it("does not change focus when removing an unfocused cell", () => {
       const store = createNotebook(DEFAULT_CONNECTOR);
       const id1 = getState(store).cells[0].id;
-      const id2 = store.addCell();
+      store.addCell();
       const id3 = store.addCell();
 
       // id3 is focused; remove id1
@@ -293,7 +293,7 @@ describe("createNotebook", () => {
     it("changes the focused cell", () => {
       const store = createNotebook(DEFAULT_CONNECTOR);
       const id1 = getState(store).cells[0].id;
-      const id2 = store.addCell();
+      store.addCell();
 
       store.setFocusedCell(id1);
 
@@ -473,7 +473,7 @@ describe("createNotebook", () => {
     it("focuses the executed cell", async () => {
       const store = createNotebook(DEFAULT_CONNECTOR);
       const id1 = getState(store).cells[0].id;
-      const id2 = store.addCell();
+      store.addCell();
 
       store.setCellSql(id1, "SELECT 1");
       // id2 is focused after addCell; executing id1 should refocus it
