@@ -82,11 +82,7 @@
 {#if cell}
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div
-    class="query-cell"
-    class:focused={isFocused}
-    on:click={handleFocus}
-  >
+  <div class="query-cell" class:focused={isFocused} on:click={handleFocus}>
     <!-- Cell Header -->
     <div class="cell-header">
       <button
@@ -122,19 +118,23 @@
 
       {#if cell.limit === undefined}
         <span class="limit-warning">
-          Configure via `rill.interactive_sql_row_limit` in env, default is 1000. Large queries may be slow and costly.
+          Configure via `rill.interactive_sql_row_limit` in env, default is
+          1000. Large queries may be slow and costly.
         </span>
       {/if}
 
       <div class="flex items-center gap-x-2 ml-auto flex-none">
         {#if cell.isExecuting}
-          <div class="flex items-center gap-x-1.5 text-[11px] text-fg-secondary">
+          <div
+            class="flex items-center gap-x-1.5 text-[11px] text-fg-secondary"
+          >
             <Spinner size="12px" status={EntityStatus.Running} />
             Running...
           </div>
         {:else if cell.result}
           <span class="text-[11px] text-fg-secondary">
-            {formatInteger(rowCount)} {rowCount === 1 ? "row" : "rows"}
+            {formatInteger(rowCount)}
+            {rowCount === 1 ? "row" : "rows"}
             {#if cell.executionTimeMs !== null}
               in {cell.executionTimeMs < 1000
                 ? `${cell.executionTimeMs}ms`
@@ -177,10 +177,7 @@
         </WorkspaceEditorContainer>
 
         {#if cell.result || cell.isExecuting}
-          <div
-            class="cell-results"
-            style:height="{resultsHeight}px"
-          >
+          <div class="cell-results" style:height="{resultsHeight}px">
             <Resizer
               absolute={false}
               max={600}

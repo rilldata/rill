@@ -36,9 +36,7 @@
               c?.driver?.implementsSqlStore ||
               c?.driver?.implementsWarehouse,
           )
-          .sort((a, b) =>
-            (a?.name as string).localeCompare(b?.name as string),
-          );
+          .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
       },
     },
   });

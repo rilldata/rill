@@ -3,9 +3,7 @@
   import ConnectorExplorer from "@rilldata/web-common/features/connectors/explorer/ConnectorExplorer.svelte";
   import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import {
-    createRuntimeServiceGetInstance,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import QueryCell from "./QueryCell.svelte";
   import QuerySchemaPanel from "./QuerySchemaPanel.svelte";
@@ -65,7 +63,10 @@
     // onInsertTable: "+" button populates the focused cell
     (driver, connector, database, schema, table) => {
       const tableRef = makeSufficientlyQualifiedTableName(
-        driver, database, schema, table,
+        driver,
+        database,
+        schema,
+        table,
       );
       const sql = `SELECT * FROM ${tableRef}`;
 
@@ -99,7 +100,9 @@
   <!-- Left Sidebar: Data Explorer -->
   <aside class="data-explorer" style:width="{sidebarWidth}px">
     <div class="sidebar-header">
-      <h3 class="text-xs font-semibold text-fg-secondary uppercase tracking-wide">
+      <h3
+        class="text-xs font-semibold text-fg-secondary uppercase tracking-wide"
+      >
         Data Explorer
       </h3>
     </div>

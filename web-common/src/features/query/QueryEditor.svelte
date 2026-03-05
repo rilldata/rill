@@ -1,9 +1,6 @@
 <script lang="ts">
   import { autocompletion } from "@codemirror/autocomplete";
-  import {
-    keywordCompletionSource,
-    sql,
-  } from "@codemirror/lang-sql";
+  import { keywordCompletionSource, sql } from "@codemirror/lang-sql";
   import { Compartment, EditorState } from "@codemirror/state";
   import { EditorView, keymap } from "@codemirror/view";
   import { base as baseExtensions } from "../../components/editor/presets/base";

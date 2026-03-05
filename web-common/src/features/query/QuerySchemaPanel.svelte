@@ -85,9 +85,8 @@
         </svelte:fragment>
         <svelte:fragment slot="bottom-right">
           {#if tableColumns.length > 0}
-            {formatInteger(tableColumns.length)} {tableColumns.length === 1
-              ? "column"
-              : "columns"}
+            {formatInteger(tableColumns.length)}
+            {tableColumns.length === 1 ? "column" : "columns"}
           {/if}
         </svelte:fragment>
       </InspectorHeaderGrid>
@@ -120,7 +119,10 @@
                       type={prettyPrintType(column.type)}
                       suppressTooltip
                     />
-                    <span class="truncate text-xs font-mono" title={column.name}>
+                    <span
+                      class="truncate text-xs font-mono"
+                      title={column.name}
+                    >
                       {column.name}
                     </span>
                     <span
@@ -132,7 +134,9 @@
                 {/each}
               </ul>
             {:else}
-              <p class="px-4 py-2 text-fg-secondary text-xs">No columns found</p>
+              <p class="px-4 py-2 text-fg-secondary text-xs">
+                No columns found
+              </p>
             {/if}
           </div>
         {/if}
@@ -143,7 +147,8 @@
           <p>Query results</p>
         </svelte:fragment>
         <svelte:fragment slot="top-right">
-          {formatInteger(rowCount)} {rowCount === 1 ? "row" : "rows"}
+          {formatInteger(rowCount)}
+          {rowCount === 1 ? "row" : "rows"}
         </svelte:fragment>
         <svelte:fragment slot="bottom-left">
           {#if executionTimeMs !== null}
@@ -151,9 +156,8 @@
           {/if}
         </svelte:fragment>
         <svelte:fragment slot="bottom-right">
-          {formatInteger(columnCount)} {columnCount === 1
-            ? "column"
-            : "columns"}
+          {formatInteger(columnCount)}
+          {columnCount === 1 ? "column" : "columns"}
         </svelte:fragment>
       </InspectorHeaderGrid>
 

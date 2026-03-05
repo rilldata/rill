@@ -30,7 +30,12 @@
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
 
-  const { allowContextMenu, allowNavigateToTable, allowShowSchema, onInsertTable } = store;
+  const {
+    allowContextMenu,
+    allowNavigateToTable,
+    allowShowSchema,
+    onInsertTable,
+  } = store;
 
   $: ({ instanceId: runtimeInstanceId } = $runtime);
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(

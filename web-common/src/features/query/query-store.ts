@@ -77,9 +77,7 @@ function hydrateCell(p: PersistedCell): CellState {
     limit: p.limit,
     collapsed: p.collapsed,
     isExecuting: false,
-    result: hasSchema
-      ? { schema: p.resultSchema!, data: [] }
-      : null,
+    result: hasSchema ? { schema: p.resultSchema!, data: [] } : null,
     error: null,
     executionTimeMs: p.executionTimeMs ?? null,
     lastRowCount: p.resultRowCount ?? null,
@@ -266,15 +264,12 @@ function createNotebookStore(defaultConnector: string) {
     ($c) => $c?.result?.schema ?? null,
   );
   const focusedData = derived(focusedCell, ($c) => $c?.result?.data ?? null);
-  const focusedRowCount = derived(
-    focusedCell,
-    ($c) => {
-      // Use live data length if available; fall back to persisted row count
-      const liveCount = $c?.result?.data?.length;
-      if (liveCount !== undefined && liveCount > 0) return liveCount;
-      return $c?.lastRowCount ?? 0;
-    },
-  );
+  const focusedRowCount = derived(focusedCell, ($c) => {
+    // Use live data length if available; fall back to persisted row count
+    const liveCount = $c?.result?.data?.length;
+    if (liveCount !== undefined && liveCount > 0) return liveCount;
+    return $c?.lastRowCount ?? 0;
+  });
   const focusedExecutionTimeMs = derived(
     focusedCell,
     ($c) => $c?.executionTimeMs ?? null,
