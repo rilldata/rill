@@ -47,7 +47,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import { RefreshCw } from "lucide-svelte";
+  import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
 
   export let resources: V1Resource[] | undefined;
@@ -187,10 +187,7 @@
   $: isSprawlMode = (() => {
     if (selectedGroupId) return false; // specific resource selected
     const rawSeeds = seeds ?? [];
-    return (
-      rawSeeds.length === 1 &&
-      rawSeeds[0]?.toLowerCase() === "dashboards"
-    );
+    return rawSeeds.length === 1 && rawSeeds[0]?.toLowerCase() === "dashboards";
   })();
 
   // Dashboard trees for sprawl mode (partitioned by dashboard roots)
@@ -218,9 +215,19 @@
   $: filteredResourceGroups = (() => {
     let groups = resourceGroups;
 
-    // Filter by search query (matches resource names)
+    // Filter by external search query (matches resource names)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
+      groups = groups.filter((group) =>
+        group.resources.some((r) =>
+          r.meta?.name?.name?.toLowerCase().includes(query),
+        ),
+      );
+    }
+
+    // Filter by toolbar search (matches resource names within trees)
+    if (treeSearchQuery.trim()) {
+      const query = treeSearchQuery.toLowerCase().trim();
       groups = groups.filter((group) =>
         group.resources.some((r) =>
           r.meta?.name?.name?.toLowerCase().includes(query),
@@ -231,7 +238,9 @@
     // Filter entire trees by status (show tree if any resource matches)
     if (statusFilter.length > 0) {
       groups = groups.filter((group) =>
-        group.resources.some((r) => statusFilter.includes(getResourceStatus(r))),
+        group.resources.some((r) =>
+          statusFilter.includes(getResourceStatus(r)),
+        ),
       );
     }
 
@@ -270,7 +279,7 @@
   type ResourceDropdownEntry = {
     name: string;
     kind: ResourceKind;
-    status: "ok" | "pending" | "errored";
+    status: "ok" | "pending" | "warning" | "errored";
   };
   type ResourceDropdownSection = {
     kind: ResourceKind;
@@ -278,8 +287,13 @@
     entries: ResourceDropdownEntry[];
   };
 
-  function getResourceStatus(r: V1Resource): "ok" | "pending" | "errored" {
-    if (r.meta?.reconcileError) return "errored";
+  const TEST_FAILURE_MARKER = "tests failed:";
+  function getResourceStatus(
+    r: V1Resource,
+  ): "ok" | "pending" | "warning" | "errored" {
+    const error = r.meta?.reconcileError ?? "";
+    if (error && !error.includes(TEST_FAILURE_MARKER)) return "errored";
+    if (error && error.includes(TEST_FAILURE_MARKER)) return "warning";
     if (
       r.meta?.reconcileStatus &&
       r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE"
@@ -425,15 +439,8 @@
         ) ?? null)
       : null;
 
-  // Display label for the breadcrumb trigger
   $: selectedGroupIsConnector =
     effectiveSelectedGroupId?.includes("Connector") ?? false;
-  // Show "All Resources" for sprawl mode or when a connector is auto-selected
-  $: breadcrumbLabel = isSprawlMode
-    ? "All Resources"
-    : selectedGroupIsConnector && !resolvedControlledId
-      ? "All Resources"
-      : (selectedGroup?.label ?? "Select resource");
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
   let seedTransitionLoading = false;
@@ -754,43 +761,41 @@
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
     <div class="graph-toolbar-bar" class:nav-collapsed={!$navigationOpen}>
-      <div class="breadcrumb">
-        <DropdownMenu.Root bind:open={resourceDropdownOpen}>
-          <DropdownMenu.Trigger
-            class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {resourceDropdownOpen
-              ? 'bg-gray-200'
-              : 'hover:bg-surface-hover'} px-2 py-1"
-          >
-            <span class="text-fg-secondary font-medium truncate">
-              {breadcrumbLabel}
-            </span>
-            {#if resourceDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start" class="w-96">
-            <div class="tree-filter-row">
-              <input
-                class="tree-search-input"
-                type="text"
-                placeholder="Search..."
-                bind:value={treeSearchQuery}
-                on:keydown|stopPropagation
-              />
-            </div>
+      <!-- Search combo: input + resource dropdown -->
+      <div
+        class="search-combo"
+        on:focusin={() => (resourceDropdownOpen = true)}
+        on:focusout={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            resourceDropdownOpen = false;
+          }
+        }}
+      >
+        <Search
+          bind:value={treeSearchQuery}
+          placeholder="Search"
+          large
+          autofocus={false}
+          showBorderOnFocus={false}
+          retainValueOnMount
+        />
+        {#if resourceDropdownOpen}
+          <div class="search-combo-dropdown">
             <div class="tree-dropdown-list">
-              <DropdownMenu.Item
-                class="flex items-center gap-x-2 cursor-pointer {selectedGroupIsConnector
+              <button
+                class="combo-item {selectedGroupIsConnector
                   ? 'font-semibold'
                   : ''}"
-                on:click={handleSelectAll}
+                on:mousedown|preventDefault
+                on:click={() => {
+                  handleSelectAll();
+                  resourceDropdownOpen = false;
+                }}
               >
                 <span class="flex-1 truncate text-xs">All Resources</span>
-              </DropdownMenu.Item>
+              </button>
               {#each filteredResourceSections as section}
-                <DropdownMenu.Separator />
+                <div class="combo-separator"></div>
                 <div class="section-header">
                   <ResourceTypeBadge kind={section.kind} />
                   <span class="text-[10px] text-fg-muted"
@@ -799,12 +804,15 @@
                 </div>
                 {#each section.entries as entry}
                   {@const entryId = `${entry.kind}:${entry.name}`}
-                  <DropdownMenu.Item
-                    class="flex items-center gap-x-2 cursor-pointer {effectiveSelectedGroupId ===
-                    entryId
+                  <button
+                    class="combo-item {effectiveSelectedGroupId === entryId
                       ? 'font-semibold'
                       : ''}"
-                    on:click={() => handleResourceSelect(entry)}
+                    on:mousedown|preventDefault
+                    on:click={() => {
+                      handleResourceSelect(entry);
+                      resourceDropdownOpen = false;
+                    }}
                   >
                     <svelte:component
                       this={resourceIconMapping[entry.kind]}
@@ -814,7 +822,7 @@
                       {entry.name}
                     </span>
                     <span class="status-dot {entry.status}"></span>
-                  </DropdownMenu.Item>
+                  </button>
                 {/each}
               {/each}
               {#if filteredResourceSections.length === 0}
@@ -823,62 +831,70 @@
                 </div>
               {/if}
             </div>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+          </div>
+        {/if}
       </div>
 
-      <div class="toolbar-right">
-        {#if hasActiveFilters}
-          <button class="clear-link" on:click={handleClearFilters}
-            >Clear Filter</button
+      {#if statusFilterOptions.length > 0}
+        <DropdownMenu.Root bind:open={statusDropdownOpen}>
+          <DropdownMenu.Trigger
+            class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+              ? 'bg-gray-200'
+              : 'hover:bg-surface-hover'} px-2 py-1"
           >
-        {/if}
-        {#if statusFilterOptions.length > 0}
-          <DropdownMenu.Root bind:open={statusDropdownOpen}>
-            <DropdownMenu.Trigger
-              class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
-                ? 'bg-gray-200'
-                : 'hover:bg-surface-hover'} px-2 py-1"
-            >
-              <span class="text-fg-secondary font-medium">
-                {#if statusFilter.length === 0}
-                  All statuses
-                {:else if statusFilter.length === 1}
-                  {statusFilterOptions.find((o) => o.value === statusFilter[0])
-                    ?.label ?? statusFilter[0]}
-                {:else}
-                  {statusFilterOptions.find((o) => o.value === statusFilter[0])
-                    ?.label}, +{statusFilter.length - 1} other{statusFilter.length >
-                  2
-                    ? "s"
-                    : ""}
-                {/if}
-              </span>
-              {#if statusDropdownOpen}
-                <CaretUpIcon size="12px" />
+            <span class="text-fg-secondary font-medium">
+              {#if statusFilter.length === 0}
+                All statuses
+              {:else if statusFilter.length === 1}
+                {statusFilterOptions.find((o) => o.value === statusFilter[0])
+                  ?.label ?? statusFilter[0]}
               {:else}
-                <CaretDownIcon size="12px" />
+                {statusFilterOptions.find((o) => o.value === statusFilter[0])
+                  ?.label}, +{statusFilter.length - 1} other{statusFilter.length >
+                2
+                  ? "s"
+                  : ""}
               {/if}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end" class="w-48">
-              {#each statusFilterOptions as opt}
-                <DropdownMenu.CheckboxItem
-                  checked={statusFilter.includes(opt.value)}
-                  onCheckedChange={() => onStatusToggle?.(opt.value)}
-                >
-                  {opt.label}
-                </DropdownMenu.CheckboxItem>
-              {/each}
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        {/if}
-        {#if onRefreshAll}
-          <Button type="secondary" class="min-h-9" onClick={onRefreshAll}>
-            <RefreshCw size="14" />
-            <span>Refresh all sources and models</span>
-          </Button>
-        {/if}
-      </div>
+            </span>
+            {#if statusDropdownOpen}
+              <CaretUpIcon size="12px" />
+            {:else}
+              <CaretDownIcon size="12px" />
+            {/if}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" class="w-48">
+            {#each statusFilterOptions as opt}
+              <DropdownMenu.CheckboxItem
+                checked={statusFilter.includes(opt.value)}
+                onCheckedChange={() => onStatusToggle?.(opt.value)}
+              >
+                {opt.label}
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      {/if}
+
+      {#if hasActiveFilters}
+        <button
+          class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
+          on:click={handleClearFilters}
+        >
+          Clear
+        </button>
+      {/if}
+
+      {#if onRefreshAll}
+        <Button
+          type="secondary"
+          large
+          class="shrink-0 whitespace-nowrap"
+          onClick={onRefreshAll}
+        >
+          <span class="hidden lg:inline">Refresh all sources and models</span>
+          <span class="lg:hidden">Refresh all</span>
+        </Button>
+      {/if}
     </div>
     <div class="sidebar-main">
       {#if error}
@@ -1055,7 +1071,7 @@
   }
 
   .graph-toolbar-bar {
-    @apply flex items-center px-4 min-h-[3rem] flex-none gap-x-2 gap-y-1 flex-wrap;
+    @apply flex flex-row items-center px-4 min-h-[3rem] flex-none gap-x-4;
     transition: padding-left 300ms ease-in-out;
   }
 
@@ -1063,41 +1079,26 @@
     padding-left: 44px;
   }
 
-  .breadcrumb {
-    @apply flex items-center gap-x-1.5 min-w-0;
+  .search-combo {
+    @apply relative flex-1 min-w-0 min-h-9;
   }
 
-  .toolbar-right {
-    @apply flex items-center gap-x-2 flex-wrap ml-auto;
+  .search-combo-dropdown {
+    @apply absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover shadow-md;
+    min-width: 24rem;
   }
 
-  .clear-link {
-    @apply text-xs text-primary-500 cursor-pointer;
+  .combo-item {
+    @apply flex w-full items-center gap-x-2 cursor-pointer rounded-sm py-1.5 px-2 text-xs text-left;
+    @apply hover:bg-popover-accent;
   }
 
-  .clear-link:hover {
-    @apply text-primary-600;
-  }
-
-  .tree-filter-row {
-    @apply flex items-center gap-1.5 px-2 pb-1.5 pt-1 border-b;
-  }
-
-  .tree-search-input {
-    @apply flex-1 min-w-0 text-xs px-2 py-1 rounded border bg-transparent text-fg-primary;
-    @apply outline-none;
-  }
-
-  .tree-search-input::placeholder {
-    @apply text-fg-muted;
-  }
-
-  .tree-search-input:focus {
-    @apply border-primary-300 ring-1 ring-primary-300;
+  .combo-separator {
+    @apply my-1 h-px bg-border;
   }
 
   .tree-dropdown-list {
-    @apply max-h-72 overflow-y-auto overflow-x-hidden;
+    @apply max-h-72 overflow-y-auto overflow-x-hidden p-1;
   }
 
   .section-header {
@@ -1121,6 +1122,10 @@
   .status-dot.pending {
     @apply rounded-full border border-yellow-500;
     background: transparent;
+  }
+
+  .status-dot.warning {
+    @apply rounded-full bg-yellow-500;
   }
 
   .status-dot.errored {

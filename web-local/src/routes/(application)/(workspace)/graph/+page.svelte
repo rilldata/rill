@@ -8,8 +8,7 @@
     tokenForSeedString,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
   import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
   import {
     createRuntimeServiceCreateTrigger,
     getRuntimeServiceListResourcesQueryKey,
@@ -71,6 +70,7 @@
   const statusOptions: { label: string; value: ResourceStatusFilterValue }[] = [
     { label: "OK", value: "ok" },
     { label: "Pending", value: "pending" },
+    { label: "Warning", value: "warning" },
     { label: "Errored", value: "errored" },
   ];
 
@@ -140,33 +140,10 @@
   />
 </div>
 
-<AlertDialog.Root bind:open={isConfirmDialogOpen}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Refresh all sources and models?</AlertDialog.Title>
-      <AlertDialog.Description>
-        <div class="flex flex-col gap-y-2 mt-1">
-          <p>This will refresh all project sources and models.</p>
-          <p>
-            <span class="font-medium">Note:</span> To refresh a single resource,
-            click the '...' button on a node and select the refresh option.
-          </p>
-        </div>
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <Button
-        type="tertiary"
-        onClick={() => {
-          isConfirmDialogOpen = false;
-        }}>Cancel</Button
-      >
-      <Button type="primary" onClick={refreshAllSourcesAndModels}
-        >Yes, refresh</Button
-      >
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
+<RefreshConfirmDialog
+  bind:open={isConfirmDialogOpen}
+  onRefresh={refreshAllSourcesAndModels}
+/>
 
 <style lang="postcss">
   .graph-wrapper {

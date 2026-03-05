@@ -108,7 +108,12 @@ export interface ResourceNodeData extends Record<string, unknown> {
  * Filter values for resource status in the graph view.
  * Empty array means "all" (no filter applied).
  * - "pending": Resources with non-idle reconcile status
+ * - "warning": Resources with test-only errors (not full reconcile errors)
  * - "errored": Resources with reconcile errors
  */
-export type ResourceStatusFilterValue = "ok" | "pending" | "errored";
+export type ResourceStatusFilterValue =
+  | "ok"
+  | "pending"
+  | "warning"
+  | "errored";
 export type ResourceStatusFilter = ResourceStatusFilterValue[];
