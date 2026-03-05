@@ -107,7 +107,7 @@ function createDefaultCell(connector: string): CellState {
 }
 
 /** Extracts a human-readable message from an API or runtime error */
-function extractErrorMessage(err: unknown): string {
+export function extractErrorMessage(err: unknown): string {
   if (err && typeof err === "object") {
     // Axios-style error with response.data.message
     if ("response" in err) {
@@ -147,9 +147,9 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     focusedCellId: initialCells[0]?.id ?? null,
   });
 
-  // Only persist when we have a real connector (skip the throwaway initial store)
+  // Only persist when we have a real connector and project ID
   let unsubPersist: (() => void) | undefined;
-  if (defaultConnector) {
+  if (defaultConnector && projectId) {
     const debouncedSave = debounce(
       (cells: CellState[]) => saveToLocalStorage(projectId, cells),
       500,

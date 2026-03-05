@@ -9,6 +9,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
+  import { extractErrorMessage } from "./query-store";
   import { prettyPrintType } from "./query-utils";
 
   export let filePath: string;
@@ -104,7 +105,7 @@
               <p class="px-4 py-2 text-fg-secondary text-xs">Loading...</p>
             {:else if tableError}
               <p class="px-4 py-2 text-red-500 text-xs">
-                {tableError?.response?.data?.message || tableError?.message}
+                {extractErrorMessage(tableError)}
               </p>
             {:else if tableColumns.length > 0}
               <ul class="flex flex-col">

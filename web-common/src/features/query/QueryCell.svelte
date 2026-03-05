@@ -66,8 +66,8 @@
     if (val === "") {
       notebook.setCellLimit(cellId, undefined);
     } else {
-      const parsed = parseInt(val, 10);
-      if (!isNaN(parsed) && parsed > 0) {
+      const parsed = Number(val);
+      if (Number.isFinite(parsed) && parsed > 0) {
         notebook.setCellLimit(cellId, parsed);
       }
     }
