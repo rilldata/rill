@@ -388,10 +388,6 @@
     @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
   }
 
-  .node-status-icon {
-    @apply flex-shrink-0 flex items-center;
-  }
-
   .actions-trigger {
     @apply flex-shrink-0 ml-auto;
   }

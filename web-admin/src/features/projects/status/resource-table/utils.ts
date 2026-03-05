@@ -1,24 +1,8 @@
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { isResourceReconciling } from "../../../../lib/refetch-interval-store";
+import { getResourceStatus } from "@rilldata/web-common/features/resource-graph/shared/resource-status";
 
-export type ResourceStatus = "ok" | "pending" | "warning" | "errored";
-
-const TEST_FAILURE_MARKER = "tests failed:";
-
-/**
- * Determines the display status of a resource based on its reconcile state.
- * - "errored": has a reconcile error (excluding test-only failures)
- * - "warning": has test-only failures
- * - "pending": reconcile is PENDING or RUNNING
- * - "ok": otherwise (IDLE, UNSPECIFIED, etc.)
- */
-export function getResourceStatus(r: V1Resource): ResourceStatus {
-  const error = r.meta?.reconcileError ?? "";
-  if (error && !error.includes(TEST_FAILURE_MARKER)) return "errored";
-  if (error && error.includes(TEST_FAILURE_MARKER)) return "warning";
-  if (isResourceReconciling(r)) return "pending";
-  return "ok";
-}
+export type { ResourceStatusFilterValue as ResourceStatus } from "@rilldata/web-common/features/resource-graph/shared/types";
+export { getResourceStatus };
 
 /**
  * Filters resources by kind, search text, and status.

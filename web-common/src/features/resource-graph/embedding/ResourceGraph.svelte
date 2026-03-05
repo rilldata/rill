@@ -43,6 +43,7 @@
     ResourceStatusFilter,
     ResourceStatusFilterValue,
   } from "../shared/types";
+  import { getResourceStatus } from "../shared/resource-status";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -304,21 +305,6 @@
     label: string;
     entries: ResourceDropdownEntry[];
   };
-
-  const TEST_FAILURE_MARKER = "tests failed:";
-  function getResourceStatus(
-    r: V1Resource,
-  ): "ok" | "pending" | "warning" | "errored" {
-    const error = r.meta?.reconcileError ?? "";
-    if (error && !error.includes(TEST_FAILURE_MARKER)) return "errored";
-    if (error && error.includes(TEST_FAILURE_MARKER)) return "warning";
-    if (
-      r.meta?.reconcileStatus &&
-      r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE"
-    )
-      return "pending";
-    return "ok";
-  }
 
   $: allResourceSections = (function (): ResourceDropdownSection[] {
     const grouped = new Map<ResourceKind, ResourceDropdownEntry[]>();
@@ -787,11 +773,12 @@
       >
         <Search
           bind:value={treeSearchQuery}
-          placeholder="Search"
+          placeholder="Search all resources"
           large
           autofocus={false}
           showBorderOnFocus={false}
           retainValueOnMount
+          onSubmit={() => (resourceDropdownOpen = false)}
         />
         {#if resourceDropdownOpen}
           <div class="search-combo-dropdown">
@@ -802,6 +789,7 @@
                   : ''}"
                 on:mousedown|preventDefault
                 on:click={() => {
+                  treeSearchQuery = "";
                   handleSelectAll();
                   resourceDropdownOpen = false;
                 }}
@@ -824,6 +812,7 @@
                       : ''}"
                     on:mousedown|preventDefault
                     on:click={() => {
+                      treeSearchQuery = entry.name;
                       handleResourceSelect(entry);
                       resourceDropdownOpen = false;
                     }}
