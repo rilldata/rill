@@ -5,7 +5,7 @@ import type {
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { Query } from "@tanstack/svelte-query";
 
-export const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
+export const INITIAL_REFETCH_INTERVAL = 500; // Start at 500ms for quick feedback
 export const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
 export const BACKOFF_FACTOR = 1.5;
 
