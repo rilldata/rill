@@ -5,13 +5,20 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/redshift",
   "driver": "redshift",
   "olap": "duckdb",
-  "tags": ["redshift", "aws", "warehouse", "duckdb", "source", "connector"],
+  "icon": "AmazonRedshift",
+  "small_icon": "RedshiftIcon",
+  "tags": [
+    "redshift",
+    "aws",
+    "warehouse",
+    "duckdb",
+    "source",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "warehouse",
-    "x-icon": "AmazonRedshift",
-    "x-small-icon": "RedshiftIcon",
     "properties": {
       "aws_access_key_id": {
         "type": "string",
@@ -75,7 +82,13 @@
         "x-step": "explorer"
       }
     },
-    "required": ["aws_access_key_id", "aws_secret_access_key", "database", "sql", "name"]
+    "required": [
+      "aws_access_key_id",
+      "aws_secret_access_key",
+      "database",
+      "sql",
+      "name"
+    ]
   },
   "files": [
     {

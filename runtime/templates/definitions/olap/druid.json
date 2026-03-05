@@ -4,25 +4,44 @@
   "description": "Connect to an Apache Druid OLAP engine",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/druid",
   "driver": "druid",
-  "tags": ["druid", "olap", "analytics", "connector"],
+  "icon": "ApacheDruid",
+  "small_icon": "ApacheDruidIcon",
+  "tags": [
+    "druid",
+    "olap",
+    "analytics",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "olap",
-    "x-icon": "ApacheDruid",
-    "x-small-icon": "ApacheDruidIcon",
     "properties": {
       "connection_mode": {
         "type": "string",
         "title": "Connection method",
-        "enum": ["parameters", "dsn"],
+        "enum": [
+          "parameters",
+          "dsn"
+        ],
         "default": "parameters",
         "x-display": "tabs",
-        "x-enum-labels": ["Enter parameters", "Enter connection string"],
+        "x-enum-labels": [
+          "Enter parameters",
+          "Enter connection string"
+        ],
         "x-ui-only": true,
         "x-tab-group": {
-          "parameters": ["host", "port", "username", "password", "ssl"],
-          "dsn": ["dsn"]
+          "parameters": [
+            "host",
+            "port",
+            "username",
+            "password",
+            "ssl"
+          ],
+          "dsn": [
+            "dsn"
+          ]
         },
         "x-step": "connector"
       },
@@ -47,7 +66,9 @@
         "title": "Port",
         "description": "Druid port",
         "pattern": "^\\d+$",
-        "errorMessage": { "pattern": "Port must be a number" },
+        "errorMessage": {
+          "pattern": "Port must be a number"
+        },
         "x-placeholder": "8888",
         "x-step": "connector"
       },
@@ -77,8 +98,19 @@
     },
     "required": [],
     "oneOf": [
-      { "title": "Use connection string", "required": ["dsn"] },
-      { "title": "Use individual parameters", "required": ["host", "ssl"] }
+      {
+        "title": "Use connection string",
+        "required": [
+          "dsn"
+        ]
+      },
+      {
+        "title": "Use individual parameters",
+        "required": [
+          "host",
+          "ssl"
+        ]
+      }
     ]
   },
   "files": [

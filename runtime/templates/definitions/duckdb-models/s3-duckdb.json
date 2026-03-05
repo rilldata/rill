@@ -5,29 +5,48 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
   "driver": "s3",
   "olap": "duckdb",
-  "tags": ["s3", "aws", "object-storage", "duckdb", "source", "connector"],
+  "icon": "AmazonS3",
+  "small_icon": "AmazonS3Icon",
+  "tags": [
+    "s3",
+    "aws",
+    "object-storage",
+    "duckdb",
+    "source",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "objectStore",
-    "x-icon": "AmazonS3",
-    "x-small-icon": "AmazonS3Icon",
     "properties": {
       "auth_method": {
         "type": "string",
         "title": "Authentication method",
         "description": "Choose how to authenticate to S3",
-        "enum": ["access_keys", "public"],
+        "enum": [
+          "access_keys",
+          "public"
+        ],
         "default": "access_keys",
         "x-display": "radio",
-        "x-enum-labels": ["Access keys", "Public"],
+        "x-enum-labels": [
+          "Access keys",
+          "Public"
+        ],
         "x-enum-descriptions": [
           "Use AWS access key ID and secret access key.",
           "Access publicly readable buckets without credentials."
         ],
         "x-ui-only": true,
         "x-grouped-fields": {
-          "access_keys": ["aws_access_key_id", "aws_secret_access_key", "region", "endpoint", "aws_role_arn"],
+          "access_keys": [
+            "aws_access_key_id",
+            "aws_secret_access_key",
+            "region",
+            "endpoint",
+            "aws_role_arn"
+          ],
           "public": []
         },
         "x-step": "connector"
@@ -40,7 +59,9 @@
         "x-secret": true,
         "x-env-var": "AWS_ACCESS_KEY_ID",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "access_keys" }
+        "x-visible-if": {
+          "auth_method": "access_keys"
+        }
       },
       "aws_secret_access_key": {
         "type": "string",
@@ -50,7 +71,9 @@
         "x-secret": true,
         "x-env-var": "AWS_SECRET_ACCESS_KEY",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "access_keys" }
+        "x-visible-if": {
+          "auth_method": "access_keys"
+        }
       },
       "region": {
         "type": "string",
@@ -58,7 +81,9 @@
         "description": "Rill uses your default AWS region unless you set it explicitly.",
         "x-placeholder": "us-east-1",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "access_keys" }
+        "x-visible-if": {
+          "auth_method": "access_keys"
+        }
       },
       "endpoint": {
         "type": "string",
@@ -66,7 +91,9 @@
         "description": "Override the S3 endpoint (for S3-compatible services like R2/MinIO).",
         "x-placeholder": "https://s3.example.com",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "access_keys" }
+        "x-visible-if": {
+          "auth_method": "access_keys"
+        }
       },
       "aws_role_arn": {
         "type": "string",
@@ -76,7 +103,9 @@
         "x-secret": true,
         "x-env-var": "AWS_ROLE_ARN",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "access_keys" }
+        "x-visible-if": {
+          "auth_method": "access_keys"
+        }
       },
       "path": {
         "type": "string",
@@ -98,11 +127,25 @@
         "x-step": "source"
       }
     },
-    "required": ["path", "name"],
+    "required": [
+      "path",
+      "name"
+    ],
     "allOf": [
       {
-        "if": { "properties": { "auth_method": { "const": "access_keys" } } },
-        "then": { "required": ["aws_access_key_id", "aws_secret_access_key"] }
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "access_keys"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "aws_access_key_id",
+            "aws_secret_access_key"
+          ]
+        }
       }
     ]
   },

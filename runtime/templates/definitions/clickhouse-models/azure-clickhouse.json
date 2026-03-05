@@ -5,13 +5,19 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/azure",
   "driver": "azure",
   "olap": "clickhouse",
-  "tags": ["azure", "microsoft", "object-storage", "clickhouse", "source"],
+  "icon": "MicrosoftAzureBlobStorage",
+  "small_icon": "MicrosoftAzureBlobStorageIcon",
+  "tags": [
+    "azure",
+    "microsoft",
+    "object-storage",
+    "clickhouse",
+    "source"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "source_only",
-    "x-icon": "MicrosoftAzureBlobStorage",
-    "x-small-icon": "MicrosoftAzureBlobStorageIcon",
     "properties": {
       "azure_storage_account": {
         "type": "string",
@@ -32,7 +38,9 @@
         "title": "Azure URI",
         "description": "Path to your Azure container and blob",
         "pattern": "^azure://[^/]+(/.*)?$",
-        "errorMessage": { "pattern": "Must be an Azure URI (e.g. azure://container/path)" },
+        "errorMessage": {
+          "pattern": "Must be an Azure URI (e.g. azure://container/path)"
+        },
         "x-placeholder": "azure://container/path"
       },
       "name": {
@@ -43,7 +51,12 @@
         "x-placeholder": "my_model"
       }
     },
-    "required": ["azure_storage_account", "azure_storage_key", "path", "name"]
+    "required": [
+      "azure_storage_account",
+      "azure_storage_key",
+      "path",
+      "name"
+    ]
   },
   "files": [
     {

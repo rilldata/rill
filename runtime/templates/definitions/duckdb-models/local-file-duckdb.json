@@ -5,13 +5,19 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/duckdb",
   "driver": "local_file",
   "olap": "duckdb",
-  "tags": ["local-file", "file", "file-store", "duckdb", "source"],
+  "icon": "LocalFile",
+  "small_icon": "LocalFileIcon",
+  "tags": [
+    "local-file",
+    "file",
+    "file-store",
+    "duckdb",
+    "source"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "fileStore",
-    "x-icon": "LocalFile",
-    "x-small-icon": "LocalFileIcon",
     "properties": {
       "path": {
         "type": "string",
@@ -28,7 +34,10 @@
         "x-step": "explorer"
       }
     },
-    "required": ["path", "name"]
+    "required": [
+      "path",
+      "name"
+    ]
   },
   "files": [
     {

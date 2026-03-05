@@ -4,30 +4,51 @@
   "description": "Connect to a ClickHouse OLAP engine",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/clickhouse",
   "driver": "clickhouse",
-  "tags": ["clickhouse", "olap", "analytics", "connector"],
+  "icon": "ClickHouse",
+  "small_icon": "ClickHouseIcon",
+  "tags": [
+    "clickhouse",
+    "olap",
+    "analytics",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "olap",
-    "x-icon": "ClickHouse",
-    "x-small-icon": "ClickHouseIcon",
     "x-form-height": "tall",
     "x-form-width": "wide",
     "x-button-labels": {
       "deployment_type": {
-        "playground": { "idle": "Connect", "loading": "Connecting..." },
-        "rill-managed": { "idle": "Connect", "loading": "Connecting..." }
+        "playground": {
+          "idle": "Connect",
+          "loading": "Connecting..."
+        },
+        "rill-managed": {
+          "idle": "Connect",
+          "loading": "Connecting..."
+        }
       }
     },
     "properties": {
       "deployment_type": {
         "type": "string",
         "title": "Connection type",
-        "enum": ["cloud", "playground", "self-managed", "rill-managed"],
+        "enum": [
+          "cloud",
+          "playground",
+          "self-managed",
+          "rill-managed"
+        ],
         "default": "cloud",
         "x-display": "select",
         "x-select-style": "rich",
-        "x-enum-labels": ["ClickHouse Cloud", "ClickHouse Playground", "Self Managed", "Rill-Managed"],
+        "x-enum-labels": [
+          "ClickHouse Cloud",
+          "ClickHouse Playground",
+          "Self Managed",
+          "Rill-Managed"
+        ],
         "x-enum-descriptions": [
           "Connect to your ClickHouse Cloud instance",
           "Free public instance for testing and demos",
@@ -36,25 +57,54 @@
         ],
         "x-ui-only": true,
         "x-grouped-fields": {
-          "cloud": ["connection_mode"],
-          "playground": ["playground_info"],
-          "self-managed": ["connection_mode"],
-          "rill-managed": ["managed"]
+          "cloud": [
+            "connection_mode"
+          ],
+          "playground": [
+            "playground_info"
+          ],
+          "self-managed": [
+            "connection_mode"
+          ],
+          "rill-managed": [
+            "managed"
+          ]
         },
         "x-step": "connector"
       },
       "connection_mode": {
         "type": "string",
-        "enum": ["parameters", "dsn"],
+        "enum": [
+          "parameters",
+          "dsn"
+        ],
         "default": "parameters",
         "x-display": "tabs",
-        "x-enum-labels": ["Enter parameters", "Enter connection string"],
+        "x-enum-labels": [
+          "Enter parameters",
+          "Enter connection string"
+        ],
         "x-ui-only": true,
         "x-tab-group": {
-          "parameters": ["host", "port", "username", "password", "database", "cluster", "ssl"],
-          "dsn": ["dsn"]
+          "parameters": [
+            "host",
+            "port",
+            "username",
+            "password",
+            "database",
+            "cluster",
+            "ssl"
+          ],
+          "dsn": [
+            "dsn"
+          ]
         },
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "dsn": {
@@ -64,7 +114,12 @@
         "x-placeholder": "clickhouse://localhost:9000?username=default&password=password",
         "x-secret": true,
         "x-env-var": "CLICKHOUSE_DSN",
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "managed": {
@@ -73,7 +128,9 @@
         "description": "This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required.",
         "default": true,
         "x-informational": true,
-        "x-visible-if": { "deployment_type": "rill-managed" },
+        "x-visible-if": {
+          "deployment_type": "rill-managed"
+        },
         "x-step": "connector"
       },
       "playground_info": {
@@ -83,7 +140,9 @@
         "default": true,
         "x-informational": true,
         "x-ui-only": true,
-        "x-visible-if": { "deployment_type": "playground" },
+        "x-visible-if": {
+          "deployment_type": "playground"
+        },
         "x-step": "connector"
       },
       "host": {
@@ -92,7 +151,12 @@
         "description": "Hostname or IP address of the ClickHouse server",
         "x-placeholder": "your.clickhouse.server.com",
         "x-hint": "Your ClickHouse hostname (e.g., your-server.com)",
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "port": {
@@ -100,10 +164,17 @@
         "title": "Port",
         "description": "Port number of the ClickHouse server (8443 HTTPS, 9440 Native TLS, 8123 HTTP, 9000 Native TCP)",
         "pattern": "^\\d+$",
-        "errorMessage": { "pattern": "Port must be a number" },
+        "errorMessage": {
+          "pattern": "Port must be a number"
+        },
         "default": "8443",
         "x-placeholder": "8443",
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "username": {
@@ -112,7 +183,12 @@
         "description": "Username to connect to the ClickHouse server",
         "default": "default",
         "x-placeholder": "default",
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "password": {
@@ -122,7 +198,12 @@
         "x-placeholder": "Database password",
         "x-secret": true,
         "x-env-var": "CLICKHOUSE_PASSWORD",
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "database": {
@@ -131,7 +212,12 @@
         "description": "Name of the ClickHouse database to connect to",
         "default": "default",
         "x-placeholder": "default",
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "cluster": {
@@ -139,7 +225,12 @@
         "title": "Cluster",
         "description": "Cluster name. If set, models are created as distributed tables.",
         "x-placeholder": "Cluster name",
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       },
       "ssl": {
@@ -147,44 +238,139 @@
         "title": "SSL",
         "description": "Use SSL to connect to the ClickHouse server",
         "default": true,
-        "x-visible-if": { "deployment_type": ["cloud", "self-managed"] },
+        "x-visible-if": {
+          "deployment_type": [
+            "cloud",
+            "self-managed"
+          ]
+        },
         "x-step": "connector"
       }
     },
-    "required": ["deployment_type"],
+    "required": [
+      "deployment_type"
+    ],
     "allOf": [
       {
-        "if": { "properties": { "deployment_type": { "const": "rill-managed" } } },
-        "then": { "required": ["managed"], "properties": { "managed": { "const": true } } }
-      },
-      {
-        "if": { "properties": { "deployment_type": { "const": "playground" } } },
-        "then": {
+        "if": {
           "properties": {
-            "host": { "const": "play.clickhouse.com" },
-            "port": { "const": "9440" },
-            "username": { "const": "play" },
-            "password": { "const": "" },
-            "database": { "const": "default" },
-            "ssl": { "const": true }
+            "deployment_type": {
+              "const": "rill-managed"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "managed"
+          ],
+          "properties": {
+            "managed": {
+              "const": true
+            }
           }
         }
       },
       {
-        "if": { "properties": { "deployment_type": { "const": "cloud" }, "connection_mode": { "const": "parameters" } } },
-        "then": { "required": ["host", "username", "port"] }
+        "if": {
+          "properties": {
+            "deployment_type": {
+              "const": "playground"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "host": {
+              "const": "play.clickhouse.com"
+            },
+            "port": {
+              "const": "9440"
+            },
+            "username": {
+              "const": "play"
+            },
+            "password": {
+              "const": ""
+            },
+            "database": {
+              "const": "default"
+            },
+            "ssl": {
+              "const": true
+            }
+          }
+        }
       },
       {
-        "if": { "properties": { "deployment_type": { "const": "cloud" }, "connection_mode": { "const": "dsn" } } },
-        "then": { "required": ["dsn"] }
+        "if": {
+          "properties": {
+            "deployment_type": {
+              "const": "cloud"
+            },
+            "connection_mode": {
+              "const": "parameters"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "host",
+            "username",
+            "port"
+          ]
+        }
       },
       {
-        "if": { "properties": { "deployment_type": { "const": "self-managed" }, "connection_mode": { "const": "parameters" } } },
-        "then": { "required": ["host", "username"] }
+        "if": {
+          "properties": {
+            "deployment_type": {
+              "const": "cloud"
+            },
+            "connection_mode": {
+              "const": "dsn"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "dsn"
+          ]
+        }
       },
       {
-        "if": { "properties": { "deployment_type": { "const": "self-managed" }, "connection_mode": { "const": "dsn" } } },
-        "then": { "required": ["dsn"] }
+        "if": {
+          "properties": {
+            "deployment_type": {
+              "const": "self-managed"
+            },
+            "connection_mode": {
+              "const": "parameters"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "host",
+            "username"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "deployment_type": {
+              "const": "self-managed"
+            },
+            "connection_mode": {
+              "const": "dsn"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "dsn"
+          ]
+        }
       }
     ]
   },

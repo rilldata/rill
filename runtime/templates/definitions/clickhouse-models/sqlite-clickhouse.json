@@ -5,13 +5,18 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/sqlite",
   "driver": "sqlite",
   "olap": "clickhouse",
-  "tags": ["sqlite", "database", "clickhouse", "source"],
+  "icon": "SQLite",
+  "small_icon": "SQLiteIcon",
+  "tags": [
+    "sqlite",
+    "database",
+    "clickhouse",
+    "source"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "source_only",
-    "x-icon": "SQLite",
-    "x-small-icon": "SQLiteIcon",
     "properties": {
       "db": {
         "type": "string",
@@ -33,7 +38,11 @@
         "x-placeholder": "my_model"
       }
     },
-    "required": ["db", "table", "name"]
+    "required": [
+      "db",
+      "table",
+      "name"
+    ]
   },
   "files": [
     {

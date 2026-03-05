@@ -44,6 +44,8 @@ func (s *Server) ListTemplates(ctx context.Context, req *runtimev1.ListTemplates
 			DocsUrl:     t.DocsURL,
 			Driver:      t.Driver,
 			Olap:        t.OLAP,
+			Icon:        t.Icon,
+			SmallIcon:   t.SmallIcon,
 			Tags:        t.Tags,
 			Files:       files,
 			JsonSchema:  schemaPb,

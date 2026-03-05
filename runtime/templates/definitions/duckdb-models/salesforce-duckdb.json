@@ -5,13 +5,20 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/salesforce",
   "driver": "salesforce",
   "olap": "duckdb",
-  "tags": ["salesforce", "crm", "warehouse", "duckdb", "source", "connector"],
+  "icon": "Salesforce",
+  "small_icon": "SalesforceIcon",
+  "tags": [
+    "salesforce",
+    "crm",
+    "warehouse",
+    "duckdb",
+    "source",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "source_only",
-    "x-icon": "Salesforce",
-    "x-small-icon": "SalesforceIcon",
     "x-form-height": "tall",
     "properties": {
       "soql": {
@@ -78,23 +85,50 @@
         "x-step": "source"
       }
     },
-    "required": ["soql", "sobject", "name"],
+    "required": [
+      "soql",
+      "sobject",
+      "name"
+    ],
     "allOf": [
       {
         "if": {
           "not": {
-            "required": ["key"],
-            "properties": { "key": { "minLength": 1 } }
+            "required": [
+              "key"
+            ],
+            "properties": {
+              "key": {
+                "minLength": 1
+              }
+            }
           }
         },
-        "then": { "required": ["username", "password", "endpoint"] }
+        "then": {
+          "required": [
+            "username",
+            "password",
+            "endpoint"
+          ]
+        }
       },
       {
         "if": {
-          "required": ["key"],
-          "properties": { "key": { "minLength": 1 } }
+          "required": [
+            "key"
+          ],
+          "properties": {
+            "key": {
+              "minLength": 1
+            }
+          }
         },
-        "then": { "required": ["client_id", "username"] }
+        "then": {
+          "required": [
+            "client_id",
+            "username"
+          ]
+        }
       }
     ]
   },

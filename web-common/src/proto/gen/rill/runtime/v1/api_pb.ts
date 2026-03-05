@@ -2816,6 +2816,20 @@ export class Template extends Message$1<Template> {
    */
   docsUrl = "";
 
+  /**
+   * Icon component name for full-size display (e.g. add-data grid).
+   *
+   * @generated from field: string icon = 10;
+   */
+  icon = "";
+
+  /**
+   * Icon component name for small display (e.g. nav, cards, dialog headers).
+   *
+   * @generated from field: string small_icon = 11;
+   */
+  smallIcon = "";
+
   constructor(data?: PartialMessage<Template>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2833,6 +2847,8 @@ export class Template extends Message$1<Template> {
     { no: 7, name: "json_schema", kind: "message", T: Struct },
     { no: 8, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "icon", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "small_icon", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Template {

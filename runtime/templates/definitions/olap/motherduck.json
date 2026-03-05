@@ -4,13 +4,18 @@
   "description": "Connect to a MotherDuck OLAP engine",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/motherduck",
   "driver": "motherduck",
-  "tags": ["motherduck", "duckdb", "olap", "connector"],
+  "icon": "MotherDuck",
+  "small_icon": "MotherDuckIcon",
+  "tags": [
+    "motherduck",
+    "duckdb",
+    "olap",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "olap",
-    "x-icon": "MotherDuck",
-    "x-small-icon": "MotherDuckIcon",
     "properties": {
       "path": {
         "type": "string",
@@ -36,7 +41,11 @@
         "x-step": "connector"
       }
     },
-    "required": ["path", "token", "schema_name"]
+    "required": [
+      "path",
+      "token",
+      "schema_name"
+    ]
   },
   "files": [
     {

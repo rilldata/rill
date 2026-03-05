@@ -2535,6 +2535,10 @@ Present for self-contained templates; absent for legacy templates that use Drive
   description?: string;
   /** Link to documentation. */
   docsUrl?: string;
+  /** Icon component name for full-size display (e.g. add-data grid). */
+  icon?: string;
+  /** Icon component name for small display (e.g. nav, cards, dialog headers). */
+  smallIcon?: string;
 }
 
 /**

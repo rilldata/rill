@@ -13,6 +13,8 @@ type Template struct {
 	DocsURL     string         `json:"docs_url,omitempty"`    // link to documentation
 	Driver      string         `json:"driver"`                // primary driver (e.g. "s3"); empty for driverless templates like iceberg
 	OLAP        string         `json:"olap"`                  // target OLAP engine (e.g. "duckdb"); empty for OLAP connector templates
+	Icon        string         `json:"icon,omitempty"`        // icon component name for full-size display (e.g. add-data grid)
+	SmallIcon   string         `json:"small_icon,omitempty"`  // icon component name for small display (e.g. nav, cards)
 	Tags        []string       `json:"tags"`
 	JSONSchema    map[string]any `json:"json_schema,omitempty"` // JSON Schema for form generation and property metadata
 	PropertyOrder []string       `json:"-"`                     // JSON-defined property key order; computed at load time

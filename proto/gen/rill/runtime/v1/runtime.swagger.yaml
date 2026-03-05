@@ -7865,6 +7865,12 @@ definitions:
       docsUrl:
         type: string
         description: Link to documentation.
+      icon:
+        type: string
+        description: Icon component name for full-size display (e.g. add-data grid).
+      smallIcon:
+        type: string
+        description: Icon component name for small display (e.g. nav, cards, dialog headers).
     description: Template describes a declarative template for generating project files.
   v1TemplateFile:
     type: object

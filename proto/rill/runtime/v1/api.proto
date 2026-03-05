@@ -811,6 +811,10 @@ message Template {
   string description = 8;
   // Link to documentation.
   string docs_url = 9;
+  // Icon component name for full-size display (e.g. add-data grid).
+  string icon = 10;
+  // Icon component name for small display (e.g. nav, cards, dialog headers).
+  string small_icon = 11;
 }
 
 // TemplateFile describes a single output file within a template.

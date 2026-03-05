@@ -5,13 +5,19 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
   "driver": "gcs",
   "olap": "clickhouse",
-  "tags": ["gcs", "google", "object-storage", "clickhouse", "source"],
+  "icon": "GoogleCloudStorage",
+  "small_icon": "GoogleCloudStorageIcon",
+  "tags": [
+    "gcs",
+    "google",
+    "object-storage",
+    "clickhouse",
+    "source"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "source_only",
-    "x-icon": "GoogleCloudStorage",
-    "x-small-icon": "GoogleCloudStorageIcon",
     "properties": {
       "key_id": {
         "type": "string",
@@ -34,7 +40,9 @@
         "title": "GCS URI",
         "description": "Path to your GCS bucket or prefix",
         "pattern": "^gs://[^/]+(/.*)?$",
-        "errorMessage": { "pattern": "Must be a GCS URI (e.g. gs://bucket/path)" },
+        "errorMessage": {
+          "pattern": "Must be a GCS URI (e.g. gs://bucket/path)"
+        },
         "x-placeholder": "gs://bucket/path"
       },
       "name": {
@@ -45,7 +53,12 @@
         "x-placeholder": "my_model"
       }
     },
-    "required": ["key_id", "secret", "path", "name"]
+    "required": [
+      "key_id",
+      "secret",
+      "path",
+      "name"
+    ]
   },
   "files": [
     {

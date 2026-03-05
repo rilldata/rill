@@ -35,11 +35,12 @@ for (const [path, mod] of Object.entries(iconModules)) {
 const SOURCES_SET = new Set(SOURCES);
 const OLAP_SET = new Set(OLAP_ENGINES);
 
-// Module-level cache populated when the TanStack Query resolves.
+// Module-level caches populated when the TanStack Query resolves.
 // Safe because AddDataModal (the entry point) subscribes to the query
 // and renders the connector grid (step 1) first; by the time step 2
 // needs getConnectorSchema(), the cache is populated.
 let schemasCache: Record<string, MultiStepFormSchema> = {};
+let iconsCache: Record<string, { icon?: string; smallIcon?: string }> = {};
 
 /**
  * Connector information derived from API templates.
@@ -81,6 +82,8 @@ export function normalizeOlapForTemplate(
 interface RegistryEntry {
   schema: MultiStepFormSchema;
   docsUrl?: string;
+  icon?: string;
+  smallIcon?: string;
 }
 
 function buildSchemaRegistry(
@@ -102,6 +105,8 @@ function buildSchemaRegistry(
           title: t.displayName,
         } as unknown as MultiStepFormSchema,
         docsUrl: t.docsUrl,
+        icon: t.icon,
+        smallIcon: t.smallIcon,
       };
       continue;
     }
@@ -114,6 +119,8 @@ function buildSchemaRegistry(
           title: t.displayName,
         } as unknown as MultiStepFormSchema,
         docsUrl: t.docsUrl,
+        icon: t.icon,
+        smallIcon: t.smallIcon,
       };
     }
   }
@@ -148,9 +155,15 @@ export function createConnectorSchemas(instanceId: string) {
       );
       const entries = buildSchemaRegistry($tq.data.templates, olap);
 
-      // Populate module-level cache for sync access by child components
+      // Populate module-level caches for sync access by child components
       schemasCache = Object.fromEntries(
         Object.entries(entries).map(([k, v]) => [k, v.schema]),
+      );
+      iconsCache = Object.fromEntries(
+        Object.entries(entries).map(([k, v]) => [
+          k,
+          { icon: v.icon, smallIcon: v.smallIcon },
+        ]),
       );
       rebuildIconMaps();
 
@@ -255,7 +268,7 @@ export function getFormWidth(schema: MultiStepFormSchema | null): string {
 }
 
 /**
- * Resolve an icon component name from a schema's x-icon or x-small-icon field.
+ * Resolve an icon component by name from the auto-discovered icon modules.
  */
 function resolveIcon(name: string | undefined): ConnectorIcon | undefined {
   if (!name) return undefined;
@@ -264,27 +277,22 @@ function resolveIcon(name: string | undefined): ConnectorIcon | undefined {
 
 /**
  * Get the full-size icon for a connector (used in add-data grid).
- * Reads x-icon from the connector's cached schema.
  */
 export function getConnectorIcon(
   connectorName: string,
 ): ConnectorIcon | undefined {
-  const schema = schemasCache[connectorName];
-  return resolveIcon(schema?.["x-icon"] as string);
+  return resolveIcon(iconsCache[connectorName]?.icon);
 }
 
 /**
  * Get the small icon for a connector (used in nav, cards, dialog headers).
- * Reads x-small-icon from the schema, falling back to x-icon.
+ * Falls back to the full-size icon when small_icon is not defined.
  */
 export function getConnectorSmallIcon(
   connectorName: string,
 ): ConnectorIcon | undefined {
-  const schema = schemasCache[connectorName];
-  return (
-    resolveIcon(schema?.["x-small-icon"] as string) ??
-    resolveIcon(schema?.["x-icon"] as string)
-  );
+  const entry = iconsCache[connectorName];
+  return resolveIcon(entry?.smallIcon) ?? resolveIcon(entry?.icon);
 }
 
 /**
@@ -305,12 +313,11 @@ function rebuildIconMaps() {
   const icons: Record<string, ConnectorIcon> = {};
   const smallIcons: Record<string, ConnectorIcon> = {};
 
-  for (const [name, schema] of Object.entries(schemasCache)) {
-    const icon = resolveIcon(schema?.["x-icon"] as string);
+  for (const [name, entry] of Object.entries(iconsCache)) {
+    const icon = resolveIcon(entry.icon);
     if (icon) icons[name] = icon;
 
-    const smallIcon =
-      resolveIcon(schema?.["x-small-icon"] as string) ?? icon;
+    const smallIcon = resolveIcon(entry.smallIcon) ?? icon;
     if (smallIcon) smallIcons[name] = smallIcon;
   }
 

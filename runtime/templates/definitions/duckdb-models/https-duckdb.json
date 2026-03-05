@@ -5,15 +5,28 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
   "driver": "https",
   "olap": "duckdb",
-  "tags": ["https", "http", "url", "file-store", "duckdb", "source", "connector"],
+  "icon": "HTTPS",
+  "small_icon": "HTTPSIcon",
+  "tags": [
+    "https",
+    "http",
+    "url",
+    "file-store",
+    "duckdb",
+    "source",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "fileStore",
-    "x-icon": "HTTPS",
-    "x-small-icon": "HTTPSIcon",
     "x-button-labels": {
-      "*": { "*": { "idle": "Continue", "loading": "Continuing..." } }
+      "*": {
+        "*": {
+          "idle": "Continue",
+          "loading": "Continuing..."
+        }
+      }
     },
     "properties": {
       "headers": {
@@ -43,7 +56,10 @@
         "x-step": "source"
       }
     },
-    "required": ["path", "name"]
+    "required": [
+      "path",
+      "name"
+    ]
   },
   "files": [
     {

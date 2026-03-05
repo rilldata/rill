@@ -6768,6 +6768,10 @@ func (m *Template) validate(all bool) error {
 
 	// no validation rules for DocsUrl
 
+	// no validation rules for Icon
+
+	// no validation rules for SmallIcon
+
 	if len(errors) > 0 {
 		return TemplateMultiError(errors)
 	}

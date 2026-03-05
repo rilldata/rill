@@ -5,27 +5,59 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/snowflake",
   "driver": "snowflake",
   "olap": "duckdb",
-  "tags": ["snowflake", "warehouse", "duckdb", "source", "connector"],
+  "icon": "Snowflake",
+  "small_icon": "SnowflakeIcon",
+  "tags": [
+    "snowflake",
+    "warehouse",
+    "duckdb",
+    "source",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "warehouse",
-    "x-icon": "Snowflake",
-    "x-small-icon": "SnowflakeIcon",
     "x-form-height": "tall",
     "properties": {
       "auth_method": {
         "type": "string",
         "title": "Authentication method",
-        "enum": ["password", "private_key", "dsn"],
+        "enum": [
+          "password",
+          "private_key",
+          "dsn"
+        ],
         "default": "password",
         "x-display": "tabs",
-        "x-enum-labels": ["User/Password", "Private Key", "Connection String"],
+        "x-enum-labels": [
+          "User/Password",
+          "Private Key",
+          "Connection String"
+        ],
         "x-ui-only": true,
         "x-tab-group": {
-          "password": ["account", "user", "password", "warehouse", "database", "schema", "role"],
-          "private_key": ["account", "user", "privateKey", "warehouse", "database", "schema", "role"],
-          "dsn": ["dsn"]
+          "password": [
+            "account",
+            "user",
+            "password",
+            "warehouse",
+            "database",
+            "schema",
+            "role"
+          ],
+          "private_key": [
+            "account",
+            "user",
+            "privateKey",
+            "warehouse",
+            "database",
+            "schema",
+            "role"
+          ],
+          "dsn": [
+            "dsn"
+          ]
         },
         "x-step": "connector"
       },
@@ -34,7 +66,7 @@
         "title": "Account identifier",
         "description": "Snowflake account identifier (from your Snowflake URL, before .snowflakecomputing.com)",
         "x-placeholder": "abc12345.us-east-1",
-        "x-hint": "e.g. abc12345 or abc12345.us-east-1 — don't include https://",
+        "x-hint": "e.g. abc12345 or abc12345.us-east-1 \u2014 don't include https://",
         "x-step": "connector"
       },
       "user": {
@@ -51,7 +83,9 @@
         "x-placeholder": "your_password",
         "x-secret": true,
         "x-env-var": "SNOWFLAKE_PASSWORD",
-        "x-visible-if": { "auth_method": "password" },
+        "x-visible-if": {
+          "auth_method": "password"
+        },
         "x-step": "connector"
       },
       "privateKey": {
@@ -64,7 +98,9 @@
         "x-file-encoding": "base64",
         "x-secret": true,
         "x-env-var": "SNOWFLAKE_PRIVATEKEY",
-        "x-visible-if": { "auth_method": "private_key" },
+        "x-visible-if": {
+          "auth_method": "private_key"
+        },
         "x-step": "connector"
       },
       "warehouse": {
@@ -103,7 +139,9 @@
         "x-secret": true,
         "x-env-var": "SNOWFLAKE_DSN",
         "x-hint": "Include authenticator and privateKey query params for JWT if needed.",
-        "x-visible-if": { "auth_method": "dsn" },
+        "x-visible-if": {
+          "auth_method": "dsn"
+        },
         "x-step": "connector"
       },
       "sql": {
@@ -122,19 +160,60 @@
         "x-step": "explorer"
       }
     },
-    "required": ["sql", "name"],
+    "required": [
+      "sql",
+      "name"
+    ],
     "allOf": [
       {
-        "if": { "properties": { "auth_method": { "const": "password" } } },
-        "then": { "required": ["account", "user", "password", "database", "warehouse"] }
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "password"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "account",
+            "user",
+            "password",
+            "database",
+            "warehouse"
+          ]
+        }
       },
       {
-        "if": { "properties": { "auth_method": { "const": "private_key" } } },
-        "then": { "required": ["account", "user", "privateKey", "database", "warehouse"] }
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "private_key"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "account",
+            "user",
+            "privateKey",
+            "database",
+            "warehouse"
+          ]
+        }
       },
       {
-        "if": { "properties": { "auth_method": { "const": "dsn" } } },
-        "then": { "required": ["dsn"] }
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "dsn"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "dsn"
+          ]
+        }
       }
     ]
   },

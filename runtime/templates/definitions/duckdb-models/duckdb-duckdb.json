@@ -5,13 +5,16 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/duckdb",
   "driver": "duckdb",
   "olap": "duckdb",
-  "tags": ["duckdb", "model"],
+  "icon": "DuckDB",
+  "small_icon": "DuckDBIcon",
+  "tags": [
+    "duckdb",
+    "model"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "sqlStore",
-    "x-icon": "DuckDB",
-    "x-small-icon": "DuckDBIcon",
     "properties": {
       "sql": {
         "type": "string",
@@ -29,7 +32,10 @@
         "x-step": "explorer"
       }
     },
-    "required": ["sql", "name"]
+    "required": [
+      "sql",
+      "name"
+    ]
   },
   "files": [
     {

@@ -5,22 +5,39 @@
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/azure",
   "driver": "azure",
   "olap": "duckdb",
-  "tags": ["azure", "microsoft", "object-storage", "duckdb", "source", "connector"],
+  "icon": "MicrosoftAzureBlobStorage",
+  "small_icon": "MicrosoftAzureBlobStorageIcon",
+  "tags": [
+    "azure",
+    "microsoft",
+    "object-storage",
+    "duckdb",
+    "source",
+    "connector"
+  ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "x-category": "objectStore",
-    "x-icon": "MicrosoftAzureBlobStorage",
-    "x-small-icon": "MicrosoftAzureBlobStorageIcon",
     "properties": {
       "auth_method": {
         "type": "string",
         "title": "Authentication method",
         "description": "Choose how to authenticate to Azure Blob Storage",
-        "enum": ["connection_string", "account_key", "sas_token", "public"],
+        "enum": [
+          "connection_string",
+          "account_key",
+          "sas_token",
+          "public"
+        ],
         "default": "connection_string",
         "x-display": "radio",
-        "x-enum-labels": ["Connection String", "Storage Account Key", "SAS Token", "Public"],
+        "x-enum-labels": [
+          "Connection String",
+          "Storage Account Key",
+          "SAS Token",
+          "Public"
+        ],
         "x-enum-descriptions": [
           "Provide a full Azure Storage connection string.",
           "Provide the storage account name and access key.",
@@ -29,9 +46,17 @@
         ],
         "x-ui-only": true,
         "x-grouped-fields": {
-          "connection_string": ["azure_storage_connection_string"],
-          "account_key": ["azure_storage_account", "azure_storage_key"],
-          "sas_token": ["azure_storage_account", "azure_storage_sas_token"],
+          "connection_string": [
+            "azure_storage_connection_string"
+          ],
+          "account_key": [
+            "azure_storage_account",
+            "azure_storage_key"
+          ],
+          "sas_token": [
+            "azure_storage_account",
+            "azure_storage_sas_token"
+          ],
           "public": []
         },
         "x-step": "connector"
@@ -44,7 +69,9 @@
         "x-secret": true,
         "x-env-var": "AZURE_STORAGE_CONNECTION_STRING",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "connection_string" }
+        "x-visible-if": {
+          "auth_method": "connection_string"
+        }
       },
       "azure_storage_account": {
         "type": "string",
@@ -52,7 +79,12 @@
         "description": "The name of the Azure storage account",
         "x-placeholder": "Enter Azure storage account",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": ["account_key", "sas_token"] }
+        "x-visible-if": {
+          "auth_method": [
+            "account_key",
+            "sas_token"
+          ]
+        }
       },
       "azure_storage_key": {
         "type": "string",
@@ -62,7 +94,9 @@
         "x-secret": true,
         "x-env-var": "AZURE_STORAGE_KEY",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "account_key" }
+        "x-visible-if": {
+          "auth_method": "account_key"
+        }
       },
       "azure_storage_sas_token": {
         "type": "string",
@@ -72,7 +106,9 @@
         "x-secret": true,
         "x-env-var": "AZURE_STORAGE_SAS_TOKEN",
         "x-step": "connector",
-        "x-visible-if": { "auth_method": "sas_token" }
+        "x-visible-if": {
+          "auth_method": "sas_token"
+        }
       },
       "path": {
         "type": "string",
@@ -94,19 +130,54 @@
         "x-step": "source"
       }
     },
-    "required": ["path", "name"],
+    "required": [
+      "path",
+      "name"
+    ],
     "allOf": [
       {
-        "if": { "properties": { "auth_method": { "const": "connection_string" } } },
-        "then": { "required": ["azure_storage_connection_string"] }
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "connection_string"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "azure_storage_connection_string"
+          ]
+        }
       },
       {
-        "if": { "properties": { "auth_method": { "const": "account_key" } } },
-        "then": { "required": ["azure_storage_account", "azure_storage_key"] }
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "account_key"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "azure_storage_account",
+            "azure_storage_key"
+          ]
+        }
       },
       {
-        "if": { "properties": { "auth_method": { "const": "sas_token" } } },
-        "then": { "required": ["azure_storage_account", "azure_storage_sas_token"] }
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "sas_token"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "azure_storage_account",
+            "azure_storage_sas_token"
+          ]
+        }
       }
     ]
   },
