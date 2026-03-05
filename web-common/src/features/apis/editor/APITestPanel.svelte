@@ -26,6 +26,14 @@
   let isLoading = false;
   let previewHeight = 200;
 
+  // Clear response when switching to a different API
+  $: apiName, resetResponse();
+  function resetResponse() {
+    apiResponse = null;
+    responseError = null;
+    isLoading = false;
+  }
+
   $: baseUrl = `${host}/v1/instances/${instanceId}/api/${apiName}`;
   $: fullUrl = buildFullUrl(baseUrl, args);
   $: isDisabled = hasErrors || isReconciling;
