@@ -1046,3 +1046,141 @@ export function partitionResourcesByMetrics(
   graphCache.persist();
   return finalGroups;
 }
+
+/**
+ * Partition resources into independent trees rooted at dashboard resources.
+ * Each dashboard (Explore or Canvas) anchors a tree containing all its
+ * upstream dependencies (MetricsView → Models → Sources).
+ *
+ * Connector nodes are excluded from trees; their info is shown as badges
+ * on the source model nodes instead.
+ *
+ * Resources not reachable from any dashboard go into an "Other resources" group.
+ */
+export function partitionResourcesByDashboardTrees(
+  resources: V1Resource[],
+): ResourceGraphGrouping[] {
+  const resourceMap = buildVisibleResourceMap(resources);
+  const { incoming } = buildDirectedAdjacency(resourceMap);
+
+  // Identify dashboard resources (Explore/Canvas) as tree roots
+  const dashboardSeeds: { id: string; label: string }[] = [];
+  for (const [id, res] of resourceMap) {
+    const kind = coerceResourceKind(res);
+    if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas) {
+      dashboardSeeds.push({ id, label: res.meta?.name?.name ?? id });
+    }
+  }
+  dashboardSeeds.sort((a, b) => a.label.localeCompare(b.label));
+
+  const groups: ResourceGraphGrouping[] = [];
+  const assigned = new Set<string>();
+
+  for (const seed of dashboardSeeds) {
+    const upIds = traverseUpstream(seed.id, incoming);
+    // Exclude connector nodes from the tree.
+    // Allow resources to appear in multiple trees (shared upstream models)
+    // since buildMultiTreeLayout runs separate Dagre layouts per tree,
+    // and duplicate node IDs across trees are handled there.
+    const treeIds = new Set<string>();
+    for (const rid of upIds) {
+      const res = resourceMap.get(rid);
+      if (!res) continue;
+      const kind = coerceResourceKind(res);
+      if (kind === ResourceKind.Connector) continue;
+      treeIds.add(rid);
+    }
+    if (!treeIds.size) continue;
+
+    const treeResources = Array.from(treeIds)
+      .map((rid) => resourceMap.get(rid))
+      .filter((r): r is V1Resource => !!r);
+    groups.push({ id: seed.id, resources: treeResources, label: seed.label });
+    for (const rid of treeIds) assigned.add(rid);
+  }
+
+  // Collect orphans (not connectors, not assigned to any tree)
+  const orphans: V1Resource[] = [];
+  for (const [id, res] of resourceMap) {
+    if (assigned.has(id)) continue;
+    const kind = coerceResourceKind(res);
+    if (kind === ResourceKind.Connector) continue;
+    orphans.push(res);
+  }
+  if (orphans.length) {
+    groups.push({
+      id: "__orphans__",
+      resources: orphans,
+      label: "Other resources",
+    });
+  }
+
+  return groups;
+}
+
+/**
+ * Build a combined multi-tree layout for rendering all source trees
+ * on a single SvelteFlow canvas.
+ *
+ * Runs Dagre independently per tree, then offsets each tree horizontally
+ * so they appear side-by-side with padding between them.
+ */
+export function buildMultiTreeLayout(
+  groups: ResourceGraphGrouping[],
+): { nodes: Node<ResourceNodeData>[]; edges: Edge[] } {
+  const TREE_GAP = 80; // horizontal gap between trees
+  const allNodes: Node<ResourceNodeData>[] = [];
+  const allEdges: Edge[] = [];
+  let xOffset = 0;
+
+  // Track which node IDs have been seen globally to detect shared resources
+  const seenNodeIds = new Set<string>();
+
+  for (const group of groups) {
+    const { nodes, edges } = buildResourceGraph(group.resources, {
+      positionNs: `sprawl|${group.id}`,
+      ignoreCache: true,
+    });
+
+    if (!nodes.length) continue;
+
+    // Check if any nodes in this tree share IDs with previous trees.
+    // If so, prefix IDs with tree group to make them unique on the canvas.
+    const hasConflicts = nodes.some((n) => seenNodeIds.has(n.id));
+    const prefix = hasConflicts ? `${group.id}__` : "";
+
+    // Find bounding box of this tree
+    let minX = Infinity;
+    let maxX = -Infinity;
+    for (const node of nodes) {
+      const nx = node.position.x;
+      const nw = node.width ?? NODE_CONFIG.MIN_WIDTH;
+      if (nx < minX) minX = nx;
+      if (nx + nw > maxX) maxX = nx + nw;
+    }
+
+    // Shift nodes so the tree starts at xOffset (create new objects to avoid mutation)
+    const shift = xOffset - minX;
+    for (const node of nodes) {
+      const newId = prefix + node.id;
+      seenNodeIds.add(node.id);
+      allNodes.push({
+        ...node,
+        id: newId,
+        position: { x: node.position.x + shift, y: node.position.y },
+      });
+    }
+    for (const edge of edges) {
+      allEdges.push({
+        ...edge,
+        id: prefix + edge.id,
+        source: prefix + edge.source,
+        target: prefix + edge.target,
+      });
+    }
+
+    xOffset = xOffset + (maxX - minX) + TREE_GAP;
+  }
+
+  return { nodes: allNodes, edges: allEdges };
+}

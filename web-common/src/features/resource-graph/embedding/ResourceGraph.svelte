@@ -6,8 +6,11 @@
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
+    partitionResourcesByDashboardTrees,
+    buildMultiTreeLayout,
     type ResourceGraphGrouping,
   } from "../graph-canvas/graph-builder";
+  import type { Edge, Node } from "@xyflow/svelte";
   import {
     coerceResourceKind,
     ResourceKind,
@@ -36,12 +39,14 @@
     RESOURCE_SECTION_LABELS,
   } from "../shared/config";
   import type {
+    ResourceNodeData,
     ResourceStatusFilter,
     ResourceStatusFilterValue,
   } from "../shared/types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { RefreshCw } from "lucide-svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
 
@@ -177,12 +182,29 @@
     return null;
   })();
 
+  // Detect sprawl mode: seeds contain only the "dashboards" kind token
+  // and no specific resource is selected via controlled prop
+  $: isSprawlMode = (() => {
+    if (selectedGroupId) return false; // specific resource selected
+    const rawSeeds = seeds ?? [];
+    return (
+      rawSeeds.length === 1 &&
+      rawSeeds[0]?.toLowerCase() === "dashboards"
+    );
+  })();
+
+  // Dashboard trees for sprawl mode (partitioned by dashboard roots)
+  $: dashboardTreeGroups = isSprawlMode
+    ? partitionResourcesByDashboardTrees(normalizedResources)
+    : [];
+
   // If seeds were provided (e.g., kind filter like "models"), use seed-based partitioning.
   // When the kind has no resources, normalizedSeeds will be empty — return [] instead of
   // falling back to partitionResourcesByMetrics, which would show unrelated metric views.
   $: hasExplicitSeeds = seeds && seeds.length > 0;
-  $: resourceGroups =
-    normalizedSeeds && normalizedSeeds.length
+  $: resourceGroups = isSprawlMode
+    ? dashboardTreeGroups
+    : normalizedSeeds && normalizedSeeds.length
       ? partitionResourcesBySeeds(
           normalizedResources,
           normalizedSeeds,
@@ -191,6 +213,7 @@
       : hasExplicitSeeds
         ? []
         : partitionResourcesByMetrics(normalizedResources);
+
   // Filter groups by search query and status
   $: filteredResourceGroups = (() => {
     let groups = resourceGroups;
@@ -205,8 +228,21 @@
       );
     }
 
+    // Filter entire trees by status (show tree if any resource matches)
+    if (statusFilter.length > 0) {
+      groups = groups.filter((group) =>
+        group.resources.some((r) => statusFilter.includes(getResourceStatus(r))),
+      );
+    }
+
     return groups;
   })();
+
+  // Build combined multi-tree layout for sprawl mode
+  $: sprawlLayout = (() => {
+    if (!isSprawlMode || !filteredResourceGroups.length) return null;
+    return buildMultiTreeLayout(filteredResourceGroups);
+  })() as { nodes: Node<ResourceNodeData>[]; edges: Edge[] } | null;
 
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
@@ -215,27 +251,19 @@
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // Whether any filters are active (URL params, status, or tree search)
-  $: hasActiveFilters = hasUrlFilters || treeSearchQuery.trim().length > 0;
+  $: hasActiveFilters =
+    hasUrlFilters ||
+    statusFilter.length > 0 ||
+    treeSearchQuery.trim().length > 0;
 
   function handleClearFilters() {
     treeSearchQuery = "";
     onClearFilters?.();
   }
 
-  function handleStatusChange(e: Event) {
-    const el = e.currentTarget as HTMLSelectElement;
-    const val: ResourceStatusFilterValue | "" = el.value as
-      | ResourceStatusFilterValue
-      | "";
-    for (const opt of statusFilterOptions) {
-      if (statusFilter.includes(opt.value)) {
-        onStatusToggle?.(opt.value);
-      }
-    }
-    if (val) onStatusToggle?.(val);
-  }
-
   // --- Sidebar selection state ---
+  let resourceDropdownOpen = false;
+  let statusDropdownOpen = false;
   let treeSearchQuery = "";
 
   // All resources organized by kind for the tree dropdown
@@ -400,10 +428,10 @@
   // Display label for the breadcrumb trigger
   $: selectedGroupIsConnector =
     effectiveSelectedGroupId?.includes("Connector") ?? false;
-  // Show "All Resources" when a connector is auto-selected (no URL param),
-  // but show the actual connector name when explicitly selected via URL
-  $: breadcrumbLabel =
-    selectedGroupIsConnector && !resolvedControlledId
+  // Show "All Resources" for sprawl mode or when a connector is auto-selected
+  $: breadcrumbLabel = isSprawlMode
+    ? "All Resources"
+    : selectedGroupIsConnector && !resolvedControlledId
       ? "All Resources"
       : (selectedGroup?.label ?? "Select resource");
 
@@ -600,13 +628,18 @@
   $: {
     const signature = JSON.stringify(seeds ?? []);
     if (signature !== lastSeedsSignature) {
-      // Show a short loading state to indicate graphs are updating
-      seedTransitionLoading = true;
-      if (seedTransitionTimer) clearTimeout(seedTransitionTimer);
-      seedTransitionTimer = setTimeout(
-        () => (seedTransitionLoading = false),
-        PERFORMANCE_CONFIG.SEED_TRANSITION_DELAY_MS,
-      );
+      // Show a short loading state to indicate graphs are updating.
+      // Skip the transition on the very first render (lastSeedsSignature is "")
+      // to avoid a 500ms blank screen on initial page load.
+      const isFirstRender = lastSeedsSignature === "";
+      if (!isFirstRender) {
+        seedTransitionLoading = true;
+        if (seedTransitionTimer) clearTimeout(seedTransitionTimer);
+        seedTransitionTimer = setTimeout(
+          () => (seedTransitionLoading = false),
+          PERFORMANCE_CONFIG.SEED_TRANSITION_DELAY_MS,
+        );
+      }
 
       lastSeedsSignature = signature;
 
@@ -722,33 +755,23 @@
     <!-- Sidebar layout: toolbar always visible, content varies -->
     <div class="graph-toolbar-bar" class:nav-collapsed={!$navigationOpen}>
       <div class="breadcrumb">
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild let:builder>
-            <button
-              class="text-fg-muted px-[5px] py-1 max-w-fit"
-              use:builder.action
-              {...builder}
-            >
-              <span class="gap-x-1.5 items-center font-medium flex">
-                <span class="truncate">{breadcrumbLabel}</span>
-                <CaretDownIcon size="10px" />
-              </span>
-            </button>
+        <DropdownMenu.Root bind:open={resourceDropdownOpen}>
+          <DropdownMenu.Trigger
+            class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {resourceDropdownOpen
+              ? 'bg-gray-200'
+              : 'hover:bg-surface-hover'} px-2 py-1"
+          >
+            <span class="text-fg-secondary font-medium truncate">
+              {breadcrumbLabel}
+            </span>
+            {#if resourceDropdownOpen}
+              <CaretUpIcon size="12px" />
+            {:else}
+              <CaretDownIcon size="12px" />
+            {/if}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content align="start" class="w-96">
             <div class="tree-filter-row">
-              {#if statusFilterOptions.length > 0}
-                <select
-                  class="status-select"
-                  value={statusFilter.length === 1 ? statusFilter[0] : ""}
-                  on:change|stopPropagation={handleStatusChange}
-                >
-                  <option value="">All statuses</option>
-                  {#each statusFilterOptions as opt}
-                    <option value={opt.value}>{opt.label}</option>
-                  {/each}
-                </select>
-              {/if}
               <input
                 class="tree-search-input"
                 type="text"
@@ -810,8 +833,47 @@
             >Clear Filter</button
           >
         {/if}
+        {#if statusFilterOptions.length > 0}
+          <DropdownMenu.Root bind:open={statusDropdownOpen}>
+            <DropdownMenu.Trigger
+              class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+                ? 'bg-gray-200'
+                : 'hover:bg-surface-hover'} px-2 py-1"
+            >
+              <span class="text-fg-secondary font-medium">
+                {#if statusFilter.length === 0}
+                  All statuses
+                {:else if statusFilter.length === 1}
+                  {statusFilterOptions.find((o) => o.value === statusFilter[0])
+                    ?.label ?? statusFilter[0]}
+                {:else}
+                  {statusFilterOptions.find((o) => o.value === statusFilter[0])
+                    ?.label}, +{statusFilter.length - 1} other{statusFilter.length >
+                  2
+                    ? "s"
+                    : ""}
+                {/if}
+              </span>
+              {#if statusDropdownOpen}
+                <CaretUpIcon size="12px" />
+              {:else}
+                <CaretDownIcon size="12px" />
+              {/if}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" class="w-48">
+              {#each statusFilterOptions as opt}
+                <DropdownMenu.CheckboxItem
+                  checked={statusFilter.includes(opt.value)}
+                  onCheckedChange={() => onStatusToggle?.(opt.value)}
+                >
+                  {opt.label}
+                </DropdownMenu.CheckboxItem>
+              {/each}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        {/if}
         {#if onRefreshAll}
-          <Button type="secondary" onClick={onRefreshAll}>
+          <Button type="secondary" class="min-h-9" onClick={onRefreshAll}>
             <RefreshCw size="14" />
             <span>Refresh all sources and models</span>
           </Button>
@@ -832,6 +894,25 @@
             </p>
           </div>
         </div>
+      {:else if isSprawlMode && sprawlLayout}
+        <GraphCanvas
+          flowId="sprawl"
+          resources={normalizedResources}
+          precomputedNodes={sprawlLayout.nodes}
+          precomputedEdges={sprawlLayout.edges}
+          title={null}
+          titleLabel={null}
+          titleErrorCount={null}
+          anchorError={false}
+          {showControls}
+          {showNodeActions}
+          showLock={false}
+          fillParent={true}
+          enableExpand={false}
+          {fitViewPadding}
+          {fitViewMinZoom}
+          {fitViewMaxZoom}
+        />
       {:else if selectedGroup}
         <GraphCanvas
           flowId={selectedGroup.id}
@@ -974,7 +1055,7 @@
   }
 
   .graph-toolbar-bar {
-    @apply flex items-center justify-between px-4 min-h-[2.75rem] flex-none gap-x-2 gap-y-1 flex-wrap;
+    @apply flex items-center px-4 min-h-[3rem] flex-none gap-x-2 gap-y-1 flex-wrap;
     transition: padding-left 300ms ease-in-out;
   }
 
@@ -986,22 +1067,8 @@
     @apply flex items-center gap-x-1.5 min-w-0;
   }
 
-  .breadcrumb :global(button),
-  .breadcrumb :global(a) {
-    @apply bg-transparent border-none cursor-pointer transition-colors;
-  }
-
-  .breadcrumb :global(button:hover),
-  .breadcrumb :global(a:hover) {
-    @apply text-fg-primary;
-  }
-
-  .breadcrumb :global(button[data-state="open"]) {
-    @apply bg-gray-100 rounded-[2px] text-fg-primary;
-  }
-
   .toolbar-right {
-    @apply flex items-center gap-x-2 flex-wrap;
+    @apply flex items-center gap-x-2 flex-wrap ml-auto;
   }
 
   .clear-link {
@@ -1014,19 +1081,6 @@
 
   .tree-filter-row {
     @apply flex items-center gap-1.5 px-2 pb-1.5 pt-1 border-b;
-  }
-
-  .status-select {
-    @apply flex-none text-xs py-1 pl-1.5 pr-5 rounded border bg-transparent text-fg-primary;
-    @apply outline-none cursor-pointer appearance-none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 2px center;
-    background-repeat: no-repeat;
-    background-size: 14px;
-  }
-
-  .status-select:focus {
-    @apply border-primary-300 ring-1 ring-primary-300;
   }
 
   .tree-search-input {

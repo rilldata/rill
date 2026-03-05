@@ -214,7 +214,11 @@
     <div class="content">
       {#if isSourceOrModel}
         {@const allIndicators = [
-          metadata?.isMaterialized ? { type: "materialized" } : null,
+          metadata?.isMaterialized
+            ? { type: "materialized" }
+            : kind === ResourceKind.Model
+              ? { type: "view" }
+              : null,
           isIncremental ? { type: "incremental" } : null,
           isPartitioned ? { type: "partitioned" } : null,
           hasSchedule ? { type: "schedule" } : null,
@@ -234,6 +238,8 @@
             {#each rightIndicators as ind}
               {#if ind?.type === "materialized"}
                 <span class="badge" title="Materialized">Materialized</span>
+              {:else if ind?.type === "view"}
+                <span class="badge" title="View">View</span>
               {:else if ind?.type === "incremental"}
                 <span class="icon-indicator" title="Incremental">
                   <Zap size="10px" />

@@ -21,6 +21,9 @@
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
 
   export let resources: V1Resource[] = [];
+  // Pre-computed layout: when provided, skip internal buildResourceGraph
+  export let precomputedNodes: Node<ResourceNodeData>[] | null = null;
+  export let precomputedEdges: Edge[] | null = null;
   export let title: string | null = null;
   // Fine-grained title rendering: base label + error count with conditional coloring
   export let titleLabel: string | null = null;
@@ -241,10 +244,14 @@
     graphError = null;
     try {
       const rootSet = new Set(rootNodeIds ?? []);
-      const graph = buildResourceGraph(resources ?? [], {
-        positionNs: flowId,
-        ignoreCache: true,
-      });
+      // Use precomputed layout if provided; otherwise build from resources
+      const graph =
+        precomputedNodes && precomputedEdges
+          ? { nodes: precomputedNodes, edges: precomputedEdges }
+          : buildResourceGraph(resources ?? [], {
+              positionNs: flowId,
+              ignoreCache: true,
+            });
       const nodeIds = new Set(graph.nodes.map((n) => n.id));
       const filteredEdges = graph.edges.filter(
         (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
@@ -262,16 +269,25 @@
       nodesStore.set(nodesWithRoots);
       edgesStore.set(filteredEdges);
       hasNodes = nodesWithRoots.length > 0;
-      // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes
+      // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes.
+      // Use node/edge count + hash for large graphs to avoid huge key strings.
       try {
-        const nodeSig = nodesWithRoots
-          .map((n) => n.id)
-          .sort()
-          .join(",");
-        const edgeSig = filteredEdges
-          .map((e) => e.id || `${e.source}->${e.target}`)
-          .sort()
-          .join(",");
+        const nodeCount = nodesWithRoots.length;
+        const edgeCount = filteredEdges.length;
+        const nodeSig =
+          nodeCount > 50
+            ? `${nodeCount}:${nodesWithRoots[0]?.id ?? ""}:${nodesWithRoots[nodeCount - 1]?.id ?? ""}`
+            : nodesWithRoots
+                .map((n) => n.id)
+                .sort()
+                .join(",");
+        const edgeSig =
+          edgeCount > 50
+            ? `${edgeCount}:${filteredEdges[0]?.id ?? ""}:${filteredEdges[edgeCount - 1]?.id ?? ""}`
+            : filteredEdges
+                .map((e) => e.id || `${e.source}->${e.target}`)
+                .sort()
+                .join(",");
         flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
       } catch {
         flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
