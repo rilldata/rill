@@ -5,6 +5,7 @@ import {
   connectors,
   getBackendConnectorName,
   getConnectorSchema,
+  isMultiStepConnector,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
 import { get, writable } from "svelte/store";
@@ -88,13 +89,16 @@ export class AddDataManager {
     const step = state.step as AddDataStep;
     const schemaName = state.schema as string | undefined;
     const connectorName = state.connector as string | undefined;
+    console.log(state);
 
     if (connectorName && schemaName) {
       void this.setConnectorStep(step, schemaName, connectorName);
     } else if (schemaName) {
       this.setSchemaStep(step, schemaName);
+      this.connectorNameStore.set(null);
     } else {
       this.stepStore.set(step);
+      this.connectorDriverStore.set(null);
       this.schemaNameStore.set(null);
       this.connectorNameStore.set(null);
     }
@@ -184,12 +188,12 @@ async function connectorDriverForConnector(
 
 function isConnectorType(connectorDriver: V1ConnectorDriver) {
   return (
+    connectorDriver?.implementsFileStore ||
     connectorDriver?.implementsObjectStore ||
     connectorDriver?.implementsOlap ||
     connectorDriver?.implementsSqlStore ||
     (connectorDriver?.implementsWarehouse &&
       connectorDriver?.name !== "salesforce")
-    // TODO: multi step?
   );
 }
 

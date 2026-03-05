@@ -35,6 +35,8 @@
   $: schemaName = $schemaNameStore;
   $: connectorName = $connectorNameStore;
 
+  $: console.log(step, connectorDriver, schemaName, connectorName);
+
   $: displayIcon =
     connectorIconMapping[connectorName ?? ""] ??
     connectorIconMapping[connectorDriver?.name ?? ""];
@@ -49,7 +51,7 @@
 </script>
 
 <div
-  class="flex flex-col gap-y-4 w-full bg-surface-background border rounded-lg shadow-sm;"
+  class="flex flex-col size-full bg-surface-background border rounded-lg shadow-sm;"
 >
   {#if displayName && step !== AddDataStep.Import}
     <div class="flex flex-row items-center px-6 py-4 gap-1 border-b">

@@ -28,7 +28,7 @@
   }
 
   .source-selector-header {
-    @apply flex flex-row items-center justify-center gap-x-2 p-6;
+    @apply flex flex-row items-center gap-x-2 p-2.5 px-6;
     @apply border-b;
   }
 

@@ -96,6 +96,7 @@
 </script>
 
 <AddDataFormStructure
+  {connectorDriver}
   {schema}
   {superFormsParams}
   {yamlPreview}

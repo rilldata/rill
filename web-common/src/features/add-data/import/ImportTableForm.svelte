@@ -15,7 +15,10 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import { compileSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils.ts";
+  import {
+    compileSourceYAML,
+    inferModelNameFromSQL,
+  } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import { get } from "svelte/store";
   import { ImportTableRunner } from "@rilldata/web-common/features/add-data/import/ImportTableRunner.ts";
 
@@ -64,45 +67,54 @@
     }),
   );
 
-  const { form, enhance, submit } = superForm(defaults(initialValues, schema), {
-    SPA: true,
-    validators: schema,
-    resetForm: false,
-    async onUpdate({ form }) {
-      if (!form.valid) return;
-      const values = form.data;
-      const sql =
-        values.mode === "table" ? `SELECT * FROM ${values.table}` : values.sql;
-      const yaml = compileSourceYAML(
-        connectorDriver,
-        {
-          name: values.name,
-          sql,
-          database: values.database,
-        },
-        {
-          connectorInstanceName: connectorName,
-        },
-      );
-      onSubmit(
-        new ImportTableRunner(
-          instanceId,
-          values.name,
-          get(connectorExplorerStore.selectedTableStore),
-          yaml,
-          null,
-        ),
-      );
+  const { form, tainted, enhance, submit } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      resetForm: false,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+        const sql =
+          values.mode === "table"
+            ? `SELECT * FROM ${values.table}`
+            : values.sql;
+        const yaml = compileSourceYAML(
+          connectorDriver,
+          {
+            name: values.name,
+            sql,
+            database: values.database,
+          },
+          {
+            connectorInstanceName: connectorName,
+          },
+        );
+        onSubmit(
+          new ImportTableRunner(
+            instanceId,
+            values.name,
+            get(connectorExplorerStore.selectedTableStore),
+            yaml,
+            null,
+          ),
+        );
+      },
+      validationMethod: "onsubmit",
     },
-    validationMethod: "onsubmit",
-  });
+  );
+
+  $: taintedFields = $tainted;
+  $: nameFieldTainted =
+    taintedFields && typeof taintedFields === "object"
+      ? Boolean(taintedFields?.name)
+      : false;
 
   $: connectors = getAnalyzedConnectors(instanceId, false);
   $: analyzedConnector = $connectors.data?.connectors?.find(
     (c) => c.name === connectorName,
   );
-
-  let nameChangedDirectly = false;
 
   $: connectorExplorerStore = new ConnectorExplorerStore(
     {
@@ -120,35 +132,50 @@
         table,
       });
 
-      form.update((f) => {
-        f.database = database;
-        f.schema = schema;
-        f.table = table;
-        if (!nameChangedDirectly) {
-          f.name = getName(
-            table,
-            fileArtifacts.getNamesForKind(ResourceKind.Model),
-          );
-        }
-        return f;
-      });
+      form.update(
+        (f) => {
+          f.database = database;
+          f.schema = schema;
+          f.table = table;
+          if (!nameFieldTainted) {
+            f.name = getName(
+              table,
+              fileArtifacts.getNamesForKind(ResourceKind.Model),
+            );
+          }
+          return f;
+        },
+        {
+          taint: false,
+        },
+      );
     },
   );
+
+  function onSQLInputChange(newSql: string) {
+    if (nameFieldTainted) return;
+
+    const inferredName = inferModelNameFromSQL(newSql);
+    if (!inferredName) return;
+
+    form.update(
+      ($form) => {
+        $form.name = inferredName;
+        return $form;
+      },
+      { taint: false },
+    );
+  }
 </script>
 
 <form
   use:enhance
   on:submit|preventDefault={submit}
   id={FormId}
-  class="flex flex-col gap-1"
+  class="flex flex-col gap-1 h-full"
 >
   <div class="flex flex-col gap-2 px-6 pt-2">
-    <Input
-      id="name"
-      label="Name"
-      bind:value={$form["name"]}
-      onInput={() => (nameChangedDirectly = true)}
-    />
+    <Input id="name" label="Name" bind:value={$form["name"]} />
     <div>Pick a table or Input your file SQL to power your first dashboard</div>
     <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
       {#each modeOptions as option (option.value)}
@@ -156,34 +183,41 @@
       {/each}
     </Tabs>
   </div>
-  {#if $form["mode"] === "table"}
-    {#if analyzedConnector}
-      <div class="flex flex-row w-full border-t">
-        <div class="grow border-r">
-          <DatabaseExplorer
-            {instanceId}
-            connector={analyzedConnector}
-            store={connectorExplorerStore}
-          />
-        </div>
-        <div class="bg-surface-subtle w-[40%] p-2">
-          {#if $form["table"]}
-            <TableSchema
-              connector={connectorName}
-              database={$form["database"]}
-              databaseSchema={$form["schema"]}
-              table={$form["table"]}
-              addLeftPadding={false}
+  <div class="grow">
+    {#if $form["mode"] === "table"}
+      {#if analyzedConnector}
+        <div class="flex flex-row size-full border-t">
+          <div class="grow border-r">
+            <DatabaseExplorer
+              {instanceId}
+              connector={analyzedConnector}
+              store={connectorExplorerStore}
             />
-          {/if}
+          </div>
+          <div class="bg-surface-subtle w-[40%] p-2">
+            {#if $form["table"]}
+              <TableSchema
+                connector={connectorName}
+                database={$form["database"]}
+                databaseSchema={$form["schema"]}
+                table={$form["table"]}
+                addLeftPadding={false}
+              />
+            {/if}
+          </div>
         </div>
+      {/if}
+    {:else if $form["mode"] === "sql"}
+      <div class="px-6">
+        <Input
+          id="sql"
+          label="SQL"
+          bind:value={$form["sql"]}
+          onInput={onSQLInputChange}
+        />
       </div>
     {/if}
-  {:else if $form["mode"] === "sql"}
-    <div class="px-6">
-      <Input id="sql" label="SQL" bind:value={$form["sql"]} />
-    </div>
-  {/if}
+  </div>
 
   <div class="flex flex-row px-6 py-4 gap-2 border-t">
     <Button onClick={() => window.history.back()} type="secondary">Back</Button>

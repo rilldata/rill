@@ -74,12 +74,14 @@
   $: ({ route } = $page);
 
   $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
+
+  $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
 </script>
 
 <QueryClientProvider client={queryClient}>
   <FileAndResourceWatcher {host} {instanceId}>
     <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
-      {#if data.initialized}
+      {#if data.initialized && !onWelcomePage}
         <BannerCenter />
         <RepresentingUserBanner />
         <ApplicationHeader {mode} />

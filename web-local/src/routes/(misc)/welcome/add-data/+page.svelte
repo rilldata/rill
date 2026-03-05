@@ -6,6 +6,10 @@
   const initConnectorName = ($page.state as any).connector;
 </script>
 
-<div class="w-[900px]">
-  <AddData {initSchemaName} {initConnectorName} />
+<div>
+  <div class="text-base font-semibold text-fg-secondary">Getting started</div>
+  <div class="text-3xl font-bold text-fg-accent">Connect your data</div>
+  <div class="w-[900px] h-[600px] mt-4">
+    <AddData {initSchemaName} {initConnectorName} />
+  </div>
 </div>

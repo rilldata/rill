@@ -9,7 +9,13 @@
   import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
   import { getFormHeight } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { processFileContent } from "@rilldata/web-common/features/templates/file-encoding.ts";
+  import {
+    inferModelNameFromSQL,
+    inferSourceName,
+  } from "@rilldata/web-common/features/sources/sourceUtils.ts";
+  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
+  export let connectorDriver: V1ConnectorDriver;
   export let schema: MultiStepFormSchema | null;
   export let superFormsParams: ReturnType<typeof createConnectorForm>;
   export let labels = defaultFormLabels;
@@ -17,9 +23,9 @@
   export let step: "connector" | "source";
   export let onBack: () => void;
 
-  const formHeight = getFormHeight(schema);
-
-  $: ({ form, formId, submit, submitting, errors, enhance } = superFormsParams);
+  $: ({ form, formId, tainted, submit, submitting, errors, enhance } =
+    superFormsParams);
+  $: taintedFields = $tainted;
 
   let shouldShowSaveAnywayButton = false;
   let shouldShowSkipLink = false;
@@ -27,8 +33,31 @@
 
   $: error = $errors._errors?.[0]; // TODO
 
-  function onStringInputChange() {
-    // TODO
+  function onStringInputChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const { name, value } = target;
+
+    if (name !== "path" && name !== "sql") return;
+
+    const nameFieldTainted =
+      taintedFields && typeof taintedFields === "object"
+        ? Boolean(taintedFields?.name)
+        : false;
+    if (nameFieldTainted) return;
+
+    const inferredName =
+      name === "sql"
+        ? inferModelNameFromSQL(value)
+        : inferSourceName(connectorDriver, value);
+    if (!inferredName) return;
+
+    form.update(
+      ($form) => {
+        $form.name = inferredName;
+        return $form;
+      },
+      { taint: false },
+    );
   }
 
   async function handleFileUpload(
@@ -64,13 +93,13 @@
   }
 </script>
 
-<div class="flex flex-col h-full w-full md:flex-row">
+<div class="flex flex-col h-full w-full md:flex-row overflow-y-auto">
   <!-- LEFT SIDE PANEL -->
-  <div class="flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative">
-    <div class="flex flex-col flex-grow {formHeight} overflow-y-auto p-6">
+  <div class="flex-1 flex flex-col min-w-0 h-full md:pr-0 pr-0 relative">
+    <div class="flex flex-col flex-grow overflow-y-auto p-6">
       <form
         id={$formId}
-        class="pb-5 flex-grow overflow-y-auto"
+        class="pb-5"
         use:enhance
         on:submit|preventDefault={submit}
       >
