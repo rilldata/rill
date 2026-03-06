@@ -3,7 +3,7 @@
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
 
@@ -18,12 +18,12 @@
   export let allowMultiSelect = true;
   export let allowSelectAll = false;
 
+  const client = useRuntimeClient();
+
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
 
-  $: ({ instanceId } = $runtime);
-
-  $: ctx = getCanvasStore(canvasName, instanceId);
+  $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: fieldData = useMetricFieldData(
     ctx,
     metricName,

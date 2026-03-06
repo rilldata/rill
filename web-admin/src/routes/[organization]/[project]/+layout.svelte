@@ -8,7 +8,8 @@
   > = {
     gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
     refetchInterval: (query) => {
-      switch (query.state.data?.deployment?.status) {
+      const status = query.state.data?.deployment?.status;
+      switch (status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
         case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
           return PollTimeWhenProjectDeploymentPending;
@@ -20,6 +21,7 @@
           return false;
       }
     },
+    refetchIntervalInBackground: true, // Keep polling while the tab is hidden (e.g. deploy loader)
     refetchOnMount: true,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
@@ -51,10 +53,10 @@
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
+  import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
@@ -205,6 +207,20 @@
         : "user"
   ) as AuthContext;
 
+  // Derive effective runtime connection props
+  $: effectiveHost =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.runtimeHost
+      : projectData?.deployment?.runtimeHost;
+  $: effectiveInstanceId =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.instanceId
+      : projectData?.deployment?.runtimeInstanceId;
+  $: effectiveJwt =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.accessToken
+      : projectData?.jwt;
+
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
     metricsService?.loadCloudFields({
@@ -247,19 +263,19 @@
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if isProjectAvailable}
-    <RuntimeProvider
-      instanceId={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.instanceId
-        : projectData.deployment.runtimeInstanceId}
-      host={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.runtimeHost
-        : projectData.deployment.runtimeHost}
-      jwt={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.accessToken
-        : projectData.jwt}
-      {authContext}
-    >
-      <slot />
-    </RuntimeProvider>
+    {#if effectiveHost != null && effectiveInstanceId}
+      {#key `${effectiveHost}::${effectiveInstanceId}`}
+        <RuntimeProvider
+          host={effectiveHost}
+          instanceId={effectiveInstanceId}
+          jwt={effectiveJwt}
+          {authContext}
+        >
+          <slot />
+        </RuntimeProvider>
+      {/key}
+    {:else}
+      <ProjectBuilding />
+    {/if}
   {/if}
 {/if}

@@ -2,7 +2,7 @@ import type {
   V1ListResourcesResponse,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { ConnectError } from "@connectrpc/connect";
 import type { Query } from "@tanstack/svelte-query";
 
 export const INITIAL_REFETCH_INTERVAL = 500; // Start at 500ms for quick feedback
@@ -73,7 +73,7 @@ const queryRefetchStateMap = new WeakMap<
 export function smartRefetchIntervalFunc(
   query: Query<
     V1ListResourcesResponse,
-    HTTPError,
+    ConnectError,
     V1ListResourcesResponse,
     readonly unknown[]
   >,
