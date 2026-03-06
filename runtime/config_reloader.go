@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -80,9 +82,15 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	restartController := false
 
 	// Update variables
-	varsChanged := !maps.Equal(inst.Variables, cfg.Variables)
-	if varsChanged {
-		inst.Variables = cfg.Variables
+	allvars := make(map[string]string)
+	for _, envVars := range cfg.Variables {
+		for k, v := range envVars {
+			allvars[k] = v
+		}
+	}
+	varsChanged := !maps.Equal(inst.Variables, allvars)
+	if varsChanged && !cfg.Editable { // for editable deployments we will write vars to `.env` which will also trigger controller restart
+		inst.Variables = allvars
 		restartController = true
 	}
 	inst.Annotations = cfg.Annotations
@@ -151,6 +159,32 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	err = r.rt.EditInstance(ctx, inst, restartController)
 	if err != nil {
 		return err
+	}
+	if !(varsChanged && cfg.Editable) {
+		return nil
+	}
+
+	// write variables to .env files for editable deployments. This will also trigger controller restart via repo watcher
+	for env, envVars := range cfg.Variables {
+		var path string
+		switch env {
+		case "":
+			path = ".env"
+		case "dev":
+			path = ".dev.env"
+		default:
+			// should not happen because only dev vars will be fetched for editable deployments
+			r.rt.Logger.Error("skipping variables for non-dev environment. Only `dev` deployments can be made editable.", zap.String("env", env), zap.String("instance_id", inst.ID))
+			continue
+		}
+		contents, err := godotenv.Marshal(envVars)
+		if err != nil {
+			return fmt.Errorf("failed to marshal env vars: %w", err)
+		}
+		err = r.rt.PutFile(ctx, instanceID, path, strings.NewReader(contents), true, true)
+		if err != nil {
+			return fmt.Errorf("failed to write %s file: %w", path, err)
+		}
 	}
 	return nil
 }

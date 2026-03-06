@@ -116,13 +116,23 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 		return nil, err
 	}
 
+	vars := make(map[string]map[string]string, len(res.ProjectVariables))
+	for _, v := range res.ProjectVariables {
+		envVars, ok := vars[v.Environment]
+		if !ok {
+			envVars = make(map[string]string)
+			vars[v.Environment] = envVars
+		}
+		envVars[v.Name] = v.Value
+	}
 	return &drivers.DeploymentConfig{
-		Variables:             res.Variables,
+		Variables:             vars,
 		Annotations:           res.Annotations,
 		FrontendURL:           res.FrontendUrl,
 		UpdatedOn:             res.UpdatedOn.AsTime(),
 		UsesArchive:           res.UsesArchive,
 		DuckdbConnectorConfig: res.DuckdbConnectorConfig.AsMap(),
+		Editable:              res.Editable,
 	}, nil
 }
 
@@ -151,4 +161,51 @@ func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, er
 	}
 
 	return res, nil
+}
+
+func (h *Handle) GetProjectVariables(ctx context.Context, environment string) (map[string]map[string]string, error) {
+	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: h.config.ProjectID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.admin.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+		Org:         projectResp.Project.OrgName,
+		Project:     projectResp.Project.Name,
+		Environment: environment,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	perEnv := make(map[string]map[string]string)
+	for _, v := range resp.Variables {
+		vars, ok := perEnv[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnv[v.Environment] = vars
+		}
+		vars[v.Name] = v.Value
+	}
+
+	return perEnv, nil
+}
+
+func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
+	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: h.config.ProjectID,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = h.admin.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		Org:         projectResp.Project.OrgName,
+		Project:     projectResp.Project.Name,
+		Environment: environment,
+		Variables:   variables,
+	})
+	return err
 }

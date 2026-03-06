@@ -14,6 +14,8 @@ type AdminService interface {
 	ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error)
 	GetDeploymentConfig(ctx context.Context) (*DeploymentConfig, error)
 	ListDeployments(ctx context.Context) ([]*Deployment, error)
+	GetProjectVariables(ctx context.Context, environment string) (map[string]map[string]string, error)
+	UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error
 }
 
 type ReportMetadata struct {
@@ -42,12 +44,13 @@ type AlertMetadata struct {
 
 // DeploymentConfig holds configuration returned by the admin service for a deployment.
 type DeploymentConfig struct {
-	Variables             map[string]string
+	Variables             map[string]map[string]string
 	Annotations           map[string]string
 	FrontendURL           string
 	UpdatedOn             time.Time
 	UsesArchive           bool
 	DuckdbConnectorConfig map[string]any
+	Editable              bool
 }
 
 type Deployment struct {
