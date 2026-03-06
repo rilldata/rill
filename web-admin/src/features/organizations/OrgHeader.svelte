@@ -62,7 +62,7 @@
   function createOrgPaths(
     organizations: V1Organization[],
     viewingOrg: string | undefined,
-    planDisplayName: string,
+    planDisplayName: string | undefined,
   ) {
     const pathMap = new Map<string, PathOption>();
 

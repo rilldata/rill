@@ -54,6 +54,15 @@
     };
   });
 
+  // Keep src in sync if the user query resolves or changes after mount
+  $: if (
+    sharedImg &&
+    $user.data?.user?.photoUrl &&
+    sharedImg.src !== $user.data.user.photoUrl
+  ) {
+    sharedImg.src = $user.data.user.photoUrl;
+  }
+
   $: if ($user.data?.user) {
     // Actions to take when the user is known
     posthogIdentify($user.data.user.id, {

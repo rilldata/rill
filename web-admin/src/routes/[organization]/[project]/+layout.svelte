@@ -290,40 +290,6 @@
         <slot />
       </RuntimeProvider>
     {/key}
-  {:else if !projectData.deployment}
-    <!-- No deployment = the project is "hibernating" -->
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <RedeployProjectCta {organization} {project} />
-  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <ProjectBuilding />
-  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <ErrorPage
-      statusCode={500}
-      header="Deployment Error"
-      body={projectData.deployment.statusMessage !== ""
-        ? projectData.deployment.statusMessage
-        : "There was an error deploying your project. Please contact support."}
-    />
   {:else}
     <SlimProjectHeader
       {organization}
@@ -332,6 +298,21 @@
       {planDisplayName}
       {organizationLogoUrl}
     />
-    <ProjectBuilding />
+    {#if !projectData.deployment}
+      <!-- No deployment = the project is "hibernating" -->
+      <RedeployProjectCta {organization} {project} />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+      <ProjectBuilding />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
+      <ErrorPage
+        statusCode={500}
+        header="Deployment Error"
+        body={projectData.deployment.statusMessage !== ""
+          ? projectData.deployment.statusMessage
+          : "There was an error deploying your project. Please contact support."}
+      />
+    {:else}
+      <ProjectBuilding />
+    {/if}
   {/if}
 {/if}

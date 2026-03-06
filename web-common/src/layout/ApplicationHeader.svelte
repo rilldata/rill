@@ -119,7 +119,7 @@
     {/if}
   {/if}
 
-  <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
+  <div class="flex gap-x-2 items-center ml-auto">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
