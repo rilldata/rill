@@ -52,7 +52,6 @@
   $: if (!isOpen && closeActive === close) closeActive = null;
 
   const runtimeClient = useRuntimeClient();
-  $: ({ instanceId } = runtimeClient);
   $: resource = data?.resource;
   $: kind = data?.kind;
   $: resourceName = resource?.meta?.name?.name ?? "";
