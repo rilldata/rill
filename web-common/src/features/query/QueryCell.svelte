@@ -22,7 +22,8 @@
   const runtimeClient = useRuntimeClient();
 
   let editorRef: QueryEditor;
-  let cellHeight = 450;
+  let editorHeight = 180;
+  let resultsHeight = 250;
 
   /** Called externally (e.g. from data explorer) to set the editor content */
   export function setEditorContent(text: string) {
@@ -181,8 +182,8 @@
 
     <!-- Editor + Results -->
     {#if !cell.collapsed}
-      <div class="cell-body" style:height="{cellHeight}px">
-        <div class="editor-pane">
+      <div class="cell-body">
+        <div class="editor-pane" style:height="{editorHeight}px">
           <WorkspaceEditorContainer error={cell.error ?? undefined}>
             <QueryEditor
               bind:this={editorRef}
@@ -193,8 +194,20 @@
           </WorkspaceEditorContainer>
         </div>
 
+        <div class="resize-handle">
+          <Resizer
+            absolute={false}
+            direction="NS"
+            side="bottom"
+            min={60}
+            max={600}
+            hang={false}
+            bind:dimension={editorHeight}
+          />
+        </div>
+
         {#if cell.result || cell.isExecuting}
-          <div class="cell-results">
+          <div class="cell-results" style:height="{resultsHeight}px">
             <div class="results-wrapper">
               {#if cell.isExecuting}
                 <div class="size-full flex items-center justify-center">
@@ -205,18 +218,19 @@
               {/if}
             </div>
           </div>
-        {/if}
 
-        <div class="cell-resize-handle">
-          <Resizer
-            absolute={false}
-            direction="NS"
-            side="top"
-            min={120}
-            max={900}
-            bind:dimension={cellHeight}
-          />
-        </div>
+          <div class="resize-handle">
+            <Resizer
+              absolute={false}
+              direction="NS"
+              side="bottom"
+              min={80}
+              max={800}
+              hang={false}
+              bind:dimension={resultsHeight}
+            />
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
@@ -272,22 +286,24 @@
 
   .editor-pane {
     @apply flex-none overflow-hidden;
-    height: 40%;
     min-height: 60px;
   }
 
   .cell-results {
-    @apply flex-1 min-h-0 flex flex-col;
+    @apply flex-none min-h-0 flex flex-col overflow-hidden;
   }
 
   .results-wrapper {
     @apply relative w-full overflow-hidden border-t h-full;
   }
 
-  .cell-resize-handle {
-    @apply flex-none h-2 relative cursor-ns-resize;
-    @apply bg-surface-subtle border-t hover:bg-primary-100;
-    transition: background-color 0.15s;
+  .resize-handle {
+    @apply flex-none relative cursor-ns-resize border-t border-b;
+    height: 5px;
+  }
+
+  .resize-handle:hover {
+    @apply bg-primary-100;
   }
 
   .delete-button {
