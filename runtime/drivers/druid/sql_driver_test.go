@@ -19,7 +19,7 @@ import (
  */
 func Ignore_TestDriver_types(t *testing.T) {
 	driver := &driver{}
-	handle, err := driver.Open("default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := driver.Open("", "default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -54,7 +54,7 @@ func Ignore_TestDriver_types(t *testing.T) {
 
 func Ignore_TestDriver_array_type(t *testing.T) {
 	driver := &driver{}
-	handle, err := driver.Open("default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := driver.Open("", "default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -78,7 +78,7 @@ func Ignore_TestDriver_array_type(t *testing.T) {
 
 func Ignore_TestDriver_json_type(t *testing.T) {
 	driver := &driver{}
-	handle, err := driver.Open("default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := driver.Open("", "default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -101,7 +101,7 @@ func Ignore_TestDriver_json_type(t *testing.T) {
 
 func Ignore_TestDriver_multiple_rows(t *testing.T) {
 	driver := &driver{}
-	handle, err := driver.Open("default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := driver.Open("", "default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -135,7 +135,7 @@ func Ignore_TestDriver_multiple_rows(t *testing.T) {
 
 func Ignore_TestDriver_error(t *testing.T) {
 	driver := &driver{}
-	handle, err := driver.Open("default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := driver.Open("", "default", map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")

@@ -6,13 +6,12 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
-  import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import {
@@ -24,22 +23,25 @@
 
   export let sourcePath: string | null;
 
+  const runtimeClient = useRuntimeClient();
+
   let fileArtifact: FileArtifact;
-  let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
+  let sourceQuery: CreateQueryResult<V1Resource, Error>;
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
-    sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+    sourceQuery = fileArtifact.getResource(queryClient);
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
   $: createDashboardFromTable =
     sourcePath !== null
       ? useCreateMetricsViewWithCanvasAndExploreUIAction(
+          runtimeClient,
           instanceId,
           sinkConnector as string,
           "",
@@ -69,7 +71,7 @@
     // Use developer agent if enabled, otherwise fall back to RPC
     if ($developerChat) {
       await createCanvasDashboardFromTableWithAgent(
-        instanceId,
+        runtimeClient,
         sinkConnector as string,
         "",
         "",

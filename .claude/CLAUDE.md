@@ -83,6 +83,10 @@ Rules for contributing backend features in Rill:
 
 Frontend conventions are being formalized in `.claude/rules/frontend.md` (coming soon).
 
+## Tool Usage
+
+- **WebFetch and WebSearch lose information.** Both tools use small models to summarize content, and they regularly drop items from long lists, tables, or dense pages. When researching reference documentation (e.g. finding all config settings, API parameters, or CLI flags matching a pattern), download the raw page and search it directly: `curl -sL 'https://...' | sed 's/<[^>]*>//g' | grep -i 'pattern'`. This ensures completeness that summarization cannot guarantee.
+
 ## Tips
 
 - **Monorepo**: Uses npm workspaces (frontend) and Go modules (backend)

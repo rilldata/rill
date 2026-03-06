@@ -1,3 +1,7 @@
+/**
+ * Generic binary max-heap with O(log n) insert/update and O(1) key-based lookup.
+ * Ported from http-request-queue/Heap.ts for use with ConnectRPC request queue.
+ */
 export class Heap<Item extends { index?: number }, Key = string> {
   private readonly array: Array<Item> = [];
   private valueToIdxMap: Map<Key, number> = new Map();
@@ -32,7 +36,7 @@ export class Heap<Item extends { index?: number }, Key = string> {
       const value = this.array[0];
       this.valueToIdxMap.delete(this.keyGetter(value));
       if (this.array.length > 1) {
-        this.array[0] = this.array.pop();
+        this.array[0] = this.array.pop()!;
         this.setIndex(this.array[0], 0);
         this.moveDown(0);
       } else {
@@ -42,8 +46,8 @@ export class Heap<Item extends { index?: number }, Key = string> {
     }
   }
 
-  public delete(value: Item, key?: Key) {
-    key ??= this.keyGetter(value);
+  public delete(value: Item | undefined, key?: Key) {
+    key ??= this.keyGetter(value!);
     const idx = value?.index ?? this.valueToIdxMap.get(key);
     if (idx === undefined || idx < 0) return;
 
@@ -51,16 +55,17 @@ export class Heap<Item extends { index?: number }, Key = string> {
     this.valueToIdxMap.delete(key);
     delete value.index;
     if (idx < this.array.length - 1) {
-      this.array[idx] = this.array.pop();
+      this.array[idx] = this.array.pop()!;
       this.array[idx].index = idx;
       this.setIndex(this.array[idx], idx);
-      this.moveDown(idx);
+      if (!this.moveUp(idx)) {
+        this.moveDown(idx);
+      }
     } else {
       this.array.pop();
     }
   }
 
-  // doesnt work on literals
   public updateItem(value: Item) {
     const idx = value.index ?? this.valueToIdxMap.get(this.keyGetter(value));
     if (idx === undefined || idx < 0) return;
