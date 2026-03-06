@@ -38,6 +38,10 @@ vars:
 	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=reload-configs-test", "--project=rill-mgd-deploy", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
+	t.Cleanup(func() {
+		adm.DeleteManagedRepo(t, tempDir)
+	})
+
 	// manually trigger deployment
 	depl := adm.TriggerDeployment(t, "reload-configs-test", "rill-mgd-deploy")
 
@@ -139,6 +143,10 @@ olap_connector: duckdb`,
 	putFiles(t, tempDir, map[string]string{"models/model.sql": "SELECT 'main' AS branch"})
 	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=branch-change-test", "--project=branch-test", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	t.Cleanup(func() {
+		adm.DeleteManagedRepo(t, tempDir)
+	})
 
 	// manually trigger deployment
 	depl := adm.TriggerDeployment(t, "branch-change-test", "branch-test")

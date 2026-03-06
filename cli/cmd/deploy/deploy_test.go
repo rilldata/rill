@@ -60,8 +60,8 @@ func TestManagedDeploy(t *testing.T) {
 		// but for test cleanup we will delete it here directly
 		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
 		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
+		err = adm.Admin.Github.DeleteManagedRepo(context.Background(), repo)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, repo)
 	})
 
 	// redeploy the same project with changes
@@ -116,8 +116,8 @@ func TestManagedDeployWithPrimaryBranch(t *testing.T) {
 	t.Cleanup(func() {
 		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
 		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
+		err = adm.Admin.Github.DeleteManagedRepo(context.Background(), repo)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, repo)
 	})
 
 	// verify the model file is present on the "staging" branch
@@ -178,7 +178,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
 
 	author := &object.Signature{
@@ -248,7 +248,7 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
 
 	author := &object.Signature{
