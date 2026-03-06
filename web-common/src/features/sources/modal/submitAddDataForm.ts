@@ -129,7 +129,7 @@ async function saveConnectorWithoutTest(
   formValues: AddDataFormValues,
   newConnectorName: string,
   instanceId?: string,
-  existingEnvBlob?: string,
+  _existingEnvBlob?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
 

@@ -46,11 +46,10 @@
   $: sourceConnectors = $connectorsStore.filter((c) => c.category !== "olap");
   $: olapConnectors = $connectorsStore.filter((c) => c.category === "olap");
 
-  // Get the form width class for the selected connector
-  $: selectedSchema = selectedSchemaName
-    ? getConnectorSchema(selectedSchemaName)
-    : null;
-  $: formWidthClass = getFormWidth(selectedSchema);
+  // Get the form width class for the selected connector (selectedSchema declared below)
+  $: formWidthClass = getFormWidth(
+    selectedSchemaName ? getConnectorSchema(selectedSchemaName) : null,
+  );
 
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
@@ -109,8 +108,8 @@
 
   // Handle pending connector name when connectors finish loading
   // When connector is provided via Import Data button, ensure step stays at 2
-  $: if (pendingConnectorName && connectors.length > 0) {
-    const found = connectors.find((c) => c.name === pendingConnectorName);
+  $: if (pendingConnectorName && $connectorsStore.length > 0) {
+    const found = $connectorsStore.find((c) => c.name === pendingConnectorName);
     if (found) {
       selectedConnector = toConnectorDriver(found);
       selectedSchemaName = pendingConnectorName;
