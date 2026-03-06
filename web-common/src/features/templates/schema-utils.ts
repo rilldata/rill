@@ -292,32 +292,6 @@ export function getRequiredFieldsForValues(
   return required;
 }
 
-export function getSchemaSecretKeys(
-  schema: MultiStepFormSchema,
-  opts?: { step?: "connector" | "source" | string },
-): string[] {
-  const properties = schema.properties ?? {};
-  return Object.entries(properties)
-    .filter(
-      ([key, prop]) =>
-        isStepMatch(schema, key, opts?.step) && Boolean(prop["x-secret"]),
-    )
-    .map(([key]) => key);
-}
-
-export function getSchemaStringKeys(
-  schema: MultiStepFormSchema,
-  opts?: { step?: "connector" | "source" | string },
-): string[] {
-  const properties = schema.properties ?? {};
-  return Object.entries(properties)
-    .filter(
-      ([key, prop]) =>
-        isStepMatch(schema, key, opts?.step) && prop.type === "string",
-    )
-    .map(([key]) => key);
-}
-
 export function filterSchemaInternalValues(
   schema: MultiStepFormSchema,
   values: Record<string, unknown>,
@@ -559,17 +533,6 @@ export function getConditionalValues(
   }
 
   return result;
-}
-
-/**
- * Returns the backend driver name for a schema.
- * If x-driver is specified, returns that; otherwise returns the schemaName.
- */
-export function getBackendConnectorName(
-  schema: MultiStepFormSchema | null,
-  schemaName: string,
-): string {
-  return schema?.["x-driver"] ?? schemaName;
 }
 
 /**

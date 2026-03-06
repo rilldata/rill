@@ -98,7 +98,7 @@ export type ConnectorCategory =
   | "objectStore"
   | "fileStore"
   | "warehouse"
-  | "source_only";
+  | "sourceOnly";
 
 export type ButtonLabels = {
   idle: string;

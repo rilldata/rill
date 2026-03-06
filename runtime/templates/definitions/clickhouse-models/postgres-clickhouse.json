@@ -1,6 +1,6 @@
 {
   "name": "postgres-clickhouse",
-  "display_name": "PostgreSQL",
+  "display_name": "Postgres",
   "description": "Read PostgreSQL tables into ClickHouse using table functions",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/postgres",
   "driver": "postgres",
@@ -17,7 +17,7 @@
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "source_only",
+    "x-category": "sourceOnly",
     "properties": {
       "host": {
         "type": "string",

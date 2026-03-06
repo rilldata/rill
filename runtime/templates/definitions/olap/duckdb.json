@@ -57,7 +57,7 @@
         "type": "boolean",
         "title": "Managed",
         "description": "This option uses DuckDB as an OLAP engine with Rill-managed infrastructure. No additional configuration is required.",
-        "default": false,
+        "default": true,
         "x-informational": true,
         "x-ui-only": true,
         "x-visible-if": {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"os"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -10,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/templates"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -90,6 +92,8 @@ func (s *Server) GenerateFile(ctx context.Context, req *runtimev1.GenerateFileRe
 	if err == nil {
 		existingEnv = templates.ReadEnvKeys(ctx, repo)
 		release()
+	} else {
+		s.logger.Warn("failed to open repo for .env conflict resolution; env var conflicts may not be detected", zap.Error(err))
 	}
 
 	// Render
@@ -137,7 +141,10 @@ func (s *Server) writeRenderedFiles(ctx context.Context, instanceID string, resu
 
 	// Write .env first so secrets are available when YAML files are parsed
 	if len(result.EnvVars) > 0 {
-		envContent, _ := repo.Get(ctx, ".env")
+		envContent, err := repo.Get(ctx, ".env")
+		if err != nil && !os.IsNotExist(err) {
+			s.logger.Warn("failed to read .env; existing env vars may be overwritten", zap.Error(err))
+		}
 		for key, val := range result.EnvVars {
 			envContent = appendEnvVar(envContent, key, val)
 		}
@@ -158,7 +165,18 @@ func (s *Server) writeRenderedFiles(ctx context.Context, instanceID string, resu
 
 // appendEnvVar updates an existing env var or appends a new one.
 // If the key already exists, its value is replaced in-place.
+// Values are sanitized: newlines are stripped to prevent injection of extra
+// env vars, and values containing spaces or special characters are quoted.
 func appendEnvVar(content, key, value string) string {
+	// Sanitize: strip newlines to prevent env var injection
+	value = strings.ReplaceAll(value, "\n", "")
+	value = strings.ReplaceAll(value, "\r", "")
+
+	// Quote values that contain spaces, '=', or '#' (comment char)
+	if strings.ContainsAny(value, " =#'\"") {
+		value = `"` + strings.ReplaceAll(value, `"`, `\"`) + `"`
+	}
+
 	prefix := key + "="
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {

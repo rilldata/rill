@@ -81,6 +81,9 @@ func propVal(props any, key string) string {
 
 // defaultVal returns val if non-empty, otherwise fallback.
 // Registered as "default" in the template function map.
+// NOTE: Use positional syntax only: [[ default (expr) "fallback" ]].
+// Pipeline syntax ([[ expr | default "fallback" ]]) would swap arguments
+// because text/template pipes into the last parameter.
 func defaultVal(val, fallback string) string {
 	if val == "" {
 		return fallback

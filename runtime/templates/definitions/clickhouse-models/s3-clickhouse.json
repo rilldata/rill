@@ -17,7 +17,7 @@
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "source_only",
+    "x-category": "sourceOnly",
     "properties": {
       "auth_method": {
         "type": "string",

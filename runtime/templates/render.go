@@ -171,9 +171,13 @@ func processPropertiesFromSchema(
 			continue
 		}
 
-		// Skip managed: false for ClickHouse (it's the default)
-		if key == "managed" && !toBool(val) {
-			continue
+		// Skip properties whose value matches the schema default when x-omit-if-default is set.
+		// For example, ClickHouse's "managed" field defaults to true; rendering "managed: true"
+		// is unnecessary noise, but "managed: false" (self-hosted) must appear.
+		if schemaFieldBool(prop, "x-omit-if-default") {
+			if defVal, hasDefault := prop["default"]; hasDefault && fmt.Sprint(val) == fmt.Sprint(defVal) {
+				continue
+			}
 		}
 
 		// Handle map-typed properties (e.g. headers).
@@ -365,18 +369,6 @@ func isEmpty(v any) bool {
 		return len(val) == 0
 	default:
 		return fmt.Sprintf("%v", v) == ""
-	}
-}
-
-// toBool converts a value to bool.
-func toBool(v any) bool {
-	switch val := v.(type) {
-	case bool:
-		return val
-	case string:
-		return val == "true"
-	default:
-		return false
 	}
 }
 

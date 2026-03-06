@@ -128,6 +128,7 @@
         "description": "This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required.",
         "default": true,
         "x-informational": true,
+        "x-omit-if-default": true,
         "x-visible-if": {
           "deployment_type": "rill-managed"
         },

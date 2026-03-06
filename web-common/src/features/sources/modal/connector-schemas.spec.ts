@@ -120,7 +120,7 @@ const testSchemas: Record<string, MultiStepFormSchema> = {
     $schema: "http://json-schema.org/draft-07/schema#",
     type: "object",
     title: "SQLite",
-    "x-category": "source_only",
+    "x-category": "sourceOnly",
     properties: {
       db: { type: "string", title: "Database" },
     },

@@ -51,8 +51,12 @@
       "name": {
         "type": "string",
         "title": "Model name",
-        "description": "Name of the model",
-        "x-placeholder": "my_new_model",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "errorMessage": {
+          "pattern": "Model name can only contain letters, numbers, and underscores"
+        },
+        "x-placeholder": "my_model",
         "x-step": "source"
       }
     },
