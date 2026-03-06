@@ -94,8 +94,9 @@
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  // Source Models are coerced from Models in the UI — the trigger API
-  // still expects the "models" key since the underlying resource is a Model.
+  // IMPORTANT: coerceResourceKind classifies root models as ResourceKind.Source,
+  // but the trigger API still expects the "models" mutation key because the
+  // underlying runtime resource is always a Model. Do not change this to "sources".
   function refreshModel(full: boolean) {
     if (!resourceName) return;
     $triggerMutation.mutate(

@@ -1,7 +1,7 @@
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { ResourceStatusFilterValue } from "./types";
 
-const TEST_FAILURE_MARKER = "tests failed:";
+export const TEST_FAILURE_MARKER = "tests failed:";
 
 /**
  * Determines the display status of a resource based on its reconcile state.

@@ -4,6 +4,7 @@
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import type { ResourceNodeData } from "../shared/types";
+  import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -64,10 +65,6 @@
   // Test failures propagate as "tests failed:..." on the model itself and
   // "Error in dependency <name>: tests failed:..." on downstream resources.
   // Treat both as warnings (shown via check indicator), not node errors.
-  // String matching is necessary because downstream nodes only receive the
-  // propagated error string; the structured `testErrors` field is only on the
-  // originating model. If the backend message format changes, update this constant.
-  const TEST_FAILURE_MARKER = "tests failed:";
   $: isTestOnlyError =
     !!reconcileError && reconcileError.includes(TEST_FAILURE_MARKER);
   $: hasError = !!reconcileError && !isTestOnlyError;

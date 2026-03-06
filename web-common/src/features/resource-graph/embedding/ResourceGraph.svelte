@@ -802,7 +802,7 @@
               >
                 <span class="flex-1 truncate text-xs">All Resources</span>
               </button>
-              {#each filteredResourceSections as section}
+              {#each filteredResourceSections as section (section.kind)}
                 <div class="combo-separator"></div>
                 <div class="section-header">
                   <ResourceTypeBadge kind={section.kind} />
@@ -810,7 +810,7 @@
                     >{section.entries.length}</span
                   >
                 </div>
-                {#each section.entries as entry}
+                {#each section.entries as entry (entry.name)}
                   {@const entryId = `${entry.kind}:${entry.name}`}
                   <button
                     class="combo-item {effectiveSelectedGroupId === entryId
@@ -848,7 +848,7 @@
         <DropdownMenu.Root bind:open={statusDropdownOpen}>
           <DropdownMenu.Trigger
             class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
-              ? 'bg-gray-200'
+              ? 'bg-surface-hover'
               : 'hover:bg-surface-hover'} px-2 py-1"
           >
             <span class="text-fg-secondary font-medium">
