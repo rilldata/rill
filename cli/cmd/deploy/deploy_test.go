@@ -186,8 +186,6 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		Email: "test.user@rilldata.com",
 		When:  time.Now(),
 	}
-	// Embed the token in the remote URL so that all subsequent git operations
-	// (including those run by the deploy command via the system git) can authenticate.
 	authCloneURL := authGitURL(t, *repo.CloneURL, token)
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        authCloneURL,
@@ -493,9 +491,7 @@ func initGitWithTwoBranches(t *testing.T, dir string) {
 
 func authGitURL(t *testing.T, repoURL, token string) string {
 	u, err := url.Parse(repoURL)
-	if err != nil {
-		t.Errorf("authGitURL: invalid URL %q: %v", repoURL, err)
-	}
+	require.NoError(t, err)
 	u.User = url.UserPassword("x-access-token", token)
 	return u.String()
 }
