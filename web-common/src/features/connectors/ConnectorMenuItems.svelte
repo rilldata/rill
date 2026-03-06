@@ -4,7 +4,7 @@
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { type ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch } from "lucide-svelte";
 
@@ -12,9 +12,10 @@
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: connectorQuery = fileArtifact.getResource(queryClient, instanceId);
   $: connectorResource = $connectorQuery.data;
