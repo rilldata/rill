@@ -4,20 +4,24 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { ResourceKind } from "../entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import WorkspaceCrumb from "./WorkspaceCrumb.svelte";
 
   export let resource: V1Resource | undefined;
   export let filePath: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: resourceKind = resource?.meta?.name?.kind as ResourceKind | undefined;
   $: resourceName = resource?.meta?.name?.name;
 
-  $: resourcesQuery = createRuntimeServiceListResources(instanceId, undefined, {
-    query: { retry: 2, refetchOnMount: true },
-  });
+  $: resourcesQuery = createRuntimeServiceListResources(
+    runtimeClient,
+    {},
+    {
+      query: { retry: 2, refetchOnMount: true },
+    },
+  );
   $: allResources = $resourcesQuery.data?.resources ?? [];
 
   $: lateralResources = allResources.filter(({ meta }) => {

@@ -1,26 +1,20 @@
-import type { GraphicScale } from "@rilldata/web-common/components/data-graphic/state/types";
-import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { createIndexMap } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   createAndExpression,
   filterExpressions,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
 import type {
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
   V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
-import type { DateTimeUnit } from "luxon";
-import { get } from "svelte/store";
 import {
   convertISOStringToJSDateWithSameTimeAsSelectedTimeZone,
   removeZoneOffset,
 } from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
-import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import type { TimeSeriesDatum } from "./timeseries-data-store";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
@@ -56,42 +50,6 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
     }
     return acc;
   }, {});
-}
-
-export function updateChartInteractionStore(
-  xHoverValue: undefined | number | Date,
-  yHoverValue: undefined | string | null,
-  isAllTime: boolean,
-  formattedData: TimeSeriesDatum[],
-) {
-  let xHoverColNum: number | undefined = undefined;
-
-  const slicedData = isAllTime
-    ? formattedData?.slice(1)
-    : formattedData?.slice(1, -1);
-
-  if (xHoverValue && xHoverValue instanceof Date) {
-    const { position } = bisectData(
-      xHoverValue,
-      "center",
-      "ts_position",
-      slicedData,
-    );
-    xHoverColNum = position;
-  }
-
-  const currentCol = get(chartInteractionColumn);
-
-  if (
-    currentCol?.xHover !== xHoverColNum ||
-    currentCol?.yHover !== yHoverValue
-  ) {
-    chartInteractionColumn.update((state) => ({
-      ...state,
-      yHover: yHoverValue,
-      xHover: xHoverColNum,
-    }));
-  }
 }
 
 export function prepareTimeSeries(
@@ -132,30 +90,6 @@ export function prepareTimeSeries(
       ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
     };
   });
-}
-
-export function getBisectedTimeFromCordinates(
-  value: number,
-  scaleStore: GraphicScale,
-  accessor: string,
-  data: TimeSeriesDatum[],
-  grainLabel: DateTimeUnit,
-): Date | null {
-  const roundedValue = roundToNearestTimeUnit(
-    new Date(scaleStore.invert(value)),
-    grainLabel,
-  );
-  const { entry: bisector } = bisectData(
-    roundedValue,
-    "center",
-    accessor,
-    data,
-  );
-  if (!bisector || typeof bisector === "number") return null;
-  const bisected = bisector[accessor];
-  if (!bisected) return null;
-
-  return new Date(bisected);
 }
 
 /**

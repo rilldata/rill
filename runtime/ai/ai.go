@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -574,6 +575,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			content := "<redacted>"
+			if msg.ContentType == MessageContentTypeError {
+				content = msg.Content
+			}
 			s.activity.Record(ctx, activity.EventTypeLog, "ai_message",
 				attribute.String("message_id", msg.ID),
 				attribute.String("parent_message_id", msg.ParentID),
@@ -582,6 +587,7 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 				attribute.String("message_type", string(msg.Type)),
 				attribute.String("tool", msg.Tool),
 				attribute.String("content_type", string(msg.ContentType)),
+				attribute.String("content", content),
 			)
 		}
 		s.messagesDirty = false
@@ -967,6 +973,7 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 			attribute.String("ai_session_id", s.id),
 			attribute.String("tool", opts.Name),
 			attribute.String("args", string(argsJSON)),
+			semconv.EnduserID(s.claims.UserID),
 		))
 		s.logger.Info("tool call started", zap.String("tool", opts.Name))
 		start := time.Now()
@@ -1308,11 +1315,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 						Out:  nil,
 						Args: block.ToolCall.Input.AsMap(),
 					})
-					if err != nil && toolResult.Result == nil {
+					if err != nil {
 						if ctx.Err() != nil {
 							return nil, ctx.Err()
 						}
-						return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						if toolResult == nil || toolResult.Result == nil {
+							return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						}
+						// Fall through since it's a structured error that we can capture in the messages.
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {

@@ -207,7 +207,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -228,7 +228,7 @@ func Test_safeSQLString(t *testing.T) {
 	err := os.Mkdir(path, fs.ModePerm)
 	require.NoError(t, err)
 
-	conn, err := Driver{}.Open("default", map[string]any{"data_dir": path}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("", "default", map[string]any{"data_dir": path}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 	require.NoError(t, conn.Close())

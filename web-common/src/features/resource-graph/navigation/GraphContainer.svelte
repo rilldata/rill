@@ -5,7 +5,8 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  const runtimeClient = useRuntimeClient();
   import ResourceGraph from "../embedding/ResourceGraph.svelte";
   import type {
     ResourceStatusFilter,
@@ -37,7 +38,8 @@
     graphCache.initialize();
   });
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
+
 
   $: instanceQuery = createRuntimeServiceGetInstance(
     instanceId,
@@ -45,15 +47,17 @@
     { query: { enabled: !!instanceId } },
   );
   $: olapConnectorName = $instanceQuery.data?.instance?.olapConnector;
-
-  $: resourcesQuery = createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      retry: 2,
-      refetchOnMount: true,
-      refetchOnWindowFocus: false,
-      enabled: !!instanceId,
-    },
-  });
+  $: resourcesQuery = createRuntimeServiceListResources(
+    runtimeClient,
+    {},
+    {
+      query: {
+        retry: 2,
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
+        enabled: !!instanceId,
+      },
+  );
 
   // Keep all connectors so they appear in the dropdown for explicit selection.
   // If no explicit connector resource exists for the OLAP connector, inject a

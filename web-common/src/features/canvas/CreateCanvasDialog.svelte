@@ -9,11 +9,14 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { createResourceFile } from "../file-explorer/new-files";
 
   export let open = false;
   export let metricsViews: V1Resource[];
   export let wrapNavigation: (path: string | undefined) => Promise<void>;
+
+  const runtimeClient = useRuntimeClient();
 
   let selectedMetricsView: V1Resource | undefined = undefined;
 
@@ -25,6 +28,7 @@
   async function createResource() {
     if (selectedMetricsView) {
       const newFilePath = await createResourceFile(
+        runtimeClient,
         ResourceKind.Canvas,
         selectedMetricsView,
       );

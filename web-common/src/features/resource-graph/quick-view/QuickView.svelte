@@ -6,16 +6,19 @@
     resourceGraphQuickViewState,
   } from "./quick-view-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createRuntimeServiceGetInstance,
     createRuntimeServiceListResources,
   } from "@rilldata/web-common/runtime-client";
 
+
+  const runtimeClient = useRuntimeClient();
+
   $: currentState = $resourceGraphQuickViewState;
   $: anchorResource = currentState.anchorResource ?? undefined;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: shouldFetchResources = currentState.open && !!instanceId;
 
@@ -27,8 +30,8 @@
   $: olapConnectorName = $instanceQuery.data?.instance?.olapConnector;
 
   $: resourcesQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         retry: 2,

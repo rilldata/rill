@@ -1,7 +1,6 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch } from "lucide-svelte";
   import { goto } from "$app/navigation";
@@ -14,9 +13,7 @@
 
   const queryClient = useQueryClient();
 
-  $: ({ instanceId } = $runtime);
-
-  $: exploreQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: exploreQuery = fileArtifact.getResource(queryClient);
   $: exploreResource = $exploreQuery.data;
 
   function viewGraph() {

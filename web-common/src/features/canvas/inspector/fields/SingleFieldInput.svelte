@@ -4,8 +4,10 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricFieldData } from "../selectors";
+
+  const client = useRuntimeClient();
 
   export let metricName: string;
   export let label: string | undefined = undefined;
@@ -23,9 +25,7 @@
   let open = false;
   let searchValue = "";
 
-  $: ({ instanceId } = $runtime);
-
-  $: ctx = getCanvasStore(canvasName, instanceId);
+  $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.metricsView);
 
   $: timeDimension = getTimeDimensionForMetricView(metricName);
