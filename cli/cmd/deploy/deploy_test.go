@@ -188,7 +188,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	}
 	// Embed the token in the remote URL so that all subsequent git operations
 	// (including those run by the deploy command via the system git) can authenticate.
-	authCloneURL := authGitURL(*repo.CloneURL, token)
+	authCloneURL := authGitURL(t, *repo.CloneURL, token)
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        authCloneURL,
 		DefaultBranch: "main",
@@ -259,7 +259,7 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 		When:  time.Now(),
 	}
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
-		Remote:        authGitURL(*repo.CloneURL, token),
+		Remote:        authGitURL(t, *repo.CloneURL, token),
 		DefaultBranch: "main",
 	}, "", author)
 	require.NoError(t, err, "failed to push to github repo")
@@ -267,7 +267,7 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	// Clone two separate copies of the same repo to simulate independent working directories
 	// This demonstrates that different subpaths can be worked on independently
 	cloneRepo := func(ctx context.Context, repoURL, path, token string) error {
-		cmd := exec.CommandContext(ctx, "git", "clone", authGitURL(repoURL, token), path)
+		cmd := exec.CommandContext(ctx, "git", "clone", authGitURL(t, repoURL, token), path)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("git clone failed: %s(%s)", out, err)
@@ -491,10 +491,10 @@ func initGitWithTwoBranches(t *testing.T, dir string) {
 	runGitCmd("commit", "-m", "staging changes")
 }
 
-func authGitURL(repoURL, token string) string {
+func authGitURL(t *testing.T, repoURL, token string) string {
 	u, err := url.Parse(repoURL)
 	if err != nil {
-		panic(fmt.Sprintf("authGitURL: invalid URL %q: %v", repoURL, err))
+		t.Errorf("authGitURL: invalid URL %q: %v", repoURL, err)
 	}
 	u.User = url.UserPassword("x-access-token", token)
 	return u.String()
