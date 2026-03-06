@@ -10,7 +10,7 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
@@ -30,8 +30,9 @@
   import { resetConnectorStep } from "./connectorStepStore";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
+  const runtimeClient = useRuntimeClient();
   const { connectors: connectorsStore } = createConnectorSchemas(
-    $runtime.instanceId,
+    runtimeClient.instanceId,
   );
 
   let step = 0;
@@ -199,7 +200,7 @@
   }
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   $: selectedSchema = getConnectorSchema(

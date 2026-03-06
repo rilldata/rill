@@ -1,6 +1,7 @@
 import type { SuperValidated } from "sveltekit-superforms";
 import type { Writable } from "svelte/store";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector } from "./FormValidation";
 import { inferModelNameFromSQL, inferSourceName } from "../sourceUtils";
@@ -223,12 +224,18 @@ export class AddDataFormManager {
 
   makeOnUpdate(args: {
     onClose: () => void;
+    client: RuntimeClient;
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
   }) {
-    const { onClose, queryClient, getSelectedAuthMethod, setParamsError } =
-      args;
+    const {
+      onClose,
+      client,
+      queryClient,
+      getSelectedAuthMethod,
+      setParamsError,
+    } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
@@ -306,6 +313,7 @@ export class AddDataFormManager {
         if (isStepFlowConnector && isOnSourceOrExplorerStep) {
           // Step 2: submit the source/model and close
           await submitAddSourceForm(
+            client,
             queryClient,
             connector,
             submitValues,
@@ -315,6 +323,7 @@ export class AddDataFormManager {
         } else if (isStepFlowConnector && isOnConnectorStep) {
           // Step 1: test connector, persist config, then advance to step 2
           await this.submitConnectorStepAndAdvance({
+            client,
             queryClient,
             values,
             submitValues,
@@ -323,11 +332,17 @@ export class AddDataFormManager {
           });
         } else if (this.formType === "source") {
           // Single-step source form
-          await submitAddSourceForm(queryClient, connector, submitValues);
+          await submitAddSourceForm(
+            client,
+            queryClient,
+            connector,
+            submitValues,
+          );
           onClose();
         } else {
           // Single-step connector form
           await submitAddConnectorForm(
+            client,
             queryClient,
             connector,
             submitValues,
@@ -347,14 +362,21 @@ export class AddDataFormManager {
    * persist connector config, then advance to the source/explorer step.
    */
   private async submitConnectorStepAndAdvance(args: {
+    client: RuntimeClient;
     queryClient: QueryClient;
     values: FormData;
     submitValues: FormData;
     isPublicAuth: boolean;
     isMultiStep: boolean;
   }) {
-    const { queryClient, values, submitValues, isPublicAuth, isMultiStep } =
-      args;
+    const {
+      client,
+      queryClient,
+      values,
+      submitValues,
+      isPublicAuth,
+      isMultiStep,
+    } = args;
     const nextStep = isMultiStep ? "source" : "explorer";
 
     if (isPublicAuth) {
@@ -368,6 +390,7 @@ export class AddDataFormManager {
 
     // Test the connection, then persist config and advance
     const connectorInstanceName = await submitAddConnectorForm(
+      client,
       queryClient,
       this.connector,
       submitValues,
@@ -550,17 +573,19 @@ export class AddDataFormManager {
    * Schema conditionals handle connector-specific requirements (e.g., SSL).
    */
   async saveConnector(args: {
+    client: RuntimeClient;
     queryClient: QueryClient;
     values: FormData;
     existingEnvBlob?: string;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values, existingEnvBlob } = args;
+    const { client, queryClient, values, existingEnvBlob } = args;
     const schema = getConnectorSchema(this.schemaName);
     const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;
     try {
       await submitAddConnectorForm(
+        client,
         queryClient,
         this.connector,
         processedValues,

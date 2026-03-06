@@ -11,6 +11,7 @@ import (
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/azure"
 	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/shared"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -45,6 +46,20 @@ var spec = drivers.Spec{
 			DisplayName: "Model",
 			Description: "The OpenAI model to use (e.g., 'gpt-4o').",
 			Placeholder: "",
+		},
+		{
+			Key:         "max_output_tokens",
+			Type:        drivers.NumberPropertyType,
+			Required:    false,
+			DisplayName: "Max Output Tokens",
+			Description: "Maximum number of tokens to generate in the completion (default: 8192).",
+		},
+		{
+			Key:         "reasoning_effort",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Reasoning Effort",
+			Description: "Constrains effort on reasoning for reasoning models.",
 		},
 		{
 			Key:         "base_url",
@@ -84,7 +99,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[strin
 }
 
 // Open implements drivers.Driver.
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -135,12 +150,14 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey      string   `mapstructure:"api_key"`
-	Model       string   `mapstructure:"model"`
-	Temperature *float64 `mapstructure:"temperature"`
-	BaseURL     string   `mapstructure:"base_url"`
-	APIType     string   `mapstructure:"api_type"`
-	APIVersion  string   `mapstructure:"api_version"`
+	APIKey          string   `mapstructure:"api_key"`
+	Model           string   `mapstructure:"model"`
+	MaxOutputTokens int64    `mapstructure:"max_output_tokens"`
+	ReasoningEffort string   `mapstructure:"reasoning_effort"`
+	Temperature     *float64 `mapstructure:"temperature"`
+	BaseURL         string   `mapstructure:"base_url"`
+	APIType         string   `mapstructure:"api_type"`
+	APIVersion      string   `mapstructure:"api_version"`
 }
 
 func (c *configProperties) getModel() string {
@@ -150,11 +167,23 @@ func (c *configProperties) getModel() string {
 	return openai.ChatModelGPT5_2
 }
 
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature != nil {
-		return *c.Temperature
+func (c *configProperties) getMaxOutputTokens() int64 {
+	if c.MaxOutputTokens > 0 {
+		return c.MaxOutputTokens
 	}
-	return defaultTemperature
+	return 8192
+}
+
+func (c *configProperties) getTemperature() *float64 {
+	if c.Temperature != nil {
+		return c.Temperature
+	}
+	// When reasoning is enabled, default temperature must be 1 (or omitted).
+	if c.ReasoningEffort != "" {
+		return nil
+	}
+	t := defaultTemperature
+	return &t
 }
 
 type openaiHandle struct {
@@ -285,10 +314,16 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 
 	// Prepare request parameters
 	params := openai.ChatCompletionNewParams{
-		Model:       o.config.getModel(),
-		Messages:    reqMsgs,
-		Tools:       openaiTools,
-		Temperature: openai.Float(o.config.getTemperature()),
+		Model:               o.config.getModel(),
+		Messages:            reqMsgs,
+		Tools:               openaiTools,
+		MaxCompletionTokens: openai.Int(o.config.getMaxOutputTokens()),
+	}
+	if t := o.config.getTemperature(); t != nil {
+		params.Temperature = openai.Float(*t)
+	}
+	if o.config.ReasoningEffort != "" {
+		params.ReasoningEffort = shared.ReasoningEffort(o.config.ReasoningEffort)
 	}
 
 	// Set response format based on output schema

@@ -98,7 +98,7 @@ func (p *ModelInputProperties) Decode(props map[string]any) error {
 	return nil
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("https driver can't be shared")
 	}

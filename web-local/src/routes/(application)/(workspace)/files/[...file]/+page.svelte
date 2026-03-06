@@ -17,7 +17,6 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
@@ -35,8 +34,6 @@
 
   let editor: EditorView;
 
-  $: ({ instanceId } = $runtime);
-
   $: ({ fileArtifact } = data);
   $: ({
     autoSave,
@@ -53,7 +50,7 @@
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
+  $: resourceQuery = getResource(queryClient);
 
   $: resource = $resourceQuery.data;
 
@@ -63,7 +60,7 @@
       : getExtensionsForFile(path);
 
   // Parse error for the editor banner
-  $: parseErrorQuery = getParseError(queryClient, instanceId);
+  $: parseErrorQuery = getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
   onMount(() => {

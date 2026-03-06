@@ -222,7 +222,7 @@ func (c *configProperties) validate() error {
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
@@ -372,6 +372,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		logger:          logger,
 		activity:        ac,
 		instanceID:      instanceID,
+		connectorName:   connectorName,
 		supportSettings: supportSettings,
 		ctx:             ctx,
 		cancel:          cancel,
@@ -406,6 +407,7 @@ type Connection struct {
 	logger          *zap.Logger
 	activity        *activity.Client
 	instanceID      string
+	connectorName   string
 	supportSettings bool
 
 	// context that is cancelled when the connection is closed

@@ -209,7 +209,7 @@ func (c *configProperties) resolveDSN() (string, error) {
 	return gosnowflake.DSN(cfg)
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("snowflake driver can't be shared")
 	}

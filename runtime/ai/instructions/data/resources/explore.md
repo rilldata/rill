@@ -122,7 +122,9 @@ dimensions: '*'
 measures: '*'
 ```
 
-## JSON Schema
+## Reference documentation
+
+Here is a full JSON schema for the explore syntax:
 
 ```
 {% json_schema_for_resource "explore" %}

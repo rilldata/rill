@@ -3,8 +3,7 @@
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { httpRequestQueue } from "../../../runtime-client/http-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -27,7 +26,7 @@
   export let hideNullPercentage = false;
   export let enableProfiling = true;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   let timestampDetailHeight = 160;
   let active = false;
@@ -36,7 +35,7 @@
 
   /** queries used to power the different plots */
   $: nullPercentage = getNullPercentage(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -46,7 +45,7 @@
   );
 
   $: timeSeries = getTimeSeriesAndSpark(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -62,7 +61,6 @@
 
   function toggleColumnProfile() {
     active = !active;
-    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 </script>
 
