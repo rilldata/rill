@@ -146,7 +146,7 @@ export class AddDataFormManager {
   }
 
   handleSkip(): void {
-    const stepState = get(connectorStepStore) as ConnectorStepState;
+    const stepState = get(connectorStepStore);
     // Only allow skipping when on connector step
     if (stepState.step !== "connector") return;
     if (!this.isMultiStepConnector && !this.hasExplorerStep) return;
@@ -165,7 +165,7 @@ export class AddDataFormManager {
   }
 
   handleBack(onBack: () => void): void {
-    const stepState = get(connectorStepStore) as ConnectorStepState;
+    const stepState = get(connectorStepStore);
     if (this.isMultiStepConnector && stepState.step === "source") {
       setStep("connector");
     } else if (this.hasExplorerStep && stepState.step === "explorer") {
@@ -250,7 +250,7 @@ export class AddDataFormManager {
       cancel?: () => void;
     }) => {
       const values = event.form.data;
-      const stepState = get(connectorStepStore) as ConnectorStepState;
+      const stepState = get(connectorStepStore);
       const isOnSourceOrExplorerStep =
         stepState.step === "source" || stepState.step === "explorer";
       const isOnConnectorStep = stepState.step === "connector";

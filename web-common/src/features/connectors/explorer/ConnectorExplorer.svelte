@@ -2,39 +2,16 @@
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import { useRuntimeClient } from "../../../runtime-client/v2";
-  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
   import ConnectorEntry from "./ConnectorEntry.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
 
   const client = useRuntimeClient();
 
-  $: connectors = createRuntimeServiceAnalyzeConnectors(
-    client,
-    {},
-    {
-      query: {
-        // Retry transient errors during runtime resets (e.g. project initialization)
-        retry: (failureCount) => failureCount < 3,
-        retryDelay: 1000,
-        // sort alphabetically
-        select: (data) => {
-          if (!data?.connectors) return;
-
-          const filtered = (
-            olapOnly
-              ? data.connectors.filter((c) => c?.driver?.implementsOlap)
-              : data.connectors
-          ).sort((a, b) =>
-            (a?.name as string).localeCompare(b?.name as string),
-          );
-          return { connectors: filtered };
-        },
-      },
-    },
-  );
+  $: connectors = getAnalyzedConnectors(client, olapOnly);
   $: ({ data, error } = $connectors);
 </script>
 

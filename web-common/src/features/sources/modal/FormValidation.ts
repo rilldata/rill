@@ -31,7 +31,9 @@ export function getValidationSchemaForConnector(
 export function createConnectorForm(args: {
   schemaName: string;
   formType: AddDataFormType;
-  onUpdate: (event: { form: { data: FormData; valid: boolean } }) => void;
+  onUpdate: (event: {
+    form: { data: FormData; valid: boolean };
+  }) => void | Promise<void>;
 }) {
   const { schemaName, formType, onUpdate } = args;
   const schema = getConnectorSchema(schemaName);
@@ -64,11 +66,15 @@ export function createConnectorForm(args: {
     adapter,
   );
 
-  return superForm<FormData, string, FormData>(formDefaults, {
+  const form = superForm<FormData, string, FormData>(formDefaults, {
     SPA: true,
     validators: adapter,
     onUpdate,
+    onError: ({ result }) => {
+      form.message.set((result.error as any).details || result.error.message);
+    },
     resetForm: false,
     validationMethod: "onsubmit",
   });
+  return form;
 }

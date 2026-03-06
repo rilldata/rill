@@ -21,6 +21,7 @@ import {
 } from "../../connectors/code-utils";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
+  waitForProjectParser,
   waitForResourceReconciliation,
 } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -33,12 +34,14 @@ import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { sourceIngestionTracker } from "../sources-store";
 import { OLAP_ENGINES } from "./constants";
-import { getConnectorSchema } from "./connector-schemas";
+import { getConnectorSchema, isMultiStepConnector } from "./connector-schemas";
 import {
+  findRadioEnumKey,
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
+import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -84,6 +87,7 @@ async function beforeSubmitForm(
       displayName: EMPTY_PROJECT_TITLE,
       olap: olapEngine, // Explicitly set OLAP based on connector type
     });
+    await waitForProjectParser(client.instanceId);
 
     // Race condition: invalidate("init") must be called before we navigate to
     // `/files/${newFilePath}`. invalidate("init") is also called in the
@@ -214,6 +218,7 @@ export async function submitAddConnectorForm(
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
   existingEnvBlob?: string,
+  shouldNavigate: boolean = true,
 ): Promise<string> {
   await beforeSubmitForm(client, connector);
   const schema = getConnectorSchema(connector.name ?? "");
@@ -226,6 +231,11 @@ export async function submitAddConnectorForm(
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
+
+  // Fast-path: public auth skips validation/test and advances directly
+  if (isMultiStepConnector(schema) && isPublicAuth(schema, formValues)) {
+    return connector.name!;
+  }
 
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${client.instanceId}:${connector.name}`;
@@ -373,7 +383,7 @@ export async function submitAddConnectorForm(
       }
 
       // Go to the new connector file
-      await goto(`/files/${newConnectorFilePath}`);
+      if (shouldNavigate) await goto(`/files/${newConnectorFilePath}`);
       return newConnectorName;
     } catch (error) {
       // If the operation was aborted, don't treat it as an error
@@ -390,10 +400,10 @@ export async function submitAddConnectorForm(
         await rollbackChanges(client, newConnectorFilePath, originalEnvBlob);
       }
 
-      const errorDetails = (error as any).details;
-      if (errorDetails && errorDetails !== (error as any).message) {
+      const errorDetails = error.details;
+      if (errorDetails && errorDetails !== error.message) {
         throw {
-          message: (error as any).message || "Unable to establish a connection",
+          message: error.message || "Unable to establish a connection",
           details: errorDetails,
         };
       }
@@ -423,7 +433,8 @@ export async function submitAddSourceForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
-): Promise<void> {
+  shouldNavigate: boolean = true,
+): Promise<string> {
   await beforeSubmitForm(client, connector);
   const newSourceName = formValues.name as string;
 
@@ -499,7 +510,7 @@ export async function submitAddSourceForm(
     // The source file was already created, so we need to delete it
     sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
     await rollbackChanges(client, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    const errorDetails = error.details;
 
     throw {
       message: error.message || "Unable to establish a connection",
@@ -522,5 +533,19 @@ export async function submitAddSourceForm(
     throw new Error(errorMessage);
   }
 
-  await goto(`/files/${newSourceFilePath}`);
+  if (shouldNavigate) await goto(`/files/${newSourceFilePath}`);
+  return newSourceName;
+}
+
+function isPublicAuth(
+  schema: MultiStepFormSchema | null,
+  values: AddDataFormValues,
+) {
+  // Resolve the auth method from form values or the parent component's state
+  const authKey = schema ? findRadioEnumKey(schema) : null;
+  const selectedAuthMethod =
+    (authKey && values?.[authKey] != null
+      ? String(values[authKey])
+      : undefined) || "";
+  return selectedAuthMethod === "public";
 }

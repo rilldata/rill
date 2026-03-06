@@ -4,8 +4,6 @@
   import Button from "../../components/button/Button.svelte";
   import { createRuntimeServiceUnpackExampleMutation } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
-  import { addSourceModal } from "../sources/modal/add-source-visibility";
-  import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -20,8 +18,13 @@
   import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import ConnectYourDataSmall from "@rilldata/web-common/features/add-data/ConnectYourDataSmall.svelte";
+  import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
 
   const runtimeClient = useRuntimeClient();
+
+  let openAddDataDialog = false;
+  let selectedAddDataSchema: string | undefined = undefined;
 
   const unpackExampleProject =
     createRuntimeServiceUnpackExampleMutation(runtimeClient);
@@ -52,20 +55,12 @@
 
 <div class="container">
   <div class="cta-container">
-    <div class="import-data-container cta-item">
-      <div class="flex flex-col gap-y-1">
-        <div class="font-semibold text-base">Import data</div>
-        <div class="text-xs">
-          Add or drag a file here (Parquet, NDJSON, CSV).
-        </div>
-      </div>
-      <div class="mx-auto">
-        <ImportData />
-      </div>
-      <Button type="primary" onClick={() => addSourceModal.open()}
-        >+ Add Data</Button
-      >
-    </div>
+    <ConnectYourDataSmall
+      startConnectorSelection={(newSchemaName) => {
+        selectedAddDataSchema = newSchemaName;
+        openAddDataDialog = true;
+      }}
+    />
 
     <div class="my-auto text-gray-400 text-base">or</div>
 
@@ -137,6 +132,8 @@
   </div>
 </div>
 
+<AddDataModal bind:open={openAddDataDialog} schema={selectedAddDataSchema} />
+
 <style lang="postcss">
   .container {
     @apply flex flex-col m-auto px-8 gap-y-6 w-fit;
@@ -144,13 +141,5 @@
 
   .cta-container {
     @apply flex flex-row text-center gap-x-6;
-  }
-
-  .import-data-container {
-    @apply flex flex-col w-64 p-6 gap-y-4;
-  }
-
-  .cta-item {
-    @apply bg-surface border rounded-md shadow-sm;
   }
 </style>

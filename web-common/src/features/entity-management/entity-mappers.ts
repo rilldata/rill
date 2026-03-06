@@ -44,6 +44,7 @@ export function getFilePathFromNameAndType(
 export function getFileAPIPathFromNameAndType(
   name: string,
   type: EntityType,
+  yaml?: boolean,
 ): string {
   switch (type) {
     case EntityType.Connector:
@@ -51,7 +52,7 @@ export function getFileAPIPathFromNameAndType(
     case EntityType.Table:
       return `models/${name}.yaml`;
     case EntityType.Model:
-      return `models/${name}.sql`;
+      return `models/${name}.${yaml ? "yaml" : "sql"}`;
     case EntityType.MetricsDefinition:
       return `dashboards/${name}.yaml`;
     case EntityType.Chart:
