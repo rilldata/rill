@@ -35,12 +35,14 @@ import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { sourceIngestionTracker } from "../sources-store";
 import { OLAP_ENGINES } from "./constants";
-import { getConnectorSchema } from "./connector-schemas";
+import { getConnectorSchema, isMultiStepConnector } from "./connector-schemas";
 import {
+  findRadioEnumKey,
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
+import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -231,6 +233,11 @@ export async function submitAddConnectorForm(
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
+
+  // Fast-path: public auth skips validation/test and advances directly
+  if (isMultiStepConnector(schema) && isPublicAuth(schema, formValues)) {
+    return connector.name!;
+  }
 
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
@@ -542,4 +549,17 @@ export async function submitAddSourceForm(
 
   if (shouldNavigate) await goto(`/files/${newSourceFilePath}`);
   return newSourceName;
+}
+
+function isPublicAuth(
+  schema: MultiStepFormSchema | null,
+  values: AddDataFormValues,
+) {
+  // Resolve the auth method from form values or the parent component's state
+  const authKey = schema ? findRadioEnumKey(schema) : null;
+  const selectedAuthMethod =
+    (authKey && values?.[authKey] != null
+      ? String(values[authKey])
+      : undefined) || "";
+  return selectedAuthMethod === "public";
 }

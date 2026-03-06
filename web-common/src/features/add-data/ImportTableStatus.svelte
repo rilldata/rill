@@ -1,46 +1,66 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import {
-    ImportTableMode,
-    type ImportTableRunner,
-  } from "@rilldata/web-common/features/add-data/import/ImportTableRunner.ts";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { CheckIcon, XIcon } from "lucide-svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import {
+    type AddDataConfig,
+    type ImportAddDataStep,
+    ImportDataStep,
+  } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import { runImportStep } from "@rilldata/web-common/features/add-data/steps/import.ts";
+  import { onMount } from "svelte";
 
-  export let runner: ImportTableRunner;
+  export let config: AddDataConfig;
+  export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
 
-  const { mode, error, details, currentFilePath } = runner;
+  $: ({ importStep } = importAddDataStep);
 
   const Steps = [
     {
-      mode: ImportTableMode.CreateModel,
+      step: ImportDataStep.CreateModel,
       pendingLabel: "Ingesting data...",
       doneLabel: "Ingested data",
       failedLabel: "Ingesting data failed.",
     },
     {
-      mode: ImportTableMode.CreateMetrics,
+      step: ImportDataStep.CreateMetricsView,
       pendingLabel: "Creating Metrics View...",
       doneLabel: "Created Metrics View",
       failedLabel: "Creating Metrics View failed.",
     },
     {
-      mode: ImportTableMode.CreateExplore,
+      step: ImportDataStep.CreateExplore,
       pendingLabel: "Generating Explore dashboard...",
       doneLabel: "Generated Explore dashboard",
       failedLabel: "Generating Explore dashboard failed.",
     },
   ];
 
-  $: hasErrored = !!$error;
-  $: currentFileRoute = $currentFilePath
-    ? `/files${addLeadingSlash($currentFilePath)}`
-    : "/";
+  let currentFileRoute: string = "/";
+  let error: string | null = null;
+  $: hasErrored = !!error;
+
+  async function runImport() {
+    try {
+      while (importAddDataStep.importStep.step !== ImportDataStep.Done) {
+        importAddDataStep = await runImportStep(
+          config,
+          importAddDataStep,
+          (newRoute) => (currentFileRoute = newRoute),
+        );
+      }
+      return goto(currentFileRoute);
+    } catch (e) {
+      error = e?.response?.data?.message ?? e?.message ?? null;
+    }
+  }
+
+  onMount(runImport);
 </script>
 
 <div class="flex flex-col gap-4 p-6 mx-auto w-fit">
@@ -52,22 +72,22 @@
     {/if}
   </div>
   <div class="text-center">Creating your dashboard</div>
-  {#each Steps as step (step.mode)}
+  {#each Steps as s (s.step)}
     <div class="flex flex-row items-center gap-4 text-fg-tertiary">
-      {#if $mode > step.mode}
+      {#if importStep.step > s.step}
         <CheckIcon size="14px" />
-        <div>{step.doneLabel}</div>
+        <div>{s.doneLabel}</div>
       {:else if hasErrored}
-        {#if $mode === step.mode}
+        {#if importStep.step > s.step}
           <AlertCircleOutline size="14px" className="text-destructive" />
-          <div>{step.failedLabel}</div>
+          <div>{s.failedLabel}</div>
         {:else}
           <XIcon size="14px" className="text-destructive" />
-          <div>{step.pendingLabel}</div>
+          <div>{s.pendingLabel}</div>
         {/if}
       {:else}
         <LoadingSpinner size="14px" />
-        <div>{step.pendingLabel}</div>
+        <div>{s.pendingLabel}</div>
       {/if}
     </div>
   {/each}
@@ -75,14 +95,11 @@
 {#if $error}
   <div class="w-96 mx-auto mb-4 text-destructive">
     <div class="text-sm mb-2">{$error}</div>
-    {#if $details}<div>{$details}</div>{/if}
   </div>
 {/if}
 <div class="flex flex-row items-center gap-2 mb-4 mx-auto">
   {#if hasErrored}
-    <Button type="secondary" noStroke href={currentFileRoute} onClick={onBack}>
-      Back
-    </Button>
+    <Button type="secondary" noStroke onClick={onBack}>Back</Button>
   {/if}
   <Button type="secondary" href={currentFileRoute}>
     Skip and view project

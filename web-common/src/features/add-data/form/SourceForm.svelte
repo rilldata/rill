@@ -10,15 +10,18 @@
   import { getSourceYamlPreview } from "./yaml-preview.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import { ImportTableRunner } from "@rilldata/web-common/features/add-data/import/ImportTableRunner.ts";
   import { prepareSourceFormData } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import { getSchemaSecretKeys } from "@rilldata/web-common/features/templates/schema-utils.ts";
   import { updateDotEnvWithSecrets } from "@rilldata/web-common/features/connectors/code-utils.ts";
+  import {
+    type ImportAddDataStepConfig,
+    ImportDataStep,
+  } from "@rilldata/web-common/features/add-data/steps/types.ts";
 
   export let connectorDriver: V1ConnectorDriver;
   export let schemaName: string;
   export let connectorName: string;
-  export let onSubmit: (runner: ImportTableRunner) => void;
+  export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
   export let onBack: () => void;
 
   $: ({ instanceId } = $runtime);
@@ -44,8 +47,7 @@
     formType: "source",
     onUpdate: async ({ form }) => {
       if (!form.valid) return;
-      const runner = await getRunner(form.data);
-      onSubmit(runner);
+      return submitImportConfig(form.data);
     },
   });
 
@@ -59,7 +61,7 @@
     existingEnvBlob,
   });
 
-  async function getRunner(formValues: any) {
+  async function submitImportConfig(formValues: any) {
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connectorDriver,
       formValues,
@@ -80,18 +82,21 @@
       },
     );
 
-    return new ImportTableRunner(
-      instanceId,
-      formValues.name,
-      {
-        connector: rewrittenConnector.name,
-        schema: "",
-        database: "",
-        table: "",
-      },
-      yamlPreview,
-      newBlob,
-    );
+    const importConfig = {
+      importSteps: [
+        ImportDataStep.CreateModel,
+        ImportDataStep.CreateMetricsView,
+        ImportDataStep.CreateExplore,
+      ],
+      source: formValues.name,
+      sourceSchema: "",
+      sourceDatabase: "",
+      connector: rewrittenConnector.name!,
+      yaml: yamlPreview,
+      envBlob: newBlob,
+    } satisfies ImportAddDataStepConfig;
+
+    onSubmit(importConfig);
   }
 </script>
 

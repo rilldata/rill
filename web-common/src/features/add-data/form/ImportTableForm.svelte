@@ -19,12 +19,14 @@
     compileSourceYAML,
     inferModelNameFromSQL,
   } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-  import { get } from "svelte/store";
-  import { ImportTableRunner } from "@rilldata/web-common/features/add-data/import/ImportTableRunner.ts";
+  import {
+    type ImportAddDataStepConfig,
+    ImportDataStep,
+  } from "@rilldata/web-common/features/add-data/steps/types.ts";
 
   export let connectorName: string;
   export let connectorDriver: V1ConnectorDriver;
-  export let onSubmit: (runner: ImportTableRunner) => void;
+  export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
 
   const FormId = "import-table-form";
 
@@ -42,14 +44,12 @@
   ];
 
   const initialValues: {
-    name: string;
     mode: string;
     table: string;
     database: string;
     schema: string;
     sql: string;
   } = {
-    name: "",
     mode: modeOptions[0].value,
     table: "",
     database: "",
@@ -58,58 +58,71 @@
   };
   const schema = yup(
     object({
-      name: string().required(),
       mode: string().required(),
-      table: string(),
+      table: string().when("mode", {
+        is: "table",
+        then: (schema) => schema.required(),
+        otherwise: (schema) => schema.notRequired(),
+      }),
       database: string(),
       schema: string(),
-      sql: string(),
+      sql: string().when("mode", {
+        is: "sql",
+        then: (schema) => schema.required(),
+        otherwise: (schema) => schema.notRequired(),
+      }),
     }),
   );
 
-  const { form, tainted, enhance, submit } = superForm(
-    defaults(initialValues, schema),
-    {
-      SPA: true,
-      validators: schema,
-      resetForm: false,
-      async onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
-        const sql =
-          values.mode === "table"
-            ? `SELECT * FROM ${values.table}`
-            : values.sql;
-        const yaml = compileSourceYAML(
-          connectorDriver,
-          {
-            name: values.name,
-            sql,
-            database: values.database,
-          },
-          {
-            connectorInstanceName: connectorName,
-          },
-        );
-        onSubmit(
-          new ImportTableRunner(
-            instanceId,
-            values.name,
-            get(connectorExplorerStore.selectedTableStore),
-            yaml,
-            null,
-          ),
-        );
-      },
-      validationMethod: "onsubmit",
-    },
-  );
+  const { form, enhance, submit } = superForm(defaults(initialValues, schema), {
+    SPA: true,
+    validators: schema,
+    resetForm: false,
+    async onUpdate({ form }) {
+      if (!form.valid) return;
+      const values = form.data;
+      const sql =
+        values.mode === "table"
+          ? `SELECT * FROM ${values.table ?? ""}`
+          : values.sql;
+      const name =
+        values.mode === "table"
+          ? values.table
+          : inferModelNameFromSQL(values.sql ?? "");
+      if (!name) return; // TODO: error
 
-  $: taintedFields = $tainted;
-  $: nameFieldTainted =
-    taintedFields && typeof taintedFields === "object"
-      ? Boolean(taintedFields?.name)
-      : false;
+      const modelName = getName(
+        name,
+        fileArtifacts.getNamesForKind(ResourceKind.Model),
+      );
+      const yaml = compileSourceYAML(
+        connectorDriver,
+        {
+          name: modelName,
+          sql,
+          database: values.database,
+        },
+        {
+          connectorInstanceName: connectorName,
+        },
+      );
+
+      onSubmit({
+        importSteps: [
+          ImportDataStep.CreateModel, // TODO: live connectors cannot create models
+          ImportDataStep.CreateMetricsView,
+          ImportDataStep.CreateExplore,
+        ],
+        source: modelName,
+        sourceSchema: values.schema ?? "",
+        sourceDatabase: values.database ?? "",
+        connector: connectorName,
+        yaml,
+        envBlob: null,
+      } satisfies ImportAddDataStepConfig);
+    },
+    validationMethod: "onsubmit",
+  });
 
   $: connectors = getAnalyzedConnectors(instanceId, false);
   $: analyzedConnector = $connectors.data?.connectors?.find(
@@ -125,47 +138,14 @@
     },
     (_, database, schema, table) => {
       if (!database || !schema || !table) return;
-      connectorExplorerStore.selectedTableStore.set({
-        connector: connectorName,
-        database,
-        schema,
-        table,
+      form.update((f) => {
+        f.database = database;
+        f.schema = schema;
+        f.table = table;
+        return f;
       });
-
-      form.update(
-        (f) => {
-          f.database = database;
-          f.schema = schema;
-          f.table = table;
-          if (!nameFieldTainted) {
-            f.name = getName(
-              table,
-              fileArtifacts.getNamesForKind(ResourceKind.Model),
-            );
-          }
-          return f;
-        },
-        {
-          taint: false,
-        },
-      );
     },
   );
-
-  function onSQLInputChange(newSql: string) {
-    if (nameFieldTainted) return;
-
-    const inferredName = inferModelNameFromSQL(newSql);
-    if (!inferredName) return;
-
-    form.update(
-      ($form) => {
-        $form.name = inferredName;
-        return $form;
-      },
-      { taint: false },
-    );
-  }
 </script>
 
 <form
@@ -175,7 +155,6 @@
   class="flex flex-col gap-1 h-full"
 >
   <div class="flex flex-col gap-2 px-6 pt-2">
-    <Input id="name" label="Name" bind:value={$form["name"]} />
     <div>Pick a table or Input your file SQL to power your first dashboard</div>
     <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
       {#each modeOptions as option (option.value)}
@@ -209,12 +188,7 @@
       {/if}
     {:else if $form["mode"] === "sql"}
       <div class="px-6">
-        <Input
-          id="sql"
-          label="SQL"
-          bind:value={$form["sql"]}
-          onInput={onSQLInputChange}
-        />
+        <Input id="sql" label="SQL" bind:value={$form["sql"]} />
       </div>
     {/if}
   </div>

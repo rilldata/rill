@@ -20,8 +20,13 @@
   import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import ConnectYourDataSmall from "@rilldata/web-common/features/add-data/ConnectYourDataSmall.svelte";
+  import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
 
   $: ({ instanceId } = $runtime);
+
+  let openAddDataDialog = false;
+  let selectedAddDataSchema: string | undefined = undefined;
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
 
@@ -54,20 +59,12 @@
 
 <div class="container">
   <div class="cta-container">
-    <div class="import-data-container cta-item">
-      <div class="flex flex-col gap-y-1">
-        <div class="font-semibold text-base">Import data</div>
-        <div class="text-xs">
-          Add or drag a file here (Parquet, NDJSON, CSV).
-        </div>
-      </div>
-      <div class="mx-auto">
-        <ImportData />
-      </div>
-      <Button type="primary" onClick={() => addSourceModal.open()}
-        >+ Add Data</Button
-      >
-    </div>
+    <ConnectYourDataSmall
+      startConnectorSelection={(newSchemaName) => {
+        selectedAddDataSchema = newSchemaName;
+        openAddDataDialog = true;
+      }}
+    />
 
     <div class="my-auto text-gray-400 text-base">or</div>
 
@@ -136,6 +133,8 @@
     </ul>
   </div>
 </div>
+
+<AddDataModal bind:open={openAddDataDialog} schema={selectedAddDataSchema} />
 
 <style lang="postcss">
   .container {

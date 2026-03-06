@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
   export let startConnectorSelection: (name: string | null) => void;
+  export let onWelcomeScreen = false;
 
   const PrimaryConnectors = ["clickhouse", "motherduck", "s3", "snowflake"];
   const SecondaryConnectors = ["bigquery", "redshift", "azure"];
@@ -18,7 +19,10 @@
   }
 </script>
 
-<button class="container" on:click={() => startConnectorSelection(null)}>
+<button
+  class="container {onWelcomeScreen ? 'container-welcome' : 'container-home'}"
+  on:click={() => startConnectorSelection(null)}
+>
   <div class="header">
     <DatabaseIcon />
     <span>Connect your data</span>
@@ -55,7 +59,11 @@
 <style lang="postcss">
   .container {
     @apply flex flex-col p-6 gap-4 w-fit;
-    @apply border border-primary-200 rounded-lg;
+    @apply border rounded-lg;
+  }
+
+  .container-welcome {
+    @apply border-primary-200;
     background: radial-gradient(
       58.72% 82.18% at 23.7% 14.73%,
       #d7e4ff 42.79%,
@@ -63,9 +71,16 @@
     );
   }
 
+  .container-home {
+    @apply bg-surface-overlay;
+  }
+
   /* We need to toggle off hover when primary connector is hovered */
-  .container:hover:not(:has(.primary-connector-entry:hover)) {
+  .container-welcome:hover:not(:has(.primary-connector-entry:hover)) {
     @apply border-accent-primary-action shadow-lg cursor-pointer;
+  }
+  .container-home:hover:not(:has(.primary-connector-entry:hover)) {
+    @apply bg-surface-hover;
   }
 
   .header {
@@ -81,8 +96,11 @@
     @apply flex flex-row gap-2 items-center p-2 w-40;
     @apply text-sm bg-surface-overlay rounded-md border;
   }
-  .primary-connector-entry:hover {
+  .container-welcome .primary-connector-entry:hover {
     @apply border-accent-primary-action shadow-lg cursor-pointer;
+  }
+  .container-home .primary-connector-entry:hover {
+    @apply bg-surface-hover;
   }
 
   .secondary-connectors {
