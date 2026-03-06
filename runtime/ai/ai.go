@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -972,6 +973,7 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 			attribute.String("ai_session_id", s.id),
 			attribute.String("tool", opts.Name),
 			attribute.String("args", string(argsJSON)),
+			semconv.EnduserID(s.claims.UserID),
 		))
 		s.logger.Info("tool call started", zap.String("tool", opts.Name))
 		start := time.Now()

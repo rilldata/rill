@@ -209,10 +209,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
 
 	// We need to manually add HTTP handlers for streaming RPCs since Vanguard can't map these to HTTP routes automatically.
-	httpMux.Handle("/v1/instances/{instance_id}/sse", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))
-	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))       // Deprecated: Use /sse?streams=files
-	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))) // Deprecated: Use /sse?streams=resources
-	httpMux.Handle("/v1/instances/{instance_id}/ai/complete/stream", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler)))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/sse", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))       // Deprecated: Use /sse?streams=files
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/resources/-/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))) // Deprecated: Use /sse?streams=resources
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
