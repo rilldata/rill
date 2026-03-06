@@ -5,7 +5,6 @@
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
-  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -14,9 +13,10 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { runtimeClientStore } from "@rilldata/web-common/runtime-client/v2";
-  import RuntimeContextBridge from "@rilldata/web-common/runtime-client/v2/RuntimeContextBridge.svelte";
-  import { readable } from "svelte/store";
+  import Header from "@rilldata/web-common/layout/header/Header.svelte";
+  import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { V1ProjectPermissions } from "../../client";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
@@ -37,14 +37,13 @@
   import {
     isCanvasDashboardPage,
     isMetricsExplorerPage,
-    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
-  } from "./nav-utils";
+  } from "../navigation/nav-utils";
 
-  export let createMagicAuthTokens: boolean;
-  export let manageProjectAdmins: boolean;
-  export let manageProjectMembers: boolean;
+  export let organization: string;
+  export let project: string;
+  export let projectPermissions: V1ProjectPermissions;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
@@ -52,35 +51,26 @@
   export let organizationLogoUrl: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
+  const runtimeClient = useRuntimeClient();
   const {
     alerts: alertsFlag,
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
   } = featureFlags;
-  // TopNavigationBar renders in the root layout, ABOVE RuntimeProvider.
-  // Subscribe to the global store so we reactively get the client when
-  // RuntimeProvider mounts on project pages.
-  $: runtimeClient = $runtimeClientStore;
 
-  $: instanceId = runtimeClient?.instanceId ?? "";
-
-  // These can be undefined
   $: ({
-    params: { organization, project, dashboard, alert, report },
+    params: { dashboard, alert, report },
   } = $page);
 
-  $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
+  $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: onOrgPage = isOrganizationPage($page);
 
   // When "View As" is active, fetch deployment credentials for the mocked user.
-  // TanStack Query deduplicates by query key, so if the project layout already
-  // ran this query, we get instant cache hits with zero extra network calls.
   $: mockedUserId = $viewAsUserStore?.id;
 
   $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
@@ -107,17 +97,15 @@
   );
 
   // Use effective permissions when "View As" is active (from server)
-  // Otherwise fall back to the props passed from the root layout
   $: effectiveManageProjectMembers =
     $mockedProjectQuery.data?.projectPermissions?.manageProjectMembers ??
-    manageProjectMembers;
+    projectPermissions.manageProjectMembers;
   $: effectiveCreateMagicAuthTokens =
     $mockedProjectQuery.data?.projectPermissions?.createMagicAuthTokens ??
-    createMagicAuthTokens;
+    projectPermissions.createMagicAuthTokens;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
-  $: logoUrl = organizationLogoUrl;
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
@@ -132,9 +120,7 @@
 
   $: projectsQuery = listProjects(
     organization,
-    {
-      pageSize: 100,
-    },
+    { pageSize: 100 },
     {
       query: {
         enabled: !!organization && readProjects,
@@ -144,18 +130,9 @@
     },
   );
 
-  // These queries only run when inside a RuntimeProvider (project pages).
-  // On org-level pages runtimeClient is null; use a no-op store so $-subscriptions don't crash.
-  const _noopQuery = readable({ data: undefined }) as any;
-  $: visualizationsQuery = runtimeClient
-    ? useDashboards(runtimeClient)
-    : _noopQuery;
-  $: alertsQuery = runtimeClient
-    ? useAlerts(runtimeClient, onAlertPage)
-    : _noopQuery;
-  $: reportsQuery = runtimeClient
-    ? useReports(runtimeClient, onReportPage)
-    : _noopQuery;
+  $: visualizationsQuery = useDashboards(runtimeClient);
+  $: alertsQuery = useAlerts(runtimeClient, onAlertPage);
+  $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
@@ -170,7 +147,7 @@
   function createOrgPaths(
     organizations: V1Organization[],
     viewingOrg: string | undefined,
-    planDisplayName: string,
+    planDisplayName: string | undefined,
   ) {
     const pathMap = new Map<string, PathOption>();
 
@@ -255,11 +232,10 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: exploreQuery = runtimeClient
-    ? useExplore(runtimeClient, dashboard, {
-        enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
-      })
-    : _noopQuery;
+  $: exploreQuery = useExplore(runtimeClient, dashboard, {
+    enabled:
+      !!runtimeClient.instanceId && !!dashboard && !!onMetricsExplorerPage,
+  });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
   $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;
@@ -271,96 +247,76 @@
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<div
-  class="flex items-center w-full pr-4 pl-2 py-1 bg-surface-base"
-  class:border-b={!onProjectPage && !onOrgPage}
->
-  <!-- Left side -->
-  <a
-    href={rillLogoHref}
-    class="grid place-content-center rounded {logoUrl ? 'pl-2 pr-2' : 'p-2'}"
-  >
-    {#if logoUrl}
-      <img src={logoUrl} alt="logo" class="h-7" />
-    {:else}
-      <Rill />
-    {/if}
-  </a>
+<Header borderBottom={!onProjectPage}>
+  <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath} />
   {/if}
 
-  <!-- Right side -->
   <div class="flex gap-x-2 items-center ml-auto">
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    <!-- NOTE: only project admin and editor can manage project members -->
-    <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
     {#if onProjectPage && effectiveManageProjectMembers}
       <ShareProjectPopover
         {organization}
         {project}
-        {manageProjectAdmins}
+        manageProjectAdmins={projectPermissions.manageProjectAdmins}
         {manageOrgAdmins}
         {manageOrgMembers}
       />
     {/if}
-    {#if runtimeClient}
-      {#key runtimeClient}
-        <RuntimeContextBridge client={runtimeClient}>
-          {#if onMetricsExplorerPage && isDashboardValid}
-            {#if exploreSpec}
-              {#key dashboard}
-                <StateManagersProvider
-                  metricsViewName={exploreSpec.metricsView}
-                  exploreName={dashboard}
-                  let:ready
-                >
-                  <LastRefreshedDate {dashboard} />
-                  {#if $dimensionSearch && ready}
-                    <GlobalDimensionSearch />
-                  {/if}
-                  {#if $dashboardChat && !onPublicURLPage}
-                    <ChatToggle />
-                  {/if}
-                  {#if hasUserAccess}
-                    <ExploreBookmarks
-                      {organization}
-                      {project}
-                      metricsViewName={exploreSpec.metricsView}
-                      exploreName={dashboard}
-                    />
-                    {#if $alertsFlag}
-                      <CreateAlert />
-                    {/if}
-                    <ShareDashboardPopover
-                      createMagicAuthTokens={effectiveCreateMagicAuthTokens}
-                    />
-                  {/if}
-                </StateManagersProvider>
-              {/key}
-            {/if}
-          {/if}
 
-          {#if onCanvasDashboardPage && hasUserAccess}
+    {#if onMetricsExplorerPage && isDashboardValid}
+      {#if exploreSpec}
+        {#key dashboard}
+          <StateManagersProvider
+            metricsViewName={exploreSpec.metricsView}
+            exploreName={dashboard}
+            let:ready
+          >
+            <LastRefreshedDate {dashboard} />
+            {#if $dimensionSearch && ready}
+              <GlobalDimensionSearch />
+            {/if}
             {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle />
             {/if}
-            <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-            <ShareDashboardPopover createMagicAuthTokens={false} />
-          {/if}
-        </RuntimeContextBridge>
-      {/key}
+            {#if hasUserAccess}
+              <ExploreBookmarks
+                {organization}
+                {project}
+                metricsViewName={exploreSpec.metricsView}
+                exploreName={dashboard}
+              />
+              {#if $alertsFlag}
+                <CreateAlert />
+              {/if}
+              <ShareDashboardPopover
+                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+              />
+            {/if}
+          </StateManagersProvider>
+        {/key}
+      {/if}
     {/if}
+
+    {#if onCanvasDashboardPage && hasUserAccess}
+      {#if $dashboardChat && !onPublicURLPage}
+        <ChatToggle />
+      {/if}
+      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+      <ShareDashboardPopover createMagicAuthTokens={false} />
+    {/if}
+
     {#if $user.isSuccess}
-      {#if $user.data && $user.data.user}
+      {#if $user.data?.user}
         <AvatarButton />
       {:else}
         <SignIn />
       {/if}
     {/if}
   </div>
-</div>
+</Header>

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type {
     PathOption,
@@ -18,6 +17,8 @@
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
+  import Header from "@rilldata/web-common/layout/header/Header.svelte";
+  import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
@@ -95,11 +96,9 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage} class="bg-surface-base">
+<Header borderBottom={!onDeployPage}>
   {#if !onDeployPage}
-    <a href="/">
-      <Rill />
-    </a>
+    <HeaderLogo href="/" />
 
     <Tag text={mode} color="gray"></Tag>
 
@@ -120,7 +119,7 @@
     {/if}
   {/if}
 
-  <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
+  <div class="flex gap-x-2 items-center ml-auto">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
@@ -135,12 +134,4 @@
     {/if}
     <LocalAvatarButton />
   </div>
-</header>
-
-<style lang="postcss">
-  header {
-    @apply w-full box-border;
-    @apply flex gap-x-2 items-center px-4 flex-none;
-    @apply h-11;
-  }
-</style>
+</Header>
