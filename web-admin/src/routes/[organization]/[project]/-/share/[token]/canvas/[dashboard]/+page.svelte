@@ -9,9 +9,9 @@
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: ({ organization, project, dashboard: canvasName } = $page.params);
 
@@ -43,7 +43,12 @@
 </script>
 
 {#key canvasName}
-  <CanvasProvider {canvasName} {instanceId} projectId={project} showBanner>
+  <CanvasProvider
+    {canvasName}
+    instanceId={runtimeClient.instanceId}
+    projectId={project}
+    showBanner
+  >
     <CanvasDashboardEmbed {canvasName} />
   </CanvasProvider>
 {/key}

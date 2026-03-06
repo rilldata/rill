@@ -25,12 +25,22 @@ refresh:
 partitions:
   sql: SELECT range AS num FROM range(0,10)
 sql: >
-  SELECT 
+  SELECT
     {{ .partition.num }} AS num,
     now() AS inserted_on,
     CASE WHEN {{ .partition.num }} = 2 THEN error('simulated error') ELSE NULL END as error
 `,
     );
+
+    // Trigger save via keyboard shortcut — works regardless of auto-save state.
+    // (After a rename from .sql to .yaml the editor may keep auto-save enabled,
+    // so the "Save" button is not guaranteed to exist.)
+    if (process.platform === "darwin") {
+      await page.keyboard.press("Meta+s");
+    } else {
+      await page.keyboard.press("Control+s");
+    }
+
     await waitForProfiling(page, "partitioned_model", ["inserted_on", "num"]);
 
     // Open the partitions browser

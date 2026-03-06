@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "slack": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "slack-mcp-server"],
+      "env": {
+        "SLACK_MCP_XOXP_TOKEN": "${SLACK_MCP_XOXP_TOKEN}"
+      }
+    }
+  }
+}

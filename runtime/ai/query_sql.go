@@ -2,15 +2,11 @@ package ai
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 const QuerySQLName = "query_sql"
@@ -28,8 +24,9 @@ type QuerySQLArgs struct {
 }
 
 type QuerySQLResult struct {
-	Data              []map[string]any `json:"data"`
-	TruncationWarning string           `json:"truncation_warning,omitempty"`
+	Schema            []SchemaField `json:"schema"`
+	Data              [][]any       `json:"data"`
+	TruncationWarning string        `json:"truncation_warning,omitempty"`
 }
 
 func (t *QuerySQL) Spec() *mcp.Tool {
@@ -97,32 +94,16 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	}
 	defer res.Close()
 
-	// Collect results
-	var data []map[string]any
-	schema := &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, StructType: res.Schema()}
-	for {
-		row, err := res.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-
-		// Convert types for JSON serialization
-		v, err := jsonval.ToValue(row, schema)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert row: %w", err)
-		}
-		row, ok := v.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("expected row to be map[string]any, got %T", v)
-		}
-
-		data = append(data, row)
+	// Collect results in tabular format
+	schema, data, err := resolverResultToTabular(res)
+	if err != nil {
+		return nil, err
 	}
 
-	result := &QuerySQLResult{Data: data}
+	result := &QuerySQLResult{
+		Schema: schema,
+		Data:   data,
+	}
 	if int64(len(data)) >= hardLimit { // Add a warning if we hit the system limit
 		result.TruncationWarning = fmt.Sprintf("The system truncated the result to %d rows", hardLimit)
 	}

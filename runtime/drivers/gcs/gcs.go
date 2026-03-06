@@ -28,7 +28,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/gcs",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "google_application_credentials",
@@ -102,7 +102,7 @@ func NewConfigProperties(prop map[string]any) (*ConfigProperties, error) {
 	return gcsConfig, nil
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("gcs driver can't be shared")
 	}
@@ -128,7 +128,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if err != nil {
 			return nil, err
 		}
-		handle, err := drivers.Open("s3", instanceID, config, st, ac, logger)
+		handle, err := drivers.Open("s3", "", instanceID, config, st, ac, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open s3 connection for gcs in s3 compatible mode: %w", err)
 		}

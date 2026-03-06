@@ -68,7 +68,7 @@ allOf:
         description: Defines project-wide default settings for canvases. Unless overridden, individual canvases will inherit these defaults. 
         examples:
         - # For complete examples, see: 
-          # https://docs.rilldata.com/build/rill-project-file#dashboard-defaults
+          # https://docs.rilldata.com/developers/build/rill-project-file#dashboard-defaults
           models:
             refresh:
               cron: '0 * * * *'

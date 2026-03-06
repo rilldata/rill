@@ -60,14 +60,6 @@ Individual resources can override these defaults.
 
 The `dev` and `prod` properties allow environment-specific configuration overrides.
 
-## JSON Schema
-
-Here is a full JSON schema for the `rill.yaml` syntax:
-
-```
-{% json_schema_for_resource "rill.yaml" %}
-```
-
 ## Minimal Example
 
 A minimal `rill.yaml` for a new project:
@@ -129,4 +121,12 @@ explores:
 # Exclude non-Rill files from parsing
 ignore_paths:
   - /docs
+```
+
+## Reference documentation
+
+Here is a full JSON schema for the `rill.yaml` syntax:
+
+```
+{% json_schema_for_resource "rill.yaml" %}
 ```

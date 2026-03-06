@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -116,6 +117,40 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 // LoadPhysicalSize implements drivers.OLAPInformationSchema.
 func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	// SHOW CREATE TABLE works for both tables and views in MySQL.
+	// For tables it returns columns: [Table, Create Table].
+	// For views it returns columns: [View, Create View, character_set_client, collation_connection].
+	// We extract the DDL by column name to avoid depending on column order or count.
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", drivers.DialectMySQL.EscapeTable(table.Database, table.DatabaseSchema, table.Name)))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		res := make(map[string]any)
+		if err := rows.MapScan(res); err != nil {
+			return err
+		}
+		for _, key := range []string{"Create Table", "Create View"} {
+			if v, ok := res[key]; ok && v != nil {
+				if b, ok := v.([]byte); ok {
+					table.DDL = string(b)
+				}
+				break
+			}
+		}
+	}
+	return rows.Err()
 }
 
 // Lookup implements drivers.OLAPInformationSchema.
@@ -282,7 +317,12 @@ func (r *mysqlRows) MapScan(dest map[string]any) error {
 			}
 		case *sql.NullString:
 			if valPtr.Valid {
-				dest[fieldName] = valPtr.String
+				if strings.ToUpper(r.colTypes[i].DatabaseTypeName()) == "BIT" {
+					// MySQL driver returns BIT values as raw bytes; convert to numeric string
+					dest[fieldName] = new(big.Int).SetBytes([]byte(valPtr.String)).String()
+				} else {
+					dest[fieldName] = valPtr.String
+				}
 			} else {
 				dest[fieldName] = nil
 			}

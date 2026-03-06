@@ -41,6 +41,7 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema, database, databaseSchema) })
+	t.Run("testLoadDDL", func(t *testing.T) { testLoadDDL(t, olap) })
 }
 
 func TestInformationSchemaMotherduck(t *testing.T) {
@@ -282,4 +283,24 @@ func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.
 	require.NoError(t, err)
 	require.Equal(t, 6, len(tables))
 	require.Empty(t, nextToken)
+}
+
+func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	// Test DDL for a materialized table
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "bar")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, table)
+	require.NoError(t, err)
+	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "bar")
+
+	// Test DDL for a view
+	view, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, view)
+	require.NoError(t, err)
+	require.Contains(t, view.DDL, "CREATE VIEW")
+	require.Contains(t, view.DDL, "model")
 }

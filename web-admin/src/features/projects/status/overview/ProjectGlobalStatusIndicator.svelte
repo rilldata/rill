@@ -1,0 +1,80 @@
+<script lang="ts">
+  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { runtimeClientStore } from "@rilldata/web-common/runtime-client/v2";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { useProjectDeployment } from "../selectors";
+
+  const queryClient = useQueryClient();
+
+  export let organization: string;
+  export let project: string;
+
+  $: runtimeClient = $runtimeClientStore;
+
+  $: projectDeployment = useProjectDeployment(organization, project);
+  $: ({ data: deployment } = $projectDeployment);
+  $: isDeploymentNotOk =
+    deployment?.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
+
+  $: hasResourceErrorsQuery = runtimeClient
+    ? createRuntimeServiceListResources(
+        runtimeClient,
+        {},
+        {
+          query: {
+            select: (data) => {
+              return (
+                data.resources.filter(
+                  (resource) => !!resource.meta.reconcileError,
+                ).length > 0
+              );
+            },
+            refetchOnMount: true,
+            refetchOnWindowFocus: true,
+          },
+        },
+      )
+    : null;
+  $: ({
+    data: hasResourceErrors,
+    error: hasResourceErrorsError,
+    isLoading: hasResourceErrorsLoading,
+  } = $hasResourceErrorsQuery ?? {
+    data: undefined,
+    error: undefined,
+    isLoading: true,
+  });
+
+  $: projectParserQuery = runtimeClient
+    ? useProjectParser(queryClient, runtimeClient, {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      })
+    : null;
+  $: ({
+    data: projectParserData,
+    error: projectParserError,
+    isLoading: projectParserLoading,
+  } = $projectParserQuery ?? {
+    data: undefined,
+    error: undefined,
+    isLoading: true,
+  });
+  $: hasParseErrors =
+    projectParserData?.projectParser.state.parseErrors.length > 0;
+</script>
+
+{#if hasResourceErrorsLoading || projectParserLoading}
+  <LoadingSpinner />
+{:else if hasResourceErrorsError || projectParserError}
+  <CancelCircle className="text-red-600" />
+{:else if isDeploymentNotOk || hasResourceErrors || hasParseErrors}
+  <CancelCircle className="text-red-600" />
+{:else}
+  <CheckCircle className="text-green-400" />
+{/if}

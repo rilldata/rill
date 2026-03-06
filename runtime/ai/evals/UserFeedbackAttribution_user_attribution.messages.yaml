@@ -1,0 +1,40 @@
+- id: 7339eac2-a93d-4654-9d44-34f6f28a9a22
+  parent_id: ""
+  session_id: e76c045b-5e62-4970-bd4a-dbbb2104084e
+  time: 2026-02-03T15:57:22.939928+03:00
+  index: 0
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Show me the thing"}'
+- id: 50144fd1-2f14-4fd9-b6e2-0d4478a205be
+  parent_id: 7339eac2-a93d-4654-9d44-34f6f28a9a22
+  session_id: e76c045b-5e62-4970-bd4a-dbbb2104084e
+  time: 2026-02-03T15:57:22.939929+03:00
+  index: 1
+  role: assistant
+  type: result
+  tool: router_agent
+  content_type: text
+  content: I'm not sure what you're referring to. Could you please clarify what 'thing' you'd like to see?
+- id: d8fabd19-c4f2-499e-a94b-83abe27c3571
+  parent_id: ""
+  session_id: e76c045b-5e62-4970-bd4a-dbbb2104084e
+  time: 2026-02-03T15:57:22.939934+03:00
+  index: 2
+  role: user
+  type: call
+  tool: feedback_agent
+  content_type: json
+  content: '{"target_message_id":"50144fd1-2f14-4fd9-b6e2-0d4478a205be","sentiment":"negative","comment":"I meant the sales report obviously"}'
+- id: b58d6ae1-ec3f-4cb6-aa6b-2900ceb3aefc
+  parent_id: d8fabd19-c4f2-499e-a94b-83abe27c3571
+  session_id: e76c045b-5e62-4970-bd4a-dbbb2104084e
+  time: 2026-02-03T15:57:25.93914+03:00
+  index: 3
+  role: user
+  type: result
+  tool: feedback_agent
+  content_type: json
+  content: '{"response":"Thanks for your feedback. Try specifying the exact item you want (e.g., “Show me the sales report for last month” or “Open the sales report dashboard”) and include any relevant time range or filters.","predicted_attribution":"user","attribution_reasoning":"Your original request (“Show me the thing”) was ambiguous and didn’t specify what artifact you wanted (e.g., sales report, dashboard, chart, file). I reasonably asked for clarification, and your follow-up (“sales report obviously”) provided the missing context.","suggested_action":"Try specifying the exact item you want (e.g., “Show me the sales report for last month” or “Open the sales report dashboard”) and include any relevant time range or filters."}'

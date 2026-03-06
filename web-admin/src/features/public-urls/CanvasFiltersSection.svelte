@@ -4,6 +4,7 @@
   import type { UIFilters } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
   import {
     getCanvasFilters,
@@ -11,14 +12,15 @@
     hasCanvasFilters,
   } from "./canvas-form-utils";
 
+  const runtimeClient = useRuntimeClient();
+
   export let dashboard: string;
-  export let instanceId: string;
   export let onFilterStateChange: (hasFilters: boolean) => void;
   export let onProvideFilters: (
     provider: () => Partial<AdminServiceIssueMagicAuthTokenBody>,
   ) => void;
 
-  $: canvasStore = getCanvasStore(dashboard, instanceId);
+  $: canvasStore = getCanvasStore(dashboard, runtimeClient.instanceId);
   $: canvasEntity = canvasStore.canvasEntity;
   $: canvasFilterManager = canvasEntity.filterManager;
   $: canvasActiveUIFiltersStore = canvasFilterManager.activeUIFiltersStore;

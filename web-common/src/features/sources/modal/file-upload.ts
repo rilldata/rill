@@ -1,7 +1,9 @@
 import { goto } from "$app/navigation";
+import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   PossibleFileExtensions,
   PossibleZipExtensions,
@@ -9,7 +11,7 @@ import {
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions";
 import { overlay } from "@rilldata/web-common/layout/overlay-store";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getTableNameFromFile } from "../extract-file-name";
 import {
   DuplicateActions,
@@ -25,7 +27,7 @@ import {
  */
 export async function* uploadTableFiles(
   files: Array<File>,
-  instanceId: string,
+  client: RuntimeClient,
   goToIfSuccessful = true,
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
@@ -52,7 +54,7 @@ export async function* uploadTableFiles(
 
     overlay.setDebounced({ title: `Uploading ${validFile.name}` });
 
-    const filePath = await uploadFile(instanceId, validFile);
+    const filePath = await uploadFile(client, validFile);
     // if upload failed for any reason continue
     if (filePath) {
       lastTableName = resolvedTableName;
@@ -63,7 +65,11 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName && goToIfSuccessful) {
-    await goto(`/files/sources/${lastTableName}.yaml`);
+    const newFilePath = getFilePathFromNameAndType(
+      lastTableName,
+      EntityType.Table,
+    );
+    await goto(`/files${newFilePath}`);
   }
 
   if (invalidFiles.length) {
@@ -124,7 +130,7 @@ async function checkForDuplicate(
 }
 
 export async function uploadFile(
-  instanceId: string,
+  client: RuntimeClient,
   file: File,
 ): Promise<string | undefined> {
   const formData = new FormData();
@@ -133,7 +139,12 @@ export async function uploadFile(
   const filePath = `data/${file.name}`;
 
   try {
-    await runtimeServiceFileUpload(instanceId, filePath, formData);
+    const url = `${client.host}/v1/instances/${client.instanceId}/files/upload/-/${filePath}`;
+    const headers: Record<string, string> = {};
+    const jwt = client.getJwt();
+    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+    const resp = await fetch(url, { method: "POST", headers, body: formData });
+    if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
     return filePath;
   } catch (err) {
     console.error(err);

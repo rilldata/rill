@@ -210,9 +210,9 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		return nil, ErrForbidden
 	}
 
-	// Add basic validation - fail fast for invalid requests
-	if req.Prompt == "" {
-		return nil, status.Error(codes.InvalidArgument, "prompt cannot be empty")
+	// Validate request - either prompt or feedback context must be provided
+	if req.Prompt == "" && req.FeedbackAgentContext == nil {
+		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
 	}
 
 	// Setup user agent
@@ -270,6 +270,15 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
+	var feedbackAgentArgs *ai.FeedbackAgentArgs
+	if req.FeedbackAgentContext != nil {
+		feedbackAgentArgs = &ai.FeedbackAgentArgs{
+			TargetMessageID: req.FeedbackAgentContext.TargetMessageId,
+			Sentiment:       req.FeedbackAgentContext.Sentiment,
+			Categories:      req.FeedbackAgentContext.Categories,
+			Comment:         req.FeedbackAgentContext.Comment,
+		}
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
@@ -278,6 +287,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		Agent:              req.Agent,
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
+		FeedbackAgentArgs:  feedbackAgentArgs,
 	})
 	if err != nil && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
@@ -311,9 +321,9 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return ErrForbidden
 	}
 
-	// Add basic validation - fail fast for invalid requests
-	if req.Prompt == "" {
-		return status.Error(codes.InvalidArgument, "prompt cannot be empty")
+	// Validate request - either prompt or feedback context must be provided
+	if req.Prompt == "" && req.FeedbackAgentContext == nil {
+		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
 	}
 
 	// Setup user agent
@@ -348,6 +358,14 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	subCh := session.Subscribe()
 	defer session.Unsubscribe(subCh)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreaming subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
+		// Read messages until the context is done or the tool call finished.
 		for {
 			select {
 			case <-ctx.Done():
@@ -372,7 +390,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
-	// Prepare agent args if provided
+	// Prepare optional context args
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
 		wherePerMetricsView := map[string]*metricsview.Expression{}
@@ -399,6 +417,15 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
+	var feedbackAgentArgs *ai.FeedbackAgentArgs
+	if req.FeedbackAgentContext != nil {
+		feedbackAgentArgs = &ai.FeedbackAgentArgs{
+			TargetMessageID: req.FeedbackAgentContext.TargetMessageId,
+			Sentiment:       req.FeedbackAgentContext.Sentiment,
+			Categories:      req.FeedbackAgentContext.Categories,
+			Comment:         req.FeedbackAgentContext.Comment,
+		}
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
@@ -407,6 +434,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		Agent:              req.Agent,
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
+		FeedbackAgentArgs:  feedbackAgentArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
@@ -458,6 +486,13 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Start goroutine that calls CompleteStreaming and publishes responses to a channel
 	events := make(chan *sseEvent)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreamingHandler subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
 		// We must close the events channel when done to make sure the SSE handler returns
 		defer close(events)
 
@@ -495,6 +530,37 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Serve the SSE stream.
 	// This will only return when the background goroutine calls close(events).
 	serveSSEUntilClose(w, events)
+}
+
+func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRequest) (*runtimev1.GetAIMessageResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
+	}
+
+	msg, ok := session.Message(ai.FilterByID(req.MessageId))
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.MessageId)
+	}
+
+	pbMsg, err := messageToPB(session, msg)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
+	}
+
+	return &runtimev1.GetAIMessageResponse{
+		Message: pbMsg,
+	}, nil
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.

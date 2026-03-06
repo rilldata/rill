@@ -27,7 +27,7 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/salesforce",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/salesforce",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
@@ -141,7 +141,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("salesforce driver can't be shared")
 	}

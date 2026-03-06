@@ -3,19 +3,15 @@ package ai
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 const QueryMetricsViewName = "query_metrics_view"
@@ -29,9 +25,10 @@ var _ Tool[QueryMetricsViewArgs, *QueryMetricsViewResult] = (*QueryMetricsView)(
 type QueryMetricsViewArgs map[string]any
 
 type QueryMetricsViewResult struct {
-	Data              []map[string]any `json:"data"`
-	OpenURL           string           `json:"open_url,omitempty"`
-	TruncationWarning string           `json:"truncation_warning,omitempty"`
+	Schema            []SchemaField `json:"schema"`
+	Data              [][]any       `json:"data"`
+	OpenURL           string        `json:"open_url,omitempty"`
+	TruncationWarning string        `json:"truncation_warning,omitempty"`
 }
 
 func (t *QueryMetricsView) Spec() *mcp.Tool {
@@ -149,6 +146,44 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
 		"limit": 10
 	}
+
+Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing last month as of latest day (base period) to previous month (comparison period):
+	{
+		"metrics_view": "ecommerce_financials",
+		"measures": [
+			{"name": "total_revenue"},
+			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+		],
+		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
+		"time_range": {
+			"expression": "1M as of latest/D"
+		},
+		"comparison_time_range": {
+			expression": "1M as of latest/D offset -1M"
+		},
+		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
+		"limit": 10
+	}
+
+Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing last day as of latest minute (base period) to previous day (comparison period):
+	{
+		"metrics_view": "ecommerce_financials",
+		"measures": [
+			{"name": "total_revenue"},
+			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+		],
+		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
+		"time_range": {
+			"expression": "1D as of latest/m"
+		},
+		"comparison_time_range": {
+			expression": "1D as of latest/m offset -1D"
+		},
+		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
+		"limit": 10
+	}
 `
 
 	var inputSchema *jsonschema.Schema
@@ -188,6 +223,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Compute a hard limit to prevent large results that bloat the context
+	// ideally can be moved to executor.enforceQueryLimits, but then we cannot return the warning message in the result as easily
 	var limit int64
 	var isSystemLimit bool
 	if v, ok := args["limit"]; ok { // Hackily extracting the query's 'limit' to avoid parsing the entire query outside of the resolver
@@ -204,6 +240,10 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		isSystemLimit = true
 	}
 	args["limit"] = limit
+	args["query_limits"] = metricsview.QueryLimits{
+		RequireTimeRange: cfg.AIRequireTimeRange,
+		MaxTimeRangeDays: cfg.AIMaxTimeRangeDays,
+	}
 
 	// Apply a timeout to prevent runaway queries
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -221,40 +261,21 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 	defer res.Close()
 
-	// Gather the result rows
-	var data []map[string]any
-	schema := &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, StructType: res.Schema()}
-	for {
-		row, err := res.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-
-		// Cast non-JSON types to JSON-compatible types
-		v, err := jsonval.ToValue(row, schema)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert row to value: %w", err)
-		}
-		var ok bool
-		row, ok = v.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("expected row to be map[string]any, got %T", v)
-		}
-
-		data = append(data, row)
+	// Gather the result in tabular format
+	schema, data, err := resolverResultToTabular(res)
+	if err != nil {
+		return nil, err
 	}
 
 	// Generate an open URL for the query
-	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), args)
+	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), session.ID(), session.ParentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate open URL: %w", err)
 	}
 
 	// Build the result
 	result := &QueryMetricsViewResult{
+		Schema:  schema,
 		Data:    data,
 		OpenURL: openURL,
 	}
@@ -269,7 +290,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 }
 
 // generateOpenURL generates an open URL for the given query parameters
-func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID string, metricsQuery map[string]any) (string, error) {
+func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sessionID, callID string) (string, error) {
 	// Get instance to access the configured frontend URL
 	instance, err := t.Runtime.Instance(ctx, instanceID)
 	if err != nil {
@@ -287,18 +308,10 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 		return "", fmt.Errorf("failed to parse frontend URL %q: %w", instance.FrontendURL, err)
 	}
 
-	openURL.Path, err = url.JoinPath(openURL.Path, "-", "open-query")
+	openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "message", callID, "-", "open")
 	if err != nil {
 		return "", fmt.Errorf("failed to join path: %w", err)
 	}
-
-	queryJSON, err := json.Marshal(metricsQuery)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
-	}
-	values := make(url.Values)
-	values.Set("query", string(queryJSON))
-	openURL.RawQuery = values.Encode()
 
 	return openURL.String(), nil
 }

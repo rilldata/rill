@@ -9,7 +9,7 @@ sidebar_position: 00
 ## Overview
 
 
-Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](/guide/dashboards/explore), [embed Rill](/developers/integrate/embedding) into other applications, and more!
+Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](/guide/dashboards/explore), [embed Rill](/developers/embed/dashboards) into other applications, and more!
 
 The flow diagram below shows two options for deploying an existing project. 
 
@@ -119,7 +119,7 @@ Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tuto
 Opening project in browser...
 ```
 
-If you have not already [configured your connections' credentials](https://docs.rilldata.com/build/connectors/credentials), you will be reminded here which connections are required.
+If you have not already [configured your connections' credentials](https://docs.rilldata.com/developers/build/connectors/credentials), you will be reminded here which connections are required.
 
 **First deployment**
 

@@ -2,11 +2,11 @@ import type {
   ConnectorCategory,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
+import type { ConnectorStep } from "./connectorStepStore";
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
-import { clickhousecloudSchema } from "../../templates/schemas/clickhousecloud";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { mysqlSchema } from "../../templates/schemas/mysql";
 import { postgresSchema } from "../../templates/schemas/postgres";
@@ -22,13 +22,13 @@ import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
+import { supabaseSchema } from "../../templates/schemas/supabase";
 import { SOURCES, OLAP_ENGINES } from "./constants";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
   bigquery: bigquerySchema,
   clickhouse: clickhouseSchema,
-  clickhousecloud: clickhousecloudSchema,
   mysql: mysqlSchema,
   postgres: postgresSchema,
   redshift: redshiftSchema,
@@ -40,6 +40,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   druid: druidSchema,
   pinot: pinotSchema,
   starrocks: starrocksSchema,
+  supabase: supabaseSchema,
   local_file: localFileSchema,
   https: httpsSchema,
   s3: s3Schema,
@@ -88,6 +89,29 @@ export function getBackendConnectorName(schemaName: string): string {
 }
 
 /**
+ * Get the schema name for a given backend driver name.
+ * Reverse lookup: finds the schema name that maps to the given driver name.
+ * For most connectors, driver name = schema name, but some have x-driver override.
+ */
+export function getSchemaNameFromDriver(driverName: string): string {
+  // First, check if driver name matches a schema name directly
+  if (driverName in multiStepFormSchemas) {
+    return driverName;
+  }
+
+  // If not, search for schema with matching x-driver
+  for (const [schemaName, schema] of Object.entries(multiStepFormSchemas)) {
+    const backendName = schema?.["x-driver"] ?? schemaName;
+    if (backendName === driverName) {
+      return schemaName;
+    }
+  }
+
+  // Fallback: return driver name (assumes it's the schema name)
+  return driverName;
+}
+
+/**
  * Determine if a connector has multi-step form flow (connector → source).
  * True for object store connectors (S3, GCS, Azure) and any schema that
  * defines fields on both the "connector" and "source" steps.
@@ -118,9 +142,54 @@ export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
  * Some connectors with more fields use a taller form.
  */
 export function getFormHeight(schema: MultiStepFormSchema | null): string {
-  const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
+  const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
   const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
   return schema?.["x-form-height"] === "tall"
     ? FORM_HEIGHT_TALL
     : FORM_HEIGHT_DEFAULT;
+}
+
+/**
+ * Connectors excluded from showing the "skip to import" link.
+ * These connectors don't support skipping the connector setup step.
+ */
+export const SKIP_LINK_EXCLUDED_CONNECTORS = ["salesforce", "sqlite"];
+
+/**
+ * Determine if the skip link should be shown for a connector.
+ * The skip link allows users to skip connector setup and go directly to import.
+ * Only shown for connectors where handleSkip() can actually advance the step
+ * (i.e., multi-step connectors or connectors with an explorer step).
+ *
+ * @param step - Current form step ("connector", "source", or "explorer")
+ * @param connectorName - Name of the connector (e.g., "postgres", "s3")
+ * @param connectorInstanceName - If set, user came from "Import Data" button
+ * @param implementsOlap - Whether the connector is an OLAP engine
+ */
+export function shouldShowSkipLink(
+  step: ConnectorStep,
+  connectorName: string | undefined,
+  connectorInstanceName: string | null,
+  implementsOlap: boolean | undefined,
+): boolean {
+  if (
+    step !== "connector" ||
+    connectorInstanceName ||
+    implementsOlap ||
+    SKIP_LINK_EXCLUDED_CONNECTORS.includes(connectorName ?? "")
+  ) {
+    return false;
+  }
+
+  // Only show skip link if handleSkip() can actually advance the step
+  const schema = getConnectorSchema(connectorName ?? "");
+  return isMultiStepConnector(schema) || hasExplorerStep(schema);
+}
+
+/**
+ * Get the form width CSS class for a connector's add data modal.
+ * Some connectors with templates or more content use a wider form.
+ */
+export function getFormWidth(schema: MultiStepFormSchema | null): string {
+  return schema?.["x-form-width"] === "wide" ? "max-w-5xl" : "max-w-4xl";
 }

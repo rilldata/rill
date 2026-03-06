@@ -18,8 +18,7 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Pencil } from "lucide-svelte";
   import { DateTime } from "luxon";
@@ -33,7 +32,6 @@
   const queryClient = useQueryClient();
 
   $: ({ organization, project, dashboard } = $page.params);
-  $: ({ instanceId } = $runtime);
   $: isCanvas = isCanvasDashboardPage($page);
 
   $: isTitleEmpty = $form.title.trim() === "";
@@ -220,10 +218,9 @@
       {/if}
     </div> -->
 
-    {#if isCanvas && instanceId}
+    {#if isCanvas}
       <CanvasFiltersSection
         {dashboard}
-        {instanceId}
         onFilterStateChange={handleFilterStateChange}
         onProvideFilters={handleProvideFilters}
       />

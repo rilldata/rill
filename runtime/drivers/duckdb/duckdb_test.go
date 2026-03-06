@@ -16,7 +16,7 @@ import (
 func TestNoFatalErr(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	handle, err := Driver{}.Open("default", map[string]any{"pool_size": 2}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{"pool_size": 2}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -76,7 +76,7 @@ func TestNoFatalErr(t *testing.T) {
 func TestNoFatalErrConcurrent(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	handle, err := Driver{}.Open("default", map[string]any{"pool_size": 2}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{"pool_size": 2}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -245,7 +245,7 @@ func TestDuckDBModeEnforcement(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("read mode blocks model execution", func(t *testing.T) {
-		handle, err := drivers.Open("duckdb", "test", map[string]any{
+		handle, err := drivers.Open("duckdb", "", "test", map[string]any{
 			"dsn":  ":memory:",
 			"mode": "read",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -268,7 +268,7 @@ func TestDuckDBModeEnforcement(t *testing.T) {
 	})
 
 	t.Run("readwrite mode allows model execution", func(t *testing.T) {
-		handle, err := drivers.Open("duckdb", "test", map[string]any{
+		handle, err := drivers.Open("duckdb", "", "test", map[string]any{
 			"dsn":  ":memory:",
 			"mode": "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -291,7 +291,7 @@ func TestDuckDBModeEnforcement(t *testing.T) {
 	})
 
 	t.Run("read mode allows reading", func(t *testing.T) {
-		handle, err := drivers.Open("duckdb", "test", map[string]any{
+		handle, err := drivers.Open("duckdb", "", "test", map[string]any{
 			"dsn":  ":memory:",
 			"mode": "read",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())

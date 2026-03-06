@@ -12,6 +12,7 @@
   } from "../../templates/schema-utils";
   import { getConnectorSchema } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
+  import { ICONS } from "./icons";
   import type { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
   import type { ConnectorStepState } from "./connectorStepStore";
@@ -40,7 +41,6 @@
   export let primaryLoadingCopy = "";
   export let isSubmitDisabled = true;
   export let formId = baseFormId;
-  export let shouldShowSkipLink = false;
 
   const selectedAuthMethodStore = {
     subscribe: (run: (value: string) => void) =>
@@ -188,8 +188,6 @@
           ? "Continuing..."
           : "Testing connection...";
   $: formId = baseFormId;
-  $: shouldShowSkipLink =
-    stepState.step === "connector" && formManager.isMultiStepConnector;
 </script>
 
 <AddDataFormSection
@@ -204,5 +202,6 @@
     errors={$paramsErrors}
     {onStringInputChange}
     {handleFileUpload}
+    iconMap={ICONS}
   />
 </AddDataFormSection>

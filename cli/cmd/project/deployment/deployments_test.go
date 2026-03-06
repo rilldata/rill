@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin/testadmin"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/testcli"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -116,6 +118,127 @@ vars:
 		modelOutputFn, _ := checkModelOutput()
 		return modelOutputFn == 20
 	}, 10*time.Second, 100*time.Millisecond, "unexpected model output after env set post restart")
+}
+
+func TestPrimaryBranchChange(t *testing.T) {
+	testmode.Expensive(t)
+
+	adm := testadmin.NewWithOptionalRuntime(t, true)
+	_, c := adm.NewUser(t)
+	u1 := testcli.New(t, adm, c.Token)
+
+	result := u1.Run(t, "org", "create", "branch-change-test")
+	require.Equal(t, 0, result.ExitCode)
+
+	// deploy the project on main branch
+	tempDir := t.TempDir()
+	putFiles(t, tempDir, map[string]string{"rill.yaml": `compiler: rillv1
+display_name: Branch Change Test
+olap_connector: duckdb`,
+	})
+	putFiles(t, tempDir, map[string]string{"models/model.sql": "SELECT 'main' AS branch"})
+	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=branch-change-test", "--project=branch-test", "--path="+tempDir)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// manually trigger deployment
+	depl := adm.TriggerDeployment(t, "branch-change-test", "branch-test")
+
+	// check model output from main branch
+	checkModelOutput := func() (string, error) {
+		olap, release, err := adm.Runtime.OLAP(t.Context(), depl.RuntimeInstanceID, "duckdb")
+		if err != nil {
+			return "", err
+		}
+		defer release()
+
+		rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT branch FROM model"})
+		if err != nil {
+			return "", err
+		}
+		defer rows.Close()
+
+		var res string
+		for rows.Next() {
+			if err := rows.Scan(&res); err != nil {
+				return "", err
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return "", err
+		}
+		return res, nil
+	}
+	require.Eventually(t, func() bool {
+		branch, _ := checkModelOutput()
+		return branch == "main"
+	}, 10*time.Second, 100*time.Millisecond, "expected model output to be 'main'")
+
+	// get project to find git remote
+	proj, err := c.GetProject(t.Context(), &adminv1.GetProjectRequest{
+		Org:     "branch-change-test",
+		Project: "branch-test",
+	})
+	require.NoError(t, err)
+
+	// create a new branch in github with updated model
+	installationID, err := adm.Admin.Github.ManagedOrgInstallationID()
+	require.NoError(t, err)
+	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
+
+	owner, repo, ok := gitutil.SplitGithubRemote(proj.Project.GitRemote)
+	require.True(t, ok, "invalid github remote: %s", proj.Project.GitRemote)
+
+	// get the current main branch ref
+	mainRef, _, err := ghClient.Git.GetRef(t.Context(), owner, repo, "refs/heads/main")
+	require.NoError(t, err)
+
+	// create new branch "feature" from main
+	newBranchRef := "refs/heads/feature"
+	_, _, err = ghClient.Git.CreateRef(t.Context(), owner, repo, &github.Reference{
+		Ref:    &newBranchRef,
+		Object: &github.GitObject{SHA: mainRef.Object.SHA},
+	})
+	require.NoError(t, err)
+
+	// update model.sql in the feature branch
+	fileContent := "SELECT 'feature' AS branch"
+	filePath := "models/model.sql"
+
+	// get current file to get its SHA
+	fileInfo, _, _, err := ghClient.Repositories.GetContents(t.Context(), owner, repo, filePath, &github.RepositoryContentGetOptions{
+		Ref: "feature",
+	})
+	require.NoError(t, err)
+
+	// update file in feature branch
+	_, _, err = ghClient.Repositories.UpdateFile(t.Context(), owner, repo, filePath, &github.RepositoryContentFileOptions{
+		Message: github.Ptr("Update model for feature branch"),
+		Content: []byte(fileContent),
+		SHA:     fileInfo.SHA,
+		Branch:  github.Ptr("feature"),
+	})
+	require.NoError(t, err)
+
+	// change primary branch using project edit
+	result = u1.Run(t, "project", "edit", "--primary-branch=feature", "--project=branch-test", "--org=branch-change-test")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify project primary branch is updated
+	proj, err = c.GetProject(t.Context(), &adminv1.GetProjectRequest{
+		Org:     "branch-change-test",
+		Project: "branch-test",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "feature", proj.Project.PrimaryBranch)
+
+	// manually trigger deployment to pick up new branch
+	depl = adm.TriggerDeployment(t, "branch-change-test", "branch-test")
+
+	// verify model is updated with changes from feature branch
+	require.Eventually(t, func() bool {
+		branch, _ := checkModelOutput()
+		return branch == "feature"
+	}, 10*time.Second, 100*time.Millisecond, "expected model output to be 'feature' after branch change")
 }
 
 func putFiles(t *testing.T, baseDir string, files map[string]string) {

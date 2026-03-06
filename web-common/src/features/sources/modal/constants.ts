@@ -92,13 +92,13 @@ export const SOURCES = [
   "salesforce",
   "snowflake",
   "sqlite",
+  "supabase",
   "https",
   "local_file",
 ];
 
 export const OLAP_ENGINES = [
   "clickhouse",
-  "clickhousecloud",
   "motherduck",
   "duckdb",
   "druid",

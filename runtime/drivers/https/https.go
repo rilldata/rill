@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "https",
 	Description: "Connect to a remote file.",
-	DocsURL:     "https://docs.rilldata.com/build/connect/#adding-a-remote-source",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -90,7 +90,7 @@ func (p *ModelInputProperties) Decode(props map[string]any) error {
 	return nil
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("https driver can't be shared")
 	}

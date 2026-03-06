@@ -1436,8 +1436,11 @@ annotations:
 					Cron:     "0 * * * *",
 					TimeZone: "America/Los_Angeles",
 				},
-				QueryName:           "MetricsViewToplist",
-				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				Resolver: "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": "{\"metrics_view\":\"mv1\"}",
+				})),
 				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportIncludeHeader: true,
 				ExportLimit:         10000,
@@ -1460,8 +1463,11 @@ annotations:
 					Cron:     "0 * * * *",
 					TimeZone: "America/Los_Angeles",
 				},
-				QueryName:           "MetricsViewToplist",
-				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				Resolver: "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": "{\"metrics_view\":\"mv1\"}",
+				})),
 				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportIncludeHeader: false,
 				ExportLimit:         10000,
@@ -2542,7 +2548,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("file", "", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")

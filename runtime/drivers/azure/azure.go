@@ -21,7 +21,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Azure Blob Storage",
 	Description: "Connect to Azure Blob Storage.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/azure",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/azure",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "azure_storage_account",
@@ -135,7 +135,7 @@ func (c *ConfigProperties) GetConnectionString() string {
 	return dsn
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("azure driver can't be shared")
 	}
