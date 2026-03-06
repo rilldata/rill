@@ -32,7 +32,12 @@
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
 
-  const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
+  const {
+    allowContextMenu,
+    allowNavigateToTable,
+    allowShowSchema,
+    onInsertTable,
+  } = store;
 
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     client,
@@ -93,6 +98,18 @@
         {table}
       </span>
     </svelte:element>
+
+    {#if onInsertTable}
+      <button
+        class="insert-button"
+        aria-label="Insert {table} into query"
+        title="Insert into query"
+        on:click|stopPropagation={() =>
+          onInsertTable(driver, connector, database, databaseSchema, table)}
+      >
+        +
+      </button>
+    {/if}
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
@@ -160,5 +177,20 @@
 
   .selected:hover {
     @apply bg-gray-200;
+  }
+
+  .insert-button {
+    @apply hidden flex-none items-center justify-center;
+    @apply w-5 h-5 rounded text-xs font-semibold;
+    @apply text-fg-secondary bg-transparent;
+  }
+
+  .table-entry-header:hover .insert-button,
+  .open .insert-button {
+    @apply flex;
+  }
+
+  .insert-button:hover {
+    @apply text-fg-primary bg-gray-200;
   }
 </style>

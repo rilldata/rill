@@ -2,6 +2,7 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import { extractErrorMessage } from "../../../lib/errors";
+  import { prettyPrintType } from "../../query/query-utils";
   import { useGetTable } from "../selectors";
   import { useRuntimeClient } from "../../../runtime-client/v2";
 
@@ -31,12 +32,6 @@
   $: error = $newTableQuery?.error;
   $: isError = !!$newTableQuery?.error;
   $: isLoading = $newTableQuery?.isLoading;
-
-  function prettyPrintType(type: string) {
-    // Remove CODE_ prefix and normalize unsupported types to just "UNKNOWN"
-    const normalized = type.replace(/^CODE_/, "");
-    return normalized.startsWith("UNKNOWN(") ? "UNKNOWN" : normalized;
-  }
 </script>
 
 <ul class="table-schema-list">
