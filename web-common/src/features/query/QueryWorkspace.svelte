@@ -8,9 +8,13 @@
   import QueryCell from "./QueryCell.svelte";
   import QuerySchemaPanel from "./QuerySchemaPanel.svelte";
   import { makeSufficientlyQualifiedTableName } from "@rilldata/web-common/features/connectors/connectors-utils";
-  import { createNotebook, type NotebookStore } from "./query-store";
+  import {
+    createNotebook,
+    type NotebookStore,
+    type NotebookState,
+  } from "./query-store";
   import { onDestroy } from "svelte";
-  import { get } from "svelte/store";
+  import { get, readable } from "svelte/store";
 
   const WORKSPACE_KEY = "__query_console__";
 
@@ -93,18 +97,22 @@
 
   let sidebarWidth = 260;
 
-  // Subscribe to notebook state at top level (Svelte requires $store at top level)
-  $: cells = $notebook?.cells ?? [];
+  // Fallback stores for when notebook is null (Svelte can't auto-subscribe nullable stores)
+  const EMPTY_NOTEBOOK = readable<NotebookState>({
+    cells: [],
+    focusedCellId: null,
+  });
+  const NULL_READABLE = readable<null>(null);
+  const ZERO_READABLE = readable<number>(0);
+
+  // Always-valid store references for $-prefix subscriptions
+  $: nb = notebook ?? EMPTY_NOTEBOOK;
+  $: cells = $nb.cells;
 
   // Derived stores for the focused cell (forwarded to inspector)
-  $: focusedSchema = notebook?.focusedSchema;
-  $: focusedRowCount = notebook?.focusedRowCount;
-  $: focusedExecutionTimeMs = notebook?.focusedExecutionTimeMs;
-  $: focusedSchemaValue = focusedSchema ? ($focusedSchema ?? null) : null;
-  $: focusedRowCountValue = focusedRowCount ? ($focusedRowCount ?? 0) : 0;
-  $: focusedExecutionTimeMsValue = focusedExecutionTimeMs
-    ? ($focusedExecutionTimeMs ?? null)
-    : null;
+  $: focusedSchemaStore = notebook?.focusedSchema ?? NULL_READABLE;
+  $: focusedRowCountStore = notebook?.focusedRowCount ?? ZERO_READABLE;
+  $: focusedTimeMsStore = notebook?.focusedExecutionTimeMs ?? NULL_READABLE;
 
   function handleAddCell() {
     notebook?.addCell(olapConnector);
@@ -171,9 +179,9 @@
     <!-- Right Sidebar: Schema Inspector -->
     <QuerySchemaPanel
       filePath={WORKSPACE_KEY}
-      schema={focusedSchemaValue}
-      rowCount={focusedRowCountValue}
-      executionTimeMs={focusedExecutionTimeMsValue}
+      schema={$focusedSchemaStore}
+      rowCount={$focusedRowCountStore}
+      executionTimeMs={$focusedTimeMsStore}
       {selectedTable}
     />
   </div>
