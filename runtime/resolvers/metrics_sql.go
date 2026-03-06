@@ -42,9 +42,11 @@ type metricsSQLArgs struct {
 // The compiler preserves templating in the SQL, allowing the regular SQL resolver to handle SQL templating rules.
 func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &metricsSQLProps{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.Properties, props)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "metrics_sql", unused)
 	if props.SQL == "" {
 		return nil, errors.New(`metrics SQL: missing required property "sql"`)
 	}

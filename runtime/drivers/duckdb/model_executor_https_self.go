@@ -8,6 +8,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/https"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 type httpsToSelfExecutor struct {
@@ -40,8 +42,12 @@ func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelEx
 
 func (e *httpsToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
 	parsed := &https.ModelInputProperties{}
-	if err := parsed.Decode(opts.InputProperties); err != nil {
+	unused, err := parsed.DecodeWithWarnings(opts.InputProperties)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 
 	var format string
@@ -52,8 +58,7 @@ func (e *httpsToSelfExecutor) modelInputProperties(ctx context.Context, opts *dr
 	}
 
 	m := &ModelInputProperties{}
-	// Generate secret SQL to access the to access http url using duckdb
-	var err error
+	// Generate secret SQL to access the http url using duckdb
 	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, _, err = generateSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {
 		return nil, err

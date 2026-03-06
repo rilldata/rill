@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // TestEnvParsing tests repo without a .env file
@@ -15,7 +16,7 @@ func TestEnvParsing(t *testing.T) {
 			`rill.yaml`: ``,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
 		require.NoError(t, err)
 		require.Equal(t, len(parser.DotEnv), 0)
 	})
@@ -30,7 +31,7 @@ FOO=bar
 `,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
 		require.NoError(t, err)
 
 		mergedEnv := parser.GetDotEnv()
@@ -51,7 +52,7 @@ MODELS_FOLDER_TEST_VAR=models
 `,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
 		require.NoError(t, err)
 
 		require.Empty(t, parser.Errors)
@@ -78,7 +79,7 @@ NESTED_ONLY=nested_value
 `,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
 		require.NoError(t, err)
 		require.Empty(t, parser.Errors)
 
@@ -99,7 +100,7 @@ func TestEnvReparse(t *testing.T) {
 
 	// Create an empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``, ".env": `ROOT_VAR=root_val`})
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 

@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -121,7 +122,7 @@ security:
 			},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -164,7 +165,7 @@ openapi:
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
 	require.NoError(t, err)
 	require.Len(t, p.Errors, 0)
 	require.Len(t, p.Resources, 2)

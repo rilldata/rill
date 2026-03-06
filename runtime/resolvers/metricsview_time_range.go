@@ -39,9 +39,11 @@ type metricsViewTimeRange struct {
 
 func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	tr := &metricsViewTimeRange{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, tr); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.Properties, tr)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "metrics_time_range", unused)
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {

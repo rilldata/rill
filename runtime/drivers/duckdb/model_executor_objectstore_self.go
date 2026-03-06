@@ -9,6 +9,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
@@ -47,8 +49,12 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 
 func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(opts.InputProperties); err != nil {
+	unused, err := parsed.DecodeWithWarnings(opts.InputProperties)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 
 	m := &ModelInputProperties{}
@@ -60,7 +66,6 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, op
 	}
 
 	// Generate secret SQL to access the to access object store using duckdb
-	var err error
 	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, _, err = generateSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {
 		return nil, err
@@ -88,8 +93,12 @@ type objectStoreToSelfExecutorNonNative struct {
 
 func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(opts.InputProperties); err != nil {
+	unused, err := parsed.DecodeWithWarnings(opts.InputProperties)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 
 	store, ok := opts.InputHandle.AsObjectStore()

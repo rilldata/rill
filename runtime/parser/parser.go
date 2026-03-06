@@ -14,6 +14,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 )
 
 // Built-in parser limits
@@ -178,6 +179,8 @@ type Parser struct {
 	Environment          string
 	DefaultOLAPConnector string
 
+	Logger *zap.Logger
+
 	// Output
 	RillYAML  *RillYAML
 	DotEnv    map[string]map[string]string // Map of .env file paths to their key-value pairs
@@ -219,12 +222,13 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 }
 
 // Parse creates a new parser and parses the entire project.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string, logger *zap.Logger) (*Parser, error) {
 	p := &Parser{
 		Repo:                 repo,
 		InstanceID:           instanceID,
 		Environment:          environment,
 		DefaultOLAPConnector: defaultOLAPConnector,
+		Logger:               logger,
 	}
 
 	err := p.reload(ctx)

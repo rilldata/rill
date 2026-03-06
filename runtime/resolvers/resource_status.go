@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 )
 
@@ -38,9 +38,11 @@ type resourceStatusProps struct {
 // newResourceStatus creates a new resourceStatusResolver.
 func newResourceStatus(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &resourceStatusProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	unused, err := mapstructureutil.DecodeWithWarnings(opts.Properties, props)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "resource_status", unused)
 
 	return &resourceStatusResolver{
 		runtime:    opts.Runtime,

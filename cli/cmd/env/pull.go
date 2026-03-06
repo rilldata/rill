@@ -11,6 +11,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 func PullCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -51,7 +52,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	if err != nil {
 		return err
 	}
-	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb", zap.NewNop())
 	if err != nil {
 		return fmt.Errorf("failed to parse project: %w", err)
 	}

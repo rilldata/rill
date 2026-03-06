@@ -83,6 +83,8 @@ type ResolverOptions struct {
 	Args       map[string]any
 	Claims     *SecurityClaims
 	ForExport  bool
+	// SkipPropertyValidation disables warnings about unsupported properties.
+	SkipPropertyValidation bool
 }
 
 // ResolverInitializer is a function that initializes a resolver.

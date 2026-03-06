@@ -38,9 +38,11 @@ type metricsResolverArgs struct {
 
 func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	qry := &metricsview.Query{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, qry); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.Properties, qry)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "metrics", unused)
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
