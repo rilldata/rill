@@ -44,12 +44,14 @@
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
     const dashboard = $dashboards.data?.find(
-      (d) => d.meta?.name?.name === token.resourceName,
+      (d) => d.meta?.name?.name === token.resources?.[0]?.name,
     );
+
     return {
       ...token,
       dashboardTitle:
         dashboard?.explore?.spec?.displayName ||
+        dashboard?.canvas?.spec?.displayName ||
         dashboard?.meta?.name?.name ||
         "",
     };
