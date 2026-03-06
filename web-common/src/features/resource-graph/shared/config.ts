@@ -74,7 +74,7 @@ export const UI_CONFIG = {
  */
 export const FIT_VIEW_CONFIG = {
   PADDING: 0.15,
-  MIN_ZOOM: 0.1,
+  MIN_ZOOM: 0.75,
   MAX_ZOOM: 1.25,
   DURATION: 0,
 } as const;

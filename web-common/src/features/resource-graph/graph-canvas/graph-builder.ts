@@ -1113,13 +1113,18 @@ export function partitionResourcesByDashboardTrees(
  * Runs Dagre independently per tree, then offsets each tree horizontally
  * so they appear side-by-side with padding between them.
  */
-export function buildMultiTreeLayout(groups: ResourceGraphGrouping[]): {
+export function buildMultiTreeLayout(
+  groups: ResourceGraphGrouping[],
+  containerWidth?: number,
+): {
   nodes: Node<ResourceNodeData>[];
   edges: Edge[];
 } {
   const TREE_GAP_X = 100; // horizontal gap between trees
   const TREE_GAP_Y = 200; // vertical gap between rows
-  const MAX_ROW_WIDTH = 2500; // wrap to next row after this width
+  // Use actual container width so trees wrap into rows that fit the viewport.
+  // fitView will scale the result to fill the canvas afterward.
+  const MAX_ROW_WIDTH = containerWidth || 2500;
   const allNodes: Node<ResourceNodeData>[] = [];
   const allEdges: Edge[] = [];
 

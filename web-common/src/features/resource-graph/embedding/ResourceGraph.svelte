@@ -117,6 +117,9 @@
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
 
+  // Track container width for dynamic multi-tree row wrapping
+  let sidebarMainWidth = 0;
+
   $: normalizedResources = resources ?? [];
   $: normalizedSeeds = expandSeedsByKind(
     seeds,
@@ -251,7 +254,10 @@
   // Build combined multi-tree layout for sprawl mode
   $: sprawlLayout = (() => {
     if (!isSprawlMode || !filteredResourceGroups.length) return null;
-    return buildMultiTreeLayout(filteredResourceGroups);
+    return buildMultiTreeLayout(
+      filteredResourceGroups,
+      sidebarMainWidth || undefined,
+    );
   })() as { nodes: Node<ResourceNodeData>[]; edges: Edge[] } | null;
 
   $: visibleResourceGroups =
@@ -899,7 +905,7 @@
         </Button>
       {/if}
     </div>
-    <div class="sidebar-main">
+    <div class="sidebar-main" bind:clientWidth={sidebarMainWidth}>
       {#if error}
         <div class="state error">
           <p>{error}</p>
