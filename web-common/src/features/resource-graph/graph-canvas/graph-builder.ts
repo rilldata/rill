@@ -13,9 +13,10 @@ import type {
   V1Resource,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import type { ResourceNodeData } from "../shared/types";
+import type { ResourceNodeData, ResourceMetadata } from "../shared/types";
 import { graphCache } from "../shared/cache/position-cache";
 import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
+import { deriveConnectorType } from "@rilldata/web-common/features/connectors/connector-type-detector";
 
 // Use centralized configuration
 const MIN_NODE_WIDTH = NODE_CONFIG.MIN_WIDTH;
@@ -39,6 +40,7 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Model,
   ResourceKind.MetricsView,
   ResourceKind.Explore,
+  ResourceKind.Canvas,
 ]);
 
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
@@ -62,6 +64,284 @@ function estimateNodeWidth(label?: string | null) {
   );
 }
 
+/**
+ * Format a V1Schedule into a short human-readable description for the header.
+ */
+function formatScheduleDescription(
+  schedule:
+    | { cron?: string; tickerSeconds?: number; timeZone?: string }
+    | undefined,
+): string | undefined {
+  if (!schedule) return undefined;
+  if (schedule.cron) {
+    // Just show the cron expression - timezone is in the YAML
+    return schedule.cron;
+  }
+  if (schedule.tickerSeconds) {
+    const seconds = schedule.tickerSeconds;
+    if (seconds >= 3600 && seconds % 3600 === 0) {
+      const hours = seconds / 3600;
+      return `every ${hours}h`;
+    }
+    if (seconds >= 60 && seconds % 60 === 0) {
+      const minutes = seconds / 60;
+      return `every ${minutes}m`;
+    }
+    return `every ${seconds}s`;
+  }
+  return undefined;
+}
+
+/**
+ * Build a reverse-reference map: resourceId -> { alerts, apis } counts.
+ * Built once in O(M) and queried in O(1) per node, avoiding O(N*M) per-node scanning.
+ */
+function buildReverseRefCounts(
+  resources: V1Resource[],
+): Map<string, { alerts: number; apis: number }> {
+  const counts = new Map<string, { alerts: number; apis: number }>();
+  for (const res of resources) {
+    const resKind = res.meta?.name?.kind;
+    if (resKind !== ResourceKind.Alert && resKind !== ResourceKind.API)
+      continue;
+    for (const ref of res.meta?.refs ?? []) {
+      const refId = resourceNameToId(ref);
+      if (!refId) continue;
+      const entry = counts.get(refId) ?? { alerts: 0, apis: 0 };
+      if (resKind === ResourceKind.Alert) entry.alerts++;
+      else entry.apis++;
+      counts.set(refId, entry);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Extract rich metadata from a resource for badge display.
+ */
+function extractResourceMetadata(
+  resource: V1Resource,
+  kind: ResourceKind | undefined,
+  reverseRefCounts: Map<string, { alerts: number; apis: number }>,
+): ResourceMetadata {
+  const metadata: ResourceMetadata = {};
+
+  // Model/Source metadata
+  const model = resource.model;
+  const source = resource.source;
+
+  if (model?.spec) {
+    const spec = model.spec;
+    const inputProps = spec.inputProperties as
+      | { path?: string; sql?: string }
+      | undefined;
+
+    // Connector info
+    metadata.connector = deriveConnectorType({
+      partitionsResolverProperties: spec.partitionsResolverProperties as
+        | Record<string, unknown>
+        | undefined,
+      sourcePath: inputProps?.path,
+      sqlContent: inputProps?.sql,
+      inputConnector: spec.inputConnector,
+    });
+    if (spec.inputConnector) metadata.inputConnector = spec.inputConnector;
+
+    // Source path for file-based sources
+    if (inputProps?.path) {
+      metadata.sourcePath = inputProps.path;
+    }
+
+    // Processing configuration
+    metadata.incremental = spec.incremental;
+    metadata.partitioned = Boolean(spec.partitionsResolver);
+
+    // Schedule configuration
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+    metadata.refUpdate = spec.refreshSchedule?.refUpdate ?? false;
+
+    // Timeout
+    if (spec.timeoutSeconds) metadata.timeoutSeconds = spec.timeoutSeconds;
+
+    // Last refreshed
+    if (model.state?.refreshedOn) {
+      metadata.lastRefreshedOn = model.state.refreshedOn;
+    }
+
+    // Execution duration
+    if (model.state?.latestExecutionDurationMs) {
+      metadata.executionDurationMs = model.state.latestExecutionDurationMs;
+    }
+
+    // Result table
+    if (model.state?.resultTable) {
+      metadata.resultTable = model.state.resultTable;
+    }
+
+    // Materialization
+    const outputProps = spec.outputProperties as
+      | { materialize?: boolean }
+      | undefined;
+    metadata.materialize = outputProps?.materialize ?? false;
+    metadata.isMaterialized =
+      outputProps?.materialize === true || Boolean(spec.stageConnector);
+    if (spec.outputConnector) metadata.outputConnector = spec.outputConnector;
+    if (spec.stageConnector) metadata.stageConnector = spec.stageConnector;
+
+    // Change mode
+    if (spec.changeMode) metadata.changeMode = spec.changeMode;
+
+    // Retry configuration
+    if (spec.retryAttempts) metadata.retryAttempts = spec.retryAttempts;
+    if (spec.retryDelaySeconds)
+      metadata.retryDelaySeconds = spec.retryDelaySeconds;
+    if (spec.retryExponentialBackoff) metadata.retryExponentialBackoff = true;
+    if (spec.retryIfErrorMatches?.length)
+      metadata.retryIfErrorMatches = spec.retryIfErrorMatches;
+
+    // Tests
+    metadata.testCount = spec.tests?.length ?? 0;
+    if (model.state?.testErrors) {
+      metadata.testErrors = model.state.testErrors;
+    }
+
+    // Extract SQL query
+    if (inputProps?.sql) {
+      metadata.sqlQuery = inputProps.sql;
+    }
+
+    // Check if model is defined via SQL file
+    const filePaths = resource.meta?.filePaths ?? [];
+    metadata.isSqlModel = filePaths.some((fp) => fp.endsWith(".sql"));
+  }
+
+  if (source?.spec) {
+    const spec = source.spec;
+    const props = spec.properties as
+      | { path?: string; sql?: string }
+      | undefined;
+
+    metadata.connector = deriveConnectorType({
+      sourcePath: props?.path,
+      sqlContent: props?.sql,
+      inputConnector: spec.sourceConnector,
+    });
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+
+    // Last refreshed
+    if (source.state?.refreshedOn) {
+      metadata.lastRefreshedOn = source.state.refreshedOn;
+    }
+
+    // Mark as YAML-based (sources are always YAML)
+    metadata.isSqlModel = false;
+  }
+
+  // MetricsView metadata
+  const metricsView = resource.metricsView;
+  if (metricsView?.spec) {
+    const mvSpec = metricsView.spec;
+    metadata.metricsTable = mvSpec.table;
+    metadata.metricsModel = mvSpec.model;
+    metadata.timeDimension = mvSpec.timeDimension;
+    metadata.hasSecurityRules = (mvSpec.securityRules?.length ?? 0) > 0;
+
+    // Extract dimensions
+    if (mvSpec.dimensions && mvSpec.dimensions.length > 0) {
+      metadata.dimensions = mvSpec.dimensions.map((d) => ({
+        name: d.name ?? "",
+        displayName: d.displayName,
+        description: d.description,
+        type: d.type?.replace("DIMENSION_TYPE_", ""),
+        column: d.column,
+        expression: d.expression,
+      }));
+    }
+
+    // Extract measures
+    if (mvSpec.measures && mvSpec.measures.length > 0) {
+      metadata.measures = mvSpec.measures.map((m) => ({
+        name: m.name ?? "",
+        displayName: m.displayName,
+        description: m.description,
+        expression: m.expression,
+        type: m.type?.replace("MEASURE_TYPE_", ""),
+      }));
+    }
+  }
+
+  // Dashboard (Explore/Canvas) theme metadata
+  const explore = resource.explore;
+  const canvas = resource.canvas;
+
+  if (explore?.spec) {
+    if (explore.spec.theme && !explore.spec.embeddedTheme) {
+      metadata.theme = explore.spec.theme;
+    }
+    metadata.metricsViewName = explore.spec.metricsView;
+    metadata.hasSecurityRules = (explore.spec.securityRules?.length ?? 0) > 0;
+    metadata.exploreMeasuresAll = explore.spec.measuresSelector?.all === true;
+    metadata.exploreDimensionsAll =
+      explore.spec.dimensionsSelector?.all === true;
+    metadata.exploreMeasuresCount = explore.spec.measures?.length ?? 0;
+    metadata.exploreDimensionsCount = explore.spec.dimensions?.length ?? 0;
+  }
+
+  if (canvas?.spec) {
+    if (canvas.spec.theme && !canvas.spec.embeddedTheme) {
+      metadata.theme = canvas.spec.theme;
+    }
+    // Count components across all rows
+    const rows = canvas.spec.rows ?? [];
+    metadata.rowCount = rows.length;
+    let componentCount = 0;
+    for (const row of rows) {
+      componentCount += row.items?.length ?? 0;
+    }
+    if (componentCount > 0) {
+      metadata.componentCount = componentCount;
+    }
+    metadata.hasSecurityRules = (canvas.spec.securityRules?.length ?? 0) > 0;
+  }
+
+  // Connector metadata
+  const connectorRes = resource.connector;
+  if (connectorRes?.spec) {
+    if (connectorRes.spec.driver) {
+      metadata.connectorDriver = connectorRes.spec.driver;
+    }
+    if (connectorRes.spec.properties) {
+      metadata.connectorProperties = connectorRes.spec.properties;
+    }
+    if (connectorRes.spec.templatedProperties?.length) {
+      metadata.connectorTemplatedProperties =
+        connectorRes.spec.templatedProperties;
+    }
+  }
+
+  // Look up alert/API counts from pre-built reverse-reference map (O(1))
+  const resourceId = createResourceId(resource.meta);
+  if (resourceId) {
+    const counts = reverseRefCounts.get(resourceId);
+    if (counts) {
+      if (counts.alerts > 0) metadata.alertCount = counts.alerts;
+      if (counts.apis > 0) metadata.apiCount = counts.apis;
+    }
+  }
+
+  return metadata;
+}
+
 type BuildGraphOptions = {
   // Namespace for caching node positions. Using a per-graph id avoids reusing
   // coordinates from unrelated graphs, which can place nodes far away.
@@ -76,12 +356,13 @@ type BuildGraphOptions = {
  * Uses Dagre for automatic layout and maintains cached node positions for stability.
  *
  * This function:
- * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore)
+ * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore, Canvas)
+ *   Note: Sources and Models are merged in the UI (Source is deprecated)
  * - Creates nodes with dynamic widths based on label length
  * - Generates edges based on resource references
  * - Applies Dagre layout with configurable spacing
  * - Caches node positions per namespace for consistent placement
- * - Enforces rank constraints (Sources at top, Explores/Canvas at bottom)
+ * - Enforces rank constraints (Explores/Canvas at bottom, Sources/Models flow naturally)
  *
  * @param resources - Array of V1Resource objects to visualize
  * @param opts - Optional configuration for layout and caching
@@ -102,18 +383,20 @@ export function buildResourceGraph(
   const positionNs = opts?.positionNs?.trim() || "global";
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
-    rankdir: "TB",
-    // Extreme compactness; overlaps allowed
+    rankdir: DAGRE_CONFIG.RANKDIR,
     nodesep: DAGRE_NODESEP,
     ranksep: DAGRE_RANKSEP,
     edgesep: DAGRE_EDGESEP,
-    ranker: "tight-tree",
-    acyclicer: "greedy",
+    ranker: DAGRE_CONFIG.RANKER,
+    acyclicer: DAGRE_CONFIG.ACYCLICER,
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   const resourceMap = new Map<string, V1Resource>();
   const nodeDefinitions = new Map<string, Node<ResourceNodeData>>();
+
+  // Build reverse-reference counts once (O(M)) for O(1) per-node lookups
+  const reverseRefCounts = buildReverseRefCounts(resources);
 
   for (const resource of resources) {
     const id = createResourceId(resource.meta);
@@ -121,7 +404,8 @@ export function buildResourceGraph(
 
     const kind = coerceResourceKind(resource);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    if (resource.meta?.hidden) continue;
+    // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+    if (resource.meta?.hidden && kind !== ResourceKind.Connector) continue;
 
     resourceMap.set(id, resource);
     const label = resource.meta?.name?.name ?? "";
@@ -129,8 +413,12 @@ export function buildResourceGraph(
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
       case ResourceKind.Connector:
-      case ResourceKind.Source:
         rankConstraint = "min";
+        break;
+      case ResourceKind.Source:
+      case ResourceKind.Model:
+        // No special rank constraint - let them flow naturally in the graph
+        rankConstraint = undefined;
         break;
       case ResourceKind.Explore:
       case ResourceKind.Canvas:
@@ -146,6 +434,8 @@ export function buildResourceGraph(
       rank: rankConstraint,
     });
 
+    const metadata = extractResourceMetadata(resource, kind, reverseRefCounts);
+
     const nodeDef: Node<ResourceNodeData> = {
       id,
       width: nodeWidth,
@@ -154,6 +444,7 @@ export function buildResourceGraph(
         resource,
         kind,
         label,
+        metadata,
       },
       type: "resource-node",
       position: { x: 0, y: 0 },
@@ -163,7 +454,12 @@ export function buildResourceGraph(
     nodeDefinitions.set(id, nodeDef);
   }
 
+  // Build adjacency map for edges
+  // dependentsMap: sourceId -> Set of dependentIds (outgoing edges from source)
   const dependentsMap = new Map<string, Set<string>>();
+
+  // First pass: collect all refs per dependent, tracking which have non-connector parents
+  const nonConnectorParents = new Set<string>();
 
   for (const resource of resourceMap.values()) {
     const dependentId = createResourceId(resource.meta);
@@ -175,6 +471,15 @@ export function buildResourceGraph(
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
 
+      const sourceResource = resourceMap.get(sourceId);
+      const sourceKind = sourceResource
+        ? coerceResourceKind(sourceResource)
+        : undefined;
+      if (sourceKind !== ResourceKind.Connector) {
+        nonConnectorParents.add(dependentId);
+      }
+
+      // Track outgoing edges (source -> dependent)
       if (!dependentsMap.has(sourceId)) dependentsMap.set(sourceId, new Set());
       dependentsMap.get(sourceId)!.add(dependentId);
     }
@@ -185,8 +490,18 @@ export function buildResourceGraph(
 
   for (const [sourceId, dependents] of dependentsMap) {
     if (!dependents?.size) continue;
+    const sourceResource = resourceMap.get(sourceId);
+    const sourceKind = sourceResource
+      ? coerceResourceKind(sourceResource)
+      : undefined;
+    const isConnectorSource = sourceKind === ResourceKind.Connector;
+
     for (const dependentId of dependents) {
       if (!resourceMap.has(sourceId) || !resourceMap.has(dependentId)) continue;
+
+      // Only connect connector to root nodes (those with no other non-connector parents)
+      if (isConnectorSource && nonConnectorParents.has(dependentId)) continue;
+
       const edgeId = `${sourceId}->${dependentId}`;
       if (edgeIds.has(edgeId)) continue;
       edgeIds.add(edgeId);
@@ -327,7 +642,8 @@ function buildVisibleResourceMap(
     if (!id) continue;
     const kind = toResourceKind(resource.meta?.name);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    if (resource.meta?.hidden) continue;
+    // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+    if (resource.meta?.hidden && kind !== ResourceKind.Connector) continue;
     resourceMap.set(id, resource);
   }
   return resourceMap;
@@ -338,13 +654,17 @@ function buildVisibleResourceMap(
  * Converts V1ResourceName objects to string IDs and removes duplicates.
  */
 function normalizeSeeds(seeds: (string | V1ResourceName)[]): string[] {
-  const toSeedId = (seed: string | V1ResourceName) =>
-    typeof seed === "string" ? seed : createResourceId({ name: seed });
-
-  return seeds
-    .map((s) => toSeedId(s))
-    .filter((id): id is string => !!id)
-    .filter((id, idx, arr) => arr.indexOf(id) === idx);
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const seed of seeds) {
+    const id =
+      typeof seed === "string" ? seed : createResourceId({ name: seed });
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
+  }
+  return result;
 }
 
 /**
@@ -371,9 +691,20 @@ function createSeedBasedGroups(
     const downIds = traverseDownstream(seedId, outgoing);
     const componentIds = new Set<string>([...upIds, ...downIds]);
 
+    const seedKind = toResourceKind(resourceMap.get(seedId)?.meta?.name);
     const componentResources = Array.from(componentIds)
       .map((resourceId) => resourceMap.get(resourceId))
-      .filter((res): res is V1Resource => !!res);
+      .filter((res): res is V1Resource => !!res)
+      .filter((res) => {
+        // Exclude non-seed connectors; connector info is shown as badges
+        const k = toResourceKind(res.meta?.name);
+        if (k !== ResourceKind.Connector) return true;
+        // Keep the connector if it's the seed itself
+        return (
+          seedKind === ResourceKind.Connector &&
+          createResourceId(res.meta) === seedId
+        );
+      });
     if (!componentResources.length) continue;
 
     const label = resourceMap.get(seedId)?.meta?.name?.name ?? seedId;
@@ -511,7 +842,7 @@ function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
 export function partitionResourcesBySeeds(
   resources: V1Resource[],
   seeds: (string | V1ResourceName)[],
-  filterKind?: ResourceKind,
+  filterKind?: ResourceKind | "dashboards",
 ): ResourceGraphGrouping[] {
   const resourceMap = buildVisibleResourceMap(resources);
   const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
@@ -535,10 +866,14 @@ export function partitionResourcesBySeeds(
 
   // If filtering by a specific kind, remove groups that don't contain any resource of that kind
   // Use coerceResourceKind to handle "defined-as-source" models correctly
+  // Special case: "dashboards" includes both Explore and Canvas
   if (filterKind) {
     return groups.filter((group) =>
       group.resources.some((r) => {
         const kind = coerceResourceKind(r);
+        if (filterKind === "dashboards") {
+          return kind === ResourceKind.Explore || kind === ResourceKind.Canvas;
+        }
         return kind === filterKind;
       }),
     );
@@ -588,11 +923,13 @@ export function partitionResourcesByMetrics(
     if (!id) continue;
     const kind = toResourceKind(res.meta?.name);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    if (res.meta?.hidden) continue;
+    // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+    if (res.meta?.hidden && kind !== ResourceKind.Connector) continue;
     resourceMap.set(id, res);
     if (!adjacency.has(id)) adjacency.set(id, new Set());
   }
 
+  // Build adjacency from resource refs.
   for (const res of resourceMap.values()) {
     const dependentId = createResourceId(res.meta);
     if (!dependentId) continue;
@@ -645,7 +982,24 @@ export function partitionResourcesByMetrics(
     graphCache.setLabel(m.id, m.label);
   }
 
-  // If there are resources not connected to any metrics view, group remaining components.
+  // Create connector groups. Connectors are the conceptual root of the
+  // project, so selecting one displays the full DAG (all visible resources).
+  // Insert at the beginning so they appear first in the sidebar tree.
+  const connectorGroups: ResourceGraphGrouping[] = [];
+  for (const [id, res] of resourceMap) {
+    const kind = toResourceKind(res.meta?.name);
+    if (kind !== ResourceKind.Connector) continue;
+    const label = res.meta?.name?.name ?? id;
+    connectorGroups.push({
+      id,
+      resources: Array.from(resourceMap.values()),
+      label,
+    });
+    graphCache.setLabel(id, label);
+    assigned.add(id);
+  }
+
+  // Group remaining resources not connected to any metrics view.
   const remaining = Array.from(resourceMap.keys()).filter(
     (id) => !assigned.has(id),
   );
@@ -663,11 +1017,13 @@ export function partitionResourcesByMetrics(
         resources: resourcesInGroup,
         label: "Other resources",
       });
+      for (const rid of ids) assigned.add(rid);
     }
   }
 
   // Persist grouping assignments
-  for (const g of groups) {
+  const finalGroups = [...connectorGroups, ...groups];
+  for (const g of finalGroups) {
     if (g.label) graphCache.setLabel(g.id, g.label);
     for (const r of g.resources) {
       const rid = createResourceId(r.meta);
@@ -676,5 +1032,192 @@ export function partitionResourcesByMetrics(
   }
 
   graphCache.persist();
+  return finalGroups;
+}
+
+/**
+ * Partition resources into independent trees rooted at dashboard resources.
+ * Each dashboard (Explore or Canvas) anchors a tree containing all its
+ * upstream dependencies (MetricsView → Models → Sources).
+ *
+ * Connector nodes are excluded from trees; their info is shown as badges
+ * on the source model nodes instead.
+ *
+ * Resources not reachable from any dashboard go into an "Other resources" group.
+ */
+export function partitionResourcesByDashboardTrees(
+  resources: V1Resource[],
+): ResourceGraphGrouping[] {
+  const resourceMap = buildVisibleResourceMap(resources);
+  const { incoming } = buildDirectedAdjacency(resourceMap);
+
+  // Identify dashboard resources (Explore/Canvas) as tree roots
+  const dashboardSeeds: { id: string; label: string }[] = [];
+  for (const [id, res] of resourceMap) {
+    const kind = coerceResourceKind(res);
+    if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas) {
+      dashboardSeeds.push({ id, label: res.meta?.name?.name ?? id });
+    }
+  }
+  dashboardSeeds.sort((a, b) => a.label.localeCompare(b.label));
+
+  const groups: ResourceGraphGrouping[] = [];
+  const assigned = new Set<string>();
+
+  for (const seed of dashboardSeeds) {
+    const upIds = traverseUpstream(seed.id, incoming);
+    // Exclude connector nodes from the tree.
+    // Allow resources to appear in multiple trees (shared upstream models)
+    // since buildMultiTreeLayout runs separate Dagre layouts per tree,
+    // and duplicate node IDs across trees are handled there.
+    const treeIds = new Set<string>();
+    for (const rid of upIds) {
+      const res = resourceMap.get(rid);
+      if (!res) continue;
+      const kind = coerceResourceKind(res);
+      if (kind === ResourceKind.Connector) continue;
+      treeIds.add(rid);
+    }
+    if (!treeIds.size) continue;
+
+    const treeResources = Array.from(treeIds)
+      .map((rid) => resourceMap.get(rid))
+      .filter((r): r is V1Resource => !!r);
+    groups.push({ id: seed.id, resources: treeResources, label: seed.label });
+    for (const rid of treeIds) assigned.add(rid);
+  }
+
+  // Collect orphans (not connectors, not assigned to any tree)
+  const orphans: V1Resource[] = [];
+  for (const [id, res] of resourceMap) {
+    if (assigned.has(id)) continue;
+    const kind = coerceResourceKind(res);
+    if (kind === ResourceKind.Connector) continue;
+    orphans.push(res);
+  }
+  if (orphans.length) {
+    groups.push({
+      id: "__orphans__",
+      resources: orphans,
+      label: "Other resources",
+    });
+  }
+
   return groups;
+}
+
+/**
+ * Build a combined multi-tree layout for rendering all source trees
+ * on a single SvelteFlow canvas.
+ *
+ * Runs Dagre independently per tree, then offsets each tree horizontally
+ * so they appear side-by-side with padding between them.
+ */
+export function buildMultiTreeLayout(
+  groups: ResourceGraphGrouping[],
+  containerWidth?: number,
+): {
+  nodes: Node<ResourceNodeData>[];
+  edges: Edge[];
+} {
+  const TREE_GAP_X = 100; // horizontal gap between trees
+  const TREE_GAP_Y = 200; // vertical gap between rows
+  // Use actual container width so trees wrap into rows that fit the viewport.
+  // fitView will scale the result to fill the canvas afterward.
+  const MAX_ROW_WIDTH = containerWidth || 2500;
+  const allNodes: Node<ResourceNodeData>[] = [];
+  const allEdges: Edge[] = [];
+
+  // Track which node IDs have been seen globally to detect shared resources
+  const seenNodeIds = new Set<string>();
+
+  // First pass: build each tree and compute bounding boxes
+  type TreeResult = {
+    nodes: Node<ResourceNodeData>[];
+    edges: Edge[];
+    width: number;
+    height: number;
+    minX: number;
+    minY: number;
+    prefix: string;
+  };
+  const trees: TreeResult[] = [];
+
+  for (const group of groups) {
+    const { nodes, edges } = buildResourceGraph(group.resources, {
+      positionNs: `sprawl|${group.id}`,
+      ignoreCache: true,
+    });
+    if (!nodes.length) continue;
+
+    const hasConflicts = nodes.some((n) => seenNodeIds.has(n.id));
+    const prefix = hasConflicts ? `${group.id}__` : "";
+    for (const node of nodes) seenNodeIds.add(node.id);
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const node of nodes) {
+      const nx = node.position.x;
+      const ny = node.position.y;
+      const nw = node.width ?? NODE_CONFIG.MIN_WIDTH;
+      const nh = node.height ?? NODE_CONFIG.DEFAULT_HEIGHT;
+      if (nx < minX) minX = nx;
+      if (nx + nw > maxX) maxX = nx + nw;
+      if (ny < minY) minY = ny;
+      if (ny + nh > maxY) maxY = ny + nh;
+    }
+
+    trees.push({
+      nodes,
+      edges,
+      width: maxX - minX,
+      height: maxY - minY,
+      minX,
+      minY,
+      prefix,
+    });
+  }
+
+  // Second pass: arrange trees in rows, wrapping when exceeding MAX_ROW_WIDTH
+  let xOffset = 0;
+  let yOffset = 0;
+  let rowMaxHeight = 0;
+
+  for (const tree of trees) {
+    // Wrap to next row if this tree would exceed max width
+    if (xOffset > 0 && xOffset + tree.width > MAX_ROW_WIDTH) {
+      xOffset = 0;
+      yOffset += rowMaxHeight + TREE_GAP_Y;
+      rowMaxHeight = 0;
+    }
+
+    const shiftX = xOffset - tree.minX;
+    const shiftY = yOffset - tree.minY;
+
+    for (const node of tree.nodes) {
+      allNodes.push({
+        ...node,
+        id: tree.prefix + node.id,
+        position: {
+          x: node.position.x + shiftX,
+          y: node.position.y + shiftY,
+        },
+      });
+    }
+    for (const edge of tree.edges) {
+      allEdges.push({
+        ...edge,
+        id: tree.prefix + edge.id,
+        source: tree.prefix + edge.source,
+        target: tree.prefix + edge.target,
+      });
+    }
+
+    if (tree.height > rowMaxHeight) rowMaxHeight = tree.height;
+    xOffset += tree.width + TREE_GAP_X;
+  }
+
+  return { nodes: allNodes, edges: allEdges };
 }

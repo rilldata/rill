@@ -1,55 +1,153 @@
 <script lang="ts">
-  import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
-  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
   import {
     parseGraphUrlParams,
-    urlParamsToSeeds,
+    tokenForKind,
+    tokenForSeedString,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
+  import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
+  import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
+  import {
+    createRuntimeServiceCreateTriggerMutation,
+    getRuntimeServiceListResourcesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
-  // Parse URL parameters using new API (kind/resource instead of seed)
+  const runtimeClient = useRuntimeClient();
+  const queryClient = useQueryClient();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
+
+  $: ({ instanceId } = runtimeClient);
+
+  // Parse URL parameters
   $: urlParams = parseGraphUrlParams($page.url);
-  $: seeds = urlParamsToSeeds(urlParams);
+  $: derivedKindFromResource =
+    urlParams.resources.length > 0
+      ? tokenForSeedString(urlParams.resources[0])
+      : null;
+  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "dashboards";
+  $: seeds = urlParams.kind
+    ? [urlParams.kind]
+    : urlParams.resources.length > 0
+      ? urlParams.resources
+      : [activeKind];
+
+  // Sidebar selection from URL ?resource= param.
+  // Only use controlled mode when the URL explicitly names a resource;
+  // otherwise let the sidebar auto-select internally without touching the URL.
+  $: hasResourceParam = urlParams.resources.length > 0;
+  $: selectedGroupId = hasResourceParam ? urlParams.resources[0] : null;
+
+  function handleSelectedGroupChange(groupId: string | null) {
+    if (!groupId) return;
+    const name = groupId.includes(":") ? groupId.split(":").pop() : groupId;
+    const kindPart = groupId.includes(":")
+      ? groupId.split(":").slice(0, -1).join(":")
+      : null;
+    const derivedKind = kindPart ? tokenForKind(kindPart) : null;
+    const params = new URLSearchParams();
+    params.set("kind", derivedKind ?? activeKind);
+    if (name) params.set("resource", name);
+    goto(`/graph?${params.toString()}`, {
+      replaceState: true,
+      noScroll: true,
+    });
+  }
+
+  function handleKindChange(kind: string | null) {
+    if (kind) {
+      goto(`/graph?kind=${kind}`);
+    } else {
+      goto("/graph");
+    }
+  }
+
+  // Status filter state
+  let selectedStatuses: ResourceStatusFilterValue[] = [];
+
+  const statusOptions: { label: string; value: ResourceStatusFilterValue }[] = [
+    { label: "OK", value: "ok" },
+    { label: "Pending", value: "pending" },
+    { label: "Warning", value: "warning" },
+    { label: "Errored", value: "errored" },
+  ];
+
+  function toggleStatus(value: ResourceStatusFilterValue) {
+    if (selectedStatuses.includes(value)) {
+      selectedStatuses = selectedStatuses.filter((s) => s !== value);
+    } else {
+      selectedStatuses = [...selectedStatuses, value];
+    }
+  }
+
+  // True when the URL has any explicit filter params (kind or resource)
+  $: hasUrlFilters = !!urlParams.kind || urlParams.resources.length > 0;
+
+  // Clear all filters
+  function handleClearFilters() {
+    selectedStatuses = [];
+    handleKindChange(null);
+  }
+
+  // Refresh all
+  let isConfirmDialogOpen = false;
+
+  function handleRefreshAll() {
+    isConfirmDialogOpen = true;
+  }
+
+  function refreshAllSourcesAndModels() {
+    isConfirmDialogOpen = false;
+    void $triggerMutation
+      .mutateAsync({
+        all: true,
+      })
+      .then(() => {
+        void queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(
+            instanceId,
+            undefined,
+          ),
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to refresh all sources and models:", err);
+      });
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | Project graph</title>
 </svelte:head>
 
-<WorkspaceContainer inspector={false}>
-  <div slot="header" class="header">
-    <div class="header-title">
-      <div class="header-left">
-        <h1>Project graph</h1>
-      </div>
-    </div>
-    <p>Visualize dependencies between sources, models, dashboards, and more.</p>
-  </div>
+<div class="graph-wrapper">
+  <GraphContainer
+    {seeds}
+    statusFilter={selectedStatuses}
+    showSummary={false}
+    layout="sidebar"
+    {selectedGroupId}
+    onSelectedGroupChange={handleSelectedGroupChange}
+    onRefreshAll={handleRefreshAll}
+    statusFilterOptions={statusOptions}
+    onStatusToggle={toggleStatus}
+    onClearFilters={handleClearFilters}
+    onSelectAll={() => goto("/graph")}
+    {hasUrlFilters}
+  />
+</div>
 
-  <div slot="body" class="graph-wrapper">
-    <GraphContainer {seeds} />
-  </div>
-</WorkspaceContainer>
+<RefreshConfirmDialog
+  bind:open={isConfirmDialogOpen}
+  onRefresh={refreshAllSourcesAndModels}
+/>
 
 <style lang="postcss">
-  .header {
-    @apply px-4 pt-3 pb-2;
-  }
-
-  .header h1 {
-    @apply text-lg font-semibold text-fg-primary;
-  }
-
-  .header-title {
-    @apply flex items-center justify-between;
-  }
-  /* seed-label removed */
-
-  .header p {
-    @apply text-sm text-fg-secondary mt-1;
-  }
-
   .graph-wrapper {
-    @apply h-full w-full;
+    @apply flex flex-col size-full overflow-hidden;
   }
 </style>

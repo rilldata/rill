@@ -19,7 +19,7 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import { filterResources } from "./utils";
@@ -73,9 +73,10 @@
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
-    { label: "Error", value: "error" },
-    { label: "Warn", value: "warn" },
     { label: "OK", value: "ok" },
+    { label: "Pending", value: "pending" },
+    { label: "Warning", value: "warning" },
+    { label: "Errored", value: "errored" },
   ];
 
   // Resource types available for filtering (excluding internal types)
@@ -302,7 +303,7 @@
   </div>
 </section>
 
-<RefreshAllSourcesAndModelsConfirmDialog
+<RefreshConfirmDialog
   bind:open={isConfirmDialogOpen}
   onRefresh={refreshAllSourcesAndModels}
 />
