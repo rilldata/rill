@@ -19,7 +19,7 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import { filterResources } from "./utils";
@@ -27,7 +27,7 @@
     createUrlFilterSync,
     parseArrayParam,
     parseStringParam,
-  } from "../url-filter-sync";
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
   const runtimeClient = useRuntimeClient();
