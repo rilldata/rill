@@ -10,17 +10,17 @@ import (
 // funcMap returns the template function map available to all template definitions.
 func funcMap() template.FuncMap {
 	return template.FuncMap{
-		"renderProps":       renderProps,
-		"indent":            indent,
-		"quote":             quote,
-		"propVal":           propVal,
-		"default":           defaultVal,
-		"duckdbSQL":         duckdbSQL,
-		"s3ToHTTPS":         s3ToHTTPS,
-		"gcsToHTTPS":        gcsToHTTPS,
-		"azureContainer":    azureContainer,
-		"azureBlobPath":     azureBlobPath,
-		"azureEndpoint":     azureEndpoint,
+		"renderProps":         renderProps,
+		"indent":              indent,
+		"quote":               quote,
+		"propVal":             propVal,
+		"default":             defaultVal,
+		"duckdbSQL":           duckdbSQL,
+		"s3ToHTTPS":           s3ToHTTPS,
+		"gcsToHTTPS":          gcsToHTTPS,
+		"azureContainer":      azureContainer,
+		"azureBlobPath":       azureBlobPath,
+		"azureEndpoint":       azureEndpoint,
 		"clickhouseFormat":    clickhouseFormat,
 		"clickhouseURLSuffix": clickhouseURLSuffix,
 	}
