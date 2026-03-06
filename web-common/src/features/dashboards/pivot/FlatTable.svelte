@@ -16,6 +16,8 @@
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import type { PivotClickSelectionState } from "./pivot-click-selection";
+  import type { PivotRowSelectionState } from "./pivot-row-selection";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -24,6 +26,9 @@
   export let dataRows: PivotDataRow[];
   export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -86,6 +91,10 @@
       cell.row.id === activeCell?.rowId &&
       cell.column.id === activeCell?.columnId
     );
+  }
+
+  function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
+    return clickSelection?.isCellSelected(cell.row.id, cell.column.id) ?? false;
   }
 
   function hasBorderRight(columnId: string): boolean {
@@ -184,17 +193,30 @@
     <tr style:height="{before}px" />
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr>
+      {@const rowId = rows[row.index].id}
+      {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
+      {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
+      {@const isRowHeaderSelected =
+        clickSelection?.isRowHeaderSelected(rowId) ?? false}
+      {@const hasClickedCell =
+        clickSelection?.hasSelectedCellInRow(rowId) ?? false}
+      <tr
+        class:selected-row={isSelected && isRowHeaderSelected}
+        class:dimmed-row={hasSelection && !isSelected && !hasClickedCell}
+      >
         {#each cells as cell (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
+          {@const isClicked = isCellClicked(cell)}
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
-            class:interactive-cell={canShowDataViewer &&
+            class:selected-cell={isClicked}
+            class:interactive-cell={(canShowDataViewer ||
+              enableClickToFilter) &&
               cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
@@ -313,5 +335,23 @@
   }
   .active-cell.cell {
     @apply bg-primary-50;
+  }
+
+  .selected-cell.cell {
+    @apply bg-primary-50 ring-1 ring-inset ring-primary-400;
+  }
+  .selected-cell.cell:hover {
+    @apply bg-primary-100;
+  }
+
+  .selected-row .cell {
+    @apply bg-primary-50;
+  }
+  .selected-row:hover .cell {
+    @apply bg-primary-100;
+  }
+
+  .dimmed-row .cell {
+    @apply opacity-50;
   }
 </style>

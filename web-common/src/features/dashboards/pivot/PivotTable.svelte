@@ -10,6 +10,8 @@
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
+  import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
     splitPivotChips,
@@ -61,6 +63,15 @@
   export let setPivotRowLimitForExpanded:
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
+  export let onCellClickToFilter:
+    | ((rowId: string, columnId: string, isRowHeader: boolean) => void)
+    | undefined = undefined;
+  export let onColumnHeaderClick:
+    | ((dimensionPath: Record<string, string>) => void)
+    | undefined = undefined;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
@@ -236,10 +247,27 @@
       return;
     }
 
-    if (rowHeader) {
+    if (rowHeader && !onCellClickToFilter) {
+      // Legacy expand behavior: when no filter callback, row headers expand/collapse.
+      // When onCellClickToFilter is present, expand is handled by the chevron icon
+      // in PivotExpandableCell (stopPropagation), so row header clicks filter instead.
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
-    } else if (setPivotActiveCell && canShowDataViewer) {
-      setPivotActiveCell(rowId, columnId);
+    } else {
+      // Skip totals row for filtering
+      const isTotalsRow = totalsRow && rowId === "0";
+      if (isTotalsRow && onCellClickToFilter) {
+        return;
+      }
+
+      // Set active cell for Explore data viewer (if enabled)
+      if (setPivotActiveCell && canShowDataViewer) {
+        setPivotActiveCell(rowId, columnId);
+      }
+
+      // Apply click-to-filter (Canvas or future Explore)
+      if (onCellClickToFilter) {
+        onCellClickToFilter(rowId, columnId, rowHeader);
+      }
     }
   }
 
@@ -321,7 +349,10 @@
       {after}
       {totalRowSize}
       {canShowDataViewer}
+      {enableClickToFilter}
       {hasMeasureContextColumns}
+      {rowSelectionState}
+      {clickSelection}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
@@ -344,6 +375,10 @@
       {dataRows}
       {measures}
       {canShowDataViewer}
+      {enableClickToFilter}
+      {rowSelectionState}
+      {clickSelection}
+      {onColumnHeaderClick}
       activeCell={$pivotState.activeCell}
       {assembled}
       {scrollLeft}
