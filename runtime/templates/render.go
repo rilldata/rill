@@ -43,10 +43,7 @@ func Render(input *RenderInput) (*RenderOutput, error) {
 	existingEnv := cloneEnvMap(input.ExistingEnv)
 
 	// Build the template data context
-	data, err := buildTemplateData(input, existingEnv, envVars)
-	if err != nil {
-		return nil, err
-	}
+	data := buildTemplateData(input, existingEnv, envVars)
 
 	// Render each matching file
 	var files []RenderedFile
@@ -76,7 +73,7 @@ func Render(input *RenderInput) (*RenderOutput, error) {
 
 // buildTemplateData creates the data map passed to Go templates.
 // It pre-processes properties: extracts secrets, filters empties, adds derived fields.
-func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars map[string]string) (map[string]any, error) {
+func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars map[string]string) map[string]any {
 	data := make(map[string]any)
 
 	// Basic fields
@@ -121,11 +118,11 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		data["config_props"] = configProps
 		data["source_props"] = sourceProps
 
-		return data, nil
+		return data
 	}
 
 	// Template without schema: pass properties as-is
-	return data, nil
+	return data
 }
 
 // processPropertiesFromSchema pre-processes properties using JSON Schema metadata.
