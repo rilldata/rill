@@ -59,7 +59,7 @@ func TestManagedDeploy(t *testing.T) {
 		// but for test cleanup we will delete it here directly
 		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
 		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
+		err = adm.Admin.Github.DeleteManagedRepo(context.Background(), repo)
 		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
 	})
 
@@ -115,7 +115,7 @@ func TestManagedDeployWithPrimaryBranch(t *testing.T) {
 	t.Cleanup(func() {
 		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
 		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
+		err = adm.Admin.Github.DeleteManagedRepo(context.Background(), repo)
 		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
 	})
 

@@ -25,6 +25,7 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -285,6 +286,23 @@ func (f *Fixture) TriggerDeployment(t *testing.T, org, project string) *database
 	return depl[0]
 }
 
+func (f *Fixture) DeleteManagedRepo(t *testing.T, path string) {
+	// get the remote from the tempDir
+	remote, err := gitutil.ExtractGitRemote(path, "__rill_remote", false)
+	require.NoError(t, err)
+	require.NotNil(t, remote)
+
+	ghURL, err := remote.Github()
+	require.NoError(t, err)
+	require.NotNil(t, ghURL)
+
+	_, repo, ok := gitutil.SplitGithubRemote(ghURL)
+	require.True(t, ok, "invalid github remote: %s", ghURL)
+
+	err = f.Admin.Github.DeleteManagedRepo(context.Background(), repo)
+	require.NoError(t, err, "failed to delete managed github repo %s: %v", repo, err)
+}
+
 // newGithub creates a new Github client. In short testing mode this is a mock client which has no-op implementations of all methods.
 // Otherwise it creates a real implementation that makes real API calls to Github.
 func newGithub(t *testing.T) admin.Github {
@@ -329,6 +347,10 @@ func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (s
 
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockGithub) DeleteManagedRepo(ctx context.Context, repo string) error {
+	return fmt.Errorf("not implemented")
 }
 
 func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {
