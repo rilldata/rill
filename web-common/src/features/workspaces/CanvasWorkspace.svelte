@@ -17,7 +17,7 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
@@ -25,13 +25,11 @@
   import CanvasInitialization from "../canvas/CanvasInitialization.svelte";
 
   export let fileArtifact: FileArtifact;
-  export let hideCodeToggle = false;
-  export let inPreviewMode = false;
+
+  const runtimeClient = useRuntimeClient();
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
-
-  $: ({ instanceId } = $runtime);
 
   $: ({
     autoSave,
@@ -43,7 +41,7 @@
     saveState: { saving },
   } = fileArtifact);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
+  $: resourceQuery = getResource(queryClient);
 
   $: ({ data } = $resourceQuery);
 
@@ -56,13 +54,13 @@
   $: canvasName = getNameFromFile(filePath);
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
   // Reconcile error resolved to root cause for the banner
   $: reconcileError = data?.meta?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    instanceId,
+    runtimeClient,
     data,
     reconcileError,
   );
@@ -72,7 +70,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      $runtime.instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,
@@ -84,7 +82,7 @@
 {#key canvasName}
   <CanvasInitialization
     {canvasName}
-    {instanceId}
+    instanceId={runtimeClient.instanceId}
     let:ready
     let:isReconciling
     let:isLoading
@@ -96,24 +94,24 @@
         resource={data}
         hasUnsavedChanges={$hasUnsavedChanges}
         titleInput={fileName}
-        codeToggle={!hideCodeToggle}
+        codeToggle
         onTitleChange={onChangeCallback}
         resourceKind={ResourceKind.Canvas}
       >
         <div class="flex gap-x-2" slot="cta">
-          {#if !inPreviewMode}
-            {#if ready}
-              <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
-            {/if}
-
-            <PreviewButton
-              href="/canvas/{canvasName}"
-              disabled={!!parseError ||
-                !!reconcileError ||
-                resourceIsReconciling}
-              reconciling={resourceIsReconciling}
+          {#if ready}
+            <SaveDefaultsButton
+              {canvasName}
+              instanceId={runtimeClient.instanceId}
+              saving={$saving}
             />
           {/if}
+
+          <PreviewButton
+            href="/canvas/{canvasName}"
+            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
+            reconciling={resourceIsReconciling}
+          />
         </div>
       </WorkspaceHeader>
 

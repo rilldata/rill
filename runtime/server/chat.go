@@ -358,6 +358,14 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	subCh := session.Subscribe()
 	defer session.Unsubscribe(subCh)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreaming subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
+		// Read messages until the context is done or the tool call finished.
 		for {
 			select {
 			case <-ctx.Done():
@@ -478,6 +486,13 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Start goroutine that calls CompleteStreaming and publishes responses to a channel
 	events := make(chan *sseEvent)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreamingHandler subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
 		// We must close the events channel when done to make sure the SSE handler returns
 		defer close(events)
 

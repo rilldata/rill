@@ -11,7 +11,8 @@ import {
   type V1TimeGrain,
   type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import type { ConnectError } from "@connectrpc/connect";
 import {
   keepPreviousData,
   type CreateQueryResult,
@@ -29,7 +30,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
  * Used by MeasureChart to fetch per-dimension-value time series.
  */
 export function createDimensionAggregationQuery(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   measureName: string,
   dimensionName: string,
@@ -41,7 +42,7 @@ export function createDimensionAggregationQuery(
   timeGranularity: V1TimeGrain,
   timeZone: string,
   enabled: boolean,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> {
   const baseFilter = where
     ? (filterExpressions(where, () => true) ?? createAndExpression([]))
     : createAndExpression([]);
@@ -51,18 +52,18 @@ export function createDimensionAggregationQuery(
   ]);
 
   return createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: measureName }],
       dimensions: [
         { name: dimensionName },
-        { name: timeDimension, timeGrain: timeGranularity, timeZone },
+        { name: timeDimension, timeGrain: timeGranularity as any, timeZone },
       ],
       where: sanitiseExpression(updatedFilter, undefined),
       timeRange: {
-        start: timeStart,
-        end: timeEnd,
+        start: timeStart as any,
+        end: timeEnd as any,
         timeDimension,
       },
       sort: [

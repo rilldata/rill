@@ -11,8 +11,6 @@
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
-  import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import {
     initPosthog,
     posthogIdentify,
@@ -22,61 +20,32 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+  import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
-  import PreviewModeNav from "./PreviewModeNav.svelte";
-  import {
-    isPreviewRoute,
-    isDeveloperRoute,
-    showPreviewNav,
-  } from "./route-constants";
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
 
   const { deploy } = featureFlags;
 
-  queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
-    query: Query,
-  ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
+    errorEventHandler?.requestErrorEventHandler(error, query);
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
-
-  // Sync preview mode:
-  // - If --preview flag is set, always lock to preview mode
-  // - Otherwise, infer from the current URL so refresh on preview pages stays in preview mode
-  //   and shared routes (/explore, /canvas) preserve the current mode
-  $: {
-    if (data.previewMode) {
-      previewModeStore.set(true);
-    } else if (isPreviewRoute($page.url.pathname)) {
-      previewModeStore.set(true);
-    } else if (isDeveloperRoute($page.url.pathname)) {
-      previewModeStore.set(false);
-    }
-    // For shared routes (/explore, /canvas, /deploy), keep current store value
-  }
-
   onMount(async () => {
-    // If in preview mode and on root, redirect to /dashboards
-    if ($previewModeStore && window.location.pathname === "/") {
-      goto("/dashboards");
-    }
-
-    const config = data.metadata;
+    const config = await localServiceGetMetadata();
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
 
     if (shouldSendAnalytics) {
-      await initMetrics(config); // Proxies events through the Rill "intake" service
+      await initMetrics(config, host); // Proxies events through the Rill "intake" service
       initPosthog(config.version);
       posthogIdentify(config.userId, {
         installId: config.installId,
@@ -98,42 +67,33 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: ({ host, instanceId } = $runtime);
+  const host = LOCAL_HOST;
+  const instanceId = LOCAL_INSTANCE_ID;
 
-  $: onDeployPage = isDeployPage($page);
+  $: ({ route } = $page);
 
-  $: isPreviewMode = $previewModeStore;
-
-  $: shouldShowPreviewNav =
-    isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
+  $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <FileAndResourceWatcher {host} {instanceId}>
-    <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
-      {#if data.initialized}
-        <BannerCenter />
-        <RepresentingUserBanner />
-        <ApplicationHeader
-          logoHref={isPreviewMode ? "/dashboards" : "/"}
-          breadcrumbResourceHref={isPreviewMode
-            ? (name, kind) => `/${kind}/${name}`
-            : undefined}
-          noBorder={isPreviewMode}
-        />
-        {#if shouldShowPreviewNav}
-          <PreviewModeNav />
+  <RuntimeProvider {host} {instanceId}>
+    <FileAndResourceWatcher {host} {instanceId}>
+      <div
+        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+      >
+        {#if data.initialized}
+          <BannerCenter />
+          <RepresentingUserBanner />
+          <ApplicationHeader {mode} />
+          {#if $deploy}
+            <RemoteProjectManager />
+          {/if}
         {/if}
-        {#if $deploy}
-          <RemoteProjectManager />
-        {/if}
-      {/if}
 
-      <div class="flex-1 overflow-hidden" class:bg-white={onDeployPage}>
         <slot />
       </div>
-    </div>
-  </FileAndResourceWatcher>
+    </FileAndResourceWatcher>
+  </RuntimeProvider>
 </QueryClientProvider>
 
 {#if $overlay !== null}

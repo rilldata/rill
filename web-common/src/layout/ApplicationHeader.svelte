@@ -19,24 +19,17 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
-  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
+  import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
+  const runtimeClient = useRuntimeClient();
 
-  export let logoHref: string = "/";
-  export let breadcrumbResourceHref:
-    | ((resourceName: string, resourceKind: string) => string)
-    | undefined = undefined;
-  export let noBorder = false;
-
-  $: previewMode = $previewModeStore;
-
-  $: ({ instanceId } = $runtime);
+  export let mode: string;
 
   $: ({
     params: { name: dashboardName },
@@ -49,9 +42,9 @@
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
 
-  $: exploresQuery = useValidExplores(instanceId);
-  $: canvasQuery = useValidCanvases(instanceId);
-  $: projectTitleQuery = useProjectTitle(instanceId);
+  $: exploresQuery = useValidExplores(runtimeClient);
+  $: canvasQuery = useValidCanvases(runtimeClient);
+  $: projectTitleQuery = useProjectTitle(runtimeClient);
 
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
 
@@ -62,40 +55,16 @@
 
   $: hasValidDashboard = Boolean(defaultDashboard);
 
-  $: dashboardOptions = (() => {
-    const options = getBreadcrumbOptions(explores, canvases);
-
-    if (breadcrumbResourceHref) {
-      const customOptions = new Map<string, PathOption>();
-      options.forEach((option, key) => {
-        const customOption = { ...option };
-        const isExplore = option.section === "explore";
-        const isCanvas = option.section === "canvas";
-        const resourceKind = isExplore
-          ? "explore"
-          : isCanvas
-            ? "canvas"
-            : "resource";
-        customOption.href = breadcrumbResourceHref(key, resourceKind);
-        customOptions.set(key, customOption);
-      });
-      return {
-        options: customOptions,
-        carryOverSearchParams: $stickyDashboardState,
-      } satisfies PathOptions;
-    }
-
-    return {
-      options,
-      carryOverSearchParams: $stickyDashboardState,
-    } satisfies PathOptions;
-  })();
+  $: dashboardOptions = {
+    options: getBreadcrumbOptions(explores, canvases),
+    carryOverSearchParams: $stickyDashboardState,
+  } satisfies PathOptions;
 
   $: projectPath = <PathOption>{
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: logoHref,
+    href: "/",
   };
 
   $: pathParts = [
@@ -126,19 +95,19 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage && !noBorder} class="bg-surface-base">
+<header class:border-b={!onDeployPage} class="bg-surface-base">
   {#if !onDeployPage}
-    <a href={logoHref}>
+    <a href="/">
       <Rill />
     </a>
 
-    {#if previewMode}
+    <Tag text={mode} color="gray"></Tag>
+
+    {#if mode === "Preview"}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
-    {:else if $exploresQuery?.data}
-      <Breadcrumbs {pathParts} {currentPath} />
-    {:else}
+    {:else if mode === "Developer"}
       <InputWithConfirm
         size="md"
         bumpDown
@@ -152,11 +121,13 @@
   {/if}
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
-    {#if route.id?.includes("explore")}
-      <ExplorePreviewCTAs exploreName={dashboardName} />
-    {:else if route.id?.includes("canvas")}
-      <CanvasPreviewCTAs />
-    {:else if showDeveloperChat && !previewMode}
+    {#if mode === "Preview"}
+      {#if route.id?.includes("explore")}
+        <ExplorePreviewCTAs exploreName={dashboardName} />
+      {:else if route.id?.includes("canvas")}
+        <CanvasPreviewCTAs canvasName={dashboardName} />
+      {/if}
+    {:else if showDeveloperChat}
       <ChatToggle />
     {/if}
     {#if showDeployCTA}

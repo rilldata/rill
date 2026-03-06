@@ -13,6 +13,7 @@
     createQueryServiceMetricsViewAggregation,
     V1Operation,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
   import {
     getComparisonRequestMeasures,
@@ -42,13 +43,13 @@
   import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
 
+  const runtimeClient = useRuntimeClient();
   const gutterWidth = 24;
 
   export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
@@ -165,9 +166,9 @@
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    runtimeClient,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       measures,
       timeRange,
@@ -185,9 +186,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    runtimeClient,
     {
+      metricsView: metricsViewName,
       measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
       timeRange,
@@ -223,9 +224,9 @@
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    runtimeClient,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       where: sanitiseExpression(
         createAndExpression(

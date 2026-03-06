@@ -16,7 +16,7 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
@@ -28,7 +28,8 @@
   export let hideCodeToggle = false;
   export let inPreviewMode = false;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
   $: ({
     hasUnsavedChanges,
     autoSave,
@@ -40,7 +41,9 @@
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
+  $: query = createRuntimeServiceGetExplore(runtimeClient, {
+    name: exploreName,
+  });
 
   $: ({ data: resources } = $query);
 
@@ -57,14 +60,14 @@
   $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
   // Reconcile error resolved to root cause for the banner
   $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
     ?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    instanceId,
+    runtimeClient,
     exploreResource ?? metricsViewResource,
     reconcileError,
   );
@@ -74,7 +77,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

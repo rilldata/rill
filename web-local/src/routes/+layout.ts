@@ -1,46 +1,32 @@
 export const ssr = false;
 
 import { redirect } from "@sveltejs/kit";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
-import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
-import { PREVIEW_ALLOWED_PREFIXES } from "./route-constants";
+import { getLocalRuntimeClient } from "../lib/runtime-client";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
 
 export async function load({ url, depends, untrack }) {
-  depends("app:init");
+  depends("init");
 
-  // Fetch metadata to check preview mode
-  const metadata = await localServiceGetMetadata();
-  const previewMode = metadata.previewMode ?? false;
+  const client = getLocalRuntimeClient();
 
-  // In preview mode, only allow preview-related routes; redirect everything else to /dashboards
-  if (previewMode) {
-    const isAllowed =
-      url.pathname === "/" ||
-      PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
-        url.pathname.startsWith(prefix),
-      );
-    if (!isAllowed) {
-      throw redirect(303, "/dashboards");
-    }
-  }
-
-  const instanceId = get(runtime).instanceId;
+  // Set the client on fileArtifacts early so child page load functions
+  // (e.g., files/[...file]/+page.ts) can access it before components render.
+  fileArtifacts.setClient(client);
 
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+    queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
     queryFn: ({ signal }) => {
-      return runtimeServiceListFiles(instanceId, undefined, signal);
+      return runtimeServiceListFiles(client, {}, { signal });
     },
   });
 
@@ -51,26 +37,18 @@ export async function load({ url, depends, untrack }) {
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
 
   const redirectPath = untrack(() => {
-    if (!url.searchParams.get("redirect")) return false;
-
-    // In preview mode, redirect to /dashboards instead of /files
-    if (previewMode) {
-      return url.pathname !== "/dashboards" && "/dashboards";
-    }
-
     return (
+      !!url.searchParams.get("redirect") &&
       url.pathname !== `/files${firstDashboardFile?.path}` &&
       `/files${firstDashboardFile?.path}`
     );
   });
 
   if (!initialized) {
-    initialized = await handleUninitializedProject(instanceId);
-  } else {
-    if (redirectPath) {
-      throw redirect(303, redirectPath);
-    }
+    initialized = await handleUninitializedProject(client);
+  } else if (redirectPath) {
+    throw redirect(303, redirectPath);
   }
 
-  return { initialized, previewMode, metadata };
+  return { initialized };
 }
