@@ -91,9 +91,9 @@ describe("mergeEnvVars", () => {
   });
 
   it("should handle .env file not found", async () => {
-    queryClient.fetchQuery.mockRejectedValue({
-      response: { data: { message: "no such file" } },
-    });
+    queryClient.fetchQuery.mockRejectedValue(
+      new Error("open .env: no such file or directory"),
+    );
 
     const result = await mergeEnvVars(mockClient, queryClient, {
       NEW_VAR: "new_value",

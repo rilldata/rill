@@ -114,9 +114,9 @@
         "type": "string",
         "title": "Blob URI",
         "description": "URI to the Azure blob container or directory",
-        "pattern": "^azure://.+",
+        "pattern": "^(azure://|https?://).+",
         "errorMessage": {
-          "pattern": "Must be an Azure URI (e.g. azure://container/path)"
+          "pattern": "Must be an Azure URI (e.g. azure://container/path or https://account.blob.core.windows.net/container/path)"
         },
         "x-placeholder": "azure://container/path",
         "x-step": "source"

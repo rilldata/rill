@@ -191,7 +191,7 @@ func TestRenderS3ClickHouseModel(t *testing.T) {
 	require.Contains(t, blob, "materialize: true")
 	// SQL should show the s3() function with env var refs
 	require.Contains(t, blob, "FROM s3(")
-	require.Contains(t, blob, "s3://my-bucket/data/events.parquet")
+	require.Contains(t, blob, "https://my-bucket.s3.amazonaws.com/data/events.parquet")
 	require.Contains(t, blob, "{{ .env.AWS_ACCESS_KEY_ID }}")
 	require.Contains(t, blob, "{{ .env.AWS_SECRET_ACCESS_KEY }}")
 	// Raw secrets should NOT appear in the blob

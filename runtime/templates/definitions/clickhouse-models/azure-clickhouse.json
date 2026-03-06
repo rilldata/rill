@@ -19,11 +19,58 @@
     "type": "object",
     "x-category": "source_only",
     "properties": {
+      "auth_method": {
+        "type": "string",
+        "title": "Authentication method",
+        "description": "Choose how to authenticate to Azure Blob Storage",
+        "enum": [
+          "connection_string",
+          "account_key",
+          "public"
+        ],
+        "default": "connection_string",
+        "x-display": "radio",
+        "x-enum-labels": [
+          "Connection String",
+          "Storage Account Key",
+          "Public"
+        ],
+        "x-enum-descriptions": [
+          "Provide a full Azure Storage connection string.",
+          "Provide the storage account name and access key.",
+          "No credentials needed; the data is publicly accessible."
+        ],
+        "x-ui-only": true,
+        "x-grouped-fields": {
+          "connection_string": [
+            "azure_storage_connection_string"
+          ],
+          "account_key": [
+            "azure_storage_account",
+            "azure_storage_key"
+          ],
+          "public": []
+        }
+      },
+      "azure_storage_connection_string": {
+        "type": "string",
+        "title": "Connection string",
+        "description": "Paste an Azure Storage connection string",
+        "x-placeholder": "DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net",
+        "x-secret": true,
+        "x-env-var": "AZURE_STORAGE_CONNECTION_STRING",
+        "x-visible-if": {
+          "auth_method": "connection_string"
+        }
+      },
       "azure_storage_account": {
         "type": "string",
         "title": "Storage account",
         "description": "Azure storage account name",
-        "x-placeholder": "mystorageaccount"
+        "x-placeholder": "mystorageaccount",
+        "x-visible-if": {
+          "auth_method": "account_key"
+        }
       },
       "azure_storage_key": {
         "type": "string",
@@ -31,15 +78,18 @@
         "description": "Azure storage account key",
         "x-placeholder": "Enter storage key",
         "x-secret": true,
-        "x-env-var": "AZURE_STORAGE_KEY"
+        "x-env-var": "AZURE_STORAGE_KEY",
+        "x-visible-if": {
+          "auth_method": "account_key"
+        }
       },
       "path": {
         "type": "string",
         "title": "Azure URI",
         "description": "Path to your Azure container and blob",
-        "pattern": "^azure://[^/]+(/.*)?$",
+        "pattern": "^(azure://|https?://).+",
         "errorMessage": {
-          "pattern": "Must be an Azure URI (e.g. azure://container/path)"
+          "pattern": "Must be an Azure URI (e.g. azure://container/path or https://account.blob.core.windows.net/container/path)"
         },
         "x-placeholder": "azure://container/path"
       },
@@ -52,17 +102,46 @@
       }
     },
     "required": [
-      "azure_storage_account",
-      "azure_storage_key",
       "path",
       "name"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "connection_string"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "azure_storage_connection_string"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "account_key"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "azure_storage_account",
+            "azure_storage_key"
+          ]
+        }
+      }
     ]
   },
   "files": [
     {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",
-      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  SELECT * FROM azureBlobStorage(\n      'https://[[ .azure_storage_account ]].blob.core.windows.net',\n      '[[ azureContainer .path ]]',\n      '[[ azureBlobPath .path ]]',\n      '[[ propVal .props \"azure_storage_account\" ]]',\n      '[[ propVal .props \"azure_storage_key\" ]]'\n  )\n"
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |[[ if eq .auth_method \"connection_string\" ]]\n  SELECT * FROM azureBlobStorage(\n      '[[ propVal .props \"azure_storage_connection_string\" ]]',\n      '[[ azureContainer .path ]]',\n      '[[ azureBlobPath .path ]]'\n  )[[ else if eq .auth_method \"account_key\" ]]\n  SELECT * FROM azureBlobStorage(\n      '[[ azureEndpoint .path .azure_storage_account ]]',\n      '[[ azureContainer .path ]]',\n      '[[ azureBlobPath .path ]]',\n      '[[ propVal .props \"azure_storage_account\" ]]',\n      '[[ propVal .props \"azure_storage_key\" ]]'\n  )[[ else ]]\n  SELECT * FROM azureBlobStorage(\n      '[[ azureEndpoint .path \"\" ]]',\n      '[[ azureContainer .path ]]',\n      '[[ azureBlobPath .path ]]'\n  )[[ end ]]\n"
     }
   ]
 }

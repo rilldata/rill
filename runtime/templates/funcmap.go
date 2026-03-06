@@ -16,8 +16,12 @@ func funcMap() template.FuncMap {
 		"propVal":           propVal,
 		"default":           defaultVal,
 		"duckdbSQL":         duckdbSQL,
+		"s3ToHTTPS":         s3ToHTTPS,
+		"gcsToHTTPS":        gcsToHTTPS,
 		"azureContainer":    azureContainer,
 		"azureBlobPath":     azureBlobPath,
+		"azureEndpoint":     azureEndpoint,
+		"clickhouseFormat":    clickhouseFormat,
 		"clickhouseURLSuffix": clickhouseURLSuffix,
 	}
 }
@@ -126,6 +130,34 @@ func matchesExt(path string, targets ...string) bool {
 	return false
 }
 
+// s3ToHTTPS converts an s3:// URI to an HTTPS URL for ClickHouse's s3() function.
+// "s3://bucket/key" becomes "https://bucket.s3.amazonaws.com/key".
+// If the path is already HTTPS, it is returned as-is.
+func s3ToHTTPS(path string) string {
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "http://") {
+		return path
+	}
+	trimmed := strings.TrimPrefix(path, "s3://")
+	idx := strings.IndexByte(trimmed, '/')
+	if idx < 0 {
+		return fmt.Sprintf("https://%s.s3.amazonaws.com", trimmed)
+	}
+	bucket := trimmed[:idx]
+	key := trimmed[idx:]
+	return fmt.Sprintf("https://%s.s3.amazonaws.com%s", bucket, key)
+}
+
+// gcsToHTTPS converts a gs:// URI to an HTTPS URL for ClickHouse's gcs() function.
+// "gs://bucket/key" becomes "https://storage.googleapis.com/bucket/key".
+// If the path is already HTTPS, it is returned as-is.
+func gcsToHTTPS(path string) string {
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "http://") {
+		return path
+	}
+	trimmed := strings.TrimPrefix(path, "gs://")
+	return fmt.Sprintf("https://storage.googleapis.com/%s", trimmed)
+}
+
 // clickhouseURLSuffix generates additional arguments for ClickHouse's url() table function.
 // When headers are present, returns ", Format, headers('K1'='V1', 'K2'='V2')" where
 // Format is auto-detected from the URL extension. Returns empty string when no headers
@@ -196,9 +228,10 @@ func extractClickhouseHeaders(props any) string {
 	return fmt.Sprintf("headers(%s)", strings.Join(pairs, ", "))
 }
 
-// azureContainer extracts the container name from an Azure URI like "azure://container/blob/path".
+// azureContainer extracts the container name from an Azure URI.
+// Supports both "azure://container/blob/path" and "https://account.blob.core.windows.net/container/blob/path".
 func azureContainer(path string) string {
-	path = strings.TrimPrefix(path, "azure://")
+	path = stripAzurePrefix(path)
 	idx := strings.IndexByte(path, '/')
 	if idx < 0 {
 		return path
@@ -206,12 +239,48 @@ func azureContainer(path string) string {
 	return path[:idx]
 }
 
-// azureBlobPath extracts the blob path from an Azure URI like "azure://container/blob/path".
+// azureBlobPath extracts the blob path from an Azure URI.
+// Supports both "azure://container/blob/path" and "https://account.blob.core.windows.net/container/blob/path".
 func azureBlobPath(path string) string {
-	path = strings.TrimPrefix(path, "azure://")
+	path = stripAzurePrefix(path)
 	idx := strings.IndexByte(path, '/')
 	if idx < 0 {
 		return ""
 	}
 	return path[idx+1:]
+}
+
+// azureEndpoint returns the blob service endpoint for a given Azure URI.
+// For "https://account.blob.core.windows.net/..." it returns "https://account.blob.core.windows.net".
+// For "azure://..." it builds the endpoint from the account property.
+func azureEndpoint(path, account string) string {
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "http://") {
+		u := strings.TrimPrefix(path, "https://")
+		u = strings.TrimPrefix(u, "http://")
+		idx := strings.IndexByte(u, '/')
+		if idx > 0 {
+			return "https://" + u[:idx]
+		}
+		return "https://" + u
+	}
+	return fmt.Sprintf("https://%s.blob.core.windows.net", account)
+}
+
+// stripAzurePrefix strips the scheme and host from an Azure URI, returning "container/blob/path".
+// Handles "azure://container/path" and "https://account.blob.core.windows.net/container/path".
+func stripAzurePrefix(path string) string {
+	if strings.HasPrefix(path, "azure://") {
+		return strings.TrimPrefix(path, "azure://")
+	}
+	// HTTPS: strip scheme + host, leaving "/container/path"
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "http://") {
+		noScheme := strings.TrimPrefix(path, "https://")
+		noScheme = strings.TrimPrefix(noScheme, "http://")
+		idx := strings.IndexByte(noScheme, '/')
+		if idx >= 0 {
+			return noScheme[idx+1:]
+		}
+		return ""
+	}
+	return path
 }

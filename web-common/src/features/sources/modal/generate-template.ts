@@ -13,7 +13,13 @@ import { OLAP_ENGINES } from "./constants";
 const OLAP_SET = new Set(OLAP_ENGINES);
 
 // Cache OLAP per instance to avoid a network call on every YAML preview keystroke.
+// Invalidated by clearOlapCache() when the OLAP connector changes.
 const olapCache = new Map<string, string>();
+
+/** Clear the cached OLAP value so the next preview re-fetches it. */
+export function clearOlapCache() {
+  olapCache.clear();
+}
 
 /**
  * Resolve the template name from (driver, olap).
@@ -110,7 +116,11 @@ export async function mergeEnvVars(
     blob = file.blob || "";
     originalBlob = blob;
   } catch (error) {
-    if ((error as any)?.response?.data?.message?.includes("no such file")) {
+    const msg =
+      (error as any)?.message ??
+      (error as any)?.response?.data?.message ??
+      "";
+    if (msg.includes("no such file")) {
       blob = "";
       originalBlob = "";
     } else {

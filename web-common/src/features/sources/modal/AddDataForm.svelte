@@ -365,10 +365,12 @@
   >
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
       {#if paramsError}
-        <SubmissionError
-          message={paramsError ?? ""}
-          details={paramsErrorDetails ?? ""}
-        />
+        <div class="max-h-32 overflow-y-auto shrink-0">
+          <SubmissionError
+            message={paramsError ?? ""}
+            details={paramsErrorDetails ?? ""}
+          />
+        </div>
       {/if}
 
       <YamlPreview
