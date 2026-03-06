@@ -1,6 +1,6 @@
 {
   "name": "gcs-clickhouse",
-  "display_name": "GCS",
+  "display_name": "Google Cloud Storage",
   "description": "Read GCS files into ClickHouse using table functions (HMAC keys)",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
   "driver": "gcs",

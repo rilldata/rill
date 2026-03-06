@@ -1,6 +1,6 @@
 {
   "name": "azure-duckdb",
-  "display_name": "Azure",
+  "display_name": "Azure Blob Storage",
   "description": "Read files from Azure Blob Storage into DuckDB using the appropriate file reader",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/azure",
   "driver": "azure",

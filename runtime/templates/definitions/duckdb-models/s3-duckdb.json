@@ -1,6 +1,6 @@
 {
   "name": "s3-duckdb",
-  "display_name": "S3",
+  "display_name": "Amazon S3",
   "description": "Read files from Amazon S3 into DuckDB using the appropriate file reader",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
   "driver": "s3",

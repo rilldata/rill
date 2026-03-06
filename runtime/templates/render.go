@@ -172,8 +172,8 @@ func processPropertiesFromSchema(
 		}
 
 		// Skip properties whose value matches the schema default when x-omit-if-default is set.
-		// For example, ClickHouse's "managed" field defaults to true; rendering "managed: true"
-		// is unnecessary noise, but "managed: false" (self-hosted) must appear.
+		// For example, ClickHouse's "managed" defaults to false; rendering "managed: false"
+		// is unnecessary noise, but "managed: true" (rill-managed) must appear.
 		if schemaFieldBool(prop, "x-omit-if-default") {
 			if defVal, hasDefault := prop["default"]; hasDefault && fmt.Sprint(val) == fmt.Sprint(defVal) {
 				continue

@@ -1,6 +1,6 @@
 {
   "name": "https-clickhouse",
-  "display_name": "HTTPS",
+  "display_name": "HTTP(S) Endpoint",
   "description": "Read files from HTTP/HTTPS URLs into ClickHouse",
   "docs_url": "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
   "driver": "https",

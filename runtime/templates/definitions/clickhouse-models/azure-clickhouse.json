@@ -1,6 +1,6 @@
 {
   "name": "azure-clickhouse",
-  "display_name": "Azure",
+  "display_name": "Azure Blob Storage",
   "description": "Read Azure Blob Storage files into ClickHouse using table functions",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/azure",
   "driver": "azure",

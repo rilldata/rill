@@ -1,6 +1,6 @@
 {
   "name": "https-duckdb",
-  "display_name": "HTTPS",
+  "display_name": "HTTP(S) Endpoint",
   "description": "Read files from an HTTP/HTTPS URL into DuckDB using the appropriate file reader",
   "docs_url": "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
   "driver": "https",

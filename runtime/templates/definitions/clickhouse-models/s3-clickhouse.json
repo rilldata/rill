@@ -1,6 +1,6 @@
 {
   "name": "s3-clickhouse",
-  "display_name": "S3",
+  "display_name": "Amazon S3",
   "description": "Read S3 files into ClickHouse using table functions",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
   "driver": "s3",
