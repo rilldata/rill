@@ -1,5 +1,4 @@
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
-import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
@@ -13,7 +12,7 @@ import {
   runtimeServiceGetResource,
   createConnectorServiceListDatabaseSchemas,
   createConnectorServiceGetTable,
-  connectorServiceListTables,
+  createConnectorServiceListTablesInfinite,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
 
@@ -155,48 +154,33 @@ export function useInfiniteListTables(
   pageSize = 5,
   enabled: boolean = true,
 ) {
-  return createInfiniteQuery({
-    queryKey: [
-      "/v1/connectors/tables",
-      {
-        instanceId: client.instanceId,
-        connector,
-        database,
-        databaseSchema,
-        pageSize,
+  return createConnectorServiceListTablesInfinite(
+    client,
+    { connector, database, databaseSchema, pageSize },
+    {
+      query: {
+        enabled:
+          enabled &&
+          !!client.instanceId &&
+          !!connector &&
+          (!!database || database === "") &&
+          databaseSchema !== undefined,
+        select: (data) => ({
+          tables: data.pages.flatMap(
+            (p) => (p as { tables?: V1TableInfo[] }).tables ?? [],
+          ),
+          nextPageToken:
+            data.pages.length > 0
+              ? (
+                  data.pages[data.pages.length - 1] as {
+                    nextPageToken?: string;
+                  }
+                ).nextPageToken
+              : undefined,
+        }),
       },
-    ],
-    enabled:
-      enabled &&
-      !!client.instanceId &&
-      !!connector &&
-      (!!database || database === "") &&
-      databaseSchema !== undefined,
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage: { nextPageToken?: string }) =>
-      lastPage?.nextPageToken || undefined,
-    queryFn: ({ pageParam, signal }) =>
-      connectorServiceListTables(
-        client,
-        {
-          connector,
-          database,
-          databaseSchema,
-          pageSize,
-          pageToken: pageParam,
-        },
-        { signal },
-      ),
-    select: (data: any) => ({
-      tables: data.pages.flatMap(
-        (p: { tables?: V1TableInfo[] }) => p.tables ?? [],
-      ),
-      nextPageToken:
-        data.pages.length > 0
-          ? data.pages[data.pages.length - 1].nextPageToken
-          : undefined,
-    }),
-  });
+    },
+  );
 }
 
 /**

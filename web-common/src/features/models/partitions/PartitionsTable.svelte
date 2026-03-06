@@ -13,13 +13,9 @@
   import {
     type V1ModelPartition,
     type V1Resource,
-    type V1GetModelPartitionsResponse,
-    runtimeServiceGetModelPartitions,
-    getRuntimeServiceGetModelPartitionsQueryKey,
   } from "../../../runtime-client";
-  import { createInfiniteQuery } from "@tanstack/svelte-query";
-
   import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { createRuntimeServiceGetModelPartitionsInfinite } from "../../../runtime-client";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
   import TriggerPartition from "./TriggerPartition.svelte";
@@ -39,30 +35,16 @@
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
   };
-  $: query = createInfiniteQuery<V1GetModelPartitionsResponse>({
-    queryKey: [
-      ...getRuntimeServiceGetModelPartitionsQueryKey(runtimeClient.instanceId, {
-        model: modelName,
-        ...baseParams,
-      }),
-      "infinite",
-    ],
-    queryFn: ({ pageParam }) =>
-      runtimeServiceGetModelPartitions(runtimeClient, {
-        model: modelName,
-        ...baseParams,
-        pageToken: pageParam as string | undefined,
-      }),
-    initialPageParam: undefined,
-    getNextPageParam: (lastPage) => {
-      if (lastPage.nextPageToken !== "") {
-        return lastPage.nextPageToken;
-      }
-      return undefined;
+  $: query = createRuntimeServiceGetModelPartitionsInfinite(
+    runtimeClient,
+    { model: modelName, ...baseParams },
+    {
+      query: {
+        enabled: !!modelName,
+        refetchOnMount: true,
+      },
     },
-    enabled: !!modelName,
-    refetchOnMount: true,
-  });
+  );
   $: ({ error } = $query);
 
   // ==========================
@@ -204,7 +186,7 @@
     setOptions({
       count: $query.hasNextPage ? allRows.length + 1 : allRows.length,
     });
-    const [lastItem] = [...virtualRows].reverse();
+    const lastItem = virtualRows[virtualRows.length - 1];
     if (
       lastItem &&
       lastItem.index > allRows.length - 1 &&
@@ -270,7 +252,7 @@
           </tr>
         {:else}
           <tr style:height="{paddingTop}px" />
-          {#each getVirtualItems() as virtualRow (virtualRow.index)}
+          {#each virtualRows as virtualRow (virtualRow.index)}
             <tr>
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
                 <td data-label={cell.column.columnDef.header}>
