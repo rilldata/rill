@@ -329,7 +329,10 @@ export function filterSchemaInternalValues(
       const prop = properties[key] as JSONSchemaField | undefined;
       if (!prop) return false;
       if (!isStepMatch(schema, key, opts?.step)) return false;
-      return !prop["x-ui-only"];
+      // Keep x-ui-only fields that have x-grouped-fields; they control
+      // template branching (e.g. auth_method selects credential vs public SQL)
+      if (prop["x-ui-only"] && !prop["x-grouped-fields"]) return false;
+      return true;
     }),
   );
 }
