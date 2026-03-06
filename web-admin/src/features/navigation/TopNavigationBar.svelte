@@ -8,10 +8,11 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtimeClientStore } from "@rilldata/web-common/runtime-client/v2";
@@ -264,9 +265,20 @@
   $: isDashboardValid = !!exploreSpec;
   $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;
 
-  $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
-    dashboard;
+  $: canvasQuery = runtimeClient
+    ? useCanvas(runtimeClient, dashboard, {
+        enabled:
+          !!instanceId &&
+          !!dashboard &&
+          !!onCanvasDashboardPage &&
+          !!onPublicURLPage,
+      })
+    : _noopQuery;
+
+  $: publicURLDashboardTitle = onCanvasDashboardPage
+    ? $canvasQuery.data?.canvas?.displayName || dashboard
+    : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+      dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -350,7 +362,7 @@
               <ChatToggle />
             {/if}
             <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-            <ShareDashboardPopover createMagicAuthTokens={false} />
+            <ShareDashboardPopover {createMagicAuthTokens} />
           {/if}
         </RuntimeContextBridge>
       {/key}
