@@ -20,7 +20,7 @@ import { Settings } from "luxon";
 Settings.defaultLocale = "en";
 
 export async function load({ url, depends, untrack }) {
-  depends("init");
+  depends("app:init");
 
   // Fetch metadata to check preview mode
   const metadata = await localServiceGetMetadata();

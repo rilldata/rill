@@ -380,7 +380,7 @@ type ServeOptions struct {
 	EnableUI    bool
 	OpenBrowser bool
 	Readonly    bool
-	Preview     bool
+	PreviewMode bool
 	UserID      string
 	TLSCertPath string
 	TLSKeyPath  string
@@ -406,7 +406,7 @@ func (a *App) Serve(opts ServeOptions) error {
 		IsDev:            a.ch.Version.IsDev(),
 		AnalyticsEnabled: enabled,
 		Readonly:         opts.Readonly,
-		PreviewMode:      opts.Preview,
+		PreviewMode:      opts.PreviewMode,
 	}
 
 	// Create the local server handler

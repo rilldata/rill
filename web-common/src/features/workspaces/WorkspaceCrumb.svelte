@@ -67,10 +67,7 @@
     );
   }
 
-  function getPreviewHref(
-    name: string | undefined,
-    filePaths: string[] | undefined,
-  ): string {
+  function getFileHref(filePaths: string[] | undefined): string {
     return `/files${filePaths?.[0] ?? filePath}`;
   }
 
@@ -150,10 +147,7 @@
               : exampleResource
                 ? isDisabledInPreview
                   ? "#"
-                  : getPreviewHref(
-                      resourceName,
-                      exampleResource?.meta?.filePaths,
-                    )
+                  : getFileHref(exampleResource?.meta?.filePaths)
                 : "#"}
             on:click={isDisabledInPreview
               ? (e) => e.preventDefault()
@@ -180,10 +174,7 @@
                 disabled={itemDisabled}
                 href={itemDisabled
                   ? "#"
-                  : getPreviewHref(
-                      resource?.meta?.name?.name,
-                      resource?.meta?.filePaths,
-                    )}
+                  : getFileHref(resource?.meta?.filePaths)}
               >
                 {#if kind}
                   <svelte:component

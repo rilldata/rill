@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import { onMount } from "svelte";
   import ResourcesFilterableTable from "@rilldata/web-common/features/resources/ResourcesFilterableTable.svelte";
+  import ParseErrorsSection from "../ParseErrorsSection.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     createRuntimeServiceCreateTriggerMutation,
@@ -9,23 +12,49 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
-
-  /** Pre-set status filters when navigating from the overview errors section */
-  export let initialStatusFilter: string[] = [];
-  /** Pre-set type filters when navigating from the overview resources section */
-  export let initialTypeFilter: string[] = [];
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  let selectedStatuses: string[] = initialStatusFilter;
-  let selectedTypes: string[] = initialTypeFilter;
+  const filterSync = createUrlFilterSync([
+    { key: "kind", type: "array" },
+    { key: "status", type: "array" },
+    { key: "q", type: "string" },
+  ]);
+  filterSync.init($page.url);
 
-  // React to prop changes (e.g., clicking errors section switches tab and sets filter)
-  $: selectedStatuses = initialStatusFilter;
-  $: selectedTypes = initialTypeFilter;
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+  let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+  let mounted = false;
+
+  // Sync URL → local state on external navigation (back/forward)
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    searchText = parseStringParam($page.url.searchParams.get("q"));
+  }
+
+  // Sync filter state → URL
+  $: if (mounted) {
+    filterSync.syncToUrl({
+      kind: selectedTypes,
+      status: selectedStatuses,
+      q: searchText,
+    });
+  }
+
+  onMount(() => {
+    mounted = true;
+  });
 
   $: resourcesQuery = createRuntimeServiceListResources(
     runtimeClient,
@@ -57,6 +86,7 @@
 
 <ResourcesFilterableTable
   {resources}
+  containerHeight={550}
   isLoading={$resourcesQuery.isLoading}
   isError={$resourcesQuery.isError}
   errorMessage={$resourcesQuery.error?.message ?? ""}
@@ -65,4 +95,7 @@
   onRefetch={() => $resourcesQuery.refetch()}
   bind:selectedStatuses
   bind:selectedTypes
+  bind:searchText
 />
+
+<ParseErrorsSection />

@@ -3,6 +3,7 @@
     ColumnDef,
     SortingState,
     TableOptions,
+    Updater,
   } from "@tanstack/svelte-table";
   import {
     createSvelteTable,
@@ -24,7 +25,7 @@
   export let initialSorting: SortingState = [];
 
   let sorting: SortingState = initialSorting;
-  function setSorting(updater) {
+  function setSorting(updater: Updater<SortingState>) {
     if (updater instanceof Function) {
       sorting = updater(sorting);
     } else {

@@ -33,7 +33,7 @@
     createUrlFilterSync,
     parseEnumParam,
     parseStringParam,
-  } from "../url-filter-sync";
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
   const runtimeClient = useRuntimeClient();

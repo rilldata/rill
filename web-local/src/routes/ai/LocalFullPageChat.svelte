@@ -1,6 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     getLocalConversationManager,
@@ -25,11 +25,10 @@
     chatInputComponent?.focusInput();
   }
 
-  // Focus on mount with a small delay for component initialization
-  onMount(() => {
-    setTimeout(() => {
-      chatInputComponent?.focusInput();
-    }, 100);
+  // Focus on mount after the component tree settles
+  onMount(async () => {
+    await tick();
+    chatInputComponent?.focusInput();
   });
 
   // Clean up conversation manager resources when leaving the chat context entirely
