@@ -1,14 +1,42 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { AddDataFormManager } from "./AddDataFormManager";
 import {
   resetConnectorStep,
   setStep,
   connectorStepStore,
 } from "./connectorStepStore";
+import { populateSchemaCache } from "./connector-schemas";
+import type { MultiStepFormSchema } from "../../templates/schemas/types";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import { get, writable } from "svelte/store";
 
+const testSchemas: Record<string, MultiStepFormSchema> = {
+  gcs: {
+    type: "object",
+    "x-category": "objectStore",
+    properties: {
+      google_application_credentials: {
+        type: "string",
+        "x-step": "connector",
+      },
+      path: { type: "string", "x-step": "source" },
+    },
+  } as unknown as MultiStepFormSchema,
+  snowflake: {
+    type: "object",
+    "x-category": "warehouse",
+    properties: {
+      account: { type: "string", "x-step": "connector" },
+      sql: { type: "string", "x-step": "explorer" },
+      name: { type: "string", "x-step": "explorer" },
+    },
+  } as unknown as MultiStepFormSchema,
+};
+
 describe("AddDataFormManager", () => {
+  beforeAll(() => {
+    populateSchemaCache(testSchemas);
+  });
   beforeEach(() => {
     resetConnectorStep();
   });

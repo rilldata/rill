@@ -1,0 +1,76 @@
+{
+  "name": "iceberg-duckdb",
+  "display_name": "Iceberg",
+  "description": "Query Apache Iceberg tables using DuckDB's iceberg extension",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/iceberg",
+  "driver": "",
+  "olap": "duckdb",
+  "tags": [
+    "iceberg",
+    "table-format",
+    "duckdb",
+    "source"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "objectStore",
+    "properties": {
+      "aws_access_key_id": {
+        "type": "string",
+        "title": "AWS Access Key ID",
+        "description": "Access key for the S3 bucket containing your Iceberg table",
+        "x-placeholder": "Enter AWS access key ID",
+        "x-secret": true,
+        "x-env-var": "AWS_ACCESS_KEY_ID",
+        "x-step": "connector"
+      },
+      "aws_secret_access_key": {
+        "type": "string",
+        "title": "AWS Secret Access Key",
+        "description": "Secret key for the S3 bucket containing your Iceberg table",
+        "x-placeholder": "Enter AWS secret access key",
+        "x-secret": true,
+        "x-env-var": "AWS_SECRET_ACCESS_KEY",
+        "x-step": "connector"
+      },
+      "aws_region": {
+        "type": "string",
+        "title": "AWS Region",
+        "description": "AWS region of the S3 bucket",
+        "x-placeholder": "us-east-1",
+        "x-step": "connector"
+      },
+      "path": {
+        "type": "string",
+        "title": "Iceberg Table Path",
+        "description": "S3 path to your Iceberg table metadata",
+        "pattern": "^s3://.*",
+        "errorMessage": {
+          "pattern": "Must be an S3 URI (e.g. s3://bucket/warehouse/my_table)"
+        },
+        "x-placeholder": "s3://bucket/warehouse/my_table",
+        "x-step": "source"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_iceberg_table",
+        "x-step": "source"
+      }
+    },
+    "required": [
+      "path",
+      "name"
+    ]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "type: model\n[[ if .connector_name -]]\ncreate_secrets_from_connectors: \"[[ .connector_name ]]\"\n[[ end -]]\n\nsql: |\n  SELECT * FROM iceberg_scan('[[ .path ]]');\n"
+    }
+  ]
+}

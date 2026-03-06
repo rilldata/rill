@@ -11,7 +11,6 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { useRuntimeClient } from "../../../runtime-client/v2";
-  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
@@ -19,16 +18,20 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
-    connectors,
+    connectorIconMapping,
+    createConnectorSchemas,
     getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
+    ICONS,
     isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
-  import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+
+  const runtimeClient = useRuntimeClient();
+  const { connectors: connectorsStore } = createConnectorSchemas(runtimeClient);
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -38,15 +41,14 @@
   let requestConnector = false;
   let isSubmittingForm = false;
 
-  // Filter connectors by category from JSON schemas
-  $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
-  $: olapConnectors = connectors.filter((c) => c.category === "olap");
+  // Filter connectors by category from API-served schemas
+  $: sourceConnectors = $connectorsStore.filter((c) => c.category !== "olap");
+  $: olapConnectors = $connectorsStore.filter((c) => c.category === "olap");
 
-  // Get the form width class for the selected connector
-  $: selectedSchema = selectedSchemaName
-    ? getConnectorSchema(selectedSchemaName)
-    : null;
-  $: formWidthClass = getFormWidth(selectedSchema);
+  // Get the form width class for the selected connector (selectedSchema declared below)
+  $: formWidthClass = getFormWidth(
+    selectedSchemaName ? getConnectorSchema(selectedSchemaName) : null,
+  );
 
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
@@ -61,6 +63,7 @@
     return {
       name: backendName,
       displayName: info.displayName,
+      docsUrl: info.docsUrl,
       implementsObjectStore: category === "objectStore",
       implementsOlap: category === "olap",
       implementsSqlStore: category === "sqlStore",
@@ -104,8 +107,8 @@
 
   // Handle pending connector name when connectors finish loading
   // When connector is provided via Import Data button, ensure step stays at 2
-  $: if (pendingConnectorName && connectors.length > 0) {
-    const found = connectors.find((c) => c.name === pendingConnectorName);
+  $: if (pendingConnectorName && $connectorsStore.length > 0) {
+    const found = $connectorsStore.find((c) => c.name === pendingConnectorName);
     if (found) {
       selectedConnector = toConnectorDriver(found);
       selectedSchemaName = pendingConnectorName;
@@ -194,22 +197,19 @@
     resetModal();
   }
 
-  const runtimeClient = useRuntimeClient();
-
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
-  // FIXME: excluding salesforce until we implement the table discovery APIs
+  $: selectedSchema = getConnectorSchema(
+    selectedSchemaName ?? selectedConnector?.name ?? "",
+  );
   $: isConnectorType =
     selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
-    (selectedConnector?.implementsWarehouse &&
-      selectedConnector?.name !== "salesforce") ||
-    isMultiStepConnectorSchema(
-      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
-    );
+    selectedConnector?.implementsWarehouse ||
+    isMultiStepConnectorSchema(selectedSchema);
 </script>
 
 {#if step >= 1 || $duplicateSourceName}

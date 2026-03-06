@@ -35,14 +35,16 @@ var spec = drivers.Spec{
 			Secret: false,
 		},
 		{
-			Key:    "password",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:        "password",
+			Type:       drivers.StringPropertyType,
+			Secret:     true,
+			EnvVarName: "SALESFORCE_PASSWORD",
 		},
 		{
-			Key:    "key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:        "key",
+			Type:       drivers.StringPropertyType,
+			Secret:     true,
+			EnvVarName: "SALESFORCE_KEY",
 		},
 		{
 			Key:    "endpoint",
@@ -99,6 +101,7 @@ var spec = drivers.Spec{
 			Hint:        "Your Salesforce password, optionally followed by a security token if required.",
 			Placeholder: "your_password",
 			Secret:      true,
+			EnvVarName:  "SALESFORCE_PASSWORD",
 		},
 		{
 			Key:         "key",
@@ -108,6 +111,7 @@ var spec = drivers.Spec{
 			Hint:        "Paste your JWT private key for token-based authentication. Used with Connected App and Client ID.",
 			Placeholder: "your_jwt_key",
 			Secret:      true,
+			EnvVarName:  "SALESFORCE_KEY",
 		},
 		{
 			Key:         "endpoint",

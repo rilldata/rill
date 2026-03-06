@@ -18,10 +18,11 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import { onMount } from "svelte";
   import { get } from "svelte/store";
+  import { onDestroy } from "svelte";
   import {
     getConnectorSchema,
+    ICONS,
     shouldShowSkipLink as checkShouldShowSkipLink,
   } from "./connector-schemas";
   import {
@@ -29,8 +30,6 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
-  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -110,22 +109,6 @@
   let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
-
-  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
-  // This prevents the preview from updating when Test and Connect writes to .env.
-  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
-  let existingEnvBlob: string | null = null;
-  onMount(async () => {
-    try {
-      const envFile = await runtimeServiceGetFile(runtimeClient, {
-        path: ".env",
-      });
-      existingEnvBlob = envFile.blob ?? "";
-    } catch {
-      // .env doesn't exist yet
-      existingEnvBlob = "";
-    }
-  });
 
   // Clear errors when connection type changes
   $: {
@@ -218,7 +201,7 @@
       client: runtimeClient,
       queryClient,
       values: $form,
-      existingEnvBlob: existingEnvBlob ?? undefined,
+      existingEnvBlob: undefined,
     });
     if (result.ok) {
       // Use quiet close — saveConnector already navigated via goto().
@@ -232,14 +215,27 @@
     saving = false;
   }
 
-  // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
-  $: yamlPreview = formManager.computeYamlPreview({
-    stepState,
-    isMultiStepConnector: isStepFlowConnector,
-    isConnectorForm,
-    formValues: $form,
-    existingEnvBlob: existingEnvBlob ?? "",
-  });
+  // Debounced async YAML preview via the GenerateTemplate RPC
+  let yamlPreview = "";
+  let previewTimer: ReturnType<typeof setTimeout>;
+  $: {
+    const ctx = {
+      client: runtimeClient,
+      stepState,
+      isMultiStepConnector: isStepFlowConnector,
+      isConnectorForm,
+      formValues: $form,
+    };
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(async () => {
+      try {
+        yamlPreview = await formManager.computeYamlPreview(ctx);
+      } catch {
+        // Keep last valid preview on error (e.g., incomplete form data)
+      }
+    }, 150);
+  }
+  onDestroy(() => clearTimeout(previewTimer));
   // Show Save button for connector forms on the connector step (not for public auth which skips connection test).
   // Intentionally not disabled when fields are empty: Save persists whatever the user has entered so far,
   // even partial credentials, so they can finish configuring later in the YAML editor.
@@ -369,10 +365,12 @@
   >
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
       {#if paramsError}
-        <SubmissionError
-          message={paramsError ?? ""}
-          details={paramsErrorDetails ?? ""}
-        />
+        <div class="max-h-32 overflow-y-auto shrink-0">
+          <SubmissionError
+            message={paramsError ?? ""}
+            details={paramsErrorDetails ?? ""}
+          />
+        </div>
       {/if}
 
       <YamlPreview

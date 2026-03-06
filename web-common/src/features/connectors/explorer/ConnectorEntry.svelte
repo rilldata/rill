@@ -5,7 +5,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
-  import { connectorIconMapping } from "../connector-icon-mapping";
+  import { connectorIconMapping } from "../../sources/modal/connector-schemas";
   import { getConnectorIconKey } from "../connectors-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 

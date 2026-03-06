@@ -1,0 +1,50 @@
+{
+  "name": "clickhouse-duckdb",
+  "display_name": "ClickHouse",
+  "description": "Query ClickHouse tables and ingest into DuckDB",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/clickhouse",
+  "driver": "clickhouse",
+  "olap": "duckdb",
+  "icon": "ClickHouse",
+  "small_icon": "ClickHouseIcon",
+  "tags": [
+    "clickhouse",
+    "olap",
+    "duckdb",
+    "source",
+    "model"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "sqlStore",
+    "properties": {
+      "sql": {
+        "type": "string",
+        "title": "SQL",
+        "description": "SQL query to run against ClickHouse",
+        "x-placeholder": "SELECT * FROM my_table",
+        "x-step": "explorer"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": [
+      "sql",
+      "name"
+    ]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/olap/clickhouse\ntype: model\n[[ if .connector_name -]]\nconnector: \"[[ .connector_name ]]\"\n[[ end -]]\nmaterialize: true\n[[ if .sql -]]\nsql: |\n  [[ .sql | indent 2 ]]\n\ndev:\n  sql: |\n    [[ .sql ]] limit 10000\n[[ end -]]\n"
+    }
+  ]
+}

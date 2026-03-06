@@ -22,7 +22,7 @@
   import {
     connectorIconMapping,
     connectorLabelMapping,
-  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  } from "@rilldata/web-common/features/sources/modal/connector-schemas";
 
   const unpackExampleProject =
     createRuntimeServiceUnpackExampleMutation(runtimeClient);

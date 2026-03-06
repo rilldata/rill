@@ -292,32 +292,6 @@ export function getRequiredFieldsForValues(
   return required;
 }
 
-export function getSchemaSecretKeys(
-  schema: MultiStepFormSchema,
-  opts?: { step?: "connector" | "source" | string },
-): string[] {
-  const properties = schema.properties ?? {};
-  return Object.entries(properties)
-    .filter(
-      ([key, prop]) =>
-        isStepMatch(schema, key, opts?.step) && Boolean(prop["x-secret"]),
-    )
-    .map(([key]) => key);
-}
-
-export function getSchemaStringKeys(
-  schema: MultiStepFormSchema,
-  opts?: { step?: "connector" | "source" | string },
-): string[] {
-  const properties = schema.properties ?? {};
-  return Object.entries(properties)
-    .filter(
-      ([key, prop]) =>
-        isStepMatch(schema, key, opts?.step) && prop.type === "string",
-    )
-    .map(([key]) => key);
-}
-
 export function filterSchemaInternalValues(
   schema: MultiStepFormSchema,
   values: Record<string, unknown>,
@@ -329,7 +303,10 @@ export function filterSchemaInternalValues(
       const prop = properties[key] as JSONSchemaField | undefined;
       if (!prop) return false;
       if (!isStepMatch(schema, key, opts?.step)) return false;
-      return !prop["x-ui-only"];
+      // Keep x-ui-only fields that have x-grouped-fields; they control
+      // template branching (e.g. auth_method selects credential vs public SQL)
+      if (prop["x-ui-only"] && !prop["x-grouped-fields"]) return false;
+      return true;
     }),
   );
 }
@@ -340,7 +317,35 @@ export function filterSchemaValuesForSubmit(
   opts?: { step?: "connector" | "source" | string },
 ): Record<string, unknown> {
   const tabFiltered = filterValuesByTabGroups(schema, values, opts);
-  return filterSchemaInternalValues(schema, tabFiltered, opts);
+  const internalFiltered = filterSchemaInternalValues(
+    schema,
+    tabFiltered,
+    opts,
+  );
+  return convertKeyValueFieldsToMap(schema, internalFiltered);
+}
+
+/**
+ * Convert key-value display fields from array format [{key, value}] to a plain
+ * map {key: value}. The backend RPC expects map-typed properties, but the
+ * key-value UI produces arrays.
+ */
+function convertKeyValueFieldsToMap(
+  schema: MultiStepFormSchema,
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = { ...values };
+  for (const [key, prop] of Object.entries(schema.properties ?? {})) {
+    if (prop["x-display"] !== "key-value") continue;
+    const val = result[key];
+    if (!Array.isArray(val)) continue;
+    result[key] = Object.fromEntries(
+      (val as Array<{ key: string; value: string }>)
+        .filter((e) => e.key?.trim())
+        .map((e) => [e.key.trim(), e.value ?? ""]),
+    );
+  }
+  return result;
 }
 
 export function findRadioEnumKey(schema: MultiStepFormSchema): string | null {
@@ -528,17 +533,6 @@ export function getConditionalValues(
   }
 
   return result;
-}
-
-/**
- * Returns the backend driver name for a schema.
- * If x-driver is specified, returns that; otherwise returns the schemaName.
- */
-export function getBackendConnectorName(
-  schema: MultiStepFormSchema | null,
-  schemaName: string,
-): string {
-  return schema?.["x-driver"] ?? schemaName;
 }
 
 /**

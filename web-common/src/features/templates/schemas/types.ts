@@ -66,11 +66,6 @@ export type JSONSchemaField = {
    * Group fields under tab options for enum-driven tab layouts.
    */
   "x-tab-group"?: Record<string, string[]>;
-  /**
-   * Explicit environment variable name for secret fields.
-   * When set, this name is used instead of computing it from driver + property key.
-   */
-  "x-env-var-name"?: string;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };
@@ -102,7 +97,8 @@ export type ConnectorCategory =
   | "olap"
   | "objectStore"
   | "fileStore"
-  | "warehouse";
+  | "warehouse"
+  | "sourceOnly";
 
 export type ButtonLabels = {
   idle: string;
@@ -148,6 +144,10 @@ export type JSONSchemaObject = {
    * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
    */
   "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
+  /** Full-size icon name (resolved to a Svelte component by ICON_COMPONENTS registry). */
+  "x-icon"?: string;
+  /** Small icon name (resolved to a Svelte component by ICON_COMPONENTS registry). */
+  "x-small-icon"?: string;
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;

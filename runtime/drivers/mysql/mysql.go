@@ -38,6 +38,7 @@ var spec = drivers.Spec{
 			Placeholder: "mysql://user:password@host:3306/my-db",
 			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
+			EnvVarName:  "MYSQL_DSN",
 		},
 		{
 			Key:         "user",
@@ -54,6 +55,7 @@ var spec = drivers.Spec{
 			Placeholder: "your_password",
 			Hint:        "MySQL password for authentication",
 			Secret:      true,
+			EnvVarName:  "MYSQL_PASSWORD",
 		},
 		{
 			Key:         "host",
