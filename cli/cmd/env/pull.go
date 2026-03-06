@@ -82,15 +82,15 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	}
 
 	// new vars from the cloud
-	perEnvVars := GroupVariablesByEnv(res)
+	newVars := GroupVariablesByEnv(res)
 
 	// existing vars from the .env files in the project
-	dotEnv := p.GetDotEnvPerEnvironment()
+	currentVars := p.GetDotEnvPerEnvironment()
 
 	// If variables for every environment are exactly the same as what's in the .env file, skip writing and warn the user
 	equal := true
-	for env, resVars := range perEnvVars {
-		if !maps.Equal(resVars, dotEnv[env]) {
+	for env, resVars := range newVars {
+		if !maps.Equal(resVars, currentVars[env]) {
 			equal = false
 			break
 		}
@@ -106,9 +106,9 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	}
 
 	// Merge the current .env file with pulled variables
-	for env, resVars := range perEnvVars {
+	for env, resVars := range newVars {
 		vars := make(map[string]string)
-		existing := dotEnv[env]
+		existing := currentVars[env]
 		maps.Copy(vars, existing)
 		maps.Copy(vars, resVars)
 		path := pathForEnv(env)

@@ -64,7 +64,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// new vars from the cloud
-			perEnvVars := GroupVariablesByEnv(res)
+			cloudVars := GroupVariablesByEnv(res)
 
 			// existing vars from the .env files in the project
 			current := p.GetDotEnvPerEnvironment()
@@ -75,7 +75,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 					ch.Printf("Skipping environment %q since it doesn't match the specified environment filter %q.\n", env, environment)
 					continue
 				}
-				cloud, ok := perEnvVars[env]
+				cloud, ok := cloudVars[env]
 				if !ok {
 					cloud = make(map[string]string)
 				}
