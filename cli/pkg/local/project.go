@@ -6,7 +6,6 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/parser"
-	"go.uber.org/zap"
 )
 
 func ParseDotenv(ctx context.Context, projectPath string) (map[string]string, error) {
@@ -14,7 +13,7 @@ func ParseDotenv(ctx context.Context, projectPath string) (map[string]string, er
 	if err != nil {
 		return nil, err
 	}
-	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb", zap.NewNop())
+	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb", true)
 	if err != nil {
 		return nil, err
 	}

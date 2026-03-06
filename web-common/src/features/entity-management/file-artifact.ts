@@ -325,7 +325,7 @@ export class FileArtifact {
         }
         return (
           projectParser.data?.projectParser?.state?.parseErrors ?? []
-        ).find((e) => e.filePath === this.path);
+        ).find((e) => e.filePath === this.path && !e.warning);
       },
       undefined as V1ParseError | undefined,
     );
@@ -350,7 +350,7 @@ export class FileArtifact {
         return [
           ...(
             projectParser.data?.projectParser?.state?.parseErrors ?? []
-          ).filter((e) => e.filePath === this.path),
+          ).filter((e) => e.filePath === this.path && !e.warning),
           ...(resource.data?.meta?.reconcileError
             ? [
                 {

@@ -21,14 +21,16 @@ import (
 
 // ValidationResult represents the complete validation output
 type ValidationResult struct {
-	Summary     ValidationSummary `json:"summary"`
-	ParseErrors []ParseError      `json:"parse_errors"`
-	Resources   []ResourceStatus  `json:"resources"`
+	Summary       ValidationSummary `json:"summary"`
+	ParseErrors   []ParseError      `json:"parse_errors"`
+	ParseWarnings []ParseError      `json:"parse_warnings"`
+	Resources     []ResourceStatus  `json:"resources"`
 }
 
 type ValidationSummary struct {
 	TotalResources  int `json:"total_resources"`
 	ParseErrors     int `json:"parse_errors"`
+	ParseWarnings   int `json:"parse_warnings"`
 	ReconcileErrors int `json:"reconcile_errors"`
 }
 
@@ -37,6 +39,7 @@ type ParseError struct {
 	Message   string `json:"message" header:"message"`
 	FilePath  string `json:"file_path" header:"file_path"`
 	StartLine uint32 `json:"start_line,omitempty" header:"start_line"`
+	Level     string `json:"level" header:"level"` // "error" or "warning"
 }
 
 type ResourceStatus struct {
@@ -184,6 +187,9 @@ func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 			parseErrors := parseErrorsFromParser(r)
 			result.Summary.ParseErrors = len(parseErrors)
 			result.ParseErrors = parseErrors
+			parseWarnings := parseErrorsFromParser(r)
+			result.Summary.ParseWarnings = len(parseWarnings)
+			result.ParseWarnings = parseWarnings
 			continue
 		}
 		if r.Meta.Hidden {
@@ -235,6 +241,11 @@ func parseErrorsFromParser(parserRes *runtimev1.Resource) []ParseError {
 		}
 		if e.StartLocation != nil {
 			pe.StartLine = e.StartLocation.Line
+		}
+		if e.Warning {
+			pe.Level = "warning"
+		} else {
+			pe.Level = "error"
 		}
 		parseErrors = append(parseErrors, pe)
 	}

@@ -117,7 +117,13 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	if err != nil {
 		return nil, err
 	}
-	res.ParseErrCount = len(parser.GetProjectParser().State.ParseErrors)
+	var count int
+	for _, e := range parser.GetProjectParser().State.ParseErrors {
+		if !e.Warning {
+			count++
+		}
+	}
+	res.ParseErrCount = count
 
 	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
 

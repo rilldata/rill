@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -18,13 +20,25 @@ type DataYAML struct {
 	Args           map[string]any `yaml:"args"`
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
-	AI             map[string]any `yaml:"ai"` // AI resolver properties
+	AI             map[string]any `yaml:"ai"`      // AI resolver properties
+	ExtraFields    map[string]any `yaml:",inline"` // Capture any extra fields for validation
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
 // The contextualConnector argument is optional; if provided and the resolver supports a connector, it becomes the default connector for the resolver.
 // It returns the resolver name, its properties, and refs found in the resolver props.
-func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
+func (p *Parser) parseDataYAML(paths []string, raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
+	// If there are any extra fields put it in compiler warnings
+	if len(raw.ExtraFields) > 0 {
+		for _, path := range paths {
+			p.Errors = append(p.Errors, &runtimev1.ParseError{
+				Message:  fmt.Sprintf("undefined fields in resolver properties: %q, will be ignored", maps.Keys(raw.ExtraFields)),
+				FilePath: path,
+				Warning:  !p.StrictResolverProps,
+			})
+		}
+	}
+
 	// Parse the resolver and its properties
 	var count int
 	var resolver string

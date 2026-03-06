@@ -155,12 +155,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// Parse the project
 	// NOTE: Explicitly passing inst.OLAPConnector instead of inst.ResolveOLAPConnector() since the parser expects the base name to use if not overridden in rill.yaml.
-	logger, err := r.C.Runtime.InstanceLogger(ctx, r.C.InstanceID)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to get instance logger: %w", err)}
-	}
-
-	parser, err := parserpkg.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector, logger)
+	parser, err := parserpkg.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector, instCfg.StrictResolverProps)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}
@@ -292,21 +287,21 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
 				continue
 			}
-			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
+			r.C.Logger.Warn("Parser error", zap.Bool("warning", e.Warning), zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
 		}
 	} else if diff.Skipped {
 		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml", observability.ZapCtx(ctx))
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
-				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
+				r.C.Logger.Warn("Parser error", zap.Bool("warning", e.Warning), zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
 			}
 		}
 	}
 
 	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
 	var parseErrsErr error
-	if len(parser.Errors) > 0 {
+	if parser.HasParseErrors() {
 		parseErrsErr = ErrParserHasParseErrors
 	}
 	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
@@ -314,7 +309,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return err
 	}
 
-	if instCfg.ParserSkipUpdatesIfParseErrors && len(parser.Errors) > 0 {
+	if instCfg.ParserSkipUpdatesIfParseErrors && parser.HasParseErrors() {
 		// best efforts cancellation of all resource reconciliations, ignoring all errors
 		resources, _ := r.C.List(ctx, "", "", false)
 		for _, res := range resources {

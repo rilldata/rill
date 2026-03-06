@@ -132,19 +132,27 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					table = append(table, &parseErrorTableRow{
 						Path:  "<meta>",
 						Error: parser.Meta.ReconcileError,
+						Level: "error",
 					})
 				}
 				if state != nil {
 					for _, e := range state.ParseErrors {
+						var lvl string
+						if e.Warning {
+							lvl = "warning"
+						} else {
+							lvl = "error"
+						}
 						table = append(table, &parseErrorTableRow{
 							Path:  e.FilePath,
 							Error: e.Message,
+							Level: lvl,
 						})
 					}
 				}
 
 				if len(table) > 0 {
-					ch.PrintfSuccess("\nParse errors\n\n")
+					ch.PrintfSuccess("\nParse issues\n\n")
 					ch.PrintData(table)
 				}
 			}
@@ -185,4 +193,5 @@ func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 type parseErrorTableRow struct {
 	Path  string `header:"path"`
 	Error string `header:"error"`
+	Level string `header:"level"`
 }

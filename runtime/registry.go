@@ -593,7 +593,11 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 		return err
 	}
 
-	p, err := parser.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector, zap.NewNop())
+	cfg, err := instance.Config()
+	if err != nil {
+		return err
+	}
+	p, err := parser.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector, cfg.StrictResolverProps)
 	if err != nil {
 		return err
 	}

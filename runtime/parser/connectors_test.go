@@ -6,7 +6,6 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -83,7 +82,7 @@ region: us-west-2
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 
 	cs := p.AnalyzeConnectors(ctx)
@@ -182,7 +181,7 @@ notify:
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 
 	cs := p.AnalyzeConnectors(ctx)
@@ -226,7 +225,7 @@ managed:
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb", zap.NewNop())
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	require.Len(t, p.Resources, 3)
 

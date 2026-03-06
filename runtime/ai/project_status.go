@@ -27,7 +27,7 @@ type ProjectStatusResult struct {
 	DefaultOLAPConnector string           `json:"default_olap_connector,omitempty" jsonschema:"The default OLAP connector configured in rill.yaml. May or may not exist as an explicit connector resource."`
 	Env                  []string         `json:"env,omitempty" jsonschema:"List of environment variable names present in the project. Their values are omitted for security."`
 	Resources            []map[string]any `json:"resources" jsonschema:"List of resources and their status."`
-	ParseErrors          []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files."`
+	ParseErrors          []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files. Error with 'warning: true' does not prevent the project from being parsed and resources from being created but are recommended to be fixed."`
 }
 
 func (t *ProjectStatus) Spec() *mcp.Tool {
@@ -112,6 +112,7 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 		parseErrors = append(parseErrors, map[string]any{
 			"path":    pe.FilePath,
 			"message": pe.Message,
+			"warning": pe.Warning,
 		})
 	}
 

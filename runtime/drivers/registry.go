@@ -123,6 +123,10 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
+	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
+	StrictResolverProps bool `mapstructure:"rill.strict_resolver_props"`
+	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
+	StrictModelProps bool `mapstructure:"rill.strict_model_props"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
