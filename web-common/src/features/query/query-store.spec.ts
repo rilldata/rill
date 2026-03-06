@@ -10,14 +10,13 @@ vi.mock("@rilldata/web-common/lib/create-debouncer", () => ({
   debounce: (fn: (...args: unknown[]) => void) => fn,
 }));
 
-vi.mock("@rilldata/web-common/runtime-client", () => ({
+vi.mock("@rilldata/web-common/runtime-client/v2/gen/runtime-service", () => ({
   runtimeServiceQueryResolver: vi.fn(),
 }));
 
-import {
-  runtimeServiceQueryResolver,
-  type V1QueryResolverResponse,
-} from "@rilldata/web-common/runtime-client";
+import { runtimeServiceQueryResolver } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import type { V1QueryResolverResponse } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createNotebook, type NotebookState } from "./query-store";
 
 // =============================================================================
@@ -26,7 +25,7 @@ import { createNotebook, type NotebookState } from "./query-store";
 
 const DEFAULT_CONNECTOR = "duckdb";
 const PROJECT_ID = "test-org/test-project";
-const INSTANCE_ID = "test-instance";
+const MOCK_CLIENT = { instanceId: "test-instance" } as unknown as RuntimeClient;
 
 // =============================================================================
 // HELPERS
@@ -321,7 +320,7 @@ describe("createNotebook", () => {
       } as V1QueryResolverResponse;
       vi.mocked(runtimeServiceQueryResolver).mockResolvedValue(mockResponse);
 
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
       const cell = getState(store).cells[0];
 
       expect(cell.result).toEqual(mockResponse);
@@ -345,7 +344,7 @@ describe("createNotebook", () => {
         }),
       );
 
-      const promise = store.executeCellQuery(cellId, INSTANCE_ID);
+      const promise = store.executeCellQuery(cellId, MOCK_CLIENT);
 
       // While in flight, isExecuting should be true
       expect(getState(store).cells[0].isExecuting).toBe(true);
@@ -365,7 +364,7 @@ describe("createNotebook", () => {
         new Error("Syntax error"),
       );
 
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
       const cell = getState(store).cells[0];
 
       expect(cell.error).toBe("Syntax error");
@@ -383,7 +382,7 @@ describe("createNotebook", () => {
       };
       vi.mocked(runtimeServiceQueryResolver).mockRejectedValue(apiError);
 
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
 
       expect(getState(store).cells[0].error).toBe("API-level error");
     });
@@ -393,7 +392,7 @@ describe("createNotebook", () => {
       const cellId = getState(store).cells[0].id;
       // SQL is "" by default
 
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
 
       expect(runtimeServiceQueryResolver).not.toHaveBeenCalled();
       expect(getState(store).cells[0].isExecuting).toBe(false);
@@ -404,7 +403,7 @@ describe("createNotebook", () => {
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "   ");
 
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
 
       expect(runtimeServiceQueryResolver).not.toHaveBeenCalled();
     });
@@ -419,10 +418,10 @@ describe("createNotebook", () => {
         data: [],
       });
 
-      await store.executeCellQuery(cellId, INSTANCE_ID, "SELECT override");
+      await store.executeCellQuery(cellId, MOCK_CLIENT, "SELECT override");
 
       expect(runtimeServiceQueryResolver).toHaveBeenCalledWith(
-        INSTANCE_ID,
+        MOCK_CLIENT,
         expect.objectContaining({
           resolverProperties: expect.objectContaining({
             sql: "SELECT override",
@@ -442,10 +441,10 @@ describe("createNotebook", () => {
         data: [],
       });
 
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
 
       expect(runtimeServiceQueryResolver).toHaveBeenCalledWith(
-        INSTANCE_ID,
+        MOCK_CLIENT,
         expect.objectContaining({
           resolver: "sql",
           resolverProperties: {
@@ -468,7 +467,7 @@ describe("createNotebook", () => {
         data: [],
       });
 
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
 
       const callArgs = vi.mocked(runtimeServiceQueryResolver).mock.calls[0][1];
       expect(callArgs).not.toHaveProperty("limit");
@@ -486,7 +485,7 @@ describe("createNotebook", () => {
         data: [],
       });
 
-      await store.executeCellQuery(id1, INSTANCE_ID);
+      await store.executeCellQuery(id1, MOCK_CLIENT);
 
       expect(getState(store).focusedCellId).toBe(id1);
     });
@@ -494,7 +493,7 @@ describe("createNotebook", () => {
     it("does nothing for a nonexistent cell id", async () => {
       const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
 
-      await store.executeCellQuery("nonexistent-id", INSTANCE_ID);
+      await store.executeCellQuery("nonexistent-id", MOCK_CLIENT);
 
       expect(runtimeServiceQueryResolver).not.toHaveBeenCalled();
     });
@@ -512,11 +511,11 @@ describe("createNotebook", () => {
       );
 
       // Fire first execution (will be in-flight)
-      const first = store.executeCellQuery(cellId, INSTANCE_ID);
+      const first = store.executeCellQuery(cellId, MOCK_CLIENT);
       expect(getState(store).cells[0].isExecuting).toBe(true);
 
       // Second call while first is in-flight should be a no-op
-      await store.executeCellQuery(cellId, INSTANCE_ID);
+      await store.executeCellQuery(cellId, MOCK_CLIENT);
       expect(runtimeServiceQueryResolver).toHaveBeenCalledTimes(1);
 
       resolveQuery({ schema: null, data: [] });

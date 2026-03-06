@@ -4,7 +4,7 @@
   import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import QueryCell from "./QueryCell.svelte";
   import QuerySchemaPanel from "./QuerySchemaPanel.svelte";
   import { makeSufficientlyQualifiedTableName } from "@rilldata/web-common/features/connectors/connectors-utils";
@@ -20,10 +20,10 @@
 
   export let projectId = "";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // Get default OLAP connector for new cells
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
@@ -162,7 +162,6 @@
             bind:this={cellRefs[cell.id]}
             cellId={cell.id}
             {notebook}
-            {instanceId}
             cellCount={cells.length}
             on:focus={handleCellFocus}
             on:run={handleCellRun}

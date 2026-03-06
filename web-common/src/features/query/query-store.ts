@@ -1,7 +1,8 @@
 import { browser } from "$app/environment";
 import { writable, derived, get } from "svelte/store";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-import { runtimeServiceQueryResolver } from "@rilldata/web-common/runtime-client";
+import { runtimeServiceQueryResolver } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type {
   V1QueryResolverResponse,
   V1StructType,
@@ -216,7 +217,7 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
 
   async function executeCellQuery(
     cellId: string,
-    instanceId: string,
+    client: RuntimeClient,
     sqlOverride?: string,
   ) {
     const current = get(state);
@@ -254,7 +255,7 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
         body.limit = cell.limit;
       }
 
-      const response = await runtimeServiceQueryResolver(instanceId, body);
+      const response = await runtimeServiceQueryResolver(client, body);
       const elapsed = Math.round(performance.now() - startTime);
 
       update((s) =>

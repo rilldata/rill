@@ -4,16 +4,16 @@
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
 
   export let id: string = "connector-selector";
   export let value: string = "";
   export let onChange: (connector: string) => void = () => {};
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // Get the default OLAP connector
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
@@ -25,7 +25,7 @@
   }
 
   // Get all connectors that support SQL queries
-  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
+  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(runtimeClient, {
     query: {
       select: (data) => {
         if (!data?.connectors) return [];

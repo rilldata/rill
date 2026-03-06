@@ -7,6 +7,7 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher } from "svelte";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import ConnectorSelector from "./ConnectorSelector.svelte";
   import QueryEditor from "./QueryEditor.svelte";
   import QueryResultsTable from "./QueryResultsTable.svelte";
@@ -16,8 +17,9 @@
 
   export let cellId: string;
   export let notebook: NotebookStore;
-  export let instanceId: string;
   export let cellCount: number;
+
+  const runtimeClient = useRuntimeClient();
 
   let editorRef: QueryEditor;
   let resultsHeight = 300;
@@ -45,7 +47,7 @@
   function runQuery(sqlOverride?: string) {
     if (!cell || cell.isExecuting) return;
     notebook.setFocusedCell(cellId);
-    notebook.executeCellQuery(cellId, instanceId, sqlOverride);
+    notebook.executeCellQuery(cellId, runtimeClient, sqlOverride);
     dispatch("run");
   }
 

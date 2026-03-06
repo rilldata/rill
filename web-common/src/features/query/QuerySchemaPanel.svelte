@@ -6,7 +6,7 @@
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import type { V1StructType } from "@rilldata/web-common/runtime-client";
   import { useGetTable } from "@rilldata/web-common/features/connectors/selectors";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import { extractErrorMessage } from "./query-store";
@@ -25,12 +25,12 @@
     objectName: string;
   } | null = null;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // Fetch table schema when a table is selected from the data explorer
   $: tableQuery = selectedTable
     ? useGetTable(
-        instanceId,
+        runtimeClient,
         selectedTable.connector,
         selectedTable.database,
         selectedTable.databaseSchema,
