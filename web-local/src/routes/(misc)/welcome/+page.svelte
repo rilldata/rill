@@ -16,7 +16,10 @@
         <ConnectYourDataSmall
           startConnectorSelection={(name) =>
             void goto("/welcome/add-data", {
-              state: { step: AddDataStep.Select, schema: name },
+              state: {
+                step: name ? AddDataStep.Connector : AddDataStep.Select,
+                schema: name,
+              },
             })}
           onWelcomeScreen
         />

@@ -142,12 +142,4 @@
   .cta-container {
     @apply flex flex-row text-center gap-x-6;
   }
-
-  .import-data-container {
-    @apply flex flex-col w-64 p-6 gap-y-4;
-  }
-
-  .cta-item {
-    @apply bg-surface border rounded-md shadow-sm;
-  }
 </style>

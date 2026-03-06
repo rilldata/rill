@@ -223,27 +223,30 @@ export function getAnalyzedConnectors(
   client: RuntimeClient,
   olapOnly: boolean,
 ) {
-  return createRuntimeServiceAnalyzeConnectors(client, {
-    query: {
-      // Retry transient 500s during runtime resets (e.g. project initialization)
-      retry: (failureCount, error) =>
-        !!error?.response?.status &&
-        error.response.status >= 500 &&
-        failureCount < 3,
-      retryDelay: 1000,
-      // sort alphabetically
-      select: (data) => {
-        if (!data?.connectors) return;
+  return createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        // Retry transient errors during runtime resets (e.g. project initialization)
+        retry: (failureCount) => failureCount < 3,
+        retryDelay: 1000,
+        // sort alphabetically
+        select: (data) => {
+          if (!data?.connectors) return;
 
-        const filtered = (
-          olapOnly
-            ? data.connectors.filter((c) => c?.driver?.implementsOlap)
-            : data.connectors
-        ).sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
-        return { connectors: filtered };
+          const filtered = (
+            olapOnly
+              ? data.connectors.filter((c) => c?.driver?.implementsOlap)
+              : data.connectors
+          ).sort((a, b) =>
+            (a?.name as string).localeCompare(b?.name as string),
+          );
+          return { connectors: filtered };
+        },
       },
     },
-  });
+  );
 }
 
 export async function fetchAnalyzeConnectors(client: RuntimeClient) {

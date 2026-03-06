@@ -18,13 +18,17 @@
   $: if (open) {
     pushState(
       "",
-      transitionToNextStep(config, { step: AddDataStep.Select }, initArgs),
+      transitionToNextStep(
+        runtimeClient,
+        { step: AddDataStep.Select },
+        initArgs,
+      ),
     );
   }
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="p-0 w-[900px] max-w-[900px] h-[600px]">
+  <Dialog.Content class="p-0 w-fit max-w-fit h-fit">
     <AddData {config} />
   </Dialog.Content>
 </Dialog.Root>

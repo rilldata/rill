@@ -7,7 +7,6 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
-    type AddDataConfig,
     type ImportAddDataStep,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
@@ -22,7 +21,7 @@
 
   $: ({ importStep } = importAddDataStep);
 
-  const Steps = [
+  const StepLabels = [
     {
       step: ImportDataStep.CreateModel,
       pendingLabel: "Ingesting data...",
@@ -42,6 +41,9 @@
       failedLabel: "Generating Explore dashboard failed.",
     },
   ];
+  const steps = importAddDataStep.config.importSteps.map(
+    (s) => StepLabels.find((label) => label.step === s)!,
+  );
 
   let currentFileRoute: string = "/";
   let error: string | null = null;
@@ -74,7 +76,7 @@
     {/if}
   </div>
   <div class="text-center">Creating your dashboard</div>
-  {#each Steps as s (s.step)}
+  {#each steps as s (s.step)}
     <div class="flex flex-row items-center gap-4 text-fg-tertiary">
       {#if importStep.step > s.step}
         <CheckIcon size="14px" />
@@ -94,9 +96,9 @@
     </div>
   {/each}
 </div>
-{#if $error}
+{#if error}
   <div class="w-96 mx-auto mb-4 text-destructive">
-    <div class="text-sm mb-2">{$error}</div>
+    <div class="text-sm mb-2">{error}</div>
   </div>
 {/if}
 <div class="flex flex-row items-center gap-2 mb-4 mx-auto">

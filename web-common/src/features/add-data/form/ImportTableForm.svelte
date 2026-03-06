@@ -19,11 +19,13 @@
     inferModelNameFromSQL,
   } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import {
+    type AddDataConfig,
     type ImportAddDataStepConfig,
-    ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
 
+  export let config: AddDataConfig;
   export let connectorName: string;
   export let connectorDriver: V1ConnectorDriver;
   export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
@@ -108,11 +110,7 @@
       );
 
       onSubmit({
-        importSteps: [
-          ImportDataStep.CreateModel, // TODO: live connectors cannot create models
-          ImportDataStep.CreateMetricsView,
-          ImportDataStep.CreateExplore,
-        ],
+        importSteps: getImportStepsForConnector(config, connectorDriver),
         source: modelName,
         sourceSchema: values.schema ?? "",
         sourceDatabase: values.database ?? "",

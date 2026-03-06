@@ -127,6 +127,12 @@ async function runCreateModelStep(
     ResourceKind.Model,
   );
 
+  if (!step.config.importSteps.includes(ImportDataStep.CreateMetricsView)) {
+    return {
+      step: ImportDataStep.Done,
+    };
+  }
+
   return {
     step: ImportDataStep.CreateMetricsView,
     source: modelImportStep.source,
@@ -169,6 +175,12 @@ async function runCreateMetricsViewStep(
     newMetricsViewName,
     ResourceKind.MetricsView,
   );
+
+  if (!step.config.importSteps.includes(ImportDataStep.CreateExplore)) {
+    return {
+      step: ImportDataStep.Done,
+    };
+  }
 
   return {
     step: ImportDataStep.CreateExplore,

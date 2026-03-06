@@ -19,7 +19,7 @@
   import { pushState } from "$app/navigation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  export let config: AddDataConfig;
+  export let config: AddDataConfig = {};
 
   const runtimeClient = useRuntimeClient();
 
@@ -28,7 +28,7 @@
   // beforeNavigate, onNavigate or afterNavigate do not seem to get called when state changes.
   // "popstate" event does not have direct access to the page state, rather it is under `sveltekit:states` key which seems like internal key.
   // So we need this reactive statement to update the state.
-  $: if (($page.state as AddDataState).step) {
+  $: if ("step" in $page.state) {
     stepState = $page.state as AddDataState;
   }
 
@@ -45,9 +45,13 @@
     connectorIconMapping[connectorDriver?.name ?? ""];
   $: displayName = connectorDriver?.displayName ?? connector;
 
+  $: isImportStep = stepState.step === AddDataStep.Import;
+  $: height = isImportStep ? "h-fit" : "h-[600px]";
+  $: width = isImportStep ? "w-[500px]" : "w-[900px]";
+
   function transitionToSchema(schema: string) {
     const newState = transitionToNextStep(runtimeClient, stepState, {
-      schema: schema,
+      schema,
     });
     console.log("transition:schema", newState);
     pushState("", newState);
@@ -55,7 +59,8 @@
 
   function transitionToConnector(connector: string) {
     const newState = transitionToNextStep(runtimeClient, stepState, {
-      connector: connector,
+      schema,
+      connector,
     });
     console.log("transition:connector", newState);
     pushState("", newState);
@@ -71,9 +76,9 @@
 </script>
 
 <div
-  class="flex flex-col size-full bg-surface-background border rounded-lg shadow-sm;"
+  class="flex flex-col {width} {height} bg-surface-background border rounded-lg shadow-sm;"
 >
-  {#if displayName && stepState.step !== AddDataStep.Import}
+  {#if displayName && !isImportStep}
     <div class="flex flex-row items-center px-6 py-4 gap-1 border-b">
       {#if displayIcon}
         <svelte:component this={displayIcon} size="18px" />
@@ -96,6 +101,7 @@
   {:else if stepState.step === AddDataStep.Source}
     {#if connectorDriver && schema && connector}
       <SourceForm
+        {config}
         {connectorDriver}
         schemaName={schema}
         connectorName={connector}
@@ -108,6 +114,7 @@
   {:else if stepState.step === AddDataStep.Explorer}
     {#if connectorDriver && connector}
       <ImportTableForm
+        {config}
         {connectorDriver}
         connectorName={connector}
         onSubmit={setAndStartImport}

@@ -13,11 +13,13 @@
   import { getSchemaSecretKeys } from "@rilldata/web-common/features/templates/schema-utils.ts";
   import { updateDotEnvWithSecrets } from "@rilldata/web-common/features/connectors/code-utils.ts";
   import {
+    type AddDataConfig,
     type ImportAddDataStepConfig,
-    ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getImportStepsForSource } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
 
+  export let config: AddDataConfig;
   export let connectorDriver: V1ConnectorDriver;
   export let schemaName: string;
   export let connectorName: string;
@@ -84,11 +86,7 @@
     );
 
     const importConfig = {
-      importSteps: [
-        ImportDataStep.CreateModel,
-        ImportDataStep.CreateMetricsView,
-        ImportDataStep.CreateExplore,
-      ],
+      importSteps: getImportStepsForSource(config),
       source: formValues.name,
       sourceSchema: "",
       sourceDatabase: "",

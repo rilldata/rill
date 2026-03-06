@@ -22,15 +22,13 @@
   export let step: "connector" | "source";
   export let onBack: () => void;
 
-  $: ({ form, formId, tainted, submit, submitting, errors, enhance } =
+  $: ({ form, formId, tainted, submit, submitting, errors, message, enhance } =
     superFormsParams);
   $: taintedFields = $tainted;
 
   let shouldShowSaveAnywayButton = false;
   let shouldShowSkipLink = false;
   let isSubmitDisabled = false; // TODO
-
-  $: error = $errors._errors?.[0]; // TODO
 
   function onStringInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -144,8 +142,8 @@
     class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
   >
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-      {#if error}
-        <SubmissionError message={error} />
+      {#if $message}
+        <SubmissionError message="Failed to create" details={$message} />
       {/if}
 
       <YamlPreview title={labels.yamlPreviewTitle} yaml={yamlPreview} />

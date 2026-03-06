@@ -1,4 +1,5 @@
 import {
+  type AddDataConfig,
   type AddDataState,
   AddDataStep,
   type AddDataTransitionArgs,
@@ -73,7 +74,7 @@ export function transitionToNextStep(
       );
 
     case AddDataStep.Explorer:
-    case AddDataStep.Source:
+    case AddDataStep.Source: {
       if (!args.importConfig) {
         throw new Error("Import config must be specified");
       }
@@ -84,6 +85,7 @@ export function transitionToNextStep(
         importStep: { step: ImportDataStep.Init },
         config: args.importConfig,
       };
+    }
   }
 
   return current;
@@ -105,6 +107,32 @@ export function maybeGetConnectorDriver(
   }
   if (schemaName) return getConnectorDriverForSchema(schemaName);
   return null;
+}
+
+export function getImportStepsForConnector(
+  config: AddDataConfig,
+  driver: V1ConnectorDriver,
+) {
+  // Live connectors cannot create models as of now.
+  // They will create metrics views directly.
+  const steps = isLiveConnectorType(driver)
+    ? [ImportDataStep.CreateMetricsView, ImportDataStep.CreateExplore]
+    : [
+        ImportDataStep.CreateModel,
+        ImportDataStep.CreateMetricsView,
+        ImportDataStep.CreateExplore,
+      ];
+  return config.importOnly ? [steps[0]] : steps;
+}
+
+export function getImportStepsForSource(config: AddDataConfig) {
+  return config.importOnly
+    ? [ImportDataStep.CreateModel]
+    : [
+        ImportDataStep.CreateModel,
+        ImportDataStep.CreateMetricsView,
+        ImportDataStep.CreateExplore,
+      ];
 }
 
 function transitionFromSchema(
@@ -193,4 +221,8 @@ function isConnectorType(connectorDriver: V1ConnectorDriver) {
 
 function isExplorerType(connectorDriver: V1ConnectorDriver) {
   return connectorDriver?.implementsOlap || connectorDriver?.implementsSqlStore;
+}
+
+export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {
+  return !!connectorDriver?.implementsOlap;
 }
