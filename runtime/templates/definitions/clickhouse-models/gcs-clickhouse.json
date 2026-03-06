@@ -52,7 +52,7 @@
         "description": "GCS HMAC access key ID",
         "x-placeholder": "Enter HMAC access key",
         "x-secret": true,
-        "x-env-var": "GCS_KEY_ID",
+        "x-env-var": "GCP_ACCESS_KEY_ID",
         "x-visible-if": {
           "auth_method": "hmac_key"
         }
@@ -63,7 +63,7 @@
         "description": "GCS HMAC secret key",
         "x-placeholder": "Enter HMAC secret",
         "x-secret": true,
-        "x-env-var": "GCS_SECRET",
+        "x-env-var": "GCP_SECRET_ACCESS_KEY",
         "x-visible-if": {
           "auth_method": "hmac_key"
         }
