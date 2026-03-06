@@ -40,9 +40,8 @@
 
   $: ({ instanceId } = runtimeClient);
 
-
   $: instanceQuery = createRuntimeServiceGetInstance(
-    instanceId,
+    runtimeClient,
     { sensitive: true },
     { query: { enabled: !!instanceId } },
   );
@@ -57,6 +56,7 @@
         refetchOnWindowFocus: false,
         enabled: !!instanceId,
       },
+    },
   );
 
   // Keep all connectors so they appear in the dropdown for explicit selection.

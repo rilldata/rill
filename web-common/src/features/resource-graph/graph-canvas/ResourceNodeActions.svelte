@@ -22,9 +22,11 @@
     GitBranch,
     Copy,
   } from "lucide-svelte";
-  import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    createRuntimeServiceCreateTriggerMutation,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { goto } from "$app/navigation";
   import type { ResourceNodeData } from "../shared/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -49,7 +51,8 @@
   // Keep module-level tracker in sync when dropdown closes via outside click
   $: if (!isOpen && closeActive === close) closeActive = null;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+  $: ({ instanceId } = runtimeClient);
   $: resource = data?.resource;
   $: kind = data?.kind;
   $: resourceName = resource?.meta?.name?.name ?? "";
@@ -89,7 +92,8 @@
 
   $: specContent = getResourceSpec(resource);
 
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   // Source Models are coerced from Models in the UI — the trigger API
   // still expects the "models" key since the underlying resource is a Model.
@@ -97,10 +101,7 @@
     if (!resourceName) return;
     $triggerMutation.mutate(
       {
-        instanceId,
-        data: {
-          models: [{ model: resourceName, full }],
-        },
+        models: [{ model: resourceName, full }],
       },
       {
         onError: (err) => {

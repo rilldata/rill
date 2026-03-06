@@ -12,7 +12,6 @@
     createRuntimeServiceListResources,
   } from "@rilldata/web-common/runtime-client";
 
-
   const runtimeClient = useRuntimeClient();
 
   $: currentState = $resourceGraphQuickViewState;
@@ -23,7 +22,7 @@
   $: shouldFetchResources = currentState.open && !!instanceId;
 
   $: instanceQuery = createRuntimeServiceGetInstance(
-    instanceId,
+    runtimeClient,
     { sensitive: true },
     { query: { enabled: !!instanceId } },
   );

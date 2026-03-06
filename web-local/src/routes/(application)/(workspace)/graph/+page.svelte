@@ -10,16 +10,18 @@
   import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
   import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   // Parse URL parameters
   $: urlParams = parseGraphUrlParams($page.url);
@@ -100,10 +102,9 @@
 
   function refreshAllSourcesAndModels() {
     isConfirmDialogOpen = false;
-    void $createTrigger
+    void $triggerMutation
       .mutateAsync({
-        instanceId,
-        data: { all: true },
+        all: true,
       })
       .then(() => {
         void queryClient.invalidateQueries({
