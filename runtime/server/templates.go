@@ -172,8 +172,10 @@ func appendEnvVar(content, key, value string) string {
 	value = strings.ReplaceAll(value, "\n", "")
 	value = strings.ReplaceAll(value, "\r", "")
 
-	// Quote values that contain spaces, '=', or '#' (comment char)
-	if strings.ContainsAny(value, " =#'\"") {
+	// Quote values that contain spaces, '=', or '#' (comment char).
+	// Escape backslashes first, then double quotes, to avoid double-escaping.
+	if strings.ContainsAny(value, ` =#'"\\`) {
+		value = strings.ReplaceAll(value, `\`, `\\`)
 		value = `"` + strings.ReplaceAll(value, `"`, `\"`) + `"`
 	}
 

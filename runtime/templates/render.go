@@ -186,7 +186,11 @@ func processPropertiesFromSchema(
 		if !isMap {
 			if arrVal, isArr := val.([]any); isArr {
 				mapVal = kvArrayToMap(arrVal)
-				isMap = mapVal != nil
+				if mapVal == nil {
+					// Empty or malformed array (e.g. []); skip to avoid rendering "[]"
+					continue
+				}
+				isMap = true
 			}
 		}
 		if isMap {
@@ -342,7 +346,7 @@ func processHeaders(headers map[string]any, connectorName string, existingEnv ma
 func renderString(name, tmplText string, data map[string]any) (string, error) {
 	t, err := template.New(name).
 		Delims("[[", "]]").
-		Funcs(funcMap()).
+		Funcs(sharedFuncMap).
 		Parse(tmplText)
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)

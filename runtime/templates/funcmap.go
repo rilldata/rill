@@ -7,23 +7,22 @@ import (
 	"text/template"
 )
 
-// funcMap returns the template function map available to all template definitions.
-func funcMap() template.FuncMap {
-	return template.FuncMap{
-		"renderProps":         renderProps,
-		"indent":              indent,
-		"quote":               quote,
-		"propVal":             propVal,
-		"default":             defaultVal,
-		"duckdbSQL":           duckdbSQL,
-		"s3ToHTTPS":           s3ToHTTPS,
-		"gcsToHTTPS":          gcsToHTTPS,
-		"azureContainer":      azureContainer,
-		"azureBlobPath":       azureBlobPath,
-		"azureEndpoint":       azureEndpoint,
-		"clickhouseFormat":    clickhouseFormat,
-		"clickhouseURLSuffix": clickhouseURLSuffix,
-	}
+// sharedFuncMap is the template function map available to all template definitions.
+// Allocated once since all entries are stateless functions.
+var sharedFuncMap = template.FuncMap{
+	"renderProps":         renderProps,
+	"indent":              indent,
+	"quote":               quote,
+	"propVal":             propVal,
+	"default":             defaultVal,
+	"duckdbSQL":           duckdbSQL,
+	"s3ToHTTPS":           s3ToHTTPS,
+	"gcsToHTTPS":          gcsToHTTPS,
+	"azureContainer":      azureContainer,
+	"azureBlobPath":       azureBlobPath,
+	"azureEndpoint":       azureEndpoint,
+	"clickhouseFormat":    clickhouseFormat,
+	"clickhouseURLSuffix": clickhouseURLSuffix,
 }
 
 // renderProps renders a slice of ProcessedProp as YAML key-value lines.
