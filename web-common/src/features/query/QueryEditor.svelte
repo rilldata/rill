@@ -108,7 +108,7 @@
 />
 
 <style lang="postcss">
-  :global(.cm-editor) {
+  div :global(.cm-editor) {
     padding-top: 2px;
   }
 </style>

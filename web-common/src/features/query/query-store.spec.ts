@@ -427,6 +427,7 @@ describe("createNotebook", () => {
             sql: "SELECT override",
           }),
         }),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
 
@@ -453,6 +454,7 @@ describe("createNotebook", () => {
           },
           limit: 25,
         }),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
 
@@ -498,28 +500,44 @@ describe("createNotebook", () => {
       expect(runtimeServiceQueryResolver).not.toHaveBeenCalled();
     });
 
-    it("skips execution when the cell is already executing", async () => {
+    it("aborts previous in-flight query when re-executed", async () => {
       const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT 1");
 
-      let resolveQuery!: (value: unknown) => void;
-      vi.mocked(runtimeServiceQueryResolver).mockReturnValue(
-        new Promise((resolve) => {
-          resolveQuery = resolve;
-        }),
-      );
+      let resolveFirst!: (value: unknown) => void;
+      let rejectFirst!: (reason: unknown) => void;
+      vi.mocked(runtimeServiceQueryResolver)
+        .mockReturnValueOnce(
+          new Promise((resolve, reject) => {
+            resolveFirst = resolve;
+            rejectFirst = reject;
+          }),
+        )
+        .mockResolvedValueOnce({ schema: undefined, data: [] });
 
       // Fire first execution (will be in-flight)
       const first = store.executeCellQuery(cellId, MOCK_CLIENT);
       expect(getState(store).cells[0].isExecuting).toBe(true);
 
-      // Second call while first is in-flight should be a no-op
-      await store.executeCellQuery(cellId, MOCK_CLIENT);
-      expect(runtimeServiceQueryResolver).toHaveBeenCalledTimes(1);
+      // Second call aborts the first and starts a new execution
+      const second = store.executeCellQuery(cellId, MOCK_CLIENT);
 
-      resolveQuery({ schema: null, data: [] });
+      // The first call's signal should be aborted
+      const firstSignal = vi.mocked(runtimeServiceQueryResolver).mock
+        .calls[0][2]?.signal;
+      expect(firstSignal?.aborted).toBe(true);
+
+      // Both calls were made
+      expect(runtimeServiceQueryResolver).toHaveBeenCalledTimes(2);
+
+      // Resolve/reject the first (should be ignored due to abort)
+      rejectFirst(new DOMException("aborted", "AbortError"));
       await first;
+      await second;
+
+      // Cell should have completed from the second call
+      expect(getState(store).cells[0].isExecuting).toBe(false);
     });
   });
 

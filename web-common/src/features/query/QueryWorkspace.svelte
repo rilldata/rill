@@ -23,9 +23,7 @@
   const runtimeClient = useRuntimeClient();
 
   // Get default OLAP connector for new cells
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
-    sensitive: true,
-  });
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
   $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
 
   // Create notebook store once we have the default connector
@@ -46,14 +44,6 @@
 
   // Refs to cell editors for programmatic content setting
   let cellRefs: Record<string, QueryCell> = {};
-
-  // Clean up stale refs when cells are removed
-  $: if (notebook) {
-    const cellIds = new Set(get(notebook).cells.map((c) => c.id));
-    for (const id of Object.keys(cellRefs)) {
-      if (!cellIds.has(id)) delete cellRefs[id];
-    }
-  }
 
   // Data explorer sidebar
   const explorerStore = new ConnectorExplorerStore(
@@ -108,6 +98,14 @@
   // Always-valid store references for $-prefix subscriptions
   $: nb = notebook ?? EMPTY_NOTEBOOK;
   $: cells = $nb.cells;
+
+  // Clean up stale refs when cells change
+  $: {
+    const cellIds = new Set(cells.map((c) => c.id));
+    for (const id of Object.keys(cellRefs)) {
+      if (!cellIds.has(id)) delete cellRefs[id];
+    }
+  }
 
   // Derived stores for the focused cell (forwarded to inspector)
   $: focusedSchemaStore = notebook?.focusedSchema ?? NULL_READABLE;

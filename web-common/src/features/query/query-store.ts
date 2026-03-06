@@ -1,6 +1,7 @@
 import { browser } from "$app/environment";
 import { writable, derived, get } from "svelte/store";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { runtimeServiceQueryResolver } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type {
@@ -60,17 +61,21 @@ function loadPersistedCells(projectId: string): PersistedCell[] | null {
 
 function saveToLocalStorage(projectId: string, cells: CellState[]) {
   if (!browser) return;
-  const persisted: PersistedCell[] = cells.map((c) => ({
-    id: c.id,
-    sql: c.sql,
-    connector: c.connector,
-    limit: c.limit,
-    collapsed: c.collapsed,
-    resultSchema: c.result?.schema ?? null,
-    resultRowCount: c.result?.data?.length ?? null,
-    executionTimeMs: c.executionTimeMs,
-  }));
-  localStorage.setItem(storageKey(projectId), JSON.stringify(persisted));
+  try {
+    const persisted: PersistedCell[] = cells.map((c) => ({
+      id: c.id,
+      sql: c.sql,
+      connector: c.connector,
+      limit: c.limit,
+      collapsed: c.collapsed,
+      resultSchema: c.result?.schema ?? null,
+      resultRowCount: c.result?.data?.length ?? null,
+      executionTimeMs: c.executionTimeMs,
+    }));
+    localStorage.setItem(storageKey(projectId), JSON.stringify(persisted));
+  } catch {
+    // QuotaExceededError or other storage failures; silently ignore
+  }
 }
 
 function hydrateCell(p: PersistedCell): CellState {
@@ -105,25 +110,6 @@ function createDefaultCell(connector: string): CellState {
     collapsed: false,
     hasExecuted: false,
   };
-}
-
-/** Extracts a human-readable message from an API or runtime error */
-export function extractErrorMessage(err: unknown): string {
-  if (err && typeof err === "object") {
-    // Axios-style error with response.data.message
-    if ("response" in err) {
-      const resp = (err as Record<string, unknown>).response;
-      if (resp && typeof resp === "object" && "data" in resp) {
-        const data = (resp as Record<string, unknown>).data;
-        if (data && typeof data === "object" && "message" in data) {
-          const msg = (data as Record<string, unknown>).message;
-          if (typeof msg === "string" && msg) return msg;
-        }
-      }
-    }
-    if (err instanceof Error) return err.message;
-  }
-  return "Query execution failed";
 }
 
 function updateCell(
@@ -215,6 +201,9 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     update((s) => ({ ...s, focusedCellId: cellId }));
   }
 
+  // Per-cell abort controllers for query cancellation
+  const abortControllers = new Map<string, AbortController>();
+
   async function executeCellQuery(
     cellId: string,
     client: RuntimeClient,
@@ -222,10 +211,15 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
   ) {
     const current = get(state);
     const cell = current.cells.find((c) => c.id === cellId);
-    if (!cell || cell.isExecuting) return;
+    if (!cell) return;
 
     const sqlToRun = (sqlOverride ?? cell.sql).trim();
     if (!sqlToRun) return;
+
+    // Abort any in-flight query for this cell
+    abortControllers.get(cellId)?.abort();
+    const controller = new AbortController();
+    abortControllers.set(cellId, controller);
 
     update((s) => ({
       ...updateCell(s, cellId, (c) => ({
@@ -239,23 +233,18 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     const startTime = performance.now();
 
     try {
-      const body: {
-        resolver: string;
-        resolverProperties: { sql: string; connector: string };
-        limit?: number;
-      } = {
-        resolver: "sql",
-        resolverProperties: {
-          sql: sqlToRun,
-          connector: cell.connector,
-        },
-      };
-
-      if (cell.limit !== undefined) {
-        body.limit = cell.limit;
-      }
-
-      const response = await runtimeServiceQueryResolver(client, body);
+      const response = await runtimeServiceQueryResolver(
+        client,
+        {
+          resolver: "sql",
+          resolverProperties: {
+            sql: sqlToRun,
+            connector: cell.connector,
+          },
+          ...(cell.limit !== undefined ? { limit: cell.limit } : {}),
+        } as Parameters<typeof runtimeServiceQueryResolver>[1],
+        { signal: controller.signal },
+      );
       const elapsed = Math.round(performance.now() - startTime);
 
       update((s) =>
@@ -270,6 +259,9 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
         })),
       );
     } catch (err: unknown) {
+      // Ignore abort errors (user cancelled or re-ran)
+      if (controller.signal.aborted) return;
+
       const elapsed = Math.round(performance.now() - startTime);
       const message = extractErrorMessage(err);
 
@@ -282,6 +274,8 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
           hasExecuted: true,
         })),
       );
+    } finally {
+      abortControllers.delete(cellId);
     }
   }
 
@@ -309,6 +303,10 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
 
   function destroy() {
     unsubPersist?.();
+    for (const controller of abortControllers.values()) {
+      controller.abort();
+    }
+    abortControllers.clear();
   }
 
   return {

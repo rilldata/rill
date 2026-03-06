@@ -1,4 +1,7 @@
-import { prettyPrintType } from "@rilldata/web-common/features/query/query-utils";
+import {
+  formatExecutionTime,
+  prettyPrintType,
+} from "@rilldata/web-common/features/query/query-utils";
 import { describe, expect, it } from "vitest";
 
 describe("prettyPrintType", () => {
@@ -51,5 +54,19 @@ describe("prettyPrintType", () => {
   it("only strips the first CODE_ occurrence", () => {
     // replace(/^CODE_/, "") only strips the leading prefix
     expect(prettyPrintType("CODE_CODE_INT32")).toBe("CODE_INT32");
+  });
+});
+
+describe("formatExecutionTime", () => {
+  it("formats sub-second durations in milliseconds", () => {
+    expect(formatExecutionTime(0)).toBe("0ms");
+    expect(formatExecutionTime(50)).toBe("50ms");
+    expect(formatExecutionTime(999)).toBe("999ms");
+  });
+
+  it("formats durations >= 1 second with one decimal", () => {
+    expect(formatExecutionTime(1000)).toBe("1.0s");
+    expect(formatExecutionTime(1500)).toBe("1.5s");
+    expect(formatExecutionTime(12345)).toBe("12.3s");
   });
 });

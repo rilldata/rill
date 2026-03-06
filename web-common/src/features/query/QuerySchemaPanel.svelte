@@ -9,8 +9,8 @@
   import { useRuntimeClient } from "../../runtime-client/v2";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
-  import { extractErrorMessage } from "./query-store";
-  import { prettyPrintType } from "./query-utils";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { formatExecutionTime, prettyPrintType } from "./query-utils";
 
   export let filePath: string;
   export let schema: V1StructType | null;
@@ -28,15 +28,14 @@
   const runtimeClient = useRuntimeClient();
 
   // Fetch table schema when a table is selected from the data explorer
-  $: tableQuery = selectedTable
-    ? useGetTable(
-        runtimeClient,
-        selectedTable.connector,
-        selectedTable.database,
-        selectedTable.databaseSchema,
-        selectedTable.objectName,
-      )
-    : null;
+  // Always call useGetTable; it disables itself when table is empty
+  $: tableQuery = useGetTable(
+    runtimeClient,
+    selectedTable?.connector ?? "",
+    selectedTable?.database ?? "",
+    selectedTable?.databaseSchema ?? "",
+    selectedTable?.objectName ?? "",
+  );
 
   $: tableColumns = $tableQuery?.data?.schema
     ? Object.entries($tableQuery.data.schema).map(([name, type]) => ({
@@ -52,10 +51,6 @@
 
   $: fields = schema?.fields ?? [];
   $: columnCount = fields.length;
-
-  function formatTime(ms: number): string {
-    return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
-  }
 </script>
 
 <Inspector {filePath}>
@@ -148,7 +143,7 @@
         </svelte:fragment>
         <svelte:fragment slot="bottom-left">
           {#if executionTimeMs !== null}
-            <p>{formatTime(executionTimeMs)}</p>
+            <p>{formatExecutionTime(executionTimeMs)}</p>
           {/if}
         </svelte:fragment>
         <svelte:fragment slot="bottom-right">

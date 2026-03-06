@@ -12,6 +12,7 @@
   import QueryEditor from "./QueryEditor.svelte";
   import QueryResultsTable from "./QueryResultsTable.svelte";
   import type { NotebookStore } from "./query-store";
+  import { formatExecutionTime } from "./query-utils";
 
   const dispatch = createEventDispatcher<{ focus: void; run: void }>();
 
@@ -41,7 +42,7 @@
 
   $: schema = cell?.result?.schema ?? null;
   $: data = cell?.result?.data ?? null;
-  $: rowCount = (cell?.result?.data?.length || cell?.lastRowCount) ?? 0;
+  $: rowCount = cell?.result?.data?.length ?? cell?.lastRowCount ?? 0;
   $: hasExecuted = cell?.hasExecuted ?? false;
   $: hasSql = (cell?.sql ?? "").trim().length > 0;
 
@@ -152,9 +153,7 @@
             {formatInteger(rowCount)}
             {rowCount === 1 ? "row" : "rows"}
             {#if cell.executionTimeMs !== null}
-              in {cell.executionTimeMs < 1000
-                ? `${cell.executionTimeMs}ms`
-                : `${(cell.executionTimeMs / 1000).toFixed(1)}s`}
+              in {formatExecutionTime(cell.executionTimeMs)}
             {/if}
           </span>
         {/if}
