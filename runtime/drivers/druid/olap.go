@@ -75,7 +75,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	// Start a span covering connection acquisition and query execution (including retries).
-	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "druid")))
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "druid"), attribute.String("connector", c.connectorName)))
 
 	start := time.Now()
 	defer func() {

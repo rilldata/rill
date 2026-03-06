@@ -61,7 +61,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	// Start a span covering connection acquisition and query execution
-	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "pinot")))
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "pinot"), attribute.String("connector", c.connectorName)))
 
 	start := time.Now()
 	defer func() {

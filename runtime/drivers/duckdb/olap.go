@@ -102,7 +102,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	// Start a span covering connection acquisition + SQL execution to capture total latency and queue latency.
-	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "duckdb")))
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "duckdb"), attribute.String("connector", c.connectorName)))
 
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time

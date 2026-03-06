@@ -16,7 +16,7 @@ func TestMotherDuckModeEnforcement(t *testing.T) {
 		cfg := testruntime.AcquireConnector(t, "motherduck")
 		cfg["mode"] = "read"
 
-		handle, err := drivers.Open("motherduck", "test", cfg,
+		handle, err := drivers.Open("motherduck", "", "test", cfg,
 			storage.MustNew(t.TempDir(), nil),
 			activity.NewNoopClient(),
 			zap.NewNop())
@@ -42,7 +42,7 @@ func TestMotherDuckModeEnforcement(t *testing.T) {
 		cfg := testruntime.AcquireConnector(t, "motherduck")
 		cfg["mode"] = "readwrite"
 
-		handle, err := drivers.Open("motherduck", "test", cfg,
+		handle, err := drivers.Open("motherduck", "", "test", cfg,
 			storage.MustNew(t.TempDir(), nil),
 			activity.NewNoopClient(),
 			zap.NewNop())
