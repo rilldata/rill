@@ -1,8 +1,9 @@
 <script lang="ts">
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
+  import { extractErrorMessage } from "../../../lib/errors";
   import { useGetTable } from "../selectors";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
 
   export let connector: string;
   export let database: string = ""; // The backend interprets an empty string as the default database
@@ -10,9 +11,10 @@
   export let table: string;
   export let addLeftPadding = true;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+
   $: newTableQuery = useGetTable(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -42,8 +44,10 @@
 
 <ul class="table-schema-list">
   {#if isError}
-    <div class="{leftPadding} py-1.5 text-fg-secondary">
-      Error loading schema: {error?.response?.data?.message || error?.message}
+    <div
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
+    >
+      Error loading schema: {extractErrorMessage(error)}
     </div>
   {:else if isLoading}
     <div class="{leftPadding} py-1.5 text-fg-secondary">Loading schema...</div>

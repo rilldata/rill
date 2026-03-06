@@ -12,11 +12,8 @@ import {
   type V1TableColumnsResponse,
   type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import {
-  getPriority,
-  getPriorityForColumn,
-} from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
 import {
   keepPreviousData,
   type QueryObserverResult,
@@ -35,12 +32,12 @@ export type ColumnSummary = V1ProfileColumn & {
 
 /** for each entry in a profile column results, return the null count and the column cardinality */
 export function getSummaries(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
   objectName: string,
-  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse, HTTPError>,
+  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse, Error>,
 ): Readable<Array<ColumnSummary>> {
   return derived(
     profileColumnResponse?.data?.profileColumns?.map((column) => {
@@ -48,9 +45,9 @@ export function getSummaries(
         [
           writable(column),
           createQueryServiceColumnNullCount(
-            instanceId,
-            objectName,
+            client,
             {
+              tableName: objectName,
               connector,
               database,
               databaseSchema,
@@ -64,9 +61,9 @@ export function getSummaries(
             },
           ),
           createQueryServiceColumnCardinality(
-            instanceId,
-            objectName,
+            client,
             {
+              tableName: objectName,
               connector,
               database,
               databaseSchema,
@@ -101,7 +98,7 @@ export function getSummaries(
 }
 
 export function getNullPercentage(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -110,9 +107,9 @@ export function getNullPercentage(
   enabled = true,
 ) {
   const nullQuery = createQueryServiceColumnNullCount(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -125,9 +122,9 @@ export function getNullPercentage(
     },
   );
   const totalRowsQuery = createQueryServiceTableCardinality(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -152,7 +149,7 @@ export function getNullPercentage(
 }
 
 export function getCountDistinct(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -161,9 +158,8 @@ export function getCountDistinct(
   enabled = true,
 ) {
   const cardinalityQuery = createQueryServiceColumnCardinality(
-    instanceId,
-    objectName,
-    { connector, database, databaseSchema, columnName },
+    client,
+    { tableName: objectName, connector, database, databaseSchema, columnName },
     {
       query: {
         enabled,
@@ -172,9 +168,8 @@ export function getCountDistinct(
   );
 
   const totalRowsQuery = createQueryServiceTableCardinality(
-    instanceId,
-    objectName,
-    { connector, database, databaseSchema },
+    client,
+    { tableName: objectName, connector, database, databaseSchema },
     {
       query: {
         enabled,
@@ -199,7 +194,7 @@ export function getCountDistinct(
 }
 
 export function getTopK(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -209,9 +204,9 @@ export function getTopK(
   active = false,
 ) {
   const topKQuery = createQueryServiceColumnTopK(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -247,7 +242,7 @@ function convertPoint(point: V1TimeSeriesValue) {
 export type TimestampDataPoint = ReturnType<typeof convertPoint>;
 
 export function getTimeSeriesAndSpark(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -257,10 +252,9 @@ export function getTimeSeriesAndSpark(
   active = false,
 ) {
   const query = createQueryServiceColumnTimeSeries(
-    instanceId,
-    objectName,
-    // FIXME: convert pixel back to number once the API
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -278,9 +272,9 @@ export function getTimeSeriesAndSpark(
     },
   );
   const estimatedInterval = createQueryServiceColumnRollupInterval(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -295,9 +289,9 @@ export function getTimeSeriesAndSpark(
   );
 
   const smallestTimeGrain = createQueryServiceColumnTimeGrain(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -329,7 +323,7 @@ export function getTimeSeriesAndSpark(
 }
 
 export function getNumericHistogram(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -339,15 +333,15 @@ export function getNumericHistogram(
   enabled = true,
 ) {
   return createQueryServiceColumnNumericHistogram(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
       columnName,
       histogramMethod,
-      priority: getPriority("numeric-histogram"),
+      priority: getPriorityForColumn("numeric-histogram", false),
     },
     {
       query: {

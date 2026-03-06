@@ -1,14 +1,14 @@
 import { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 import {
   type V1ConnectorDriver,
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";
-import { runtime } from "../../runtime-client/runtime-store";
+import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   getName,
@@ -256,6 +256,7 @@ driver: ${driverName}`;
 }
 
 export async function updateDotEnvWithSecrets(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
@@ -276,27 +277,27 @@ export async function updateDotEnvWithSecrets(
     blob = opts.existingEnvBlob;
     originalBlob = opts.existingEnvBlob;
   } else {
-    const instanceId = get(runtime).instanceId;
-
     // Invalidate the cache to ensure we get fresh .env content
     // This prevents overwriting credentials added by a previous step
     await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+      queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+        path: ".env",
+      }),
     });
 
     // Get the existing .env file with fresh data
     try {
       const file = await queryClient.fetchQuery({
-        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+        queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
           path: ".env",
         }),
-        queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+        queryFn: () => runtimeServiceGetFile(client, { path: ".env" }),
       });
       blob = file.blob || "";
       originalBlob = blob; // Keep original for conflict detection
     } catch (error) {
       // Handle the case where the .env file does not exist
-      if (error?.response?.data?.message?.includes("no such file")) {
+      if (extractErrorMessage(error).includes("no such file")) {
         blob = "";
         originalBlob = "";
       } else {
@@ -508,16 +509,16 @@ export function makeEnvVarKey(
 }
 
 export async function updateRillYAMLWithOlapConnector(
+  client: RuntimeClient,
   queryClient: QueryClient,
   newConnector: string,
 ): Promise<string> {
   // Get the existing rill.yaml file
-  const instanceId = get(runtime).instanceId;
   const file = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
       path: "rill.yaml",
     }),
-    queryFn: () => runtimeServiceGetFile(instanceId, { path: "rill.yaml" }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
   });
   const blob = file.blob || "";
 
@@ -543,19 +544,20 @@ export function replaceOlapConnectorInYAML(
 }
 
 export async function createYamlModelFromTable(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name for makeSufficientlyQualifiedTableName
-  const analyzeConnectorsQueryKey =
-    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const analyzeConnectorsQueryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+    {},
+  );
   const analyzeConnectorsQueryFn = async () =>
-    runtimeServiceAnalyzeConnectors(instanceId);
+    runtimeServiceAnalyzeConnectors(client, {});
   const connectors = await queryClient.fetchQuery({
     queryKey: analyzeConnectorsQueryKey,
     queryFn: analyzeConnectorsQueryFn,
@@ -599,7 +601,7 @@ export async function createYamlModelFromTable(
     .replace("{{ dev_section }}", devSection);
 
   // Write the YAML file
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newModelPath,
     blob: yamlContent,
     createOnly: true,
@@ -607,13 +609,14 @@ export async function createYamlModelFromTable(
 
   // Invalidate relevant queries
   await queryClient.invalidateQueries({
-    queryKey: ["runtimeServiceListFiles", instanceId],
+    queryKey: ["runtimeServiceListFiles", client.instanceId],
   });
 
   return ["/" + newModelPath, newModelName];
 }
 
 export async function createSqlModelFromTable(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: string,
   database: string,
@@ -621,13 +624,13 @@ export async function createSqlModelFromTable(
   table: string,
   addDevLimit: boolean = true,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name
-  const analyzeConnectorsQueryKey =
-    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const analyzeConnectorsQueryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+    {},
+  );
   const analyzeConnectorsQueryFn = async () =>
-    runtimeServiceAnalyzeConnectors(instanceId);
+    runtimeServiceAnalyzeConnectors(client, {});
   const connectors = await queryClient.fetchQuery({
     queryKey: analyzeConnectorsQueryKey,
     queryFn: analyzeConnectorsQueryFn,
@@ -641,16 +644,18 @@ export async function createSqlModelFromTable(
   const driverName = analyzedConnector.driver?.name as string;
 
   // Determine whether the connector is the default OLAP connector
-  const runtimeInstanceQueryKey =
-    getRuntimeServiceGetInstanceQueryKey(instanceId);
+  const runtimeInstanceQueryKey = getRuntimeServiceGetInstanceQueryKey(
+    client.instanceId,
+    {},
+  );
   const runtimeInstanceQueryFn = async () =>
-    runtimeServiceGetInstance(instanceId, { sensitive: true });
+    runtimeServiceGetInstance(client, { sensitive: true });
   const runtimeInstance = await queryClient.fetchQuery({
     queryKey: runtimeInstanceQueryKey,
     queryFn: runtimeInstanceQueryFn,
   });
   if (!runtimeInstance) {
-    throw new Error(`Could not find runtime instance ${instanceId}`);
+    throw new Error(`Could not find runtime instance ${client.instanceId}`);
   }
   const isDefaultOLAPConnector =
     runtimeInstance?.instance?.olapConnector === connector;
@@ -693,7 +698,7 @@ export async function createSqlModelFromTable(
     modelSQL += `\n${devLimit}`;
   }
 
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newModelPath,
     blob: modelSQL,
     createOnly: true,

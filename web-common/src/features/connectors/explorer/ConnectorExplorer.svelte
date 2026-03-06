@@ -1,7 +1,7 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import ConnectorEntry from "./ConnectorEntry.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
@@ -9,7 +9,7 @@
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: connectors = getAnalyzedConnectors(instanceId, olapOnly);
   $: ({ data, error } = $connectors);

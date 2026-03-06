@@ -8,21 +8,23 @@
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceUnpackEmpty,
-    createRuntimeServiceUnpackExample,
+    createRuntimeServiceUnpackEmptyMutation,
+    createRuntimeServiceUnpackExampleMutation,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
   import { Button } from "@rilldata/web-common/components/button";
 
-  const unpackExampleProject = createRuntimeServiceUnpackExample();
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const unpackExampleProject =
+    createRuntimeServiceUnpackExampleMutation(runtimeClient);
+  const unpackEmptyProject =
+    createRuntimeServiceUnpackEmptyMutation(runtimeClient);
 
   let selectedProjectName: string | null = null;
-
-  $: ({ instanceId } = $runtime);
 
   $: ({ mutateAsync: unpackExample } = $unpackExampleProject);
   $: ({ mutateAsync: unpackEmpty } = $unpackEmptyProject);
@@ -44,11 +46,8 @@
 
     try {
       await mutationFunction({
-        instanceId,
-        data: {
-          [key]: selectedProjectName,
-          force: true,
-        },
+        [key]: selectedProjectName,
+        force: true,
       });
 
       setTimeout(() => {
