@@ -11,13 +11,14 @@ import {
   getConversationManager,
   cleanupConversationManager,
 } from "@rilldata/web-common/features/chat/core/conversation-manager";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { LocalURLConversationSelector } from "./local-conversation-selector";
 
 export function getLocalConversationManager(
-  instanceId: string,
+  client: RuntimeClient,
   agent?: string,
 ): ConversationManager {
-  return getConversationManager(instanceId, {
+  return getConversationManager(client, {
     conversationState: "url",
     agent,
     customSelector: new LocalURLConversationSelector(),

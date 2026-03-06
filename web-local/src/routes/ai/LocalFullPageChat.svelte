@@ -17,9 +17,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: conversationManager = getLocalConversationManager(
-    runtimeClient.instanceId,
-  );
+  $: conversationManager = getLocalConversationManager(runtimeClient);
 
   let chatInputComponent: ChatInput;
 

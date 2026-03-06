@@ -16,7 +16,7 @@
 
   $: hasResourceErrorsQuery = createRuntimeServiceListResources(
     runtimeClient,
-    undefined,
+    {},
     {
       query: {
         select: (data) => {
