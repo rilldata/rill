@@ -290,17 +290,16 @@ func (f *Fixture) DeleteManagedRepo(t *testing.T, path string) {
 	// get the remote from the tempDir
 	remote, err := gitutil.ExtractGitRemote(path, "__rill_remote", false)
 	require.NoError(t, err)
-	require.NotNil(t, remote)
 
 	ghURL, err := remote.Github()
 	require.NoError(t, err)
-	require.NotNil(t, ghURL)
+	require.NotEmpty(t, ghURL)
 
 	_, repo, ok := gitutil.SplitGithubRemote(ghURL)
 	require.True(t, ok, "invalid github remote: %s", ghURL)
 
 	err = f.Admin.Github.DeleteManagedRepo(context.Background(), repo)
-	require.NoError(t, err, "failed to delete managed github repo %s: %v", repo, err)
+	require.NoError(t, err, "failed to delete managed github repo %s", repo)
 }
 
 // newGithub creates a new Github client. In short testing mode this is a mock client which has no-op implementations of all methods.
