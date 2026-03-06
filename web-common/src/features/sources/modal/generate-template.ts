@@ -1,12 +1,11 @@
 import type { QueryClient } from "@tanstack/query-core";
-import { get } from "svelte/store";
 import {
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGenerateFile,
   runtimeServiceGetFile,
   runtimeServiceGetInstance,
 } from "../../../runtime-client";
-import { runtime } from "../../../runtime-client/runtime-store";
+import type { RuntimeClient } from "../../../runtime-client/v2";
 import { replaceOrAddEnvVariable } from "../../connectors/code-utils";
 import { normalizeOlapForTemplate } from "./connector-schemas";
 import { OLAP_ENGINES } from "./constants";
@@ -36,7 +35,7 @@ function resolveTemplateName(driver: string, olap: string): string {
  * the caller handles file writing and reconciliation.
  */
 export async function generateTemplate(
-  instanceId: string,
+  client: RuntimeClient,
   opts: {
     resourceType: string;
     driver: string;
@@ -47,11 +46,11 @@ export async function generateTemplate(
   // Resolve OLAP; cached per instance since it doesn't change during a session.
   let olap = "duckdb";
   if (!OLAP_SET.has(opts.driver)) {
-    const cached = olapCache.get(instanceId);
+    const cached = olapCache.get(client.instanceId);
     if (cached) {
       olap = cached;
     } else {
-      const resp = await runtimeServiceGetInstance(instanceId, {
+      const resp = await runtimeServiceGetInstance(client, {
         sensitive: true,
       });
       olap = normalizeOlapForTemplate(
@@ -59,13 +58,13 @@ export async function generateTemplate(
         resp.instance?.connectors,
         resp.instance?.projectConnectors,
       );
-      olapCache.set(instanceId, olap);
+      olapCache.set(client.instanceId, olap);
     }
   }
 
   const templateName = resolveTemplateName(opts.driver, olap);
 
-  const response = await runtimeServiceGenerateFile(instanceId, {
+  const response = await runtimeServiceGenerateFile(client, {
     templateName,
     output: opts.resourceType,
     properties: opts.properties,
@@ -88,22 +87,25 @@ export async function generateTemplate(
  * Returns the updated blob and the original blob (for rollback).
  */
 export async function mergeEnvVars(
+  client: RuntimeClient,
   queryClient: QueryClient,
   envVars: Record<string, string>,
 ): Promise<{ newBlob: string; originalBlob: string }> {
-  const instanceId = get(runtime).instanceId;
-
   // Invalidate cache to get fresh .env content
   await queryClient.invalidateQueries({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+      path: ".env",
+    }),
   });
 
   let blob: string;
   let originalBlob: string;
   try {
     const file = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+      queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+        path: ".env",
+      }),
+      queryFn: () => runtimeServiceGetFile(client, { path: ".env" }),
     });
     blob = file.blob || "";
     originalBlob = blob;

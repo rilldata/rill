@@ -5,6 +5,7 @@ import {
   type V1Connector,
   type V1Template,
 } from "../../../runtime-client";
+import type { RuntimeClient } from "../../../runtime-client/v2";
 import type {
   ConnectorCategory,
   MultiStepFormSchema,
@@ -138,9 +139,9 @@ function buildSchemaRegistry(
  * As a side effect, populates the module-level schemasCache so that
  * getConnectorSchema() works synchronously in child components.
  */
-export function createConnectorSchemas(instanceId: string) {
-  const templatesQuery = createRuntimeServiceListTemplates();
-  const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+export function createConnectorSchemas(client: RuntimeClient) {
+  const templatesQuery = createRuntimeServiceListTemplates(client, {});
+  const instanceQuery = createRuntimeServiceGetInstance(client, {
     sensitive: true,
   });
 

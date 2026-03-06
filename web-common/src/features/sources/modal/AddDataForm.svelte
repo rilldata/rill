@@ -220,6 +220,7 @@
   let previewTimer: ReturnType<typeof setTimeout>;
   $: {
     const ctx = {
+      client: runtimeClient,
       stepState,
       isMultiStepConnector: isStepFlowConnector,
       isConnectorForm,

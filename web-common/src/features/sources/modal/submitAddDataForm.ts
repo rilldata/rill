@@ -143,12 +143,13 @@ async function saveConnectorWithoutTest(
   // Mark to avoid rollback by concurrent submissions
   savedWithoutTestPaths.add(newConnectorFilePath);
 
-  const templateResponse = await generateTemplate(client.instanceId, {
+  const templateResponse = await generateTemplate(client, {
     resourceType: "connector",
     driver: connector.name as string,
     properties: formValues,
   });
   const { newBlob: newEnvBlob } = await mergeEnvVars(
+    client,
     queryClient,
     templateResponse.envVars ?? {},
   );
@@ -248,12 +249,13 @@ export async function submitAddConnectorForm(
         throw new Error("Operation cancelled");
       }
 
-      const templateResponse = await generateTemplate(client.instanceId, {
+      const templateResponse = await generateTemplate(client, {
         resourceType: "connector",
         driver: connector.name as string,
         properties: formValues,
       });
       const envResult = await mergeEnvVars(
+        client,
         queryClient,
         templateResponse.envVars ?? {},
       );
@@ -374,14 +376,14 @@ export async function submitAddSourceForm(
   const newSourceName = formValues.name as string;
 
   // Use the GenerateTemplate RPC; backend handles DuckDB rewrite and env var naming
-  const templateResponse = await generateTemplate(client.instanceId, {
+  const templateResponse = await generateTemplate(client, {
     resourceType: "model",
     driver: connector.name as string,
     properties: formValues,
     connectorName: connectorInstanceName || (connector.name as string),
   });
   const { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
-    await mergeEnvVars(queryClient, templateResponse.envVars ?? {});
+    await mergeEnvVars(client, queryClient, templateResponse.envVars ?? {});
 
   // Create model YAML file
   const newSourceFilePath = getFileAPIPathFromNameAndType(

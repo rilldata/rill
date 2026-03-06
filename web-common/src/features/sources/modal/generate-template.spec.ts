@@ -1,15 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mergeEnvVars } from "./generate-template";
-
-// Mock the runtime store
-vi.mock("../../../runtime-client/runtime-store", () => ({
-  runtime: {
-    subscribe: vi.fn((cb) => {
-      cb({ instanceId: "test-instance" });
-      return () => {};
-    }),
-  },
-}));
+import type { RuntimeClient } from "../../../runtime-client/v2";
 
 // Mock the runtime client
 const mockGetFile = vi.fn();
@@ -57,6 +48,10 @@ vi.mock("../../connectors/code-utils", async () => {
   };
 });
 
+const mockClient = {
+  instanceId: "test-instance",
+} as unknown as RuntimeClient;
+
 describe("mergeEnvVars", () => {
   let queryClient: any;
 
@@ -73,7 +68,7 @@ describe("mergeEnvVars", () => {
       blob: "EXISTING_VAR=existing_value",
     });
 
-    const result = await mergeEnvVars(queryClient, {
+    const result = await mergeEnvVars(mockClient, queryClient, {
       CLICKHOUSE_PASSWORD: "secret123",
       CLICKHOUSE_HOST: "ch.example.com",
     });
@@ -87,7 +82,7 @@ describe("mergeEnvVars", () => {
   it("should handle empty .env file", async () => {
     queryClient.fetchQuery.mockResolvedValue({ blob: "" });
 
-    const result = await mergeEnvVars(queryClient, {
+    const result = await mergeEnvVars(mockClient, queryClient, {
       S3_ACCESS_KEY: "AKID123",
     });
 
@@ -100,7 +95,7 @@ describe("mergeEnvVars", () => {
       response: { data: { message: "no such file" } },
     });
 
-    const result = await mergeEnvVars(queryClient, {
+    const result = await mergeEnvVars(mockClient, queryClient, {
       NEW_VAR: "new_value",
     });
 
@@ -113,7 +108,7 @@ describe("mergeEnvVars", () => {
       blob: "CLICKHOUSE_PASSWORD=old_secret",
     });
 
-    const result = await mergeEnvVars(queryClient, {
+    const result = await mergeEnvVars(mockClient, queryClient, {
       CLICKHOUSE_PASSWORD: "new_secret",
     });
 
@@ -126,7 +121,7 @@ describe("mergeEnvVars", () => {
       blob: "EXISTING=value",
     });
 
-    const result = await mergeEnvVars(queryClient, {});
+    const result = await mergeEnvVars(mockClient, queryClient, {});
 
     expect(result.originalBlob).toBe("EXISTING=value");
     expect(result.newBlob).toBe("EXISTING=value");
@@ -135,7 +130,7 @@ describe("mergeEnvVars", () => {
   it("should skip entries with empty keys or values", async () => {
     queryClient.fetchQuery.mockResolvedValue({ blob: "" });
 
-    const result = await mergeEnvVars(queryClient, {
+    const result = await mergeEnvVars(mockClient, queryClient, {
       "": "no_key",
       VALID_KEY: "",
       REAL_KEY: "real_value",
@@ -149,7 +144,7 @@ describe("mergeEnvVars", () => {
   it("should invalidate query cache before fetching", async () => {
     queryClient.fetchQuery.mockResolvedValue({ blob: "" });
 
-    await mergeEnvVars(queryClient, { KEY: "value" });
+    await mergeEnvVars(mockClient, queryClient, { KEY: "value" });
 
     expect(queryClient.invalidateQueries).toHaveBeenCalledBefore(
       queryClient.fetchQuery,
@@ -160,9 +155,9 @@ describe("mergeEnvVars", () => {
     const error = new Error("network error");
     queryClient.fetchQuery.mockRejectedValue(error);
 
-    await expect(mergeEnvVars(queryClient, { KEY: "value" })).rejects.toThrow(
-      "network error",
-    );
+    await expect(
+      mergeEnvVars(mockClient, queryClient, { KEY: "value" }),
+    ).rejects.toThrow("network error");
   });
 
   it("should handle suffixed env var names from backend", async () => {
@@ -171,7 +166,7 @@ describe("mergeEnvVars", () => {
     });
 
     // Backend already resolved the conflict and returned _1 suffix
-    const result = await mergeEnvVars(queryClient, {
+    const result = await mergeEnvVars(mockClient, queryClient, {
       CLICKHOUSE_PASSWORD_1: "second_secret",
     });
 

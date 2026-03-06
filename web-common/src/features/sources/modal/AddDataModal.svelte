@@ -32,7 +32,7 @@
 
   const runtimeClient = useRuntimeClient();
   const { connectors: connectorsStore } = createConnectorSchemas(
-    runtimeClient.instanceId,
+    runtimeClient,
   );
 
   let step = 0;

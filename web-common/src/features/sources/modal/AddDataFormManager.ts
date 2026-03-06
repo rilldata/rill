@@ -34,7 +34,6 @@ import {
 import type { ButtonLabels } from "../../templates/schemas/types";
 import { processFileContent } from "../../templates/file-encoding";
 import { generateTemplate } from "./generate-template";
-import { runtime } from "../../../runtime-client/runtime-store";
 
 type FormData = Record<string, unknown>;
 // Use unknown to be compatible with superforms' complex ValidationErrors type
@@ -481,17 +480,22 @@ export class AddDataFormManager {
    * All connectors use the GenerateTemplate RPC.
    */
   async computeYamlPreview(ctx: {
+    client: RuntimeClient;
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     formValues: Record<string, unknown>;
   }): Promise<string> {
     const connector = this.connector;
-    const { stepState, isMultiStepConnector, isConnectorForm, formValues } =
-      ctx;
+    const {
+      client,
+      stepState,
+      isMultiStepConnector,
+      isConnectorForm,
+      formValues,
+    } = ctx;
 
     const schema = getConnectorSchema(this.schemaName);
-    const instanceId = get(runtime).instanceId;
 
     const isOnConnectorStep = !stepState || stepState.step === "connector";
     const isOnSourceOrExplorerStep =
@@ -504,7 +508,7 @@ export class AddDataFormManager {
             step: "connector",
           })
         : formValues;
-      const response = await generateTemplate(instanceId, {
+      const response = await generateTemplate(client, {
         resourceType: "connector",
         driver: connector.name as string,
         properties: filteredValues,
@@ -534,7 +538,7 @@ export class AddDataFormManager {
         );
       }
 
-      const response = await generateTemplate(instanceId, {
+      const response = await generateTemplate(client, {
         resourceType: "model",
         driver: connector.name as string,
         properties: sourceValues,
@@ -551,7 +555,7 @@ export class AddDataFormManager {
             step: "connector",
           })
         : formValues;
-      const response = await generateTemplate(instanceId, {
+      const response = await generateTemplate(client, {
         resourceType: "connector",
         driver: connector.name as string,
         properties: filteredValues,
@@ -560,7 +564,7 @@ export class AddDataFormManager {
     }
 
     // Single-step source form
-    const response = await generateTemplate(instanceId, {
+    const response = await generateTemplate(client, {
       resourceType: "model",
       driver: connector.name as string,
       properties: formValues,
