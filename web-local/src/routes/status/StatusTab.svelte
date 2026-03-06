@@ -18,7 +18,7 @@
     createRuntimeServiceListResources,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createLocalServiceGetVersion } from "@rilldata/web-common/runtime-client/local-service";
   import ResourcesSection from "./ResourcesSection.svelte";
   import ParseErrorsSection from "./ParseErrorsSection.svelte";
@@ -30,10 +30,10 @@
     { label: "Resources", value: "resources" },
   ];
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // Instance query for connector info
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
@@ -43,16 +43,18 @@
   $: version = $versionQuery.data?.current ?? "";
 
   // Resources query for overview sections
-  $: resourcesQuery = createRuntimeServiceListResources(instanceId, {});
+  $: resourcesQuery = createRuntimeServiceListResources(runtimeClient, {});
   $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
   $: resourceCounts = countByKind(allResources);
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     },
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );

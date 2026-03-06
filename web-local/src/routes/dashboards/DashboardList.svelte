@@ -3,14 +3,15 @@
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { useDashboards } from "@rilldata/web-common/features/dashboards/listing/selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let limit: number | undefined = undefined;
   export let showSearch = false;
   export let showSeeAll = false;
   export let seeAllHref = "/dashboards";
 
-  $: dashboardsQuery = useDashboards($runtime.instanceId);
+  const runtimeClient = useRuntimeClient();
+  $: dashboardsQuery = useDashboards(runtimeClient);
   $: ({ data: dashboardsData, isLoading, isError, error } = $dashboardsQuery);
 
   function getHref(name: string, isMetricsExplorer: boolean): string {

@@ -20,6 +20,19 @@ export const PREVIEW_ALLOWED_PREFIXES = [
 ] as const;
 
 /**
+ * All route prefixes allowed in developer mode.
+ * Includes developer routes, root, and shared routes (/explore, /canvas, /deploy).
+ */
+export const DEVELOPER_ALLOWED_PREFIXES = [
+  ...DEVELOPER_ROUTE_PREFIXES,
+  "/explore/",
+  "/canvas/",
+  "/deploy",
+  "/connector/",
+  "/graph",
+] as const;
+
+/**
  * Note: isPreviewRoute and isDeveloperRoute are intentionally not exhaustive.
  * Routes like /explore, /canvas, and /deploy are shared between modes and
  * match neither; they preserve the current mode without triggering a switch.

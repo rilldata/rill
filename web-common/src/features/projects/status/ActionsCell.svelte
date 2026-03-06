@@ -3,9 +3,9 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { RefreshCcwIcon } from "lucide-svelte";
@@ -18,7 +18,9 @@
   export let onDropdownOpenChange: (isOpen: boolean) => void;
   export let resource: V1Resource | undefined = undefined;
 
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const runtimeClient = useRuntimeClient();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   $: isLoading = $triggerMutation.isPending;
 
@@ -30,11 +32,7 @@
     if (isLoading) return;
 
     try {
-      if (!$runtime?.instanceId) {
-        throw new Error("Runtime not initialized");
-      }
-
-      const data =
+      const body =
         resourceKind === ResourceKind.Model
           ? {
               models: [
@@ -53,10 +51,7 @@
               ],
             };
 
-      await $triggerMutation.mutateAsync({
-        instanceId: $runtime.instanceId,
-        data,
-      });
+      await $triggerMutation.mutateAsync(body);
 
       onRefresh();
       onDropdownOpenChange(false);

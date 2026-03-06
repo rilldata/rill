@@ -9,13 +9,43 @@ import {
 } from "@rilldata/web-common/runtime-client/index.js";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
 import { getLocalRuntimeClient } from "../lib/runtime-client";
+import {
+  DEVELOPER_ALLOWED_PREFIXES,
+  PREVIEW_ALLOWED_PREFIXES,
+} from "./route-constants";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
 
 export async function load({ url, depends, untrack }) {
   depends("init");
+
+  // Fetch metadata to check preview mode
+  const metadata = await localServiceGetMetadata();
+  const previewMode = metadata.previewMode ?? false;
+
+  // Enforce mode-based route locking
+  if (previewMode) {
+    // Preview mode: only allow preview-related and shared routes
+    const isAllowed = PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
+      url.pathname.startsWith(prefix),
+    );
+    if (!isAllowed) {
+      throw redirect(303, "/dashboards");
+    }
+  } else {
+    // Developer mode: block preview-exclusive routes
+    const isAllowed =
+      url.pathname === "/" ||
+      DEVELOPER_ALLOWED_PREFIXES.some((prefix) =>
+        url.pathname.startsWith(prefix),
+      );
+    if (!isAllowed) {
+      throw redirect(303, "/");
+    }
+  }
 
   const client = getLocalRuntimeClient();
 
@@ -37,8 +67,14 @@ export async function load({ url, depends, untrack }) {
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
 
   const redirectPath = untrack(() => {
+    if (!url.searchParams.get("redirect")) return false;
+
+    // In preview mode, redirect to /dashboards instead of /files
+    if (previewMode) {
+      return url.pathname !== "/dashboards" && "/dashboards";
+    }
+
     return (
-      !!url.searchParams.get("redirect") &&
       url.pathname !== `/files${firstDashboardFile?.path}` &&
       `/files${firstDashboardFile?.path}`
     );
@@ -50,5 +86,5 @@ export async function load({ url, depends, untrack }) {
     throw redirect(303, redirectPath);
   }
 
-  return { initialized };
+  return { initialized, previewMode, metadata };
 }

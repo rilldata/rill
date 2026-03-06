@@ -2,12 +2,12 @@
   import ResourcesFilterableTable from "@rilldata/web-common/features/resources/ResourcesFilterableTable.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   /** Pre-set status filters when navigating from the overview errors section */
@@ -15,8 +15,10 @@
   /** Pre-set type filters when navigating from the overview resources section */
   export let initialTypeFilter: string[] = [];
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   let selectedStatuses: string[] = initialStatusFilter;
   let selectedTypes: string[] = initialTypeFilter;
@@ -26,7 +28,7 @@
   $: selectedTypes = initialTypeFilter;
 
   $: resourcesQuery = createRuntimeServiceListResources(
-    $runtime.instanceId,
+    runtimeClient,
     {},
     { query: { refetchInterval: 5000 } },
   );
@@ -42,19 +44,14 @@
   );
 
   function refreshAllSourcesAndModels() {
-    void $createTrigger
-      .mutateAsync({
-        instanceId: $runtime.instanceId,
-        data: { all: true },
-      })
-      .then(() => {
-        void queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceListResourcesQueryKey(
-            $runtime.instanceId,
-            undefined,
-          ),
-        });
+    void $createTrigger.mutateAsync({ all: true }).then(() => {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+          undefined,
+        ),
       });
+    });
   }
 </script>
 

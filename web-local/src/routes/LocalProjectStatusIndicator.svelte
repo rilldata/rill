@@ -10,12 +10,12 @@
     createRuntimeServiceGetResource,
     createRuntimeServiceListResources,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: hasResourceErrorsQuery = createRuntimeServiceListResources(
-    instanceId,
+    runtimeClient,
     undefined,
     {
       query: {
@@ -38,10 +38,12 @@
   } = $hasResourceErrorsQuery);
 
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     },
     {
       query: {

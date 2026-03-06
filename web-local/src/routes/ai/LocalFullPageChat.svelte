@@ -1,7 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     getLocalConversationManager,
     cleanupLocalConversationManager,
@@ -15,9 +15,11 @@
   } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: conversationManager = getLocalConversationManager(instanceId);
+  $: conversationManager = getLocalConversationManager(
+    runtimeClient.instanceId,
+  );
 
   let chatInputComponent: ChatInput;
 
@@ -36,7 +38,7 @@
   beforeNavigate(({ to }) => {
     const isChatRoute = to?.route?.id?.includes("ai");
     if (!isChatRoute) {
-      cleanupLocalConversationManager(instanceId);
+      cleanupLocalConversationManager(runtimeClient.instanceId);
     }
   });
 </script>
