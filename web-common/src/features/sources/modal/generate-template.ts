@@ -117,9 +117,7 @@ export async function mergeEnvVars(
     originalBlob = blob;
   } catch (error) {
     const msg =
-      (error as any)?.message ??
-      (error as any)?.response?.data?.message ??
-      "";
+      (error as any)?.message ?? (error as any)?.response?.data?.message ?? "";
     if (msg.includes("no such file")) {
       blob = "";
       originalBlob = "";
