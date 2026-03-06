@@ -22,8 +22,10 @@
 
   const runtimeClient = useRuntimeClient();
 
-  // Get default OLAP connector for new cells
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
+  // Get default OLAP connector for new cells (sensitive: true required to include olapConnector)
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
   $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
 
   // Create notebook store once we have the default connector

@@ -505,12 +505,10 @@ describe("createNotebook", () => {
       const cellId = getState(store).cells[0].id;
       store.setCellSql(cellId, "SELECT 1");
 
-      let resolveFirst!: (value: unknown) => void;
       let rejectFirst!: (reason: unknown) => void;
       vi.mocked(runtimeServiceQueryResolver)
         .mockReturnValueOnce(
-          new Promise((resolve, reject) => {
-            resolveFirst = resolve;
+          new Promise((_resolve, reject) => {
             rejectFirst = reject;
           }),
         )
