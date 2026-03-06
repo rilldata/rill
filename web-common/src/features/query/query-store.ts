@@ -301,6 +301,19 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     ($c) => $c?.executionTimeMs ?? null,
   );
 
+  function cancelCellQuery(cellId: string) {
+    const controller = abortControllers.get(cellId);
+    if (!controller) return;
+    controller.abort();
+    abortControllers.delete(cellId);
+    update((s) =>
+      updateCell(s, cellId, (c) => ({
+        ...c,
+        isExecuting: false,
+      })),
+    );
+  }
+
   function destroy() {
     unsubPersist?.();
     for (const controller of abortControllers.values()) {
@@ -320,6 +333,7 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     toggleCellCollapsed,
     setFocusedCell,
     executeCellQuery,
+    cancelCellQuery,
     focusedSchema,
     focusedData,
     focusedRowCount,

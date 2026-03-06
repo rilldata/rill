@@ -46,19 +46,16 @@
   $: hasExecuted = cell?.hasExecuted ?? false;
   $: hasSql = (cell?.sql ?? "").trim().length > 0;
 
-  function runQuery(sqlOverride?: string) {
+  function handleRunButton() {
     if (!cell || cell.isExecuting) return;
     notebook.setFocusedCell(cellId);
-    notebook.executeCellQuery(cellId, runtimeClient, sqlOverride);
+    const selected = editorRef?.getSelectedText();
+    notebook.executeCellQuery(cellId, runtimeClient, selected);
     dispatch("run");
   }
 
-  function handleRun(e: CustomEvent<{ selectedText?: string }>) {
-    runQuery(e.detail?.selectedText);
-  }
-
-  function handleRunButton() {
-    runQuery(editorRef?.getSelectedText());
+  function handleStopButton() {
+    notebook.cancelCellQuery(cellId);
   }
 
   function handleChange(e: CustomEvent<string>) {
@@ -158,14 +155,20 @@
           </span>
         {/if}
 
-        <Button
-          type="primary"
-          small
-          onClick={handleRunButton}
-          disabled={cell.isExecuting || !hasSql}
-        >
-          Run
-        </Button>
+        {#if cell.isExecuting}
+          <Button type="destructive" small onClick={handleStopButton}>
+            Stop
+          </Button>
+        {:else}
+          <Button
+            type="primary"
+            small
+            onClick={handleRunButton}
+            disabled={!hasSql}
+          >
+            Run
+          </Button>
+        {/if}
 
         {#if canDelete}
           <button
@@ -187,7 +190,6 @@
             <QueryEditor
               bind:this={editorRef}
               initialValue={cell.sql}
-              on:run={handleRun}
               on:change={handleChange}
             />
           </WorkspaceEditorContainer>

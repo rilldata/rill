@@ -2,7 +2,7 @@
   import { autocompletion } from "@codemirror/autocomplete";
   import { keywordCompletionSource, sql } from "@codemirror/lang-sql";
   import { Compartment, EditorState } from "@codemirror/state";
-  import { EditorView, keymap } from "@codemirror/view";
+  import { EditorView } from "@codemirror/view";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { DuckDBSQL } from "../../components/editor/presets/duckDBDialect";
   import { createEventDispatcher, onMount } from "svelte";
@@ -10,7 +10,6 @@
   export let initialValue = "";
 
   const dispatch = createEventDispatcher<{
-    run: { selectedText?: string };
     change: string;
   }>();
 
@@ -26,22 +25,6 @@
     });
   }
 
-  // Cmd/Ctrl+Enter to run query (selected text or full content)
-  const runKeymap = keymap.of([
-    {
-      key: "Mod-Enter",
-      run: (view) => {
-        const sel = view.state.selection.main;
-        const hasSelection = sel.from !== sel.to;
-        const selectedText = hasSelection
-          ? view.state.sliceDoc(sel.from, sel.to)
-          : undefined;
-        dispatch("run", { selectedText });
-        return true;
-      },
-    },
-  ]);
-
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
@@ -50,7 +33,6 @@
           baseExtensions(),
           sql({ dialect: DuckDBSQL }),
           autocompleteCompartment.of(makeAutocompleteConfig()),
-          runKeymap,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               dispatch("change", update.state.doc.toString());
