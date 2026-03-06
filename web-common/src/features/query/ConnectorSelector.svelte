@@ -25,21 +25,27 @@
   }
 
   // Get all connectors that support SQL queries
-  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(runtimeClient, {
-    query: {
-      select: (data) => {
-        if (!data?.connectors) return [];
-        return data.connectors
-          .filter(
-            (c) =>
-              c?.driver?.implementsOlap ||
-              c?.driver?.implementsSqlStore ||
-              c?.driver?.implementsWarehouse,
-          )
-          .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => {
+          if (!data?.connectors) return [];
+          return data.connectors
+            .filter(
+              (c) =>
+                c?.driver?.implementsOlap ||
+                c?.driver?.implementsSqlStore ||
+                c?.driver?.implementsWarehouse,
+            )
+            .sort((a, b) =>
+              (a?.name as string).localeCompare(b?.name as string),
+            );
+        },
       },
     },
-  });
+  );
 
   $: options =
     ($connectorsQuery.data ?? []).map((c) => ({
