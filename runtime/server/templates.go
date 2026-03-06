@@ -106,28 +106,8 @@ func (s *Server) GenerateFile(ctx context.Context, req *runtimev1.GenerateFileRe
 
 	// Write files if not preview mode
 	if !req.Preview {
-		repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "opening repo: %s", err)
-		}
-		defer release()
-
-		// Write rendered files
-		for _, f := range result.Files {
-			if err := repo.Put(ctx, f.Path, strings.NewReader(f.Blob)); err != nil {
-				return nil, status.Errorf(codes.Internal, "writing file %q: %s", f.Path, err)
-			}
-		}
-
-		// Merge env vars into .env
-		if len(result.EnvVars) > 0 {
-			envContent, _ := repo.Get(ctx, ".env")
-			for key, val := range result.EnvVars {
-				envContent = appendEnvVar(envContent, key, val)
-			}
-			if err := repo.Put(ctx, ".env", strings.NewReader(envContent)); err != nil {
-				return nil, status.Errorf(codes.Internal, "writing .env: %s", err)
-			}
+		if err := s.writeRenderedFiles(ctx, req.InstanceId, result); err != nil {
+			return nil, err
 		}
 	}
 
@@ -144,6 +124,36 @@ func (s *Server) GenerateFile(ctx context.Context, req *runtimev1.GenerateFileRe
 		Files:   pbFiles,
 		EnvVars: result.EnvVars,
 	}, nil
+}
+
+// writeRenderedFiles writes all rendered output files and merges env vars into .env.
+// Writes .env first so that YAML files referencing {{ .env.VAR }} have their secrets available.
+func (s *Server) writeRenderedFiles(ctx context.Context, instanceID string, result *templates.RenderOutput) error {
+	repo, release, err := s.runtime.Repo(ctx, instanceID)
+	if err != nil {
+		return status.Errorf(codes.Internal, "opening repo: %s", err)
+	}
+	defer release()
+
+	// Write .env first so secrets are available when YAML files are parsed
+	if len(result.EnvVars) > 0 {
+		envContent, _ := repo.Get(ctx, ".env")
+		for key, val := range result.EnvVars {
+			envContent = appendEnvVar(envContent, key, val)
+		}
+		if err := repo.Put(ctx, ".env", strings.NewReader(envContent)); err != nil {
+			return status.Errorf(codes.Internal, "writing .env: %s", err)
+		}
+	}
+
+	// Write rendered files
+	for _, f := range result.Files {
+		if err := repo.Put(ctx, f.Path, strings.NewReader(f.Blob)); err != nil {
+			return status.Errorf(codes.Internal, "writing file %q: %s", f.Path, err)
+		}
+	}
+
+	return nil
 }
 
 // appendEnvVar updates an existing env var or appends a new one.

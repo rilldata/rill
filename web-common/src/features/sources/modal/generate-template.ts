@@ -3,22 +3,20 @@ import {
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGenerateFile,
   runtimeServiceGetFile,
-  runtimeServiceGetInstance,
 } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
 import { replaceOrAddEnvVariable } from "../../connectors/code-utils";
-import { normalizeOlapForTemplate } from "./connector-schemas";
 import { OLAP_ENGINES } from "./constants";
 
 const OLAP_SET = new Set(OLAP_ENGINES);
 
-// Cache OLAP per instance to avoid a network call on every YAML preview keystroke.
-// Invalidated by clearOlapCache() when the OLAP connector changes.
+// OLAP per instance, populated by createConnectorSchemas() when schemas load.
+// Avoids a redundant GetInstance call on first generateTemplate invocation.
 const olapCache = new Map<string, string>();
 
-/** Clear the cached OLAP value so the next preview re-fetches it. */
-export function clearOlapCache() {
-  olapCache.clear();
+/** Set the cached OLAP value for an instance. Called by connector-schemas.ts. */
+export function setOlapCache(instanceId: string, olap: string) {
+  olapCache.set(instanceId, olap);
 }
 
 /**
@@ -49,24 +47,11 @@ export async function generateTemplate(
     connectorName?: string;
   },
 ): Promise<{ blob: string; envVars: Record<string, string> }> {
-  // Resolve OLAP; cached per instance since it doesn't change during a session.
-  let olap = "duckdb";
-  if (!OLAP_SET.has(opts.driver)) {
-    const cached = olapCache.get(client.instanceId);
-    if (cached) {
-      olap = cached;
-    } else {
-      const resp = await runtimeServiceGetInstance(client, {
-        sensitive: true,
-      });
-      olap = normalizeOlapForTemplate(
-        resp.instance?.olapConnector ?? "duckdb",
-        resp.instance?.connectors,
-        resp.instance?.projectConnectors,
-      );
-      olapCache.set(client.instanceId, olap);
-    }
-  }
+  // Resolve OLAP from cache (populated by createConnectorSchemas on modal open).
+  // Falls back to "duckdb" if the cache is empty (shouldn't happen in normal flow).
+  const olap = OLAP_SET.has(opts.driver)
+    ? opts.driver
+    : (olapCache.get(client.instanceId) ?? "duckdb");
 
   const templateName = resolveTemplateName(opts.driver, olap);
 

@@ -86,11 +86,16 @@ func buildTemplateData(input *RenderInput, existingEnv map[string]bool, envVars 
 		data["model_name"] = fmt.Sprintf("%v", name)
 	}
 
-	// Pre-populate all schema properties with empty strings so the base YAML
-	// skeleton renders cleanly even before the user fills in any values.
+	// Pre-populate schema properties: use "default" if defined, otherwise empty string.
+	// This ensures templates render cleanly and conditional branches (e.g. auth_method)
+	// work correctly even when the frontend omits optional UI-only fields.
 	if input.Template.JSONSchema != nil {
-		for k := range schemaProperties(input.Template.JSONSchema) {
-			data[k] = ""
+		for k, prop := range schemaProperties(input.Template.JSONSchema) {
+			if def := schemaFieldString(prop, "default"); def != "" {
+				data[k] = def
+			} else {
+				data[k] = ""
+			}
 		}
 	}
 

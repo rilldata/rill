@@ -13,7 +13,7 @@ import type {
 import type { ConnectorStep } from "./connectorStepStore";
 import { SOURCES, OLAP_ENGINES } from "./constants";
 import { derived, type Readable } from "svelte/store";
-import { clearOlapCache } from "./generate-template";
+import { setOlapCache } from "./generate-template";
 
 export type ConnectorIcon = ComponentType<SvelteComponent>;
 
@@ -158,9 +158,9 @@ export function createConnectorSchemas(client: RuntimeClient) {
       );
       const entries = buildSchemaRegistry($tq.data.templates, olap);
 
-      // Clear the OLAP cache used by generateTemplate so the next preview
-      // picks up the current OLAP engine (e.g., after switching DuckDB ↔ ClickHouse).
-      clearOlapCache();
+      // Populate the OLAP cache used by generateTemplate so it doesn't
+      // need a redundant GetInstance call. Also handles OLAP engine changes.
+      setOlapCache(client.instanceId, olap);
 
       // Populate module-level caches for sync access by child components
       schemasCache = Object.fromEntries(

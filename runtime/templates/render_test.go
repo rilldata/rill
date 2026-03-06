@@ -408,7 +408,6 @@ func TestRenderOutputFilter(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Files, 1)
-	require.Equal(t, "connector", "connector") // verify it's the connector file
 	require.Contains(t, result.Files[0].Blob, "type: connector")
 
 	// Model only
