@@ -87,7 +87,7 @@ function hydrateCell(p: PersistedCell): CellState {
     error: null,
     executionTimeMs: p.executionTimeMs ?? null,
     lastRowCount: p.resultRowCount ?? null,
-    hasExecuted: !!hasSchema,
+    hasExecuted: false,
   };
 }
 

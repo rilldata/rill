@@ -22,7 +22,7 @@
   const runtimeClient = useRuntimeClient();
 
   let editorRef: QueryEditor;
-  let resultsHeight = 300;
+  let cellHeight = 450;
 
   /** Called externally (e.g. from data explorer) to set the editor content */
   export function setEditorContent(text: string) {
@@ -181,25 +181,20 @@
 
     <!-- Editor + Results -->
     {#if !cell.collapsed}
-      <div class="cell-body">
-        <WorkspaceEditorContainer error={cell.error ?? undefined}>
-          <QueryEditor
-            bind:this={editorRef}
-            initialValue={cell.sql}
-            on:run={handleRun}
-            on:change={handleChange}
-          />
-        </WorkspaceEditorContainer>
+      <div class="cell-body" style:height="{cellHeight}px">
+        <div class="editor-pane">
+          <WorkspaceEditorContainer error={cell.error ?? undefined}>
+            <QueryEditor
+              bind:this={editorRef}
+              initialValue={cell.sql}
+              on:run={handleRun}
+              on:change={handleChange}
+            />
+          </WorkspaceEditorContainer>
+        </div>
 
         {#if cell.result || cell.isExecuting}
-          <div class="cell-results" style:height="{resultsHeight}px">
-            <Resizer
-              absolute={false}
-              max={600}
-              direction="NS"
-              side="top"
-              bind:dimension={resultsHeight}
-            />
+          <div class="cell-results">
             <div class="results-wrapper">
               {#if cell.isExecuting}
                 <div class="size-full flex items-center justify-center">
@@ -211,6 +206,17 @@
             </div>
           </div>
         {/if}
+
+        <div class="cell-resize-handle">
+          <Resizer
+            absolute={false}
+            direction="NS"
+            side="top"
+            min={120}
+            max={900}
+            bind:dimension={cellHeight}
+          />
+        </div>
       </div>
     {/if}
   </div>
@@ -261,15 +267,27 @@
   }
 
   .cell-body {
-    @apply flex flex-col;
+    @apply flex flex-col overflow-hidden;
+  }
+
+  .editor-pane {
+    @apply flex-none overflow-hidden;
+    height: 40%;
+    min-height: 60px;
   }
 
   .cell-results {
-    @apply w-full relative flex flex-col flex-none;
+    @apply flex-1 min-h-0 flex flex-col;
   }
 
   .results-wrapper {
     @apply relative w-full overflow-hidden border-t h-full;
+  }
+
+  .cell-resize-handle {
+    @apply flex-none h-2 relative cursor-ns-resize;
+    @apply bg-surface-subtle border-t hover:bg-primary-100;
+    transition: background-color 0.15s;
   }
 
   .delete-button {

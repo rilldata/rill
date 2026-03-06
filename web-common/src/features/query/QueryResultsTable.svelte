@@ -32,7 +32,7 @@
   </div>
 {:else}
   <div class="empty-state">
-    <p class="text-fg-secondary text-sm">Run query to see results</p>
+    <p class="text-fg-secondary text-sm">Run query to view results</p>
   </div>
 {/if}
 

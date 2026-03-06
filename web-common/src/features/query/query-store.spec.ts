@@ -587,7 +587,7 @@ describe("createNotebook", () => {
   // ---------------------------------------------------------------------------
 
   describe("hydration", () => {
-    it("restores hasExecuted as true when schema was persisted", () => {
+    it("restores schema but marks hasExecuted as false (no live data)", () => {
       const key = `rill:query-notebook:${PROJECT_ID}`;
       const persisted = [
         {
@@ -608,8 +608,9 @@ describe("createNotebook", () => {
       const store = createNotebook(DEFAULT_CONNECTOR, PROJECT_ID);
       const cell = getState(store).cells[0];
 
-      expect(cell.hasExecuted).toBe(true);
+      expect(cell.hasExecuted).toBe(false);
       expect(cell.result).not.toBeNull();
+      expect(cell.result?.schema).not.toBeNull();
       expect(cell.sql).toBe("SELECT 1");
     });
 
