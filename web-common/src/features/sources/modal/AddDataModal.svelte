@@ -31,9 +31,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   const runtimeClient = useRuntimeClient();
-  const { connectors: connectorsStore } = createConnectorSchemas(
-    runtimeClient,
-  );
+  const { connectors: connectorsStore } = createConnectorSchemas(runtimeClient);
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
