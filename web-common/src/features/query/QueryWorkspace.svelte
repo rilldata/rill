@@ -55,35 +55,37 @@
       allowShowSchema: true,
       allowSelectTable: false,
     },
-    // onToggleItem: show ColumnProfile when a table is expanded
-    (connector, database, schema, table) => {
-      if (!table) {
-        selectedTable = null;
-        return;
-      }
-      selectedTable = {
-        connector,
-        database: database ?? "",
-        databaseSchema: schema ?? "",
-        objectName: table,
-      };
-    },
-    // onInsertTable: "+" button inserts SELECT * FROM table at cursor in focused cell
-    (driver, _connector, database, schema, table) => {
-      if (!notebook) return;
-      const state = get(notebook);
-      const focusedId = state.focusedCellId ?? state.cells[0]?.id;
-      if (!focusedId) return;
+    {
+      // Show table schema in right panel when a table is expanded
+      onToggleItem: (connector, database, schema, table) => {
+        if (!table) {
+          selectedTable = null;
+          return;
+        }
+        selectedTable = {
+          connector,
+          database: database ?? "",
+          databaseSchema: schema ?? "",
+          objectName: table,
+        };
+      },
+      // "+" button inserts SELECT * FROM table at cursor in focused cell
+      onInsertTable: (driver, _connector, database, schema, table) => {
+        if (!notebook) return;
+        const state = get(notebook);
+        const focusedId = state.focusedCellId ?? state.cells[0]?.id;
+        if (!focusedId) return;
 
-      const tableRef = makeSufficientlyQualifiedTableName(
-        driver,
-        database,
-        schema,
-        table,
-      );
-      const sql = `SELECT * FROM ${tableRef}`;
+        const tableRef = makeSufficientlyQualifiedTableName(
+          driver,
+          database,
+          schema,
+          table,
+        );
+        const sql = `SELECT * FROM ${tableRef}`;
 
-      cellRefs[focusedId]?.insertAtCursor(sql);
+        cellRefs[focusedId]?.insertAtCursor(sql);
+      },
     },
   );
 

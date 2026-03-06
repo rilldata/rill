@@ -289,7 +289,6 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     focusedCell,
     ($c) => $c?.result?.schema ?? null,
   );
-  const focusedData = derived(focusedCell, ($c) => $c?.result?.data ?? null);
   const focusedRowCount = derived(focusedCell, ($c) => {
     // Use live data length if available; fall back to persisted row count
     const liveCount = $c?.result?.data?.length;
@@ -335,7 +334,6 @@ function createNotebookStore(defaultConnector: string, projectId: string) {
     executeCellQuery,
     cancelCellQuery,
     focusedSchema,
-    focusedData,
     focusedRowCount,
     focusedExecutionTimeMs,
   };

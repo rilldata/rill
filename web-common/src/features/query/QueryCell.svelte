@@ -42,8 +42,10 @@
 
   $: schema = cell?.result?.schema ?? null;
   $: data = cell?.result?.data ?? null;
-  $: rowCount = cell?.result?.data?.length ?? cell?.lastRowCount ?? 0;
   $: hasExecuted = cell?.hasExecuted ?? false;
+  $: rowCount = hasExecuted
+    ? (cell?.result?.data?.length ?? 0)
+    : (cell?.lastRowCount ?? 0);
   $: hasSql = (cell?.sql ?? "").trim().length > 0;
 
   function handleRunButton() {
@@ -72,7 +74,7 @@
     if (val === "") {
       notebook.setCellLimit(cellId, undefined);
     } else {
-      const parsed = Number(val);
+      const parsed = parseInt(val, 10);
       if (Number.isFinite(parsed) && parsed > 0) {
         notebook.setCellLimit(cellId, parsed);
       }
@@ -145,7 +147,7 @@
             <Spinner size="12px" status={EntityStatus.Running} />
             Running...
           </div>
-        {:else if cell.result}
+        {:else if cell.result && (hasExecuted || cell.lastRowCount)}
           <span class="text-[11px] text-fg-secondary">
             {formatInteger(rowCount)}
             {rowCount === 1 ? "row" : "rows"}

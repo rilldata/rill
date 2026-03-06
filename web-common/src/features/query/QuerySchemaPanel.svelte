@@ -12,6 +12,11 @@
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { formatExecutionTime, prettyPrintType } from "./query-utils";
 
+  interface ColumnEntry {
+    name: string;
+    type: string;
+  }
+
   export let filePath: string;
   export let schema: V1StructType | null;
   export let rowCount: number;
@@ -37,12 +42,7 @@
     selectedTable?.objectName ?? "",
   );
 
-  $: tableColumns = $tableQuery?.data?.schema
-    ? Object.entries($tableQuery.data.schema).map(([name, type]) => ({
-        name,
-        type: type as string,
-      }))
-    : [];
+  $: tableColumns = toColumnEntries($tableQuery?.data?.schema);
   $: tableLoading = $tableQuery?.isLoading ?? false;
   $: tableError = $tableQuery?.error;
 
@@ -50,7 +50,21 @@
   let showTableColumns = true;
 
   $: fields = schema?.fields ?? [];
+  $: resultColumns = fields.map((f) => ({
+    name: f.name ?? "",
+    type: prettyPrintType(f.type?.code),
+  }));
   $: columnCount = fields.length;
+
+  function toColumnEntries(
+    tableSchema: Record<string, unknown> | undefined | null,
+  ): ColumnEntry[] {
+    if (!tableSchema) return [];
+    return Object.entries(tableSchema).map(([name, type]) => ({
+      name,
+      type: prettyPrintType(type as string),
+    }));
+  }
 </script>
 
 <Inspector {filePath}>
@@ -106,10 +120,7 @@
               <ul class="flex flex-col">
                 {#each tableColumns as column (column.name)}
                   <li class="column-row">
-                    <DataTypeIcon
-                      type={prettyPrintType(column.type)}
-                      suppressTooltip
-                    />
+                    <DataTypeIcon type={column.type} suppressTooltip />
                     <span
                       class="truncate text-xs font-mono"
                       title={column.name}
@@ -119,7 +130,7 @@
                     <span
                       class="text-fg-secondary text-[10px] ml-auto flex-none uppercase"
                     >
-                      {prettyPrintType(column.type)}
+                      {column.type}
                     </span>
                   </li>
                 {/each}
@@ -167,19 +178,16 @@
         {#if showColumns}
           <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ul class="flex flex-col">
-              {#each fields as field (field.name)}
+              {#each resultColumns as column (column.name)}
                 <li class="column-row">
-                  <DataTypeIcon
-                    type={prettyPrintType(field.type?.code)}
-                    suppressTooltip
-                  />
-                  <span class="truncate text-xs font-mono" title={field.name}>
-                    {field.name}
+                  <DataTypeIcon type={column.type} suppressTooltip />
+                  <span class="truncate text-xs font-mono" title={column.name}>
+                    {column.name}
                   </span>
                   <span
                     class="text-fg-secondary text-[10px] ml-auto flex-none uppercase"
                   >
-                    {prettyPrintType(field.type?.code)}
+                    {column.type}
                   </span>
                 </li>
               {/each}
