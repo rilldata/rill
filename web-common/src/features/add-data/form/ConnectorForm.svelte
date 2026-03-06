@@ -6,15 +6,17 @@
   } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { onMount } from "svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { getConnectorYamlPreview } from "./yaml-preview.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { submitAddConnectorForm } from "@rilldata/web-common/features/sources/modal/submitAddDataForm.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let connectorDriver: V1ConnectorDriver;
   export let onSubmit: (name: string) => void;
   export let onBack: () => void;
+
+  const runtimeClient = useRuntimeClient();
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
@@ -22,7 +24,7 @@
   let existingEnvBlob: string | null = null;
   onMount(async () => {
     try {
-      const envFile = await runtimeServiceGetFile($runtime.instanceId, {
+      const envFile = await runtimeServiceGetFile(runtimeClient, {
         path: ".env",
       });
       existingEnvBlob = envFile.blob ?? "";
@@ -38,6 +40,7 @@
     onUpdate: async ({ form }) => {
       if (!form.valid) return;
       const connectorName = await submitAddConnectorForm(
+        runtimeClient,
         queryClient,
         connectorDriver,
         form.data,

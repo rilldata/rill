@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
   import { SparklesIcon } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -7,10 +6,11 @@
   import { object, string } from "yup";
   import IconButton from "../../components/button/IconButton.svelte";
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let open = false;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   const FORM_ID = "generate-sample-data-form";
 
@@ -29,7 +29,7 @@
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
-      void generateSampleData(true, instanceId, values.prompt);
+      void generateSampleData(runtimeClient, true, values.prompt);
       open = false;
     },
     invalidateAll: false,

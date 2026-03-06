@@ -1,5 +1,4 @@
 import {
-  type AddDataConfig,
   type ImportAddDataStep,
   ImportDataStep,
 } from "@rilldata/web-common/features/add-data/steps/types.ts";
@@ -19,9 +18,10 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { get } from "svelte/store";
 import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files.ts";
 import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export async function runImportStep(
-  config: AddDataConfig,
+  runtimeClient: RuntimeClient,
   step: ImportAddDataStep,
   onNewRoute: (newRoute: string) => void,
 ): Promise<ImportAddDataStep> {
@@ -61,15 +61,23 @@ export async function runImportStep(
       break;
 
     case ImportDataStep.CreateModel:
-      newImportStep = await runCreateModelStep(config, step, onNewRoute);
+      newImportStep = await runCreateModelStep(runtimeClient, step, onNewRoute);
       break;
 
     case ImportDataStep.CreateMetricsView:
-      newImportStep = await runCreateMetricsViewStep(config, step, onNewRoute);
+      newImportStep = await runCreateMetricsViewStep(
+        runtimeClient,
+        step,
+        onNewRoute,
+      );
       break;
 
     case ImportDataStep.CreateExplore:
-      newImportStep = await runCreateExploreStep(config, step, onNewRoute);
+      newImportStep = await runCreateExploreStep(
+        runtimeClient,
+        step,
+        onNewRoute,
+      );
       break;
 
     case ImportDataStep.Done:
@@ -83,7 +91,7 @@ export async function runImportStep(
 }
 
 async function runCreateModelStep(
-  config: AddDataConfig,
+  runtimeClient: RuntimeClient,
   step: ImportAddDataStep,
   onNewRoute: (newRoute: string) => void,
 ): Promise<ImportAddDataStep["importStep"]> {
@@ -95,7 +103,7 @@ async function runCreateModelStep(
   const filePath = `/models/${step.config.source}.yaml`;
   onNewRoute(`/files${filePath}`);
 
-  await runtimeServicePutFile(config.instanceId, {
+  await runtimeServicePutFile(runtimeClient, {
     path: filePath,
     blob: modelImportStep.yaml,
     create: true,
@@ -104,7 +112,7 @@ async function runCreateModelStep(
 
   if (modelImportStep.envBlob !== null) {
     // Make sure the file has reconciled before testing the connection
-    await runtimeServicePutFileAndWaitForReconciliation(config.instanceId, {
+    await runtimeServicePutFileAndWaitForReconciliation(runtimeClient, {
       path: ".env",
       blob: modelImportStep.envBlob,
       create: true,
@@ -114,7 +122,7 @@ async function runCreateModelStep(
 
   // Wait for the model to successfully reconcile
   await waitForResourceReconciliation(
-    config.instanceId,
+    runtimeClient,
     modelImportStep.source,
     ResourceKind.Model,
   );
@@ -129,7 +137,7 @@ async function runCreateModelStep(
 }
 
 async function runCreateMetricsViewStep(
-  config: AddDataConfig,
+  runtimeClient: RuntimeClient,
   step: ImportAddDataStep,
   onNewRoute: (newRoute: string) => void,
 ): Promise<ImportAddDataStep["importStep"]> {
@@ -147,7 +155,7 @@ async function runCreateMetricsViewStep(
   onNewRoute(`/files${newMetricsViewFilePath}`);
 
   // Call GenerateMetricsViewFile with the generated file path
-  await runtimeServiceGenerateMetricsViewFile(config.instanceId, {
+  await runtimeServiceGenerateMetricsViewFile(runtimeClient, {
     table: metricsViewImportStep.source,
     connector: metricsViewImportStep.connector,
     database: metricsViewImportStep.sourceDatabase,
@@ -157,7 +165,7 @@ async function runCreateMetricsViewStep(
   });
   // Wait for the metrics view to successfully reconcile
   await waitForResourceReconciliation(
-    config.instanceId,
+    runtimeClient,
     newMetricsViewName,
     ResourceKind.MetricsView,
   );
@@ -169,7 +177,7 @@ async function runCreateMetricsViewStep(
 }
 
 async function runCreateExploreStep(
-  config: AddDataConfig,
+  runtimeClient: RuntimeClient,
   step: ImportAddDataStep,
   onNewRoute: (newRoute: string) => void,
 ): Promise<ImportAddDataStep["importStep"]> {
@@ -181,7 +189,7 @@ async function runCreateExploreStep(
   // Get the MetricsView resource used to create the explore from.
   const metricsViewResourceResp = fileArtifacts
     .getFileArtifact(exploreImportStep.metricsViewFilePath)
-    .getResource(queryClient, config.instanceId);
+    .getResource(queryClient);
   await waitUntil(() => get(metricsViewResourceResp).data !== undefined, 5000);
   const metricsViewResource = get(metricsViewResourceResp).data;
   if (!metricsViewResource) {
@@ -190,6 +198,7 @@ async function runCreateExploreStep(
 
   // Create the Explore file
   const exploreFilePath = await createResourceFile(
+    runtimeClient,
     ResourceKind.Explore,
     metricsViewResource,
   );
@@ -199,7 +208,7 @@ async function runCreateExploreStep(
 
   // Wait for explore to reconcile
   await waitForResourceReconciliation(
-    config.instanceId,
+    runtimeClient,
     exploreName,
     ResourceKind.Explore,
   );

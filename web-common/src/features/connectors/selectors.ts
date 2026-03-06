@@ -4,6 +4,8 @@ import {
   type V1TableInfo,
   type V1GetResourceResponse,
   createRuntimeServiceAnalyzeConnectors,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
+  runtimeServiceAnalyzeConnectors,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { isNotFoundError } from "../../lib/errors";
@@ -16,6 +18,7 @@ import {
   createConnectorServiceListTablesInfinite,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 /**
  * Creates query options for checking modeling support of a connector
@@ -220,7 +223,7 @@ export function getAnalyzedConnectors(
   client: RuntimeClient,
   olapOnly: boolean,
 ) {
-  return createRuntimeServiceAnalyzeConnectors(client.instanceId, {
+  return createRuntimeServiceAnalyzeConnectors(client, {
     query: {
       // Retry transient 500s during runtime resets (e.g. project initialization)
       retry: (failureCount, error) =>
@@ -243,11 +246,13 @@ export function getAnalyzedConnectors(
   });
 }
 
-export async function fetchAnalyzeConnectors(instanceId: string) {
-  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+export async function fetchAnalyzeConnectors(client: RuntimeClient) {
+  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+  );
   const resp = await queryClient.fetchQuery({
     queryKey,
-    queryFn: () => runtimeServiceAnalyzeConnectors(instanceId),
+    queryFn: () => runtimeServiceAnalyzeConnectors(client, {}),
   });
   return resp?.connectors ?? [];
 }

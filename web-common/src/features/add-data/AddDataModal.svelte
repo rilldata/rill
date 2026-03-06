@@ -2,17 +2,17 @@
   import { pushState } from "$app/navigation";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import AddData from "@rilldata/web-common/features/add-data/AddData.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import { AddDataStep } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let open: boolean;
   export let schema: string | undefined = undefined;
   export let connector: string | undefined = undefined;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: config = { instanceId, importOnly: true };
+  $: config = { runtimeClient, importOnly: true };
   $: initArgs = { schema, connector };
 
   $: if (open) {
@@ -25,6 +25,6 @@
 
 <Dialog.Root bind:open>
   <Dialog.Content class="p-0 w-[900px] max-w-[900px] h-[600px]">
-    <AddData config={{ instanceId, importOnly: true }} />
+    <AddData {config} />
   </Dialog.Content>
 </Dialog.Root>

@@ -11,7 +11,7 @@
 
   const client = useRuntimeClient();
 
-  $: connectors = getAnalyzedConnectors(instanceId, olapOnly);
+  $: connectors = getAnalyzedConnectors(client, olapOnly);
   $: ({ data, error } = $connectors);
 </script>
 

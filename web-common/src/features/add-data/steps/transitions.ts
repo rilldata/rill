@@ -1,5 +1,4 @@
 import {
-  type AddDataConfig,
   type AddDataState,
   AddDataStep,
   type AddDataTransitionArgs,
@@ -16,9 +15,10 @@ import {
   getConnectorSchema,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export function transitionToNextStep(
-  config: AddDataConfig,
+  runtimeClient: RuntimeClient,
   current: AddDataState,
   args: AddDataTransitionArgs,
 ): AddDataState {
@@ -28,7 +28,7 @@ export function transitionToNextStep(
   let driver: V1ConnectorDriver | null = null;
   if (selectedConnector) {
     const analyzedConnector = getConnectorDriverForConnector(
-      config.instanceId,
+      runtimeClient,
       selectedConnector,
     );
     if (analyzedConnector) {
@@ -56,7 +56,7 @@ export function transitionToNextStep(
 
     case AddDataStep.Olap:
       return transitionToNextStep(
-        config,
+        runtimeClient,
         { step: AddDataStep.Select },
         { schema: current.schema },
       );
@@ -90,13 +90,13 @@ export function transitionToNextStep(
 }
 
 export function maybeGetConnectorDriver(
-  instanceId: string,
+  runtimeClient: RuntimeClient,
   schemaName: string | undefined,
   connectorName: string | undefined,
 ) {
   if (connectorName) {
     const analyzedConnector = getConnectorDriverForConnector(
-      instanceId,
+      runtimeClient,
       connectorName,
     );
     return (
@@ -166,10 +166,12 @@ function getConnectorDriverForSchema(
 }
 
 function getConnectorDriverForConnector(
-  instanceId: string,
+  runtimeClient: RuntimeClient,
   connectorName: string,
 ) {
-  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    runtimeClient.instanceId,
+  );
   const runtimeConnectorsResp =
     queryClient.getQueryData<V1AnalyzeConnectorsResponse>(queryKey);
   const analyzedConnector = runtimeConnectorsResp?.connectors?.find(

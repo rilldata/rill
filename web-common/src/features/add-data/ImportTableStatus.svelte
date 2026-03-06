@@ -13,10 +13,12 @@
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { runImportStep } from "@rilldata/web-common/features/add-data/steps/import.ts";
   import { onMount } from "svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  export let config: AddDataConfig;
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
+
+  const runtimeClient = useRuntimeClient();
 
   $: ({ importStep } = importAddDataStep);
 
@@ -49,7 +51,7 @@
     try {
       while (importAddDataStep.importStep.step !== ImportDataStep.Done) {
         importAddDataStep = await runImportStep(
-          config,
+          runtimeClient,
           importAddDataStep,
           (newRoute) => (currentFileRoute = newRoute),
         );

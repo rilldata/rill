@@ -9,7 +9,6 @@ export enum AddDataStep {
 }
 
 export type AddDataConfig = {
-  instanceId: string;
   importOnly?: boolean;
 };
 

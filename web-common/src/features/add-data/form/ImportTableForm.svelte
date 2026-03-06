@@ -7,7 +7,6 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import DatabaseExplorer from "@rilldata/web-common/features/connectors/explorer/DatabaseExplorer.svelte";
   import TableSchema from "@rilldata/web-common/features/connectors/explorer/TableSchema.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
@@ -23,6 +22,7 @@
     type ImportAddDataStepConfig,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let connectorName: string;
   export let connectorDriver: V1ConnectorDriver;
@@ -30,7 +30,7 @@
 
   const FormId = "import-table-form";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   const modeOptions = [
     {
@@ -124,7 +124,7 @@
     validationMethod: "onsubmit",
   });
 
-  $: connectors = getAnalyzedConnectors(instanceId, false);
+  $: connectors = getAnalyzedConnectors(runtimeClient, false);
   $: analyzedConnector = $connectors.data?.connectors?.find(
     (c) => c.name === connectorName,
   );
@@ -168,7 +168,6 @@
         <div class="flex flex-row size-full border-t">
           <div class="grow border-r">
             <DatabaseExplorer
-              {instanceId}
               connector={analyzedConnector}
               store={connectorExplorerStore}
             />

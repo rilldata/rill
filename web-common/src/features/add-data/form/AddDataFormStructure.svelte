@@ -7,7 +7,6 @@
   import { ICONS } from "@rilldata/web-common/features/sources/modal/icons.ts";
   import JSONSchemaFormRenderer from "@rilldata/web-common/features/templates/JSONSchemaFormRenderer.svelte";
   import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
-  import { getFormHeight } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { processFileContent } from "@rilldata/web-common/features/templates/file-encoding.ts";
   import {
     inferModelNameFromSQL,

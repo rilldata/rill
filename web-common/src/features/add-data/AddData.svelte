@@ -17,8 +17,11 @@
     transitionToNextStep,
   } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import { pushState } from "$app/navigation";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let config: AddDataConfig;
+
+  const runtimeClient = useRuntimeClient();
 
   let stepState: AddDataState = { step: AddDataStep.Select };
 
@@ -32,7 +35,7 @@
   $: schema = (stepState as any).schema as string | undefined;
   $: connector = (stepState as any).connector as string | undefined;
   $: connectorDriver = maybeGetConnectorDriver(
-    config.instanceId,
+    runtimeClient,
     schema,
     connector,
   );
@@ -43,7 +46,7 @@
   $: displayName = connectorDriver?.displayName ?? connector;
 
   function transitionToSchema(schema: string) {
-    const newState = transitionToNextStep(config, stepState, {
+    const newState = transitionToNextStep(runtimeClient, stepState, {
       schema: schema,
     });
     console.log("transition:schema", newState);
@@ -51,7 +54,7 @@
   }
 
   function transitionToConnector(connector: string) {
-    const newState = transitionToNextStep(config, stepState, {
+    const newState = transitionToNextStep(runtimeClient, stepState, {
       connector: connector,
     });
     console.log("transition:connector", newState);
@@ -59,7 +62,7 @@
   }
 
   function setAndStartImport(importConfig: ImportAddDataStepConfig) {
-    const newState = transitionToNextStep(config, stepState, {
+    const newState = transitionToNextStep(runtimeClient, stepState, {
       importConfig,
     });
     console.log("transition:source/explorer", newState);
@@ -114,7 +117,6 @@
     {/if}
   {:else if stepState.step === AddDataStep.Import}
     <ImportTableStatus
-      {config}
       importAddDataStep={stepState}
       onBack={() => window.history.back()}
     />
