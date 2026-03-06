@@ -7,6 +7,7 @@ import {
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, writable } from "svelte/store";
 import { FileArtifact } from "./file-artifact";
@@ -36,9 +37,19 @@ class UnsavedFilesStore {
 export class FileArtifacts {
   private readonly artifacts: Map<string, FileArtifact> = new Map();
   readonly unsavedFiles = new UnsavedFilesStore();
+  private client!: RuntimeClient;
 
-  async init(queryClient: QueryClient, instanceId: string) {
-    const resources = await fetchResources(queryClient, instanceId);
+  /**
+   * Must be called synchronously (in the script block, not onMount)
+   * so that child components can access the client during initial render.
+   */
+  setClient(client: RuntimeClient) {
+    this.client = client;
+  }
+
+  async init(client: RuntimeClient, queryClient: QueryClient) {
+    this.client = client;
+    const resources = await fetchResources(queryClient, client);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
         case ResourceKind.Connector:
@@ -52,9 +63,11 @@ export class FileArtifacts {
         case ResourceKind.API:
           // set query data for GetResource to avoid refetching data we already have
           queryClient.setQueryData(
-            getRuntimeServiceGetResourceQueryKey(instanceId, {
-              "name.name": resource.meta?.name?.name,
-              "name.kind": resource.meta?.name?.kind,
+            getRuntimeServiceGetResourceQueryKey(client.instanceId, {
+              name: {
+                name: resource.meta?.name?.name,
+                kind: resource.meta?.name?.kind,
+              },
             }),
             {
               resource,
@@ -90,7 +103,7 @@ export class FileArtifacts {
     let artifact = this.artifacts.get(filePath);
 
     if (!artifact) {
-      artifact = new FileArtifact(filePath);
+      artifact = new FileArtifact(this.client, filePath);
       this.artifacts.set(filePath, artifact);
     }
 
@@ -158,15 +171,14 @@ export class FileArtifacts {
    */
   async checkFileErrors(
     queryClient: QueryClient,
-    instanceId: string,
     filePath: string,
   ): Promise<string | null> {
     const fileArtifact = this.getFileArtifact(filePath);
-    const hasErrorsStore = fileArtifact.getHasErrors(queryClient, instanceId);
+    const hasErrorsStore = fileArtifact.getHasErrors(queryClient);
     const hasErrors = get(hasErrorsStore);
 
     if (hasErrors) {
-      const errors = get(fileArtifact.getAllErrors(queryClient, instanceId));
+      const errors = get(fileArtifact.getAllErrors(queryClient));
       return errors[0]?.message ?? null;
     }
     return null;

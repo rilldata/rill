@@ -42,7 +42,9 @@ export async function uploadFile(
   const fileUploadPromise = fileChooser.setFiles([
     path.join(TestDataPath, file),
   ]);
-  const fileRespWaitPromise = page.waitForResponse(/files\/entry/);
+  const fileRespWaitPromise = page.waitForResponse(
+    "**/rill.runtime.v1.RuntimeService/PutFile",
+  );
 
   // TODO: infer duplicate
   if (isDuplicate) {

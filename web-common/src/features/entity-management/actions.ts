@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { isNotFoundError } from "@rilldata/web-common/lib/errors";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
@@ -14,7 +15,7 @@ import {
   runtimeServiceRenameFile,
   type RuntimeServicePutFileBody,
 } from "@rilldata/web-common/runtime-client";
-import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get } from "svelte/store";
 import {
   FolderNameToResourceKind,
@@ -28,23 +29,25 @@ import {
 import { ResourceKind } from "./resource-selectors";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
-  instanceId: string,
+  client: RuntimeClient,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
 ) {
-  const projectParserStartingVersion = getProjectParserVersion(instanceId);
+  const projectParserStartingVersion = getProjectParserVersion(
+    client.instanceId,
+  );
 
-  await runtimeServicePutFile(instanceId, runtimeServicePutFileBody);
+  await runtimeServicePutFile(client, runtimeServicePutFileBody);
 
   // Wait for the file to be processed by the parser
   await waitForProjectParserVersion(
-    instanceId,
+    client.instanceId,
     projectParserStartingVersion + 1,
   );
 }
 
 // Resource-level reconciliation
 export async function waitForResourceReconciliation(
-  instanceId: string,
+  client: RuntimeClient,
   resourceName: string,
   resourceKind: ResourceKind,
 ) {
@@ -54,9 +57,8 @@ export async function waitForResourceReconciliation(
   while (true) {
     attempt++;
     try {
-      const resource = await runtimeServiceGetResource(instanceId, {
-        "name.kind": resourceKind,
-        "name.name": resourceName,
+      const resource = await runtimeServiceGetResource(client, {
+        name: { kind: resourceKind, name: resourceName },
       });
 
       // Check if there's a reconcile error
@@ -77,7 +79,7 @@ export async function waitForResourceReconciliation(
       continue;
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
-      if (error?.status === 404 || error?.response?.status === 404) {
+      if (isNotFoundError(error)) {
         if (attempt >= 3) {
           // After 6 seconds, assume reconcile failure
           throw new Error(
@@ -101,7 +103,7 @@ export async function waitForResourceReconciliation(
  * Returns true if file was found, false if cancelled.
  */
 export async function pollForFileCreation(
-  instanceId: string,
+  client: RuntimeClient,
   filePath: string,
   abortSignal: AbortSignal,
   pollIntervalMs: number = 1000,
@@ -110,7 +112,7 @@ export async function pollForFileCreation(
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
 
     try {
-      await runtimeServiceGetFile(instanceId, { path: filePath });
+      await runtimeServiceGetFile(client, { path: filePath });
       return true; // success, file exists
     } catch {
       // 404 error, file is not ready yet, continue polling
@@ -120,7 +122,7 @@ export async function pollForFileCreation(
 }
 
 export async function renameFileArtifact(
-  instanceId: string,
+  client: RuntimeClient,
   fromPath: string,
   toPath: string,
 ) {
@@ -145,12 +147,12 @@ export async function renameFileArtifact(
   }
 
   try {
-    await runtimeServiceRenameFile(instanceId, {
+    await runtimeServiceRenameFile(client, {
       fromPath,
       toPath,
     });
 
-    httpRequestQueue.removeByName(fromName);
+    client.requestQueue.removeByName(fromName);
     const topLevelFromFolder = getTopLevelFolder(addLeadingSlash(fromPath));
     const topLevelToFolder = getTopLevelFolder(addLeadingSlash(toPath));
 
@@ -167,13 +169,13 @@ export async function renameFileArtifact(
     }
   } catch (err) {
     eventBus.emit("notification", {
-      message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+      message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.rawMessage ?? err.response?.data?.message ?? err.message)}`,
     });
   }
 }
 
 export async function duplicateFileArtifact(
-  instanceId: string,
+  client: RuntimeClient,
   filePath: string,
 ): Promise<string> {
   // Get new file path
@@ -187,7 +189,7 @@ export async function duplicateFileArtifact(
   const fileContent = get(fileArtifact.remoteContent);
 
   // Create new file
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newFilePath,
     blob: fileContent ?? "",
   });
@@ -197,21 +199,21 @@ export async function duplicateFileArtifact(
 }
 
 export async function deleteFileArtifact(
-  instanceId: string,
+  client: RuntimeClient,
   filePath: string,
   force = false,
 ) {
   const name = extractFileName(filePath);
   try {
-    await runtimeServiceDeleteFile(instanceId, {
+    await runtimeServiceDeleteFile(client, {
       path: filePath,
       force,
     });
 
-    httpRequestQueue.removeByName(name);
+    client.requestQueue.removeByName(name);
   } catch (err) {
     eventBus.emit("notification", {
-      message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+      message: `Failed to delete ${name}: ${extractMessage(err.rawMessage ?? err.response?.data?.message ?? err.message)}`,
     });
   }
 }

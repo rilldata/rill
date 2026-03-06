@@ -8,8 +8,10 @@ import { ResourceKind, SingletonProjectParserName } from "./resource-selectors";
 export function getProjectParserVersion(instanceId: string) {
   const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     }),
   );
 
@@ -29,8 +31,10 @@ export async function waitForProjectParserVersion(
   while (currentVersion < version) {
     const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
       getRuntimeServiceGetResourceQueryKey(instanceId, {
-        "name.kind": ResourceKind.ProjectParser,
-        "name.name": SingletonProjectParserName,
+        name: {
+          kind: ResourceKind.ProjectParser,
+          name: SingletonProjectParserName,
+        },
       }),
     );
 

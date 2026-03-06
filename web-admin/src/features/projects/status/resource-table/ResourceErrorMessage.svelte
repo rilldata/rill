@@ -19,7 +19,10 @@
 
 <div class="container">
   {#if status === V1ReconcileStatus.RECONCILE_STATUS_PENDING || status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
-    <LoadingSpinner size="18px" />
+    <Tooltip distance={8}>
+      <LoadingSpinner size="18px" />
+      <TooltipContent slot="tooltip-content">Reconciling</TooltipContent>
+    </Tooltip>
   {:else if hasTestErrors}
     <Tooltip distance={8}>
       <button
@@ -60,7 +63,10 @@
       </TooltipContent>
     </Tooltip>
   {:else}
-    <Check size="18px" className="text-green-500" />
+    <Tooltip distance={8}>
+      <Check size="18px" className="text-green-500" />
+      <TooltipContent slot="tooltip-content">Complete</TooltipContent>
+    </Tooltip>
   {/if}
 </div>
 
