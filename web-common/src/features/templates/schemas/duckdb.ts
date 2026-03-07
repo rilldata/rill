@@ -53,6 +53,19 @@ export const duckdbSchema: MultiStepFormSchema = {
       },
       "x-step": "connector",
     },
+    mode: {
+      type: "string",
+      title: "Mode",
+      description:
+        "Database access mode. 'read' allows only read operations; 'readwrite' enables model creation and table mutations",
+      enum: ["read", "readwrite"],
+      default: "read",
+      "x-display": "select",
+      "x-enum-labels": ["Read only", "Read & Write"],
+      "x-visible-if": { connector_type: "self-hosted" },
+      "x-step": "connector",
+      "x-advanced": true,
+    },
   },
   required: ["connector_type"],
   allOf: [

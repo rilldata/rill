@@ -183,6 +183,19 @@ export const clickhouseSchema: MultiStepFormSchema = {
       },
       "x-step": "connector",
     },
+    mode: {
+      type: "string",
+      title: "Mode",
+      description:
+        "Database access mode. 'read' allows only read operations; 'readwrite' enables model creation and table mutations",
+      enum: ["read", "readwrite"],
+      default: "read",
+      "x-display": "select",
+      "x-enum-labels": ["Read only", "Read & Write"],
+      "x-visible-if": { deployment_type: ["cloud", "self-managed"] },
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     write_dsn: {
       type: "string",
       title: "Write DSN",
