@@ -76,7 +76,6 @@ export const postgresSchema: MultiStepFormSchema = {
       type: "boolean",
       title: "Log queries",
       description: "Enable SQL query logging for debugging",
-      default: false,
       "x-advanced": true,
     },
     sql: {

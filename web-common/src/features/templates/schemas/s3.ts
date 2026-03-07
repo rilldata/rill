@@ -70,6 +70,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-placeholder": "https://s3.example.com",
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
     },
     aws_role_arn: {
       type: "string",
@@ -80,6 +81,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-env-var-name": "AWS_ROLE_ARN",
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
     },
     aws_role_session_name: {
       type: "string",
@@ -97,6 +99,23 @@ export const s3Schema: MultiStepFormSchema = {
       "x-placeholder": "your-external-id",
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
+    },
+    path_prefixes: {
+      type: "string",
+      title: "Path prefixes",
+      description:
+        "Comma-separated list of bucket path prefixes this connector is allowed to access",
+      "x-placeholder": "s3://my-bucket/path/",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow host access",
+      description:
+        "Use AWS credentials from the host environment (e.g. ~/.aws) in addition to configured credentials",
+      "x-step": "connector",
       "x-advanced": true,
     },
     path: {
