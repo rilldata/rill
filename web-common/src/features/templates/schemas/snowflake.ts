@@ -108,6 +108,27 @@ export const snowflakeSchema: MultiStepFormSchema = {
         "Include authenticator and privateKey query params for JWT if needed.",
       "x-visible-if": { auth_method: "dsn" },
     },
+    authenticator: {
+      type: "string",
+      title: "Authenticator",
+      description:
+        "Snowflake authentication type (e.g. snowflake, externalbrowser, snowflake_jwt)",
+      "x-placeholder": "snowflake",
+      "x-advanced": true,
+    },
+    parallel_fetch_limit: {
+      type: "number",
+      title: "Parallel fetch limit",
+      description: "Maximum number of parallel fetch operations",
+      "x-advanced": true,
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      default: false,
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL",

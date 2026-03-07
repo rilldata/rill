@@ -72,6 +72,13 @@ export const postgresSchema: MultiStepFormSchema = {
       enum: ["disable", "allow", "prefer", "require"],
       "x-placeholder": "require",
     },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      default: false,
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL",

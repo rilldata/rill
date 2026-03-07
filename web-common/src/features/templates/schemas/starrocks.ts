@@ -85,6 +85,13 @@ export const starrocksSchema: MultiStepFormSchema = {
       title: "SSL",
       description: "Enable SSL/TLS encryption for the connection",
     },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      default: false,
+      "x-advanced": true,
+    },
   },
   required: [],
   allOf: [

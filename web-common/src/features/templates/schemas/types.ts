@@ -55,6 +55,8 @@ export type JSONSchemaField = {
   "x-informational"?: boolean;
   /** URL to external documentation for this field, shown as a help link. */
   "x-docs-url"?: string;
+  /** Field is an advanced setting, hidden by default behind an expandable section. */
+  "x-advanced"?: boolean;
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**
