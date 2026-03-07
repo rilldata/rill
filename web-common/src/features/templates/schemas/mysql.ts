@@ -79,6 +79,12 @@ export const mysqlSchema: MultiStepFormSchema = {
       enum: ["DISABLED", "PREFERRED", "REQUIRED"],
       "x-placeholder": "PREFERRED",
     },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL",

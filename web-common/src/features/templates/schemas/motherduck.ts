@@ -26,6 +26,17 @@ export const motherduckSchema: MultiStepFormSchema = {
       description: "Default schema to use",
       "x-placeholder": "main",
     },
+    mode: {
+      type: "string",
+      title: "Mode",
+      description:
+        "Database access mode. 'read' allows only read operations; 'readwrite' enables model creation and table mutations",
+      enum: ["read", "readwrite"],
+      default: "read",
+      "x-display": "select",
+      "x-enum-labels": ["Read only", "Read & Write"],
+      "x-advanced": true,
+    },
   },
   required: ["path", "token", "schema_name"],
 };

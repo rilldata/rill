@@ -31,6 +31,8 @@ export type JSONSchemaField = {
   "x-secret"?: boolean;
   /** Show this field only when other fields match the given values. */
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
+  /** Always disable this field (read-only). */
+  "x-disabled"?: boolean;
   /** Disable this field (read-only) when other fields match the given values. */
   "x-disabled-if"?: Record<string, JSONSchemaVisibleIfValue>;
   /** Human-readable labels for each enum option, in the same order as `enum`. */
@@ -55,6 +57,8 @@ export type JSONSchemaField = {
   "x-informational"?: boolean;
   /** URL to external documentation for this field, shown as a help link. */
   "x-docs-url"?: string;
+  /** Field is an advanced setting, hidden by default behind an expandable section. */
+  "x-advanced"?: boolean;
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**

@@ -85,6 +85,28 @@ export const pinotSchema: MultiStepFormSchema = {
       description: "Use SSL",
       default: true,
     },
+    max_open_conns: {
+      type: "number",
+      title: "Max open connections",
+      description:
+        "Maximum number of open database connections (0 for default)",
+      "x-placeholder": "20",
+      "x-advanced": true,
+    },
+    timeout_ms: {
+      type: "number",
+      title: "Query timeout (ms)",
+      description:
+        "Timeout in milliseconds for queries (0 for cluster default)",
+      "x-placeholder": "0",
+      "x-advanced": true,
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
+    },
   },
   required: [],
   oneOf: [
