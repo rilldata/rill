@@ -5886,6 +5886,8 @@ func (m *ImportDbtMetricsRequest) validate(all bool) error {
 
 	// no validation rules for ListOnly
 
+	// no validation rules for WarehouseConnector
+
 	if len(errors) > 0 {
 		return ImportDbtMetricsRequestMultiError(errors)
 	}
@@ -6131,6 +6133,8 @@ func (m *ImportDbtMetricsResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for AdapterType
 
 	if len(errors) > 0 {
 		return ImportDbtMetricsResponseMultiError(errors)

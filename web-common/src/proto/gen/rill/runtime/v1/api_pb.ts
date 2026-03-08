@@ -2464,6 +2464,13 @@ export class ImportDbtMetricsRequest extends Message$1<ImportDbtMetricsRequest> 
    */
   listOnly = false;
 
+  /**
+   * Optional: override auto-detected warehouse connector
+   *
+   * @generated from field: string warehouse_connector = 5;
+   */
+  warehouseConnector = "";
+
   constructor(data?: PartialMessage<ImportDbtMetricsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2476,6 +2483,7 @@ export class ImportDbtMetricsRequest extends Message$1<ImportDbtMetricsRequest> 
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "metric_refs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "list_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "warehouse_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ImportDbtMetricsRequest {
@@ -2572,6 +2580,20 @@ export class ImportDbtMetricsResponse extends Message$1<ImportDbtMetricsResponse
    */
   availableMetrics: DbtMetricInfo[] = [];
 
+  /**
+   * Adapter type from the dbt manifest (e.g., "snowflake", "bigquery")
+   *
+   * @generated from field: string adapter_type = 3;
+   */
+  adapterType = "";
+
+  /**
+   * Rill connectors matching the adapter type (populated when list_only is true)
+   *
+   * @generated from field: repeated string matching_connectors = 4;
+   */
+  matchingConnectors: string[] = [];
+
   constructor(data?: PartialMessage<ImportDbtMetricsResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2582,6 +2604,8 @@ export class ImportDbtMetricsResponse extends Message$1<ImportDbtMetricsResponse
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "generated_files", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "available_metrics", kind: "message", T: DbtMetricInfo, repeated: true },
+    { no: 3, name: "adapter_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "matching_connectors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ImportDbtMetricsResponse {

@@ -755,6 +755,8 @@ message ImportDbtMetricsRequest {
   repeated string metric_refs = 3;
   // If true, only list available metrics without importing
   bool list_only = 4;
+  // Optional: override auto-detected warehouse connector
+  string warehouse_connector = 5;
 }
 
 // DbtMetricInfo describes a dbt metric available for import.
@@ -771,6 +773,10 @@ message ImportDbtMetricsResponse {
   repeated string generated_files = 1;
   // Available metrics (populated when list_only is true)
   repeated DbtMetricInfo available_metrics = 2;
+  // Adapter type from the dbt manifest (e.g., "snowflake", "bigquery")
+  string adapter_type = 3;
+  // Rill connectors matching the adapter type (populated when list_only is true)
+  repeated string matching_connectors = 4;
 }
 
 message GenerateResolverRequest {

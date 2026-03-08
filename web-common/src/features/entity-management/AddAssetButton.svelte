@@ -32,6 +32,8 @@
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
+  import DbtImportMetricsModal from "@rilldata/web-common/features/connectors/DbtImportMetricsModal.svelte";
+  import { dbtImportModal } from "@rilldata/web-common/features/connectors/dbt-import-modal-store";
   import { Wand } from "lucide-svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
@@ -70,6 +72,16 @@
   );
 
   $: metricsViews = $metricsViewQuery?.data ?? [];
+
+  // Detect dbt_cloud connectors for "Import metrics" flow
+  $: connectorQuery = useFilteredResources(
+    runtimeClient,
+    ResourceKind.Connector,
+  );
+  $: dbtConnector = ($connectorQuery?.data ?? []).find(
+    (c) => c.connector?.spec?.driver === "dbt_cloud",
+  );
+  $: dbtConnectorName = dbtConnector?.meta?.name?.name ?? "";
 
   /**
    * Open the Add Data modal
@@ -187,14 +199,19 @@
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
-      on:click={() =>
-        createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
+      on:click={() => {
+        if (dbtConnectorName) {
+          dbtImportModal.open(dbtConnectorName);
+        } else {
+          createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView);
+        }
+      }}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
         size="16px"
       />
-      Metrics view
+      {dbtConnectorName ? "Import metrics" : "Metrics view"}
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
     <DropdownMenu.Item
@@ -319,3 +336,5 @@
 <CreateExploreDialog bind:open={showExploreDialog} {metricsViews} />
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />
+
+<DbtImportMetricsModal />

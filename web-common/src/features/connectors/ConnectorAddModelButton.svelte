@@ -10,6 +10,7 @@
   } from "@rilldata/web-common/features/sources/modal/connector-schemas";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { Plus } from "lucide-svelte";
+  import { dbtImportModal } from "./dbt-import-modal-store";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges = false;
@@ -33,6 +34,11 @@
   function openAddModel() {
     if (!schemaName || !connectorName) return;
     addSourceModal.open(schemaName, connectorName);
+  }
+
+  function openImportMetrics() {
+    if (!connectorName) return;
+    dbtImportModal.open(connectorName);
   }
 </script>
 
@@ -59,7 +65,7 @@
   <Tooltip distance={8} suppress={!isDisabled}>
     <Button
       type="primary"
-      onClick={openAddModel}
+      onClick={openImportMetrics}
       disabled={isDisabled}
       label="Import metrics"
     >

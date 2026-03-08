@@ -828,6 +828,9 @@ paths:
               listOnly:
                 type: boolean
                 title: If true, only list available metrics without importing
+              warehouseConnector:
+                type: string
+                title: 'Optional: override auto-detected warehouse connector'
             title: Request message for RuntimeService.ImportDbtMetrics
       tags:
         - RuntimeService
@@ -5619,6 +5622,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1DbtMetricInfo'
         title: Available metrics (populated when list_only is true)
+      adapterType:
+        type: string
+        title: Adapter type from the dbt manifest (e.g., "snowflake", "bigquery")
+      matchingConnectors:
+        type: array
+        items:
+          type: string
+        title: Rill connectors matching the adapter type (populated when list_only is true)
     title: Response message for RuntimeService.ImportDbtMetrics
   v1Instance:
     type: object

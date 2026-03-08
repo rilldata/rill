@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -56,10 +57,13 @@ func (s *Server) ImportDbtMetrics(ctx context.Context, req *runtimev1.ImportDbtM
 		return nil, status.Errorf(codes.Internal, "failed to fetch dbt manifest: %v", err)
 	}
 
+	// Get adapter type from manifest
+	adapterType := manifest.Metadata.AdapterType
+
 	// Get all available metrics
 	metrics := dbt_cloud.ListMetrics(manifest)
 
-	// List-only mode: return metric info without importing
+	// List-only mode: return metric info, adapter type, and matching connectors
 	if req.ListOnly {
 		var available []*runtimev1.DbtMetricInfo
 		for _, m := range metrics {
@@ -70,15 +74,24 @@ func (s *Server) ImportDbtMetrics(ctx context.Context, req *runtimev1.ImportDbtM
 				Type:        m.Type,
 			})
 		}
+
+		// Find connectors matching the adapter type
+		matching, err := s.findConnectorsByAdapterType(ctx, req.InstanceId, adapterType)
+		if err != nil {
+			s.logger.Warn("failed to find matching connectors", zap.Error(err))
+		}
+
 		return &runtimev1.ImportDbtMetricsResponse{
-			AvailableMetrics: available,
+			AvailableMetrics:  available,
+			AdapterType:       adapterType,
+			MatchingConnectors: matching,
 		}, nil
 	}
 
-	// Get the warehouse connector name from the dbt_cloud connector config
-	warehouseConnector, _ := handle.Config()["warehouse_connector"].(string)
-	if warehouseConnector == "" {
-		return nil, status.Error(codes.FailedPrecondition, "warehouse_connector is not configured on the dbt_cloud connector")
+	// Resolve the warehouse connector for import
+	warehouseConnector, err := s.resolveWarehouseConnector(ctx, req, handle, adapterType)
+	if err != nil {
+		return nil, err
 	}
 
 	// Filter metrics if specific refs were requested
@@ -144,7 +157,103 @@ func (s *Server) ImportDbtMetrics(ctx context.Context, req *runtimev1.ImportDbtM
 
 	return &runtimev1.ImportDbtMetricsResponse{
 		GeneratedFiles: generatedFiles,
+		AdapterType:    adapterType,
 	}, nil
+}
+
+// resolveWarehouseConnector determines the warehouse connector to use for import.
+// Priority: request field > connector config > auto-detect from adapter type.
+func (s *Server) resolveWarehouseConnector(ctx context.Context, req *runtimev1.ImportDbtMetricsRequest, handle drivers.Handle, adapterType string) (string, error) {
+	// 1. Explicit override from request
+	if req.WarehouseConnector != "" {
+		return req.WarehouseConnector, nil
+	}
+
+	// 2. From dbt_cloud connector config (backward compat)
+	if wc, _ := handle.Config()["warehouse_connector"].(string); wc != "" {
+		return wc, nil
+	}
+
+	// 3. Auto-detect from manifest adapter type
+	if adapterType == "" {
+		return "", status.Error(codes.FailedPrecondition, "manifest does not specify an adapter type; please provide warehouse_connector")
+	}
+
+	matching, err := s.findConnectorsByAdapterType(ctx, req.InstanceId, adapterType)
+	if err != nil {
+		return "", status.Errorf(codes.Internal, "failed to find matching connectors: %v", err)
+	}
+
+	switch len(matching) {
+	case 0:
+		return "", status.Errorf(codes.FailedPrecondition, "no Rill connector found for adapter type %q; please set up a %s connector first", adapterType, adapterType)
+	case 1:
+		return matching[0], nil
+	default:
+		return "", status.Errorf(codes.FailedPrecondition, "multiple connectors match adapter type %q: %s; please select one", adapterType, strings.Join(matching, ", "))
+	}
+}
+
+// findConnectorsByAdapterType finds Rill connectors whose driver matches the dbt adapter type.
+func (s *Server) findConnectorsByAdapterType(ctx context.Context, instanceID, adapterType string) ([]string, error) {
+	if adapterType == "" {
+		return nil, nil
+	}
+
+	driverNames := adapterTypeToDrivers(adapterType)
+	if len(driverNames) == 0 {
+		return nil, nil
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := ctrl.List(ctx, runtime.ResourceKindConnector, "", false)
+	if err != nil {
+		return nil, err
+	}
+
+	driverSet := make(map[string]bool, len(driverNames))
+	for _, d := range driverNames {
+		driverSet[d] = true
+	}
+
+	var matching []string
+	for _, r := range resources {
+		if r.GetConnector() == nil {
+			continue
+		}
+		driver := r.GetConnector().GetSpec().GetDriver()
+		if driverSet[driver] {
+			matching = append(matching, r.Meta.Name.Name)
+		}
+	}
+
+	return matching, nil
+}
+
+// adapterTypeToDrivers maps a dbt adapter type to Rill driver names.
+func adapterTypeToDrivers(adapterType string) []string {
+	switch strings.ToLower(adapterType) {
+	case "snowflake":
+		return []string{"snowflake"}
+	case "bigquery":
+		return []string{"bigquery"}
+	case "postgres", "postgresql":
+		return []string{"postgres"}
+	case "redshift":
+		return []string{"redshift"}
+	case "mysql":
+		return []string{"mysql"}
+	case "duckdb":
+		return []string{"duckdb", "motherduck"}
+	case "athena":
+		return []string{"athena"}
+	default:
+		return []string{adapterType}
+	}
 }
 
 // generateDbtModelYAML generates a model YAML file for a dbt metric.
@@ -152,6 +261,7 @@ func generateDbtModelYAML(warehouseConnector, metricRef string) string {
 	return fmt.Sprintf(`# Model for dbt metric: %s
 # This file was auto-generated by Rill's dbt Cloud integration.
 
+version: 1
 type: model
 connector: %s
 dbt_metric_ref: %s
@@ -164,6 +274,7 @@ func generateDbtMetricsViewYAML(metricName, displayName string) string {
 # This file was auto-generated by Rill's dbt Cloud integration.
 # Dimensions and measures are auto-populated from the table schema by the dbt_cloud compiler.
 
+version: 1
 type: metrics_view
 model: dbt_%s
 compiler: dbt_cloud

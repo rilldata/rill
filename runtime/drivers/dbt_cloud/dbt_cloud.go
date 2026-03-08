@@ -68,13 +68,6 @@ var spec = drivers.Spec{
 			Description: "dbt Cloud host URL (e.g. https://bh369.us1.dbt.com); defaults to https://cloud.getdbt.com",
 			Required:    false,
 		},
-		{
-			Key:         "warehouse_connector",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Warehouse Connector",
-			Description: "Name of the Rill connector for the warehouse where dbt models are materialized",
-			Required:    false,
-		},
 	},
 }
 
