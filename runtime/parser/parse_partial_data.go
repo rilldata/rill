@@ -18,8 +18,8 @@ type DataYAML struct {
 	Args           map[string]any `yaml:"args"`
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
-	AI             map[string]any `yaml:"ai"`        // AI resolver properties
-	Union          []*DataYAML    `yaml:"union"`      // List of resolvers whose results are unioned
+	AI             map[string]any `yaml:"ai"`    // AI resolver properties
+	Union          []*DataYAML    `yaml:"union"` // List of resolvers whose results are unioned
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
