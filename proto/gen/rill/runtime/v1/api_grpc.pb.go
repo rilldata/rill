@@ -40,6 +40,7 @@ const (
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
 	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
 	RuntimeService_GenerateCanvasFile_FullMethodName      = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
+	RuntimeService_ImportDbtMetrics_FullMethodName        = "/rill.runtime.v1.RuntimeService/ImportDbtMetrics"
 	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
 	RuntimeService_GenerateRenderer_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
 	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
@@ -126,6 +127,8 @@ type RuntimeServiceClient interface {
 	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(ctx context.Context, in *GenerateCanvasFileRequest, opts ...grpc.CallOption) (*GenerateCanvasFileResponse, error)
+	// ImportDbtMetrics imports dbt metrics from a dbt Cloud connector as model and metrics_view YAML files.
+	ImportDbtMetrics(ctx context.Context, in *ImportDbtMetricsRequest, opts ...grpc.CallOption) (*ImportDbtMetricsResponse, error)
 	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
 	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
@@ -423,6 +426,16 @@ func (c *runtimeServiceClient) GenerateCanvasFile(ctx context.Context, in *Gener
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenerateCanvasFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GenerateCanvasFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ImportDbtMetrics(ctx context.Context, in *ImportDbtMetricsRequest, opts ...grpc.CallOption) (*ImportDbtMetricsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ImportDbtMetricsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ImportDbtMetrics_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -837,6 +850,8 @@ type RuntimeServiceServer interface {
 	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error)
+	// ImportDbtMetrics imports dbt metrics from a dbt Cloud connector as model and metrics_view YAML files.
+	ImportDbtMetrics(context.Context, *ImportDbtMetricsRequest) (*ImportDbtMetricsResponse, error)
 	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
 	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
@@ -983,6 +998,9 @@ func (UnimplementedRuntimeServiceServer) GenerateMetricsViewFile(context.Context
 }
 func (UnimplementedRuntimeServiceServer) GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateCanvasFile not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ImportDbtMetrics(context.Context, *ImportDbtMetricsRequest) (*ImportDbtMetricsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ImportDbtMetrics not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateResolver not implemented")
@@ -1471,6 +1489,24 @@ func _RuntimeService_GenerateCanvasFile_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GenerateCanvasFile(ctx, req.(*GenerateCanvasFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ImportDbtMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportDbtMetricsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ImportDbtMetrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ImportDbtMetrics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ImportDbtMetrics(ctx, req.(*ImportDbtMetricsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2134,6 +2170,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateCanvasFile",
 			Handler:    _RuntimeService_GenerateCanvasFile_Handler,
+		},
+		{
+			MethodName: "ImportDbtMetrics",
+			Handler:    _RuntimeService_ImportDbtMetrics_Handler,
 		},
 		{
 			MethodName: "GenerateResolver",

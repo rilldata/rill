@@ -17,6 +17,7 @@ import type { RuntimeClient } from "../../../runtime-client/v2";
 import {
   compileConnectorYAML,
   updateDotEnvWithSecrets,
+  updateRillYAMLWithMetricsCompiler,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import {
@@ -136,6 +137,19 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
+async function setMetricsCompilerInRillYAML(
+  queryClient: QueryClient,
+  client: RuntimeClient,
+  compiler: string,
+): Promise<void> {
+  await runtimeServicePutFile(client, {
+    path: "rill.yaml",
+    blob: await updateRillYAMLWithMetricsCompiler(client, queryClient, compiler),
+    create: true,
+    createOnly: false,
+  });
+}
+
 async function saveConnectorWithoutTest(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -201,6 +215,16 @@ async function saveConnectorWithoutTest(
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
+  }
+
+  // Set metrics_compiler in rill.yaml for dbt connectors
+  const connectorSchema = getConnectorSchema(connector.name ?? "");
+  if (connectorSchema?.["x-category"] === "dbt") {
+    await setMetricsCompilerInRillYAML(
+      queryClient,
+      client,
+      connector.name as string,
+    );
   }
 
   // Go to the new connector file
@@ -370,6 +394,16 @@ export async function submitAddConnectorForm(
 
       if (OLAP_ENGINES.includes(connector.name as string)) {
         await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
+      }
+
+      // Set metrics_compiler in rill.yaml for dbt connectors
+      const connectorSchema = getConnectorSchema(connector.name ?? "");
+      if (connectorSchema?.["x-category"] === "dbt") {
+        await setMetricsCompilerInRillYAML(
+          queryClient,
+          client,
+          connector.name as string,
+        );
       }
 
       // Go to the new connector file

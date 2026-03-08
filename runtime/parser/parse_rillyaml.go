@@ -21,9 +21,10 @@ type RillYAML struct {
 	DisplayName    string
 	Description    string
 	AIInstructions string
-	OLAPConnector  string
-	AIConnector    string
-	Theme          string
+	OLAPConnector    string
+	MetricsCompiler  string
+	AIConnector      string
+	Theme            string
 	Connectors     []*ConnectorDef
 	Variables      []*VariableDef
 	Defaults       map[ResourceKind]yaml.Node
@@ -66,6 +67,8 @@ type rillYAML struct {
 	Theme string `yaml:"theme"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
+	// Default compiler for metrics views (e.g. "dbt_cloud")
+	MetricsCompiler string `yaml:"metrics_compiler"`
 	// Connectors required by the project
 	Connectors []struct {
 		Type     string         `yaml:"type"`
@@ -307,8 +310,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		AIInstructions: tmp.AIInstructions,
 		AIConnector:    tmp.AIConnector,
 		Theme:          tmp.Theme,
-		OLAPConnector:  tmp.OLAPConnector,
-		Connectors:     make([]*ConnectorDef, len(tmp.Connectors)),
+		OLAPConnector:   tmp.OLAPConnector,
+		MetricsCompiler: tmp.MetricsCompiler,
+		Connectors:      make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:      make([]*VariableDef, len(vars)),
 		Defaults:       defaults,
 		FeatureFlags:   snakeCaseFeatureFlags,

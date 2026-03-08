@@ -340,6 +340,10 @@ message MetricsViewSpec {
   // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
   // Keys and values are stored as templates and will be resolved at query time.
   map<string, string> query_attributes = 33;
+  // Compiler to use for auto-populating dimensions and measures (e.g. "dbt_cloud").
+  // When set, the reconciler will derive dimensions/measures from the underlying table schema
+  // instead of requiring them in the YAML.
+  string compiler = 34;
 }
 
 message SecurityRule {

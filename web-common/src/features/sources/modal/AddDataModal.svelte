@@ -3,6 +3,10 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+
+  type ExtendedConnectorDriver = V1ConnectorDriver & {
+    implementsMetricsIntegration?: boolean;
+  };
   import { onMount } from "svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
@@ -31,7 +35,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   let step = 0;
-  let selectedConnector: null | V1ConnectorDriver = null;
+  let selectedConnector: null | ExtendedConnectorDriver = null;
   let selectedSchemaName: string | null = null;
   let pendingConnectorName: string | null = null;
   let connectorInstanceName: string | null = null;
@@ -53,7 +57,7 @@
    * Derives implements* flags from the schema's x-category.
    * Uses x-driver for the name when specified.
    */
-  function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
+  function toConnectorDriver(info: ConnectorInfo): ExtendedConnectorDriver {
     const schema = getConnectorSchema(info.name);
     const category = schema?.["x-category"];
     const backendName = getBackendConnectorName(info.name);
@@ -66,6 +70,7 @@
       implementsSqlStore: category === "sqlStore",
       implementsWarehouse: category === "warehouse",
       implementsFileStore: category === "fileStore",
+      implementsMetricsIntegration: category === "dbt",
     };
   }
 
@@ -201,15 +206,18 @@
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
+  $: selectedConnectorSchema = getConnectorSchema(
+    selectedSchemaName ?? selectedConnector?.name ?? "",
+  );
   $: isConnectorType =
     selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce") ||
-    isMultiStepConnectorSchema(
-      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
-    );
+    (selectedConnector as ExtendedConnectorDriver)
+      ?.implementsMetricsIntegration ||
+    isMultiStepConnectorSchema(selectedConnectorSchema);
 </script>
 
 {#if step >= 1 || $duplicateSourceName}

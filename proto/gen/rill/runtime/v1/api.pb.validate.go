@@ -5849,6 +5849,369 @@ var _ interface {
 	ErrorName() string
 } = GenerateCanvasFileResponseValidationError{}
 
+// Validate checks the field values on ImportDbtMetricsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ImportDbtMetricsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ImportDbtMetricsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ImportDbtMetricsRequestMultiError, or nil if none found.
+func (m *ImportDbtMetricsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ImportDbtMetricsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_ImportDbtMetricsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ImportDbtMetricsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Connector
+
+	// no validation rules for ListOnly
+
+	if len(errors) > 0 {
+		return ImportDbtMetricsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ImportDbtMetricsRequestMultiError is an error wrapping multiple validation
+// errors returned by ImportDbtMetricsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ImportDbtMetricsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ImportDbtMetricsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ImportDbtMetricsRequestMultiError) AllErrors() []error { return m }
+
+// ImportDbtMetricsRequestValidationError is the validation error returned by
+// ImportDbtMetricsRequest.Validate if the designated constraints aren't met.
+type ImportDbtMetricsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ImportDbtMetricsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ImportDbtMetricsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ImportDbtMetricsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ImportDbtMetricsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ImportDbtMetricsRequestValidationError) ErrorName() string {
+	return "ImportDbtMetricsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ImportDbtMetricsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sImportDbtMetricsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ImportDbtMetricsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ImportDbtMetricsRequestValidationError{}
+
+var _ImportDbtMetricsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on DbtMetricInfo with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *DbtMetricInfo) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DbtMetricInfo with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DbtMetricInfoMultiError, or
+// nil if none found.
+func (m *DbtMetricInfo) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DbtMetricInfo) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Label
+
+	// no validation rules for Description
+
+	// no validation rules for Type
+
+	if len(errors) > 0 {
+		return DbtMetricInfoMultiError(errors)
+	}
+
+	return nil
+}
+
+// DbtMetricInfoMultiError is an error wrapping multiple validation errors
+// returned by DbtMetricInfo.ValidateAll() if the designated constraints
+// aren't met.
+type DbtMetricInfoMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DbtMetricInfoMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DbtMetricInfoMultiError) AllErrors() []error { return m }
+
+// DbtMetricInfoValidationError is the validation error returned by
+// DbtMetricInfo.Validate if the designated constraints aren't met.
+type DbtMetricInfoValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DbtMetricInfoValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DbtMetricInfoValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DbtMetricInfoValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DbtMetricInfoValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DbtMetricInfoValidationError) ErrorName() string { return "DbtMetricInfoValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DbtMetricInfoValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDbtMetricInfo.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DbtMetricInfoValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DbtMetricInfoValidationError{}
+
+// Validate checks the field values on ImportDbtMetricsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ImportDbtMetricsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ImportDbtMetricsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ImportDbtMetricsResponseMultiError, or nil if none found.
+func (m *ImportDbtMetricsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ImportDbtMetricsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetAvailableMetrics() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ImportDbtMetricsResponseValidationError{
+						field:  fmt.Sprintf("AvailableMetrics[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ImportDbtMetricsResponseValidationError{
+						field:  fmt.Sprintf("AvailableMetrics[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ImportDbtMetricsResponseValidationError{
+					field:  fmt.Sprintf("AvailableMetrics[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ImportDbtMetricsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ImportDbtMetricsResponseMultiError is an error wrapping multiple validation
+// errors returned by ImportDbtMetricsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ImportDbtMetricsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ImportDbtMetricsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ImportDbtMetricsResponseMultiError) AllErrors() []error { return m }
+
+// ImportDbtMetricsResponseValidationError is the validation error returned by
+// ImportDbtMetricsResponse.Validate if the designated constraints aren't met.
+type ImportDbtMetricsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ImportDbtMetricsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ImportDbtMetricsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ImportDbtMetricsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ImportDbtMetricsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ImportDbtMetricsResponseValidationError) ErrorName() string {
+	return "ImportDbtMetricsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ImportDbtMetricsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sImportDbtMetricsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ImportDbtMetricsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ImportDbtMetricsResponseValidationError{}
+
 // Validate checks the field values on GenerateResolverRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

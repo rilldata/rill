@@ -29,6 +29,7 @@ import {
   GenerateMetricsViewFileRequest,
   GenerateRendererRequest,
   GenerateResolverRequest,
+  GetAIMessageRequest,
   GetConversationRequest,
   GetExploreRequest,
   GetFileRequest,
@@ -43,6 +44,8 @@ import {
   GitStatusRequest,
   GitSwitchBranchRequest,
   HealthRequest,
+  ImportDbtMetricsRequest,
+  ImportDbtMetricsResponse,
   InstanceHealthRequest,
   IssueDevJWTRequest,
   ListConnectorDriversRequest,
@@ -77,6 +80,7 @@ import type {
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
+  V1GetAIMessageResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
   V1GetFileResponse,
@@ -1652,6 +1656,84 @@ export function createRuntimeServiceListTools<TData = V1ListToolsResponse>(
 }
 
 /**
+ * Raw RPC call: RuntimeService.GetAIMessage
+ */
+export async function runtimeServiceGetAIMessage(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetAIMessageRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<V1GetAIMessageResponse> {
+  const r = await client.runtimeService.getAIMessage(
+    GetAIMessageRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GetAIMessageResponse;
+}
+
+export function getRuntimeServiceGetAIMessageQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<GetAIMessageRequest>, "instanceId">,
+): QueryKey {
+  return ["RuntimeService", "getAIMessage", instanceId, request ?? {}] as const;
+}
+
+export function getRuntimeServiceGetAIMessageQueryOptions<
+  TData = V1GetAIMessageResponse,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetAIMessageRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<V1GetAIMessageResponse, ConnectError, TData>
+    >;
+  },
+): CreateQueryOptions<V1GetAIMessageResponse, ConnectError, TData> & {
+  queryKey: QueryKey;
+} {
+  const queryKey = getRuntimeServiceGetAIMessageQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<V1GetAIMessageResponse> = ({ signal }) =>
+    runtimeServiceGetAIMessage(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<V1GetAIMessageResponse, ConnectError, TData> & {
+    queryKey: QueryKey;
+  };
+}
+
+export function createRuntimeServiceGetAIMessage<
+  TData = V1GetAIMessageResponse,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetAIMessageRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<V1GetAIMessageResponse, ConnectError, TData>
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceGetAIMessageQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
  * Raw RPC call: RuntimeService.IssueDevJWT
  */
 export async function runtimeServiceIssueDevJWT(
@@ -2804,6 +2886,70 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
   Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateCanvasFileMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.ImportDbtMetrics
+ */
+export async function runtimeServiceImportDbtMetrics(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ImportDbtMetricsRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<ImportDbtMetricsResponse>> {
+  const r = await client.runtimeService.importDbtMetrics(
+    ImportDbtMetricsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<ImportDbtMetricsResponse>;
+}
+
+export function getRuntimeServiceImportDbtMetricsMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<ImportDbtMetricsResponse>,
+      unknown,
+      Omit<PartialMessage<ImportDbtMetricsRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<ImportDbtMetricsResponse>,
+  unknown,
+  Omit<PartialMessage<ImportDbtMetricsRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceImportDbtMetrics(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceImportDbtMetricsMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<ImportDbtMetricsResponse>,
+      unknown,
+      Omit<PartialMessage<ImportDbtMetricsRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<ImportDbtMetricsResponse>,
+  unknown,
+  Omit<PartialMessage<ImportDbtMetricsRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceImportDbtMetricsMutationOptions(
     client,
     options,
   );

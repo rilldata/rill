@@ -395,6 +395,9 @@ function generateServiceFile(
 
     if (hasOrvalType(availableOrvalTypes, m.outputType)) {
       orvalTypeImports.add(orvalTypeName(m.outputType));
+    } else {
+      protoTypes.add(m.outputType);
+      needsPartialMessage = true;
     }
   }
 

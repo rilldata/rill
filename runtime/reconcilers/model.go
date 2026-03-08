@@ -19,6 +19,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/dbt_cloud"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
@@ -231,6 +232,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			}
 		}
 
+		return runtime.ReconcileResult{Err: err}
+	}
+
+	// If the input connector is dbt_cloud, check that all required connectors are available and healthy
+	if err := r.checkRequiredConnectors(ctx, model.Spec.InputConnector); err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
@@ -1388,6 +1394,12 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
+	// Resolve dbt_metric_ref to a SQL query if present
+	inputProps, err = r.resolveDbtMetricRef(ctx, inputProps)
+	if err != nil {
+		return nil, err
+	}
+
 	tempDir, err := r.C.Runtime.TempDir(r.C.InstanceID)
 	if err != nil {
 		return nil, err
@@ -2013,6 +2025,114 @@ func hashWriteMapOrdered(w io.Writer, m map[string]string) error {
 	}
 
 	return nil
+}
+
+// checkRequiredConnectors checks that all required connectors for a dbt_cloud input connector are available and healthy.
+// It is a no-op if the input connector is not dbt_cloud or has no required_connectors configured.
+func (r *ModelReconciler) checkRequiredConnectors(ctx context.Context, inputConnector string) error {
+	handle, release, err := r.C.AcquireConn(ctx, inputConnector)
+	if err != nil {
+		return nil // connector not found; will be caught by checkRefs
+	}
+	defer release()
+
+	if handle.Driver() != "dbt_cloud" {
+		return nil
+	}
+
+	requiredStr, _ := handle.Config()["required_connectors"].(string)
+	if requiredStr == "" {
+		return nil
+	}
+
+	for _, name := range strings.Split(requiredStr, ",") {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+
+		h, rel, err := r.C.AcquireConn(ctx, name)
+		if err != nil {
+			return fmt.Errorf("required connector %q is not available: %w", name, err)
+		}
+
+		if pingErr := h.Ping(ctx); pingErr != nil {
+			rel()
+			return fmt.Errorf("required connector %q is unhealthy: %w", name, pingErr)
+		}
+		rel()
+	}
+
+	return nil
+}
+
+// resolveDbtMetricRef checks if the input properties contain a dbt_metric_ref.
+// If so, it finds the project's dbt_cloud connector, resolves the metric to a SQL query,
+// and rewrites the input properties with the resolved SQL.
+func (r *ModelReconciler) resolveDbtMetricRef(ctx context.Context, inputProps map[string]any) (map[string]any, error) {
+	metricRef, _ := inputProps["dbt_metric_ref"].(string)
+	if metricRef == "" {
+		return inputProps, nil
+	}
+
+	// Find the dbt_cloud connector by scanning all connector resources
+	connectors, err := r.C.List(ctx, runtime.ResourceKindConnector, "", false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list connectors: %w", err)
+	}
+
+	var dbtConnectorName string
+	for _, c := range connectors {
+		if c.GetConnector().GetSpec().GetDriver() == "dbt_cloud" {
+			dbtConnectorName = c.Meta.Name.Name
+			break
+		}
+	}
+	if dbtConnectorName == "" {
+		return nil, fmt.Errorf("dbt_metric_ref %q requires a dbt_cloud connector, but none was found", metricRef)
+	}
+
+	// Acquire the dbt_cloud connector and resolve the metric
+	handle, release, err := r.C.AcquireConn(ctx, dbtConnectorName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire dbt_cloud connector %q: %w", dbtConnectorName, err)
+	}
+	defer release()
+
+	provider, ok := handle.(dbt_cloud.ManifestProvider)
+	if !ok {
+		return nil, fmt.Errorf("dbt_cloud connector %q does not support manifest fetching", dbtConnectorName)
+	}
+
+	manifest, err := provider.GetManifest(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch dbt manifest: %w", err)
+	}
+
+	database, schema, table, err := dbt_cloud.GetOutputTable(manifest, metricRef)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve dbt metric %q: %w", metricRef, err)
+	}
+
+	// Build qualified table name
+	qualifiedTable := table
+	if schema != "" {
+		qualifiedTable = schema + "." + table
+	}
+	if database != "" && schema != "" {
+		qualifiedTable = database + "." + schema + "." + table
+	}
+
+	// Rewrite input properties: replace dbt_metric_ref with a SQL query
+	resolved := make(map[string]any, len(inputProps))
+	for k, v := range inputProps {
+		if k != "dbt_metric_ref" {
+			resolved[k] = v
+		}
+	}
+	resolved["sql"] = fmt.Sprintf("SELECT * FROM %s", qualifiedTable)
+
+	return resolved, nil
 }
 
 // md5Hash returns a hex-encoded SHA-256 hash of the provided byte slice.

@@ -214,6 +214,9 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/resources/-/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))) // Deprecated: Use /sse?streams=resources
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler))))
 
+	// dbt Cloud webhook handler (authenticates via HMAC, not session auth)
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/dbt/{connector}/webhook", observability.Middleware("runtime", s.logger, http.HandlerFunc(s.dbtWebhookHandler)))
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		httpMux.Handle("/metrics", promhttp.Handler())

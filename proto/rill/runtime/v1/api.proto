@@ -157,6 +157,14 @@ service RuntimeService {
     };
   }
 
+  // ImportDbtMetrics imports dbt metrics from a dbt Cloud connector as model and metrics_view YAML files.
+  rpc ImportDbtMetrics(ImportDbtMetricsRequest) returns (ImportDbtMetricsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/dbt/import-metrics",
+      body: "*"
+    };
+  }
+
   // GenerateResolver generates resolver and resolver properties from a table or a metrics view
   rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
     option (google.api.http) = {
@@ -736,6 +744,33 @@ message GenerateCanvasFileRequest {
 message GenerateCanvasFileResponse {
   // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
   bool ai_succeeded = 1;
+}
+
+// Request message for RuntimeService.ImportDbtMetrics
+message ImportDbtMetricsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Name of the dbt_cloud connector to import from
+  string connector = 2;
+  // Specific metric refs to import; if empty, imports all available metrics
+  repeated string metric_refs = 3;
+  // If true, only list available metrics without importing
+  bool list_only = 4;
+}
+
+// DbtMetricInfo describes a dbt metric available for import.
+message DbtMetricInfo {
+  string name = 1;
+  string label = 2;
+  string description = 3;
+  string type = 4;
+}
+
+// Response message for RuntimeService.ImportDbtMetrics
+message ImportDbtMetricsResponse {
+  // Paths of generated files (empty when list_only is true)
+  repeated string generated_files = 1;
+  // Available metrics (populated when list_only is true)
+  repeated DbtMetricInfo available_metrics = 2;
 }
 
 message GenerateResolverRequest {

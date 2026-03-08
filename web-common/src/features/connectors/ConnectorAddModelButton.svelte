@@ -4,7 +4,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { addSourceModal } from "@rilldata/web-common/features/sources/modal/add-source-visibility";
   import { SOURCES } from "@rilldata/web-common/features/sources/modal/constants";
-  import { getSchemaNameFromDriver } from "@rilldata/web-common/features/sources/modal/connector-schemas";
+  import {
+    getSchemaNameFromDriver,
+    getConnectorSchema,
+  } from "@rilldata/web-common/features/sources/modal/connector-schemas";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { Plus } from "lucide-svelte";
 
@@ -16,7 +19,10 @@
   $: hasReconcileError = !!resource?.meta?.reconcileError;
   // Map driver name to schema name for connector lookup
   $: schemaName = driverName ? getSchemaNameFromDriver(driverName) : null;
-  $: isDataSource = schemaName ? SOURCES.includes(schemaName) : false;
+  $: schema = schemaName ? getConnectorSchema(schemaName) : null;
+  $: isDbtConnector = schema?.["x-category"] === "dbt";
+  $: isDataSource =
+    schemaName ? SOURCES.includes(schemaName) && !isDbtConnector : false;
   $: isDisabled = hasUnsavedChanges || hasReconcileError || !driverName;
 
   /**
@@ -40,6 +46,25 @@
     >
       <Plus size="14px" />
       Import data
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      {#if hasUnsavedChanges}
+        Save your changes first
+      {:else if hasReconcileError}
+        Fix connector errors first
+      {/if}
+    </TooltipContent>
+  </Tooltip>
+{:else if isDbtConnector}
+  <Tooltip distance={8} suppress={!isDisabled}>
+    <Button
+      type="primary"
+      onClick={openAddModel}
+      disabled={isDisabled}
+      label="Import metrics"
+    >
+      <Plus size="14px" />
+      Import metrics
     </Button>
     <TooltipContent slot="tooltip-content">
       {#if hasUnsavedChanges}

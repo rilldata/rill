@@ -508,6 +508,38 @@ export function makeEnvVarKey(
   return findAvailableEnvVarName(existingEnvBlob, baseGenericName);
 }
 
+export async function updateRillYAMLWithMetricsCompiler(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+  compiler: string,
+): Promise<string> {
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+  return replaceMetricsCompilerInYAML(blob, compiler);
+}
+
+/**
+ * Update the `metrics_compiler` key in a YAML file.
+ * Preserves comments and formatting via regex.
+ */
+export function replaceMetricsCompilerInYAML(
+  blob: string,
+  compiler: string,
+): string {
+  const metricsCompilerRegex = /^metrics_compiler: .+$/m;
+
+  if (metricsCompilerRegex.test(blob)) {
+    return blob.replace(metricsCompilerRegex, `metrics_compiler: ${compiler}`);
+  } else {
+    return `${blob}${blob !== "" ? "\n" : ""}metrics_compiler: ${compiler}\n`;
+  }
+}
+
 export async function updateRillYAMLWithOlapConnector(
   client: RuntimeClient,
   queryClient: QueryClient,

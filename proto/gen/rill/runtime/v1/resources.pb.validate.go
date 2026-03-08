@@ -3403,6 +3403,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for QueryAttributes
 
+	// no validation rules for Compiler
+
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled
 	}

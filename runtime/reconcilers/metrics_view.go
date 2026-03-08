@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -126,6 +127,19 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 
 	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
 
+	// If a compiler is set, use it to auto-populate dimensions and measures from the underlying table.
+	if mv.Spec.Compiler != "" {
+		if err := r.applyCompiler(ctx, mv.Spec); err != nil {
+			mv.State.ValidSpec = nil
+			mv.State.Streaming = false
+			mv.State.DataRefreshedOn = nil
+			if updateErr := r.C.UpdateState(ctx, self.Meta.Name, self); updateErr != nil {
+				return runtime.ReconcileResult{Err: errors.Join(err, updateErr)}
+			}
+			return runtime.ReconcileResult{Err: err}
+		}
+	}
+
 	// Validate the metrics view and update ValidSpec
 	e, err := executor.New(ctx, r.C.Runtime, r.C.InstanceID, mv.Spec, !hasInternalRef, runtime.ResolvedSecurityOpen, 0, nil)
 	if err != nil {
@@ -177,4 +191,89 @@ func (r *MetricsViewReconciler) ResolveTransitiveAccess(ctx context.Context, cla
 		return nil, fmt.Errorf("not a metrics view resource")
 	}
 	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
+
+// applyCompiler uses the specified compiler to auto-populate dimensions and measures on the spec.
+func (r *MetricsViewReconciler) applyCompiler(ctx context.Context, spec *runtimev1.MetricsViewSpec) error {
+	switch spec.Compiler {
+	case "dbt_cloud":
+		return r.applyDbtCloudCompiler(ctx, spec)
+	default:
+		return fmt.Errorf("unknown metrics view compiler: %q", spec.Compiler)
+	}
+}
+
+// applyDbtCloudCompiler derives dimensions and measures from the underlying table schema.
+// It overwrites any user-defined dimensions/measures; dbt definitions take precedence.
+func (r *MetricsViewReconciler) applyDbtCloudCompiler(ctx context.Context, spec *runtimev1.MetricsViewSpec) error {
+	if spec.Table == "" {
+		return fmt.Errorf("dbt_cloud compiler requires a resolved table; ensure the model has been materialized")
+	}
+
+	// Acquire the OLAP connector where the model's result table lives
+	connector := spec.Connector
+	if connector == "" {
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+		if err != nil {
+			return err
+		}
+		connector = inst.ResolveOLAPConnector()
+	}
+
+	olap, release, err := r.C.Runtime.OLAP(ctx, r.C.InstanceID, connector)
+	if err != nil {
+		return fmt.Errorf("failed to acquire OLAP connector %q: %w", connector, err)
+	}
+	defer release()
+
+	// Look up the table schema
+	tbl, err := olap.InformationSchema().Lookup(ctx, spec.Database, spec.DatabaseSchema, spec.Table)
+	if err != nil {
+		return fmt.Errorf("table %q not found: %w", spec.Table, err)
+	}
+
+	// Auto-populate dimensions from columns
+	spec.Dimensions = nil
+	for _, f := range tbl.Schema.Fields {
+		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
+			Name:        f.Name,
+			DisplayName: identifierToDisplayName(f.Name),
+			Column:      f.Name,
+		})
+	}
+
+	// Auto-populate a default count measure
+	spec.Measures = []*runtimev1.MetricsViewSpec_Measure{
+		{
+			Name:         "total_records",
+			DisplayName:  "Total records",
+			Expression:   "COUNT(*)",
+			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			FormatPreset: "humanize",
+		},
+	}
+
+	// Auto-detect time dimension from timestamp columns (if not already set)
+	if spec.TimeDimension == "" {
+		for _, f := range tbl.Schema.Fields {
+			switch f.Type.Code {
+			case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE:
+				spec.TimeDimension = f.Name
+				return nil // found one; stop
+			}
+		}
+	}
+
+	return nil
+}
+
+// identifierToDisplayName converts a snake_case identifier to a Title Case display name.
+func identifierToDisplayName(s string) string {
+	words := strings.Split(s, "_")
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }

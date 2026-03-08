@@ -2433,6 +2433,175 @@ export class GenerateCanvasFileResponse extends Message$1<GenerateCanvasFileResp
 }
 
 /**
+ * Request message for RuntimeService.ImportDbtMetrics
+ *
+ * @generated from message rill.runtime.v1.ImportDbtMetricsRequest
+ */
+export class ImportDbtMetricsRequest extends Message$1<ImportDbtMetricsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Name of the dbt_cloud connector to import from
+   *
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * Specific metric refs to import; if empty, imports all available metrics
+   *
+   * @generated from field: repeated string metric_refs = 3;
+   */
+  metricRefs: string[] = [];
+
+  /**
+   * If true, only list available metrics without importing
+   *
+   * @generated from field: bool list_only = 4;
+   */
+  listOnly = false;
+
+  constructor(data?: PartialMessage<ImportDbtMetricsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ImportDbtMetricsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "metric_refs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "list_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ImportDbtMetricsRequest {
+    return new ImportDbtMetricsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ImportDbtMetricsRequest {
+    return new ImportDbtMetricsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ImportDbtMetricsRequest {
+    return new ImportDbtMetricsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ImportDbtMetricsRequest | PlainMessage<ImportDbtMetricsRequest> | undefined, b: ImportDbtMetricsRequest | PlainMessage<ImportDbtMetricsRequest> | undefined): boolean {
+    return proto3.util.equals(ImportDbtMetricsRequest, a, b);
+  }
+}
+
+/**
+ * DbtMetricInfo describes a dbt metric available for import.
+ *
+ * @generated from message rill.runtime.v1.DbtMetricInfo
+ */
+export class DbtMetricInfo extends Message$1<DbtMetricInfo> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string label = 2;
+   */
+  label = "";
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * @generated from field: string type = 4;
+   */
+  type = "";
+
+  constructor(data?: PartialMessage<DbtMetricInfo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DbtMetricInfo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DbtMetricInfo {
+    return new DbtMetricInfo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DbtMetricInfo {
+    return new DbtMetricInfo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DbtMetricInfo {
+    return new DbtMetricInfo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DbtMetricInfo | PlainMessage<DbtMetricInfo> | undefined, b: DbtMetricInfo | PlainMessage<DbtMetricInfo> | undefined): boolean {
+    return proto3.util.equals(DbtMetricInfo, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ImportDbtMetrics
+ *
+ * @generated from message rill.runtime.v1.ImportDbtMetricsResponse
+ */
+export class ImportDbtMetricsResponse extends Message$1<ImportDbtMetricsResponse> {
+  /**
+   * Paths of generated files (empty when list_only is true)
+   *
+   * @generated from field: repeated string generated_files = 1;
+   */
+  generatedFiles: string[] = [];
+
+  /**
+   * Available metrics (populated when list_only is true)
+   *
+   * @generated from field: repeated rill.runtime.v1.DbtMetricInfo available_metrics = 2;
+   */
+  availableMetrics: DbtMetricInfo[] = [];
+
+  constructor(data?: PartialMessage<ImportDbtMetricsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ImportDbtMetricsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "generated_files", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "available_metrics", kind: "message", T: DbtMetricInfo, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ImportDbtMetricsResponse {
+    return new ImportDbtMetricsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ImportDbtMetricsResponse {
+    return new ImportDbtMetricsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ImportDbtMetricsResponse {
+    return new ImportDbtMetricsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ImportDbtMetricsResponse | PlainMessage<ImportDbtMetricsResponse> | undefined, b: ImportDbtMetricsResponse | PlainMessage<ImportDbtMetricsResponse> | undefined): boolean {
+    return proto3.util.equals(ImportDbtMetricsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GenerateResolverRequest
  */
 export class GenerateResolverRequest extends Message$1<GenerateResolverRequest> {

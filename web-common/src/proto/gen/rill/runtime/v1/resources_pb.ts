@@ -1508,6 +1508,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   queryAttributes: { [key: string]: string } = {};
 
+  /**
+   * Compiler to use for auto-populating dimensions and measures (e.g. "dbt_cloud").
+   * When set, the reconciler will derive dimensions/measures from the underlying table schema
+   * instead of requiring them in the YAML.
+   *
+   * @generated from field: string compiler = 34;
+   */
+  compiler = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1540,6 +1549,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 34, name: "compiler", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

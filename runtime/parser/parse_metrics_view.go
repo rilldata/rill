@@ -20,7 +20,8 @@ import (
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Parent            string           `yaml:"parent"` // Parent metrics view, if any
+	Compiler          string           `yaml:"compiler"` // Compiler for auto-populating dimensions/measures (e.g. "dbt_cloud")
+	Parent            string           `yaml:"parent"`   // Parent metrics view, if any
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
@@ -605,7 +606,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Tags:                measure.Tags,
 		})
 	}
-	if len(measures) == 0 && tmp.Parent == "" {
+	effectiveCompiler := tmp.Compiler
+	if effectiveCompiler == "" && p.RillYAML != nil {
+		effectiveCompiler = p.RillYAML.MetricsCompiler
+	}
+	if len(measures) == 0 && tmp.Parent == "" && effectiveCompiler == "" {
 		return fmt.Errorf("must define at least one measure")
 	}
 
@@ -763,6 +768,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 	spec := r.MetricsViewSpec
 
+	spec.Compiler = tmp.Compiler
+	if spec.Compiler == "" && p.RillYAML != nil {
+		spec.Compiler = p.RillYAML.MetricsCompiler
+	}
 	spec.Parent = tmp.Parent
 	spec.Connector = node.Connector
 	spec.Database = tmp.Database

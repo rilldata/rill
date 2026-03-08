@@ -793,6 +793,44 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/dbt/import-metrics:
+    post:
+      summary: ImportDbtMetrics imports dbt metrics from a dbt Cloud connector as model and metrics_view YAML files.
+      operationId: RuntimeService_ImportDbtMetrics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ImportDbtMetricsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              connector:
+                type: string
+                title: Name of the dbt_cloud connector to import from
+              metricRefs:
+                type: array
+                items:
+                  type: string
+                title: Specific metric refs to import; if empty, imports all available metrics
+              listOnly:
+                type: boolean
+                title: If true, only list available metrics without importing
+            title: Request message for RuntimeService.ImportDbtMetrics
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -4997,6 +5035,18 @@ definitions:
         type: string
       databaseSchema:
         type: string
+  v1DbtMetricInfo:
+    type: object
+    properties:
+      name:
+        type: string
+      label:
+        type: string
+      description:
+        type: string
+      type:
+        type: string
+    description: DbtMetricInfo describes a dbt metric available for import.
   v1DefaultMetricsSQLFilter:
     type: object
     properties:
@@ -5555,6 +5605,21 @@ definitions:
       - HISTOGRAM_METHOD_FD
       - HISTOGRAM_METHOD_DIAGNOSTIC
     default: HISTOGRAM_METHOD_UNSPECIFIED
+  v1ImportDbtMetricsResponse:
+    type: object
+    properties:
+      generatedFiles:
+        type: array
+        items:
+          type: string
+        title: Paths of generated files (empty when list_only is true)
+      availableMetrics:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DbtMetricInfo'
+        title: Available metrics (populated when list_only is true)
+    title: Response message for RuntimeService.ImportDbtMetrics
   v1Instance:
     type: object
     properties:
@@ -6469,6 +6534,12 @@ definitions:
         description: |-
           Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
           Keys and values are stored as templates and will be resolved at query time.
+      compiler:
+        type: string
+        description: |-
+          Compiler to use for auto-populating dimensions and measures (e.g. "dbt_cloud").
+          When set, the reconciler will derive dimensions/measures from the underlying table schema
+          instead of requiring them in the YAML.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
