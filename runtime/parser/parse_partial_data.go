@@ -18,7 +18,8 @@ type DataYAML struct {
 	Args           map[string]any `yaml:"args"`
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
-	AI             map[string]any `yaml:"ai"` // AI resolver properties
+	AI             map[string]any `yaml:"ai"`        // AI resolver properties
+	Union          []*DataYAML    `yaml:"union"`      // List of resolvers whose results are unioned
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -106,6 +107,25 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 		count++
 		resolver = "ai"
 		resolverProps = raw.AI
+	}
+
+	// Handle union resolver
+	if len(raw.Union) > 0 {
+		count++
+		resolver = "union"
+		var entries []any
+		for _, entry := range raw.Union {
+			name, entryProps, entryRefs, err := p.parseDataYAML(entry, contextualConnector)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("failed to parse union entry: %w", err)
+			}
+			refs = append(refs, entryRefs...)
+			entries = append(entries, map[string]any{
+				"name":       name,
+				"properties": entryProps.AsMap(),
+			})
+		}
+		resolverProps = map[string]any{"resolvers": entries}
 	}
 
 	// Validate there was exactly one resolver

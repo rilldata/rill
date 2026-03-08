@@ -3513,11 +3513,32 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
-        examples: 
+        examples:
           - type: api
             resource_status:
               where_error: true
- 
+
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - type: api
+            union:
+              - connector: duckdb
+                sql: SELECT 1
+              - connector: clickhouse
+                sql: SELECT 2
+
   data_properties:
     oneOf:
       - title: SQL Query
@@ -3589,6 +3610,26 @@ definitions:
           -
             resource_status:
               where_error: true
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - union:
+              - glob:
+                  path: s3://bucket/year=*/month=*
+              - glob:
+                  path: s3://bucket/year=*/month=*/day=*
+                  last: 30
       - title: AI Resolver
         type: object
         description: Uses AI to generate insights and analysis from metrics data. Only available for reports.
