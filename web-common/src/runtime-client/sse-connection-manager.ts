@@ -210,7 +210,6 @@ export class SSEConnectionManager {
   private handleSuccessfulConnection = () => {
     this.connectionCount += 1;
     this.openedAt = Date.now();
-    this.retryAttempts.set(0);
     this.status.set(ConnectionStatus.OPEN);
 
     if (this.connectionCount > 1) {
@@ -256,6 +255,19 @@ export class SSEConnectionManager {
       status === ConnectionStatus.PAUSED
     )
       return;
+
+    // Reset retry counter if this was a stable connection. An intentional pause
+    // of a healthy connection should not consume retry budget; without this,
+    // retryAttempts accumulates across auto-close pause/resume cycles and
+    // eventually hits maxRetryAttempts, showing a spurious error page.
+    if (status === ConnectionStatus.OPEN) {
+      const wasStable =
+        this.openedAt !== null &&
+        Date.now() - this.openedAt >= MIN_STABLE_DURATION;
+      if (wasStable) {
+        this.retryAttempts.set(0);
+      }
+    }
 
     this.status.set(ConnectionStatus.PAUSED);
 
