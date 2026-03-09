@@ -137,7 +137,6 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			// Match directory if the glob is not double-star ("**")
 			// and the file level is greater than the glob level.
 			if !hasDoubleStar && fileLevel > globLevel {
-
 				// Extract the directory at the same depth as the glob pattern
 				// so it can be matched against the glob.
 				dirPath := fileutil.PrefixUntilLevel(obj.Key, globLevel, delimiter)
