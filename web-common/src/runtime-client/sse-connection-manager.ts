@@ -210,6 +210,7 @@ export class SSEConnectionManager {
   private handleSuccessfulConnection = () => {
     this.connectionCount += 1;
     this.openedAt = Date.now();
+    this.retryAttempts.set(0);
     this.status.set(ConnectionStatus.OPEN);
 
     if (this.connectionCount > 1) {
