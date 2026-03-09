@@ -3,13 +3,12 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/https"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
 )
 
 type httpsToSelfExecutor struct {
@@ -28,7 +27,7 @@ func (e *httpsToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(ctx, opts)
+	newInputProps, warnings, err := e.modelInputProperties(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -37,17 +36,26 @@ func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelEx
 
 	// execute
 	executor := &selfToSelfExecutor{c: e.c}
-	return executor.Execute(ctx, newOpts)
+	res, err := executor.Execute(ctx, newOpts)
+	if err != nil {
+		return nil, err
+	}
+	res.Warnings = append(res.Warnings, warnings...)
+	return res, nil
 }
 
-func (e *httpsToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
+func (e *httpsToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, []string, error) {
 	parsed := &https.ModelInputProperties{}
+	var warnings []string
 	unused, err := parsed.DecodeWithWarnings(opts.InputProperties)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+		return nil, nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in input properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 
 	var format string
@@ -61,20 +69,20 @@ func (e *httpsToSelfExecutor) modelInputProperties(ctx context.Context, opts *dr
 	// Generate secret SQL to access the http url using duckdb
 	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, _, err = generateSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Set SQL to read from the external source
 	from, err := sourceReader([]string{parsed.Path}, format, map[string]any{})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	m.SQL = "SELECT * FROM " + from
 
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return propsMap, nil
+	return propsMap, warnings, nil
 }

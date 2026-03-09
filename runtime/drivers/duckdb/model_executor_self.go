@@ -22,9 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
-	"go.uber.org/zap"
 )
 
 type selfToSelfExecutor struct {
@@ -44,12 +42,16 @@ var createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &ModelInputProperties{}
+	var warnings []string
 	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in input properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
@@ -61,7 +63,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in output properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 	if err := outputProps.validateAndApplyDefaults(opts, inputProps, outputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
@@ -240,6 +245,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Properties:   resultPropsMap,
 		Table:        tableName,
 		ExecDuration: duration,
+		Warnings:     warnings,
 	}, nil
 }
 

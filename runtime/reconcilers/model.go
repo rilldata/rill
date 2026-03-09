@@ -326,7 +326,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	var newIncrementalState *structpb.Struct
 	var newIncrementalStateSchema *runtimev1.StructType
 	if execErr == nil {
-		newIncrementalState, newIncrementalStateSchema, execErr = r.resolveIncrementalState(ctx, model)
+		newIncrementalState, newIncrementalStateSchema, execErr = r.resolveIncrementalState(ctx, self.Meta.Name, model)
 	}
 
 	// If the model is partitioned, track if any of the partitions have errors
@@ -736,7 +736,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 // Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
 // but models also have a resolver for "incremental state" that enables incremental/stateful computation by persisting data from the previous execution.
 // It returns nil results if an incremental state resolver is not configured or does not return any data.
-func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.Model) (*structpb.Struct, *runtimev1.StructType, error) {
+func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, name *runtimev1.ResourceName, mdl *runtimev1.Model) (*structpb.Struct, *runtimev1.StructType, error) {
 	if !mdl.Spec.Incremental {
 		return nil, nil, nil
 	}
@@ -745,11 +745,18 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		return nil, nil, nil
 	}
 
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
 	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         r.C.InstanceID,
-		Resolver:           mdl.Spec.IncrementalStateResolver,
-		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
-		Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		InstanceID:                 r.C.InstanceID,
+		Resolver:                   mdl.Spec.IncrementalStateResolver,
+		ResolverProperties:         mdl.Spec.IncrementalStateResolverProperties.AsMap(),
+		ValidateResolverProperties: true,
+		StrictResolverProperties:   cfg.StrictModelProps,
+		Caller:                     name.String(), // todo: fix
+		Claims:                     &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
 		return nil, nil, err
@@ -787,13 +794,21 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		}
 	}
 
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get instance config: %w", err)
+	}
+
 	// Resolve partition rows
 	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         r.C.InstanceID,
-		Resolver:           mdl.Spec.PartitionsResolver,
-		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
-		Args:               map[string]any{"state": incrementalState},
-		Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		InstanceID:                 r.C.InstanceID,
+		Resolver:                   mdl.Spec.PartitionsResolver,
+		ResolverProperties:         mdl.Spec.PartitionsResolverProperties.AsMap(),
+		ValidateResolverProperties: true,
+		StrictResolverProperties:   cfg.StrictModelProps,
+		Caller:                     self.Meta.Name.String(), // todo: fix
+		Args:                       map[string]any{"state": incrementalState},
+		Claims:                     &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
 		return err
@@ -1837,8 +1852,12 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 		return nil, nil
 	}
 	var msgs []string
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, err
+	}
 	for _, test := range tests {
-		msg, err := r.execModelTest(ctx, test)
+		msg, err := r.execModelTest(ctx, self.Meta.Name, test, cfg.StrictModelProps)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
 		}
@@ -1850,13 +1869,16 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 }
 
 // execModelTest runs a single model test and returns an error if it fails.
-func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, error) {
+func (r *ModelReconciler) execModelTest(ctx context.Context, name *runtimev1.ResourceName, test *runtimev1.ModelTest, strictResolverProps bool) (string, error) {
 	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         r.C.InstanceID,
-		Resolver:           test.Resolver,
-		ResolverProperties: test.ResolverProperties.AsMap(),
-		Claims:             &runtime.SecurityClaims{SkipChecks: true},
-		Args:               map[string]any{"limit": 1},
+		InstanceID:                 r.C.InstanceID,
+		Resolver:                   test.Resolver,
+		ResolverProperties:         test.ResolverProperties.AsMap(),
+		ValidateResolverProperties: true,
+		StrictResolverProperties:   strictResolverProps,
+		Caller:                     name.String(),
+		Claims:                     &runtime.SecurityClaims{SkipChecks: true},
+		Args:                       map[string]any{"limit": 1},
 	})
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {

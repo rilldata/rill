@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
+	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -32,17 +33,16 @@ type resourceStatusResolver struct {
 // resourceStatusProps declares the properties for the "resource_status" resolver.
 type resourceStatusProps struct {
 	// WhereError is a flag to only return resources that are in the error state.
-	WhereError bool `mapstructure:"where_error"`
+	WhereError       bool           `mapstructure:"where_error"`
+	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
 // newResourceStatus creates a new resourceStatusResolver.
 func newResourceStatus(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &resourceStatusProps{}
-	unused, err := mapstructureutil.DecodeWithWarnings(opts.Properties, props)
-	if err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
-	logUnusedProperties(ctx, opts, "resource_status", unused)
 
 	return &resourceStatusResolver{
 		runtime:    opts.Runtime,
@@ -64,7 +64,10 @@ func (r *resourceStatusResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *resourceStatusResolver) Validate(ctx context.Context) error {
-	return nil
+	return &runtime.ErrUndefinedFieldsInResolverProps{
+		Name:   "resource_status",
+		Fields: maps.Keys(r.props.AdditionalFields),
+	}
 }
 
 func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {

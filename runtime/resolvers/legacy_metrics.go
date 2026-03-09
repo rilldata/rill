@@ -46,11 +46,9 @@ type legacyMetricsResolverArgs struct {
 
 func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &legacyMetricsResolverProps{}
-	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.Properties, props)
-	if err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
-	logUnusedProperties(ctx, opts, "legacy_metrics", unused)
 
 	args := &legacyMetricsResolverArgs{}
 	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {

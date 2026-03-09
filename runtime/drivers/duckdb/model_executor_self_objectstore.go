@@ -10,8 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/exportutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
 )
 
 type selfToObjectStoreExecutor struct {
@@ -34,24 +32,31 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	}
 
 	inputProps := &ModelInputProperties{}
+	var warnings []string
 	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in input properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	outputProps := &drivers.ObjectStoreModelOutputProperties{}
-	unused, err = mapstructureutil.DecodeWithWarnings(opts.OutputProperties, outputProps)
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
 	if err != nil {
 		return nil, err
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in output properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 
 	if outputProps.Format != "" && outputProps.Format != drivers.FileFormatParquet {
@@ -113,5 +118,6 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	return &drivers.ModelResult{
 		Connector:  opts.OutputConnector,
 		Properties: resPropsMap,
+		Warnings:   warnings,
 	}, nil
 }

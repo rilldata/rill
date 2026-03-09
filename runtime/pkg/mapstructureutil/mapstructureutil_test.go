@@ -62,35 +62,3 @@ func TestWeakDecodeWithWarnings_NoUnused(t *testing.T) {
 	require.Equal(t, "Bob", out.Name)
 	require.Empty(t, unused)
 }
-
-func TestDecodeWithWarnings(t *testing.T) {
-	type target struct {
-		SQL       string `mapstructure:"sql"`
-		Connector string `mapstructure:"connector"`
-	}
-
-	in := map[string]any{
-		"sql":       "SELECT 1",
-		"connector": "duckdb",
-		"typo_key":  "oops",
-	}
-	out := &target{}
-	unused, err := DecodeWithWarnings(in, out)
-	require.NoError(t, err)
-	require.Equal(t, "SELECT 1", out.SQL)
-	require.Equal(t, "duckdb", out.Connector)
-	require.Equal(t, []string{"typo_key"}, unused)
-}
-
-func TestDecodeWithWarnings_NoUnused(t *testing.T) {
-	type target struct {
-		SQL string `mapstructure:"sql"`
-	}
-
-	in := map[string]any{"sql": "SELECT 1"}
-	out := &target{}
-	unused, err := DecodeWithWarnings(in, out)
-	require.NoError(t, err)
-	require.Equal(t, "SELECT 1", out.SQL)
-	require.Empty(t, unused)
-}

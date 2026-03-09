@@ -18,9 +18,19 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
+
+type ErrUndefinedFieldsInResolverProps struct {
+	Name   string
+	Fields []string
+}
+
+func (e *ErrUndefinedFieldsInResolverProps) Error() string {
+	return fmt.Sprintf("undefined fields in resolver properties : %q for %q, will be ignored", e.Fields, e.Name)
+}
 
 // Resolver represents logic, such as a SQL query, that produces output data.
 // Resolvers are used to evaluate API requests, alerts, reports, etc.
@@ -103,11 +113,40 @@ func RegisterResolverInitializer(name string, initializer ResolverInitializer) {
 
 // ResolveOptions are the options passed to the runtime's Resolve method.
 type ResolveOptions struct {
-	InstanceID         string
-	Resolver           string
-	ResolverProperties map[string]any
-	Args               map[string]any
-	Claims             *SecurityClaims
+	InstanceID                 string
+	Resolver                   string
+	ResolverProperties         map[string]any
+	ValidateResolverProperties bool
+	StrictResolverProperties   bool
+	Args                       map[string]any
+	Claims                     *SecurityClaims
+
+	Caller string // for logging and observability
+}
+
+func (opts *ResolveOptions) toResolverOptions(runtime *Runtime, forExport bool) *ResolverOptions {
+	return &ResolverOptions{
+		Runtime:    runtime,
+		InstanceID: opts.InstanceID,
+		Properties: opts.ResolverProperties,
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  forExport,
+	}
+}
+
+func (r *Runtime) ValidateResolverProps(ctx context.Context, opts *ResolveOptions) error {
+	initializer, ok := ResolverInitializers[opts.Resolver]
+	if !ok {
+		return fmt.Errorf("no resolver found for name %q", opts.Resolver)
+	}
+	resolver, err := initializer(ctx, opts.toResolverOptions(r, false))
+	if err != nil {
+		return err
+	}
+	defer resolver.Close()
+
+	return resolver.Validate(ctx)
 }
 
 // Resolve resolves a query using the given options.
@@ -134,18 +173,29 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	if !ok {
 		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
-	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:    r,
-		InstanceID: opts.InstanceID,
-		Properties: opts.ResolverProperties,
-		Args:       opts.Args,
-		Claims:     opts.Claims,
-		ForExport:  false,
-	})
+	resolver, err := initializer(ctx, opts.toResolverOptions(r, false))
 	if err != nil {
 		return nil, err
 	}
 	defer resolver.Close()
+
+	if opts.ValidateResolverProperties {
+		err := resolver.Validate(ctx)
+		if err != nil {
+			var undefinedErr *ErrUndefinedFieldsInResolverProps
+			if !errors.As(err, &undefinedErr) {
+				return nil, err
+			}
+			if opts.StrictResolverProperties {
+				return nil, err
+			}
+			l, err := r.InstanceLogger(ctx, opts.InstanceID)
+			if err != nil {
+				return nil, err
+			}
+			l.Warn("resolver has undefined properties, will be ignored", zap.String("resource", opts.Caller), zap.String("resolver", opts.Resolver), zap.Strings("undefined_properties", undefinedErr.Fields), observability.ZapCtx(ctx))
+		}
+	}
 
 	// Get the cache key
 	cacheKey, ok, err := resolver.CacheKey(ctx)

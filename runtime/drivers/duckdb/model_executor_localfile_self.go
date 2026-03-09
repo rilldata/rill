@@ -3,13 +3,12 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
 )
 
 type localFileToSelfExecutor struct {
@@ -42,12 +41,16 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	inputProps := &inputProps{}
+	var warnings []string
 	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in input properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
@@ -59,7 +62,10 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in output properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 	if err := outputProps.validateAndApplyDefaults(opts, &ModelInputProperties{}, outputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
@@ -140,5 +146,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Properties:   resultPropsMap,
 		Table:        tableName,
 		ExecDuration: metrics.duration,
+		Warnings:     warnings,
 	}, nil
 }

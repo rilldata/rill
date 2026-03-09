@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -35,7 +36,8 @@ type aiProps struct {
 	Measures   []string       `mapstructure:"measures"`
 	Where      map[string]any `mapstructure:"where"`
 	// IsReport indicates if the AI resolver is used for an automated report.
-	IsReport bool `mapstructure:"is_report"`
+	IsReport         bool           `mapstructure:"is_report"`
+	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
 // aiArgs contains the dynamic arguments for the AI resolver.
@@ -50,11 +52,9 @@ type aiArgs struct {
 func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	// Parse props
 	props := &aiProps{}
-	unused, err := mapstructureutil.DecodeWithWarnings(opts.Properties, props)
-	if err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
-	logUnusedProperties(ctx, opts, "ai", unused)
 
 	// Parse args
 	args := &aiArgs{}
@@ -153,7 +153,10 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 	if !r.props.IsReport && r.props.Prompt == "" {
 		return errors.New("prompt is required for non-report AI sessions")
 	}
-	return nil
+	return &runtime.ErrUndefinedFieldsInResolverProps{
+		Name:   "ai",
+		Fields: maps.Keys(r.props.AdditionalFields),
+	}
 }
 
 // ResolveInteractive implements runtime.Resolver.

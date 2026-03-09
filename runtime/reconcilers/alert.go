@@ -724,10 +724,18 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
 
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+
 	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         r.C.InstanceID,
-		Resolver:           a.Spec.Resolver,
-		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		InstanceID:                 r.C.InstanceID,
+		Resolver:                   a.Spec.Resolver,
+		ResolverProperties:         a.Spec.ResolverProperties.AsMap(),
+		ValidateResolverProperties: true,
+		StrictResolverProperties:   cfg.StrictModelProps,
+		Caller:                     self.Meta.Name.String(),
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,

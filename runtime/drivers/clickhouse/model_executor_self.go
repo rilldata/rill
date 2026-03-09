@@ -3,12 +3,11 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
 )
 
 type selfToSelfExecutor struct {
@@ -27,12 +26,16 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Parse the input and output properties
 	inputProps := &ModelInputProperties{}
+	var warnings []string
 	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in input properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 
 	outputProps := &ModelOutputProperties{}
@@ -41,7 +44,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	if len(unused) > 0 {
-		e.c.logger.Warn("Undefined fields in output properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
+		if opts.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))
 	}
 
 	// Validate the output properties
@@ -117,5 +123,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Properties:   resultPropsMap,
 		Table:        tableName,
 		ExecDuration: metrics.duration,
+		Warnings:     warnings,
 	}, nil
 }

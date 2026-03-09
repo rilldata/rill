@@ -744,11 +744,19 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		props["agent"] = ai.AnalystAgentName
 	}
 
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+
 	// Execute AI resolver
 	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         r.C.InstanceID,
-		Resolver:           "ai",
-		ResolverProperties: props,
+		InstanceID:                 r.C.InstanceID,
+		Resolver:                   "ai",
+		ResolverProperties:         props,
+		ValidateResolverProperties: true,
+		StrictResolverProperties:   cfg.StrictModelProps,
+		Caller:                     self.String(),
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session

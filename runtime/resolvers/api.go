@@ -23,11 +23,9 @@ type apiProps struct {
 func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	// Parse props
 	props := &apiProps{}
-	unused, err := mapstructureutil.DecodeWithWarnings(opts.Properties, props)
-	if err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
-	logUnusedProperties(ctx, opts, "api", unused)
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {

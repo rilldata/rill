@@ -48,11 +48,9 @@ type sqlArgs struct {
 // It supports the use of templating in the SQL string to inject user attributes and args into the SQL query.
 func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &sqlProps{}
-	unused, err := mapstructureutil.DecodeWithWarnings(opts.Properties, props)
-	if err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
-	logUnusedProperties(ctx, opts, "sql", unused)
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
