@@ -154,10 +154,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		if !ch.Interactive {
 			return nil
 		}
-		if err := cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", true); err != nil {
-			return err
-		}
-		return nil
+		return cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", true)
 	}
 
 	if o.remoteURL == "" {

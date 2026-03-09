@@ -10,7 +10,7 @@ import (
 )
 
 func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, displayName, description string
+	var displayName, description string
 
 	createCmd := &cobra.Command{
 		Use:   "create <org-name>",
@@ -22,6 +22,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			name := args[0]
 			res, err := client.CreateOrganization(cmd.Context(), &adminv1.CreateOrganizationRequest{
 				Name:        name,
 				DisplayName: displayName,
