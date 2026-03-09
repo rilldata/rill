@@ -126,6 +126,7 @@ export class SSEConnectionManager {
     // Only reconnect if PAUSED (intentionally disconnected to save resources)
     // Don't reconnect if CONNECTING (already in progress) or CLOSED (fatal error)
     if (status === ConnectionStatus.PAUSED) {
+      this.retryAttempts.set(0);
       await this.reconnect();
     }
 
@@ -255,19 +256,6 @@ export class SSEConnectionManager {
       status === ConnectionStatus.PAUSED
     )
       return;
-
-    // Reset retry counter if this was a stable connection. An intentional pause
-    // of a healthy connection should not consume retry budget; without this,
-    // retryAttempts accumulates across auto-close pause/resume cycles and
-    // eventually hits maxRetryAttempts, showing a spurious error page.
-    if (status === ConnectionStatus.OPEN) {
-      const wasStable =
-        this.openedAt !== null &&
-        Date.now() - this.openedAt >= MIN_STABLE_DURATION;
-      if (wasStable) {
-        this.retryAttempts.set(0);
-      }
-    }
 
     this.status.set(ConnectionStatus.PAUSED);
 
