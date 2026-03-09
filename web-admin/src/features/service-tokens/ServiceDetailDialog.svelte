@@ -113,12 +113,12 @@
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="max-w-lg">
+  <DialogContent class="max-w-2xl">
     <DialogHeader>
       <DialogTitle>{serviceName}</DialogTitle>
     </DialogHeader>
 
-    <div class="flex flex-col gap-y-5 max-h-[30vh] overflow-y-auto">
+    <div class="flex flex-col gap-y-5 max-h-[45vh] overflow-y-auto">
       <!-- Service info -->
       <div class="grid grid-cols-2 gap-y-2 text-sm">
         <span class="text-fg-tertiary">Org role</span>
@@ -151,14 +151,14 @@
       <!-- Newly issued token -->
       {#if newlyIssuedToken}
         <div
-          class="flex flex-col gap-y-2 p-3 rounded border border-yellow-300 bg-yellow-50"
+          class="flex flex-col gap-y-2 p-3 rounded border bg-surface-subtle"
         >
           <span class="text-sm font-medium text-fg-primary"
             >New token issued</span
           >
           <div class="flex items-center gap-x-2">
             <code
-              class="text-xs bg-white border rounded px-2 py-1 flex-1 break-all"
+              class="text-xs bg-surface-base border rounded px-2 py-1 flex-1 break-all"
             >
               {newlyIssuedToken}
             </code>
@@ -166,7 +166,7 @@
               <CopyIcon size="14px" />
             </IconButton>
           </div>
-          <span class="text-xs text-yellow-700">
+          <span class="text-xs text-fg-secondary">
             Copy this token now. It will not be shown again.
           </span>
         </div>

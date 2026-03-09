@@ -21,7 +21,7 @@
   }
 </script>
 
-<SettingsContainer title="Service Account Tokens">
+<SettingsContainer title="Service Accounts">
   <svelte:fragment slot="body">
     <div class="flex flex-col gap-y-4">
       <div class="flex items-center justify-between">

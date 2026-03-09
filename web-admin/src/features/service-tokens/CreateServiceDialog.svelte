@@ -162,7 +162,7 @@
       </DialogDescription>
       <form
         id="create-service-form"
-        class="w-full flex flex-col gap-y-4 max-h-[30vh] overflow-y-auto"
+        class="w-full flex flex-col gap-y-4 max-h-[45vh] overflow-y-auto"
         on:submit|preventDefault={handleSubmit}
       >
         <Input
@@ -335,7 +335,7 @@
             <CopyIcon size="14px" />
           </IconButton>
         </div>
-        <p class="text-xs text-yellow-700">
+        <p class="text-xs text-fg-secondary">
           This token will only be shown once. Make sure to copy it now.
         </p>
       </div>
