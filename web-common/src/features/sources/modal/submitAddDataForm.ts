@@ -144,7 +144,11 @@ async function setMetricsCompilerInRillYAML(
 ): Promise<void> {
   await runtimeServicePutFile(client, {
     path: "rill.yaml",
-    blob: await updateRillYAMLWithMetricsCompiler(client, queryClient, compiler),
+    blob: await updateRillYAMLWithMetricsCompiler(
+      client,
+      queryClient,
+      compiler,
+    ),
     create: true,
     createOnly: false,
   });

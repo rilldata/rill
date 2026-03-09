@@ -22,8 +22,9 @@
   $: schemaName = driverName ? getSchemaNameFromDriver(driverName) : null;
   $: schema = schemaName ? getConnectorSchema(schemaName) : null;
   $: isDbtConnector = schema?.["x-category"] === "dbt";
-  $: isDataSource =
-    schemaName ? SOURCES.includes(schemaName) && !isDbtConnector : false;
+  $: isDataSource = schemaName
+    ? SOURCES.includes(schemaName) && !isDbtConnector
+    : false;
   $: isDisabled = hasUnsavedChanges || hasReconcileError || !driverName;
 
   /**
