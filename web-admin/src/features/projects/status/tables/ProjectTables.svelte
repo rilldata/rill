@@ -7,9 +7,9 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetInstance,
     getRuntimeServiceListResourcesQueryKey,
     type V1Resource,
@@ -36,10 +36,10 @@
   } from "../url-filter-sync";
   import { onMount } from "svelte";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // OLAP connector info
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
@@ -67,12 +67,12 @@
   // Use a writable store so createInfiniteQuery is called once during init;
   // parameter changes flow reactively through the store.
   const tablesParams = writable({
-    instanceId: "",
+    client: runtimeClient,
     connector: "",
     searchPattern: undefined as string | undefined,
   });
   $: tablesParams.set({
-    instanceId,
+    client: runtimeClient,
     connector: connectorName,
     searchPattern,
   });
@@ -84,7 +84,7 @@
   // TODO: populate from OLAPGetTable responses when per-table metadata is available
   let isViewMap = new Map<string, boolean>();
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
-  $: modelResourcesQuery = useModelResources(instanceId);
+  $: modelResourcesQuery = useModelResources(runtimeClient);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
   let typeFilter: (typeof typeValues)[number] = parseEnumParam(
     $page.url.searchParams.get("type"),
@@ -116,7 +116,7 @@
 
   type TypeOption = { label: string; value: "all" | "table" | "view" };
   const typeOptions: TypeOption[] = [
-    { label: "All", value: "all" },
+    { label: "All Types", value: "all" },
     { label: "Table", value: "table" },
     { label: "View", value: "view" },
   ];
@@ -145,7 +145,8 @@
   let selectedResource: V1Resource | null = null;
   let selectedModelName = "";
 
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
   // Handlers
@@ -190,14 +191,14 @@
 
     try {
       await $createTrigger.mutateAsync({
-        instanceId,
-        data: {
-          models: [{ model: selectedModelName, ...opts }],
-        },
+        models: [{ model: selectedModelName, ...opts }],
       });
 
       await queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+          undefined,
+        ),
       });
     } catch (error) {
       console.error("Failed to refresh model:", error);
@@ -216,18 +217,21 @@
     <h2 class="text-lg font-medium">Tables</h2>
   </div>
 
-  <div class="flex flex-row gap-x-4 min-h-9">
-    <Search
-      bind:value={searchText}
-      placeholder="Search"
-      large
-      autofocus={false}
-      showBorderOnFocus={false}
-    />
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
 
     <DropdownMenu.Root bind:open={typeDropdownOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {typeDropdownOpen
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {typeDropdownOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >
@@ -255,13 +259,13 @@
 
     {#if typeFilter !== "all" || searchText}
       <button
-        class="text-sm text-primary-500 hover:text-primary-600"
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         on:click={() => {
           typeFilter = "all";
           searchText = "";
         }}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
   </div>

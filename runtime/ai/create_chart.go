@@ -523,6 +523,42 @@ total_bids: measure
 }
 ` + "```" + `
 
+Example with delta sorting: Bar chart showing top advertisers by biggest change in bids (period-over-period). Use delta sorting when the user wants to see what changed most between two periods.
+
+Field details:
+bids_metrics: metrics_view
+advertiser_name: dimension
+total_bids: measure
+
+` + "```json" + `
+{
+  "chart_type": "bar_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-07-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "comparison_time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-06-30T23:59:59Z"
+    },
+    "color": "primary",
+    "x": {
+      "field": "advertiser_name",
+      "limit": 20,
+      "type": "nominal",
+      "sort": "-y_delta"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
 ### 2. Line Chart (` + "`line_chart`" + `)
 **Use for:** Showing trends over time
 
@@ -985,6 +1021,7 @@ rill_measures: special field
 - **sort**: Sorting order
   - ` + "`\"x\"`" + ` or ` + "`\"-x\"`" + `: Sort by x-axis values (ascending/descending)
   - ` + "`\"y\"`" + ` or ` + "`\"-y\"`" + `: Sort by y-axis values (ascending/descending)
+  - ` + "`\"y_delta\"`" + ` or ` + "`\"-y_delta\"`" + `: Sort by absolute change (delta) between current and comparison period (ascending/descending). Only effective when ` + "`comparison_time_range`" + ` is provided; otherwise falls back to regular y-axis sort. Use this when the user asks about "what changed most", "biggest increase/decrease", or "top movers".
 	- ` + "`\"color\"`" + ` or ` + "`\"-color\"`" + `: Sort by color field values (ascending/descending) Only used for heatmap charts
 	- ` + "`\"measure\"`" + ` or ` + "`\"-measure\"`" + `: Sort by measure field values (ascending/descending) Only used for donut charts
   - Array of values for custom sort order (e.g., weekday names)
@@ -1081,6 +1118,13 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **Supported chart types**: ` + "`bar_chart`" + `, ` + "`line_chart`" + `, ` + "`stacked_bar`" + `, ` + "`stacked_bar_normalized`" + ` support period-over-period comparison via the ` + "`comparison_time_range`" + ` parameter
 - **How it works**: When ` + "`comparison_time_range`" + ` is provided, the chart renders the current period alongside the comparison period with visual differentiation (e.g., side-by-side bars, dimmed comparison lines)
 - **Best practice**: Match the duration of the comparison period to the primary time range for meaningful comparisons
+
+### Delta Sorting (Period-over-Period Change Sorting)
+- **What it does**: Sorts dimensions by the **absolute change (delta)** between the current period and the comparison period, rather than by the current period's value alone
+- **Sort values**: Use ` + "`\"y_delta\"`" + ` (ascending) or ` + "`\"-y_delta\"`" + ` (descending) in the x-axis ` + "`sort`" + ` field
+- **Requires**: ` + "`comparison_time_range`" + ` must be provided. If no comparison is active, delta sort automatically falls back to regular ` + "`\"y\"`" + ` / ` + "`\"-y\"`" + ` sorting
+- **Supported chart types**: Only works on cartesian chart types with a nominal x-axis: ` + "`bar_chart`" + `, ` + "`stacked_bar`" + `, ` + "`stacked_bar_normalized`" + `, ` + "`line_chart`" + `
+- **When to use**: When the user asks about "what changed the most", "biggest increase or decrease", "top movers", "which categories grew or declined", or any question about period-over-period ranking by change
 
 ### Limitations
 - **Comparison measures**: Direct comparison measures like 'measure_name__delta_abs' or 'measure_name__delta_rel' are not allowed in the spec. Do not use such measures in the spec anywhere.

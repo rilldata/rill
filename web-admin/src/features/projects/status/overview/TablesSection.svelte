@@ -1,17 +1,17 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useInfiniteTablesList } from "../selectors";
   import { filterTemporaryTables, isLikelyView } from "../tables/utils";
   import { writable } from "svelte/store";
   import OverviewCard from "./OverviewCard.svelte";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   // Get instance info for OLAP connector
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
@@ -19,12 +19,12 @@
   // Get tables list (first page only; show "+" suffix when more pages exist)
   $: connectorName = instance?.olapConnector ?? "";
   const tablesParams = writable({
-    instanceId: "",
+    client: runtimeClient,
     connector: "",
     searchPattern: undefined as string | undefined,
   });
   $: tablesParams.set({
-    instanceId,
+    client: runtimeClient,
     connector: connectorName,
     searchPattern: undefined,
   });

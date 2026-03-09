@@ -26,9 +26,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch, WandIcon } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import {
+    createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewFromTableUIAction,
     useCreateMetricsViewWithCanvasUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -39,19 +40,21 @@
 
   export let filePath: string;
 
+  const runtimeClient = useRuntimeClient();
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, developerChat } = featureFlags;
 
-  $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: sourceQuery = fileArtifact.getResource(queryClient);
   let source: V1Source | undefined;
   $: source = $sourceQuery.data?.source;
   $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
-  $: sourceHasError = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: sourceHasError = fileArtifact.getHasErrors(queryClient);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -73,9 +76,10 @@
     openResourceGraphQuickView(sourceResource);
   }
 
-  $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
+  $: sourceFromYaml = useSourceFromYaml(runtimeClient, filePath);
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -87,6 +91,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -98,6 +103,7 @@
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -112,6 +118,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
+        runtimeClient,
         queryClient,
         connector,
         database,
@@ -145,19 +152,37 @@
         connector,
         filePath,
         $sourceQuery.data?.meta?.name?.name ?? "",
-        instanceId,
+        runtimeClient,
       );
     } catch {
       // no-op
     }
   };
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(
+    runtimeClient,
+    filePath,
+  );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
   async function onReplaceSource() {
-    await replaceSourceWithUploadedFile(instanceId, filePath);
+    await replaceSourceWithUploadedFile(runtimeClient, filePath);
     overlay.set(null);
+  }
+
+  async function onGenerateCanvasDashboard() {
+    // Use developer agent if enabled, otherwise fall back to RPC
+    if ($developerChat) {
+      await createCanvasDashboardFromTableWithAgent(
+        runtimeClient,
+        sinkConnector as string,
+        database,
+        databaseSchema,
+        tableName,
+      );
+    } else {
+      await createCanvasDashboardFromTable();
+    }
   }
 </script>
 
@@ -192,28 +217,26 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
-{#if $generateCanvas}
-  <NavigationMenuItem
-    disabled={disableCreateDashboard}
-    on:click={createCanvasDashboardFromTable}
-  >
-    <CanvasIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate Canvas Dashboard
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-    <svelte:fragment slot="description">
-      {#if $sourceHasError}
-        Source has errors
-      {:else if !sourceIsIdle}
-        Source is being ingested
-      {/if}
-    </svelte:fragment>
-  </NavigationMenuItem>
-{/if}
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={onGenerateCanvasDashboard}
+>
+  <CanvasIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate Canvas Dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $sourceHasError}
+      Source has errors
+    {:else if !sourceIsIdle}
+      Source is being ingested
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}

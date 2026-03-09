@@ -8,19 +8,19 @@
   import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let filters: Filters;
   export let timeControls: TimeControls;
 
+  const runtimeClient = useRuntimeClient();
+
   $: ({ form } = superFormInstance);
 
-  $: ({ instanceId } = $runtime);
-
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsViewValidSpec(instanceId, metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(runtimeClient, metricsViewName);
 
   $: measureOptions =
     $metricsView.data?.measures

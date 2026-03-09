@@ -8,7 +8,8 @@
   > = {
     gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
     refetchInterval: (query) => {
-      switch (query.state.data?.deployment?.status) {
+      const status = query.state.data?.deployment?.status;
+      switch (status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
         case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
           return PollTimeWhenProjectDeploymentPending;
@@ -20,6 +21,7 @@
           return false;
       }
     },
+    refetchIntervalInBackground: true, // Keep polling while the tab is hidden (e.g. deploy loader)
     refetchOnMount: true,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
@@ -27,6 +29,7 @@
 </script>
 
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     V1DeploymentStatus,
@@ -50,13 +53,14 @@
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
+  import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -64,6 +68,28 @@
     url: { pathname },
     params: { organization, project, token },
   } = $page);
+
+  // Initialize view-as store for this project scope (loads from sessionStorage)
+  $: if (organization && project) {
+    viewAsUserStore.initForProject(organization, project);
+  }
+
+  // Clear view-as state when navigating to a different project
+  onNavigate(({ from, to }) => {
+    const changedProject =
+      !from ||
+      !to ||
+      from.params?.organization !== to.params?.organization ||
+      from.params?.project !== to.params?.project;
+    if (changedProject) {
+      viewAsUserStore.clear();
+    }
+  });
+
+  // Clear view-as state when unmounting (e.g., navigating to org page)
+  onDestroy(() => {
+    viewAsUserStore.clear();
+  });
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -122,7 +148,34 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
+  /**
+   * When "View As" is active, fetch the project using the mocked user's JWT.
+   * This returns the impersonated user's `projectPermissions` from the server.
+   */
+  $: mockedUserProjectQuery = createAdminServiceGetProjectWithBearerToken(
+    organization,
+    project,
+    mockedUserDeploymentCredentials?.accessToken ?? "",
+    undefined,
+    {
+      query: {
+        enabled: !!mockedUserDeploymentCredentials?.accessToken,
+      },
+    },
+  );
+
   $: ({ data: projectData, error: projectError } = $projectQuery);
+
+  /**
+   * Compute effective project permissions.
+   * When "View As" is active, use the impersonated user's permissions (from server).
+   * Otherwise, use the actual user's permissions.
+   */
+  $: effectiveProjectPermissions =
+    mockedUserId && $mockedUserProjectQuery.data?.projectPermissions
+      ? $mockedUserProjectQuery.data.projectPermissions
+      : projectData?.projectPermissions;
+
   $: deploymentStatus = projectData?.deployment?.status;
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
   $: isProjectAvailable =
@@ -154,6 +207,20 @@
         : "user"
   ) as AuthContext;
 
+  // Derive effective runtime connection props
+  $: effectiveHost =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.runtimeHost
+      : projectData?.deployment?.runtimeHost;
+  $: effectiveInstanceId =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.instanceId
+      : projectData?.deployment?.runtimeInstanceId;
+  $: effectiveJwt =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.accessToken
+      : projectData?.jwt;
+
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
     metricsService?.loadCloudFields({
@@ -168,7 +235,7 @@
 
 {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
-    projectPermissions={projectData.projectPermissions}
+    projectPermissions={effectiveProjectPermissions}
     {organization}
     {pathname}
     {project}
@@ -196,19 +263,19 @@
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if isProjectAvailable}
-    <RuntimeProvider
-      instanceId={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.instanceId
-        : projectData.deployment.runtimeInstanceId}
-      host={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.runtimeHost
-        : projectData.deployment.runtimeHost}
-      jwt={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.accessToken
-        : projectData.jwt}
-      {authContext}
-    >
-      <slot />
-    </RuntimeProvider>
+    {#if effectiveHost != null && effectiveInstanceId}
+      {#key `${effectiveHost}::${effectiveInstanceId}`}
+        <RuntimeProvider
+          host={effectiveHost}
+          instanceId={effectiveInstanceId}
+          jwt={effectiveJwt}
+          {authContext}
+        >
+          <slot />
+        </RuntimeProvider>
+      {/key}
+    {:else}
+      <ProjectBuilding />
+    {/if}
   {/if}
 {/if}

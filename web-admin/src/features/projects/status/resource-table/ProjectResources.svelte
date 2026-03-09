@@ -2,12 +2,12 @@
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
@@ -30,8 +30,10 @@
   } from "../url-filter-sync";
   import { onMount } from "svelte";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
@@ -90,16 +92,16 @@
     ResourceKind.Connector,
   ];
 
-  $: ({ instanceId } = $runtime);
-
-  $: resources = useResources(instanceId);
+  $: resources = useResources(runtimeClient);
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     },
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );
@@ -143,40 +145,36 @@
   }
 
   function refreshAllSourcesAndModels() {
-    void $createTrigger
-      .mutateAsync({
-        instanceId,
-        data: { all: true },
-      })
-      .then(() => {
-        void queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceListResourcesQueryKey(
-            instanceId,
-            undefined,
-          ),
-        });
+    void $createTrigger.mutateAsync({ all: true }).then(() => {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+          undefined,
+        ),
       });
+    });
   }
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Resources</h2>
-  </div>
+  <h2 class="text-lg font-medium">Resources</h2>
 
   <!-- Search, Filter, and Action Controls -->
-  <div class="flex flex-row gap-x-4">
-    <Search
-      bind:value={searchText}
-      placeholder="Search"
-      large
-      autofocus={false}
-      showBorderOnFocus={false}
-    />
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
 
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >
@@ -212,7 +210,7 @@
 
     <DropdownMenu.Root bind:open={statusDropdownOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >
@@ -249,22 +247,24 @@
 
     {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
       <button
-        class="text-sm text-primary-500 hover:text-primary-600"
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         on:click={clearFilters}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
 
     <Button
       type="secondary"
       large
+      class="shrink-0 whitespace-nowrap"
       onClick={() => {
         isConfirmDialogOpen = true;
       }}
       disabled={isRefreshButtonDisabled}
     >
-      Refresh all sources and models
+      <span class="hidden lg:inline">Refresh all sources and models</span>
+      <span class="lg:hidden">Refresh all</span>
     </Button>
   </div>
 

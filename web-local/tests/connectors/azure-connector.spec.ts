@@ -25,12 +25,10 @@ test.describe("Azure connector form reset", () => {
     await expect(submit).toBeEnabled();
     await submit.click();
 
-    // Save Anyway (expected for failed test) to close the modal, then wait for form unmount.
-    const saveAnyway = page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Save Anyway" });
-    await expect(saveAnyway).toBeVisible();
-    await saveAnyway.click();
+    // Save (expected for failed test) to close the modal, then wait for form unmount.
+    const save = page.getByRole("dialog").getByRole("button", { name: "Save" });
+    await expect(save).toBeVisible();
+    await save.click();
     await page.waitForSelector('form[id*="azure"]', { state: "detached" });
 
     // Re-open and ensure the connection string is cleared.

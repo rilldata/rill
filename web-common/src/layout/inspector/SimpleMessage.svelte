@@ -1,11 +1,13 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
+
   export let message: string;
   export let includesHtml = false;
 </script>
 
 <div class="custom-instructions-wrapper" style:text-wrap="balance">
   {#if includesHtml}
-    <p>{@html message}</p>
+    <p>{@html DOMPurify.sanitize(message)}</p>
   {:else}
     <p>{message}</p>
   {/if}

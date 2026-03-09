@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
@@ -18,19 +19,17 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
-  import { fileArtifacts } from "../features/entity-management/file-artifacts";
-  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import Tag from "../components/tag/Tag.svelte";
+  import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
+  const runtimeClient = useRuntimeClient();
 
   export let mode: string;
-
-  $: ({ instanceId } = $runtime);
 
   $: ({
     params: { name: dashboardName },
@@ -43,9 +42,9 @@
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
 
-  $: exploresQuery = useValidExplores(instanceId);
-  $: canvasQuery = useValidCanvases(instanceId);
-  $: projectTitleQuery = useProjectTitle(instanceId);
+  $: exploresQuery = useValidExplores(runtimeClient);
+  $: canvasQuery = useValidCanvases(runtimeClient);
+  $: projectTitleQuery = useProjectTitle(runtimeClient);
 
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
 
@@ -129,7 +128,7 @@
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {:else if showDeveloperChat}
-      <ChatToggle beta />
+      <ChatToggle />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

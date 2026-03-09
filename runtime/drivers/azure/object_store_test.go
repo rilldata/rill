@@ -13,7 +13,7 @@ import (
 
 func TestObjectStore(t *testing.T) {
 	cfg := testruntime.AcquireConnector(t, "azure")
-	conn, err := drivers.Open("azure", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -39,7 +39,7 @@ func TestObjectStore(t *testing.T) {
 func TestObjectStorePathPrefixes(t *testing.T) {
 	cfg := testruntime.AcquireConnector(t, "azure")
 	cfg["path_prefixes"] = "azure://integration-test/glob_test/"
-	conn, err := drivers.Open("azure", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -309,10 +309,11 @@ func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket s
 func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := t.Context()
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 4, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 2, "")
 	require.NoError(t, err)
 	require.NotNil(t, objects)
-	require.Empty(t, nextToken)
+	require.Len(t, objects, 2)
+	require.NotEmpty(t, nextToken)
 }
 
 func testListObjectsNoMatch(t *testing.T, objectStore drivers.ObjectStore, bucket string) {

@@ -17,7 +17,7 @@
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
@@ -46,12 +46,19 @@
     name: $page.params.name,
   };
 
-  $: showTopBar =
-    navigationEnabled ||
-    ($dashboardChat &&
-      (activeResource?.kind === ResourceKind.Explore.toString() ||
-        activeResource?.kind === ResourceKind.MetricsView.toString()));
   $: onProjectPage = !activeResource;
+
+  $: showDashboardChat = $dashboardChat && !onProjectPage;
+  // Resource kind can be metrics view in some cases. But internally to render it will have to have an equivalent explore.
+  $: correctedKindForChat =
+    activeResource?.kind === ResourceKind.MetricsView
+      ? ResourceKind.Explore
+      : (activeResource?.kind as
+          | ResourceKind.Explore
+          | ResourceKind.Canvas
+          | undefined);
+
+  $: showTopBar = navigationEnabled || showDashboardChat;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -131,11 +138,7 @@
         class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
         class:border-b={!onProjectPage}
       >
-        <TopNavigationBarEmbed
-          {instanceId}
-          {activeResource}
-          {navigationEnabled}
-        />
+        <TopNavigationBarEmbed {activeResource} {navigationEnabled} />
       </div>
     {/if}
 
@@ -143,8 +146,8 @@
       <div class="flex-1 overflow-hidden">
         <slot />
       </div>
-      {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-        <DashboardChat />
+      {#if showDashboardChat && correctedKindForChat}
+        <DashboardChat kind={correctedKindForChat} />
       {/if}
     </div>
   </RuntimeProvider>

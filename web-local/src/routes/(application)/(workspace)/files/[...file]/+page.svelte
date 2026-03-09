@@ -2,6 +2,8 @@
   import { afterNavigate } from "$app/navigation";
   import type { EditorView } from "@codemirror/view";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
+  import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
+  import { generatingCanvas } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
@@ -15,7 +17,6 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
@@ -33,8 +34,6 @@
 
   let editor: EditorView;
 
-  $: ({ instanceId } = $runtime);
-
   $: ({ fileArtifact } = data);
   $: ({
     autoSave,
@@ -51,7 +50,7 @@
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
+  $: resourceQuery = getResource(queryClient);
 
   $: resource = $resourceQuery.data;
 
@@ -61,7 +60,7 @@
       : getExtensionsForFile(path);
 
   // Parse error for the editor banner
-  $: parseErrorQuery = getParseError(queryClient, instanceId);
+  $: parseErrorQuery = getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
   onMount(() => {
@@ -88,7 +87,9 @@
 
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
-    {#if workspace}
+    {#if $generatingCanvas}
+      <GeneratingMessage title="Generating your Canvas dashboard..." />
+    {:else if workspace}
       <svelte:component this={workspace} {fileArtifact} />
     {:else}
       <WorkspaceContainer inspector={false}>

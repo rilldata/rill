@@ -12,27 +12,31 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import {
+    extractErrorStatusCode,
+    isNotFoundError,
+  } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
+
+  const runtimeClient = useRuntimeClient();
 
   export let data: PageData;
   $: ({ metricsView, explore, exploreName } = data);
 
-  resetSelectedMockUserAfterNavigate(queryClient);
+  resetSelectedMockUserAfterNavigate(queryClient, runtimeClient);
 
   $: metricsViewName = metricsView?.meta?.name?.name as string;
-
-  $: ({ instanceId } = $runtime);
 
   $: filePaths = [
     ...(explore.meta?.filePaths ?? []),
     ...(metricsView.meta?.filePaths ?? []),
   ];
-  $: exploreQuery = useExploreValidSpec(instanceId, exploreName);
+  $: exploreQuery = useExploreValidSpec(runtimeClient, exploreName);
   $: measures = $exploreQuery.data?.explore?.measures ?? [];
-  $: projectParserQuery = useProjectParser(queryClient, instanceId, {
+  $: projectParserQuery = useProjectParser(queryClient, runtimeClient, {
     enabled: $selectedMockUserStore?.admin,
   });
 
@@ -55,7 +59,7 @@
       (error) => filePaths.includes(error.filePath as string),
     );
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && $exploreQuery.error?.response?.status === 404;
+    $selectedMockUserStore && isNotFoundError($exploreQuery.error);
 
   onNavigate(({ from, to }) => {
     const changedDashboard =
@@ -73,7 +77,7 @@
 
 {#if measures.length === 0 && $selectedMockUserStore !== null}
   <ErrorPage
-    statusCode={$exploreQuery.error?.response?.status}
+    statusCode={extractErrorStatusCode($exploreQuery.error)}
     header="Error fetching dashboard"
     body="No measures available"
   />
@@ -85,7 +89,7 @@
   />
 {:else if mockUserHasNoAccess}
   <ErrorPage
-    statusCode={$exploreQuery.error?.response?.status}
+    statusCode={extractErrorStatusCode($exploreQuery.error)}
     header="This user can't access this dashboard"
     body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
   />
