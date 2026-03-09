@@ -150,9 +150,7 @@
 
       <!-- Newly issued token -->
       {#if newlyIssuedToken}
-        <div
-          class="flex flex-col gap-y-2 p-3 rounded border bg-surface-subtle"
-        >
+        <div class="flex flex-col gap-y-2 p-3 rounded border bg-surface-subtle">
           <span class="text-sm font-medium text-fg-primary"
             >New token issued</span
           >
