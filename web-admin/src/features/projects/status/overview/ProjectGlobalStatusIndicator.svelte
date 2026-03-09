@@ -5,66 +5,52 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-  import { runtimeClientStore } from "@rilldata/web-common/runtime-client/v2";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useProjectDeployment } from "../selectors";
 
   const queryClient = useQueryClient();
+  const runtimeClient = useRuntimeClient();
 
   export let organization: string;
   export let project: string;
-
-  $: runtimeClient = $runtimeClientStore;
 
   $: projectDeployment = useProjectDeployment(organization, project);
   $: ({ data: deployment } = $projectDeployment);
   $: isDeploymentNotOk =
     deployment?.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
 
-  $: hasResourceErrorsQuery = runtimeClient
-    ? createRuntimeServiceListResources(
-        runtimeClient,
-        {},
-        {
-          query: {
-            select: (data) => {
-              return (
-                data.resources.filter(
-                  (resource) => !!resource.meta.reconcileError,
-                ).length > 0
-              );
-            },
-            refetchOnMount: true,
-            refetchOnWindowFocus: true,
-          },
+  $: hasResourceErrorsQuery = createRuntimeServiceListResources(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => {
+          return (
+            data.resources.filter((resource) => !!resource.meta.reconcileError)
+              .length > 0
+          );
         },
-      )
-    : null;
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
   $: ({
     data: hasResourceErrors,
     error: hasResourceErrorsError,
     isLoading: hasResourceErrorsLoading,
-  } = $hasResourceErrorsQuery ?? {
-    data: undefined,
-    error: undefined,
-    isLoading: true,
-  });
+  } = $hasResourceErrorsQuery);
 
-  $: projectParserQuery = runtimeClient
-    ? useProjectParser(queryClient, runtimeClient, {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      })
-    : null;
+  $: projectParserQuery = useProjectParser(queryClient, runtimeClient, {
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
   $: ({
     data: projectParserData,
     error: projectParserError,
     isLoading: projectParserLoading,
-  } = $projectParserQuery ?? {
-    data: undefined,
-    error: undefined,
-    isLoading: true,
-  });
+  } = $projectParserQuery);
   $: hasParseErrors =
     projectParserData?.projectParser.state.parseErrors.length > 0;
 </script>
