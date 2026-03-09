@@ -38,7 +38,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if len(unused) > 0 {
-		if opts.StrictModelProps {
+		if opts.Env.StrictModelProps {
 			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields in input properties. Will be ignored: %s", strings.Join(unused, ", ")))
@@ -53,7 +53,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 		return nil, err
 	}
 	if len(unused) > 0 {
-		if opts.StrictModelProps {
+		if opts.Env.StrictModelProps {
 			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))

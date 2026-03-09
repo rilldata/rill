@@ -66,9 +66,6 @@ type ModelExecuteOptions struct {
 	InputProperties map[string]any
 	// OutputProperties are the resolved properties of the model's output connector.
 	OutputProperties map[string]any
-	// StrictModelProps is true if the model execution should return an error if there are any undefined fields in the input or output properties.
-	// If false, undefined fields will be ignored with a warning set in ModelResult.
-	StrictModelProps bool
 	// Priority is the priority of the model execution.
 	Priority int
 	// Incremental is true if the model is an incremental model.
@@ -90,6 +87,7 @@ type ModelEnv struct {
 	RepoRoot           string
 	StageChanges       bool
 	DefaultMaterialize bool
+	StrictModelProps   bool
 	Connectors         []*runtimev1.Connector
 	AcquireConnector   func(ctx context.Context, name string) (Handle, func(), error)
 }

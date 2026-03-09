@@ -56,7 +56,7 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if len(unused) > 0 {
-		if opts.StrictModelProps {
+		if opts.Env.StrictModelProps {
 			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))

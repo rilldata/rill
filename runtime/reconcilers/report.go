@@ -749,20 +749,28 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		return nil, fmt.Errorf("failed to get instance config: %w", err)
 	}
 
-	// Execute AI resolver
-	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:                 r.C.InstanceID,
-		Resolver:                   "ai",
-		ResolverProperties:         props,
-		ValidateResolverProperties: true,
-		StrictResolverProperties:   cfg.StrictModelProps,
-		Caller:                     self.String(),
+	opts := &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           "ai",
+		ResolverProperties: props,
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
 		},
 		Claims: claims,
-	})
+	}
+
+	err = r.C.Runtime.ValidateResolverProperties(ctx, opts)
+	if err != nil {
+		var invalidErr *runtime.UndefinedFieldsInResolverPropsError
+		if errors.As(err, &invalidErr) && !cfg.StrictResolverProps {
+			r.C.Logger.Warn("Undefined properties in ai resolver, will be ignored", zap.String("resolver", invalidErr.Name), zap.Strings("fields", invalidErr.Fields))
+		}
+		return nil, err
+	}
+
+	// Execute AI resolver
+	result, err := r.C.Runtime.Resolve(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute AI resolver: %w", err)
 	}

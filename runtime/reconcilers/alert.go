@@ -724,18 +724,10 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
 
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance config: %w", err)
-	}
-
-	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:                 r.C.InstanceID,
-		Resolver:                   a.Spec.Resolver,
-		ResolverProperties:         a.Spec.ResolverProperties.AsMap(),
-		ValidateResolverProperties: true,
-		StrictResolverProperties:   cfg.StrictModelProps,
-		Caller:                     self.Meta.Name.String(),
+	opts := &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           a.Spec.Resolver,
+		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,
@@ -743,7 +735,23 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			"limit":          1,
 		},
 		Claims: &runtime.SecurityClaims{UserAttributes: queryForAttrs},
-	})
+	}
+
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+
+	err = r.C.Runtime.ValidateResolverProperties(ctx, opts)
+	if err != nil {
+		var invalidErr *runtime.UndefinedFieldsInResolverPropsError
+		if errors.As(err, &invalidErr) && !cfg.StrictResolverProps {
+			r.C.Logger.Warn("Undefined properties in alert reconciler, will be ignored", zap.String("resolver", invalidErr.Name), zap.Strings("fields", invalidErr.Fields))
+		}
+		return nil, err
+	}
+
+	res, err := r.C.Runtime.Resolve(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}

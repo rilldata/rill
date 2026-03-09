@@ -18,7 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
@@ -113,15 +112,11 @@ func RegisterResolverInitializer(name string, initializer ResolverInitializer) {
 
 // ResolveOptions are the options passed to the runtime's Resolve method.
 type ResolveOptions struct {
-	InstanceID                 string
-	Resolver                   string
-	ResolverProperties         map[string]any
-	ValidateResolverProperties bool
-	StrictResolverProperties   bool
-	Args                       map[string]any
-	Claims                     *SecurityClaims
-
-	Caller string // for logging and observability
+	InstanceID         string
+	Resolver           string
+	ResolverProperties map[string]any
+	Args               map[string]any
+	Claims             *SecurityClaims
 }
 
 func (opts *ResolveOptions) toResolverOptions(runtime *Runtime, forExport bool) *ResolverOptions {
@@ -136,6 +131,21 @@ func (opts *ResolveOptions) toResolverOptions(runtime *Runtime, forExport bool) 
 }
 
 func (r *Runtime) ValidateResolverProps(ctx context.Context, opts *ResolveOptions) error {
+	initializer, ok := ResolverInitializers[opts.Resolver]
+	if !ok {
+		return fmt.Errorf("no resolver found for name %q", opts.Resolver)
+	}
+	resolver, err := initializer(ctx, opts.toResolverOptions(r, false))
+	if err != nil {
+		return err
+	}
+	defer resolver.Close()
+
+	return resolver.Validate(ctx)
+}
+
+func (r *Runtime) ValidateResolverProperties(ctx context.Context, opts *ResolveOptions) error {
+	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
 		return fmt.Errorf("no resolver found for name %q", opts.Resolver)
@@ -178,24 +188,6 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		return nil, err
 	}
 	defer resolver.Close()
-
-	if opts.ValidateResolverProperties {
-		err := resolver.Validate(ctx)
-		if err != nil {
-			var undefinedErr *UndefinedFieldsInResolverPropsError
-			if !errors.As(err, &undefinedErr) {
-				return nil, err
-			}
-			if opts.StrictResolverProperties {
-				return nil, err
-			}
-			l, err := r.InstanceLogger(ctx, opts.InstanceID)
-			if err != nil {
-				return nil, err
-			}
-			l.Warn("resolver has undefined properties, will be ignored", zap.String("resource", opts.Caller), zap.String("resolver", opts.Resolver), zap.Strings("undefined_properties", undefinedErr.Fields), observability.ZapCtx(ctx))
-		}
-	}
 
 	// Get the cache key
 	cacheKey, ok, err := resolver.CacheKey(ctx)
