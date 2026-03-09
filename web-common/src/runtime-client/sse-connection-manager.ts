@@ -119,7 +119,7 @@ export class SSEConnectionManager {
   }
 
   /**
-   * Stop the connection, mark closed and clean up resources
+   * Resume the connection if paused, and reset the auto-close timer.
    */
   public heartbeat = async () => {
     const status = get(this.status);
