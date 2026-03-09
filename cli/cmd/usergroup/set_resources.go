@@ -26,10 +26,10 @@ func SetResourcesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if groupName == "" {
 				if !ch.Interactive {
-					return fmt.Errorf("required flag \"group\" not set")
+					return fmt.Errorf("--group is required when not running interactively")
 				}
 				var err error
-				groupName, err = cmdutil.StringPrompt("Enter user group name")
+				groupName, err = cmdutil.InputPrompt("Enter user group name", "")
 				if err != nil {
 					return err
 				}

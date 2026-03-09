@@ -25,10 +25,10 @@ func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if email == "" {
 				if !ch.Interactive {
-					return fmt.Errorf("required flag \"email\" not set")
+					return fmt.Errorf("--email is required when not running interactively")
 				}
 				var err error
-				email, err = cmdutil.StringPrompt("Enter user email")
+				email, err = cmdutil.InputPrompt("Enter user email", "")
 				if err != nil {
 					return err
 				}

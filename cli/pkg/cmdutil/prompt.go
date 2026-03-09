@@ -79,14 +79,3 @@ func InputPrompt(msg, def string) (string, error) {
 	}
 	return strings.TrimSpace(result), nil
 }
-
-func StringPrompt(msg string) (string, error) {
-	prompt := &survey.Input{
-		Message: msg,
-	}
-	result := ""
-	if err := survey.AskOne(prompt, &result); err != nil {
-		return "", fmt.Errorf("prompt failed: %w", err)
-	}
-	return strings.TrimSpace(result), nil
-}

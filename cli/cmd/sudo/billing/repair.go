@@ -17,12 +17,14 @@ func RepairCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ok, err := cmdutil.ConfirmPrompt("This will put all orgs not having billing customer id on trial. Are you sure ?", "", false)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return nil
+			if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt("This will put all orgs without a billing customer id on trial. Are you sure?", "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return nil
+				}
 			}
 
 			_, err = client.SudoTriggerBillingRepair(cmd.Context(), &adminv1.SudoTriggerBillingRepairRequest{})

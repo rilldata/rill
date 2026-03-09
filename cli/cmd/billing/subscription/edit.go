@@ -38,14 +38,17 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
-			ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
-			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				ch.PrintfWarn("Aborted\n")
-				return nil
+			if ch.Interactive {
+				ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
+
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
 			}
 
 			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{

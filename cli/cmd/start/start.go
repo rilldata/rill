@@ -1,6 +1,7 @@
 package start
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -101,16 +102,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Check for WSL Windows partition usage (based on the project path)
 			if envdetect.IsWSLWindowsPartition(projectPath) {
 				ch.PrintfWarn("%s\n", envdetect.GetWSLWarningMessage())
-				confirm, err := cmdutil.ConfirmPrompt(
-					"Do you want to continue anyway?",
-					"", false, // Default to "No"
-				)
-				if err != nil {
-					return err
-				}
-				if !confirm {
-					ch.PrintfWarn("Aborted\n")
-					return nil
+				if ch.Interactive {
+					confirm, err := cmdutil.ConfirmPrompt("Do you want to continue anyway?", "", false)
+					if err != nil {
+						return err
+					}
+					if !confirm {
+						return errors.New("aborted")
+					}
 				}
 			}
 

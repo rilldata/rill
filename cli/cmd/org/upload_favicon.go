@@ -45,8 +45,10 @@ func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// Confirmation prompt
-				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom favicon for %q. Continue?", ch.Org), "", false); err != nil || !ok {
-					return err
+				if ch.Interactive {
+					if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom favicon for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+						return err
+					}
 				}
 
 				empty := ""
@@ -88,8 +90,10 @@ func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer f.Close()
 
 			// Confirmation prompt
-			if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom favicon for %q. Continue?", ch.Org), "", false); err != nil || !ok {
-				return err
+			if ch.Interactive {
+				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom favicon for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+					return err
+				}
 			}
 
 			// Generate the asset upload URL

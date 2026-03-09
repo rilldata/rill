@@ -19,10 +19,10 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if email == "" {
 				if !ch.Interactive {
-					return fmt.Errorf("required flag \"email\" not set")
+					return fmt.Errorf("--email is required when not running interactively")
 				}
 				var err error
-				email, err = cmdutil.StringPrompt("Enter email")
+				email, err = cmdutil.InputPrompt("Enter email", "")
 				if err != nil {
 					return err
 				}

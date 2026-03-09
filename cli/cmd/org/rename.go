@@ -1,6 +1,8 @@
 package org
 
 import (
+	"errors"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -53,14 +55,15 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if req.NewName != nil {
-				ch.PrintfWarn("Changing the name will invalidate dashboard URLs.\n")
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-				if err != nil {
-					return err
-				}
-				if !ok {
-					ch.PrintfWarn("Aborted\n")
-					return nil
+				ch.PrintfWarn("Warning: Renaming an org will invalidate all dashboard URLs.\n")
+				if ch.Interactive {
+					ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+					if err != nil {
+						return err
+					}
+					if !ok {
+						return errors.New("aborted")
+					}
 				}
 			}
 

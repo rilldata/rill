@@ -32,7 +32,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				if !ch.Interactive {
 					return fmt.Errorf("--email is required when not running interactively")
 				}
-				email, err = cmdutil.StringPrompt("Enter email")
+				email, err = cmdutil.InputPrompt("Enter email", "")
 				if err != nil {
 					return err
 				}

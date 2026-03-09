@@ -29,7 +29,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				if !ch.Interactive {
 					return fmt.Errorf("group name must be provided as an argument")
 				}
-				name, err = cmdutil.StringPrompt("Enter user group name")
+				name, err = cmdutil.InputPrompt("Enter user group name", "")
 				if err != nil {
 					return err
 				}

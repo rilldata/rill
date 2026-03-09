@@ -65,6 +65,10 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+	if !ch.Interactive {
+		return fmt.Errorf("the GitHub connect flow requires an interactive terminal")
+	}
+
 	// Set a default org for the user if necessary
 	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
 	// TODO : similar to UI workflow create a org taking user input

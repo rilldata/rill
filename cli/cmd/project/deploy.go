@@ -356,6 +356,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	// We create a default org based on the user name.
 	// TODO : Ask user prompt similar to UI instead of silently creating org based on email
 	if ch.Org == "" {
+		if !ch.Interactive {
+			return fmt.Errorf("--org flag is required when not running interactively")
+		}
 		err = createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)

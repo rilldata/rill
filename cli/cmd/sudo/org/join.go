@@ -1,6 +1,8 @@
 package org
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -15,6 +17,9 @@ func JoinCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ch.PrintfWarn("This command will permanently add you as an admin member of %q and your name will show up in member listings. ", args[0])
 			ch.PrintfWarn("If you only need temporary access, consider instead assuming the identity of an existing admin using `rill sudo org list-admins` and `rill sudo user assume`.\n")
+			if !ch.Interactive {
+				return fmt.Errorf("confirmation required; use an interactive terminal")
+			}
 			ok, err := cmdutil.ConfirmPrompt("Do you want to proceed?", "", true)
 			if err != nil {
 				return err

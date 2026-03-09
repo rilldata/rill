@@ -48,12 +48,15 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if !empty {
+				if !ch.Interactive {
+					return fmt.Errorf("directory %q is not empty; remove it before cloning", path)
+				}
 				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("There are files at path %q. Do you want to overwrite?", path), "", false)
 				if err != nil {
 					return err
 				}
 				if !ok {
-					return fmt.Errorf("directory %q is not empty", path)
+					return errors.New("aborted")
 				}
 			}
 

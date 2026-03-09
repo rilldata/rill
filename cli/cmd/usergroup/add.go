@@ -23,7 +23,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if role == "" {
 				if !ch.Interactive {
-					return fmt.Errorf("required flag \"role\" not set")
+					return fmt.Errorf("--role is required when not running interactively")
 				}
 				var err error
 				role, err = cmdutil.SelectPrompt("Select role", usergroupRoles, "")
@@ -34,10 +34,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if groupName == "" {
 				if !ch.Interactive {
-					return fmt.Errorf("required flag \"group\" not set")
+					return fmt.Errorf("--group is required when not running interactively")
 				}
 				var err error
-				groupName, err = cmdutil.StringPrompt("Enter user group name")
+				groupName, err = cmdutil.InputPrompt("Enter user group name", "")
 				if err != nil {
 					return err
 				}

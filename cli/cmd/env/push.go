@@ -89,20 +89,21 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			// Always prompt for confirmation when there are changes
-			message := fmt.Sprintf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
-			ch.Print(message)
-
-			for k, v := range changedVars {
-				ch.Printf("  %s=%s\n", k, v)
+			// Preview the change
+			ch.Printf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
+			for k := range changedVars {
+				ch.Printf("-  %s\n", k)
 			}
 
-			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-			if err != nil {
-				return fmt.Errorf("failed to prompt for confirmation: %w", err)
-			}
-			if !ok {
-				return nil
+			// Prompt for confirmation in interactive mode
+			if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+				if err != nil {
+					return fmt.Errorf("failed to prompt for confirmation: %w", err)
+				}
+				if !ok {
+					return nil
+				}
 			}
 
 			// Write the merged variables back to the cloud project
