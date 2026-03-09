@@ -23,13 +23,15 @@ func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("--project is required")
 			}
 
-			if email == "" && ch.Interactive {
-				if err := cmdutil.StringPromptIfEmpty(&email, "Enter user email"); err != nil {
+			if email == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("required flag \"email\" not set")
+				}
+				var err error
+				email, err = cmdutil.StringPrompt("Enter user email")
+				if err != nil {
 					return err
 				}
-			}
-			if email == "" {
-				return fmt.Errorf("--email is required")
 			}
 
 			resources, err := cmdutil.ParseResourceStrings(explores, canvases)

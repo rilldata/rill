@@ -1,6 +1,8 @@
 package user
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -15,9 +17,15 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "remove",
 		Short: "Remove a user",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
-			if err != nil {
-				return err
+			if email == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("required flag \"email\" not set")
+				}
+				var err error
+				email, err = cmdutil.StringPrompt("Enter email")
+				if err != nil {
+					return err
+				}
 			}
 
 			client, err := ch.Client()

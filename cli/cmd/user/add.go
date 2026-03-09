@@ -32,7 +32,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				if !ch.Interactive {
 					return fmt.Errorf("--email is required when not running interactively")
 				}
-				err = cmdutil.StringPromptIfEmpty(&email, "Enter email")
+				email, err = cmdutil.StringPrompt("Enter email")
 				if err != nil {
 					return err
 				}
@@ -50,7 +50,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					if !ch.Interactive {
 						return fmt.Errorf("--role is required when not running interactively")
 					}
-					err := cmdutil.SelectPromptIfEmpty(&role, "Select role", orgRoles, orgRoles[len(orgRoles)-1])
+					role, err = cmdutil.SelectPrompt("Select role", orgRoles, orgRoles[len(orgRoles)-1])
 					if err != nil {
 						return err
 					}
@@ -90,7 +90,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					if !ch.Interactive {
 						return fmt.Errorf("--role is required when not running interactively")
 					}
-					err := cmdutil.SelectPromptIfEmpty(&role, "Select role", projectRoles, projectRoles[len(projectRoles)-1])
+					role, err = cmdutil.SelectPrompt("Select role", projectRoles, projectRoles[len(projectRoles)-1])
 					if err != nil {
 						return err
 					}
@@ -150,7 +150,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 						orgRole = ""
 					}
 					if orgRole == "" {
-						err := cmdutil.SelectPromptIfEmpty(&orgRole, "Select organization role", orgRoles, orgRoles[len(orgRoles)-1])
+						orgRole, err = cmdutil.SelectPrompt("Select organization role", orgRoles, orgRoles[len(orgRoles)-1])
 						if err != nil {
 							return err
 						}

@@ -90,31 +90,3 @@ func StringPrompt(msg string) (string, error) {
 	}
 	return strings.TrimSpace(result), nil
 }
-
-func StringPromptIfEmpty(input *string, msg string) error {
-	if *input != "" {
-		return nil
-	}
-
-	prompt := []*survey.Question{{
-		Prompt:   &survey.Input{Message: msg},
-		Validate: survey.Required,
-	}}
-	if err := survey.Ask(prompt, input); err != nil {
-		return fmt.Errorf("prompt failed: %w", err)
-	}
-	*input = strings.TrimSpace(*input)
-	return nil
-}
-
-func SelectPromptIfEmpty(input *string, msg string, options []string, def string) error {
-	if *input != "" {
-		return nil
-	}
-	res, err := SelectPrompt(msg, options, def)
-	if err != nil {
-		return err
-	}
-	*input = res
-	return nil
-}

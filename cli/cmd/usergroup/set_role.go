@@ -18,14 +18,26 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "set-role",
 		Short: "Change a group's role on a project or organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", usergroupRoles, "")
-			if err != nil {
-				return err
+			if role == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("required flag \"role\" not set")
+				}
+				var err error
+				role, err = cmdutil.SelectPrompt("Select role", usergroupRoles, "")
+				if err != nil {
+					return err
+				}
 			}
 
-			err = cmdutil.StringPromptIfEmpty(&groupName, "Enter user group name")
-			if err != nil {
-				return err
+			if groupName == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("required flag \"group\" not set")
+				}
+				var err error
+				groupName, err = cmdutil.StringPrompt("Enter user group name")
+				if err != nil {
+					return err
+				}
 			}
 
 			client, err := ch.Client()

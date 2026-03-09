@@ -1,6 +1,8 @@
 package usergroup
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -14,9 +16,15 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "remove",
 		Short: "Remove a group's role on a project or organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := cmdutil.StringPromptIfEmpty(&groupName, "Enter user group name")
-			if err != nil {
-				return err
+			if groupName == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("required flag \"group\" not set")
+				}
+				var err error
+				groupName, err = cmdutil.StringPrompt("Enter user group name")
+				if err != nil {
+					return err
+				}
 			}
 
 			client, err := ch.Client()

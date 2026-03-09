@@ -1,6 +1,8 @@
 package usergroup
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -23,9 +25,14 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			err = cmdutil.StringPromptIfEmpty(&name, "Enter user group name")
-			if err != nil {
-				return err
+			if name == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("group name must be provided as an argument")
+				}
+				name, err = cmdutil.StringPrompt("Enter user group name")
+				if err != nil {
+					return err
+				}
 			}
 
 			_, err = client.CreateUsergroup(cmd.Context(), &adminv1.CreateUsergroupRequest{
