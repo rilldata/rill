@@ -1448,6 +1448,90 @@ func TestRBAC(t *testing.T) {
 		require.Equal(t, group1.Usergroup.GroupName, usergroups.Usergroups[2].GroupName)
 	})
 
+	t.Run("ListProjectsForOrganizationAndUser with direct and include_roles flags", func(t *testing.T) {
+		// Create an org and project
+		_, c1 := fix.NewUser(t)
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        org1.Organization.Name,
+			Project:    "proj1",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+
+		// Create a user and add them to the org (gives them autogroup:members access)
+		u2, _ := fix.NewUser(t)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   org1.Organization.Name,
+			Email: u2.Email,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Without direct flag: user sees the project through autogroup:members
+		resp, err := c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
+			Org:    org1.Organization.Name,
+			UserId: u2.ID,
+		})
+		require.NoError(t, err)
+		require.Len(t, resp.Projects, 1)
+
+		// With direct=true: user has no direct membership, so no projects returned
+		resp, err = c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
+			Org:    org1.Organization.Name,
+			UserId: u2.ID,
+			Direct: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, resp.Projects, 0)
+
+		// With include_roles=true but no direct membership: project_roles should be empty
+		resp, err = c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
+			Org:          org1.Organization.Name,
+			UserId:       u2.ID,
+			IncludeRoles: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, resp.Projects, 1)
+		require.Empty(t, resp.ProjectRoles)
+
+		// Add the user directly to the project
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:     org1.Organization.Name,
+			Project: proj1.Project.Name,
+			Email:   u2.Email,
+			Role:    database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// With direct=true: user now has direct membership
+		resp, err = c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
+			Org:    org1.Organization.Name,
+			UserId: u2.ID,
+			Direct: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, resp.Projects, 1)
+		require.Equal(t, proj1.Project.Name, resp.Projects[0].Name)
+
+		// With both flags: project_roles should contain the direct membership
+		resp, err = c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
+			Org:          org1.Organization.Name,
+			UserId:       u2.ID,
+			Direct:       true,
+			IncludeRoles: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, resp.Projects, 1)
+		require.Len(t, resp.ProjectRoles, 1)
+		member := resp.ProjectRoles[resp.Projects[0].Id]
+		require.NotNil(t, member)
+		require.Equal(t, database.ProjectRoleNameViewer, member.RoleName)
+		require.Equal(t, u2.Email, member.UserEmail)
+	})
+
 	t.Run("User attributes", func(t *testing.T) {
 		// Create users
 		u1, c1 := fix.NewUserWithEmail(t, "attr_user@example.com")

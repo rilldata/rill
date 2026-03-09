@@ -30,6 +30,8 @@
 
   let confirmInput = "";
   $: confirmed = confirmInput === confirmText;
+  $: iconColor =
+    confirmButtonType === "destructive" ? "text-red-500" : "text-yellow-600";
 
   function close() {
     onCancel();
@@ -51,7 +53,7 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle class="flex flex-row gap-x-2 items-center">
-        <AlertCircleOutline size="40px" className="text-yellow-600" />
+        <AlertCircleOutline size="40px" className={iconColor} />
         <div>{title}</div>
       </AlertDialogTitle>
       <AlertDialogDescription class="flex flex-col gap-y-1.5">

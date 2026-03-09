@@ -65,6 +65,7 @@ export const load = async ({ params, url, route, depends }) => {
     const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
       queryKey: getAdminServiceGetCurrentUserQueryKey(),
       queryFn: () => adminServiceGetCurrentUser(),
+      staleTime: 5 * 60 * 1000, // 5 minutes; prevents refetches on every navigation/hover
     });
     user = userQuery.user;
   } catch (e) {

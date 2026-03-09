@@ -1,21 +1,22 @@
-import type {
-  ChartDataQuery,
-  ChartDomainValues,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataQuery,
+  type ChartDomainValues,
+  type ChartFieldsMap,
+  type ChartSortDirection,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type MetricsViewSpecMeasure,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
+import type {
+  MetricsViewSpecMeasure,
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -45,7 +46,7 @@ export type ComboChartDefaultOptions = {
 };
 
 const DEFAULT_NOMINAL_LIMIT = 20;
-const DEFAULT_SORT = "-y" as ChartSortDirection;
+const DEFAULT_SORT = ChartSortType.Y_DESC as ChartSortDirection;
 
 export class ComboChartProvider {
   private spec: Readable<ComboChartSpec>;
@@ -80,7 +81,7 @@ export class ComboChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.spec);
@@ -99,10 +100,9 @@ export class ComboChartProvider {
     const dimensionName = config.x?.field;
 
     const xAxisQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      timeAndFilterStore,
+      ($timeAndFilterStore) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!dimensionName &&
@@ -128,9 +128,9 @@ export class ComboChartProvider {
         );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures: xAxisMeasures,
             dimensions: [{ name: dimensionName }],
             sort: xAxisSort ? [xAxisSort] : undefined,
@@ -150,8 +150,8 @@ export class ComboChartProvider {
     const xAxisQuery = createQuery(xAxisQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, xAxisQuery],
-      ([$runtime, $timeAndFilterStore, $xAxisQuery]) => {
+      [timeAndFilterStore, xAxisQuery],
+      ([$timeAndFilterStore, $xAxisQuery]) => {
         const { timeRange, where, timeGrain, hasTimeSeries } =
           $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
@@ -203,9 +203,9 @@ export class ComboChartProvider {
         }
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions,
             where: combinedWhere,

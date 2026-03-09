@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -187,7 +188,12 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", r.props.Path, err)
 	}
-	entries, err := store.ListObjectsForGlob(ctx, url.Host, url.Path)
+
+	entries, err := pagination.CollectAll(ctx,
+		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
+			return store.ListObjectsForGlob(ctx, url.Host, url.Path, pz, tk)
+		},
+		1000)
 	if err != nil {
 		return nil, err
 	}

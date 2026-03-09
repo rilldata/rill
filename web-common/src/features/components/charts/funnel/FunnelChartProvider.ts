@@ -1,20 +1,21 @@
-import type {
-  ChartDataQuery,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataQuery,
+  type ChartFieldsMap,
+  type ChartSortDirection,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationSort,
+import type {
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -44,7 +45,7 @@ export type FunnelChartDefaultOptions = {
 };
 
 const DEFAULT_STAGE_LIMIT = 15;
-const DEFAULT_SORT = "-y" as ChartSortDirection;
+const DEFAULT_SORT = ChartSortType.Y_DESC as ChartSortDirection;
 
 export class FunnelChartProvider {
   private spec: Readable<FunnelChartSpec>;
@@ -76,7 +77,7 @@ export class FunnelChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.spec);
@@ -113,17 +114,16 @@ export class FunnelChartProvider {
       if (typeof sort === "string" && config.measure?.field) {
         stageSort = {
           name: config.measure.field,
-          desc: sort !== "y",
+          desc: sort !== ChartSortType.Y_ASC,
         };
       }
     }
 
     // Create topN query for stage dimension
     const topNStageQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      timeAndFilterStore,
+      ($timeAndFilterStore) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!stageDimensionName &&
@@ -133,9 +133,9 @@ export class FunnelChartProvider {
         const topNWhere = getFilterWithNullHandling(where, config.stage);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: stageDimensionName }],
             sort: stageSort ? [stageSort] : undefined,
@@ -155,8 +155,8 @@ export class FunnelChartProvider {
     const topNStageQuery = createQuery(topNStageQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, topNStageQuery],
-      ([$runtime, $timeAndFilterStore, $topNStageQuery]) => {
+      [timeAndFilterStore, topNStageQuery],
+      ([$timeAndFilterStore, $topNStageQuery]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
@@ -203,9 +203,9 @@ export class FunnelChartProvider {
         this.combinedWhere.set(combinedWhere);
 
         const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions,
             where: combinedWhere,

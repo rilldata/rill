@@ -27,6 +27,7 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export enum ReportRunAs {
   Recipient = "recipient",
@@ -85,7 +86,11 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
   if (reportSpec.annotations?.web_open_path)
     return getExploreName(reportSpec.annotations.web_open_path);
 
-  const queryArgsJson = JSON.parse(reportSpec.queryArgsJson!);
+  const queryArgsJson = JSON.parse(
+    (reportSpec.resolverProperties?.query_args_json as string | undefined) ??
+      reportSpec.queryArgsJson ??
+      "{}",
+  );
 
   return (
     queryArgsJson?.metrics_view_name ??
@@ -97,7 +102,7 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
 }
 
 export function getFiltersAndTimeControlsFromAggregationRequest(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   exploreName: string,
   aggregationRequest: V1MetricsViewAggregationRequest,
@@ -130,7 +135,7 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
   );
 
   const metricsViewMetadata = new ExploreMetricsViewMetadata(
-    instanceId,
+    client,
     metricsViewName,
     exploreName,
   );

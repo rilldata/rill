@@ -9,9 +9,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
   import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
   export let data: PageData;
+
+  const runtimeClient = useRuntimeClient();
 
   $: ({
     report: reportResource,
@@ -23,12 +26,23 @@
     exploreName,
   } = data);
 
+  $: reportSpec = reportResource?.report?.spec;
+  $: queryName =
+    (reportSpec?.resolverProperties?.query_name as string | undefined) ??
+    reportSpec?.queryName ??
+    "";
+  $: queryArgsJson =
+    (reportSpec?.resolverProperties?.query_args_json as string | undefined) ??
+    reportSpec?.queryArgsJson ??
+    "";
+
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
   $: dashboardStateForReport = mapQueryToDashboard(
+    runtimeClient,
     {
       exploreName,
-      queryName: reportResource?.report?.spec?.queryName,
-      queryArgsJson: reportResource?.report?.spec?.queryArgsJson,
+      queryName,
+      queryArgsJson,
       executionTime,
     },
     {
@@ -54,6 +68,7 @@
     exploreState: ExploreState,
   ) {
     const exploreStateParams = await getExplorePageUrlSearchParams(
+      runtimeClient,
       exploreName,
       exploreState,
     );

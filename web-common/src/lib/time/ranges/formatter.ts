@@ -1,4 +1,7 @@
-import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains.ts";
+import {
+  V1TimeGrainToOrder,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
   V1TimeGrain,
   type V1TimeRange,
@@ -166,4 +169,79 @@ export function formatDateTimeByGrain(
   }
 
   return dt.toLocaleString(format);
+}
+
+/**
+ * Formats a grain-sized bucket for hover labels and scrub readouts.
+ * For hour and finer grains, delegates to formatDateTimeByGrain.
+ * For day+ grains, shows the date range of the bucket, with partial
+ * bucket detection when the dashboard interval trims the first/last bucket.
+ */
+export function formatGrainBucket(
+  dt: DateTime,
+  grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  interval?: Interval<true>,
+): string {
+  if (!dt.isValid) return "Invalid date";
+
+  const grainOrder = getCorrectGrainOrder(grain);
+
+  // Hour and finer: delegate to existing formatter
+  if (grainOrder <= hourGrainOrder) {
+    return formatDateTimeByGrain(dt, grain);
+  }
+
+  const unit = V1TimeGrainToDateTimeUnit[grain];
+  const bucketEnd = dt.plus({ [unit + "s"]: 1 });
+
+  const effectiveStart =
+    interval?.start && interval.start > dt ? interval.start : dt;
+  const effectiveEnd =
+    interval?.end && interval.end < bucketEnd ? interval.end : bucketEnd;
+
+  // Day grain: show "Apr 17, 2025" or partial "Apr 17, 2025 (2 PM – 12 AM)"
+  if (grainOrder === dayGrainOrder) {
+    const datePart = dt.toLocaleString({
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    const isPartial =
+      !effectiveStart.equals(dt) || !effectiveEnd.equals(bucketEnd);
+    if (!isPartial) return datePart;
+
+    const timeFmt: DateTimeFormatOptions = {
+      hour: "numeric",
+      hour12: true,
+    };
+    if (effectiveStart.minute !== 0) timeFmt.minute = "2-digit";
+
+    const endFmt: DateTimeFormatOptions = {
+      hour: "numeric",
+      hour12: true,
+    };
+    if (effectiveEnd.minute !== 0) endFmt.minute = "2-digit";
+
+    const startTime = effectiveStart.toLocaleString(timeFmt);
+    const endTime = effectiveEnd.toLocaleString(endFmt);
+    return `${datePart} (${startTime} – ${endTime})`;
+  }
+
+  // Week, month, quarter, year: show range "Apr 17 – 23, 2025"
+  const inclusiveEnd = effectiveEnd.minus({ millisecond: 1 });
+  const rangeInterval = Interval.fromDateTimes(effectiveStart, inclusiveEnd);
+  if (!rangeInterval.isValid) {
+    return dt.toLocaleString({
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  return rangeInterval.toLocaleString({
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
