@@ -1157,8 +1157,8 @@ github.com/dnephin/pflag v1.0.7/go.mod h1:uxE91IoWURlOiTUIA8Mq5ZZkAv3dPUfZNaT80Z
 github.com/docker/buildx v0.31.1 h1:zbvbrb9nxBNVV8nnI33f2F+4aAZBA1gY+AmeBFflMqY=
 github.com/docker/buildx v0.31.1/go.mod h1:SD+jYLnt3S4SXqohVtV+8z+dihnOgwMJ8t+bLQvsaCk=
 github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
-github.com/docker/cli v29.3.0+incompatible h1:z3iWveU7h19Pqx7alZES8j+IeFQZ1lhTwb2F+V9SVvk=
-github.com/docker/cli v29.3.0+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
+github.com/docker/cli v29.2.1+incompatible h1:n3Jt0QVCN65eiVBoUTZQM9mcQICCJt3akW4pKAbKdJg=
+github.com/docker/cli v29.2.1+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/compose/v5 v5.1.0 h1:HofsoOEJZSAjXzzeGxOub3WK/uEAL0v7g7J1kgmYETY=
 github.com/docker/compose/v5 v5.1.0/go.mod h1:vpHFFnEFlKTz9HjSkRqQz8x77ZuoMoq6CN1VicxFeQM=
 github.com/docker/distribution v0.0.0-20190905152932-14b96e55d84c/go.mod h1:0+TTO4EOBfRPhZXAeF1Vu+W3hHZ8eLp8PgKVZlcvtFY=
