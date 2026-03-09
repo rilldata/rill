@@ -236,7 +236,7 @@ func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []ma
 		p := entry.Path
 		if entry.IsDir {
 			// removing the tralling '/'
-			p = path.Dir(entry.Path)
+			p = path.Clean(entry.Path)
 		}
 
 		uri := &globutil.URL{

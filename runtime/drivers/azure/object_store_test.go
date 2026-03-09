@@ -1,7 +1,6 @@
 package azure_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -55,7 +54,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 }
 
 func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string, pageSize uint32) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "glob_test/y=202*/*"
 
 	expected := []string{
@@ -96,7 +95,7 @@ func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectSt
 }
 
 func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Using the existing glob_test structure: glob_test/y=202X/...
 	path := "glob_test/y=*"
 
@@ -121,7 +120,7 @@ func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectSt
 }
 
 func testMatchFilesWithLeafWildcardGlobTest(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "glob_test/y=*/*"
 
 	objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
@@ -145,7 +144,7 @@ func testMatchFilesWithLeafWildcardGlobTest(t *testing.T, objectStore drivers.Ob
 }
 
 func testMatchFilesWithDoubleStarGlobTest(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "glob_test/**/*"
 
 	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
@@ -159,7 +158,7 @@ func testMatchFilesWithDoubleStarGlobTest(t *testing.T, objectStore drivers.Obje
 }
 
 func testListDirectoriesForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string, pageSize uint32) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "glob_test/y=*"
 
 	// Expected directories based on existing test data
@@ -203,7 +202,7 @@ func testListDirectoriesForGlobPagination(t *testing.T, objectStore drivers.Obje
 }
 
 func testTrailingSlashNormalized(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	pathWithSlash := "glob_test/y=*/"
 	pathWithoutSlash := "glob_test/y=*"
 
@@ -230,7 +229,7 @@ func testTrailingSlashNormalized(t *testing.T, objectStore drivers.ObjectStore, 
 }
 
 func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	Path := "glob_test/"
 	expected := []string{
 		"glob_test/y=2010/",
@@ -264,7 +263,7 @@ func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bu
 }
 
 func testListObjectsDelimiter(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	Path := "glob_test/"
 	delimiter := "/"
 
@@ -287,7 +286,7 @@ func testListObjectsDelimiter(t *testing.T, objectStore drivers.ObjectStore, buc
 }
 
 func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	Path := "glob_test/"
 
 	expected := []string{
@@ -308,7 +307,7 @@ func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket s
 }
 
 func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 4, "")
 	require.NoError(t, err)
@@ -317,7 +316,7 @@ func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, buc
 }
 
 func testListObjectsNoMatch(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "nonexistent/", "/", 10, "")
 	require.NoError(t, err)
@@ -326,7 +325,7 @@ func testListObjectsNoMatch(t *testing.T, objectStore drivers.ObjectStore, bucke
 }
 
 func testPathSameAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "glob_test/"
 
 	expected := []string{
@@ -347,7 +346,7 @@ func testPathSameAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bu
 }
 
 func testPathWithInAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "glob_test/y=2024/"
 
 	expected := []string{
@@ -367,7 +366,7 @@ func testPathWithInAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, 
 }
 
 func testPathOutsideAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "csv_test/"
 
 	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, path, "/", 10, "")
@@ -377,7 +376,7 @@ func testPathOutsideAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore,
 }
 
 func testPathRootLevelOfAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := "/"
 
 	expected := []string{
