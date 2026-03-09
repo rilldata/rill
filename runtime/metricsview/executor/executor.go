@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -38,6 +39,12 @@ type Executor struct {
 	olapRelease     func()
 	instanceCfg     drivers.InstanceConfig
 	queryAttributes map[string]string
+
+	// Acceleration: secondary OLAP for recent-data queries
+	accelOLAP    drivers.OLAPStore
+	accelRelease func()
+	accelMV      *runtimev1.MetricsViewSpec
+	accelDays    int
 
 	timestamps map[string]metricsview.TimestampsResult
 }
@@ -80,7 +87,7 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		}
 	}
 
-	return &Executor{
+	e := &Executor{
 		rt:              rt,
 		instanceID:      instanceID,
 		metricsView:     mv,
@@ -92,12 +99,71 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		instanceCfg:     instanceCfg,
 		queryAttributes: queryAttrs,
 		timestamps:      make(map[string]metricsview.TimestampsResult),
-	}, nil
+	}
+
+	// Set up acceleration if configured and the MV's table exists in the acceleration connector
+	if instanceCfg.AccelerationConnector != "" && instanceCfg.AccelerationDays > 0 {
+		accelOLAP, accelRelease, err := rt.OLAP(ctx, instanceID, instanceCfg.AccelerationConnector)
+		if err == nil {
+			_, lookupErr := accelOLAP.InformationSchema().Lookup(ctx, "", "", mv.Table)
+			if lookupErr == nil {
+				accelMV := proto.Clone(mv).(*runtimev1.MetricsViewSpec)
+				accelMV.Connector = instanceCfg.AccelerationConnector
+				accelMV.Database = ""
+				accelMV.DatabaseSchema = ""
+				e.accelOLAP = accelOLAP
+				e.accelRelease = accelRelease
+				e.accelMV = accelMV
+				e.accelDays = instanceCfg.AccelerationDays
+			} else {
+				accelRelease()
+			}
+		}
+	}
+
+	return e, nil
 }
 
 // Close releases the resources held by the Executor.
 func (e *Executor) Close() {
 	e.olapRelease()
+	if e.accelRelease != nil {
+		e.accelRelease()
+	}
+}
+
+// useAcceleration returns true if the query's resolved time ranges fall entirely
+// within the acceleration window, making it safe to route to the acceleration OLAP.
+func (e *Executor) useAcceleration(qry *metricsview.Query) bool {
+	if e.accelOLAP == nil {
+		return false
+	}
+	cutoff := time.Now().AddDate(0, 0, -e.accelDays)
+
+	// Must have a time range with a start after the cutoff
+	if qry.TimeRange == nil || qry.TimeRange.Start.IsZero() || !qry.TimeRange.Start.After(cutoff) {
+		return false
+	}
+	// Comparison time range (if present) must also be within the window
+	if qry.ComparisonTimeRange != nil && !qry.ComparisonTimeRange.Start.IsZero() {
+		if !qry.ComparisonTimeRange.Start.After(cutoff) {
+			return false
+		}
+	}
+	return true
+}
+
+// swapToAcceleration temporarily swaps the executor's OLAP and metrics view spec
+// to the acceleration backend. Returns a restore function that reverts the swap.
+// This is safe because the executor is single-use per query (not concurrent).
+func (e *Executor) swapToAcceleration() func() {
+	origOLAP, origMV := e.olap, e.metricsView
+	e.olap = e.accelOLAP
+	e.metricsView = e.accelMV
+	return func() {
+		e.olap = origOLAP
+		e.metricsView = origMV
+	}
 }
 
 // CacheKey returns a cache key based on the executor's metrics view's cache key configuration.
@@ -307,6 +373,12 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	// Route to acceleration OLAP if the query's time ranges are within the acceleration window
+	if e.useAcceleration(qry) {
+		restore := e.swapToAcceleration()
+		defer restore()
+	}
+
 	if err := e.enforceQueryLimits(qry); err != nil {
 		return nil, err
 	}
@@ -437,6 +509,12 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 
 	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
 		return "", err
+	}
+
+	// Route to acceleration OLAP if the query's time ranges are within the acceleration window
+	if e.useAcceleration(qry) {
+		restore := e.swapToAcceleration()
+		defer restore()
 	}
 
 	if err := e.enforceQueryLimits(qry); err != nil {

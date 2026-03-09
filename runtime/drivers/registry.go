@@ -123,6 +123,10 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
+	// AccelerationConnector is the name of a secondary OLAP connector (e.g. "duckdb") that holds recent data for faster queries.
+	AccelerationConnector string `mapstructure:"rill.acceleration.connector"`
+	// AccelerationDays is the number of days of recent data available in the acceleration connector.
+	AccelerationDays int `mapstructure:"rill.acceleration.days"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
