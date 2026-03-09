@@ -28,12 +28,15 @@
   let confirmRevokeId = "";
 
   $: organization = $page.params.organization;
-  $: serviceQuery = createAdminServiceGetService(organization, serviceName);
+  $: serviceQuery = createAdminServiceGetService(organization, serviceName, {
+    query: { enabled: open },
+  });
   $: service = $serviceQuery.data?.service;
   $: projectMemberships = $serviceQuery.data?.projectMemberships ?? [];
   $: tokensQuery = createAdminServiceListServiceAuthTokens(
     organization,
     serviceName,
+    { query: { enabled: open } },
   );
   $: tokens = $tokensQuery.data?.tokens ?? [];
 

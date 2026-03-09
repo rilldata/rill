@@ -69,7 +69,11 @@
           open = false;
         }}>Cancel</Button
       >
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
+      <Button
+        type="destructive"
+        onClick={handleDelete}
+        disabled={$deleteService.isPending}
+      >Yes, delete</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
