@@ -101,7 +101,9 @@
   <title>Rill Developer | {exploreName}</title>
 </svelte:head>
 
-{#if mockUserHasNoAccess}
+{#if $exploreResource.isPending && !$exploreResource.data}
+  <DashboardBuilding />
+{:else if mockUserHasNoAccess}
   <ErrorPage
     statusCode={extractErrorStatusCode($exploreResource.error)}
     header="This user can't access this dashboard"
