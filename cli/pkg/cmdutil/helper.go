@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/term"
 )
 
 const (
@@ -66,7 +68,7 @@ func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 		DotRill:     dotrill.New(homeDir),
 		HomeDir:     homeDir,
 		Version:     ver,
-		Interactive: true,
+		Interactive: isTerminal(),
 	}
 
 	// Load base admin config from ~/.rill
@@ -654,4 +656,9 @@ func hashStr(ss ...string) string {
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil))
+}
+
+// isTerminal reports whether both stdin and stdout are connected to an interactive terminal.
+func isTerminal() bool {
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }

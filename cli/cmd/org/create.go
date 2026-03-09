@@ -1,6 +1,7 @@
 package org
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -12,25 +13,13 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, displayName, description string
 
 	createCmd := &cobra.Command{
-		Use:   "create [<org-name>]",
+		Use:   "create <org-name>",
 		Short: "Create organization",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
 				return err
-			}
-
-			if len(args) > 0 {
-				name = args[0]
-			}
-
-			// Only prompt interactively if no name is provided via args or flags
-			if name == "" && ch.Interactive {
-				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
-				if err != nil {
-					return err
-				}
 			}
 
 			res, err := client.CreateOrganization(cmd.Context(), &adminv1.CreateOrganizationRequest{
@@ -42,9 +31,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				if !isNameExistsErr(err) {
 					return err
 				}
-
-				ch.Printf("Org name %q already exists\n", name)
-				return nil
+				return fmt.Errorf("an org with name %q already exists", name)
 			}
 
 			// Switching to the created org
@@ -53,14 +40,11 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfSuccess("Created organization\n")
-			ch.PrintOrgs([]*adminv1.Organization{res.Organization}, "")
-
+			ch.PrintfSuccess("Created org %q\n", res.Organization.Name)
 			return nil
 		},
 	}
 	createCmd.Flags().SortFlags = false
-	createCmd.Flags().StringVar(&name, "name", "", "Organization Name")
 	createCmd.Flags().StringVar(&displayName, "display-name", "", "Display name")
 	createCmd.Flags().StringVar(&description, "description", "", "Description")
 	return createCmd

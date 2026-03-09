@@ -89,6 +89,11 @@ printInstallOptions() {
 
 # Ask for preferred install option
 promptInstallChoice() {
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        printf "Non-interactive shell detected; defaulting to install in current directory.\n"
+        INSTALL_DIR=$(pwd)
+        return
+    fi
     printf "Pick install option: (1/2/3)\n"
     read -r ans </dev/tty;
     case $ans in
@@ -103,7 +108,7 @@ promptInstallChoice() {
             ;;
         *)
             printf "\nInvalid option '%s'\n\n" "$ans"
-            promtInstallChoice
+            promptInstallChoice
             ;;
     esac
 }
@@ -226,7 +231,9 @@ installRill() {
     initPlatform
     detectPreviousInstallation
     if [ -z "${INSTALL_DIR}" ]; then
-        printInstallOptions
+        if [ "$NON_INTERACTIVE" != "true" ]; then
+            printInstallOptions
+        fi
         promptInstallChoice
         checkConflictingInstallation
     fi
@@ -234,7 +241,7 @@ installRill() {
     downloadBinary
     installBinary
     testInstalledBinary
-    if [ -z "${NON_INTERACTIVE}" ]; then
+    if [ "$NON_INTERACTIVE" != "true" ]; then
         addPathConfigEntries
     fi
     printStartHelp
@@ -259,6 +266,12 @@ uninstallRill() {
 }
 
 set -e
+
+# Detect non-interactive environments (e.g. piped input, CI, subprocesses)
+if ! [ -t 0 ]; then
+    NON_INTERACTIVE=${NON_INTERACTIVE:-true}
+fi
+NON_INTERACTIVE=${NON_INTERACTIVE:-false}
 
 # Parse input flag
 case $1 in

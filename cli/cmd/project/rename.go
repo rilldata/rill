@@ -3,7 +3,6 @@ package project
 import (
 	"fmt"
 
-	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -16,6 +15,9 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "rename",
 		Args:  cobra.NoArgs,
 		Short: "Rename project",
+		Long: `Rename project
+
+Warning: Renaming a project will invalidate all dashboard URLs.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -24,34 +26,40 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfWarn("Warn: Renaming a project will invalidate dashboard URLs\n")
+			ch.PrintfWarn("Warning: Renaming a project will invalidate all dashboard URLs.\n")
 
-			if !cmd.Flags().Changed("project") && ch.Interactive {
+			if name == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("project name must be specified in non-interactive mode")
+				}
 				projectNames, err := ProjectNames(ctx, ch)
 				if err != nil {
 					return err
 				}
-
 				name, err = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
 				if err != nil {
 					return err
 				}
 			}
 
-			if !cmd.Flags().Changed("new-name") && ch.Interactive {
-				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
+			if newName == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("new project name must be specified in non-interactive mode")
+				}
+				newName, err = cmdutil.InputPrompt("Enter new name", "")
 				if err != nil {
 					return err
 				}
 			}
 
-			msg := fmt.Sprintf("Do you want to rename the project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName)) // nolint:gocritic // Because it uses colors
-			ok, err := cmdutil.ConfirmPrompt(msg, "", false)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return nil
+			if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Do you want to rename the project %q to %q?", name, newName), "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return nil
+				}
 			}
 
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
