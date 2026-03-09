@@ -12,16 +12,16 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.rilldata.com/">Docs</a> · <a href="#quickstart">Quickstart</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="#capabilities">Capabilities</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
+  <a href="https://docs.rilldata.com/">Docs</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
 </p>
 
 ---
 
 **Rill** is an open-source BI-as-code tool with an embedded OLAP database. Define all of your components in YAML, query in milliseconds, deploy via Git.
 
-- [**Sub-second queries**](https://docs.rilldata.com/build/connectors/) — DuckDB/ClickHouse embedded or BYO OLAP Engine, data and compute co-located
+- [**Embedded OLAP**](https://docs.rilldata.com/build/olap-engines/) — DuckDB or ClickHouse built in, or bring your own OLAP engine
 - [**Metrics layer**](https://docs.rilldata.com/build/metrics-view/) — Single source of truth for dimensions, measures, and time grains
-- [**AI-ready**](https://docs.rilldata.com/explore/ai-chat) — Built-in chat + MCP server for Claude, ChatGPT, and custom agents
+- [**Dashboards**](https://docs.rilldata.com/build/dashboards) — Interactive explore and canvas dashboards, embeddable in your product
 - [**Git-native**](https://docs.rilldata.com/deploy/deploy-dashboard/) — Version control your dashboards, CI/CD your analytics
 
 <p align="center">
@@ -30,10 +30,10 @@
 
 ## Why Rill?
 
-- [**Full-stack analytics**](https://docs.rilldata.com/) — OLAP + modeling + metrics + visualization in one deployment
-- [**Code + AI**](https://docs.rilldata.com/explore/ai-chat) — Engineers get code-first; business users get AI-first; both are first-class
-- [**Fast at every layer**](https://docs.rilldata.com/build/models/) — Sub-second queries on large datasets, hours from raw data to production
-- [**Low barrier to entry**](#quickstart) — Two commands to start, free tier, managed cloud, or self-hosted
+- [**One tool, full stack**](https://docs.rilldata.com/) — No glue code between ingestion, modeling, metrics, and dashboards
+- [**Code-first and AI-first**](https://docs.rilldata.com/explore/ai-chat) — Engineers define metrics in YAML; business users explore with natural language
+- [**Sub-second at scale**](https://docs.rilldata.com/build/olap-engines/) — Co-located data and compute keeps queries fast on large datasets
+- [**Up and running in minutes**](#quickstart) — Two commands to start, free tier, managed cloud, or self-hosted
 
 ## Quickstart
 
@@ -42,11 +42,11 @@ curl https://rill.sh | sh
 rill start my-rill-project
 ```
 
-> [!TIP] > **Try it live:** [AI Chat demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/ai) · [Embedding demo](https://rill-embedding-example.netlify.app/) · [All live demos](https://ui.rilldata.com/demo)
+Or explore a [live embedded dashboard](https://rill-embedding-example.netlify.app/).
 
 ## Capabilities
 
-### Rill Developer (local, open-source)
+### Rill Developer (local)
 
 - [**Connectors**](https://docs.rilldata.com/build/connectors/) — Connect to S3, GCS, databases, and 20+ sources
 - [**SQL Models**](https://docs.rilldata.com/build/models/) — Transform raw data with SQL, join models together
@@ -110,8 +110,6 @@ measures:
     format_preset: humanize
 ```
 
-> [!TIP] > [More examples](https://github.com/rilldata/rill-examples) · [Live demos](https://ui.rilldata.com/demo)
-
 ## Production Examples
 
 | Example              | Description                                                            | Links                                                                                                                                                                                                                      |
@@ -129,7 +127,3 @@ Have questions, need support, or just want to talk about Rill?
 ## Contributing
 
 We welcome contributions! See our [Contributing Guide](https://docs.rilldata.com/home/contribute) to get started.
-
-## License
-
-[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
