@@ -1,7 +1,6 @@
 import { goto, invalidate } from "$app/navigation";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import type { QueryClient } from "@tanstack/query-core";
-import { get } from "svelte/store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import {
   BehaviourEventAction,
@@ -14,7 +13,7 @@ import {
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
-import { runtime } from "../../../runtime-client/runtime-store";
+import type { RuntimeClient } from "../../../runtime-client/v2";
 import {
   compileConnectorYAML,
   updateDotEnvWithSecrets,
@@ -46,9 +45,9 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-// Track connector file paths that were created via Save Anyway so
-// in-flight Test-and-Connect submissions don't roll them back.
-const savedAnywayPaths = new Set<string>();
+// Track connector file paths that were created via Save (without test) so
+// in-flight Test and Connect submissions don't roll them back.
+const savedWithoutTestPaths = new Set<string>();
 
 const connectorSubmissions = new Map<
   string,
@@ -59,7 +58,7 @@ const connectorSubmissions = new Map<
 >();
 
 async function beforeSubmitForm(
-  instanceId: string,
+  client: RuntimeClient,
   connector?: V1ConnectorDriver,
 ) {
   // Emit telemetry
@@ -71,7 +70,7 @@ async function beforeSubmitForm(
   );
 
   // If project is uninitialized, initialize an empty project
-  const projectInitialized = await isProjectInitialized(instanceId);
+  const projectInitialized = await isProjectInitialized(client);
   if (!projectInitialized) {
     // Determine the OLAP engine based on the connector being added
     let olapEngine = "duckdb"; // Default for data sources
@@ -81,7 +80,7 @@ async function beforeSubmitForm(
       olapEngine = connector.name as string;
     }
 
-    await runtimeServiceUnpackEmpty(instanceId, {
+    await runtimeServiceUnpackEmpty(client, {
       displayName: EMPTY_PROJECT_TITLE,
       olap: olapEngine, // Explicitly set OLAP based on connector type
     });
@@ -94,24 +93,24 @@ async function beforeSubmitForm(
 }
 
 async function rollbackChanges(
-  instanceId: string,
+  client: RuntimeClient,
   newFilePath: string,
   originalEnvBlob: string | undefined,
 ) {
   // Clean-up the file
-  await runtimeServiceDeleteFile(instanceId, {
+  await runtimeServiceDeleteFile(client, {
     path: newFilePath,
   });
 
   // Clean-up the `.env` file
   if (!originalEnvBlob) {
     // If .env file didn't exist before, delete it
-    await runtimeServiceDeleteFile(instanceId, {
+    await runtimeServiceDeleteFile(client, {
       path: ".env",
     });
   } else {
     // If .env file existed before, restore its original content
-    await runtimeServicePutFile(instanceId, {
+    await runtimeServicePutFile(client, {
       path: ".env",
       blob: originalEnvBlob,
       create: true,
@@ -122,25 +121,29 @@ async function rollbackChanges(
 
 async function setOlapConnectorInRillYAML(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
   newConnectorName: string,
 ): Promise<void> {
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
+    blob: await updateRillYAMLWithOlapConnector(
+      client,
+      queryClient,
+      newConnectorName,
+    ),
     create: true,
     createOnly: false,
   });
 }
 
-async function saveConnectorAnyway(
+async function saveConnectorWithoutTest(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   newConnectorName: string,
-  instanceId?: string,
+  client: RuntimeClient,
+  existingEnvBlob?: string,
 ): Promise<void> {
-  const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
   const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema
     ? getSchemaFieldMetaList(schema, { step: "connector" })
@@ -159,16 +162,19 @@ async function saveConnectorAnyway(
   );
 
   // Mark to avoid rollback by concurrent submissions
-  savedAnywayPaths.add(newConnectorFilePath);
+  savedWithoutTestPaths.add(newConnectorFilePath);
 
-  // Update .env file with secrets (keep ordering consistent with Test and Connect)
+  // Update .env file with secrets (keep ordering consistent with Test and Connect).
+  // When existingEnvBlob is provided (e.g. Save overriding an in-flight Test and Connect),
+  // use it as the baseline so env var names stay consistent and don't get _1 suffixes.
   const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
-    await updateDotEnvWithSecrets(queryClient, connector, formValues, {
+    await updateDotEnvWithSecrets(client, queryClient, connector, formValues, {
       secretKeys: schemaSecretKeys,
       schema: schema ?? undefined,
+      existingEnvBlob: existingEnvBlob,
     });
 
-  await runtimeServicePutFile(resolvedInstanceId, {
+  await runtimeServicePutFile(client, {
     path: ".env",
     blob: newEnvBlob,
     create: true,
@@ -176,7 +182,7 @@ async function saveConnectorAnyway(
   });
 
   // Always create/overwrite to ensure the connector file is created immediately
-  await runtimeServicePutFile(resolvedInstanceId, {
+  await runtimeServicePutFile(client, {
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
@@ -194,11 +200,7 @@ async function saveConnectorAnyway(
   });
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    await setOlapConnectorInRillYAML(
-      queryClient,
-      resolvedInstanceId,
-      newConnectorName,
-    );
+    await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
   }
 
   // Go to the new connector file
@@ -206,13 +208,14 @@ async function saveConnectorAnyway(
 }
 
 export async function submitAddConnectorForm(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
+  existingEnvBlob?: string,
 ): Promise<string> {
-  const instanceId = get(runtime).instanceId;
-  await beforeSubmitForm(instanceId, connector);
+  await beforeSubmitForm(client, connector);
   const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema
     ? getSchemaFieldMetaList(schema, { step: "connector" })
@@ -225,7 +228,7 @@ export async function submitAddConnectorForm(
     : [];
 
   // Create a unique key for this connector submission
-  const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
+  const uniqueConnectorSubmissionKey = `${client.instanceId}:${connector.name}`;
 
   const newConnectorName = getName(
     connector.name as string,
@@ -239,22 +242,24 @@ export async function submitAddConnectorForm(
 
   if (existingSubmission) {
     if (saveAnyway) {
-      // If Save Anyway is clicked while Test and Connect is running,
+      // If Save is clicked while Test and Connect is running,
       // proceed immediately without waiting for the ongoing operation
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
       // Use the same connector name from the ongoing operation
       const newConnectorName = existingSubmission.connectorName;
 
-      // Proceed immediately with Save Anyway logic
-      // Use the pre-computed env blobs from the concurrent Test and Connect operation
-      // to ensure consistent variable naming (e.g., GOOGLE_APPLICATION_CREDENTIALS not _2)
-      await saveConnectorAnyway(
+      // Proceed immediately with Save logic.
+      // Pass existingEnvBlob so env var names stay consistent with what T&C used;
+      // without it, re-reading .env (which T&C already modified) would generate
+      // duplicate suffixed env var names.
+      await saveConnectorWithoutTest(
         queryClient,
         connector,
         formValues,
         newConnectorName,
-        instanceId,
+        client,
+        existingEnvBlob,
       );
       return newConnectorName;
     }
@@ -288,6 +293,7 @@ export async function submitAddConnectorForm(
       // Capture original .env and compute updated contents up front
       // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
       const envResult = await updateDotEnvWithSecrets(
+        client,
         queryClient,
         connector,
         formValues,
@@ -300,13 +306,14 @@ export async function submitAddConnectorForm(
       originalEnvBlob = envResult.originalBlob;
 
       if (saveAnyway) {
-        // Save Anyway: bypass reconciliation entirely via centralized helper
-        await saveConnectorAnyway(
+        // Save: bypass reconciliation entirely via centralized helper
+        await saveConnectorWithoutTest(
           queryClient,
           connector,
           formValues,
           newConnectorName,
-          instanceId,
+          client,
+          existingEnvBlob,
         );
         return newConnectorName;
       }
@@ -317,7 +324,7 @@ export async function submitAddConnectorForm(
        * 2. Create the `<connector>.yaml` file
        * 3. Wait for reconciliation and surface any file errors
        */
-      await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+      await runtimeServicePutFileAndWaitForReconciliation(client, {
         path: ".env",
         blob: newEnvBlob,
         create: true,
@@ -325,32 +332,28 @@ export async function submitAddConnectorForm(
       });
       envWritten = true;
 
-      await runtimeServicePutFile(
-        instanceId,
-        {
-          path: newConnectorFilePath,
-          blob: compileConnectorYAML(connector, formValues, {
-            connectorInstanceName: newConnectorName,
-            orderedProperties: schemaFields,
-            secretKeys: schemaSecretKeys,
-            stringKeys: schemaStringKeys,
-            schema: schema ?? undefined,
-            existingEnvBlob: originalEnvBlob,
-            fieldFilter: schemaFields
-              ? (property) => !("internal" in property && property.internal)
-              : undefined,
-          }),
-          create: true,
-          createOnly: false,
-        },
-        abortController.signal,
-      );
+      await runtimeServicePutFile(client, {
+        path: newConnectorFilePath,
+        blob: compileConnectorYAML(connector, formValues, {
+          connectorInstanceName: newConnectorName,
+          orderedProperties: schemaFields,
+          secretKeys: schemaSecretKeys,
+          stringKeys: schemaStringKeys,
+          schema: schema ?? undefined,
+          existingEnvBlob: originalEnvBlob,
+          fieldFilter: schemaFields
+            ? (property) => !("internal" in property && property.internal)
+            : undefined,
+        }),
+        create: true,
+        createOnly: false,
+      });
       connectorCreated = true;
 
       // Wait for connector resource-level reconciliation
       // This must happen after .env reconciliation since connectors depend on secrets
       await waitForResourceReconciliation(
-        instanceId,
+        client,
         newConnectorName,
         ResourceKind.Connector,
       );
@@ -359,7 +362,6 @@ export async function submitAddConnectorForm(
       // If the connector file has errors, rollback the changes
       const errorMessage = await fileArtifacts.checkFileErrors(
         queryClient,
-        instanceId,
         newConnectorFilePath,
       );
       if (errorMessage) {
@@ -367,11 +369,7 @@ export async function submitAddConnectorForm(
       }
 
       if (OLAP_ENGINES.includes(connector.name as string)) {
-        await setOlapConnectorInRillYAML(
-          queryClient,
-          instanceId,
-          newConnectorName,
-        );
+        await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
       }
 
       // Go to the new connector file
@@ -385,15 +383,11 @@ export async function submitAddConnectorForm(
       }
 
       const shouldRollbackConnectorFile =
-        !savedAnywayPaths.has(newConnectorFilePath) &&
+        !savedWithoutTestPaths.has(newConnectorFilePath) &&
         (envWritten || connectorCreated);
 
       if (shouldRollbackConnectorFile) {
-        await rollbackChanges(
-          instanceId,
-          newConnectorFilePath,
-          originalEnvBlob,
-        );
+        await rollbackChanges(client, newConnectorFilePath, originalEnvBlob);
       }
 
       const errorDetails = (error as any).details;
@@ -407,7 +401,7 @@ export async function submitAddConnectorForm(
       throw error;
     } finally {
       // Mark the submission as completed but keep the connector name around
-      // so a subsequent "Save Anyway" can still reuse the same connector file
+      // so a subsequent Save can still reuse the same connector file
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
     }
   })();
@@ -424,13 +418,13 @@ export async function submitAddConnectorForm(
 }
 
 export async function submitAddSourceForm(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
 ): Promise<void> {
-  const instanceId = get(runtime).instanceId;
-  await beforeSubmitForm(instanceId, connector);
+  await beforeSubmitForm(client, connector);
   const newSourceName = formValues.name as string;
 
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
@@ -461,7 +455,7 @@ export async function submitAddSourceForm(
     EntityType.Table,
   );
   sourceIngestionTracker.trackPending(`/${newSourceFilePath}`);
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newSourceFilePath,
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
       secretKeys: schemaSecretKeys,
@@ -476,6 +470,7 @@ export async function submitAddSourceForm(
   // Create or update the `.env` file
   const { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
     await updateDotEnvWithSecrets(
+      client,
       queryClient,
       rewrittenConnector,
       rewrittenFormValues,
@@ -485,7 +480,7 @@ export async function submitAddSourceForm(
     );
 
   // Make sure the file has reconciled before testing the connection
-  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+  await runtimeServicePutFileAndWaitForReconciliation(client, {
     path: ".env",
     blob: newEnvBlob,
     create: true,
@@ -496,14 +491,14 @@ export async function submitAddSourceForm(
   // This must happen after .env reconciliation since sources depend on secrets
   try {
     await waitForResourceReconciliation(
-      instanceId,
+      client,
       newSourceName,
       ResourceKind.Model,
     );
   } catch (error) {
     // The source file was already created, so we need to delete it
     sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    await rollbackChanges(client, newSourceFilePath, originalEnvBlob);
     const errorDetails = (error as any).details;
 
     throw {
@@ -519,12 +514,11 @@ export async function submitAddSourceForm(
   // If the model file has errors, rollback the changes
   const errorMessage = await fileArtifacts.checkFileErrors(
     queryClient,
-    instanceId,
     newSourceFilePath,
   );
   if (errorMessage) {
     sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    await rollbackChanges(client, newSourceFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
 

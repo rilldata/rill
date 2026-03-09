@@ -26,6 +26,7 @@
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -42,7 +43,6 @@
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { DateTime, Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -81,7 +81,7 @@
   let connectNulls = true;
   let chartSettingsOpen = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: ({
     selectedTimeRange,
@@ -182,7 +182,7 @@
   $: chartReady = !!ready;
 
   // Check if annotations are enabled for this explore
-  $: exploreValidSpec = useExploreValidSpec(instanceId, exploreName);
+  $: exploreValidSpec = useExploreValidSpec(client, exploreName);
   $: annotationsEnabled =
     !!$exploreValidSpec.data?.metricsView?.annotations?.length;
 
@@ -390,7 +390,6 @@
           {measure}
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
-          {instanceId}
           metricsViewName={chartMetricsViewName}
           where={chartWhere}
           {timeDimension}
@@ -409,7 +408,6 @@
             tddChartType={showTimeDimensionDetail
               ? (tddChartType ?? TDDChart.DEFAULT)
               : TDDChart.DEFAULT}
-            {instanceId}
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}

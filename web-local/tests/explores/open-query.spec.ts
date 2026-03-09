@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "../setup/base";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
 
 test.describe("Query-to-Explore routing", () => {
   test.use({ project: "AdBids" });
@@ -8,6 +9,9 @@ test.describe("Query-to-Explore routing", () => {
     // Get the current URL to construct the correct baseURL with the dynamic port
     const currentUrl = new URL(page.url());
     const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+
+    await page.goto(baseUrl);
+    await waitForReconciliation(page);
 
     // Open the metrics view query
     await page.goto(

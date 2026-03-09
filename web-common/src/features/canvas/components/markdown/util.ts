@@ -10,7 +10,7 @@ import type {
   QueryServiceResolveTemplatedStringBody,
 } from "@rilldata/web-common/runtime-client";
 import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import type { ParsedFilters } from "../../stores/filter-state";
 import type { Readable } from "svelte/motion";
@@ -128,6 +128,7 @@ function buildRequestBody(params: {
 
 export function getResolveTemplatedStringQueryOptions(
   component: MarkdownCanvasComponent,
+  client: RuntimeClient,
 ): Readable<
   ReturnType<typeof getQueryServiceResolveTemplatedStringQueryOptions>
 > {
@@ -139,7 +140,6 @@ export function getResolveTemplatedStringQueryOptions(
           component.specStore,
           component.timeAndFilterStore,
           component.parent?.specStore ?? null,
-          runtime,
           component.parent.timeManager.hasTimeSeriesStore,
           ...Array.from(metricsViewFilters.values()).map((f) => f.parsed),
         ],
@@ -147,14 +147,12 @@ export function getResolveTemplatedStringQueryOptions(
           spec,
           timeAndFilters,
           parentSpec,
-          runtimeState,
           hasTimeSeries,
           ...parsedMetricsViewFilters
         ]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);
-          const instanceId = runtimeState?.instanceId ?? "";
 
           const metricsViews = parentSpec?.data?.metricsViews ?? {};
 
@@ -169,7 +167,7 @@ export function getResolveTemplatedStringQueryOptions(
           const enabled =
             !!needsTemplating &&
             !!content &&
-            !!instanceId &&
+            !!client.instanceId &&
             !!requestBody &&
             (!hasTimeSeries || !!timeAndFilters?.timeRange);
 
@@ -180,9 +178,12 @@ export function getResolveTemplatedStringQueryOptions(
 
           const queryEnabled = enabled && !!requestBody;
 
+          // Cast needed: QueryServiceResolveTemplatedStringBody uses string
+          // timestamps while the v2 proto request expects Timestamp objects;
+          // the v2 fromJson layer handles the conversion at runtime.
           return getQueryServiceResolveTemplatedStringQueryOptions(
-            instanceId,
-            body,
+            client,
+            body as any,
             {
               query: {
                 enabled: queryEnabled,

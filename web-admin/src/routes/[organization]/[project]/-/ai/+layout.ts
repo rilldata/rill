@@ -3,6 +3,7 @@ import {
   setLastConversationId,
 } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
 import { getFeatureFlags } from "@rilldata/web-common/features/feature-flags.js";
+import { getCloudRuntimeClient } from "@rilldata/web-admin/lib/runtime-client";
 import { redirect } from "@sveltejs/kit";
 
 export const load = async ({
@@ -11,16 +12,10 @@ export const load = async ({
   url,
   parent,
 }) => {
-  // Wait for the feature flags to load
   const { runtime } = await parent();
+  const client = getCloudRuntimeClient(runtime);
 
-  let fetchedFeatureFlags: Awaited<ReturnType<typeof getFeatureFlags>> = {};
-  try {
-    fetchedFeatureFlags = await getFeatureFlags(runtime);
-  } catch {
-    // If the runtime is unreachable or the JWT is invalid, fall back to defaults.
-    // The project layout's JWT refresh polling will recover on the next interval.
-  }
+  const fetchedFeatureFlags = await getFeatureFlags(client);
 
   // Redirect to `/-/dashboards` if chat feature is disabled
   // NOTE: In the future, we'll use user-level `ai` permissions for more granular access control

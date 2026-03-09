@@ -5,15 +5,14 @@
     INTERVALS,
     isFloat,
   } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { QueryServiceColumnNumericHistogramHistogramMethod } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    QueryServiceColumnNumericHistogramHistogramMethod,
     createQueryServiceColumnDescriptiveStatistics,
     createQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
-  import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+  import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
   import { derived } from "svelte/store";
-  import { httpRequestQueue } from "../../../runtime-client/http-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -43,10 +42,10 @@
 
   let active = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: nulls = getNullPercentage(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -56,7 +55,7 @@
   );
 
   $: diagnosticHistogram = getNumericHistogram(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -68,7 +67,7 @@
   let fdHistogram;
   $: if (isFloat(type)) {
     fdHistogram = getNumericHistogram(
-      instanceId,
+      client,
       connector,
       database,
       databaseSchema,
@@ -93,9 +92,9 @@
     : $diagnosticHistogram?.data;
 
   $: rug = createQueryServiceColumnRugHistogram(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -112,7 +111,7 @@
     },
   );
   $: topK = getTopK(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -123,9 +122,9 @@
 
   $: summary = derived(
     createQueryServiceColumnDescriptiveStatistics(
-      instanceId,
-      objectName,
+      client,
       {
+        tableName: objectName,
         connector,
         database,
         databaseSchema,
@@ -145,7 +144,6 @@
 
   function toggleColumnProfile() {
     active = !active;
-    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
   $: fetchingSummaries = FLOATS.has(type)

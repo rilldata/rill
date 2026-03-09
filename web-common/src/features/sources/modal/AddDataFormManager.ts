@@ -1,6 +1,7 @@
 import type { SuperValidated } from "sveltekit-superforms";
 import type { Writable } from "svelte/store";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector } from "./FormValidation";
 import { inferModelNameFromSQL, inferSourceName } from "../sourceUtils";
@@ -144,44 +145,23 @@ export class AddDataFormManager {
     return hasExplorerStepSchema(schema);
   }
 
-  /**
-   * Determines whether the "Save Anyway" button should be shown for the current submission.
-   */
-  private shouldShowSaveAnywayButton(args: {
-    isConnectorForm: boolean;
-    event?:
-      | {
-          result?: Extract<ActionResult, { type: "success" | "failure" }>;
-        }
-      | undefined;
-    stepState: ConnectorStepState | undefined;
-    selectedAuthMethod?: string;
-  }): boolean {
-    const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
-
-    // Only show for connector forms (not sources)
-    if (!isConnectorForm) return false;
-
-    // Need a submission result to show the button
-    if (!event?.result) return false;
-
-    // Multi-step connectors: don't show on source/explorer step (final step)
-    if (stepState?.step === "source" || stepState?.step === "explorer")
-      return false;
-
-    // Public auth bypasses connection test, so no "Save Anyway" needed
-    if (stepState?.step === "connector" && selectedAuthMethod === "public")
-      return false;
-
-    return true;
-  }
-
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
-    if (!this.isMultiStepConnector || stepState.step !== "connector") return;
+    // Only allow skipping when on connector step
+    if (stepState.step !== "connector") return;
+    if (!this.isMultiStepConnector && !this.hasExplorerStep) return;
+
     setConnectorConfig({});
     setConnectorInstanceName(null);
-    setStep("source");
+
+    // For multi-step connectors, skip to source step
+    if (this.isMultiStepConnector) {
+      setStep("source");
+    }
+    // For connectors with explorer step (warehouses/databases), skip to explorer step
+    else {
+      setStep("explorer");
+    }
   }
 
   handleBack(onBack: () => void): void {
@@ -246,24 +226,23 @@ export class AddDataFormManager {
 
   makeOnUpdate(args: {
     onClose: () => void;
+    client: RuntimeClient;
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
-    setShowSaveAnyway?: (value: boolean) => void;
   }) {
     const {
       onClose,
+      client,
       queryClient,
       getSelectedAuthMethod,
       setParamsError,
-      setShowSaveAnyway,
     } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
     const isExplorer = hasExplorerStepSchema(schema);
     const isStepFlowConnector = isMultiStep || isExplorer;
-    const isConnectorForm = this.formType === "connector";
 
     return async (event: {
       form: SuperValidated<FormData, string, FormData>;
@@ -331,24 +310,12 @@ export class AddDataFormManager {
         return;
       }
 
-      // Show "Save Anyway" when a connector test fails
-      if (
-        typeof setShowSaveAnyway === "function" &&
-        this.shouldShowSaveAnywayButton({
-          isConnectorForm,
-          event,
-          stepState,
-          selectedAuthMethod,
-        })
-      ) {
-        setShowSaveAnyway(true);
-      }
-
       // --- Submission ---
       try {
         if (isStepFlowConnector && isOnSourceOrExplorerStep) {
           // Step 2: submit the source/model and close
           await submitAddSourceForm(
+            client,
             queryClient,
             connector,
             submitValues,
@@ -358,6 +325,7 @@ export class AddDataFormManager {
         } else if (isStepFlowConnector && isOnConnectorStep) {
           // Step 1: test connector, persist config, then advance to step 2
           await this.submitConnectorStepAndAdvance({
+            client,
             queryClient,
             values,
             submitValues,
@@ -366,11 +334,17 @@ export class AddDataFormManager {
           });
         } else if (this.formType === "source") {
           // Single-step source form
-          await submitAddSourceForm(queryClient, connector, submitValues);
+          await submitAddSourceForm(
+            client,
+            queryClient,
+            connector,
+            submitValues,
+          );
           onClose();
         } else {
           // Single-step connector form
           await submitAddConnectorForm(
+            client,
             queryClient,
             connector,
             submitValues,
@@ -390,14 +364,21 @@ export class AddDataFormManager {
    * persist connector config, then advance to the source/explorer step.
    */
   private async submitConnectorStepAndAdvance(args: {
+    client: RuntimeClient;
     queryClient: QueryClient;
     values: FormData;
     submitValues: FormData;
     isPublicAuth: boolean;
     isMultiStep: boolean;
   }) {
-    const { queryClient, values, submitValues, isPublicAuth, isMultiStep } =
-      args;
+    const {
+      client,
+      queryClient,
+      values,
+      submitValues,
+      isPublicAuth,
+      isMultiStep,
+    } = args;
     const nextStep = isMultiStep ? "source" : "explorer";
 
     if (isPublicAuth) {
@@ -411,6 +392,7 @@ export class AddDataFormManager {
 
     // Test the connection, then persist config and advance
     const connectorInstanceName = await submitAddConnectorForm(
+      client,
       queryClient,
       this.connector,
       submitValues,
@@ -585,10 +567,16 @@ export class AddDataFormManager {
         ? getSchemaStringKeys(rewrittenSchema, { step: sourceStep })
         : undefined;
       if (isRewrittenToDuckDb || isExplorerStep) {
+        // When rewritten to DuckDB, don't use the original connectorInstanceName.
+        // The original connector is referenced via create_secrets_from_connectors.
+        const yamlConnectorInstanceName = isRewrittenToDuckDb
+          ? undefined
+          : stepState?.connectorInstanceName || undefined;
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,
           originalDriverName: connector.name || undefined,
+          connectorInstanceName: yamlConnectorInstanceName,
         });
       }
       return getConnectorYamlPreview(rewrittenFormValues);
@@ -612,24 +600,28 @@ export class AddDataFormManager {
   }
 
   /**
-   * Save connector anyway, returning a result object for the caller to handle.
+   * Save connector without testing the connection, returning a result object for the caller to handle.
    * Schema conditionals handle connector-specific requirements (e.g., SSL).
    */
-  async saveConnectorAnyway(args: {
+  async saveConnector(args: {
+    client: RuntimeClient;
     queryClient: QueryClient;
     values: FormData;
+    existingEnvBlob?: string;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values } = args;
+    const { client, queryClient, values, existingEnvBlob } = args;
     const schema = getConnectorSchema(this.schemaName);
     const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;
     try {
       await submitAddConnectorForm(
+        client,
         queryClient,
         this.connector,
         processedValues,
         true,
+        existingEnvBlob,
       );
       return { ok: true } as const;
     } catch (e) {

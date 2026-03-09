@@ -70,7 +70,7 @@ measures:
 		for _, r := range res.Resources {
 			require.NotEmpty(t, r["kind"])
 			require.NotEmpty(t, r["name"])
-			require.NotEmpty(t, r["reconcile_status"])
+			require.NotEmpty(t, r["status"])
 		}
 	})
 
@@ -250,7 +250,7 @@ sql: SELECT sleep(2), 1 AS id
 	// All resources should be idle after waiting.
 	require.NotEmpty(t, res.Resources)
 	for _, r := range res.Resources {
-		require.Equal(t, "RECONCILE_STATUS_IDLE", r["reconcile_status"])
+		require.Equal(t, "OK", r["status"])
 	}
 
 	// The new materialized model should be present.
