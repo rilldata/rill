@@ -26,12 +26,10 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Plus, Trash2Icon } from "lucide-svelte";
+  import { ORG_ROLES, PROJECT_ROLES, validateServiceName } from "./utils";
 
   export let open = false;
   export let name: string;
-
-  const orgRoles = ["admin", "editor", "viewer", "guest"];
-  const projectRoles = ["admin", "editor", "viewer"];
 
   let newName = "";
   let orgRole = "";
@@ -41,8 +39,6 @@
   let initialAttributes: { key: string; value: string }[] = [];
   let saving = false;
   let nameError = "";
-
-  const NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
 
   $: organization = $page.params.organization;
   $: serviceQuery = createAdminServiceGetService(organization, name, {
@@ -55,13 +51,6 @@
   $: availableProjects = allProjects.filter(
     (p) => !assignedProjectNames.has(p.name ?? ""),
   );
-
-  function validateName(value: string): string {
-    if (!value.trim()) return "Name is required";
-    if (!NAME_PATTERN.test(value.trim()))
-      return "Must start with a letter or underscore, and contain only letters, digits, underscores, or hyphens";
-    return "";
-  }
 
   // Initialize form when service data loads
   $: if ($serviceQuery.data?.service && open) {
@@ -84,7 +73,7 @@
     }
   }
 
-  $: nameError = newName ? validateName(newName) : "";
+  $: nameError = newName ? validateServiceName(newName) : "";
 
   $: hasChanges =
     (newName.trim() !== name && !nameError) ||
@@ -97,7 +86,9 @@
       return true;
     return projectAssignments.some((pa, i) => {
       const initial = initialProjectAssignments[i];
-      return !initial || pa.project !== initial.project || pa.role !== initial.role;
+      return (
+        !initial || pa.project !== initial.project || pa.role !== initial.role
+      );
     });
   })();
 
@@ -166,8 +157,7 @@
       const effectiveName = newName.trim() || currentName;
 
       // Update org role if changed
-      const currentOrgRole =
-        $serviceQuery.data?.service?.roleName ?? "";
+      const currentOrgRole = $serviceQuery.data?.service?.roleName ?? "";
       if (orgRole !== currentOrgRole) {
         await $setOrgRole.mutateAsync({
           org: organization,
@@ -247,7 +237,7 @@
     </DialogHeader>
     <form
       id="edit-service-form"
-      class="w-full flex flex-col gap-y-4"
+      class="w-full flex flex-col gap-y-4 max-h-[60vh] overflow-y-auto"
       on:submit|preventDefault={handleSubmit}
     >
       <Input
@@ -272,7 +262,7 @@
             <Select.Value placeholder="Select a role" />
           </Select.Trigger>
           <Select.Content>
-            {#each orgRoles as role}
+            {#each ORG_ROLES as role}
               <Select.Item value={role}>{role}</Select.Item>
             {/each}
           </Select.Content>
@@ -281,8 +271,7 @@
 
       <!-- Project assignments -->
       <div class="flex flex-col gap-y-2">
-        <label class="text-sm font-medium text-fg-primary">Project roles</label
-        >
+        <label class="text-sm font-medium text-fg-primary">Project roles</label>
         {#each projectAssignments as assignment, index}
           <div class="flex items-center gap-x-2">
             <div class="flex-1">
@@ -325,7 +314,7 @@
                   <Select.Value placeholder="Role" />
                 </Select.Trigger>
                 <Select.Content>
-                  {#each projectRoles as role}
+                  {#each PROJECT_ROLES as role}
                     <Select.Item value={role}>{role}</Select.Item>
                   {/each}
                 </Select.Content>

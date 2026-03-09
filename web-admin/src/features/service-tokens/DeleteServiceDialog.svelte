@@ -72,8 +72,8 @@
       <Button
         type="destructive"
         onClick={handleDelete}
-        disabled={$deleteService.isPending}
-      >Yes, delete</Button>
+        disabled={$deleteService.isPending}>Yes, delete</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

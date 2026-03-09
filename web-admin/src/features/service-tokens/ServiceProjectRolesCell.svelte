@@ -14,7 +14,7 @@
 
 {#if !hasProjectRoles}
   <span class="text-fg-tertiary">-</span>
-{:else if $serviceQuery.isLoading}
+{:else if $serviceQuery.isPending}
   <span class="text-fg-tertiary">...</span>
 {:else if memberships.length > 0}
   <div class="flex flex-col gap-y-0.5">

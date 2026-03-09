@@ -6,18 +6,10 @@
   import ServiceActionsCell from "./ServiceActionsCell.svelte";
   import ServiceNameCell from "./ServiceNameCell.svelte";
   import ServiceProjectRolesCell from "./ServiceProjectRolesCell.svelte";
+  import { formatServiceDate } from "./utils";
 
   export let data: V1OrganizationMemberService[];
   export let onSelectService: (name: string) => void;
-
-  function formatDate(value: string | undefined) {
-    if (!value) return "-";
-    return new Date(value).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }
 
   const columns: ColumnDef<V1OrganizationMemberService, any>[] = [
     {
@@ -47,7 +39,7 @@
       accessorKey: "createdOn",
       header: "Created",
       sortDescFirst: true,
-      cell: (info) => formatDate(info.getValue() as string),
+      cell: (info) => formatServiceDate(info.getValue() as string),
     },
     {
       accessorKey: "actions",

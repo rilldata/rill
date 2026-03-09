@@ -24,11 +24,9 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CopyIcon, Plus, Trash2Icon } from "lucide-svelte";
+  import { ORG_ROLES, PROJECT_ROLES, validateServiceName } from "./utils";
 
   export let open = false;
-
-  const orgRoles = ["admin", "editor", "viewer", "guest"];
-  const projectRoles = ["admin", "editor", "viewer"];
 
   let name = "";
   let orgRole = "viewer";
@@ -37,8 +35,6 @@
   let issuedToken = "";
   let step: "form" | "token" = "form";
   let nameError = "";
-
-  const NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
 
   $: organization = $page.params.organization;
   $: projectsQuery =
@@ -49,14 +45,7 @@
     (p) => !assignedProjectNames.has(p.name ?? ""),
   );
 
-  function validateName(value: string): string {
-    if (!value.trim()) return "Name is required";
-    if (!NAME_PATTERN.test(value.trim()))
-      return "Must start with a letter or underscore, and contain only letters, digits, underscores, or hyphens";
-    return "";
-  }
-
-  $: nameError = name ? validateName(name) : "";
+  $: nameError = name ? validateServiceName(name) : "";
   $: isValid = name.trim() !== "" && !nameError;
 
   const queryClient = useQueryClient();
@@ -107,9 +96,7 @@
                 projectRoleName: firstProject.role,
               }
             : {}),
-          ...(Object.keys(attrObj).length > 0
-            ? { attributes: attrObj }
-            : {}),
+          ...(Object.keys(attrObj).length > 0 ? { attributes: attrObj } : {}),
         },
       });
 
@@ -175,7 +162,7 @@
       </DialogDescription>
       <form
         id="create-service-form"
-        class="w-full flex flex-col gap-y-4"
+        class="w-full flex flex-col gap-y-4 max-h-[30vh] overflow-y-auto"
         on:submit|preventDefault={handleSubmit}
       >
         <Input
@@ -200,7 +187,7 @@
               <Select.Value placeholder="Select a role" />
             </Select.Trigger>
             <Select.Content>
-              {#each orgRoles as role}
+              {#each ORG_ROLES as role}
                 <Select.Item value={role}>{role}</Select.Item>
               {/each}
             </Select.Content>
@@ -231,8 +218,9 @@
                     {#each allProjects as project}
                       <Select.Item
                         value={project.name ?? ""}
-                        disabled={assignedProjectNames.has(project.name ?? "") &&
-                          project.name !== assignment.project}
+                        disabled={assignedProjectNames.has(
+                          project.name ?? "",
+                        ) && project.name !== assignment.project}
                       >
                         {project.name}
                       </Select.Item>
@@ -254,7 +242,7 @@
                     <Select.Value placeholder="Role" />
                   </Select.Trigger>
                   <Select.Content>
-                    {#each projectRoles as role}
+                    {#each PROJECT_ROLES as role}
                       <Select.Item value={role}>{role}</Select.Item>
                     {/each}
                   </Select.Content>

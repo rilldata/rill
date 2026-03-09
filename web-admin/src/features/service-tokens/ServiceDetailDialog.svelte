@@ -20,6 +20,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CopyIcon, Trash2Icon } from "lucide-svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import { formatServiceDateTime } from "./utils";
 
   export let open = false;
   export let serviceName: string;
@@ -101,17 +102,6 @@
       });
     }
   }
-
-  function formatDate(value: string | undefined) {
-    if (!value) return "-";
-    return new Date(value).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-    });
-  }
 </script>
 
 <Dialog
@@ -128,23 +118,25 @@
       <DialogTitle>{serviceName}</DialogTitle>
     </DialogHeader>
 
-    <div class="flex flex-col gap-y-5">
+    <div class="flex flex-col gap-y-5 max-h-[30vh] overflow-y-auto">
       <!-- Service info -->
       <div class="grid grid-cols-2 gap-y-2 text-sm">
         <span class="text-fg-tertiary">Org role</span>
         <span class="text-fg-primary">{service?.roleName ?? "-"}</span>
         <span class="text-fg-tertiary">Created</span>
-        <span class="text-fg-primary">{formatDate(service?.createdOn)}</span>
+        <span class="text-fg-primary"
+          >{formatServiceDateTime(service?.createdOn)}</span
+        >
         <span class="text-fg-tertiary">Updated</span>
-        <span class="text-fg-primary">{formatDate(service?.updatedOn)}</span>
+        <span class="text-fg-primary"
+          >{formatServiceDateTime(service?.updatedOn)}</span
+        >
       </div>
 
       <!-- Project memberships -->
       {#if projectMemberships.length > 0}
         <div class="flex flex-col gap-y-2">
-          <span class="text-sm font-medium text-fg-primary"
-            >Project roles</span
-          >
+          <span class="text-sm font-medium text-fg-primary">Project roles</span>
           <div class="flex flex-col gap-y-1 text-sm">
             {#each projectMemberships as pm}
               <div class="flex justify-between">
@@ -170,9 +162,7 @@
             >
               {newlyIssuedToken}
             </code>
-            <IconButton
-              on:click={() => copyToClipboard(newlyIssuedToken)}
-            >
+            <IconButton on:click={() => copyToClipboard(newlyIssuedToken)}>
               <CopyIcon size="14px" />
             </IconButton>
           </div>
@@ -207,9 +197,9 @@
                     >{token.prefix}...</span
                   >
                   <span class="text-xs text-fg-tertiary">
-                    Created {formatDate(token.createdOn)}
+                    Created {formatServiceDateTime(token.createdOn)}
                     {#if token.expiresOn}
-                      · Expires {formatDate(token.expiresOn)}
+                      · Expires {formatServiceDateTime(token.expiresOn)}
                     {/if}
                   </span>
                 </div>
