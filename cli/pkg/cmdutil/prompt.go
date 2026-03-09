@@ -77,5 +77,9 @@ func InputPrompt(msg, def string) (string, error) {
 	if err := survey.AskOne(prompt, &result); err != nil {
 		return "", fmt.Errorf("prompt failed: %w", err)
 	}
-	return strings.TrimSpace(result), nil
+	result = strings.TrimSpace(result)
+	if result == "" {
+		return "", fmt.Errorf("input cannot be empty")
+	}
+	return result, nil
 }
