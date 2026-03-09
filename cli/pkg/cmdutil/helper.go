@@ -359,15 +359,30 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	return names, nil
 }
 
-// InferProjectName infers the project name from the given path.
-// If multiple projects are found, it prompts the user to select one.
-func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
-	projects, err := h.InferProjects(ctx, org, pathToProject)
+// InferProjectName infers a project name from the given path.
+// If multiple projects are found, it prompts the user to select one (or errors in non-interactive mode).
+// The hint (e.g. "use --project to specify the name") is appended to error messages.
+func (h *Helper) InferProjectName(ctx context.Context, pathToProject, hint string) (string, error) {
+	errorfWithHint := func(format string, a ...any) error {
+		if hint != "" {
+			return fmt.Errorf(format+" (%s)", append(append([]any{}, a...), hint)...)
+		}
+		return fmt.Errorf(format, a...)
+	}
+
+	projects, err := h.InferProjects(ctx, h.Org, pathToProject)
 	if err != nil {
-		return "", err
+		if errors.Is(err, ErrNoMatchingProject) {
+			return "", errorfWithHint("could not infer project")
+		}
+		return "", errorfWithHint("failed to infer project: %w", err)
 	}
 	if len(projects) == 1 {
 		return projects[0].Name, nil
+	}
+
+	if !h.Interactive {
+		return "", errorfWithHint("multiple projects match the current directory; you must explicitly specify a project")
 	}
 
 	var names []string
