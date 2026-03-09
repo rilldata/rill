@@ -7,6 +7,7 @@
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";
 
@@ -14,7 +15,10 @@
   export let filters: Filters;
   export let timeControls: TimeControls;
 
+  const runtimeClient = useRuntimeClient();
+
   $: alertPreviewQuery = getAlertPreviewData(
+    runtimeClient,
     queryClient,
     {
       ...formValues,

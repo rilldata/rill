@@ -216,7 +216,10 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.runtimeClient,
+      timeAndFilterStore,
+    );
   }
 
   chartTitle(fields: ChartFieldsMap) {

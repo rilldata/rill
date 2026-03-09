@@ -16,8 +16,8 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, readable, type Readable } from "svelte/store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { derived, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
   exploreName: string;
@@ -44,6 +44,7 @@ export type MapQueryResponse = {
  * Used to show the relevant dashboard for a report/alert.
  */
 export function mapQueryToDashboard(
+  client: RuntimeClient,
   { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
   {
     exploreProtoState,
@@ -103,16 +104,13 @@ export function mapQueryToDashboard(
   // backwards compatibility for older alerts created on metrics explore directly
   if (!exploreName) exploreName = metricsViewName;
 
-  const instanceId = get(runtime).instanceId;
-
   return derived(
     [
-      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
+      useExploreValidSpec(client, exploreName, undefined, queryClient),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
-        get(runtime).instanceId,
-        metricsViewName,
-        {},
+        client,
+        { metricsViewName },
         undefined,
         queryClient,
       ),
@@ -132,8 +130,7 @@ export function mapQueryToDashboard(
           isFetching: false,
           isLoading: false,
           error: new Error(
-            validSpecResp.error?.response?.data?.message ??
-              timeRangeSummary.error?.response?.data?.message,
+            validSpecResp.error?.message ?? timeRangeSummary.error?.message,
           ),
         });
         return;
@@ -181,7 +178,7 @@ export function mapQueryToDashboard(
       };
       getDashboardState({
         queryClient,
-        instanceId,
+        client,
         dashboard: defaultExploreState,
         req: queryRequestProperties,
         metricsView,

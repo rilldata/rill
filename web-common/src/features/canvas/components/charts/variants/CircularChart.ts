@@ -100,7 +100,10 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.runtimeClient,
+      timeAndFilterStore,
+    );
   }
 
   getChartDomainValues() {
