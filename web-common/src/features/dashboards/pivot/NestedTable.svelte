@@ -216,6 +216,22 @@
     );
   }
 
+  // Returns true if this header should be highlighted as falling within a
+  // selected column range (i.e. it is a child of the clicked header).
+  function isInSelectedColRange(
+    colStart: number,
+    colSpan: number,
+    isSelfSelected: boolean,
+  ): boolean {
+    if (selectedColIndices.size === 0 || colSpan === 0 || isSelfSelected) {
+      return false;
+    }
+    for (let i = colStart; i < colStart + colSpan; i++) {
+      if (!selectedColIndices.has(i)) return false;
+    }
+    return true;
+  }
+
   function shouldShowHeaderRightBorder(header: any, index: number): boolean {
     const isMeasure = isMeasureColumn(header, index);
     if (!isMeasure) return true;
@@ -366,15 +382,18 @@
             !!dimMeta.dimensionPath &&
             (clickSelection?.isColumnHeaderSelected(dimMeta.dimensionPath) ??
               false)}
-          {@const inSelectedRange =
-            selectedColIndices.size > 0 && selectedColIndices.has(colStart)}
+          {@const inSelectedRange = isInSelectedColRange(
+            colStart,
+            header.colSpan,
+            isSelfSelected,
+          )}
 
           <th
             colSpan={header.colSpan}
             class:col-dim-hover-self={isTheHoveredHeader}
             class:col-dim-hover-child={inHoverRange && !isTheHoveredHeader}
             class:selected-col-header={isSelfSelected}
-            class:in-selected-col-range={inSelectedRange && !isSelfSelected}
+            class:in-selected-col-range={inSelectedRange}
             on:mouseenter={() => {
               if (isColDimHeader) {
                 hoveredColRange = {
