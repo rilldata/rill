@@ -20,10 +20,11 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
-    createAdminServiceListOrganizations as listOrgs,
-    createAdminServiceListProjectsForOrganization as listProjects,
-    type V1Organization,
   } from "../../client";
+  import {
+    useBreadcrumbOrgPaths,
+    useBreadcrumbProjectPaths,
+  } from "../navigation/breadcrumb-selectors";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
@@ -107,76 +108,19 @@
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
 
-  $: organizationQuery = listOrgs(
-    { pageSize: 100 },
-    {
-      query: {
-        enabled: !!$user.data?.user,
-        retry: 2,
-        refetchOnMount: true,
-      },
-    },
-  );
-
-  $: projectsQuery = listProjects(
+  $: orgPathsQuery = useBreadcrumbOrgPaths(
+    loggedIn,
     organization,
-    { pageSize: 100 },
-    {
-      query: {
-        enabled: !!organization && readProjects,
-        retry: 2,
-        refetchOnMount: true,
-      },
-    },
+    planDisplayName,
   );
-
+  $: projectPathsQuery = useBreadcrumbProjectPaths(organization, readProjects);
   $: visualizationsQuery = useDashboards(runtimeClient);
   $: alertsQuery = useAlerts(runtimeClient, onAlertPage);
   $: reportsQuery = useReports(runtimeClient, onReportPage);
 
-  $: organizations = $organizationQuery.data?.organizations ?? [];
-  $: projects = $projectsQuery.data?.projects ?? [];
   $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
-
-  $: organizationPaths = {
-    options: createOrgPaths(organizations, organization, planDisplayName),
-  };
-
-  function createOrgPaths(
-    organizations: V1Organization[],
-    viewingOrg: string | undefined,
-    planDisplayName: string | undefined,
-  ) {
-    const pathMap = new Map<string, PathOption>();
-
-    organizations.forEach(({ name, displayName }) => {
-      pathMap.set(name.toLowerCase(), {
-        label: displayName || name,
-        pill: planDisplayName,
-      });
-    });
-
-    if (!viewingOrg) return pathMap;
-
-    if (!pathMap.has(viewingOrg.toLowerCase())) {
-      pathMap.set(viewingOrg.toLowerCase(), {
-        label: viewingOrg,
-        pill: planDisplayName,
-      });
-    }
-
-    return pathMap;
-  }
-
-  $: projectPaths = {
-    options: projects.reduce(
-      (map, { name }) =>
-        map.set(name.toLowerCase(), { label: name, preloadData: false }),
-      new Map<string, PathOption>(),
-    ),
-  };
 
   $: visualizationPaths = {
     options: [...visualizations]
@@ -226,8 +170,8 @@
   };
 
   $: pathParts = [
-    organizationPaths,
-    projectPaths,
+    { options: $orgPathsQuery.data ?? new Map() },
+    { options: $projectPathsQuery.data ?? new Map() },
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];
