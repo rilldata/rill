@@ -211,7 +211,7 @@
         this={resourceIconMapping[ResourceKind.MetricsView]}
         size="16px"
       />
-      {dbtConnectorName ? "Metrics view" : "Metrics view"}
+      Metrics view
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
     <DropdownMenu.Item
