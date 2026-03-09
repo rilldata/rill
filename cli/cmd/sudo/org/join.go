@@ -20,13 +20,8 @@ func JoinCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !ch.Interactive {
 				return fmt.Errorf("confirmation required; use an interactive terminal")
 			}
-			ok, err := cmdutil.ConfirmPrompt("Do you want to proceed?", "", true)
-			if err != nil {
+			if err := cmdutil.ConfirmPrompt("Do you want to proceed?", true); err != nil {
 				return err
-			}
-			if !ok {
-				ch.PrintfWarn("Aborted.\n")
-				return nil
 			}
 
 			c, err := ch.Client()

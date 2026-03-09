@@ -30,12 +30,8 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 				if !ch.Interactive {
 					return fmt.Errorf("confirmation required; use --force flag to proceed")
 				}
-				ok, err := cmdutil.ConfirmPrompt("Continue?", "", false)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt("Continue?", false); err != nil {
 					return err
-				}
-				if !ok {
-					return nil
 				}
 			}
 

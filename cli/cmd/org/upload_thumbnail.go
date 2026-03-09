@@ -46,7 +46,7 @@ func UploadThumbnailCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Confirmation prompt
 				if ch.Interactive {
-					if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom thumbnail for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom thumbnail for %q. Continue?", ch.Org), false); err != nil {
 						return err
 					}
 				}
@@ -91,7 +91,7 @@ func UploadThumbnailCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Confirmation prompt
 			if ch.Interactive {
-				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom thumbnail for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom thumbnail for %q. Continue?", ch.Org), false); err != nil {
 					return err
 				}
 			}

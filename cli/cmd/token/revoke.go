@@ -1,7 +1,6 @@
 package token
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -28,12 +27,8 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if all {
 				if ch.Interactive {
-					confirm, err := cmdutil.ConfirmPrompt("Are you sure you want to revoke all access and refresh tokens for the current user? This action cannot be undone.", "", false)
-					if err != nil {
+					if err := cmdutil.ConfirmPrompt("Are you sure you want to revoke all access and refresh tokens for the current user? This action cannot be undone.", false); err != nil {
 						return err
-					}
-					if !confirm {
-						return errors.New("aborted")
 					}
 				}
 

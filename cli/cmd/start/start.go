@@ -1,7 +1,6 @@
 package start
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -61,16 +60,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if currentDir == homeDir {
-					confirm, err := cmdutil.ConfirmPrompt(
-						"You are trying to start Rill in your home directory, which is not recommended. Are you sure you want to continue?",
-						"", false,
-					)
-					if err != nil {
+					if err := cmdutil.ConfirmPrompt("You are trying to start Rill in your home directory, which is not recommended. Do you want to continue?", false); err != nil {
 						return err
-					}
-					if !confirm {
-						ch.PrintfWarn("Aborted\n")
-						return nil
 					}
 				}
 
@@ -84,13 +75,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
-				confirm, err := cmdutil.ConfirmPrompt(msg, "", defval)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(msg, defval); err != nil {
 					return err
-				}
-				if !confirm {
-					ch.PrintfWarn("Aborted\n")
-					return nil
 				}
 			}
 
@@ -103,12 +89,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if envdetect.IsWSLWindowsPartition(projectPath) {
 				ch.PrintfWarn("%s\n", envdetect.GetWSLWarningMessage())
 				if ch.Interactive {
-					confirm, err := cmdutil.ConfirmPrompt("Do you want to continue anyway?", "", false)
-					if err != nil {
+					if err := cmdutil.ConfirmPrompt("Do you want to continue anyway?", false); err != nil {
 						return err
-					}
-					if !confirm {
-						return errors.New("aborted")
 					}
 				}
 			}

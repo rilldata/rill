@@ -39,7 +39,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if ch.Interactive && orgRole == "" {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to assign an organization role to the service?", "", false)
+				ok, err := cmdutil.YesNoPrompt("Do you want to assign an organization role to the service?", false)
 				if err != nil {
 					return err
 				}
@@ -52,7 +52,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if ch.Interactive && projectRole == "" && !cmd.Flags().Changed("org-role") {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to assign a project role to the service?", "", false)
+				ok, err := cmdutil.YesNoPrompt("Do you want to assign a project role to the service?", false)
 				if err != nil {
 					return err
 				}

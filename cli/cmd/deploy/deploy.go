@@ -37,7 +37,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				if !ch.Interactive {
 					return fmt.Errorf("must specify --managed or --github in non-interactive mode")
 				}
-				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
+				confirmed, err := cmdutil.YesNoPrompt("Enable automatic deploys to Rill Cloud from GitHub?", false)
 				if err != nil {
 					return err
 				}

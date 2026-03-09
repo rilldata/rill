@@ -135,12 +135,8 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					if !ch.Interactive {
 						return err
 					}
-					ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("The user must be a member of %q to join one of its groups. Do you want to invite the user to join %q?", ch.Org, ch.Org), "", false)
-					if err != nil {
+					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("The user must be a member of %q to join one of its groups. Do you want to invite the user to join %q?", ch.Org, ch.Org), false); err != nil {
 						return err
-					}
-					if !ok {
-						return fmt.Errorf("aborted: user needs to be part of the organization to be added to the user group")
 					}
 
 					// Find the org role to use.

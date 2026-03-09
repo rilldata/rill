@@ -51,14 +51,30 @@ func SelectPromptWithDescriptions(msg string, options, descriptions []string, de
 	return result, nil
 }
 
-func ConfirmPrompt(msg, help string, def bool) (bool, error) {
+// ConfirmPrompt asks the user to confirm an action.
+// It returns nil if the user confirms and an error if the user declines (or the prompt fails).
+func ConfirmPrompt(msg string, def bool) error {
 	prompt := &survey.Confirm{
 		Message: msg,
 		Default: def,
 	}
 
-	if help != "" {
-		prompt.Help = help
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		return fmt.Errorf("prompt failed: %w", err)
+	}
+	if !result {
+		return fmt.Errorf("aborted")
+	}
+	return nil
+}
+
+// YesNoPrompt asks the user a yes/no question and returns the result.
+// Use this when both answers lead to valid (non-abort) code paths.
+func YesNoPrompt(msg string, def bool) (bool, error) {
+	prompt := &survey.Confirm{
+		Message: msg,
+		Default: def,
 	}
 
 	result := def

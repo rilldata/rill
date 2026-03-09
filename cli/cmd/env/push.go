@@ -97,12 +97,8 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Prompt for confirmation in interactive mode
 			if ch.Interactive {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-				if err != nil {
-					return fmt.Errorf("failed to prompt for confirmation: %w", err)
-				}
-				if !ok {
-					return nil
+				if err := cmdutil.ConfirmPrompt("Do you want to continue?", true); err != nil {
+					return err
 				}
 			}
 

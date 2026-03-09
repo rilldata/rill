@@ -90,12 +90,8 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		}
 		if p != nil {
 			if ch.Interactive {
-				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), "", true)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), true); err != nil {
 					return err
-				}
-				if !ok {
-					return fmt.Errorf("aborting deploy")
 				}
 			}
 			o.pushToProject = p
@@ -158,12 +154,8 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		if !ch.Interactive {
 			return nil
 		}
-		ok, err := cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", "", true)
-		if err != nil {
+		if err := cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", true); err != nil {
 			return err
-		}
-		if !ok {
-			return fmt.Errorf("aborting deploy")
 		}
 		return nil
 	}
@@ -185,14 +177,14 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 	if o.Managed {
 		// if user explicitly wants managed deploys confirm if they want to really skip github connection
-		ok, err := cmdutil.ConfirmPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", "", true)
+		ok, err := cmdutil.YesNoPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", true)
 		if err != nil {
 			return err
 		}
 		connectToGithub = !ok
 	} else if !o.Github && ch.Interactive {
 		// still confirm if user wants to connect to github
-		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+		connectToGithub, err = cmdutil.YesNoPrompt("Enable automatic deploys to Rill Cloud from GitHub?", true)
 		if err != nil {
 			return err
 		}

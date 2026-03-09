@@ -18,12 +18,8 @@ func RepairCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if ch.Interactive {
-				ok, err := cmdutil.ConfirmPrompt("This will put all orgs without a billing customer id on trial. Are you sure?", "", false)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt("This will put all orgs without a billing customer id on trial. Are you sure?", false); err != nil {
 					return err
-				}
-				if !ok {
-					return nil
 				}
 			}
 

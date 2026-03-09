@@ -56,7 +56,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 					label = "dark-mode logo"
 				}
 				if ch.Interactive {
-					if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
+					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom %s for %q. Continue?", label, ch.Org), false); err != nil {
 						return err
 					}
 				}
@@ -112,7 +112,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				label = "dark-mode logo"
 			}
 			if ch.Interactive {
-				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom %s for %q. Continue?", label, ch.Org), false); err != nil {
 					return err
 				}
 			}

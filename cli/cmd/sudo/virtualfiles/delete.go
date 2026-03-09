@@ -42,12 +42,8 @@ This command can delete virtual files even if they have parse errors.`,
 				if !ch.Interactive {
 					return fmt.Errorf("confirmation required; use --force to skip")
 				}
-				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Delete virtual file %q in project %q (org %q)?", path, project, org), "", false)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Delete virtual file %q in project %q (org %q)?", path, project, org), false); err != nil {
 					return err
-				}
-				if !ok {
-					return nil
 				}
 			}
 

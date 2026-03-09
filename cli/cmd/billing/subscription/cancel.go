@@ -39,13 +39,8 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 			if ch.Interactive {
 				ch.PrintfWarn("\nIf you want to change the plan, please use `rill billing subscription edit` command.\n")
 
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt("Do you want to continue?", false); err != nil {
 					return err
-				}
-				if !ok {
-					ch.PrintfWarn("Aborted\n")
-					return nil
 				}
 			}
 

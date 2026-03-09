@@ -41,13 +41,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if ch.Interactive {
 				ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
 
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt("Do you want to continue?", false); err != nil {
 					return err
-				}
-				if !ok {
-					ch.PrintfWarn("Aborted\n")
-					return nil
 				}
 			}
 

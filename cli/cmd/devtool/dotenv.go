@@ -76,12 +76,8 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !ch.Interactive {
 				return fmt.Errorf("confirmation required; use an interactive terminal")
 			}
-			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-			if err != nil {
+			if err := cmdutil.ConfirmPrompt("Do you want to continue?", false); err != nil {
 				return err
-			}
-			if !ok {
-				return nil
 			}
 
 			err = uploadDotenv(cmd.Context(), preset)

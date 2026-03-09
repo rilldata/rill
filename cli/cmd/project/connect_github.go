@@ -93,12 +93,8 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	if opts.remoteURL == "" {
 		// first check if user wants to create a github repo
 		ch.Print("No git remote was found.\n")
-		ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to create a Github repository?", "", true)
-		if confirmErr != nil {
-			return confirmErr
-		}
-		if !ok {
-			return nil
+		if err := cmdutil.ConfirmPrompt("Do you want to create a Github repository?", true); err != nil {
+			return err
 		}
 
 		if err := createGithubRepoFlow(ctx, ch, localGitPath); err != nil {
@@ -299,13 +295,8 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		return nil
 	} else if len(candidateOrgs) == 1 {
 		repoOwner = candidateOrgs[0]
-		ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Rill will create a new repository in the Github account %q. Do you want to continue?", repoOwner), "", true)
-		if err != nil {
+		if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Rill will create a new repository in the Github account %q. Do you want to continue?", repoOwner), true); err != nil {
 			return err
-		}
-		if !ok {
-			ch.PrintfWarn("\nIf you want to deploy to another Github account, visit this URL to grant access: %s\n", pollRes.GrantAccessUrl)
-			return nil
 		}
 	} else {
 		repoOwner, err = cmdutil.SelectPrompt("Select a Github account for the new repository", candidateOrgs, candidateOrgs[0])
@@ -528,7 +519,8 @@ func repoInSyncFlow(ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bo
 		ch.PrintfWarn("Local commits are not pushed to remote yet. These changes will not be present in the deployed project.\n")
 	}
 
-	return cmdutil.ConfirmPrompt("Do you want to continue", "", true)
+	ok, err := cmdutil.YesNoPrompt("Do you want to continue", true)
+	return ok, err
 }
 
 func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) (string, error) {

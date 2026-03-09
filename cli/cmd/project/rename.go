@@ -53,12 +53,8 @@ Warning: Renaming a project will invalidate all dashboard URLs.`,
 			}
 
 			if ch.Interactive {
-				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Do you want to rename the project %q to %q?", name, newName), "", false)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Do you want to rename the project %q to %q?", name, newName), false); err != nil {
 					return err
-				}
-				if !ok {
-					return nil
 				}
 			}
 
