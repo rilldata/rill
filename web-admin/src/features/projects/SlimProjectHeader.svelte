@@ -2,19 +2,27 @@
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
-  import { createAdminServiceGetCurrentUser } from "../../client";
+  import {
+    createAdminServiceGetCurrentUser,
+    type V1DeploymentStatus,
+  } from "../../client";
   import {
     useBreadcrumbOrgPaths,
     useBreadcrumbProjectPaths,
   } from "../navigation/breadcrumb-selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
+  import BranchSelector from "./BranchSelector.svelte";
 
   export let organization: string;
   export let project: string;
   export let readProjects: boolean;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
+  export let activeBranch: string | undefined = undefined;
+  export let primaryBranch: string | undefined = undefined;
+  export let showBranchSelector: boolean = false;
+  export let activeDeploymentStatus: V1DeploymentStatus | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -40,6 +48,15 @@
   <Breadcrumbs {pathParts} {currentPath} />
 
   <div class="flex gap-x-2 items-center ml-auto">
+    {#if showBranchSelector}
+      <BranchSelector
+        {organization}
+        {project}
+        {activeBranch}
+        {primaryBranch}
+        {activeDeploymentStatus}
+      />
+    {/if}
     {#if $user.isSuccess}
       {#if $user.data?.user}
         <AvatarButton />

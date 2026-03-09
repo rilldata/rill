@@ -37,6 +37,9 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
+    createAdminServiceStartDeployment,
+    getAdminServiceGetProjectQueryKey,
+    getAdminServiceListDeploymentsQueryKey,
     type RpcStatus,
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
@@ -60,6 +63,7 @@
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
@@ -68,12 +72,16 @@
   import { onDestroy } from "svelte";
 
   const user = createAdminServiceGetCurrentUser();
+  const startDeploymentMutation = createAdminServiceStartDeployment();
 
   $: ({
     url: { pathname },
     params: { organization, project, token },
     data: pageData,
   } = $page);
+
+  // Branch selector: read from URL query param
+  $: activeBranch = $page.url.searchParams.get("branch") ?? undefined;
 
   // Root layout data used by ProjectHeader / SlimProjectHeader
   $: organizationPermissions = pageData?.organizationPermissions ?? {};
@@ -100,10 +108,17 @@
     }
   });
 
-  // Clear view-as state when unmounting (e.g., navigating to org page)
+  // Clear view-as state and branch banner when unmounting (e.g., navigating to org page)
   onDestroy(() => {
     viewAsUserStore.clear();
+    eventBus.emit("remove-banner", "branch-preview");
   });
+
+  // Build a search string suffix to append to internal project links.
+  // This preserves the branch context across tab/breadcrumb navigations.
+  $: branchSearchSuffix = activeBranch
+    ? `?branch=${encodeURIComponent(activeBranch)}`
+    : "";
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -117,10 +132,11 @@
    * `GetProject` with default cookie-based auth.
    * This returns the deployment credentials for the current logged-in user.
    */
+  $: branchParams = activeBranch ? { branch: activeBranch } : undefined;
   $: cookieProjectQuery = createAdminServiceGetProject(
     organization,
     project,
-    undefined,
+    branchParams,
     {
       query: baseGetProjectQueryOptions,
     },
@@ -152,7 +168,7 @@
     createAdminServiceGetDeploymentCredentials(
       organization,
       project,
-      { userId: mockedUserId },
+      { userId: mockedUserId, branch: activeBranch },
       {
         query: {
           enabled: !!mockedUserId,
@@ -211,6 +227,31 @@
     }
   }
 
+  // Branch banner (must be after projectData is defined)
+  $: primaryBranch = projectData?.project?.primaryBranch;
+  $: isOnBranch = !!activeBranch && activeBranch !== primaryBranch;
+  $: if (isOnBranch) {
+    const productionUrl = new URL($page.url);
+    productionUrl.searchParams.delete("branch");
+    eventBus.emit("add-banner", {
+      id: "branch-preview",
+      priority: 3,
+      message: {
+        type: "warning",
+        iconType: "alert",
+        message: `Viewing branch deployment: <b>${activeBranch}</b>`,
+        includesHtml: true,
+        cta: {
+          text: "Back to production",
+          type: "link",
+          url: productionUrl.pathname + productionUrl.search,
+        },
+      },
+    });
+  } else {
+    eventBus.emit("remove-banner", "branch-preview");
+  }
+
   $: error = projectError as HTTPError;
 
   $: authContext = (
@@ -254,6 +295,10 @@
     readProjects={organizationPermissions?.readProjects}
     {planDisplayName}
     {organizationLogoUrl}
+    {activeBranch}
+    {primaryBranch}
+    showBranchSelector={!!effectiveProjectPermissions?.readDev}
+    activeDeploymentStatus={deploymentStatus}
   />
   <ErrorPage
     statusCode={error.response.status}
@@ -278,6 +323,9 @@
           readProjects={organizationPermissions?.readProjects}
           {planDisplayName}
           {organizationLogoUrl}
+          {activeBranch}
+          {primaryBranch}
+          activeDeploymentStatus={deploymentStatus}
         />
         {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
           <ProjectTabs
@@ -285,6 +333,7 @@
             {organization}
             {pathname}
             {project}
+            {branchSearchSuffix}
           />
         {/if}
         <slot />
@@ -297,6 +346,10 @@
       readProjects={organizationPermissions?.readProjects}
       {planDisplayName}
       {organizationLogoUrl}
+      {activeBranch}
+      {primaryBranch}
+      showBranchSelector={!!effectiveProjectPermissions?.readDev}
+      activeDeploymentStatus={deploymentStatus}
     />
     {#if !projectData.deployment}
       <!-- No deployment = the project is "hibernating" -->
@@ -311,6 +364,50 @@
           ? projectData.deployment.statusMessage
           : "There was an error deploying your project. Please contact support."}
       />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
+      <div class="flex flex-col items-center justify-center gap-y-4 py-24">
+        <h2 class="text-lg font-semibold">Deployment stopped</h2>
+        <p class="text-sm text-fg-secondary">
+          This branch deployment is not running.
+        </p>
+        {#if effectiveProjectPermissions?.manageDev}
+          <button
+            class="px-4 py-2 text-sm font-medium rounded-md bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50"
+            disabled={$startDeploymentMutation.isLoading}
+            on:click={() => {
+              $startDeploymentMutation.mutate(
+                {
+                  deploymentId: projectData.deployment.id,
+                  data: {},
+                },
+                {
+                  onSuccess: () => {
+                    void Promise.all([
+                      queryClient.invalidateQueries({
+                        queryKey: getAdminServiceGetProjectQueryKey(
+                          organization,
+                          project,
+                          branchParams,
+                        ),
+                      }),
+                      queryClient.invalidateQueries({
+                        queryKey: getAdminServiceListDeploymentsQueryKey(
+                          organization,
+                          project,
+                        ),
+                      }),
+                    ]);
+                  },
+                },
+              );
+            }}
+          >
+            {$startDeploymentMutation.isLoading
+              ? "Starting..."
+              : "Start deployment"}
+          </button>
+        {/if}
+      </div>
     {:else}
       <ProjectBuilding />
     {/if}

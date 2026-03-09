@@ -11,6 +11,7 @@
   export let organization: string;
   export let project: string;
   export let pathname: string;
+  export let branchSearchSuffix: string = "";
 
   const { chat, reports, alerts } = featureFlags;
 
@@ -77,7 +78,7 @@
     {#each tabs as tab, i (tab.route)}
       {#if tab.hasPermission}
         <Tab
-          route={tab.route}
+          route={tab.route + branchSearchSuffix}
           label={tab.label}
           selected={selectedIndex === i}
           {organization}

@@ -17,6 +17,7 @@
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
+  import { type V1DeploymentStatus } from "../../client";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
@@ -25,6 +26,7 @@
     useBreadcrumbOrgPaths,
     useBreadcrumbProjectPaths,
   } from "../navigation/breadcrumb-selectors";
+  import BranchSelector from "./BranchSelector.svelte";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
@@ -50,6 +52,9 @@
   export let readProjects: boolean;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
+  export let activeBranch: string | undefined = undefined;
+  export let primaryBranch: string | undefined = undefined;
+  export let activeDeploymentStatus: V1DeploymentStatus | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
@@ -200,6 +205,15 @@
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
+    {#if projectPermissions.readDev}
+      <BranchSelector
+        {organization}
+        {project}
+        {activeBranch}
+        {primaryBranch}
+        {activeDeploymentStatus}
+      />
+    {/if}
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
