@@ -71,7 +71,7 @@ describe("Select – clearable", () => {
   });
 
   it("removes clear button after clearing", async () => {
-    const { component } = render(Select, {
+    render(Select, {
       props: {
         id: "test-select",
         options: OPTIONS,
