@@ -170,7 +170,7 @@ func (r *globResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *globResolver) Validate(ctx context.Context) error {
-	return &runtime.ErrUndefinedFieldsInResolverProps{
+	return &runtime.UndefinedFieldsInResolverPropsError{
 		Name:   "glob",
 		Fields: maps.Keys(r.props.AdditionalFields),
 	}

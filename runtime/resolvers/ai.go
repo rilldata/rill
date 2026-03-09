@@ -153,7 +153,7 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 	if !r.props.IsReport && r.props.Prompt == "" {
 		return errors.New("prompt is required for non-report AI sessions")
 	}
-	return &runtime.ErrUndefinedFieldsInResolverProps{
+	return &runtime.UndefinedFieldsInResolverPropsError{
 		Name:   "ai",
 		Fields: maps.Keys(r.props.AdditionalFields),
 	}

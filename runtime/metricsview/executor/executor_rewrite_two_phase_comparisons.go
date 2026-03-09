@@ -62,6 +62,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsv
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         qry.QueryLimits,
+		AdditionalFields:    nil,
 	} //exhaustruct:enforce
 
 	// Execute the query for the base time range

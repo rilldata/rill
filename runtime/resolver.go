@@ -23,12 +23,12 @@ import (
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
 
-type ErrUndefinedFieldsInResolverProps struct {
+type UndefinedFieldsInResolverPropsError struct {
 	Name   string
 	Fields []string
 }
 
-func (e *ErrUndefinedFieldsInResolverProps) Error() string {
+func (e *UndefinedFieldsInResolverPropsError) Error() string {
 	return fmt.Sprintf("undefined fields in resolver properties : %q for %q, will be ignored", e.Fields, e.Name)
 }
 
@@ -182,7 +182,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	if opts.ValidateResolverProperties {
 		err := resolver.Validate(ctx)
 		if err != nil {
-			var undefinedErr *ErrUndefinedFieldsInResolverProps
+			var undefinedErr *UndefinedFieldsInResolverPropsError
 			if !errors.As(err, &undefinedErr) {
 				return nil, err
 			}

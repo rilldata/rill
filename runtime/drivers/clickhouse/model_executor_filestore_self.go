@@ -192,6 +192,7 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Connector:  opts.OutputConnector,
 		Properties: resultPropsMap,
 		Table:      tableName,
+		Warnings:   warnings,
 	}, nil
 }
 

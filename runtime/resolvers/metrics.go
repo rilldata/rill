@@ -123,7 +123,7 @@ func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *metricsResolver) Validate(ctx context.Context) error {
-	return &runtime.ErrUndefinedFieldsInResolverProps{
+	return &runtime.UndefinedFieldsInResolverPropsError{
 		Name:   "metrics",
 		Fields: maps.Keys(r.query.AdditionalFields),
 	}
