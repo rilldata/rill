@@ -64,10 +64,13 @@ func (r *resourceStatusResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *resourceStatusResolver) Validate(ctx context.Context) error {
-	return &runtime.UndefinedFieldsInResolverPropsError{
-		Name:   "resource_status",
-		Fields: maps.Keys(r.props.AdditionalFields),
+	if len(r.props.AdditionalFields) > 0 {
+		return &runtime.UndefinedFieldsInResolverPropsError{
+			Name:   "resource_status",
+			Fields: maps.Keys(r.props.AdditionalFields),
+		}
 	}
+	return nil
 }
 
 func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {

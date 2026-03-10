@@ -35,7 +35,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StrictModelProps {
 			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
 		}
-		warnings = append(warnings, fmt.Sprintf("Undefined fields in input properties. Will be ignored: %s", strings.Join(unused, ", ")))
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	outputProps := &ModelOutputProperties{}
@@ -47,7 +47,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StrictModelProps {
 			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
 		}
-		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	// Validate the output properties

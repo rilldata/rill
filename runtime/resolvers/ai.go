@@ -153,10 +153,13 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 	if !r.props.IsReport && r.props.Prompt == "" {
 		return errors.New("prompt is required for non-report AI sessions")
 	}
-	return &runtime.UndefinedFieldsInResolverPropsError{
-		Name:   "ai",
-		Fields: maps.Keys(r.props.AdditionalFields),
+	if len(r.props.AdditionalFields) > 0 {
+		return &runtime.UndefinedFieldsInResolverPropsError{
+			Name:   "ai",
+			Fields: maps.Keys(r.props.AdditionalFields),
+		}
 	}
+	return nil
 }
 
 // ResolveInteractive implements runtime.Resolver.

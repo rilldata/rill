@@ -130,20 +130,6 @@ func (opts *ResolveOptions) toResolverOptions(runtime *Runtime, forExport bool) 
 	}
 }
 
-func (r *Runtime) ValidateResolverProps(ctx context.Context, opts *ResolveOptions) error {
-	initializer, ok := ResolverInitializers[opts.Resolver]
-	if !ok {
-		return fmt.Errorf("no resolver found for name %q", opts.Resolver)
-	}
-	resolver, err := initializer(ctx, opts.toResolverOptions(r, false))
-	if err != nil {
-		return err
-	}
-	defer resolver.Close()
-
-	return resolver.Validate(ctx)
-}
-
 func (r *Runtime) ValidateResolverProperties(ctx context.Context, opts *ResolveOptions) error {
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]

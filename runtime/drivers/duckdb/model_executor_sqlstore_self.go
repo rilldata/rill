@@ -59,7 +59,7 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 		if opts.Env.StrictModelProps {
 			return nil, fmt.Errorf("undefined fields in output properties: %s", strings.Join(unused, ", "))
 		}
-		warnings = append(warnings, fmt.Sprintf("Undefined fields in output properties. Will be ignored: %s", strings.Join(unused, ", ")))
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)

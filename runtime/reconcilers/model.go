@@ -917,8 +917,9 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		var invalidErr *runtime.UndefinedFieldsInResolverPropsError
 		if errors.As(err, &invalidErr) && !cfg.StrictResolverProps {
 			r.C.Logger.Warn("Undefined properties in partition resolver, will be ignored", zap.String("resolver", invalidErr.Name), zap.Strings("fields", invalidErr.Fields))
+		} else {
+			return err
 		}
-		return err
 	}
 
 	// Resolve partition rows
