@@ -29,6 +29,11 @@ export const icebergSchema: MultiStepFormSchema = {
         "Read Iceberg tables from Azure Blob Storage",
       ],
       "x-ui-only": true,
+      "x-required-driver": {
+        gcs: "gcs",
+        s3: "s3",
+        azure: "azure",
+      },
       "x-grouped-fields": {
         gcs: ["gcs_info", "gcs_path"],
         s3: ["s3_info", "s3_path"],

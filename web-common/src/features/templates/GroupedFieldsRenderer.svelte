@@ -49,7 +49,6 @@
   ) => EnumOption[];
 
   // Props for rich select support (nested ConnectionTypeSelector)
-  export let disabledOptions: Record<string, string> = {};
   export let groupedFieldsMap: Map<
     string,
     Record<string, string[]>
@@ -75,7 +74,7 @@
       <ConnectionTypeSelector
         bind:value={$formStore[childKey]}
         options={richOptions}
-        {disabledOptions}
+        requiredDrivers={childProp["x-required-driver"] ?? {}}
         label={childProp.title ?? ""}
         onChange={(newValue) => handleSelectChange(childKey, newValue)}
       />
@@ -91,7 +90,6 @@
           {getTabFieldsForOption}
           {tabGroupedFields}
           {buildEnumOptions}
-          {disabledOptions}
           {groupedFieldsMap}
           {getGroupedFieldsForOption}
           {handleSelectChange}

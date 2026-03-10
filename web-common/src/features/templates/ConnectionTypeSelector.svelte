@@ -6,6 +6,8 @@
   import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
   import AmazonS3Icon from "@rilldata/web-common/components/icons/connectors/AmazonS3Icon.svelte";
   import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
+  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ComponentType, SvelteComponent } from "svelte";
 
   type ConnectionOption = {
@@ -19,8 +21,12 @@
   export let label: string = "";
   export let onChange: (value: string) => void = () => {};
 
-  // Map of option value → disabled reason message. Options in this map are grayed out.
-  export let disabledOptions: Record<string, string> = {};
+  /**
+   * Maps option values to required connector driver names.
+   * The component queries analyzed connectors and disables options
+   * whose required driver is not found among existing connectors.
+   */
+  export let requiredDrivers: Record<string, string> = {};
 
   // Icon and color maps for rich select display.
   // Defaults support ClickHouse and DuckDB deployment types; override via props for other connectors.
@@ -66,6 +72,30 @@
   $: selectedColors = selectedOption
     ? getColors(selectedOption.value)
     : { bg: "bg-surface-secondary", text: "text-fg-muted" };
+
+  // Query existing connectors only when requiredDrivers is non-empty
+  $: hasRequiredDrivers = Object.keys(requiredDrivers).length > 0;
+  $: analyzedConnectors = createRuntimeServiceAnalyzeConnectors(
+    $runtime.instanceId,
+    { query: { enabled: hasRequiredDrivers } },
+  );
+  $: disabledOptions = (() => {
+    if (!hasRequiredDrivers) return {};
+    const existingDrivers = new Set(
+      ($analyzedConnectors?.data?.connectors ?? [])
+        .map((c) => c.driver?.name ?? "")
+        .filter(Boolean),
+    );
+    const disabled: Record<string, string> = {};
+    for (const [optionValue, driverName] of Object.entries(requiredDrivers)) {
+      if (!existingDrivers.has(driverName)) {
+        const optLabel =
+          options.find((o) => o.value === optionValue)?.label ?? optionValue;
+        disabled[optionValue] = `Create a ${optLabel} connector first`;
+      }
+    }
+    return disabled;
+  })();
 
   function handleChange(newValue: string | undefined) {
     if (newValue) {
@@ -121,7 +151,7 @@
         {@const disabledReason = disabledOptions[option.value]}
         <Select.Item
           value={option.value}
-          class="py-2"
+          class="py-2 {disabledReason ? 'cursor-not-allowed' : ''}"
           disabled={!!disabledReason}
         >
           <div class="flex items-center gap-3">

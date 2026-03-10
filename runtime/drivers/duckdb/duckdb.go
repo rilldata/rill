@@ -522,7 +522,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries = append(dbInitQueries, c.config.InitSQL)
 	}
 
-	// Set extension and secret directories before loading extensions;
+	// Set extension/secret directories and hosted-only settings before loading extensions;
 	// once an extension initializes the secret manager, these settings become immutable.
 	if !c.config.AllowHostAccess {
 		extensionDir, err := extensions.ExtensionsDir()
@@ -536,6 +536,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries = append(dbInitQueries,
 			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
 			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
+			// Reduces batch data ingestion time by ~40% in hosted environments where source data is never viewed directly.
+			"SET GLOBAL preserve_insertion_order TO false",
 		)
 	}
 
@@ -561,14 +563,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	dataDir, err := c.storage.DataDir()
 	if err != nil {
 		return err
-	}
-
-	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
-	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
-	if !c.config.AllowHostAccess {
-		dbInitQueries = append(dbInitQueries,
-			"SET GLOBAL preserve_insertion_order TO false",
-		)
 	}
 
 	// Add init SQL if provided
