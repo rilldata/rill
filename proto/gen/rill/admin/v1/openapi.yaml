@@ -2970,6 +2970,11 @@ paths:
                   name: returnUrl
                   schema:
                     type: string
+                - description: If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+                  in: query
+                  name: setup
+                  schema:
+                    type: boolean
                 - in: query
                   name: superuserForceAccess
                   schema:
