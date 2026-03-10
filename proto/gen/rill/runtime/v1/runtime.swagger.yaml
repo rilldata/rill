@@ -1615,6 +1615,71 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/python/detect:
+    post:
+      summary: DetectPython checks if a Python installation is available on the host.
+      operationId: RuntimeService_DetectPython
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DetectPythonResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              pythonPath:
+                type: string
+                description: 'Optional: specific path to check. If empty, auto-detects.'
+            title: Request message for RuntimeService.DetectPython
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/python/setup:
+    post:
+      summary: SetupPythonEnvironment creates a virtual environment and installs packages.
+      operationId: RuntimeService_SetupPythonEnvironment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetupPythonEnvironmentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              packages:
+                type: array
+                items:
+                  type: string
+                title: pip packages to install (pandas and pyarrow are always included)
+              pythonPath:
+                type: string
+                title: 'Optional: override auto-detected Python path'
+            title: Request message for RuntimeService.SetupPythonEnvironment
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/canvases/{canvas}/resolve:
     post:
       summary: ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -5008,6 +5073,16 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1DetectPythonResponse:
+    type: object
+    properties:
+      found:
+        type: boolean
+      path:
+        type: string
+      version:
+        type: string
+    title: Response message for RuntimeService.DetectPython
   v1DeveloperAgentContext:
     type: object
     properties:
@@ -7670,6 +7745,20 @@ definitions:
       resource:
         $ref: '#/definitions/v1ResourceName'
         description: this rules resolves to rules that provides access to whatever is needed to access this resource.
+  v1SetupPythonEnvironmentResponse:
+    type: object
+    properties:
+      pythonPath:
+        type: string
+        title: Path to the Python binary inside the venv
+      venvPath:
+        type: string
+        title: Path to the created virtual environment
+      installedPackages:
+        type: array
+        items:
+          type: string
+    title: Response message for RuntimeService.SetupPythonEnvironment
   v1ShareConversationResponse:
     type: object
     title: Response message for RuntimeService.ShareConversation

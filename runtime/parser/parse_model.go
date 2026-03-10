@@ -136,6 +136,16 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
+	// special handling to mark model as updated when Python script changes
+	if inputConnector == "python" {
+		if codePath, ok := inputProps["code_path"].(string); ok && codePath != "" {
+			err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Kind: ResourceKindModel, Name: node.Name}.Normalized(), map[string]any{"path": codePath})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	inputPropsPB, err := structpb.NewStruct(inputProps)
 	if err != nil {
 		return fmt.Errorf(`found invalid input property type: %w`, err)

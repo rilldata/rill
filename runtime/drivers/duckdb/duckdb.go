@@ -431,6 +431,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			return &sqlStoreToSelfExecutor{c}, nil
 		case "https":
 			return &httpsToSelfExecutor{c}, nil
+		case "python":
+			return &pythonToSelfExecutor{c}, nil
 		case "motherduck":
 			return &mdToSelfExecutor{c}, nil
 		}

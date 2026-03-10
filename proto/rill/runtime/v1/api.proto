@@ -388,6 +388,24 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Python
+
+  // DetectPython checks if a Python installation is available on the host.
+  rpc DetectPython(DetectPythonRequest) returns (DetectPythonResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/python/detect",
+      body: "*"
+    };
+  }
+
+  // SetupPythonEnvironment creates a virtual environment and installs packages.
+  rpc SetupPythonEnvironment(SetupPythonEnvironmentRequest) returns (SetupPythonEnvironmentResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/python/setup",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -1037,6 +1055,37 @@ message ListNotifierConnectorsRequest {
 message ListNotifierConnectorsResponse {
   // Note: In this list, the Connector.config property will always be empty.
   repeated Connector connectors = 1;
+}
+
+// **********
+// Python
+// **********
+
+// Request message for RuntimeService.DetectPython
+message DetectPythonRequest {
+  string instance_id = 1;
+  string python_path = 2; // Optional: specific path to check. If empty, auto-detects.
+}
+
+// Response message for RuntimeService.DetectPython
+message DetectPythonResponse {
+  bool found = 1;
+  string path = 2;
+  string version = 3;
+}
+
+// Request message for RuntimeService.SetupPythonEnvironment
+message SetupPythonEnvironmentRequest {
+  string instance_id = 1;
+  repeated string packages = 2; // pip packages to install (pandas and pyarrow are always included)
+  string python_path = 3; // Optional: override auto-detected Python path
+}
+
+// Response message for RuntimeService.SetupPythonEnvironment
+message SetupPythonEnvironmentResponse {
+  string python_path = 1; // Path to the Python binary inside the venv
+  string venv_path = 2;   // Path to the created virtual environment
+  repeated string installed_packages = 3;
 }
 
 // **********

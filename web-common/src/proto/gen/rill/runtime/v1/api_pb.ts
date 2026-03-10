@@ -4316,6 +4316,214 @@ export class ListNotifierConnectorsResponse extends Message$1<ListNotifierConnec
 }
 
 /**
+ * Request message for RuntimeService.DetectPython
+ *
+ * @generated from message rill.runtime.v1.DetectPythonRequest
+ */
+export class DetectPythonRequest extends Message$1<DetectPythonRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Optional: specific path to check. If empty, auto-detects.
+   *
+   * @generated from field: string python_path = 2;
+   */
+  pythonPath = "";
+
+  constructor(data?: PartialMessage<DetectPythonRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DetectPythonRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "python_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DetectPythonRequest {
+    return new DetectPythonRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DetectPythonRequest {
+    return new DetectPythonRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DetectPythonRequest {
+    return new DetectPythonRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DetectPythonRequest | PlainMessage<DetectPythonRequest> | undefined, b: DetectPythonRequest | PlainMessage<DetectPythonRequest> | undefined): boolean {
+    return proto3.util.equals(DetectPythonRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.DetectPython
+ *
+ * @generated from message rill.runtime.v1.DetectPythonResponse
+ */
+export class DetectPythonResponse extends Message$1<DetectPythonResponse> {
+  /**
+   * @generated from field: bool found = 1;
+   */
+  found = false;
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path = "";
+
+  /**
+   * @generated from field: string version = 3;
+   */
+  version = "";
+
+  constructor(data?: PartialMessage<DetectPythonResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DetectPythonResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "found", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DetectPythonResponse {
+    return new DetectPythonResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DetectPythonResponse {
+    return new DetectPythonResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DetectPythonResponse {
+    return new DetectPythonResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DetectPythonResponse | PlainMessage<DetectPythonResponse> | undefined, b: DetectPythonResponse | PlainMessage<DetectPythonResponse> | undefined): boolean {
+    return proto3.util.equals(DetectPythonResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.SetupPythonEnvironment
+ *
+ * @generated from message rill.runtime.v1.SetupPythonEnvironmentRequest
+ */
+export class SetupPythonEnvironmentRequest extends Message$1<SetupPythonEnvironmentRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * pip packages to install (pandas and pyarrow are always included)
+   *
+   * @generated from field: repeated string packages = 2;
+   */
+  packages: string[] = [];
+
+  /**
+   * Optional: override auto-detected Python path
+   *
+   * @generated from field: string python_path = 3;
+   */
+  pythonPath = "";
+
+  constructor(data?: PartialMessage<SetupPythonEnvironmentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SetupPythonEnvironmentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "packages", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "python_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetupPythonEnvironmentRequest {
+    return new SetupPythonEnvironmentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetupPythonEnvironmentRequest {
+    return new SetupPythonEnvironmentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetupPythonEnvironmentRequest {
+    return new SetupPythonEnvironmentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SetupPythonEnvironmentRequest | PlainMessage<SetupPythonEnvironmentRequest> | undefined, b: SetupPythonEnvironmentRequest | PlainMessage<SetupPythonEnvironmentRequest> | undefined): boolean {
+    return proto3.util.equals(SetupPythonEnvironmentRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.SetupPythonEnvironment
+ *
+ * @generated from message rill.runtime.v1.SetupPythonEnvironmentResponse
+ */
+export class SetupPythonEnvironmentResponse extends Message$1<SetupPythonEnvironmentResponse> {
+  /**
+   * Path to the Python binary inside the venv
+   *
+   * @generated from field: string python_path = 1;
+   */
+  pythonPath = "";
+
+  /**
+   * Path to the created virtual environment
+   *
+   * @generated from field: string venv_path = 2;
+   */
+  venvPath = "";
+
+  /**
+   * @generated from field: repeated string installed_packages = 3;
+   */
+  installedPackages: string[] = [];
+
+  constructor(data?: PartialMessage<SetupPythonEnvironmentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SetupPythonEnvironmentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "python_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "venv_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "installed_packages", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetupPythonEnvironmentResponse {
+    return new SetupPythonEnvironmentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetupPythonEnvironmentResponse {
+    return new SetupPythonEnvironmentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetupPythonEnvironmentResponse {
+    return new SetupPythonEnvironmentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SetupPythonEnvironmentResponse | PlainMessage<SetupPythonEnvironmentResponse> | undefined, b: SetupPythonEnvironmentResponse | PlainMessage<SetupPythonEnvironmentResponse> | undefined): boolean {
+    return proto3.util.equals(SetupPythonEnvironmentResponse, a, b);
+  }
+}
+
+/**
  * Conversation metadata and messages
  *
  * @generated from message rill.runtime.v1.Conversation

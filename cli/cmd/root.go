@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/publicurl"
+	pythoncmd "github.com/rilldata/rill/cli/cmd/python"
 	"github.com/rilldata/rill/cli/cmd/query"
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/service"
@@ -125,6 +126,7 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 		query.QueryCmd(ch),
 		publicurl.PublicURLCmd(ch),
 		env.EnvCmd(ch),
+		pythoncmd.PythonCmd(ch),
 	)
 
 	// Organization commands

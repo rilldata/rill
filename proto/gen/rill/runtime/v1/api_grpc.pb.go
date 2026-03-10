@@ -73,6 +73,8 @@ const (
 	RuntimeService_GitSwitchBranch_FullMethodName         = "/rill.runtime.v1.RuntimeService/GitSwitchBranch"
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
 	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
+	RuntimeService_DetectPython_FullMethodName            = "/rill.runtime.v1.RuntimeService/DetectPython"
+	RuntimeService_SetupPythonEnvironment_FullMethodName  = "/rill.runtime.v1.RuntimeService/SetupPythonEnvironment"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -200,6 +202,10 @@ type RuntimeServiceClient interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
+	// DetectPython checks if a Python installation is available on the host.
+	DetectPython(ctx context.Context, in *DetectPythonRequest, opts ...grpc.CallOption) (*DetectPythonResponse, error)
+	// SetupPythonEnvironment creates a virtual environment and installs packages.
+	SetupPythonEnvironment(ctx context.Context, in *SetupPythonEnvironmentRequest, opts ...grpc.CallOption) (*SetupPythonEnvironmentResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -786,6 +792,26 @@ func (c *runtimeServiceClient) GitPush(ctx context.Context, in *GitPushRequest, 
 	return out, nil
 }
 
+func (c *runtimeServiceClient) DetectPython(ctx context.Context, in *DetectPythonRequest, opts ...grpc.CallOption) (*DetectPythonResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DetectPythonResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DetectPython_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) SetupPythonEnvironment(ctx context.Context, in *SetupPythonEnvironmentRequest, opts ...grpc.CallOption) (*SetupPythonEnvironmentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetupPythonEnvironmentResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_SetupPythonEnvironment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility.
@@ -911,6 +937,10 @@ type RuntimeServiceServer interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
+	// DetectPython checks if a Python installation is available on the host.
+	DetectPython(context.Context, *DetectPythonRequest) (*DetectPythonResponse, error)
+	// SetupPythonEnvironment creates a virtual environment and installs packages.
+	SetupPythonEnvironment(context.Context, *SetupPythonEnvironmentRequest) (*SetupPythonEnvironmentResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -1082,6 +1112,12 @@ func (UnimplementedRuntimeServiceServer) GitPull(context.Context, *GitPullReques
 }
 func (UnimplementedRuntimeServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DetectPython(context.Context, *DetectPythonRequest) (*DetectPythonResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DetectPython not implemented")
+}
+func (UnimplementedRuntimeServiceServer) SetupPythonEnvironment(context.Context, *SetupPythonEnvironmentRequest) (*SetupPythonEnvironmentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetupPythonEnvironment not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -2048,6 +2084,42 @@ func _RuntimeService_GitPush_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_DetectPython_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DetectPythonRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DetectPython(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DetectPython_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DetectPython(ctx, req.(*DetectPythonRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_SetupPythonEnvironment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetupPythonEnvironmentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).SetupPythonEnvironment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_SetupPythonEnvironment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).SetupPythonEnvironment(ctx, req.(*SetupPythonEnvironmentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2254,6 +2326,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitPush",
 			Handler:    _RuntimeService_GitPush_Handler,
+		},
+		{
+			MethodName: "DetectPython",
+			Handler:    _RuntimeService_DetectPython_Handler,
+		},
+		{
+			MethodName: "SetupPythonEnvironment",
+			Handler:    _RuntimeService_SetupPythonEnvironment_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

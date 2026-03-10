@@ -10375,6 +10375,434 @@ var _ interface {
 	ErrorName() string
 } = ListNotifierConnectorsResponseValidationError{}
 
+// Validate checks the field values on DetectPythonRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DetectPythonRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DetectPythonRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DetectPythonRequestMultiError, or nil if none found.
+func (m *DetectPythonRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DetectPythonRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for PythonPath
+
+	if len(errors) > 0 {
+		return DetectPythonRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DetectPythonRequestMultiError is an error wrapping multiple validation
+// errors returned by DetectPythonRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DetectPythonRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DetectPythonRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DetectPythonRequestMultiError) AllErrors() []error { return m }
+
+// DetectPythonRequestValidationError is the validation error returned by
+// DetectPythonRequest.Validate if the designated constraints aren't met.
+type DetectPythonRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DetectPythonRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DetectPythonRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DetectPythonRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DetectPythonRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DetectPythonRequestValidationError) ErrorName() string {
+	return "DetectPythonRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DetectPythonRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDetectPythonRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DetectPythonRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DetectPythonRequestValidationError{}
+
+// Validate checks the field values on DetectPythonResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DetectPythonResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DetectPythonResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DetectPythonResponseMultiError, or nil if none found.
+func (m *DetectPythonResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DetectPythonResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Found
+
+	// no validation rules for Path
+
+	// no validation rules for Version
+
+	if len(errors) > 0 {
+		return DetectPythonResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DetectPythonResponseMultiError is an error wrapping multiple validation
+// errors returned by DetectPythonResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DetectPythonResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DetectPythonResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DetectPythonResponseMultiError) AllErrors() []error { return m }
+
+// DetectPythonResponseValidationError is the validation error returned by
+// DetectPythonResponse.Validate if the designated constraints aren't met.
+type DetectPythonResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DetectPythonResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DetectPythonResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DetectPythonResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DetectPythonResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DetectPythonResponseValidationError) ErrorName() string {
+	return "DetectPythonResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DetectPythonResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDetectPythonResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DetectPythonResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DetectPythonResponseValidationError{}
+
+// Validate checks the field values on SetupPythonEnvironmentRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SetupPythonEnvironmentRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SetupPythonEnvironmentRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SetupPythonEnvironmentRequestMultiError, or nil if none found.
+func (m *SetupPythonEnvironmentRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SetupPythonEnvironmentRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for PythonPath
+
+	if len(errors) > 0 {
+		return SetupPythonEnvironmentRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SetupPythonEnvironmentRequestMultiError is an error wrapping multiple
+// validation errors returned by SetupPythonEnvironmentRequest.ValidateAll()
+// if the designated constraints aren't met.
+type SetupPythonEnvironmentRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SetupPythonEnvironmentRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SetupPythonEnvironmentRequestMultiError) AllErrors() []error { return m }
+
+// SetupPythonEnvironmentRequestValidationError is the validation error
+// returned by SetupPythonEnvironmentRequest.Validate if the designated
+// constraints aren't met.
+type SetupPythonEnvironmentRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SetupPythonEnvironmentRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SetupPythonEnvironmentRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SetupPythonEnvironmentRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SetupPythonEnvironmentRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SetupPythonEnvironmentRequestValidationError) ErrorName() string {
+	return "SetupPythonEnvironmentRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SetupPythonEnvironmentRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSetupPythonEnvironmentRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SetupPythonEnvironmentRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SetupPythonEnvironmentRequestValidationError{}
+
+// Validate checks the field values on SetupPythonEnvironmentResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SetupPythonEnvironmentResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SetupPythonEnvironmentResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SetupPythonEnvironmentResponseMultiError, or nil if none found.
+func (m *SetupPythonEnvironmentResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SetupPythonEnvironmentResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PythonPath
+
+	// no validation rules for VenvPath
+
+	if len(errors) > 0 {
+		return SetupPythonEnvironmentResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SetupPythonEnvironmentResponseMultiError is an error wrapping multiple
+// validation errors returned by SetupPythonEnvironmentResponse.ValidateAll()
+// if the designated constraints aren't met.
+type SetupPythonEnvironmentResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SetupPythonEnvironmentResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SetupPythonEnvironmentResponseMultiError) AllErrors() []error { return m }
+
+// SetupPythonEnvironmentResponseValidationError is the validation error
+// returned by SetupPythonEnvironmentResponse.Validate if the designated
+// constraints aren't met.
+type SetupPythonEnvironmentResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SetupPythonEnvironmentResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SetupPythonEnvironmentResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SetupPythonEnvironmentResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SetupPythonEnvironmentResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SetupPythonEnvironmentResponseValidationError) ErrorName() string {
+	return "SetupPythonEnvironmentResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SetupPythonEnvironmentResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSetupPythonEnvironmentResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SetupPythonEnvironmentResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SetupPythonEnvironmentResponseValidationError{}
+
 // Validate checks the field values on Conversation with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
