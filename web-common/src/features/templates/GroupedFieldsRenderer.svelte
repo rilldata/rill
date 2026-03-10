@@ -7,7 +7,6 @@
   import ConnectionTypeSelector from "./ConnectionTypeSelector.svelte";
   import {
     type EnumOption,
-    isRadioEnum,
     isRichSelectEnum,
     isSelectEnum,
     isTabsEnum,
