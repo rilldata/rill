@@ -271,7 +271,7 @@
 
       <!-- Project assignments -->
       <div class="flex flex-col gap-y-2">
-        <label class="text-sm font-medium text-fg-primary">Project roles</label>
+        <span class="text-sm font-medium text-fg-primary">Project roles</span>
         {#each projectAssignments as assignment, index}
           <div class="flex items-center gap-x-2">
             <div class="flex-1">
@@ -340,7 +340,7 @@
 
       <!-- Custom attributes -->
       <div class="flex flex-col gap-y-2">
-        <label class="text-sm font-medium text-fg-primary">Attributes</label>
+        <span class="text-sm font-medium text-fg-primary">Attributes</span>
         {#each attributes as attr, index}
           <div class="flex items-center gap-x-2">
             <Input
