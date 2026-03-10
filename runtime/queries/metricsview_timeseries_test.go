@@ -2,9 +2,8 @@ package queries_test
 
 import (
 	"context"
-	"time"
-
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -39,18 +38,18 @@ func TestMetricsViewsTimeseriesAgainstClickHouse(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t, rt, instanceID) })
-	// t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second", func(t *testing.T) {
-	// 	testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t, rt, instanceID)
-	// })
-	// t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute", func(t *testing.T) {
-	// 	testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t, rt, instanceID)
-	// })
-	// t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly", func(t *testing.T) {
-	// 	testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t, rt, instanceID)
-	// })
-	// t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly", func(t *testing.T) {
-	// 	testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t, rt, instanceID)
-	// })
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t, true, rt, instanceID)
+	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly", func(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t, rt, instanceID)
 	})
@@ -58,10 +57,13 @@ func TestMetricsViewsTimeseriesAgainstClickHouse(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t, rt, instanceID) })
-	// t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly", func(t *testing.T) {
-	// 	testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t, rt, instanceID)
-	// })
-	// t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t, true, rt, instanceID)
+	})
+	testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t, true, rt, instanceID)
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, true, rt, instanceID)
+	})
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
 }
 
@@ -82,16 +84,16 @@ func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t, rt, instanceID) })
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second", func(t *testing.T) {
-		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t, rt, instanceID)
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t, false, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute", func(t *testing.T) {
-		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t, rt, instanceID)
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t, false, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly", func(t *testing.T) {
-		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t, rt, instanceID)
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t, false, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly", func(t *testing.T) {
-		testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t, rt, instanceID)
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t, false, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly", func(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t, rt, instanceID)
@@ -101,9 +103,11 @@ func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
 	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t, rt, instanceID) })
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly", func(t *testing.T) {
-		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t, rt, instanceID)
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t, false, rt, instanceID)
 	})
-	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, false, rt, instanceID)
+	})
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
 }
 
@@ -358,7 +362,7 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 }
 
-func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *testing.T, isClickHouse bool, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
 		MetricsViewName: "timeseries_dst_backwards",
@@ -375,7 +379,12 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *tes
 	rows := q.Result.Data
 	require.Len(t, rows, 1)
 	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	// ClickHouse returns 05:00 UTC for this range; DuckDB returns 06:00 UTC (DST difference).
+	if isClickHouse {
+		require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	} else {
+		require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	}
 
 	q = &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
@@ -396,7 +405,7 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *tes
 	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 }
 
-func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *testing.T, isClickHouse bool, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
 		MetricsViewName: "timeseries_dst_backwards",
@@ -413,7 +422,12 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *tes
 	rows := q.Result.Data
 	require.Len(t, rows, 1)
 	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	// ClickHouse returns 05:00 UTC for this range; DuckDB returns 06:00 UTC (DST difference).
+	if isClickHouse {
+		require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	} else {
+		require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	}
 
 	q = &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
@@ -434,7 +448,7 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *tes
 	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 }
 
-func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *testing.T, isClickHouse bool, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
 		MetricsViewName: "timeseries_dst_backwards",
@@ -449,19 +463,34 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *tes
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 4)
-	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
-	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	if isClickHouse {
+		// ClickHouse includes 05:00 UTC (5 bins); DuckDB skips it (4 bins) due to DST fall back.
+		require.Len(t, rows, 5)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	} else {
+		require.Len(t, rows, 4)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
+		require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	}
 }
 
-func testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing.T, isClickHouse bool, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
 		Where: expressionpb.In(
@@ -480,20 +509,40 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 4)
-	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
-	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	if isClickHouse {
+		// ClickHouse includes 05:00 UTC (5 bins); DuckDB skips it (4 bins) due to DST fall back.
+		require.Len(t, rows, 5)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	} else {
+		require.Len(t, rows, 4)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
+		require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	}
 }
 
 func testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t *testing.T, rt *runtime.Runtime, instanceID string) {
@@ -582,7 +631,7 @@ func testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 }
 
-func testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *testing.T, isClickHouse bool, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
 		MetricsViewName: "timeseries_dst_forwards",
@@ -597,22 +646,37 @@ func testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *test
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 6)
-	i := 0
-	require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	if isClickHouse {
+		// ClickHouse has 5 bins (no duplicate 07:00 for DST spring forward); DuckDB has 6 with two 07:00.
+		require.Len(t, rows, 5)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	} else {
+		require.Len(t, rows, 6)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	}
 }
 
-func testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.T, isClickHouse bool, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
 		Where: expressionpb.In(
@@ -631,25 +695,45 @@ func testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 6)
-	i := 0
-	require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
-	require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	if isClickHouse {
+		// ClickHouse has 5 bins (no duplicate 07:00 for DST spring forward); DuckDB has 6 with two 07:00.
+		require.Len(t, rows, 5)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	} else {
+		require.Len(t, rows, 6)
+		i := 0
+		require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+		i++
+		require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
+		require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	}
 }
 
 func testMetricsViewTimeSeries_having_clause(t *testing.T, rt *runtime.Runtime, instanceID string) {
