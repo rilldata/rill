@@ -58,12 +58,23 @@ func (s *Server) SetupPythonEnvironment(ctx context.Context, req *runtimev1.Setu
 		return nil, err
 	}
 
-	// Write the connector YAML file
-	connectorYAML := fmt.Sprintf("type: connector\ndriver: python\npython_path: %s\n", result.PythonPath)
+	// Write the connector YAML file with packages
+	var connectorYAML string
+	if len(req.Packages) > 0 {
+		var pkgLines string
+		for _, pkg := range req.Packages {
+			pkgLines += fmt.Sprintf("  - %s\n", pkg)
+		}
+		connectorYAML = fmt.Sprintf("type: connector\ndriver: python\npython_path: %s\n\npackages:\n%s", result.PythonPath, pkgLines)
+	} else {
+		connectorYAML = fmt.Sprintf("type: connector\ndriver: python\npython_path: %s\n", result.PythonPath)
+	}
 	err = repo.Put(ctx, "connectors/python.yaml", strings.NewReader(connectorYAML))
 	if err != nil {
 		return nil, fmt.Errorf("failed to write connector YAML: %w", err)
 	}
+
+	// requirements.txt is written by SetupEnvironment directly to disk
 
 	return &runtimev1.SetupPythonEnvironmentResponse{
 		PythonPath:        result.PythonPath,

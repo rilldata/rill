@@ -2,6 +2,7 @@ package python
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -21,6 +22,10 @@ type ExecuteOptions struct {
 	TempDir         string
 	Args            []string
 	ExtraEnv        map[string]string
+	// ConnectorEnvVars are env vars derived from connector configs (via env_from_connectors).
+	// Keys are uppercase env var names, values are the config values.
+	// JSON-object values are written to temp files; the env var is set to the file path.
+	ConnectorEnvVars map[string]string
 }
 
 // ExecuteScript runs a Python script and returns the path to the output Parquet file.
@@ -66,6 +71,30 @@ func ExecuteScript(ctx context.Context, opts *ExecuteOptions) (string, error) {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
 
+	// Process connector env vars: write JSON values to temp files, pass strings directly
+	var tempFiles []string
+	for envName, val := range opts.ConnectorEnvVars {
+		if val == "" {
+			continue
+		}
+		if looksLikeJSON(val) {
+			// Write JSON credentials to a temp file so SDKs that expect file paths work
+			tmpFile := filepath.Join(opts.TempDir, fmt.Sprintf("rill_creds_%s_%d.json", strings.ToLower(envName), time.Now().UnixNano()))
+			if err := os.WriteFile(tmpFile, []byte(val), 0600); err != nil {
+				return "", fmt.Errorf("python: failed to write credentials for %s: %w", envName, err)
+			}
+			tempFiles = append(tempFiles, tmpFile)
+			cmd.Env = append(cmd.Env, envName+"="+tmpFile)
+		} else {
+			cmd.Env = append(cmd.Env, envName+"="+val)
+		}
+	}
+	defer func() {
+		for _, f := range tempFiles {
+			os.Remove(f)
+		}
+	}()
+
 	// Capture output for error reporting
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
@@ -89,4 +118,13 @@ func ExecuteScript(ctx context.Context, opts *ExecuteOptions) (string, error) {
 	}
 
 	return outputPath, nil
+}
+
+// looksLikeJSON returns true if the string appears to be a JSON object.
+func looksLikeJSON(s string) bool {
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(s, "{") {
+		return false
+	}
+	return json.Valid([]byte(s))
 }

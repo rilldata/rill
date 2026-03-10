@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -35,6 +38,12 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Requirements",
 			Description: "Comma-separated list of pip packages or a path to requirements.txt.",
+		},
+		{
+			Key:         "packages",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Packages",
+			Description: "List of pip packages to install in the virtual environment.",
 		},
 		{
 			Key:         "venv_path",
@@ -68,16 +77,18 @@ type driver struct{}
 
 // ConfigProperties holds the connector-level configuration.
 type ConfigProperties struct {
-	PythonPath   string `mapstructure:"python_path"`
-	Requirements string `mapstructure:"requirements"`
-	VenvPath     string `mapstructure:"venv_path"`
+	PythonPath   string   `mapstructure:"python_path"`
+	Requirements string   `mapstructure:"requirements"`
+	Packages     []string `mapstructure:"packages"`
+	VenvPath     string   `mapstructure:"venv_path"`
 }
 
 // ModelInputProperties holds the per-model properties from YAML.
 type ModelInputProperties struct {
-	CodePath string            `mapstructure:"code_path"`
-	Args     []string          `mapstructure:"args"`
-	Env      map[string]string `mapstructure:"env"`
+	CodePath          string            `mapstructure:"code_path"`
+	Args              []string          `mapstructure:"args"`
+	Env               map[string]string `mapstructure:"env"`
+	CreateSecretsFromConnectors []string          `mapstructure:"create_secrets_from_connectors"`
 }
 
 // Decode parses raw properties into ModelInputProperties.
@@ -130,12 +141,16 @@ type Connection struct {
 
 var _ drivers.Handle = &Connection{}
 
-// Ping verifies that a Python binary is available.
+// Ping verifies that a Python binary is available and installs packages if configured.
 func (c *Connection) Ping(ctx context.Context) error {
 	pythonPath := c.resolvePythonPath()
 	_, err := exec.LookPath(pythonPath)
 	if err != nil {
 		return fmt.Errorf("python not found at %q: %w (run 'rill python setup' to configure)", pythonPath, err)
+	}
+	// Install packages if configured
+	if err := c.EnsurePackages(ctx); err != nil {
+		return err
 	}
 	return nil
 }
@@ -223,4 +238,58 @@ func (c *Connection) resolvePythonPath() string {
 		return c.config.PythonPath
 	}
 	return "python3"
+}
+
+// EnsurePackages installs packages listed in the connector config if a venv exists.
+// It merges packages from both the `packages` list and `requirements` string.
+func (c *Connection) EnsurePackages(ctx context.Context) error {
+	pkgs := c.allPackages()
+	if len(pkgs) == 0 {
+		return nil
+	}
+
+	// Find pip in the venv
+	pythonPath := c.resolvePythonPath()
+	venvDir := filepath.Dir(filepath.Dir(pythonPath)) // e.g. .rill/.venv/bin/python → .rill/.venv
+	pipPath := filepath.Join(venvDir, "bin", "pip")
+	if _, err := os.Stat(pipPath); err != nil {
+		// Windows fallback
+		pipPath = filepath.Join(venvDir, "Scripts", "pip.exe")
+		if _, err := os.Stat(pipPath); err != nil {
+			// No venv pip found; try using python -m pip
+			pipPath = ""
+		}
+	}
+
+	var cmd *exec.Cmd
+	if pipPath != "" {
+		args := append([]string{"install", "-q"}, pkgs...)
+		cmd = exec.CommandContext(ctx, pipPath, args...)
+	} else {
+		args := append([]string{"-m", "pip", "install", "-q"}, pkgs...)
+		cmd = exec.CommandContext(ctx, pythonPath, args...)
+	}
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("python: failed to install packages %v: %w\n%s", pkgs, err, string(out))
+	}
+
+	c.logger.Info("python: installed packages", zap.Strings("packages", pkgs))
+	return nil
+}
+
+// allPackages merges packages from the `packages` list and `requirements` string.
+func (c *Connection) allPackages() []string {
+	var pkgs []string
+	pkgs = append(pkgs, c.config.Packages...)
+	if c.config.Requirements != "" {
+		for _, p := range strings.Split(c.config.Requirements, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				pkgs = append(pkgs, p)
+			}
+		}
+	}
+	return pkgs
 }

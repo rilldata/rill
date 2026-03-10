@@ -125,6 +125,13 @@ func SetupEnvironment(ctx context.Context, opts *SetupOptions) (*SetupResult, er
 		venvPythonPath = filepath.Join(venvPath, "Scripts", "python.exe")
 	}
 
+	// Write requirements.txt to project root
+	reqPath := filepath.Join(opts.ProjectRoot, "requirements.txt")
+	reqContent := strings.Join(allPackages, "\n") + "\n"
+	if err := os.WriteFile(reqPath, []byte(reqContent), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write requirements.txt: %w", err)
+	}
+
 	return &SetupResult{
 		PythonPath: venvPythonPath,
 		VenvPath:   venvPath,

@@ -111,6 +111,8 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 			c.ignorePaths = yml.IgnorePaths
 		}
 	}
+	// Always ignore the Python venv directory
+	c.ignorePaths = append(c.ignorePaths, "/.rill")
 
 	// Setup the file watcher
 	c.watcher = filewatcher.NewLazyWatcher(c.root, c.ignorePaths, c.logger)
