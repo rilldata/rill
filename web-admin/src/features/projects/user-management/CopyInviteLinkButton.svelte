@@ -25,8 +25,8 @@
       <span class="font-medium text-xs text-fg-secondary"> URL copied </span>
     </div>
   {:else}
-    <Button type="secondary" onClick={onCopy}>
-      <Link size="16px" />
+    <Button type="secondary" small onClick={onCopy}>
+      <Link size="12px" />
       Copy URL
     </Button>
   {/if}
