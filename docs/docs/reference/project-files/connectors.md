@@ -732,6 +732,14 @@ _[string]_ - API key for connecting to OpenAI _(required)_
 
 _[string]_ - The OpenAI model to use (e.g., 'gpt-4o') 
 
+### `max_output_tokens`
+
+_[number]_ - Maximum number of tokens to generate in the completion (default: 8192) 
+
+### `reasoning_effort`
+
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high') 
+
 ### `base_url`
 
 _[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1') 
@@ -750,6 +758,8 @@ type: connector # Must be `connector` (required)
 driver: openai # Must be `openai` _(required)_
 api_key: "{{ .env.OPENAI_API_KEY }}" # API key for connecting to OpenAI
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')
+max_output_tokens: 8192 # Maximum number of tokens to generate in the completion (default: 8192)
+reasoning_effort: "medium" # Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
 api_type: "openai" # The type of OpenAI API to use
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD

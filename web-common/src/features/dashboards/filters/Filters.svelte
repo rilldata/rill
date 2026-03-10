@@ -21,7 +21,7 @@
     V1TimeGrain,
     type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -48,7 +48,7 @@
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const { rillTime } = featureFlags;
 
@@ -101,9 +101,9 @@
 
   let showDefaultItem = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
-  $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
+  $: timeRangeQuery = useMetricsViewTimeRange(client, metricsViewName);
 
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 
@@ -224,7 +224,7 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     metricsExplorerStore.setTimeDimension($exploreName, column);
@@ -234,6 +234,7 @@
 
     const { interval, grain } = await deriveInterval(
       timeRangeName,
+      client,
       metricsViewName,
       activeTimeZone,
       column,
@@ -291,11 +292,12 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     const { interval, grain } = await deriveInterval(
       alias,
+      client,
       metricsViewName,
       tz,
       selectedTimeDimension,

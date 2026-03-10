@@ -5,7 +5,7 @@
     SSEConnectionManager,
     ConnectionStatus,
   } from "@rilldata/web-common/runtime-client/sse-connection-manager";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { V1LogLevel, type V1Log } from "@rilldata/web-common/runtime-client";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -16,6 +16,8 @@
     parseArrayParam,
     parseStringParam,
   } from "../url-filter-sync";
+
+  const runtimeClient = useRuntimeClient();
 
   const MAX_LOGS = 500;
   const REPLAY_LIMIT = 100;
@@ -97,7 +99,7 @@
 
   onMount(() => {
     mounted = true;
-    const { host, instanceId } = $runtime;
+    const { host, instanceId } = runtimeClient;
     if (!host || !instanceId) return;
 
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
@@ -108,7 +110,9 @@
       logsConnection.on("open", handleOpen),
     ];
 
-    logsConnection.start(url);
+    logsConnection.start(url, {
+      getJwt: () => runtimeClient.getJwt(),
+    });
   });
 
   onDestroy(() => {
@@ -152,12 +156,14 @@
   }
 
   function retryConnection() {
-    const { host, instanceId } = $runtime;
+    const { host, instanceId } = runtimeClient;
     if (!host || !instanceId) return;
 
     connectionError = null;
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
-    logsConnection.start(url);
+    logsConnection.start(url, {
+      getJwt: () => runtimeClient.getJwt(),
+    });
   }
 
   function getLevelClass(level: V1LogLevel | undefined): string {

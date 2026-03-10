@@ -38,7 +38,7 @@ func TestScan(t *testing.T) {
 
 func acquireTestDruid(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "druid")
-	conn, err := drivers.Open("druid", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("druid", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

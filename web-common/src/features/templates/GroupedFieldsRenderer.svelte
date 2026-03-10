@@ -11,7 +11,6 @@
     isRichSelectEnum,
     isSelectEnum,
     isTabsEnum,
-    radioOptions,
     tabOptions,
   } from "./schema-utils";
 
@@ -136,10 +135,10 @@
                       bind:checked={$formStore[tabKey]}
                       {onStringInputChange}
                       {handleFileUpload}
-                      options={isRadioEnum(tabProp)
-                        ? radioOptions(tabProp)
+                      options={tabProp.enum?.length
+                        ? buildEnumOptions(tabProp, true, true)
                         : undefined}
-                      name={`${tabKey}-radio`}
+                      name={`${tabKey}-enum`}
                       disabled={isDisabled(tabKey)}
                     />
                   {/if}
@@ -172,8 +171,10 @@
         bind:checked={$formStore[childKey]}
         {onStringInputChange}
         {handleFileUpload}
-        options={isRadioEnum(childProp) ? radioOptions(childProp) : undefined}
-        name={`${childKey}-radio`}
+        options={childProp.enum?.length
+          ? buildEnumOptions(childProp, true, true)
+          : undefined}
+        name={`${childKey}-enum`}
         disabled={isDisabled(childKey)}
       />
     {/if}
