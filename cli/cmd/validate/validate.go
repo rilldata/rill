@@ -21,10 +21,9 @@ import (
 
 // ValidationResult represents the complete validation output
 type ValidationResult struct {
-	Summary       ValidationSummary `json:"summary"`
-	ParseErrors   []ParseError      `json:"parse_errors"`
-	ParseWarnings []ParseError      `json:"parse_warnings"`
-	Resources     []ResourceStatus  `json:"resources"`
+	Summary     ValidationSummary `json:"summary"`
+	ParseErrors []ParseError      `json:"parse_errors"`
+	Resources   []ResourceStatus  `json:"resources"`
 }
 
 type ValidationSummary struct {
@@ -187,9 +186,13 @@ func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 			parseErrors := parseErrorsFromParser(r)
 			result.Summary.ParseErrors = len(parseErrors)
 			result.ParseErrors = parseErrors
-			parseWarnings := parseErrorsFromParser(r)
-			result.Summary.ParseWarnings = len(parseWarnings)
-			result.ParseWarnings = parseWarnings
+			var parseWarnings int
+			for _, pe := range r.GetProjectParser().State.ParseErrors {
+				if pe.Warning {
+					parseWarnings++
+				}
+			}
+			result.Summary.ParseWarnings = parseWarnings
 			continue
 		}
 		if r.Meta.Hidden {

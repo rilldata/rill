@@ -92,8 +92,6 @@ type ResolverOptions struct {
 	Args       map[string]any
 	Claims     *SecurityClaims
 	ForExport  bool
-	// SkipPropertyValidation disables warnings about unsupported properties.
-	SkipPropertyValidation bool
 }
 
 // ResolverInitializer is a function that initializes a resolver.
@@ -128,21 +126,6 @@ func (opts *ResolveOptions) toResolverOptions(runtime *Runtime, forExport bool) 
 		Claims:     opts.Claims,
 		ForExport:  forExport,
 	}
-}
-
-func (r *Runtime) ValidateResolverProperties(ctx context.Context, opts *ResolveOptions) error {
-	// Initialize the resolver
-	initializer, ok := ResolverInitializers[opts.Resolver]
-	if !ok {
-		return fmt.Errorf("no resolver found for name %q", opts.Resolver)
-	}
-	resolver, err := initializer(ctx, opts.toResolverOptions(r, false))
-	if err != nil {
-		return err
-	}
-	defer resolver.Close()
-
-	return resolver.Validate(ctx)
 }
 
 type ResolveInfo struct {

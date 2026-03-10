@@ -155,11 +155,7 @@ func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *sqlResolver) Validate(ctx context.Context) error {
-	_, err := r.olap.Query(ctx, &drivers.Statement{
-		Query:  r.sql,
-		DryRun: true,
-	})
-	return err
+	return nil
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {

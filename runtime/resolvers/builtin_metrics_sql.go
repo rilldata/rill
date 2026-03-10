@@ -67,8 +67,7 @@ func newBuiltinMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (r
 		Args: map[string]any{
 			"priority": args.Priority,
 		},
-		Claims:                 opts.Claims,
-		ForExport:              opts.ForExport,
-		SkipPropertyValidation: true,
+		Claims:    opts.Claims,
+		ForExport: opts.ForExport,
 	})
 }
