@@ -150,6 +150,7 @@
             <div
               transition:slide={{ duration: 200 }}
               class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto flex flex-col gap-2"
+              aria-label="Model errors"
             >
               {#each allErrors as error (error.message)}
                 <div>
