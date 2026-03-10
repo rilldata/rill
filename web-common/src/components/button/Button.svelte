@@ -139,7 +139,6 @@
   .secondary {
     --focus-color: var(--color-primary-600);
     @apply bg-transparent border border-accent-primary-action text-accent-primary-action;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
 
   :global(.dark) .secondary {
