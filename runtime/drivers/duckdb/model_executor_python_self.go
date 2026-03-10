@@ -38,6 +38,8 @@ func (e *pythonToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelE
 	e.c.logger.Info("python executor: parsed input props",
 		zap.String("code_path", inputProps.CodePath),
 		zap.Strings("create_secrets_from_connectors", inputProps.CreateSecretsFromConnectors),
+		zap.Any("script_env", inputProps.Env),
+		zap.Any("raw_input_properties", opts.InputProperties),
 	)
 
 	// Parse the connector config to get python_path

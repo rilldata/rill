@@ -1,15 +1,27 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
+  import FormSelect from "@rilldata/web-common/components/forms/Select.svelte";
+  import FormTabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     ResourceKind,
     useFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import ConnectionTypeSelector from "@rilldata/web-common/features/templates/ConnectionTypeSelector.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import {
+    BarChart3,
+    CreditCard,
+    Receipt,
+    Users,
+    Globe,
+    FileCode,
+  } from "lucide-svelte";
   import { useRuntimeClient } from "../../../../runtime-client/v2";
   import {
     runtimeServiceDetectPython,
@@ -121,12 +133,67 @@
   }
 
   // ── Source step state ──
-  let sourceMode: "template" | "custom" = "template";
-  let selectedTemplateId: string | null = null;
+  let sourceMode = "template";
+  let selectedTemplateId = "";
   let codePath = "";
   let modelName = "";
   let creating = false;
   let createError = "";
+  let envVarValues: Record<string, string> = {};
+
+  // Tab options for source mode toggle
+  const sourceModeOptions = [
+    { value: "template", label: "Template" },
+    { value: "custom", label: "Custom script" },
+  ];
+
+  // Template options for ConnectionTypeSelector
+  const templateOptions = pythonTemplates.map((t) => ({
+    value: t.id,
+    label: t.label,
+    description: t.description,
+  }));
+
+  // Icon and color maps for template selector
+  const templateIconMap = {
+    ga4: BarChart3,
+    stripe: CreditCard,
+    orb: Receipt,
+    hubspot: Users,
+    http: Globe,
+    blank: FileCode,
+  };
+
+  const templateColorMap = {
+    ga4: { bg: "bg-orange-100", text: "text-orange-600" },
+    stripe: { bg: "bg-purple-100", text: "text-purple-600" },
+    orb: { bg: "bg-blue-100", text: "text-blue-600" },
+    hubspot: { bg: "bg-orange-100", text: "text-orange-500" },
+    http: { bg: "bg-green-100", text: "text-green-600" },
+    blank: { bg: "bg-gray-100", text: "text-gray-600" },
+  };
+
+  function onTemplateChange(id: string) {
+    selectedTemplateId = id;
+    const tmpl = pythonTemplates.find((t) => t.id === id);
+    if (!tmpl) return;
+    codePath = tmpl.defaultPath;
+    const slug = tmpl.defaultPath.split("/").pop()?.replace(/\.py$/, "") ?? "";
+    if (slug) modelName = slug.replace(/[^a-zA-Z0-9_]/g, "_");
+    // Pre-select first suggested secret
+    if (tmpl.suggestedSecrets.length > 0 && !selectedSecret) {
+      selectedSecret = tmpl.suggestedSecrets[0];
+    }
+    // Reset env var inputs for this template
+    envVarValues = {};
+    for (const v of tmpl.envVars) {
+      envVarValues[v.key] = "";
+    }
+  }
+
+  $: selectedTemplate = pythonTemplates.find(
+    (t) => t.id === selectedTemplateId,
+  );
 
   // ── Connector secrets ──
   const EXCLUDED_DRIVERS = new Set(["python", "duckdb", "file", "https"]);
@@ -142,30 +209,15 @@
       ),
   );
 
-  let selectedSecrets: string[] = [];
+  let selectedSecret = "";
 
-  function toggleSecret(name: string) {
-    if (selectedSecrets.includes(name)) {
-      selectedSecrets = selectedSecrets.filter((s) => s !== name);
-    } else {
-      selectedSecrets = [...selectedSecrets, name];
-    }
-  }
-
-  function selectTemplate(id: string) {
-    const tmpl = pythonTemplates.find((t) => t.id === id);
-    if (!tmpl) return;
-    selectedTemplateId = id;
-    codePath = tmpl.defaultPath;
-    const slug = tmpl.defaultPath.split("/").pop()?.replace(/\.py$/, "") ?? "";
-    if (slug) modelName = slug.replace(/[^a-zA-Z0-9_]/g, "_");
-    // Pre-select suggested secrets
-    for (const s of tmpl.suggestedSecrets) {
-      if (!selectedSecrets.includes(s)) {
-        selectedSecrets = [...selectedSecrets, s];
-      }
-    }
-  }
+  $: connectorOptions = ($connectorsQuery.data ?? [])
+    .map((c) => {
+      const name = c.meta?.name?.name ?? "";
+      const driver = c.connector?.spec?.driver ?? "";
+      return { value: name, label: `${name} (${driver})` };
+    })
+    .filter((o) => o.value);
 
   // ── Lifecycle ──
   init();
@@ -294,10 +346,47 @@
         `code_path: ${codePath.trim()}`,
       ];
 
-      if (selectedSecrets.length > 0) {
-        lines.push(
-          `create_secrets_from_connectors: ${selectedSecrets.join(", ")}`,
-        );
+      if (selectedSecret) {
+        lines.push("create_secrets_from_connectors:");
+        lines.push(`  - ${selectedSecret}`);
+      }
+
+      // Add env vars from template inputs using Rill's templating syntax.
+      // The actual values are written to .env; the YAML references them via {{.env.KEY}}.
+      const envEntries = Object.entries(envVarValues).filter(
+        ([, v]) => v.trim(),
+      );
+      if (envEntries.length > 0) {
+        lines.push("script_env:");
+        for (const [key] of envEntries) {
+          lines.push(`  ${key}: "{{ .env.${key} }}"`);
+        }
+
+        // Write actual values to .env file
+        try {
+          let dotEnv = "";
+          try {
+            const existing = await runtimeServiceGetFile(runtimeClient, {
+              path: ".env",
+            });
+            dotEnv = existing.blob ?? "";
+          } catch {
+            // .env doesn't exist yet
+          }
+          for (const [key, val] of envEntries) {
+            const line = `${key}=${val.trim()}`;
+            if (!dotEnv.includes(`${key}=`)) {
+              dotEnv = dotEnv.trimEnd() + (dotEnv ? "\n" : "") + line + "\n";
+            }
+          }
+          await runtimeServicePutFile(runtimeClient, {
+            path: ".env",
+            blob: dotEnv,
+            create: true,
+          });
+        } catch {
+          // Non-fatal; user can add to .env manually
+        }
       }
 
       await createSource(runtimeClient, modelName.trim(), lines.join("\n"));
@@ -512,7 +601,7 @@
         <div class="flex items-center gap-2">
           <div class="w-2 h-2 rounded-full bg-green-500"></div>
           <span class="text-sm text-fg-secondary">
-            Python environment ready 
+            Python environment ready
           </span>
         </div>
 
@@ -520,89 +609,71 @@
           Configure Python source
         </h3>
 
-        <!-- Tab toggle: Template / Custom -->
-        <div
-          class="inline-flex rounded-md border border-border bg-surface-subtle p-0.5 self-start"
+        <!-- Tabs: Template / Custom script (reuses shared Tabs component) -->
+        <FormTabs
+          bind:value={sourceMode}
+          options={sourceModeOptions}
+          disableMarginTop
         >
-          <button
-            class="px-3 py-1 text-sm rounded transition-colors
-              {sourceMode === 'template'
-              ? 'bg-surface text-fg-primary font-medium shadow-sm'
-              : 'text-fg-muted hover:text-fg-secondary'}"
-            on:click={() => {
-              sourceMode = "template";
-            }}
-            disabled={creating}
-          >
-            Template
-          </button>
-          <button
-            class="px-3 py-1 text-sm rounded transition-colors
-              {sourceMode === 'custom'
-              ? 'bg-surface text-fg-primary font-medium shadow-sm'
-              : 'text-fg-muted hover:text-fg-secondary'}"
-            on:click={() => {
-              sourceMode = "custom";
-              selectedTemplateId = null;
-              codePath = "";
-              modelName = "";
-            }}
-            disabled={creating}
-          >
-            Custom script
-          </button>
-        </div>
-
-        <!-- Template grid -->
-        {#if sourceMode === "template"}
-          <div class="grid grid-cols-2 gap-2">
-            {#each pythonTemplates as tmpl}
-              <button
-                class="flex flex-col items-start gap-0.5 p-3 rounded-lg border text-left transition-colors
-                  {selectedTemplateId === tmpl.id
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-border hover:border-primary-300 bg-surface'}"
-                on:click={() => selectTemplate(tmpl.id)}
-                disabled={creating}
+          <TabsContent value="template">
+            <div class="pt-2">
+              <ConnectionTypeSelector
+                bind:value={selectedTemplateId}
+                options={templateOptions}
+                label="Select a starter template"
+                onChange={onTemplateChange}
+                iconMap={templateIconMap}
+                colorMap={templateColorMap}
+              />
+              {#if selectedTemplate}
+                <span
+                  class="text-xs text-fg-muted font-mono bg-surface-muted px-2 py-1 rounded inline-block"
+                >
+                  Creates {selectedTemplate.defaultPath}
+                </span>
+                {#each selectedTemplate.envVars as envVar (envVar.key)}
+                  <div class="flex flex-col gap-1 mt-2">
+                    <label
+                      for="env-{envVar.key}"
+                      class="text-sm font-medium text-fg-secondary"
+                    >
+                      {envVar.label}
+                    </label>
+                    <input
+                      id="env-{envVar.key}"
+                      type="text"
+                      bind:value={envVarValues[envVar.key]}
+                      placeholder={envVar.placeholder}
+                      disabled={creating}
+                      class="w-full px-3 py-2 border border-border rounded-md text-sm bg-surface text-fg-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                {/each}
+              {/if}
+            </div>
+          </TabsContent>
+          <TabsContent value="custom">
+            <div class="flex flex-col gap-1 pt-2">
+              <label
+                for="code-path"
+                class="text-sm font-medium text-fg-secondary"
               >
-                <span class="text-sm font-medium text-fg-primary">
-                  {tmpl.label}
-                </span>
-                <span class="text-xs text-fg-muted leading-tight">
-                  {tmpl.description}
-                </span>
-                {#if selectedTemplateId === tmpl.id}
-                  <span
-                    class="mt-1 text-[10px] font-mono text-fg-muted bg-surface-muted px-1.5 py-0.5 rounded"
-                  >
-                    → {tmpl.defaultPath}
-                  </span>
-                {/if}
-              </button>
-            {/each}
-          </div>
-        {:else}
-          <!-- Custom script path -->
-          <div class="flex flex-col gap-1">
-            <label
-              for="code-path"
-              class="text-sm font-medium text-fg-secondary"
-            >
-              Script path
-            </label>
-            <input
-              id="code-path"
-              type="text"
-              bind:value={codePath}
-              placeholder="scripts/extract.py"
-              disabled={creating}
-              class="w-full px-3 py-2 border border-border rounded-md text-sm font-mono bg-surface text-fg-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-            <span class="text-xs text-fg-muted">
-              Path to an existing Python script relative to the project root
-            </span>
-          </div>
-        {/if}
+                Script path
+              </label>
+              <input
+                id="code-path"
+                type="text"
+                bind:value={codePath}
+                placeholder="scripts/extract.py"
+                disabled={creating}
+                class="w-full px-3 py-2 border border-border rounded-md text-sm font-mono bg-surface text-fg-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+              <span class="text-xs text-fg-muted">
+                Path to an existing script relative to the project root
+              </span>
+            </div>
+          </TabsContent>
+        </FormTabs>
 
         <!-- Model name -->
         <div class="flex flex-col gap-1">
@@ -622,66 +693,24 @@
           />
         </div>
 
-        <!-- Connector secrets dropdown -->
-        <div class="flex flex-col gap-1.5">
-          <label
-            for="secrets-select"
-            class="text-sm font-medium text-fg-secondary"
-          >
-            Pass secrets from connectors
-          </label>
-          {#if $connectorsQuery.isLoading}
-            <div class="flex items-center gap-2 text-xs text-fg-muted">
-              <LoadingSpinner size="12px" />
-              Loading connectors...
-            </div>
-          {:else if $connectorsQuery.data && $connectorsQuery.data.length > 0}
-            <select
-              id="secrets-select"
-              class="w-full px-3 py-2 border border-border rounded-md text-sm bg-surface text-fg-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              on:change={(e) => {
-                const val = e.currentTarget.value;
-                if (val && !selectedSecrets.includes(val)) {
-                  selectedSecrets = [...selectedSecrets, val];
-                }
-                e.currentTarget.value = "";
-              }}
-              disabled={creating}
-              value=""
-            >
-              <option value="" disabled>Select a connector...</option>
-              {#each $connectorsQuery.data as connector}
-                {@const name = connector.meta?.name?.name ?? ""}
-                {@const driver = connector.connector?.spec?.driver ?? ""}
-                {#if name && !selectedSecrets.includes(name)}
-                  <option value={name}>{name} ({driver})</option>
-                {/if}
-              {/each}
-            </select>
-            {#if selectedSecrets.length > 0}
-              <div class="flex flex-wrap gap-1.5 mt-1">
-                {#each selectedSecrets as secret}
-                  <span
-                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-mono rounded-md bg-primary-50 text-primary-700 border border-primary-200"
-                  >
-                    {secret}
-                    <button
-                      class="ml-0.5 text-primary-400 hover:text-primary-600"
-                      on:click={() => toggleSecret(secret)}
-                      disabled={creating}
-                    >
-                      &times;
-                    </button>
-                  </span>
-                {/each}
-              </div>
-            {/if}
-          {:else}
-            <span class="text-xs text-fg-muted italic">
-              No connectors configured yet
-            </span>
-          {/if}
-        </div>
+        <!-- Connector secrets (reuses shared Select dropdown) -->
+        {#if $connectorsQuery.isLoading}
+          <div class="flex items-center gap-2 text-xs text-fg-muted">
+            <LoadingSpinner size="12px" />
+            Loading connectors...
+          </div>
+        {:else if connectorOptions.length > 0}
+          <FormSelect
+            id="secrets-select"
+            label="Pass secrets from connector"
+            placeholder="Select a connector..."
+            bind:value={selectedSecret}
+            options={connectorOptions}
+            disabled={creating}
+            sameWidth
+            clearable
+          />
+        {/if}
 
         {#if createError}
           <div

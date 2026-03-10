@@ -87,7 +87,7 @@ type ConfigProperties struct {
 type ModelInputProperties struct {
 	CodePath          string            `mapstructure:"code_path"`
 	Args              []string          `mapstructure:"args"`
-	Env               map[string]string `mapstructure:"env"`
+	Env               map[string]string `mapstructure:"script_env"`
 	CreateSecretsFromConnectors []string          `mapstructure:"create_secrets_from_connectors"`
 }
 

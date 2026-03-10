@@ -5,7 +5,7 @@ from google.analytics.data_v1beta.types import (
     DateRange, Dimension, Metric, RunReportRequest,
 )
 
-property_id = "YOUR_PROPERTY_ID"  # Replace with your GA4 property ID
+property_id = os.environ["GA4_PROPERTY_ID"]
 output_path = os.environ["RILL_OUTPUT_PATH"]
 
 client = BetaAnalyticsDataClient()
