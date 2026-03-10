@@ -76,9 +76,6 @@ definitions:
       - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
       - [**Slack**](#slack) - Slack data
 
-      ### _Table Formats_
-      - [**Iceberg**](#iceberg) - Apache Iceberg tables via DuckDB
-
       ### _Other_
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 

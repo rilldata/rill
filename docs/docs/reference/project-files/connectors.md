@@ -39,9 +39,6 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
 - [**Slack**](#slack) - Slack data
 
-### _Table Formats_
-- [**Iceberg**](#iceberg) - Apache Iceberg tables via DuckDB
-
 ### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 
@@ -1240,4 +1237,3 @@ driver: snowflake
 dsn: "{{ .env.SNOWFLAKE_DSN }}" # define SNOWFLAKE_DSN in .env file
 parallel_fetch_limit: 2
 ```
-
