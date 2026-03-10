@@ -21,10 +21,10 @@
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
     connectors,
-    getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
     isMultiStepConnector as isMultiStepConnectorSchema,
+    toConnectorDriver as toConnectorDriverFromSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { ICONS } from "./icons";
@@ -40,7 +40,9 @@
   let isSubmittingForm = false;
 
   // Filter connectors by category from JSON schemas
-  $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
+  $: sourceConnectors = connectors.filter(
+    (c) => c.category !== "olap" && c.category !== "ai",
+  );
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
 
   // Get the form width class for the selected connector
@@ -55,19 +57,7 @@
    * Uses x-driver for the name when specified.
    */
   function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
-    const schema = getConnectorSchema(info.name);
-    const category = schema?.["x-category"];
-    const backendName = getBackendConnectorName(info.name);
-
-    return {
-      name: backendName,
-      displayName: info.displayName,
-      implementsObjectStore: category === "objectStore",
-      implementsOlap: category === "olap",
-      implementsSqlStore: category === "sqlStore",
-      implementsWarehouse: category === "warehouse",
-      implementsFileStore: category === "fileStore",
-    };
+    return toConnectorDriverFromSchema(info.name) ?? { name: info.name };
   }
 
   onMount(() => {
@@ -164,7 +154,7 @@
       connectorInstanceName: null,
       requestConnector: false,
     };
-    window.history.pushState(state, "", "");
+    window.history.replaceState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
     resetConnectorStep();
