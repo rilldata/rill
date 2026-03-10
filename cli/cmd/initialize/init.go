@@ -1,13 +1,17 @@
 package initialize
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/ai/instructions"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/examples"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -16,162 +20,177 @@ import (
 
 func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 	var olap string
-	var demo string
+	var example string
 	var agent string
-	var nonInteractive bool
-	var force bool
+
+	exampleOptions, err := examples.List()
+	if err != nil {
+		ch.Printf("Warning: failed to list example projects: %v\n", err)
+	}
+
+	var long strings.Builder
+	long.WriteString("Initialize a new Rill project. Use flags to customize the project or run interactively to be prompted for each option.")
+	if len(exampleOptions) > 0 {
+		long.WriteString("\n\nAvailable example projects:\n")
+		for _, ex := range exampleOptions {
+			fmt.Fprintf(&long, "  - %s (%s)\n", ex.Name, ex.OLAPConnector)
+		}
+	}
 
 	initCmd := &cobra.Command{
 		Use:   "init [<path>]",
 		Short: "Initialize a new Rill project",
-		Long:  "Initialize a new Rill project. Use flags to customize the project or run interactively to be prompted for each option.",
+		Long:  long.String(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			interactive := ch.Interactive && !nonInteractive
-
-			// Validate flag values
+			// Assess what flags were set
+			numFlags := 0
+			explicitOlap := false
+			explicitAgent := false
 			if cmd.Flags().Changed("olap") {
-				if olap != "duckdb" && olap != "clickhouse" {
-					return fmt.Errorf("invalid --olap value %q: must be \"duckdb\" or \"clickhouse\"", olap)
-				}
+				numFlags++
+				explicitOlap = true
+			}
+			if cmd.Flags().Changed("example") {
+				numFlags++
 			}
 			if cmd.Flags().Changed("agent") {
-				if agent != "claude" && agent != "cursor" && agent != "all" && agent != "none" {
-					return fmt.Errorf("invalid --agent value %q: must be \"claude\", \"cursor\", \"all\", or \"none\"", agent)
-				}
-			}
-			if cmd.Flags().Changed("demo") && cmd.Flags().Changed("olap") && olap != "duckdb" {
-				return fmt.Errorf("--demo is only supported with --olap duckdb")
+				numFlags++
+				explicitAgent = true
 			}
 
-			// Resolve project path
-			var projectName string
+			// Resolve project path:
+			// - If a path arg is provided, use it directly.
+			// - If cwd contains rill.yaml, default to cwd.
+			// - Otherwise prompt interactively.
 			var projectPath string
 			if len(args) > 0 {
-				projectName = args[0]
-			} else if interactive {
-				var err error
-				projectName, err = cmdutil.InputPrompt("Project name", "my-rill-project")
+				projectPath = args[0]
+			} else if cmdutil.HasRillProject(".") {
+				projectPath = "."
+			} else {
+				if !ch.Interactive {
+					return fmt.Errorf("project path argument is required when not running interactively")
+				}
+				name, err := cmdutil.InputPrompt("Project name", "my-rill-project")
 				if err != nil {
 					return err
 				}
-			} else {
-				projectName = "my-rill-project"
+				projectPath = filepath.Join(".", name)
 			}
 
-			targetPath := "."
-			if len(args) > 0 {
-				targetPath = args[0]
-			}
-			targetPath, err := fileutil.ExpandHome(targetPath)
+			// Normalize project path
+			projectPath, err := fileutil.ExpandHome(projectPath)
 			if err != nil {
-				return fmt.Errorf("failed to expand path %q: %w", targetPath, err)
+				return fmt.Errorf("failed to expand path %q: %w", projectPath, err)
 			}
-			targetPath, err = filepath.Abs(targetPath)
+			projectPath, err = filepath.Abs(projectPath)
 			if err != nil {
-				return fmt.Errorf("failed to resolve path %q: %w", targetPath, err)
+				return fmt.Errorf("failed to resolve path %q: %w", projectPath, err)
 			}
 
-			// When args are provided, targetPath IS the project path.
-			// When no args, the project is created as a subdirectory.
-			if len(args) > 0 {
-				projectPath = targetPath
-			} else {
-				projectPath = filepath.Join(targetPath, projectName)
-			}
+			// Infer project name
+			projectName := filepath.Base(projectPath)
 
-			// Resolve OLAP engine
-			if !cmd.Flags().Changed("olap") {
-				if interactive {
-					olap, err = cmdutil.SelectPrompt("OLAP engine", []string{"duckdb", "clickhouse"}, "duckdb")
-					if err != nil {
-						return err
+			// If a project already exists, we allow adding agent files via --agent, but no other changes.
+			if cmdutil.HasRillProject(projectPath) {
+				if explicitAgent {
+					if numFlags > 1 {
+						return fmt.Errorf("when adding agent instructions to an existing project, --agent must be the only flag set")
 					}
+					repo, _, err := cmdutil.RepoForProjectPath(projectPath)
+					if err != nil {
+						return fmt.Errorf("failed to open project: %w", err)
+					}
+					return writeAgentInstructions(cmd.Context(), ch, repo, agent)
 				}
-				// else: use default "duckdb"
+				return fmt.Errorf("a Rill project already exists at %q (use --agent to update agent instructions)", projectPath)
 			}
 
-			// Resolve demo project (DuckDB only)
-			if !cmd.Flags().Changed("demo") && olap == "duckdb" {
-				if interactive {
-					demoList, err := examples.List()
-					if err != nil {
-						return fmt.Errorf("failed to list demo projects: %w", err)
-					}
-					options := []string{"None"}
-					for _, ex := range demoList {
-						options = append(options, ex.Name)
-					}
-					selected, err := cmdutil.SelectPrompt("Use demo project?", options, "None")
-					if err != nil {
-						return err
-					}
-					if selected != "None" {
-						demo = selected
-					}
-				}
-				// else: use default "" (no demo)
-			}
-
-			// Validate demo against olap (for the case where olap was resolved via prompt)
-			if demo != "" && olap != "duckdb" {
-				return fmt.Errorf("--demo is only supported with --olap duckdb")
-			}
-
-			// Validate demo name if specified
-			if demo != "" {
-				demoList, err := examples.List()
+			// In interactive mode, if no flags were provided, we prompt for input.
+			// If one or more flags were provided, we don't prompt because the user
+			// has already made an active choice and presumably wants defaults for
+			// the remaining options.
+			if ch.Interactive && numFlags == 0 {
+				// OLAP
+				var err error
+				olap, err = cmdutil.SelectPrompt("OLAP engine", []string{"duckdb", "clickhouse"}, "duckdb")
 				if err != nil {
-					return fmt.Errorf("failed to list demo projects: %w", err)
+					return err
 				}
-				found := false
-				for _, ex := range demoList {
-					if ex.Name == demo {
-						found = true
-						break
+
+				// Example project
+				examplesForOLAP := []string{"none"}
+				for _, ex := range exampleOptions {
+					if ex.OLAPConnector == olap {
+						examplesForOLAP = append(examplesForOLAP, ex.Name)
 					}
+				}
+				if len(examplesForOLAP) > 1 {
+					selected, err := cmdutil.SelectPrompt("Example project", examplesForOLAP, "none")
+					if err != nil {
+						return err
+					}
+					if selected != "none" {
+						example = selected
+					}
+				}
+
+				// Agent instructions
+				agent, err = cmdutil.SelectPrompt("Agent instructions", []string{"claude", "cursor", "all", "none"}, "claude")
+				if err != nil {
+					return err
+				}
+
+				// Print an empty line for nicer output
+				ch.Printf("\n")
+			}
+
+			// Validate fields before creating any files
+			if !slices.Contains(olapOptions, olap) {
+				return fmt.Errorf("invalid --olap value %q (options: %s)", olap, strings.Join(olapOptions, ", "))
+			}
+			if !slices.Contains(agentOptions, agent) {
+				return fmt.Errorf("invalid --agent value %q (options: %s)", agent, strings.Join(agentOptions, ", "))
+			}
+			if example != "" {
+				var found bool
+				for _, ex := range exampleOptions {
+					if ex.Name != example {
+						continue
+					}
+					if explicitOlap && ex.OLAPConnector != olap {
+						return fmt.Errorf("example project %q is not compatible with OLAP engine %q", example, olap)
+					}
+					found = true
+					break
 				}
 				if !found {
-					return fmt.Errorf("unknown demo project %q", demo)
+					return fmt.Errorf("invalid --example value %q (see help menu for options)", example)
 				}
-			}
-
-			// Resolve agent
-			if !cmd.Flags().Changed("agent") {
-				if interactive {
-					agent, err = cmdutil.SelectPrompt("Agent", []string{"claude", "cursor", "all", "none"}, "claude")
-					if err != nil {
-						return err
-					}
-				}
-				// else: use default "claude"
 			}
 
 			// Create project directory
-			if cmdutil.HasRillProject(projectPath) && !force {
-				return fmt.Errorf("a Rill project already exists at %q", projectPath)
-			}
 			if err := os.MkdirAll(projectPath, 0o755); err != nil {
 				return fmt.Errorf("failed to create directory %s: %w", projectPath, err)
 			}
 
+			// Open project repo
 			repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
 			if err != nil {
-				return fmt.Errorf("failed to initialize repo: %w", err)
+				return fmt.Errorf("failed to open project: %w", err)
 			}
 
 			// Initialize empty project
-			err = parser.InitEmpty(ctx, repo, instanceID, projectName, olap)
-			if err != nil {
+			if err := parser.InitEmpty(cmd.Context(), repo, instanceID, projectName, olap); err != nil {
 				return fmt.Errorf("failed to create empty project: %w", err)
 			}
-			ch.Printf("Created a new Rill project at %q\n", projectPath)
+			ch.Printf("Created a new Rill project at %s\n", projectPath)
 
-			// Unpack demo files if selected
-			if demo != "" {
-				exampleFS, err := examples.Get(demo)
+			// Unpack example files
+			if example != "" {
+				exampleFS, err := examples.Get(example)
 				if err != nil {
-					return fmt.Errorf("failed to get demo project %q: %w", demo, err)
+					return fmt.Errorf("failed to get example project %q: %w", example, err)
 				}
 				err = fs.WalkDir(exampleFS, ".", func(p string, d fs.DirEntry, err error) error {
 					if err != nil {
@@ -185,69 +204,87 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 						return err
 					}
 					defer file.Close()
-					return repo.Put(ctx, p, file)
+					return repo.Put(cmd.Context(), p, file)
 				})
 				if err != nil {
-					return fmt.Errorf("failed to unpack demo project: %w", err)
+					return fmt.Errorf("failed to unpack example project: %w", err)
 				}
-				ch.Printf("Unpacked demo project %q\n", demo)
+				ch.Printf("Unpacked example project %q\n", example)
 			}
 
-			// Initialize agent files
-			switch agent {
-			case "claude":
-				err = instructions.InitClaudeCode(ctx, repo, force)
-				if err != nil {
-					return fmt.Errorf("failed to add Claude Code files: %w", err)
-				}
-				ch.Printf("Added Claude instructions in .claude and .mcp.json\n")
-			case "cursor":
-				err = instructions.InitCursorRules(ctx, repo, force)
-				if err != nil {
-					return fmt.Errorf("failed to add Cursor rules: %w", err)
-				}
-				ch.Printf("Added Cursor rules in .cursor\n")
-			case "all":
-				err = instructions.InitClaudeCode(ctx, repo, force)
-				if err != nil {
-					return fmt.Errorf("failed to add Claude Code files: %w", err)
-				}
-				ch.Printf("Added Claude instructions in .claude and .mcp.json\n")
-				err = instructions.InitCursorRules(ctx, repo, force)
-				if err != nil {
-					return fmt.Errorf("failed to add Cursor rules: %w", err)
-				}
-				ch.Printf("Added Cursor rules in .cursor\n")
-			}
-
-			// In non-interactive mode, we're done
-			if !interactive {
-				return nil
-			}
-
-			// Prompt: Start Rill?
-			startRill, err := cmdutil.ConfirmPrompt("Start Rill?", "", true)
-			if err != nil {
+			// Write agent files
+			if err := writeAgentInstructions(cmd.Context(), ch, repo, agent); err != nil {
 				return err
 			}
-			if startRill {
-				startCmd, _, err := cmd.Root().Find([]string{"start"})
-				if err != nil {
-					return fmt.Errorf("failed to find start command: %w", err)
-				}
-				startCmd.SetContext(ctx)
-				return startCmd.RunE(startCmd, []string{projectPath})
+
+			// Print next steps
+			projectPathRelative := projectPath
+			cwd, err := os.Getwd()
+			if err != nil {
+				cwd = "." // Safe but usually ineffective fallback
+			}
+			if rel, err := filepath.Rel(cwd, projectPath); err == nil {
+				projectPathRelative = rel
+			}
+			escaped := fileutil.ShellEscape(projectPathRelative)
+			if ch.Interactive {
+				ch.Printf("\nSuccess! Run the following command to start the project:\n\n")
+				ch.Printf("  rill start %s\n\n", escaped)
+			} else {
+				ch.Printf("Run `rill validate %s` to build and validate the project, or `rill start %s` to build and serve the project on localhost\n", escaped, escaped)
 			}
 
 			return nil
 		},
 	}
 
-	initCmd.Flags().StringVar(&olap, "olap", "duckdb", "OLAP engine: \"duckdb\" or \"clickhouse\"")
-	initCmd.Flags().StringVar(&demo, "demo", "", "Demo project name (DuckDB only); empty means none")
-	initCmd.Flags().StringVar(&agent, "agent", "claude", "Agent instructions: \"claude\", \"cursor\", \"all\", or \"none\"")
-	initCmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "Use defaults for unspecified flags; do not start Rill")
-	initCmd.Flags().BoolVar(&force, "force", false, "Overwrite existing files")
+	initCmd.Flags().StringVar(&olap, "olap", "duckdb", fmt.Sprintf("OLAP engine (options: %s)", strings.Join(olapOptions, ", ")))
+	initCmd.Flags().StringVar(&example, "example", "", "Example project name (default: empty project)")
+	initCmd.Flags().StringVar(&agent, "agent", "claude", fmt.Sprintf("Agent instructions (options: %s)", strings.Join(agentOptions, ", ")))
 
 	return initCmd
+}
+
+// olapOptions lists the supported OLAP engines.
+var olapOptions = []string{
+	"duckdb",
+	"clickhouse",
+}
+
+// agentOptions lists the supported agent instruction sets.
+var agentOptions = []string{
+	"claude",
+	"cursor",
+	"all",
+	"none",
+}
+
+// writeAgentInstructions initializes agent instruction files based on the selected agent type.
+func writeAgentInstructions(ctx context.Context, ch *cmdutil.Helper, repo drivers.RepoStore, agent string) error {
+	switch agent {
+	case "all":
+		if err := instructions.InitClaudeCode(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add Claude Code files: %w", err)
+		}
+		ch.Printf("Added Claude instructions in .claude and .mcp.json\n")
+		if err := instructions.InitCursorRules(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add Cursor rules: %w", err)
+		}
+		ch.Printf("Added Cursor rules in .cursor\n")
+	case "claude":
+		if err := instructions.InitClaudeCode(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add Claude Code files: %w", err)
+		}
+		ch.Printf("Added Claude instructions in .claude and .mcp.json\n")
+	case "cursor":
+		if err := instructions.InitCursorRules(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add Cursor rules: %w", err)
+		}
+		ch.Printf("Added Cursor rules in .cursor\n")
+	case "none":
+		// No agent instructions to add
+	default:
+		return fmt.Errorf("invalid agent option %q", agent)
+	}
+	return nil
 }
