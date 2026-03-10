@@ -4,7 +4,7 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import {
-    COMPARIONS_COLORS,
+    COMPARISON_COLORS,
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
@@ -23,7 +23,7 @@
   function getColor(i: number) {
     const posInSelection = selectedIndex.indexOf(i);
     if (posInSelection >= 7) return SELECTED_NOT_COMPARED_COLOR;
-    return COMPARIONS_COLORS[posInSelection];
+    return COMPARISON_COLORS[posInSelection];
   }
 
   const config: VirtualizedTableConfig = getContext("config");

@@ -202,6 +202,7 @@ setup.describe("global setup", () => {
 
     // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
+
     await adminPage.goto(url);
     await expect(
       adminPage.getByRole("link", { name: RILL_ORG_NAME }),
@@ -212,7 +213,8 @@ setup.describe("global setup", () => {
 
     // Expect to land on the project home page
     await adminPage.waitForURL(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
-    // Temporary fix to wait for the project to be ready.
+    // Poll with page reloads until the deployment is ready and the project title appears.
+    // Each reload triggers a fresh GetProject API call via the SvelteKit load function.
     // TODO: add a refetch to the project API
     await expect
       .poll(

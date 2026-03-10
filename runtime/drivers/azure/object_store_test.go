@@ -14,7 +14,7 @@ import (
 
 func TestObjectStore(t *testing.T) {
 	cfg := testruntime.AcquireConnector(t, "azure")
-	conn, err := drivers.Open("azure", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -34,7 +34,7 @@ func TestObjectStore(t *testing.T) {
 func TestObjectStorePathPrefixes(t *testing.T) {
 	cfg := testruntime.AcquireConnector(t, "azure")
 	cfg["path_prefixes"] = "azure://integration-test/glob_test/"
-	conn, err := drivers.Open("azure", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

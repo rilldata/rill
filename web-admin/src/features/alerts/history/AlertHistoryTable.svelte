@@ -4,15 +4,15 @@
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
 
   export let alert: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: alertQuery = useAlert(instanceId, alert);
+  $: alertQuery = useAlert(runtimeClient, alert);
 
   /**
    * Table column definitions.

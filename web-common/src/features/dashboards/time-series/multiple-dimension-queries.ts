@@ -8,7 +8,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import { type Readable, derived } from "svelte/store";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   SortDirection,
@@ -26,9 +26,8 @@ import {
   type V1MetricsViewAggregationResponse,
   V1TimeGrain,
   type V1TimeSeriesValue,
-  createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 import {
   type CreateQueryResult,
   keepPreviousData,
@@ -77,13 +76,12 @@ export function getDimensionValuesForComparison(
 ): Readable<DimensionTopList> {
   return derived(
     [
-      ctx.runtime,
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
       dimensionSearchText,
     ],
-    ([runtime, name, dashboardStore, timeControls, searchText], set) => {
+    ([name, dashboardStore, timeControls, searchText], set) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -99,7 +97,7 @@ export function getDimensionValuesForComparison(
       let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
         return selectedDimensionValues(
-          runtime.instanceId,
+          ctx.runtimeClient,
           [name],
           dashboardStore?.whereFilter,
           dimensionName,
@@ -126,9 +124,9 @@ export function getDimensionValuesForComparison(
 
         return derived(
           createQueryServiceMetricsViewAggregation(
-            runtime.instanceId,
-            name,
+            ctx.runtimeClient,
             {
+              metricsView: name,
               measures: measures.map((measure) => ({ name: measure })),
               dimensions: [{ name: dimensionName }],
               where: sanitiseExpression(
@@ -234,15 +232,10 @@ function getAggregationQueryForTopList(
   measures: string[],
   dimensionValues: DimensionTopList,
   isTimeComparison: boolean = false,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-    ],
-    ([runtime, metricsViewName, dashboardStore, timeStore], set) => {
+    [ctx.metricsViewName, ctx.dashboardStore, useTimeControlStore(ctx)],
+    ([metricsViewName, dashboardStore, timeStore], set) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
@@ -273,9 +266,9 @@ function getAggregationQueryForTopList(
       };
 
       return createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        metricsViewName,
+        ctx.runtimeClient,
         {
+          metricsView: metricsViewName,
           measures: measures.map((measure) => ({ name: measure })),
           dimensions: [
             { name: dimensionName },
@@ -413,7 +406,7 @@ export function getDimensionValueTimeSeries(
           results.push({
             value,
             total,
-            color: COMPARIONS_COLORS[i] ? COMPARIONS_COLORS[i] : "",
+            color: COMPARISON_COLORS[i] ? COMPARISON_COLORS[i] : "",
             data: prepData,
             isFetching,
           });

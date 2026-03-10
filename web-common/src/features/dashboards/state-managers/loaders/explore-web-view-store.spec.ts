@@ -30,6 +30,10 @@ import {
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  RUNTIME_CONTEXT_KEY,
+  RuntimeClient,
+} from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -252,7 +256,13 @@ function renderDashboardStateManager() {
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.
-    context: new Map([["$$_queryClient", queryClient]]),
+    context: new Map<string | symbol, unknown>([
+      ["$$_queryClient", queryClient],
+      [
+        RUNTIME_CONTEXT_KEY,
+        new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+      ],
+    ]),
   });
 
   return { queryClient, renderResults };

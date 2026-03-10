@@ -133,7 +133,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	}))
 
 	// Initialize mock AI using drivers.Open pattern
-	mockAIHandle, err := drivers.Open("mock_ai", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+	mockAIHandle, err := drivers.Open("mock_ai", "", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 	require.NoError(t, err)
 	t.Cleanup(func() { mockAIHandle.Close() })
 	mockAI, ok := mockAIHandle.AsAI("test")

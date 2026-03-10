@@ -21,7 +21,7 @@
   import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
   import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { fly } from "svelte/transition";
   import {
     useAllSearchResultsCount,
@@ -67,7 +67,7 @@
       : [];
   let curPinned = filterData.pinned;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: ({
     name,
@@ -104,24 +104,19 @@
       (curMode === DimensionFilterMode.InList &&
         searchedBulkValues.length > 0));
 
-  $: searchResultsQuery = useDimensionSearch(
-    instanceId,
-    metricsViewNames,
-    name,
-    {
-      mode: curMode,
-      values:
-        curMode === DimensionFilterMode.Select
-          ? selectedValues
-          : searchedBulkValues,
-      searchText: curSearchText,
-      timeStart,
-      timeEnd,
-      timeDimension,
-      enabled: enableSearchQuery,
-      metricsViewWheres: expressionMap,
-    },
-  );
+  $: searchResultsQuery = useDimensionSearch(client, metricsViewNames, name, {
+    mode: curMode,
+    values:
+      curMode === DimensionFilterMode.Select
+        ? selectedValues
+        : searchedBulkValues,
+    searchText: curSearchText,
+    timeStart,
+    timeEnd,
+    timeDimension,
+    enabled: enableSearchQuery,
+    metricsViewWheres: expressionMap,
+  });
   $: ({
     data: searchResults,
     error: errorFromSearchResults,
@@ -136,7 +131,7 @@
         searchedBulkValues.length > 0));
 
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
-    instanceId,
+    client,
     metricsViewNames,
     name,
     {

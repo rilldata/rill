@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import SimpleMessage from "../../layout/inspector/SimpleMessage.svelte";
   import { createConnectorServiceOLAPGetTable } from "../../runtime-client";
@@ -8,6 +9,7 @@
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
 
   export let filePath: string;
@@ -16,12 +18,10 @@
   export let databaseSchema: string;
   export let table: string;
 
-  $: ({ instanceId } = $runtime);
-
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ remoteContent } = fileArtifact);
-  $: parseError = fileArtifact.getParseError(queryClient, instanceId);
-  $: resource = fileArtifact.getResource(queryClient, instanceId);
+  $: parseError = fileArtifact.getParseError(queryClient);
+  $: resource = fileArtifact.getResource(queryClient);
   $: ({
     isLoading: isResourceLoading,
     error: resourceError,
@@ -30,8 +30,8 @@
   $: resourceReconcileError = resourceData?.meta?.reconcileError;
 
   $: tableQuery = createConnectorServiceOLAPGetTable(
+    runtimeClient,
     {
-      instanceId,
       connector,
       database,
       databaseSchema,
@@ -63,7 +63,7 @@
       <ReconcilingSpinner />
     </div>
   {:else if resourceError}
-    <SimpleMessage message="Error: {resourceError?.response?.data?.message}" />
+    <SimpleMessage message="Error: {extractErrorMessage(resourceError)}" />
   {:else if resourceReconcileError}
     <!-- The editor will show actual validation errors -->
     <SimpleMessage message="Fix the errors in the file to continue." />
@@ -72,7 +72,7 @@
       <ReconcilingSpinner />
     </div>
   {:else if tableError}
-    <SimpleMessage message="Error: {tableError?.response?.data?.message}" />
+    <SimpleMessage message="Error: {extractErrorMessage(tableError)}" />
   {:else}
     <TableInspector {connector} {database} {databaseSchema} {table} />
   {/if}
