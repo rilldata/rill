@@ -20,7 +20,7 @@ Iceberg tables can be read from any of the following storage backends:
 | Backend | URI format | Authentication |
 |---|---|---|
 | Amazon S3 | `s3://bucket/path/to/table` | Requires an [S3 connector](/developers/build/connectors/data-source/s3) |
-| Google Cloud Storage | `gs://bucket/path/to/table` | Requires a [GCS connector](/developers/build/connectors/data-source/gcs) |
+| Google Cloud Storage | `gs://bucket/path/to/table` | Requires a [GCS connector](/developers/build/connectors/data-source/gcs) with HMAC keys |
 | Azure Blob Storage | `azure://container/path/to/table` | Requires an [Azure connector](/developers/build/connectors/data-source/azure) |
 | Local filesystem | `/path/to/table` | No authentication needed |
 
@@ -57,6 +57,10 @@ sql: |
 ```
 
 ### Reading from GCS
+
+:::info HMAC keys required
+DuckDB's `iceberg_scan()` authenticates to GCS using HMAC keys, not JSON service account credentials. When configuring your [GCS connector](/developers/build/connectors/data-source/gcs), use the `key_id` and `secret` (HMAC) properties instead of `google_application_credentials`.
+:::
 
 ```yaml
 type: model
@@ -126,4 +130,5 @@ Ensure your storage connector credentials are configured in your Rill Cloud proj
 
 - **Direct file access only**: Rill reads Iceberg metadata and data files directly from storage. Catalog integrations (Hive Metastore, AWS Glue, REST catalog) are not supported.
 - **DuckDB engine**: Iceberg support is currently provided through DuckDB's Iceberg extension. Additional engine support (e.g., ClickHouse) is planned.
+- **GCS requires HMAC keys**: DuckDB's `iceberg_scan()` only supports HMAC authentication for GCS, not JSON service account credentials.
 - **Read-only**: Rill reads from Iceberg tables but does not write to them.

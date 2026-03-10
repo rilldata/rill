@@ -2,14 +2,6 @@ expensive: true
 connectors:
   - gcs
 project_files:
-  iceberg_gcs_public.yaml:
-    type: model
-    connector: duckdb
-    materialize: true
-    sql: |
-      SELECT *
-      FROM iceberg_scan('gs://rilldata-public/iceberg/lineitem_iceberg',
-        allow_moved_paths = true)
   iceberg_gcs_with_secrets.yaml:
     type: model
     connector: duckdb
@@ -17,7 +9,7 @@ project_files:
     materialize: true
     sql: |
       SELECT *
-      FROM iceberg_scan('gs://rilldata-public/iceberg/lineitem_iceberg',
+      FROM iceberg_scan('gs://integration-test.rilldata.com/iceberg/lineitem_iceberg',
         allow_moved_paths = true)
 tests:
   - name: test_iceberg_gcs_with_secrets_row_count
@@ -49,10 +41,3 @@ tests:
       l_shipinstruct,VARCHAR,YES,,,
       l_shipmode,VARCHAR,YES,,,
       l_comment,VARCHAR,YES,,,
-  - name: test_iceberg_gcs_public_row_count
-    resolver: sql
-    properties:
-      sql: "select count(*) as count from iceberg_gcs_public"
-    result_csv: |
-      count
-      51793
