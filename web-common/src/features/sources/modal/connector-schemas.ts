@@ -20,6 +20,7 @@ import { httpsSchema } from "../../templates/schemas/https";
 import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
+import { pythonSchema } from "../../templates/schemas/python";
 import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
 import { supabaseSchema } from "../../templates/schemas/supabase";
@@ -43,6 +44,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   supabase: supabaseSchema,
   local_file: localFileSchema,
   https: httpsSchema,
+  python: pythonSchema,
   s3: s3Schema,
   gcs: gcsSchema,
   azure: azureSchema,

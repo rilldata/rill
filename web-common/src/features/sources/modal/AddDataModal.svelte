@@ -17,6 +17,7 @@
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
+  import PythonSetupWizard from "./python/PythonSetupWizard.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
     connectors,
@@ -318,6 +319,8 @@
           </div>
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload onClose={resetModal} onBack={back} />
+        {:else if selectedConnector.name === "python"}
+          <PythonSetupWizard onClose={resetModal} onBack={back} />
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}

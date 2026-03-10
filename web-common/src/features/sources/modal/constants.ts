@@ -94,6 +94,7 @@ export const SOURCES = [
   "sqlite",
   "supabase",
   "https",
+  "python",
   "local_file",
 ];
 
