@@ -118,7 +118,9 @@
   async function fetchExistingAiConnector() {
     try {
       const instance = await queryClient.fetchQuery({
-        queryKey: getRuntimeServiceGetInstanceQueryKey(runtimeClient.instanceId),
+        queryKey: getRuntimeServiceGetInstanceQueryKey(
+          runtimeClient.instanceId,
+        ),
         queryFn: () => runtimeServiceGetInstance(runtimeClient, {}),
       });
       existingAiConnector = instance?.instance?.aiConnector ?? "";
