@@ -3043,7 +3043,7 @@ message RenewBillingSubscriptionResponse {
 
 message GetPaymentsPortalURLRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
-  string return_url = 2 [(validate.rules).string.min_len = 1];
+  string return_url = 2;
   bool setup = 4; // If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
   bool superuser_force_access = 3;
 }
