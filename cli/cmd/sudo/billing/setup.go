@@ -10,6 +10,7 @@ import (
 
 func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org string
+	var update bool
 	setupCmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Setup billing information returns a Stripe setup page to collect billing information like payment method and billing address for the organization",
@@ -28,7 +29,7 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.GetPaymentsPortalURL(ctx, &adminv1.GetPaymentsPortalURLRequest{
 				Org:                  org,
-				Setup:                true,
+				Setup:                !update,
 				SuperuserForceAccess: true,
 			})
 			if err != nil {
@@ -42,5 +43,6 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	setupCmd.Flags().StringVar(&org, "org", "", "Organization Name")
+	setupCmd.Flags().BoolVar(&update, "update", false, "url for updating the billing information")
 	return setupCmd
 }
