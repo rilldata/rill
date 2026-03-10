@@ -1,6 +1,10 @@
 <script lang="ts">
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import {
+    extractErrorStatusCode,
+    isNotFoundError,
+  } from "@rilldata/web-common/lib/errors";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -12,7 +16,7 @@
   import { readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { activeDashboardTheme } from "../../themes/active-dashboard-theme";
   import { createResolvedThemeStore } from "../../themes/selectors";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -52,7 +56,7 @@
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
     $dashboardStore);
@@ -77,7 +81,7 @@
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the explore
-  $: exploreQuery = useExploreValidSpec(instanceId, exploreName);
+  $: exploreQuery = useExploreValidSpec(client, exploreName);
 
   $: ({ data, error: exploreError } = $exploreQuery);
 
@@ -86,7 +90,7 @@
   $: hasTimeSeries = !!data?.metricsView?.timeDimension;
 
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && exploreError?.response?.status === 404;
+    $selectedMockUserStore && isNotFoundError(exploreError);
 
   $: hidePivot = isEmbedded && exploreSpec?.embedsHidePivot;
 
@@ -127,7 +131,7 @@
   let themeSource: Readable<string | null> = urlThemeName;
   $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
 
-  $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
+  $: theme = createResolvedThemeStore(themeSource, exploreQuery, client);
 
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
@@ -165,7 +169,7 @@
     {#if mockUserHasNoAccess}
       <!-- Additional safeguard for mock users without dashboard access. -->
       <ErrorPage
-        statusCode={exploreError?.response?.status}
+        statusCode={extractErrorStatusCode(exploreError)}
         header="This user can't access this dashboard"
         body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
       />

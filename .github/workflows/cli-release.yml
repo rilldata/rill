@@ -29,9 +29,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             platform: linux_amd64
-          - os: ubuntu-22.04-arm
+          - os: ubuntu-24.04-arm
             platform: linux_arm64
           - os: macos-14
             platform: darwin_arm64
