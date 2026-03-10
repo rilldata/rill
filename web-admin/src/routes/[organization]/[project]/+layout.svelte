@@ -131,12 +131,13 @@
   /**
    * `GetProject` with default cookie-based auth.
    * This returns the deployment credentials for the current logged-in user.
+   * When `activeBranch` is set, the branch param is passed to GetProject
+   * so the API returns the branch deployment instead of production.
    */
-  $: branchParams = activeBranch ? { branch: activeBranch } : undefined;
   $: cookieProjectQuery = createAdminServiceGetProject(
     organization,
     project,
-    branchParams,
+    activeBranch ? { branch: activeBranch } : undefined,
     {
       query: baseGetProjectQueryOptions,
     },
@@ -168,7 +169,7 @@
     createAdminServiceGetDeploymentCredentials(
       organization,
       project,
-      { userId: mockedUserId, branch: activeBranch },
+      { userId: mockedUserId },
       {
         query: {
           enabled: !!mockedUserId,
@@ -295,10 +296,6 @@
     readProjects={organizationPermissions?.readProjects}
     {planDisplayName}
     {organizationLogoUrl}
-    {activeBranch}
-    {primaryBranch}
-    showBranchSelector={!!effectiveProjectPermissions?.readDev}
-    activeDeploymentStatus={deploymentStatus}
   />
   <ErrorPage
     statusCode={error.response.status}
@@ -323,9 +320,6 @@
           readProjects={organizationPermissions?.readProjects}
           {planDisplayName}
           {organizationLogoUrl}
-          {activeBranch}
-          {primaryBranch}
-          activeDeploymentStatus={deploymentStatus}
         />
         {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
           <ProjectTabs
@@ -346,10 +340,6 @@
       readProjects={organizationPermissions?.readProjects}
       {planDisplayName}
       {organizationLogoUrl}
-      {activeBranch}
-      {primaryBranch}
-      showBranchSelector={!!effectiveProjectPermissions?.readDev}
-      activeDeploymentStatus={deploymentStatus}
     />
     {#if !projectData.deployment}
       <!-- No deployment = the project is "hibernating" -->
@@ -387,7 +377,7 @@
                         queryKey: getAdminServiceGetProjectQueryKey(
                           organization,
                           project,
-                          branchParams,
+                          activeBranch ? { branch: activeBranch } : undefined,
                         ),
                       }),
                       queryClient.invalidateQueries({
