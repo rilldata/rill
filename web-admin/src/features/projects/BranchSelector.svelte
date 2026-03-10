@@ -1,7 +1,12 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import {
+    extractBranchFromPath,
+    injectBranchIntoPath,
+    removeBranchFromPath,
+    requestSkipBranchInjection,
+  } from "@rilldata/web-admin/lib/branch-utils";
   import {
     V1DeploymentStatus,
     createAdminServiceGetProject,
@@ -15,7 +20,7 @@
 
   let subMenuOpen = false;
 
-  $: activeBranch = $page.url.searchParams.get("branch") ?? undefined;
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
@@ -61,14 +66,21 @@
     return (a.branch ?? "").localeCompare(b.branch ?? "");
   });
 
-  function handleSelect(deployment: V1Deployment) {
-    const url = new URL($page.url);
-    if (deployment.branch === primaryBranch || !deployment.branch) {
-      url.searchParams.delete("branch");
-    } else {
-      url.searchParams.set("branch", deployment.branch);
+  function getDeploymentHref(deployment: V1Deployment): string {
+    const basePath = removeBranchFromPath($page.url.pathname);
+    const isProd = deployment.branch === primaryBranch || !deployment.branch;
+    const newPath = isProd
+      ? basePath
+      : injectBranchIntoPath(basePath, deployment.branch);
+    return newPath + $page.url.search;
+  }
+
+  function handleClick(deployment: V1Deployment) {
+    const isProd = deployment.branch === primaryBranch || !deployment.branch;
+    if (isProd) {
+      // Navigating to production; tell beforeNavigate to not re-inject @branch
+      requestSkipBranchInjection();
     }
-    void goto(url.pathname + url.search);
     onSelect();
   }
 
@@ -125,7 +137,8 @@
         {@const statusColor = getStatusColor(deployment.status)}
         <DropdownMenu.CheckboxItem
           checked={isSelected}
-          on:click={() => handleSelect(deployment)}
+          href={getDeploymentHref(deployment)}
+          on:click={() => handleClick(deployment)}
           class="flex items-center gap-x-2"
         >
           <div class="flex items-center gap-x-2 truncate">

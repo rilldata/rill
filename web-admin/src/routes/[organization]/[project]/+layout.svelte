@@ -29,8 +29,16 @@
 </script>
 
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
+  import { beforeNavigate, goto, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import {
+    branchPathPrefix,
+    consumeSkipBranchInjection,
+    extractBranchFromPath,
+    injectBranchIntoPath,
+    removeBranchFromPath,
+    requestSkipBranchInjection,
+  } from "@rilldata/web-admin/lib/branch-utils";
   import {
     V1DeploymentStatus,
     type V1Organization,
@@ -80,8 +88,8 @@
     data: pageData,
   } = $page);
 
-  // Branch selector: read from URL query param
-  $: activeBranch = $page.url.searchParams.get("branch") ?? undefined;
+  // Branch selector: read from @branch path segment
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   // Root layout data used by ProjectHeader / SlimProjectHeader
   $: organizationPermissions = pageData?.organizationPermissions ?? {};
@@ -108,17 +116,35 @@
     }
   });
 
+  // Inject @branch into project-internal navigations that are missing it.
+  // This catches links from components that build /${org}/${project}/... URLs
+  // without branch awareness (dashboards, alerts, reports, breadcrumbs, etc.).
+  // The `skipBranchInjection` flag lets the "Back to production" banner
+  // bypass injection so the user can return to the production deployment.
+  beforeNavigate((nav) => {
+    if (consumeSkipBranchInjection()) return;
+    if (!activeBranch || !nav.to?.url) return;
+    if (nav.type === "popstate") return; // don't modify back/forward navigations
+    const toPath = nav.to.url.pathname;
+    const prefix = `/${organization}/${project}`;
+    if (!toPath.startsWith(prefix + "/") && toPath !== prefix) return;
+    if (toPath.includes("/-/share/")) return; // skip public URLs
+    if (extractBranchFromPath(toPath)) return; // already has @branch
+    nav.cancel();
+    void goto(
+      injectBranchIntoPath(toPath, activeBranch) +
+        nav.to.url.search +
+        nav.to.url.hash,
+    );
+  });
+
   // Clear view-as state and branch banner when unmounting (e.g., navigating to org page)
   onDestroy(() => {
     viewAsUserStore.clear();
     eventBus.emit("remove-banner", "branch-preview");
   });
 
-  // Build a search string suffix to append to internal project links.
-  // This preserves the branch context across tab/breadcrumb navigations.
-  $: branchSearchSuffix = activeBranch
-    ? `?branch=${encodeURIComponent(activeBranch)}`
-    : "";
+  $: branchPrefix = branchPathPrefix(activeBranch);
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -169,7 +195,10 @@
     createAdminServiceGetDeploymentCredentials(
       organization,
       project,
-      { userId: mockedUserId },
+      {
+        userId: mockedUserId,
+        ...(activeBranch ? { branch: activeBranch } : {}),
+      },
       {
         query: {
           enabled: !!mockedUserId,
@@ -232,8 +261,7 @@
   $: primaryBranch = projectData?.project?.primaryBranch;
   $: isOnBranch = !!activeBranch && activeBranch !== primaryBranch;
   $: if (isOnBranch) {
-    const productionUrl = new URL($page.url);
-    productionUrl.searchParams.delete("branch");
+    const productionPathname = removeBranchFromPath($page.url.pathname);
     eventBus.emit("add-banner", {
       id: "branch-preview",
       priority: 3,
@@ -245,7 +273,10 @@
         cta: {
           text: "Back to production",
           type: "link",
-          url: productionUrl.pathname + productionUrl.search,
+          url: productionPathname + $page.url.search,
+          onClick: () => {
+            requestSkipBranchInjection();
+          },
         },
       },
     });
@@ -327,7 +358,7 @@
             {organization}
             {pathname}
             {project}
-            {branchSearchSuffix}
+            {branchPrefix}
           />
         {/if}
         <slot />

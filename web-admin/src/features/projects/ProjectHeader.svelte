@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { extractBranchFromPath } from "@rilldata/web-admin/lib/branch-utils";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
@@ -73,11 +74,12 @@
 
   // When "View As" is active, fetch deployment credentials for the mocked user.
   $: mockedUserId = $viewAsUserStore?.id;
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
     organization,
     project,
-    { userId: mockedUserId },
+    { userId: mockedUserId, ...(activeBranch ? { branch: activeBranch } : {}) },
     {
       query: {
         enabled: !!mockedUserId && !!organization && !!project,
