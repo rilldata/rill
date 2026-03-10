@@ -164,7 +164,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Connect to SQLite databases for lightweight, file-based data storage and querying."
     link="/developers/build/connectors/data-source/sqlite"
     linkLabel="Learn more"
-    referenceLink="sqlite"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Supabase.svg" alt="Supabase" className="duckdb-icon"/>}
@@ -226,7 +225,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/iceberg"
     linkLabel="Learn more"
-    referenceLink="iceberg"
   />
 </div>
 
@@ -276,7 +274,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Connect to Salesforce to extract data from objects and queries using the Salesforce API."
     link="/developers/build/connectors/data-source/salesforce"
     linkLabel="Learn more"
-    referenceLink="salesforce"
   />
 
 </div>

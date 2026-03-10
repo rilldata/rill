@@ -84,6 +84,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 ### MySQL
 ### PostgreSQL
 ### SQLite
+### Supabase
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -108,7 +109,14 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Connect to SQLite databases for lightweight, file-based data storage and querying."
     link="/developers/build/connectors/data-source/sqlite"
     linkLabel="Learn more"
-    referenceLink="sqlite"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Supabase.svg" alt="Supabase" className="duckdb-icon"/>}
+    header="Supabase"
+    content="Connect to Supabase's managed PostgreSQL databases with SSL support and standard connection methods."
+    link="/developers/build/connectors/data-source/supabase"
+    linkLabel="Learn more"
+    referenceLink="supabase"
   />
 </div>
 
@@ -158,7 +166,6 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/iceberg"
     linkLabel="Learn more"
-    referenceLink="iceberg"
   />
 </div>
 
@@ -208,7 +215,6 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Connect to Salesforce to extract data from objects and queries using the Salesforce API."
     link="/developers/build/connectors/data-source/salesforce"
     linkLabel="Learn more"
-    referenceLink="salesforce"
   />
 
 </div>
