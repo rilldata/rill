@@ -25,15 +25,9 @@
       <span class="font-medium text-xs text-fg-secondary"> URL copied </span>
     </div>
   {:else}
-    <Button
-      type="secondary"
-      class="flex flex-row items-center"
-      forcedStyle="min-height: 24px !important; height: 24px !important;  "
-      onClick={onCopy}
-      compact
-    >
-      <Link size="12px" />
-      <span class="font-medium text-xs">Copy URL</span>
+    <Button type="secondary" onClick={onCopy}>
+      <Link size="16px" />
+      Copy URL
     </Button>
   {/if}
 {/if}
