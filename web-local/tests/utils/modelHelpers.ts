@@ -18,8 +18,7 @@ export async function createModel(page: Page, modelFileName: string) {
 }
 
 export async function modelHasError(page: Page, hasError: boolean, error = "") {
-  const errorLocator = page.getByLabel("Model errors");
-  try {
+  const errorLocator = page.locator(".editor-pane .border-destructive");  try {
     await errorLocator.waitFor({
       timeout: 100,
     });
