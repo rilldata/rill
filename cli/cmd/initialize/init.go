@@ -2,45 +2,63 @@ package initialize
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/ai/instructions"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/examples"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
-var templates = []struct {
-	Name        string
-	Description string
-}{
-	{"empty-duckdb", "Create a new empty Rill project with DuckDB"},
-	{"empty-clickhouse", "Create a new empty Rill project with ClickHouse"},
-	{"cursor", "Add Cursor rules to an existing Rill project"},
-	{"claude", "Add Claude Code instructions to an existing Rill project"},
-}
-
 func InitCmd(ch *cmdutil.Helper) *cobra.Command {
-	var template string
+	var olap string
+	var demo string
+	var agent string
+	var nonInteractive bool
 	var force bool
-
-	var b strings.Builder
-	b.WriteString("Initialize a new Rill project or add files to an existing project from a template.")
-	b.WriteString("\n\nThe available templates are:\n")
-	for _, t := range templates {
-		fmt.Fprintf(&b, "- %s: %s.\n", t.Name, t.Description)
-	}
-	long := b.String()
 
 	initCmd := &cobra.Command{
 		Use:   "init [<path>]",
-		Short: "Add Rill project files from a template",
-		Long:  long,
+		Short: "Initialize a new Rill project",
+		Long:  "Initialize a new Rill project. Use flags to customize the project or run interactively to be prompted for each option.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			interactive := ch.Interactive && !nonInteractive
+
+			// Validate flag values
+			if cmd.Flags().Changed("olap") {
+				if olap != "duckdb" && olap != "clickhouse" {
+					return fmt.Errorf("invalid --olap value %q: must be \"duckdb\" or \"clickhouse\"", olap)
+				}
+			}
+			if cmd.Flags().Changed("agent") {
+				if agent != "claude" && agent != "cursor" && agent != "all" && agent != "none" {
+					return fmt.Errorf("invalid --agent value %q: must be \"claude\", \"cursor\", \"all\", or \"none\"", agent)
+				}
+			}
+			if cmd.Flags().Changed("demo") && cmd.Flags().Changed("olap") && olap != "duckdb" {
+				return fmt.Errorf("--demo is only supported with --olap duckdb")
+			}
+
+			// Resolve project path
+			var projectName string
+			var projectPath string
+			if len(args) > 0 {
+				projectName = args[0]
+			} else if interactive {
+				var err error
+				projectName, err = cmdutil.InputPrompt("Project name", "my-rill-project")
+				if err != nil {
+					return err
+				}
+			} else {
+				projectName = "my-rill-project"
+			}
+
 			targetPath := "."
 			if len(args) > 0 {
 				targetPath = args[0]
@@ -54,87 +72,182 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to resolve path %q: %w", targetPath, err)
 			}
 
-			// If no template specified, prompt interactively
-			if template == "" {
-				if !ch.Interactive {
-					return fmt.Errorf("template must be specified in non-interactive mode")
-				}
-				names := make([]string, len(templates))
-				descs := make([]string, len(templates))
-				for i, t := range templates {
-					names[i] = t.Name
-					descs[i] = t.Description
-				}
-				selected, err := cmdutil.SelectPromptWithDescriptions("Select a template", names, descs, names[0])
-				if err != nil {
-					return err
-				}
-				template = selected
+			// When args are provided, targetPath IS the project path.
+			// When no args, the project is created as a subdirectory.
+			if len(args) > 0 {
+				projectPath = targetPath
+			} else {
+				projectPath = filepath.Join(targetPath, projectName)
 			}
 
-			switch template {
-			case "empty-duckdb", "empty-clickhouse":
-				if cmdutil.HasRillProject(targetPath) {
-					return fmt.Errorf("a Rill project already exists at %q", targetPath)
+			// Resolve OLAP engine
+			if !cmd.Flags().Changed("olap") {
+				if interactive {
+					olap, err = cmdutil.SelectPrompt("OLAP engine", []string{"duckdb", "clickhouse"}, "duckdb")
+					if err != nil {
+						return err
+					}
 				}
+				// else: use default "duckdb"
+			}
 
-				if err := os.MkdirAll(targetPath, 0o755); err != nil {
-					return fmt.Errorf("failed to create directory %s: %w", targetPath, err)
+			// Resolve demo project (DuckDB only)
+			if !cmd.Flags().Changed("demo") && olap == "duckdb" {
+				if interactive {
+					demoList, err := examples.List()
+					if err != nil {
+						return fmt.Errorf("failed to list demo projects: %w", err)
+					}
+					options := []string{"None"}
+					for _, ex := range demoList {
+						options = append(options, ex.Name)
+					}
+					selected, err := cmdutil.SelectPrompt("Use demo project?", options, "None")
+					if err != nil {
+						return err
+					}
+					if selected != "None" {
+						demo = selected
+					}
 				}
+				// else: use default "" (no demo)
+			}
 
-				repo, instanceID, err := cmdutil.RepoForProjectPath(targetPath)
+			// Validate demo against olap (for the case where olap was resolved via prompt)
+			if demo != "" && olap != "duckdb" {
+				return fmt.Errorf("--demo is only supported with --olap duckdb")
+			}
+
+			// Validate demo name if specified
+			if demo != "" {
+				demoList, err := examples.List()
 				if err != nil {
-					return fmt.Errorf("failed to initialize repo: %w", err)
+					return fmt.Errorf("failed to list demo projects: %w", err)
 				}
+				found := false
+				for _, ex := range demoList {
+					if ex.Name == demo {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("unknown demo project %q", demo)
+				}
+			}
 
-				// Map template name to OLAP engine: "empty-duckdb" -> "duckdb"
-				olap := strings.TrimPrefix(template, "empty-")
-				err = parser.InitEmpty(ctx, repo, instanceID, "My Rill project", olap)
+			// Resolve agent
+			if !cmd.Flags().Changed("agent") {
+				if interactive {
+					agent, err = cmdutil.SelectPrompt("Agent", []string{"claude", "cursor", "all", "none"}, "claude")
+					if err != nil {
+						return err
+					}
+				}
+				// else: use default "claude"
+			}
+
+			// Create project directory
+			if cmdutil.HasRillProject(projectPath) && !force {
+				return fmt.Errorf("a Rill project already exists at %q", projectPath)
+			}
+			if err := os.MkdirAll(projectPath, 0o755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", projectPath, err)
+			}
+
+			repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
+			if err != nil {
+				return fmt.Errorf("failed to initialize repo: %w", err)
+			}
+
+			// Initialize empty project
+			err = parser.InitEmpty(ctx, repo, instanceID, projectName, olap)
+			if err != nil {
+				return fmt.Errorf("failed to create empty project: %w", err)
+			}
+			ch.Printf("Created a new Rill project at %q\n", projectPath)
+
+			// Unpack demo files if selected
+			if demo != "" {
+				exampleFS, err := examples.Get(demo)
 				if err != nil {
-					return fmt.Errorf("failed to create empty project: %w", err)
+					return fmt.Errorf("failed to get demo project %q: %w", demo, err)
 				}
-				ch.Printf("Created a new Rill project at %q\n", targetPath)
-
-			case "cursor":
-				if !cmdutil.HasRillProject(targetPath) {
-					return fmt.Errorf("no Rill project found at %q; run `rill init` first to create an empty project.", targetPath)
-				}
-				repo, _, err := cmdutil.RepoForProjectPath(targetPath)
+				err = fs.WalkDir(exampleFS, ".", func(p string, d fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if d.IsDir() {
+						return nil
+					}
+					file, err := exampleFS.Open(p)
+					if err != nil {
+						return err
+					}
+					defer file.Close()
+					return repo.Put(ctx, p, file)
+				})
 				if err != nil {
-					return fmt.Errorf("failed to initialize repo: %w", err)
+					return fmt.Errorf("failed to unpack demo project: %w", err)
 				}
+				ch.Printf("Unpacked demo project %q\n", demo)
+			}
 
-				err = instructions.InitCursorRules(ctx, repo, force)
-				if err != nil {
-					return fmt.Errorf("failed to add Cursor rules: %w", err)
-				}
-				ch.Printf("Added Cursor rules in .cursor\n")
-
+			// Initialize agent files
+			switch agent {
 			case "claude":
-				if !cmdutil.HasRillProject(targetPath) {
-					return fmt.Errorf("no Rill project found at %q; run `rill init` first to create an empty project.", targetPath)
-				}
-				repo, _, err := cmdutil.RepoForProjectPath(targetPath)
-				if err != nil {
-					return fmt.Errorf("failed to initialize repo: %w", err)
-				}
-
 				err = instructions.InitClaudeCode(ctx, repo, force)
 				if err != nil {
 					return fmt.Errorf("failed to add Claude Code files: %w", err)
 				}
 				ch.Printf("Added Claude instructions in .claude and .mcp.json\n")
+			case "cursor":
+				err = instructions.InitCursorRules(ctx, repo, force)
+				if err != nil {
+					return fmt.Errorf("failed to add Cursor rules: %w", err)
+				}
+				ch.Printf("Added Cursor rules in .cursor\n")
+			case "all":
+				err = instructions.InitClaudeCode(ctx, repo, force)
+				if err != nil {
+					return fmt.Errorf("failed to add Claude Code files: %w", err)
+				}
+				ch.Printf("Added Claude instructions in .claude and .mcp.json\n")
+				err = instructions.InitCursorRules(ctx, repo, force)
+				if err != nil {
+					return fmt.Errorf("failed to add Cursor rules: %w", err)
+				}
+				ch.Printf("Added Cursor rules in .cursor\n")
+			}
 
-			default:
-				return fmt.Errorf("unknown template: %s", template)
+			// In non-interactive mode, we're done
+			if !interactive {
+				return nil
+			}
+
+			// Prompt: Start Rill?
+			startRill, err := cmdutil.ConfirmPrompt("Start Rill?", "", true)
+			if err != nil {
+				return err
+			}
+			if startRill {
+				startCmd, _, err := cmd.Root().Find([]string{"start"})
+				if err != nil {
+					return fmt.Errorf("failed to find start command: %w", err)
+				}
+				startCmd.SetContext(ctx)
+				return startCmd.RunE(startCmd, []string{projectPath})
 			}
 
 			return nil
 		},
 	}
 
-	initCmd.Flags().StringVar(&template, "template", "", "Project template to use (default: prompt to select)")
-	initCmd.Flags().BoolVar(&force, "force", false, "Overwrite existing files when unpacking a template")
+	initCmd.Flags().StringVar(&olap, "olap", "duckdb", "OLAP engine: \"duckdb\" or \"clickhouse\"")
+	initCmd.Flags().StringVar(&demo, "demo", "", "Demo project name (DuckDB only); empty means none")
+	initCmd.Flags().StringVar(&agent, "agent", "claude", "Agent instructions: \"claude\", \"cursor\", \"all\", or \"none\"")
+	initCmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "Use defaults for unspecified flags; do not start Rill")
+	initCmd.Flags().BoolVar(&force, "force", false, "Overwrite existing files")
 
 	return initCmd
 }
