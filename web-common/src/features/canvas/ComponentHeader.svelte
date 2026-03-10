@@ -39,7 +39,7 @@
 {#if title || description}
   <div
     bind:this={container}
-    class="component-header-container w-full h-fit flex flex-col bg-surface-card px-4 pt-2 pb-1 items-start {wide
+    class="component-header-container w-full h-fit flex flex-col bg-surface-card items-start {wide
       ? 'wide'
       : ''}"
   >
@@ -85,7 +85,7 @@
     {/if}
   </div>
 {:else if atleastOneFilter}
-  <div class="w-full px-2 py-1">
+  <div class="w-full">
     <LocalFiltersHeader {component} />
   </div>
 {/if}
@@ -104,10 +104,9 @@
   }
 
   .title {
-    font-size: 15px;
-    line-height: 26px;
-    @apply flex-shrink-0;
-    @apply font-medium text-fg-primary truncate;
+    font-size: 16px;
+    @apply flex-shrink-0 leading-none;
+    @apply font-semibold text-fg-primary truncate;
   }
 
   .title.faint {

@@ -154,20 +154,17 @@
   $: ({ parsed } = mvFilters);
 </script>
 
-{#if schema.isValid}
-  <ComponentHeader
-    {component}
-    {title}
-    {description}
-    showDescriptionAsTooltip={show_description_as_tooltip}
-    {filters}
-  />
+<div class="size-full flex flex-col overflow-hidden gap-y-4">
+  {#if schema.isValid}
+    <ComponentHeader
+      {component}
+      {title}
+      {description}
+      showDescriptionAsTooltip={show_description_as_tooltip}
+      {filters}
+    />
 
-  <div
-    class="h-fit p-0 grow relative"
-    class:!p-0={visibleDimensions.length === 1}
-  >
-    <span class="border-overlay"></span>
+    <div class="p-0 grow relative">
     <div
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
@@ -238,10 +235,11 @@
         {/if}
       {/each}
     </div>
-  </div>
-{:else}
-  <ComponentError error={schema.error} />
-{/if}
+    </div>
+  {:else}
+    <ComponentError error={schema.error} />
+  {/if}
+</div>
 
 <style lang="postcss">
   .grid-wrapper {
@@ -250,12 +248,7 @@
   }
 
   .leaderboard-wrapper {
-    @apply relative p-4 pr-6 grid outline outline-1 outline-gray-200;
-  }
-
-  .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-surface-card size-full;
-    z-index: 20;
+    @apply relative grid outline outline-1 outline-border;
   }
 
   @container component-container (inline-size < 440px) {
