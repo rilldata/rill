@@ -16,7 +16,10 @@
 </script>
 
 <div class="flex gap-x-2 items-center truncate">
-  <span class="font-bold" style:max-width={smallChip ? "150px" : labelMaxWidth}>
+  <span
+    class="font-bold truncate"
+    style:max-width={smallChip ? "150px" : labelMaxWidth}
+  >
     {label}
   </span>
 
