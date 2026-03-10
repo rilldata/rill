@@ -550,15 +550,15 @@ export function replaceOlapConnectorInYAML(
 }
 
 export async function updateRillYAMLWithAiConnector(
+  client: RuntimeClient,
   queryClient: QueryClient,
   newConnector: string,
 ): Promise<string> {
-  const instanceId = get(runtime).instanceId;
   const file = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
       path: "rill.yaml",
     }),
-    queryFn: () => runtimeServiceGetFile(instanceId, { path: "rill.yaml" }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
   });
   const blob = file.blob || "";
   return replaceAiConnectorInYAML(blob, newConnector);

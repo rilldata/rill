@@ -30,7 +30,11 @@ async function setAiConnectorInRillYAML(
 ): Promise<void> {
   await runtimeServicePutFile(client, {
     path: "rill.yaml",
-    blob: await updateRillYAMLWithAiConnector(queryClient, newConnectorName),
+    blob: await updateRillYAMLWithAiConnector(
+      client,
+      queryClient,
+      newConnectorName,
+    ),
     create: true,
     createOnly: false,
   });
