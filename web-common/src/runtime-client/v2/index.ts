@@ -4,6 +4,5 @@ export {
   evictRuntimeClient,
   useRuntimeClient,
   tryUseRuntimeClient,
-  runtimeClientStore,
   RUNTIME_CONTEXT_KEY,
 } from "./context";

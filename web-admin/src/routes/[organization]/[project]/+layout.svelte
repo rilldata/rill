@@ -33,6 +33,7 @@
   import { page } from "$app/stores";
   import {
     V1DeploymentStatus,
+    type V1Organization,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
@@ -46,12 +47,16 @@
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
+  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
+  import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
@@ -67,7 +72,16 @@
   $: ({
     url: { pathname },
     params: { organization, project, token },
+    data: pageData,
   } = $page);
+
+  // Root layout data used by ProjectHeader / SlimProjectHeader
+  $: organizationPermissions = pageData?.organizationPermissions ?? {};
+  $: planDisplayName = pageData?.planDisplayName;
+  $: organizationLogoUrl = getThemedLogoUrl(
+    $themeControl,
+    pageData?.organization as V1Organization | undefined,
+  );
 
   // Initialize view-as store for this project scope (loads from sessionStorage)
   $: if (organization && project) {
@@ -233,47 +247,70 @@
   }
 </script>
 
-{#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-  <ProjectTabs
-    projectPermissions={effectiveProjectPermissions}
-    {organization}
-    {pathname}
-    {project}
-  />
-{/if}
-
 {#if error}
+  <SlimProjectHeader
+    {organization}
+    {project}
+    readProjects={organizationPermissions?.readProjects}
+    {planDisplayName}
+    {organizationLogoUrl}
+  />
   <ErrorPage
     statusCode={error.response.status}
     header="Error fetching deployment"
     body={error.response.data?.message}
   />
 {:else if projectData}
-  {#if !projectData.deployment}
-    <!-- No deployment = the project is "hibernating" -->
-    <RedeployProjectCta {organization} {project} />
-  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-    <ProjectBuilding />
-  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
-    <ErrorPage
-      statusCode={500}
-      header="Deployment Error"
-      body={projectData.deployment.statusMessage !== ""
-        ? projectData.deployment.statusMessage
-        : "There was an error deploying your project. Please contact support."}
+  {#if isProjectAvailable && effectiveHost != null && effectiveInstanceId}
+    {#key `${effectiveHost}::${effectiveInstanceId}`}
+      <RuntimeProvider
+        host={effectiveHost}
+        instanceId={effectiveInstanceId}
+        jwt={effectiveJwt}
+        {authContext}
+      >
+        <ProjectHeader
+          {organization}
+          {project}
+          projectPermissions={effectiveProjectPermissions}
+          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+          manageOrgMembers={organizationPermissions?.manageOrgMembers}
+          readProjects={organizationPermissions?.readProjects}
+          {planDisplayName}
+          {organizationLogoUrl}
+        />
+        {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+          <ProjectTabs
+            projectPermissions={effectiveProjectPermissions}
+            {organization}
+            {pathname}
+            {project}
+          />
+        {/if}
+        <slot />
+      </RuntimeProvider>
+    {/key}
+  {:else}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      {planDisplayName}
+      {organizationLogoUrl}
     />
-  {:else if isProjectAvailable}
-    {#if effectiveHost != null && effectiveInstanceId}
-      {#key `${effectiveHost}::${effectiveInstanceId}`}
-        <RuntimeProvider
-          host={effectiveHost}
-          instanceId={effectiveInstanceId}
-          jwt={effectiveJwt}
-          {authContext}
-        >
-          <slot />
-        </RuntimeProvider>
-      {/key}
+    {#if !projectData.deployment}
+      <!-- No deployment = the project is "hibernating" -->
+      <RedeployProjectCta {organization} {project} />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+      <ProjectBuilding />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
+      <ErrorPage
+        statusCode={500}
+        header="Deployment Error"
+        body={projectData.deployment.statusMessage !== ""
+          ? projectData.deployment.statusMessage
+          : "There was an error deploying your project. Please contact support."}
+      />
     {:else}
       <ProjectBuilding />
     {/if}
