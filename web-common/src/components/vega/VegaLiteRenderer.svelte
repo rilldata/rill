@@ -88,7 +88,6 @@
 <div
   bind:contentRect
   role="presentation"
-  class:px-2={canvasDashboard}
   class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
   on:mouseleave={handleMouseLeave}
 >

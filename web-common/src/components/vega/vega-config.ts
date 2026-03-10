@@ -76,6 +76,9 @@ export const getRillTheme: (
     autosize: {
       type: "fit-x",
     },
+    ...(isCanvasDashboard && {
+      padding: 0,
+    }),
     background: "transparent",
     mark: {
       tooltip: isCanvasDashboard,

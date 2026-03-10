@@ -147,19 +147,17 @@
   $: ({ parsed } = mvFilters);
 </script>
 
-{#if schema.isValid}
-  <ComponentHeader
-    {component}
-    {title}
-    {description}
-    showDescriptionAsTooltip={show_description_as_tooltip}
-    {filters}
-  />
+<div class="size-full flex flex-col overflow-hidden gap-y-4">
+  {#if schema.isValid}
+    <ComponentHeader
+      {component}
+      {title}
+      {description}
+      showDescriptionAsTooltip={show_description_as_tooltip}
+      {filters}
+    />
 
-  <div
-    class="h-fit p-0 grow relative"
-    class:!p-0={visibleDimensions.length === 1}
-  >
+    <div class="p-0 grow relative">
     <span class="border-overlay" />
     <div
       class="grid-wrapper gap-px overflow-x-auto"
@@ -230,10 +228,11 @@
         {/if}
       {/each}
     </div>
-  </div>
-{:else}
-  <ComponentError error={schema.error} />
-{/if}
+    </div>
+  {:else}
+    <ComponentError error={schema.error} />
+  {/if}
+</div>
 
 <style lang="postcss">
   .grid-wrapper {
@@ -242,7 +241,7 @@
   }
 
   .leaderboard-wrapper {
-    @apply relative p-4 pr-6 grid outline outline-1 outline-gray-200;
+    @apply relative grid outline outline-1 outline-border;
   }
 
   .border-overlay {

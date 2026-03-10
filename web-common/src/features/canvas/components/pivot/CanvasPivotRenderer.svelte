@@ -27,12 +27,7 @@
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
 </script>
 
-<div
-  class="size-full overflow-hidden"
-  style:max-height="inherit"
-  class:p-4={hasHeader}
-  class:pt-1={hasHeader}
->
+<div class="size-full overflow-hidden" style:max-height="inherit">
   {#if !schema.isValid}
     <ComponentError error={schema.error} />
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
