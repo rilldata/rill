@@ -34,7 +34,7 @@ export function transitionToNextStep(
     );
     if (analyzedConnector) {
       driver = analyzedConnector.driver!;
-      selectedSchema = analyzedConnector.name!;
+      selectedSchema = driver.name!;
     }
   }
   if (!driver && selectedSchema) {
@@ -42,7 +42,7 @@ export function transitionToNextStep(
   }
 
   switch (current.step) {
-    case AddDataStep.Select:
+    case AddDataStep.SelectConnector:
       if (selectedConnector) {
         return transitionFromConnector(
           driver!,
@@ -55,14 +55,7 @@ export function transitionToNextStep(
         return current;
       }
 
-    case AddDataStep.Olap:
-      return transitionToNextStep(
-        runtimeClient,
-        { step: AddDataStep.Select },
-        { schema: current.schema },
-      );
-
-    case AddDataStep.Connector:
+    case AddDataStep.CreateConnector:
       if (!selectedConnector) {
         throw new Error("Connector must be specified");
       }
@@ -73,8 +66,8 @@ export function transitionToNextStep(
         selectedSchema!,
       );
 
-    case AddDataStep.Explorer:
-    case AddDataStep.Source: {
+    case AddDataStep.ExploreConnector:
+    case AddDataStep.CreateModel: {
       if (!args.importConfig) {
         throw new Error("Import config must be specified");
       }
@@ -141,12 +134,12 @@ function transitionFromSchema(
 ): AddDataState {
   if (isConnectorType(driver)) {
     return {
-      step: AddDataStep.Connector,
+      step: AddDataStep.CreateConnector,
       schema,
     };
   } else {
     return {
-      step: AddDataStep.Source,
+      step: AddDataStep.CreateModel,
       schema,
       connector: driver.name!,
     };
@@ -160,13 +153,13 @@ function transitionFromConnector(
 ): AddDataState {
   if (isExplorerType(driver)) {
     return {
-      step: AddDataStep.Explorer,
+      step: AddDataStep.ExploreConnector,
       schema,
       connector,
     };
   } else {
     return {
-      step: AddDataStep.Source,
+      step: AddDataStep.CreateModel,
       schema,
       connector,
     };

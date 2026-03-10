@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { builderActions, getAttrs } from "bits-ui";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import Button from "../../components/button/Button.svelte";
   import { createRuntimeServiceUnpackExampleMutation } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
@@ -66,43 +66,38 @@
 
     <div class="flex flex-col w-64 gap-y-4">
       <GenerateSampleData type="home" />
-      <Button
-        onClick={() =>
+      <button
+        on:click={() =>
           createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
-        type="tertiary"
-        large
-        forcedStyle="height: 3rem;"
+        class="onboarding-cta"
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
           size="14px"
         />
         Create blank model
-      </Button>
-      <Button
-        onClick={() =>
+      </button>
+      <button
+        on:click={() =>
           createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
-        type="tertiary"
-        large
-        forcedStyle="height: 3rem;"
+        class="onboarding-cta"
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.MetricsView]}
           size="14px"
         />
         Create a metrics view
-      </Button>
+      </button>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
-          <Button
-            type="tertiary"
-            builders={[builder]}
-            large
-            forcedStyle="height: 3rem;"
+          <button
+            class="onboarding-cta"
+            {...getAttrs([builder])}
+            use:builderActions={{ builders: [builder] }}
           >
             <PresentationIcon size="16px" />
             Try demo projects
-          </Button>
+          </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}
@@ -141,5 +136,13 @@
 
   .cta-container {
     @apply flex flex-row text-center gap-x-6;
+  }
+
+  .onboarding-cta {
+    @apply flex flex-row gap-2 items-center justify-center p-2 h-12;
+    @apply text-sm bg-surface-overlay rounded-md border;
+  }
+  .onboarding-cta:hover {
+    @apply bg-surface-hover;
   }
 </style>

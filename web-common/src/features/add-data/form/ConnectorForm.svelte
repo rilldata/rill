@@ -8,15 +8,23 @@
   import { onMount } from "svelte";
   import { getConnectorYamlPreview } from "./yaml-preview.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
-  import { submitAddConnectorForm } from "@rilldata/web-common/features/sources/modal/submitAddDataForm.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
+  import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { createConnector } from "@rilldata/web-common/features/add-data/steps/connector.ts";
 
   export let connectorDriver: V1ConnectorDriver;
   export let onSubmit: (name: string) => void;
   export let onBack: () => void;
 
   const runtimeClient = useRuntimeClient();
+  const connectorName = getName(
+    connectorDriver.name!,
+    fileArtifacts.getNamesForKind(ResourceKind.Connector),
+  );
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
@@ -39,15 +47,14 @@
     formType: "connector",
     onUpdate: async ({ form }) => {
       if (!form.valid) return;
-      const connectorName = await submitAddConnectorForm(
+      await createConnector({
         runtimeClient,
         queryClient,
+        connectorName,
         connectorDriver,
-        form.data,
-        false,
-        "",
-        false,
-      );
+        formValues: form.data,
+        saveAnyway: false,
+      });
       onSubmit(connectorName);
     },
   });
@@ -62,6 +69,8 @@
     existingEnvBlob,
   });
 </script>
+
+<ConnectorHeader {connectorDriver} />
 
 <AddDataFormStructure
   {connectorDriver}

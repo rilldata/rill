@@ -1,9 +1,8 @@
 export enum AddDataStep {
-  Select,
-  Olap,
-  Connector,
-  Source,
-  Explorer,
+  SelectConnector,
+  CreateConnector,
+  CreateModel,
+  ExploreConnector,
   Import,
   Done,
 }
@@ -27,11 +26,10 @@ export enum ImportDataStep {
 }
 
 export type AddDataState =
-  | SelectAddDataStep
-  | OlapAddDataStep
-  | ConnectorAddDataStep
-  | SourceAddDataStep
-  | ExplorerAddDataStep
+  | SelectConnectorStep
+  | CreateConnectorStep
+  | CreateModelStep
+  | ExploreConnectorStep
   | ImportAddDataStep
   | DoneAddDataStep;
 
@@ -39,28 +37,23 @@ export type AddDataState =
  * Individual steps for strong typing
  */
 
-type SelectAddDataStep = {
-  step: AddDataStep.Select;
+type SelectConnectorStep = {
+  step: AddDataStep.SelectConnector;
 };
 
-type OlapAddDataStep = {
-  step: AddDataStep.Olap;
-  schema: string; // Forward to the connector/source step
-};
-
-type ConnectorAddDataStep = {
-  step: AddDataStep.Connector;
+type CreateConnectorStep = {
+  step: AddDataStep.CreateConnector;
   schema: string;
 };
 
-type SourceAddDataStep = {
-  step: AddDataStep.Source;
+type CreateModelStep = {
+  step: AddDataStep.CreateModel;
   schema: string;
   connector: string;
 };
 
-type ExplorerAddDataStep = {
-  step: AddDataStep.Explorer;
+type ExploreConnectorStep = {
+  step: AddDataStep.ExploreConnector;
   schema: string;
   connector: string;
 };

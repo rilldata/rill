@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForSource } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
 
   export let config: AddDataConfig;
   export let connectorDriver: V1ConnectorDriver;
@@ -98,6 +99,8 @@
     onSubmit(importConfig);
   }
 </script>
+
+<ConnectorHeader {connectorDriver} />
 
 <AddDataFormStructure
   {connectorDriver}

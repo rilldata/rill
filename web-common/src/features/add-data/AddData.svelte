@@ -4,7 +4,6 @@
   import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
   import SourceForm from "@rilldata/web-common/features/add-data/form/SourceForm.svelte";
   import ImportTableForm from "@rilldata/web-common/features/add-data/form/ImportTableForm.svelte";
-  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
   import ImportTableStatus from "@rilldata/web-common/features/add-data/ImportTableStatus.svelte";
   import {
     type AddDataConfig,
@@ -23,7 +22,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  let stepState: AddDataState = { step: AddDataStep.Select };
+  let stepState: AddDataState = { step: AddDataStep.SelectConnector };
 
   // beforeNavigate, onNavigate or afterNavigate do not seem to get called when state changes.
   // "popstate" event does not have direct access to the page state, rather it is under `sveltekit:states` key which seems like internal key.
@@ -39,11 +38,6 @@
     schema,
     connector,
   );
-
-  $: displayIcon =
-    connectorIconMapping[connector ?? ""] ??
-    connectorIconMapping[connectorDriver?.name ?? ""];
-  $: displayName = connectorDriver?.displayName ?? connector;
 
   $: isImportStep = stepState.step === AddDataStep.Import;
   $: height = isImportStep ? "h-fit" : "h-[600px]";
@@ -78,17 +72,9 @@
 <div
   class="flex flex-col {width} {height} bg-surface-background border rounded-lg shadow-sm;"
 >
-  {#if displayName && !isImportStep}
-    <div class="flex flex-row items-center px-6 py-4 gap-1 border-b">
-      {#if displayIcon}
-        <svelte:component this={displayIcon} size="18px" />
-      {/if}
-      <span class="text-lg leading-none font-semibold">{displayName}</span>
-    </div>
-  {/if}
-  {#if stepState.step === AddDataStep.Select}
+  {#if stepState.step === AddDataStep.SelectConnector}
     <NewSourceSelector onSelect={transitionToSchema} />
-  {:else if stepState.step === AddDataStep.Connector}
+  {:else if stepState.step === AddDataStep.CreateConnector}
     {#if connectorDriver}
       <ConnectorForm
         {connectorDriver}
@@ -98,7 +84,7 @@
     {:else}
       <div>No connector driver (TODO)</div>
     {/if}
-  {:else if stepState.step === AddDataStep.Source}
+  {:else if stepState.step === AddDataStep.CreateModel}
     {#if connectorDriver && schema && connector}
       <SourceForm
         {config}
@@ -111,7 +97,7 @@
     {:else}
       <div>Missing connector driver, schema name, or connector name (TODO)</div>
     {/if}
-  {:else if stepState.step === AddDataStep.Explorer}
+  {:else if stepState.step === AddDataStep.ExploreConnector}
     {#if connectorDriver && connector}
       <ImportTableForm
         {config}

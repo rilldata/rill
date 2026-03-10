@@ -84,7 +84,7 @@
   }
 
   .header {
-    @apply flex flex-row items-center;
+    @apply flex flex-row items-center gap-2;
     @apply text-lg text-fg-primary font-semibold;
   }
 

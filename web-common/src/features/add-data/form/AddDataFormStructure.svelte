@@ -90,7 +90,7 @@
   }
 </script>
 
-<div class="flex flex-col h-full w-full md:flex-row overflow-y-auto">
+<div class="flex flex-col size-full md:flex-row overflow-y-auto">
   <!-- LEFT SIDE PANEL -->
   <div class="flex-1 flex flex-col min-w-0 h-full md:pr-0 pr-0 relative">
     <div class="flex flex-col flex-grow overflow-y-auto p-6">

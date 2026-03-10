@@ -15,6 +15,8 @@ import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.sve
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
 import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
+import { GlobeLock, File } from "lucide-svelte";
+import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -24,6 +26,7 @@ export const connectorIconMapping = {
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
+  gcs: GoogleCloudStorageIcon,
   mysql: MySqlIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,
@@ -32,8 +35,16 @@ export const connectorIconMapping = {
   azure: MicrosoftAzureBlobStorageIcon,
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
+  sqlite: RedshiftIcon,
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
+  local_file: File,
+  https: GlobeLock,
+};
+
+export const connectorClassMapping = {
+  local_file: "text-slate-300",
+  https: "text-slate-300",
 };
 
 export const connectorLabelMapping = {

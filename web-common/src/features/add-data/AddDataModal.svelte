@@ -20,7 +20,7 @@
       "",
       transitionToNextStep(
         runtimeClient,
-        { step: AddDataStep.Select },
+        { step: AddDataStep.SelectConnector },
         initArgs,
       ),
     );

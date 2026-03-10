@@ -24,6 +24,7 @@
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
 
   export let config: AddDataConfig;
   export let connectorName: string;
@@ -146,11 +147,13 @@
   );
 </script>
 
+<ConnectorHeader {connectorDriver} />
+
 <form
   use:enhance
   on:submit|preventDefault={submit}
   id={FormId}
-  class="flex flex-col gap-1 h-full"
+  class="flex flex-col gap-1 h-full overflow-y-auto"
 >
   <div class="flex flex-col gap-2 px-6 pt-2">
     <div>Pick a table or Input your file SQL to power your first dashboard</div>
@@ -160,35 +163,33 @@
       {/each}
     </Tabs>
   </div>
-  <div class="grow">
-    {#if $form["mode"] === "table"}
-      {#if analyzedConnector}
-        <div class="flex flex-row size-full border-t">
-          <div class="grow border-r">
-            <DatabaseExplorer
-              connector={analyzedConnector}
-              store={connectorExplorerStore}
-            />
-          </div>
-          <div class="bg-surface-subtle w-[40%] p-2">
-            {#if $form["table"]}
-              <TableSchema
-                connector={connectorName}
-                database={$form["database"]}
-                databaseSchema={$form["schema"]}
-                table={$form["table"]}
-                addLeftPadding={false}
-              />
-            {/if}
-          </div>
+  {#if $form["mode"] === "table"}
+    {#if analyzedConnector}
+      <div class="flex flex-row size-full overflow-auto border-t">
+        <div class="flex-grow overflow-auto border-r">
+          <DatabaseExplorer
+            connector={analyzedConnector}
+            store={connectorExplorerStore}
+          />
         </div>
-      {/if}
-    {:else if $form["mode"] === "sql"}
-      <div class="px-6">
-        <Input id="sql" label="SQL" bind:value={$form["sql"]} />
+        <div class="bg-surface-subtle w-[40%] p-2">
+          {#if $form["table"]}
+            <TableSchema
+              connector={connectorName}
+              database={$form["database"]}
+              databaseSchema={$form["schema"]}
+              table={$form["table"]}
+              addLeftPadding={false}
+            />
+          {/if}
+        </div>
       </div>
     {/if}
-  </div>
+  {:else if $form["mode"] === "sql"}
+    <div class="flex-grow px-6">
+      <Input id="sql" label="SQL" bind:value={$form["sql"]} />
+    </div>
+  {/if}
 
   <div class="flex flex-row px-6 py-4 gap-2 border-t">
     <Button onClick={() => window.history.back()} type="secondary">Back</Button>

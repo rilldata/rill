@@ -4,6 +4,7 @@
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import OnboardingGenerateSampleData from "@rilldata/web-common/features/add-data/OnboardingGenerateSampleData.svelte";
   import ConnectYourDataSmall from "@rilldata/web-common/features/add-data/ConnectYourDataSmall.svelte";
+
   import { AddDataStep } from "@rilldata/web-common/features/add-data/steps/types.ts";
 </script>
 
@@ -17,7 +18,9 @@
           startConnectorSelection={(name) =>
             void goto("/welcome/add-data", {
               state: {
-                step: name ? AddDataStep.Connector : AddDataStep.Select,
+                step: name
+                  ? AddDataStep.CreateConnector
+                  : AddDataStep.SelectConnector,
                 schema: name,
               },
             })}
