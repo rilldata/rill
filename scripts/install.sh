@@ -89,11 +89,6 @@ printInstallOptions() {
 
 # Ask for preferred install option
 promptInstallChoice() {
-    if [ "$NON_INTERACTIVE" = "true" ]; then
-        printf "Non-interactive shell detected; defaulting to install in current directory.\n"
-        INSTALL_DIR=$(pwd)
-        return
-    fi
     printf "Pick install option: (1/2/3)\n"
     read -r ans </dev/tty;
     case $ans in
@@ -111,18 +106,6 @@ promptInstallChoice() {
             promptInstallChoice
             ;;
     esac
-}
-
-# Detect previous installation
-detectPreviousInstallation() {
-    if [ -x "$(command -v rill)" ] && [ -z "${INSTALL_DIR}" ]; then
-        INSTALLED_RILL="$(command -v rill)"
-        if [ "$INSTALLED_RILL" = "/usr/local/bin/rill" ]; then
-            INSTALL_DIR="/usr/local/bin"
-        elif [ "$INSTALLED_RILL" = "$HOME/.rill/rill" ]; then
-            INSTALL_DIR="$HOME/.rill"
-        fi
-    fi
 }
 
 # Check conflicting installation and exit with a help message
@@ -221,6 +204,55 @@ removePathConfigEntries() {
     done
 }
 
+# Check if the install directory (or its parent, if it doesn't exist yet) is writable
+installDirIsWritable() {
+    if [ -d "$INSTALL_DIR" ]; then
+        [ -w "$INSTALL_DIR" ]
+    else
+        [ -w "$(dirname "$INSTALL_DIR")" ]
+    fi
+}
+
+# Resolve the install directory
+resolveInstallDir() {
+    # Detect previous installation
+    if [ -x "$(command -v rill)" ] && [ -z "${INSTALL_DIR}" ]; then
+        INSTALLED_RILL="$(command -v rill)"
+        if [ "$INSTALLED_RILL" = "/usr/local/bin/rill" ]; then
+            INSTALL_DIR="/usr/local/bin"
+        elif [ "$INSTALLED_RILL" = "$HOME/.rill/rill" ]; then
+            INSTALL_DIR="$HOME/.rill"
+        fi
+    fi
+
+    # Handle non-interactive scenarios where prompt or sudo are not possible
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        # If the install directory was explicitly set and requires sudo, we error
+        if [ -n "$INSTALL_DIR" ] && [ "$INSTALL_DIR_EXPLICIT" = "true" ] && ! installDirIsWritable; then
+            printf "Install directory '%s' requires elevated permissions, which are not available in non-interactive mode.\n" "$INSTALL_DIR"
+            exit 1
+        fi
+
+        # If the install directory is not set, or the previous installation path requires sudo, we default to installing in the current directory
+        if [ -z "$INSTALL_DIR" ] || ! installDirIsWritable; then
+            printf "Non-interactive shell detected; defaulting to install in current directory.\n"
+            INSTALL_DIR=$(pwd)
+        fi
+
+        return
+    fi
+
+    # If there is a previous or explicit installation path, we're done
+    if [ -n "${INSTALL_DIR}" ]; then
+        return
+    fi
+
+    # Prompt for install directory if there is no previous installation and we are in an interactive shell
+    printInstallOptions
+    promptInstallChoice
+    checkConflictingInstallation # Only check for conflicts in interactive, non-explicit scenarios
+}
+
 # Install Rill on the system
 installRill() {
     publishSyftEvent install
@@ -229,14 +261,7 @@ installRill() {
     checkGitDependency
     resolveShasumDependency
     initPlatform
-    detectPreviousInstallation
-    if [ -z "${INSTALL_DIR}" ]; then
-        if [ "$NON_INTERACTIVE" != "true" ]; then
-            printInstallOptions
-        fi
-        promptInstallChoice
-        checkConflictingInstallation
-    fi
+    resolveInstallDir
     initTmpDir
     downloadBinary
     installBinary
@@ -267,8 +292,9 @@ uninstallRill() {
 
 set -e
 
-# Detect non-interactive environments (e.g. piped input, CI, subprocesses)
-if ! [ -t 0 ]; then
+# Default values
+INSTALL_DIR_EXPLICIT=false
+if ! [ -t 0 ]; then # Detect non-interactive environments (e.g. piped input, CI, subprocesses)
     NON_INTERACTIVE=${NON_INTERACTIVE:-true}
 fi
 NON_INTERACTIVE=${NON_INTERACTIVE:-false}
@@ -287,7 +313,10 @@ case $1 in
         installRill
         ;;
     --non-interactive)
-        INSTALL_DIR=${2:-"/usr/local/bin"}
+        if [ -n "$2" ]; then
+            INSTALL_DIR="$2"
+            INSTALL_DIR_EXPLICIT=true
+        fi
         VERSION=${3:-latest}
         NON_INTERACTIVE=true
         installRill
