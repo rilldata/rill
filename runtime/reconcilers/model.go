@@ -843,30 +843,20 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		return nil, nil, nil
 	}
 
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get instance config: %w", err)
-	}
-
-	opts := &runtime.ResolveOptions{
+	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.IncrementalStateResolver,
 		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
-	}
-	err = r.C.Runtime.ValidateResolverProperties(ctx, opts)
-	if err != nil {
-		var invalidErr *runtime.UndefinedFieldsInResolverPropsError
-		if errors.As(err, &invalidErr) && !cfg.StrictResolverProps {
-			r.C.Logger.Warn("Undefined properties in incremental resolver, will be ignored", zap.String("resolver", invalidErr.Name), zap.Strings("fields", invalidErr.Fields))
-		}
-		return nil, nil, err
-	}
-	res, err := r.C.Runtime.Resolve(ctx, opts)
+	})
 	if err != nil {
 		return nil, nil, err
 	}
 	defer res.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("incremental state resolver produced warnings", zap.String("resolver", mdl.Spec.IncrementalStateResolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	row, err := res.Next()
 	if err != nil {
@@ -899,35 +889,22 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		}
 	}
 
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-	if err != nil {
-		return fmt.Errorf("failed to get instance config: %w", err)
-	}
-
-	opts := &runtime.ResolveOptions{
+	// Resolve partition rows
+	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.PartitionsResolver,
 		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
 		Args:               map[string]any{"state": incrementalState},
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
-	}
-
-	err = r.C.Runtime.ValidateResolverProperties(ctx, opts)
-	if err != nil {
-		var invalidErr *runtime.UndefinedFieldsInResolverPropsError
-		if errors.As(err, &invalidErr) && !cfg.StrictResolverProps {
-			r.C.Logger.Warn("Undefined properties in partition resolver, will be ignored", zap.String("resolver", invalidErr.Name), zap.Strings("fields", invalidErr.Fields))
-		} else {
-			return err
-		}
-	}
-
-	// Resolve partition rows
-	res, err := r.C.Runtime.Resolve(ctx, opts)
+	})
 	if err != nil {
 		return err
 	}
 	defer res.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("partitions resolver produced warnings", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	// Consume the rows and sync them in batches
 	var batch []map[string]any
@@ -1977,12 +1954,8 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 		return nil, nil
 	}
 	var msgs []string
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, err
-	}
 	for _, test := range tests {
-		msg, err := r.execModelTest(ctx, test, cfg.StrictResolverProps)
+		msg, err := r.execModelTest(ctx, test)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
 		}
@@ -1994,23 +1967,14 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 }
 
 // execModelTest runs a single model test and returns an error if it fails.
-func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest, strictResolverProps bool) (string, error) {
-	opts := &runtime.ResolveOptions{
+func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, error) {
+	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           test.Resolver,
 		ResolverProperties: test.ResolverProperties.AsMap(),
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 		Args:               map[string]any{"limit": 1},
-	}
-	err := r.C.Runtime.ValidateResolverProperties(ctx, opts)
-	if err != nil {
-		var invalidErr *runtime.UndefinedFieldsInResolverPropsError
-		if errors.As(err, &invalidErr) && !strictResolverProps {
-			r.C.Logger.Warn("Undefined properties in test resolver, will be ignored", zap.String("resolver", invalidErr.Name), zap.Strings("fields", invalidErr.Fields))
-		}
-		return "", err
-	}
-	result, err := r.C.Runtime.Resolve(ctx, opts)
+	})
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
 			return "", err
@@ -2018,6 +1982,10 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 		return fmt.Sprintf("%s: %v", test.Name, err), nil
 	}
 	defer result.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("Model test resolver returned warnings", zap.String("test", test.Name), zap.String("resolver", test.Resolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	row, err := result.Next()
 	if err != nil {

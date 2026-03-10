@@ -744,12 +744,8 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		props["agent"] = ai.AnalystAgentName
 	}
 
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance config: %w", err)
-	}
-
-	opts := &runtime.ResolveOptions{
+	// Execute AI resolver
+	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
 		ResolverProperties: props,
@@ -758,23 +754,15 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
 		},
 		Claims: claims,
-	}
-
-	err = r.C.Runtime.ValidateResolverProperties(ctx, opts)
-	if err != nil {
-		var invalidErr *runtime.UndefinedFieldsInResolverPropsError
-		if errors.As(err, &invalidErr) && !cfg.StrictResolverProps {
-			r.C.Logger.Warn("Undefined properties in ai resolver, will be ignored", zap.String("resolver", invalidErr.Name), zap.Strings("fields", invalidErr.Fields))
-		}
-		return nil, err
-	}
-
-	// Execute AI resolver
-	result, err := r.C.Runtime.Resolve(ctx, opts)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute AI resolver: %w", err)
 	}
 	defer result.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("AI resolver returned warnings", zap.String("report", self.Meta.Name.Name), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	// Get the result row
 	row, err := result.Next()
