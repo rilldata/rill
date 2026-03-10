@@ -60,7 +60,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, op
 	}
 	if len(unused) > 0 {
 		if opts.Env.StrictModelProps {
-			return nil, nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+			return nil, nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
@@ -108,7 +108,7 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 	}
 	if len(unused) > 0 {
 		if opts.Env.StrictModelProps {
-			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}

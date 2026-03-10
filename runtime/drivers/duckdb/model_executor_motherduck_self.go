@@ -56,7 +56,7 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	}
 	if len(unused) > 0 {
 		if opts.Env.StrictModelProps {
-			return nil, fmt.Errorf("undefined fields in input properties: %s", strings.Join(unused, ", "))
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
