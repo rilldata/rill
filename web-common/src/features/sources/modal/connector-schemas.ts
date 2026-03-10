@@ -74,8 +74,7 @@ export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
 export function getConnectorSchema(
   connectorName: string,
 ): MultiStepFormSchema | null {
-  const schema =
-    multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
+  const schema = multiStepFormSchemas[connectorName];
   return schema?.properties ? schema : null;
 }
 

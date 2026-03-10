@@ -2,24 +2,6 @@
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
-  import { behaviourEvent } from "../../metrics/initMetrics";
-  import {
-    BehaviourEventAction,
-    BehaviourEventMedium,
-  } from "../../metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import { addSourceModal } from "../sources/modal/add-source-visibility";
-  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
-  import { DatabaseIcon } from "lucide-svelte";
-
-  async function openShowAddSourceModal() {
-    addSourceModal.open();
-    await behaviourEvent?.fireSplashEvent(
-      BehaviourEventAction.SourceModal,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-    );
-  }
 </script>
 
 <section class="flex flex-col gap-y-6 items-center text-center">
@@ -33,23 +15,7 @@
   </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading twColor="text-fg-secondary">
-      Connect your data to build fast operational dashboards that your team will
-      actually use.
+      Build fast operational dashboards that your team will actually use.
     </Subheading>
-  </div>
-  <div class="flex flex-row gap-x-2">
-    <button
-      class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-500"
-      on:click={openShowAddSourceModal}
-    >
-      <div
-        class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
-      >
-        <DatabaseIcon size="14px" />
-        Connect your data
-      </div>
-    </button>
-
-    <GenerateSampleData type="init" />
   </div>
 </section>
