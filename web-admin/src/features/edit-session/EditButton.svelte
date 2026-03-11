@@ -2,12 +2,17 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import {
+    branchPathPrefix,
+    requestSkipBranchInjection,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
-    useActiveDevDeployment,
+    isActiveDeployment,
+    useDevDeployments,
     useCreateDevDeployment,
     invalidateDevDeployments,
   } from "./use-edit-session";
@@ -16,44 +21,57 @@
   export let project: string;
 
   const user = createAdminServiceGetCurrentUser();
-  const activeDevDeployment = useActiveDevDeployment(organization, project);
+  const devDeployments = useDevDeployments(organization, project);
   const createMutation = useCreateDevDeployment();
 
   $: currentUserId = $user.data?.user?.id;
-  $: deployment = $activeDevDeployment.data;
-  $: isLoading = $activeDevDeployment.isLoading;
+  $: deployments = $devDeployments.data?.deployments ?? [];
+  $: isLoading = $devDeployments.isLoading;
 
-  // Determine session state
-  $: hasActiveSession = !!deployment;
-  $: isOwnSession =
-    hasActiveSession && deployment?.ownerUserId === currentUserId;
-  $: isOtherSession = hasActiveSession && !isOwnSession;
+  // User's own active deployment (if any)
+  $: ownDeployment =
+    deployments.find(
+      (d) => d.ownerUserId === currentUserId && isActiveDeployment(d),
+    ) ?? null;
 
-  $: label = isOwnSession
+  // Another user's active deployment (single-editor lock for Phase 1)
+  $: otherActiveDeployment =
+    deployments.find(
+      (d) => d.ownerUserId !== currentUserId && isActiveDeployment(d),
+    ) ?? null;
+
+  $: label = ownDeployment
     ? "Resume editing"
-    : isOtherSession
+    : otherActiveDeployment
       ? "Editing locked"
       : "Edit";
 
-  $: tooltipText = isOtherSession
+  $: tooltipText = otherActiveDeployment
     ? "Another user is currently editing this project"
-    : isOwnSession
+    : ownDeployment
       ? "Return to your editing session"
       : "Start an editing session";
 
+  $: isOtherSession = !!otherActiveDeployment && !ownDeployment;
   $: isStarting = $createMutation.isPending;
+
+  function editUrl(branch: string | undefined): string {
+    return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
+  }
 
   async function handleClick() {
     if (isOtherSession) return;
 
-    if (isOwnSession) {
-      await goto(`/${organization}/${project}/-/edit`);
+    if (ownDeployment) {
+      // Skip branch injection; we're building the full URL ourselves
+      requestSkipBranchInjection();
+      await goto(editUrl(ownDeployment.branch));
       return;
     }
 
     // No active session: create one and navigate
     try {
-      await $createMutation.mutateAsync({
+      const resp = await $createMutation.mutateAsync({
         org: organization,
         project,
         data: {
@@ -62,7 +80,8 @@
         },
       });
       void invalidateDevDeployments(organization, project);
-      await goto(`/${organization}/${project}/-/edit`);
+      requestSkipBranchInjection();
+      await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",

@@ -5,6 +5,7 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -18,6 +19,7 @@
   export let project: string;
   export let deploymentId: string;
   export let instanceId: string;
+  export let branch: string | undefined = undefined;
 
   let isCommitting = false;
   let isDiscarding = false;
@@ -69,6 +71,8 @@
           },
         ),
       });
+      // Navigate back to production after ending session
+      requestSkipBranchInjection();
       await goto(`/${organization}/${project}`);
     } catch (err) {
       eventBus.emit("notification", {
@@ -83,8 +87,8 @@
 
 <div class="toolbar">
   <div class="toolbar-left">
-    <span class="label">Editing</span>
-    <span class="project-name">{project}</span>
+    <span class="label">Editing on</span>
+    <span class="project-name">{branch || project}</span>
   </div>
   <div class="toolbar-right">
     {#if commitError}

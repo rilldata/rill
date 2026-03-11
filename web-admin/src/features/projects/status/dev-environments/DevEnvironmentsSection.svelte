@@ -8,6 +8,10 @@
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
+    branchPathPrefix,
+    requestSkipBranchInjection,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
+  import {
     useDevDeployments,
     useCreateDevDeployment,
     invalidateDevDeployments,
@@ -65,9 +69,17 @@
     });
   }
 
+  function editUrl(branch: string | undefined): string {
+    return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
+  }
+
+  function previewUrl(branch: string | undefined): string {
+    return `/${organization}/${project}${branchPathPrefix(branch)}`;
+  }
+
   async function handleNewSession() {
     try {
-      await $createMutation.mutateAsync({
+      const resp = await $createMutation.mutateAsync({
         org: organization,
         project,
         data: {
@@ -76,7 +88,8 @@
         },
       });
       void invalidateDevDeployments(organization, project);
-      await goto(`/${organization}/${project}/-/edit`);
+      requestSkipBranchInjection();
+      await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
@@ -85,8 +98,14 @@
     }
   }
 
-  async function handleResume() {
-    await goto(`/${organization}/${project}/-/edit`);
+  async function handleResume(branch: string | undefined) {
+    requestSkipBranchInjection();
+    await goto(editUrl(branch));
+  }
+
+  async function handlePreview(branch: string | undefined) {
+    requestSkipBranchInjection();
+    await goto(previewUrl(branch));
   }
 
   let openDropdownId = "";
@@ -207,7 +226,7 @@
                 {#if own}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    on:click={handleResume}
+                    on:click={() => handleResume(deployment.branch)}
                   >
                     <div class="flex items-center">
                       <PlayIcon size="12px" />
@@ -215,6 +234,14 @@
                     </div>
                   </DropdownMenu.Item>
                 {/if}
+                <DropdownMenu.Item
+                  class="font-normal flex items-center"
+                  on:click={() => handlePreview(deployment.branch)}
+                >
+                  <div class="flex items-center">
+                    <span class="ml-0.5">Preview</span>
+                  </div>
+                </DropdownMenu.Item>
                 <DropdownMenu.Item
                   class="font-normal flex items-center"
                   disabled={deleting}
@@ -248,19 +275,17 @@
   .header-row {
     @apply w-full bg-surface-subtle;
     display: grid;
-    grid-template-columns: minmax(150px, 3fr) minmax(100px, 2fr) minmax(
-        120px,
-        2fr
-      ) 56px;
+    grid-template-columns:
+      minmax(150px, 3fr) minmax(100px, 2fr) minmax(120px, 2fr)
+      56px;
   }
 
   .data-row {
     @apply w-full py-3 border-t border-gray-200;
     display: grid;
-    grid-template-columns: minmax(150px, 3fr) minmax(100px, 2fr) minmax(
-        120px,
-        2fr
-      ) 56px;
+    grid-template-columns:
+      minmax(150px, 3fr) minmax(100px, 2fr) minmax(120px, 2fr)
+      56px;
   }
 
   .own-badge {

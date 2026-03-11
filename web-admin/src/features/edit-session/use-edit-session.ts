@@ -59,6 +59,30 @@ export function useActiveDevDeployment(
 }
 
 /**
+ * Returns the dev deployment for a specific branch (if any).
+ * Used by the edit layout to find the deployment matching the `@branch` URL.
+ */
+export function useDevDeploymentByBranch(
+  org: string,
+  project: string,
+  branch: string | undefined,
+): Readable<{ data: V1Deployment | null; isLoading: boolean }> {
+  const deploymentsQuery = useDevDeployments(org, project);
+
+  return derived(deploymentsQuery, ($query) => {
+    if ($query.isLoading) {
+      return { data: null, isLoading: true };
+    }
+    if (!branch) {
+      return { data: null, isLoading: false };
+    }
+    const found =
+      $query.data?.deployments?.find((d) => d.branch === branch) ?? null;
+    return { data: found, isLoading: false };
+  });
+}
+
+/**
  * Mutation to create a dev deployment with editable=true.
  */
 export function useCreateDevDeployment() {
@@ -99,7 +123,7 @@ function isTransitionalStatus(status: V1DeploymentStatus | undefined): boolean {
   );
 }
 
-function isActiveDeployment(d: V1Deployment): boolean {
+export function isActiveDeployment(d: V1Deployment): boolean {
   return (
     d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
     d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
