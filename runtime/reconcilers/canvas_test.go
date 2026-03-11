@@ -365,11 +365,11 @@ rows:
 	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
 	sec, err := rt.ResolveSecurity(ctx, id, claims, mv1)
 	require.NoError(t, err)
-	require.True(t, sec.CanAccess(), "mv1 should be accessible via transitive access from canvas")
+	require.True(t, sec.CanAccess())
 
 	// Resolve security for mv2 (referenced via metrics_sql); should be accessible
 	mv2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv2")
 	sec, err = rt.ResolveSecurity(ctx, id, claims, mv2)
 	require.NoError(t, err)
-	require.True(t, sec.CanAccess(), "mv2 should be accessible via transitive access from canvas (metrics_sql)")
+	require.True(t, sec.CanAccess())
 }

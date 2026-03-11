@@ -337,18 +337,28 @@ func (r *rendererRefs) populateRendererRefs(ctx context.Context, _ string, rende
 
 	// Check for a metrics_sql reference; use a resolver to discover the referenced metrics views.
 	if sql, ok := pathutil.GetPath(rendererProps, "metrics_sql"); ok {
-		sqlStr, ok := sql.(string)
-		if !ok {
-			return fmt.Errorf("metrics_sql field is not a string")
-		}
-		return r.resolveMetricsSQLRefs(ctx, sqlStr)
+		return r.metricsSQL(ctx, sql)
 	}
 
 	return nil
 }
 
-// resolveMetricsSQLRefs initializes a metrics_sql resolver and discovers referenced metrics views from its Refs().
-func (r *rendererRefs) resolveMetricsSQLRefs(ctx context.Context, sql string) error {
+// metricsView registers a metrics view reference.
+func (r *rendererRefs) metricsView(mv any) error {
+	if mv, ok := mv.(string); ok {
+		r.metricsViews[mv] = true
+		return nil
+	}
+	return fmt.Errorf("metrics view field is not a string")
+}
+
+// metricsSQL parses and registers metrics view references found in a metrics SQL string.
+func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
+	sqlStr, ok := sql.(string)
+	if !ok {
+		return fmt.Errorf("metrics_sql field is not a string")
+	}
+
 	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
 	if !ok {
 		return fmt.Errorf("metrics_sql resolver not registered")
@@ -356,7 +366,7 @@ func (r *rendererRefs) resolveMetricsSQLRefs(ctx context.Context, sql string) er
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
 		Runtime:    r.rt,
 		InstanceID: r.instanceID,
-		Properties: map[string]any{"sql": sql},
+		Properties: map[string]any{"sql": sqlStr},
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,
@@ -374,13 +384,4 @@ func (r *rendererRefs) resolveMetricsSQLRefs(ctx context.Context, sql string) er
 		}
 	}
 	return nil
-}
-
-// metricsView registers a metrics view reference.
-func (r *rendererRefs) metricsView(mv any) error {
-	if mv, ok := mv.(string); ok {
-		r.metricsViews[mv] = true
-		return nil
-	}
-	return fmt.Errorf("metrics view field is not a string")
 }
