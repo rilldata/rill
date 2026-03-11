@@ -20,6 +20,7 @@ import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -79,7 +80,9 @@ export class FunnelChartProvider {
   createChartDataQuery(
     client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
     const isMultiMeasure = config.breakdownMode === "measures";
 
@@ -121,10 +124,11 @@ export class FunnelChartProvider {
 
     // Create topN query for stage dimension
     const topNStageQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!stageDimensionName &&
           !isMultiMeasure &&
@@ -155,11 +159,12 @@ export class FunnelChartProvider {
     const topNStageQuery = createQuery(topNStageQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNStageQuery],
-      ([$timeAndFilterStore, $topNStageQuery]) => {
+      [timeAndFilterStore, topNStageQuery, visibleStore],
+      ([$timeAndFilterStore, $topNStageQuery, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           (isMultiMeasure || !!dimensions?.length) &&

@@ -7,6 +7,7 @@ import {
   hasExplorerStep,
   getFormHeight,
   shouldShowSkipLink,
+  toConnectorDriver,
   multiStepFormSchemas,
 } from "./connector-schemas";
 
@@ -107,6 +108,10 @@ describe("connector-schemas", () => {
       expect(isMultiStepConnector(mysqlSchema)).toBe(false);
     });
 
+    it("returns false for AI connectors", () => {
+      expect(isMultiStepConnector(getConnectorSchema("claude"))).toBe(false);
+    });
+
     it("returns false for null schema", () => {
       expect(isMultiStepConnector(null)).toBe(false);
     });
@@ -129,6 +134,10 @@ describe("connector-schemas", () => {
     it("returns false for object store connectors", () => {
       const s3Schema = getConnectorSchema("s3");
       expect(hasExplorerStep(s3Schema)).toBe(false);
+    });
+
+    it("returns false for AI connectors", () => {
+      expect(hasExplorerStep(getConnectorSchema("claude"))).toBe(false);
     });
 
     it("returns false for null schema", () => {
@@ -198,6 +207,47 @@ describe("connector-schemas", () => {
       expect(shouldShowSkipLink("connector", "sqlite", null, false)).toBe(
         false,
       );
+    });
+  });
+
+  describe("toConnectorDriver", () => {
+    it("returns null for unknown schema names", () => {
+      expect(toConnectorDriver("nonexistent")).toBeNull();
+    });
+
+    it("sets implementsAi for AI connectors", () => {
+      const claude = toConnectorDriver("claude");
+      expect(claude).not.toBeNull();
+      expect(claude!.name).toBe("claude");
+      expect(claude!.displayName).toBe("Claude");
+      expect(claude!.implementsAi).toBe(true);
+      expect(claude!.implementsOlap).toBe(false);
+      expect(claude!.implementsWarehouse).toBe(false);
+      expect(claude!.implementsObjectStore).toBe(false);
+      expect(claude!.implementsSqlStore).toBe(false);
+    });
+
+    it("sets implementsWarehouse for warehouse connectors", () => {
+      const bq = toConnectorDriver("bigquery");
+      expect(bq).not.toBeNull();
+      expect(bq!.name).toBe("bigquery");
+      expect(bq!.displayName).toBe("BigQuery");
+      expect(bq!.implementsWarehouse).toBe(true);
+      expect(bq!.implementsAi).toBe(false);
+    });
+
+    it("sets implementsObjectStore for object store connectors", () => {
+      const s3 = toConnectorDriver("s3");
+      expect(s3).not.toBeNull();
+      expect(s3!.implementsObjectStore).toBe(true);
+      expect(s3!.implementsAi).toBe(false);
+    });
+
+    it("sets implementsOlap for OLAP connectors", () => {
+      const ch = toConnectorDriver("clickhouse");
+      expect(ch).not.toBeNull();
+      expect(ch!.implementsOlap).toBe(true);
+      expect(ch!.implementsAi).toBe(false);
     });
   });
 });
