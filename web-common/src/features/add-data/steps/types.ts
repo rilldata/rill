@@ -21,7 +21,7 @@ export enum ImportDataStep {
   Init,
   CreateModel,
   CreateMetricsView,
-  CreateExplore,
+  CreateCanvas,
   Done,
 }
 
@@ -86,7 +86,7 @@ type ImportStep =
   | InitImportStep
   | CreateModelImportStep
   | CreateMetricsViewImportStep
-  | CreateExploreImportStep
+  | CreateCanvasImportStep
   | DoneImportStep;
 
 type InitImportStep = {
@@ -109,8 +109,8 @@ type CreateMetricsViewImportStep = {
   connector: string;
 };
 
-type CreateExploreImportStep = {
-  step: ImportDataStep.CreateExplore;
+type CreateCanvasImportStep = {
+  step: ImportDataStep.CreateCanvas;
   metricsViewFilePath: string;
 };
 

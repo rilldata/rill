@@ -3,6 +3,7 @@ import {
   ImportDataStep,
 } from "@rilldata/web-common/features/add-data/steps/types.ts";
 import {
+  runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
@@ -72,8 +73,8 @@ export async function runImportStep(
       );
       break;
 
-    case ImportDataStep.CreateExplore:
-      newImportStep = await runCreateExploreStep(
+    case ImportDataStep.CreateCanvas:
+      newImportStep = await runCreateCanvasStep(
         runtimeClient,
         step,
         onNewRoute,
@@ -167,7 +168,7 @@ async function runCreateMetricsViewStep(
     database: metricsViewImportStep.sourceDatabase,
     databaseSchema: metricsViewImportStep.sourceSchema,
     path: newMetricsViewFilePath,
-    useAi: false, // TODO: check feature flags
+    useAi: true, // TODO: check feature flags
   });
   // Wait for the metrics view to successfully reconcile
   await waitForResourceReconciliation(
@@ -176,53 +177,61 @@ async function runCreateMetricsViewStep(
     ResourceKind.MetricsView,
   );
 
-  if (!step.config.importSteps.includes(ImportDataStep.CreateExplore)) {
+  if (!step.config.importSteps.includes(ImportDataStep.CreateCanvas)) {
     return {
       step: ImportDataStep.Done,
     };
   }
 
   return {
-    step: ImportDataStep.CreateExplore,
+    step: ImportDataStep.CreateCanvas,
     metricsViewFilePath: newMetricsViewFilePath,
   };
 }
 
-async function runCreateExploreStep(
+async function runCreateCanvasStep(
   runtimeClient: RuntimeClient,
   step: ImportAddDataStep,
   onNewRoute: (newRoute: string) => void,
 ): Promise<ImportAddDataStep["importStep"]> {
-  const exploreImportStep = step.importStep;
-  if (exploreImportStep.step !== ImportDataStep.CreateExplore) {
-    throw new Error("Invalid explore import step");
+  const canvasImportStep = step.importStep;
+  if (canvasImportStep.step !== ImportDataStep.CreateCanvas) {
+    throw new Error("Invalid canvas import step");
   }
 
   // Get the MetricsView resource used to create the explore from.
   const metricsViewResourceResp = fileArtifacts
-    .getFileArtifact(exploreImportStep.metricsViewFilePath)
+    .getFileArtifact(canvasImportStep.metricsViewFilePath)
     .getResource(queryClient);
   await waitUntil(() => get(metricsViewResourceResp).data !== undefined, 5000);
   const metricsViewResource = get(metricsViewResourceResp).data;
   if (!metricsViewResource) {
     throw new Error("Failed to create a Metrics View resource");
   }
+  const metricsViewName = metricsViewResource.meta?.name?.name;
+  if (!metricsViewName) {
+    throw new Error("Failed to get MetricsView name");
+  }
 
-  // Create the Explore file
-  const exploreFilePath = await createResourceFile(
-    runtimeClient,
-    ResourceKind.Explore,
-    metricsViewResource,
+  // Get a unique name for the canvas dashboard
+  const canvasName = getName(
+    `${metricsViewName}}_canvas`,
+    fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
+  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
 
-  const [, exploreName] = splitFolderFileNameAndExtension(exploreFilePath);
-  onNewRoute(`/explore/${exploreName}`);
+  await runtimeServiceGenerateCanvasFile(runtimeClient, {
+    metricsViewName,
+    path: canvasFilePath,
+    useAi: true, // TODO: check feature flags
+  });
+  onNewRoute(`/files${canvasFilePath}`);
 
-  // Wait for explore to reconcile
+  // Wait for canvas to reconcile
   await waitForResourceReconciliation(
     runtimeClient,
-    exploreName,
-    ResourceKind.Explore,
+    canvasName,
+    ResourceKind.Canvas,
   );
 
   return {

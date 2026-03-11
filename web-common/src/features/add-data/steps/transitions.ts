@@ -5,30 +5,26 @@ import {
   type AddDataTransitionArgs,
   ImportDataStep,
 } from "@rilldata/web-common/features/add-data/steps/types.ts";
-import {
-  getRuntimeServiceAnalyzeConnectorsQueryKey,
-  type V1AnalyzeConnectorsResponse,
-  type V1ConnectorDriver,
-} from "@rilldata/web-common/runtime-client";
+import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
   connectors,
   getBackendConnectorName,
   getConnectorSchema,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
 
-export function transitionToNextStep(
+export async function transitionToNextStep(
   runtimeClient: RuntimeClient,
   current: AddDataState,
   args: AddDataTransitionArgs,
-): AddDataState {
+): Promise<AddDataState> {
   const selectedConnector: string | undefined = args.connector;
   let selectedSchema: string | undefined = args.schema;
 
   let driver: V1ConnectorDriver | null = null;
   if (selectedConnector) {
-    const analyzedConnector = getConnectorDriverForConnector(
+    const analyzedConnector = await getConnectorDriverForConnector(
       runtimeClient,
       selectedConnector,
     );
@@ -84,13 +80,13 @@ export function transitionToNextStep(
   return current;
 }
 
-export function maybeGetConnectorDriver(
+export async function maybeGetConnectorDriver(
   runtimeClient: RuntimeClient,
   schemaName: string | undefined,
   connectorName: string | undefined,
 ) {
   if (connectorName) {
-    const analyzedConnector = getConnectorDriverForConnector(
+    const analyzedConnector = await getConnectorDriverForConnector(
       runtimeClient,
       connectorName,
     );
@@ -109,11 +105,11 @@ export function getImportStepsForConnector(
   // Live connectors cannot create models as of now.
   // They will create metrics views directly.
   const steps = isLiveConnectorType(driver)
-    ? [ImportDataStep.CreateMetricsView, ImportDataStep.CreateExplore]
+    ? [ImportDataStep.CreateMetricsView, ImportDataStep.CreateCanvas]
     : [
         ImportDataStep.CreateModel,
         ImportDataStep.CreateMetricsView,
-        ImportDataStep.CreateExplore,
+        ImportDataStep.CreateCanvas,
       ];
   return config.importOnly ? [steps[0]] : steps;
 }
@@ -124,7 +120,7 @@ export function getImportStepsForSource(config: AddDataConfig) {
     : [
         ImportDataStep.CreateModel,
         ImportDataStep.CreateMetricsView,
-        ImportDataStep.CreateExplore,
+        ImportDataStep.CreateCanvas,
       ];
 }
 
@@ -186,19 +182,12 @@ function getConnectorDriverForSchema(
   };
 }
 
-function getConnectorDriverForConnector(
+async function getConnectorDriverForConnector(
   runtimeClient: RuntimeClient,
   connectorName: string,
 ) {
-  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
-    runtimeClient.instanceId,
-  );
-  const runtimeConnectorsResp =
-    queryClient.getQueryData<V1AnalyzeConnectorsResponse>(queryKey);
-  const analyzedConnector = runtimeConnectorsResp?.connectors?.find(
-    (r) => r.name === connectorName,
-  );
-  return analyzedConnector;
+  const connectors = await fetchAnalyzeConnectors(runtimeClient);
+  return connectors.find((r) => r.name === connectorName);
 }
 
 function isConnectorType(connectorDriver: V1ConnectorDriver) {

@@ -17,6 +17,7 @@
   } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import { pushState } from "$app/navigation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
   export let config: AddDataConfig = {};
 
@@ -33,26 +34,26 @@
 
   $: schema = (stepState as any).schema as string | undefined;
   $: connector = (stepState as any).connector as string | undefined;
-  $: connectorDriver = maybeGetConnectorDriver(
-    runtimeClient,
-    schema,
-    connector,
+  let connectorDriver: V1ConnectorDriver | null = null;
+  $: void maybeGetConnectorDriver(runtimeClient, schema, connector).then(
+    (d) => (connectorDriver = d),
   );
+  $: console.log("connectorDriver", schema, connector, connectorDriver);
 
   $: isImportStep = stepState.step === AddDataStep.Import;
   $: height = isImportStep ? "h-fit" : "h-[600px]";
   $: width = isImportStep ? "w-[500px]" : "w-[900px]";
 
-  function transitionToSchema(schema: string) {
-    const newState = transitionToNextStep(runtimeClient, stepState, {
+  async function transitionToSchema(schema: string) {
+    const newState = await transitionToNextStep(runtimeClient, stepState, {
       schema,
     });
     console.log("transition:schema", newState);
     pushState("", newState);
   }
 
-  function transitionToConnector(connector: string) {
-    const newState = transitionToNextStep(runtimeClient, stepState, {
+  async function transitionToConnector(connector: string) {
+    const newState = await transitionToNextStep(runtimeClient, stepState, {
       schema,
       connector,
     });
@@ -60,8 +61,8 @@
     pushState("", newState);
   }
 
-  function setAndStartImport(importConfig: ImportAddDataStepConfig) {
-    const newState = transitionToNextStep(runtimeClient, stepState, {
+  async function setAndStartImport(importConfig: ImportAddDataStepConfig) {
+    const newState = await transitionToNextStep(runtimeClient, stepState, {
       importConfig,
     });
     console.log("transition:source/explorer", newState);

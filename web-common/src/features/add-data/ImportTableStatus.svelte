@@ -35,7 +35,7 @@
       failedLabel: "Creating Metrics View failed.",
     },
     {
-      step: ImportDataStep.CreateExplore,
+      step: ImportDataStep.CreateCanvas,
       pendingLabel: "Generating Explore dashboard...",
       doneLabel: "Generated Explore dashboard",
       failedLabel: "Generating Explore dashboard failed.",
