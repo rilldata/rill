@@ -1,4 +1,4 @@
 export * from "./gen/index.schemas";
-export * from "./gen/runtime-service/runtime-service";
-export * from "./gen/query-service/query-service";
-export * from "./gen/connector-service/connector-service";
+export * from "./v2/gen/runtime-service";
+export * from "./v2/gen/query-service";
+export * from "./v2/gen/connector-service";

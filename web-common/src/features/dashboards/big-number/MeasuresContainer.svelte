@@ -2,7 +2,6 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
@@ -39,8 +38,6 @@
       measures: { toggleMeasureVisibility, toggleAllMeasuresVisibility },
     },
   } = ctx;
-
-  $: ({ instanceId } = $runtime);
 
   const timeControlsStore = useTimeControlStore(ctx);
 
@@ -184,7 +181,6 @@
         <MeasureBigNumber
           {measure}
           withTimeseries={false}
-          {instanceId}
           {metricsViewName}
           where={chartWhere}
           ready={chartReady}

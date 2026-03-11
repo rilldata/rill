@@ -24,20 +24,14 @@ export async function clickMenuButton(
 
 export async function waitForProfiling(
   page: Page,
-  name: string,
+  _name: string,
   columns: Array<string>,
 ) {
   return Promise.all(
     [
-      page.waitForResponse(
-        new RegExp(`/queries/columns-profile/tables/${name}`),
-      ),
-      columns.map((column) =>
-        page.waitForResponse(
-          new RegExp(
-            `/queries/null-count/tables/${name}\\?connector=duckdb&database=&databaseSchema=&columnName=${column}`,
-          ),
-        ),
+      page.waitForResponse("**/rill.runtime.v1.QueryService/TableColumns"),
+      columns.map(() =>
+        page.waitForResponse("**/rill.runtime.v1.QueryService/ColumnNullCount"),
       ),
     ].flat(),
   );
@@ -99,7 +93,7 @@ export async function renameFileUsingMenu(
   // type new fileName and submit
   await page.locator("#rill-portal input").fill(toFileName);
   await Promise.all([
-    page.waitForResponse(/rename/),
+    page.waitForResponse("**/rill.runtime.v1.RuntimeService/RenameFile"),
     clickModalButton(page, "Change Name"),
   ]);
 }
@@ -117,14 +111,10 @@ export async function renameFileUsingTitle(
 }
 
 export async function deleteFile(page: Page, filePath: string) {
-  // open context menu and click rename
+  // open context menu and click delete
   await openFileNavEntryContextMenu(page, filePath);
   await Promise.all([
-    page.waitForResponse(
-      (response) =>
-        response.url().includes(encodeURIComponent(filePath)) &&
-        response.request().method() === "DELETE",
-    ),
+    page.waitForResponse("**/rill.runtime.v1.RuntimeService/DeleteFile"),
     clickMenuButton(page, "Delete"),
   ]);
 }
