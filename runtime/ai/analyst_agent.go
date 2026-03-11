@@ -335,7 +335,7 @@ You should:
 1. Carefully study the canvas and metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
 {{ if .canvas_component }}
-The user is looking at "{{ .canvas_component }}".
+The user is looking at "{{ .canvas_component }}". Pay special attention to its definition and filters and use it to inform your analysis.
 {{ end }}
 {{ else }}
 Follow these steps in order:
