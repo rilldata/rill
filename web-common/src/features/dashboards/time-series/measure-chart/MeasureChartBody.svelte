@@ -98,7 +98,8 @@
   $: pb = config.plotBounds;
 
   // Chart series & mode
-  $: mode = forceLineChart ? "line" : determineMode(data);
+  $: mode =
+    forceLineChart || showTimeDimensionDetail ? "line" : determineMode(data);
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
   $: barSeries =
     mode === "bar" && showComparison && chartSeries.length === 2
