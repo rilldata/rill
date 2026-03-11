@@ -518,7 +518,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
 			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
-			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)), // should be set before `InitSQL` is set because it can have secrets 
+			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)), // should be set before `InitSQL` is set because it can have secrets
 		)
 	}
 
