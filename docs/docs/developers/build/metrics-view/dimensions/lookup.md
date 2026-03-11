@@ -15,7 +15,11 @@ The lookup function is dependent on the type of [OLAP engine](/developers/build/
 
 ## ClickHouse Lookups
 
-ClickHouse provides powerful dictionary functions for lookup operations through a several different `dictGet` functions. Note that the table needs to be defined as a dictionary. 
+ClickHouse provides powerful dictionary functions for lookup operations through `dictGet` functions. The table needs to be defined as a dictionary.
+
+### Using `expression`
+
+You can use `dictGet` directly in a dimension's `expression`:
 
 ```yaml
 dimensions:
@@ -42,6 +46,65 @@ dimensions:
     expression: concat(dictGet('users', 'first_name', user_id), ' ', dictGet('users', 'last_name', user_id))
     description: "Concatenated full name from user dictionary"
 ```
+
+This approach is straightforward but has a performance drawback: when filtering by a lookup dimension, ClickHouse must evaluate `dictGet` for every row before applying the filter, which prevents it from using indexes on the key column.
+
+### Using `lookup_*` properties
+
+The `lookup_*` properties provide a declarative way to define lookup dimensions. Rill automatically rewrites filter queries to use an optimized subquery pattern, enabling ClickHouse to leverage indexes on key columns.
+
+```yaml
+dimensions:
+  - name: country_name
+    display_name: "Country"
+    # column in the fact table to match with the dictionary key
+    column: country_code
+    lookup_table: country_dict
+    lookup_key_column: code
+    lookup_value_column: name
+
+  # With a default value for missing keys
+  - name: region
+    display_name: "Region"
+    # column in the fact table to match with the dictionary key
+    column: country_code
+    lookup_table: country_dict
+    lookup_key_column: code
+    lookup_value_column: region
+    lookup_default_expression: "'Unknown'"
+```
+
+The properties are:
+- **`lookup_table`** — the dictionary name. Use `database.dictionary_name` if the dictionary is in a non-default database (e.g. `mydb.my_dict`).
+- **`lookup_key_column`** — the primary key column in the dictionary that matches the fact table's `column`.
+- **`lookup_value_column`** — the attribute column in the dictionary to display.
+- **`lookup_default_expression`** _(optional)_ — a SQL expression used as a fallback when no match is found (maps to `dictGetOrDefault`).
+
+#### How the query optimization works
+
+When you filter on a lookup dimension defined with `expression: dictGet(...)`, the generated query looks like:
+
+```sql
+SELECT ... FROM fact_table
+WHERE dictGet('dict', 'name', publisher_id) IN ('Alice', 'Bob')
+```
+
+ClickHouse must call `dictGet` on every row to evaluate the filter, making it unable to use the index on `publisher_id`.
+
+With `lookup_*` properties, Rill rewrites the filter to a subquery pattern:
+
+```sql
+SELECT ... FROM fact_table
+WHERE publisher_id IN (
+  SELECT code FROM dict WHERE name IN ('Alice', 'Bob')
+)
+```
+
+This allows ClickHouse to first resolve the small set of matching keys from the dictionary, then use the index on `publisher_id` to efficiently scan only the relevant rows in the fact table.
+
+:::tip Optimizing GROUP BY with INJECTIVE
+If the key-to-value mapping in your dictionary is 1:1 (e.g. every `country_code` maps to exactly one `country_name`), you can mark the attribute columns as `INJECTIVE` in the ClickHouse dictionary definition. This tells ClickHouse that the mapping preserves uniqueness, allowing it to optimize `GROUP BY` queries by grouping on the key column instead of evaluating `dictGet` for every group. Note that this only helps with grouping; for filter optimization, use the `lookup_*` properties described above.
+:::
 
 ## Druid Lookups
 

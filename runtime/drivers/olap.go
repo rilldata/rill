@@ -270,6 +270,20 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	}
 }
 
+// EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table")
+// by escaping each part individually. Use this instead of EscapeIdentifier when
+// the input may contain dots that represent schema/table separators.
+func (d Dialect) EscapeQualifiedIdentifier(name string) string {
+	if name == "" {
+		return name
+	}
+	parts := strings.Split(name, ".")
+	for i, part := range parts {
+		parts[i] = d.EscapeIdentifier(part)
+	}
+	return strings.Join(parts, ".")
+}
+
 func (d Dialect) EscapeStringValue(s string) string {
 	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
 }
@@ -993,7 +1007,7 @@ func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, looku
 func (d Dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
 	switch d {
 	case DialectClickHouse:
-		return fmt.Sprintf("SELECT %s FROM dictionary(%s)", d.EscapeIdentifier(lookupKeyColumn), d.EscapeIdentifier(lookupTable)), nil
+		return fmt.Sprintf("SELECT %s FROM %s", d.EscapeIdentifier(lookupKeyColumn), d.EscapeQualifiedIdentifier(lookupTable)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
