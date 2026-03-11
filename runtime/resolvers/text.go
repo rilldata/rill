@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 func init() {
@@ -19,16 +20,16 @@ func init() {
 
 // textProps contains the static properties for the text resolver.
 type textProps struct {
-	Text                         string                    `mapstructure:"text"`
-	UseFormatTokens              bool                      `mapstructure:"use_format_tokens"`
-	AdditionalWhereByMetricsView map[string]map[string]any `mapstructure:"additional_where_by_metrics_view"`
-	AdditionalTimeRange          map[string]any            `mapstructure:"additional_time_range"`
-	TimeZone                     string                    `mapstructure:"time_zone"`
+	Text                         string                             `mapstructure:"text"`
+	UseFormatTokens              bool                               `mapstructure:"use_format_tokens"`
+	TimeZone                     string                             `mapstructure:"time_zone"`
+	AdditionalWhereByMetricsView map[string]*metricsview.Expression `mapstructure:"additional_where_by_metrics_view"`
+	AdditionalTimeRange          *metricsview.TimeRange             `mapstructure:"additional_time_range"`
 }
 
 func newText(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &textProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
 
@@ -55,75 +56,6 @@ type textResolver struct {
 }
 
 var _ runtime.Resolver = &textResolver{}
-
-// analyzeAndPopulateRefs runs a stub template resolution to discover metrics_sql calls,
-// then initializes metrics_sql resolvers to discover the metrics view refs they depend on.
-func (r *textResolver) analyzeAndPopulateRefs(ctx context.Context) error {
-	// Collect SQL strings by running the template with stub functions.
-	var collectedSQL []string
-	stubFuncs := map[string]any{
-		"metrics_sql": func(sql string) (string, error) {
-			collectedSQL = append(collectedSQL, sql)
-			return "", nil
-		},
-		"metrics_sql_rows": func(sql string) (any, error) {
-			collectedSQL = append(collectedSQL, sql)
-			return []map[string]any{}, nil
-		},
-	}
-
-	inst, err := r.rt.Instance(ctx, r.instanceID)
-	if err != nil {
-		return err
-	}
-
-	stubData := parser.TemplateData{
-		User:      r.claims.UserAttributes,
-		Variables: inst.ResolveVariables(false),
-		State:     make(map[string]any),
-		Resolve: func(ref parser.ResourceName) (string, error) {
-			return ref.Name, nil
-		},
-		ExtraFuncs: stubFuncs,
-	}
-
-	// Ignore errors; we only care about collecting SQL strings.
-	_, _ = parser.ResolveTemplate(r.props.Text, stubData, false)
-
-	// For each collected SQL, initialize a metrics_sql resolver to discover refs.
-	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
-	if !ok {
-		return nil
-	}
-
-	refsMap := make(map[string]bool)
-	for _, sql := range collectedSQL {
-		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.rt,
-			InstanceID: r.instanceID,
-			Properties: map[string]any{"sql": sql},
-			Claims: &runtime.SecurityClaims{
-				UserID:         r.claims.UserID,
-				UserAttributes: r.claims.UserAttributes,
-				SkipChecks:     true,
-			},
-		})
-		if err != nil {
-			continue // Skip SQL strings that fail to parse
-		}
-		for _, ref := range resolver.Refs() {
-			if ref.Kind == runtime.ResourceKindMetricsView {
-				refsMap[ref.Name] = true
-			}
-		}
-		resolver.Close()
-	}
-
-	for name := range refsMap {
-		r.refs = append(r.refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name})
-	}
-	return nil
-}
 
 func (r *textResolver) Close() error {
 	return nil
@@ -290,6 +222,75 @@ func (r *textResolver) ResolveExport(ctx context.Context, w io.Writer, opts *run
 
 func (r *textResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	return nil, nil
+}
+
+// analyzeAndPopulateRefs runs a stub template resolution to discover metrics_sql calls,
+// then initializes metrics_sql resolvers to discover the metrics view refs they depend on.
+func (r *textResolver) analyzeAndPopulateRefs(ctx context.Context) error {
+	// Collect SQL strings by running the template with stub functions.
+	var sqls []string
+	stubs := map[string]any{
+		"metrics_sql": func(sql string) (string, error) {
+			sqls = append(sqls, sql)
+			return "", nil
+		},
+		"metrics_sql_rows": func(sql string) (any, error) {
+			sqls = append(sqls, sql)
+			return []map[string]any{}, nil
+		},
+	}
+
+	inst, err := r.rt.Instance(ctx, r.instanceID)
+	if err != nil {
+		return err
+	}
+
+	td := parser.TemplateData{
+		User:      r.claims.UserAttributes,
+		Variables: inst.ResolveVariables(false),
+		State:     make(map[string]any),
+		Resolve: func(ref parser.ResourceName) (string, error) {
+			return ref.Name, nil
+		},
+		ExtraFuncs: stubs,
+	}
+
+	// Ignore errors; we only care about collecting SQL strings.
+	_, _ = parser.ResolveTemplate(r.props.Text, td, false)
+
+	// For each collected SQL, initialize a metrics_sql resolver to discover refs.
+	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
+	if !ok {
+		return nil
+	}
+
+	seen := make(map[string]bool)
+	for _, sql := range sqls {
+		res, err := initializer(ctx, &runtime.ResolverOptions{
+			Runtime:    r.rt,
+			InstanceID: r.instanceID,
+			Properties: map[string]any{"sql": sql},
+			Claims: &runtime.SecurityClaims{
+				UserID:         r.claims.UserID,
+				UserAttributes: r.claims.UserAttributes,
+				SkipChecks:     true,
+			},
+		})
+		if err != nil {
+			continue // Skip SQL strings that fail to parse
+		}
+		for _, ref := range res.Refs() {
+			if ref.Kind == runtime.ResourceKindMetricsView {
+				seen[ref.Name] = true
+			}
+		}
+		res.Close()
+	}
+
+	for name := range seen {
+		r.refs = append(r.refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name})
+	}
+	return nil
 }
 
 // textFormatToken is the payload inside a __RILL__FORMAT__(...) token generated by the text resolver.

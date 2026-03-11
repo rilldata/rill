@@ -360,7 +360,6 @@ rows:
 	// Build claims with a transitive access rule on the canvas
 	ctx := t.Context()
 	claims := &runtime.SecurityClaims{
-		UserAttributes: map[string]any{"admin": true},
 		AdditionalRules: []*runtimev1.SecurityRule{
 			{
 				Rule: &runtimev1.SecurityRule_TransitiveAccess{
