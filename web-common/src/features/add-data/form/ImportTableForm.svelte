@@ -5,9 +5,7 @@
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import DatabaseExplorer from "@rilldata/web-common/features/connectors/explorer/DatabaseExplorer.svelte";
   import TableSchema from "@rilldata/web-common/features/connectors/explorer/TableSchema.svelte";
-  import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
@@ -25,6 +23,8 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
+  import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
+  import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
 
   export let config: AddDataConfig;
   export let connectorName: string;
@@ -128,23 +128,19 @@
     (c) => c.name === connectorName,
   );
 
-  $: connectorExplorerStore = new ConnectorExplorerStore(
-    {
-      allowContextMenu: false,
-      allowNavigateToTable: false,
-      allowSelectTable: false,
-      allowShowSchema: false,
-    },
-    (_, database, schema, table) => {
-      if (!database || !schema || !table) return;
-      form.update((f) => {
-        f.database = database;
-        f.schema = schema;
-        f.table = table;
-        return f;
-      });
-    },
-  );
+  function handleTableChange({
+    database,
+    databaseSchema,
+    table,
+  }: ConnectorExplorerEntry) {
+    if (!database || !databaseSchema || !table) return;
+    form.update((f) => {
+      f.database = database;
+      f.schema = databaseSchema;
+      f.table = table;
+      return f;
+    });
+  }
 </script>
 
 <ConnectorHeader {connectorDriver} />
@@ -166,11 +162,8 @@
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
       <div class="flex flex-row size-full overflow-auto border-t">
-        <div class="flex-grow overflow-auto border-r">
-          <DatabaseExplorer
-            connector={analyzedConnector}
-            store={connectorExplorerStore}
-          />
+        <div class="flex-grow overflow-auto border-r ml-6 mt-2">
+          <ConnectorExplorer {connectorName} onSelect={handleTableChange} />
         </div>
         <div class="bg-surface-subtle w-[40%] p-2">
           {#if $form["table"]}
