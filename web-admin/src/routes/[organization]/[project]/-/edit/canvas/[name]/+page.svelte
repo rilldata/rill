@@ -1,12 +1,13 @@
 <script lang="ts">
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
   export let data: PageData;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+
   $: ({ canvasName } = data);
 </script>
 
@@ -14,9 +15,9 @@
   <title>Rill | {canvasName}</title>
 </svelte:head>
 
-{#key instanceId}
+{#key client.instanceId}
   <div class="h-full overflow-hidden">
-    <CanvasProvider {canvasName} {instanceId} showBanner>
+    <CanvasProvider {canvasName} instanceId={client.instanceId} showBanner>
       <CanvasDashboardEmbed {canvasName} />
     </CanvasProvider>
   </div>

@@ -9,9 +9,10 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
-    createRuntimeServiceGitPush,
+    createRuntimeServiceGitPushMutation,
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let organization: string;
   export let project: string;
@@ -22,7 +23,8 @@
   let isDiscarding = false;
   let commitError: string | null = null;
 
-  const gitPushMutation = createRuntimeServiceGitPush();
+  const client = useRuntimeClient();
+  const gitPushMutation = createRuntimeServiceGitPushMutation(client);
   const deleteMutation = createAdminServiceDeleteDeployment();
 
   async function handleCommit() {
@@ -30,11 +32,8 @@
     commitError = null;
     try {
       await $gitPushMutation.mutateAsync({
-        instanceId,
-        data: {
-          commitMessage: "Changes from Rill Cloud edit session",
-          force: false,
-        },
+        commitMessage: "Changes from Rill Cloud edit session",
+        force: false,
       });
       eventBus.emit("notification", {
         type: "success",

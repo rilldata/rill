@@ -3,19 +3,26 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ metricsView, explore, exploreName } = data);
+  $: ({ exploreName } = data);
 
-  $: metricsViewName = metricsView?.meta?.name?.name as string;
+  const client = useRuntimeClient();
 
-  $: ({ instanceId } = $runtime);
+  $: explore = createRuntimeServiceGetExplore(
+    client,
+    { name: exploreName },
+    {
+      query: { enabled: !!exploreName },
+    },
+  );
 
-  $: exploreQuery = useExploreValidSpec(instanceId, exploreName);
-  $: measures = $exploreQuery.data?.explore?.measures ?? [];
+  $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
+  $: measures =
+    $explore.data?.explore?.explore?.state?.validSpec?.measures ?? [];
 </script>
 
 <svelte:head>
@@ -24,11 +31,11 @@
 
 {#if measures.length === 0}
   <ErrorPage
-    statusCode={$exploreQuery.error?.response?.status}
+    statusCode={undefined}
     header="Error fetching dashboard"
     body="No measures available"
   />
-{:else}
+{:else if metricsViewName}
   <div class="h-full overflow-hidden">
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
