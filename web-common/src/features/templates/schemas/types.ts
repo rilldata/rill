@@ -20,7 +20,7 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value";
+  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value" | "toggle";
   /** Visual style for select fields. "rich" renders with icons and colored cards. */
   "x-select-style"?: "standard" | "rich";
   /** Render the field value in a monospace font. */
@@ -59,6 +59,8 @@ export type JSONSchemaField = {
   "x-docs-url"?: string;
   /** Field is an advanced setting, hidden by default behind an expandable section. */
   "x-advanced"?: boolean;
+  /** For boolean fields: the YAML value to emit when the toggle is checked (true). When unchecked, the field is omitted. */
+  "x-yaml-value"?: string | number | boolean;
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**

@@ -171,7 +171,17 @@ export function compileConnectorYAML(
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
-    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    schema?: {
+      properties?: Record<
+        string,
+        {
+          "x-env-var-name"?: string;
+          default?: string | number | boolean;
+          type?: string;
+          "x-yaml-value"?: string | number | boolean;
+        }
+      >;
+    };
     existingEnvBlob?: string;
   },
 ) {
@@ -208,19 +218,22 @@ driver: ${driverName}`;
       if (typeof value === "string" && value.trim() === "") return false;
       // Filter out empty arrays (e.g. key-value inputs with no entries)
       if (Array.isArray(value) && value.length === 0) return false;
-      // For ClickHouse, exclude managed: false as it's the default behavior
-      // When managed=false, it's the default self-managed mode and doesn't need to be explicit
-      if (
-        connector.name === "clickhouse" &&
-        property.key === "managed" &&
-        value === false
-      )
+      // Skip values that match the field's effective default.
+      // For booleans without an explicit default, false is the effective default.
+      const schemaProp = options?.schema?.properties?.[property.key as string];
+      const effectiveDefault =
+        schemaProp?.default !== undefined
+          ? schemaProp.default
+          : schemaProp?.type === "boolean"
+            ? false
+            : undefined;
+      if (effectiveDefault !== undefined && value === effectiveDefault)
         return false;
       return true;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       if (key === "headers") {
         return formatHeadersAsYamlMap(
@@ -239,6 +252,16 @@ driver: ${driverName}`;
           options?.schema,
         );
         return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
+      }
+
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false
+      const schemaPropForMap =
+        options?.schema?.properties?.[key];
+      if (
+        schemaPropForMap?.["x-yaml-value"] !== undefined &&
+        value === true
+      ) {
+        return `${key}: ${schemaPropForMap["x-yaml-value"]}`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
