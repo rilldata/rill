@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,8 +22,8 @@ var _ Tool[*ProjectStatusArgs, *ProjectStatusResult] = (*ProjectStatus)(nil)
 
 type ProjectStatusArgs struct {
 	WhereError                  bool   `json:"where_error,omitempty" jsonschema:"Optional flag to only return resources that have reconcile errors."`
-	Kind                        string `json:"kind,omitempty" jsonschema:"Optional filter to only return resources of the specified kind."`
-	Name                        string `json:"name,omitempty" jsonschema:"Optional filter to only return the resource with the specified name."`
+	Kind                        string `json:"kind,omitempty" jsonschema:"Optional filter to only return resources of the specified kind (example: connector, model, metrics_view). If not set, it will return a subset of resources deemed interesting based on heuristics."`
+	Name                        string `json:"name,omitempty" jsonschema:"Optional filter to only return the resource with the specified name. If set, additional metadata may be included in the response."`
 	Path                        string `json:"path,omitempty" jsonschema:"Optional filter to only return resources declared in the specified file path."`
 	WaitUntilIdle               bool   `json:"wait_until_idle,omitempty" jsonschema:"If true, waits until all resources have finished reconciling before returning the status. Set this if you have recently updated a resource and want to know if it parsed and reconciled successfully."`
 	WaitUntilIdleTimeoutSeconds int    `json:"wait_until_idle_timeout_seconds,omitempty" jsonschema:"Timeout in seconds for wait_until_idle. Defaults to 60. Only override if you anticipate large workloads."`
@@ -78,7 +79,7 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 	}
 
 	// List resources with optional filtering by kind and path
-	rs, err := ctrl.List(ctx, args.Kind, args.Path, false)
+	rs, err := ctrl.List(ctx, runtime.ResourceKindFromShorthand(args.Kind), args.Path, false)
 	if err != nil {
 		return nil, err
 	}
@@ -96,13 +97,24 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			continue
 		}
 
-		// Build refs list
-		refs := []map[string]any{}
+		// If there's no kind filter, apply the default filter: only resources that have errors OR match certain kinds.
+		if args.Kind == "" && r.Meta.ReconcileError == "" && !slices.Contains(projectStatusDefaultResourceKinds, r.Meta.Name.Kind) {
+			continue
+		}
+
+		// Build refs list.
+		// Since canvas resources can have a very large number of component refs, we summarize them instead of listing them all to keep context use manageable.
+		refs := make([]string, 0, len(r.Meta.Refs))
+		componentRefs := 0
 		for _, ref := range r.Meta.Refs {
-			refs = append(refs, map[string]any{
-				"kind": ref.Kind,
-				"name": ref.Name,
-			})
+			if ref.Kind == runtime.ResourceKindComponent {
+				componentRefs++
+				continue
+			}
+			refs = append(refs, shortResourceName(ref.Kind, ref.Name))
+		}
+		if componentRefs > 0 {
+			refs = append(refs, fmt.Sprintf("<%d additional component refs>", componentRefs))
 		}
 
 		// Get the first file path (resources can be declared in multiple files, but typically just one)
@@ -128,9 +140,13 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			status = "Unknown"
 		}
 
+		// Truncate long statuses when not filtering by name to keep context manageable.
+		if args.Name == "" && len(status) > 80 {
+			status = status[:80] + "..."
+		}
+
 		resources = append(resources, map[string]any{
-			"kind":   r.Meta.Name.Kind,
-			"name":   r.Meta.Name.Name,
+			"name":   shortResourceName(r.Meta.Name.Kind, r.Meta.Name.Name),
 			"path":   path,
 			"refs":   refs,
 			"status": status,
@@ -149,8 +165,8 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			continue
 		}
 		parseErrors = append(parseErrors, map[string]any{
-			"path":    pe.FilePath,
-			"message": pe.Message,
+			"path": pe.FilePath,
+			"msg":  pe.Message,
 		})
 	}
 
@@ -179,12 +195,12 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 		logs = make([]map[string]any, 0, len(entries))
 		for _, entry := range entries {
 			l := map[string]any{
-				"level":   strings.TrimPrefix(entry.Level.String(), "LOG_LEVEL_"),
-				"time":    entry.Time.AsTime().Format(time.RFC3339Nano),
-				"message": entry.Message,
+				"lvl": strings.TrimPrefix(entry.Level.String(), "LOG_LEVEL_"),
+				"t":   entry.Time.AsTime().UTC().Format(time.RFC3339),
+				"msg": entry.Message,
 			}
 			if entry.JsonPayload != "" {
-				l["json_payload"] = entry.JsonPayload
+				l["attrs"] = entry.JsonPayload
 			}
 			logs = append(logs, l)
 		}
@@ -197,4 +213,19 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 		ParseErrors:          parseErrors,
 		Logs:                 logs,
 	}, nil
+}
+
+// shortResourceName returns a shortened resource name in the format "kind/name", where kind is in short form.
+func shortResourceName(kind, name string) string {
+	return fmt.Sprintf("%s/%s", runtime.PrettifyResourceKind(kind), name)
+}
+
+// projectStatusDefaultResourceKinds is the list of resource kinds to return when kind filter is not specified.
+var projectStatusDefaultResourceKinds = []string{
+	runtime.ResourceKindAPI,
+	runtime.ResourceKindCanvas,
+	runtime.ResourceKindConnector,
+	runtime.ResourceKindExplore,
+	runtime.ResourceKindMetricsView,
+	runtime.ResourceKindModel,
 }

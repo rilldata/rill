@@ -68,7 +68,6 @@ measures:
 
 		// Verify resources have the expected fields
 		for _, r := range res.Resources {
-			require.NotEmpty(t, r["kind"])
 			require.NotEmpty(t, r["name"])
 			require.NotEmpty(t, r["status"])
 		}
@@ -93,23 +92,23 @@ measures:
 
 		// Verify log entries have expected fields
 		for _, l := range res.Logs {
-			require.NotEmpty(t, l["level"])
-			require.NotEmpty(t, l["time"])
-			require.NotEmpty(t, l["message"])
+			require.NotEmpty(t, l["lvl"])
+			require.NotEmpty(t, l["t"])
+			require.NotEmpty(t, l["msg"])
 		}
 	})
 
 	t.Run("filter by kind", func(t *testing.T) {
 		var res *ai.ProjectStatusResult
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
-			Kind: "rill.runtime.v1.Model",
+			Kind: "model",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Len(t, res.Resources, 2) // orders and customers
 
 		for _, r := range res.Resources {
-			require.Equal(t, "rill.runtime.v1.Model", r["kind"])
+			require.Contains(t, r["name"], "Model/")
 		}
 	})
 
@@ -121,7 +120,7 @@ measures:
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Len(t, res.Resources, 1)
-		require.Equal(t, "orders", res.Resources[0]["name"])
+		require.Equal(t, "Model/orders", res.Resources[0]["name"])
 	})
 
 	t.Run("filter by path", func(t *testing.T) {
@@ -132,7 +131,7 @@ measures:
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Len(t, res.Resources, 1)
-		require.Equal(t, "orders", res.Resources[0]["name"])
+		require.Equal(t, "Model/orders", res.Resources[0]["name"])
 		require.Equal(t, "/models/orders.yaml", res.Resources[0]["path"])
 	})
 
@@ -149,7 +148,7 @@ measures:
 	t.Run("resources have refs", func(t *testing.T) {
 		var res *ai.ProjectStatusResult
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
-			Kind: "rill.runtime.v1.MetricsView",
+			Kind: "metrics_view",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
@@ -157,7 +156,7 @@ measures:
 
 		// The metrics view should have refs to the orders model
 		mv := res.Resources[0]
-		require.Equal(t, "orders_metrics", mv["name"])
+		require.Equal(t, "MetricsView/orders_metrics", mv["name"])
 		refs, ok := mv["refs"].([]any)
 		require.True(t, ok)
 		require.NotEmpty(t, refs)
@@ -192,7 +191,7 @@ sql: SELECT 1 AS id
 		// Check parse error has expected fields
 		pe := res.ParseErrors[0]
 		require.NotEmpty(t, pe["path"])
-		require.NotEmpty(t, pe["message"])
+		require.NotEmpty(t, pe["msg"])
 	})
 
 	t.Run("filter parse errors by path", func(t *testing.T) {
@@ -256,7 +255,7 @@ sql: SELECT sleep(2), 1 AS id
 	// The new materialized model should be present.
 	var found bool
 	for _, r := range res.Resources {
-		if r["name"] == "slow" {
+		if r["name"] == "Model/slow" {
 			found = true
 			break
 		}
