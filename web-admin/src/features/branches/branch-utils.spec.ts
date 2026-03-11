@@ -6,6 +6,7 @@ import {
   branchPathPrefix,
   requestSkipBranchInjection,
   consumeSkipBranchInjection,
+  getBranchRedirect,
 } from "./branch-utils";
 
 describe("branch-utils", () => {
@@ -178,6 +179,85 @@ describe("branch-utils", () => {
       expect(branchPathPrefix("eric/revenue-metrics")).toBe(
         "/@eric~revenue-metrics",
       );
+    });
+  });
+
+  describe("getBranchRedirect", () => {
+    const org = "acme";
+    const proj = "analytics";
+    const branch = "staging";
+
+    it("returns redirect URL for a project-internal path missing @branch", () => {
+      expect(
+        getBranchRedirect(
+          "/acme/analytics/explore/revenue-overview",
+          "",
+          "",
+          branch,
+          org,
+          proj,
+        ),
+      ).toBe("/acme/analytics/@staging/explore/revenue-overview");
+    });
+
+    it("preserves search params and hash", () => {
+      expect(
+        getBranchRedirect(
+          "/acme/analytics/explore/revenue-overview",
+          "?filter=us",
+          "#section",
+          branch,
+          org,
+          proj,
+        ),
+      ).toBe(
+        "/acme/analytics/@staging/explore/revenue-overview?filter=us#section",
+      );
+    });
+
+    it("returns null if path already has @branch", () => {
+      expect(
+        getBranchRedirect(
+          "/acme/analytics/@staging/explore/revenue-overview",
+          "",
+          "",
+          branch,
+          org,
+          proj,
+        ),
+      ).toBeNull();
+    });
+
+    it("returns null for paths outside the project", () => {
+      expect(
+        getBranchRedirect(
+          "/other-org/other-project",
+          "",
+          "",
+          branch,
+          org,
+          proj,
+        ),
+      ).toBeNull();
+    });
+
+    it("returns null for public share URLs", () => {
+      expect(
+        getBranchRedirect(
+          "/acme/analytics/-/share/abc123",
+          "",
+          "",
+          branch,
+          org,
+          proj,
+        ),
+      ).toBeNull();
+    });
+
+    it("handles the bare project path", () => {
+      expect(
+        getBranchRedirect("/acme/analytics", "", "", branch, org, proj),
+      ).toBe("/acme/analytics/@staging");
     });
   });
 

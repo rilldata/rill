@@ -7,7 +7,7 @@
     injectBranchIntoPath,
     removeBranchFromPath,
     requestSkipBranchInjection,
-  } from "@rilldata/web-admin/lib/branch-utils";
+  } from "./branch-utils";
   import {
     V1DeploymentStatus,
     createAdminServiceGetProject,

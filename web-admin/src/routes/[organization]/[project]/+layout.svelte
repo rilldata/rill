@@ -35,8 +35,8 @@
     branchPathPrefix,
     consumeSkipBranchInjection,
     extractBranchFromPath,
-    injectBranchIntoPath,
-  } from "@rilldata/web-admin/lib/branch-utils";
+    getBranchRedirect,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
     V1DeploymentStatus,
     type V1Organization,
@@ -52,7 +52,7 @@
     isPublicReportPage,
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
-  import BranchDeploymentStopped from "@rilldata/web-admin/features/projects/BranchDeploymentStopped.svelte";
+  import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
@@ -119,17 +119,17 @@
     if (consumeSkipBranchInjection()) return;
     if (!activeBranch || !nav.to?.url) return;
     if (nav.type === "popstate") return; // don't modify back/forward navigations
-    const toPath = nav.to.url.pathname;
-    const prefix = `/${organization}/${project}`;
-    if (!toPath.startsWith(prefix + "/") && toPath !== prefix) return;
-    if (toPath.includes("/-/share/")) return; // skip public URLs
-    if (extractBranchFromPath(toPath)) return; // already has @branch
-    nav.cancel();
-    void goto(
-      injectBranchIntoPath(toPath, activeBranch) +
-        nav.to.url.search +
-        nav.to.url.hash,
+    const redirect = getBranchRedirect(
+      nav.to.url.pathname,
+      nav.to.url.search,
+      nav.to.url.hash,
+      activeBranch,
+      organization,
+      project,
     );
+    if (!redirect) return;
+    nav.cancel();
+    void goto(redirect);
   });
 
   // Clear view-as state when unmounting (e.g., navigating to org page)

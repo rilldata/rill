@@ -55,6 +55,28 @@ export function branchPathPrefix(branch: string | undefined): string {
 }
 
 /**
+ * Given a navigation target, returns the branch-injected URL string if
+ * the navigation should be redirected, or null if no redirect is needed.
+ *
+ * Used by the project layout's `beforeNavigate` hook to transparently
+ * preserve the active `@branch` segment on project-internal navigations.
+ */
+export function getBranchRedirect(
+  toPath: string,
+  toSearch: string,
+  toHash: string,
+  activeBranch: string,
+  organization: string,
+  project: string,
+): string | null {
+  const prefix = `/${organization}/${project}`;
+  if (!toPath.startsWith(prefix + "/") && toPath !== prefix) return null;
+  if (toPath.includes("/-/share/")) return null;
+  if (extractBranchFromPath(toPath)) return null;
+  return injectBranchIntoPath(toPath, activeBranch) + toSearch + toHash;
+}
+
+/**
  * Shared flag: when set, the next `beforeNavigate` call in the project layout
  * will skip `@branch` injection. Used by the BranchSelector and the "Back to
  * production" banner to navigate to production without re-injection.
