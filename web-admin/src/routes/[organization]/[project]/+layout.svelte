@@ -43,9 +43,6 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
-    createAdminServiceStartDeployment,
-    getAdminServiceGetProjectQueryKey,
-    getAdminServiceListDeploymentsQueryKey,
     type RpcStatus,
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
@@ -55,6 +52,7 @@
     isPublicReportPage,
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import BranchDeploymentStopped from "@rilldata/web-admin/features/projects/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
@@ -77,7 +75,6 @@
   import { onDestroy } from "svelte";
 
   const user = createAdminServiceGetCurrentUser();
-  const startDeploymentMutation = createAdminServiceStartDeployment();
 
   $: ({
     url: { pathname },
@@ -355,49 +352,14 @@
           : "There was an error deploying your project. Please contact support."}
       />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
-      <div class="flex flex-col items-center justify-center gap-y-4 py-24">
-        <h2 class="text-lg font-semibold">Deployment stopped</h2>
-        <p class="text-sm text-fg-secondary">
-          This branch deployment is not running.
-        </p>
-        {#if effectiveProjectPermissions?.manageDev}
-          <button
-            class="px-4 py-2 text-sm font-medium rounded-md bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50"
-            disabled={$startDeploymentMutation.isPending}
-            on:click={() => {
-              $startDeploymentMutation.mutate(
-                {
-                  deploymentId: projectData.deployment.id,
-                  data: {},
-                },
-                {
-                  onSuccess: () => {
-                    void Promise.all([
-                      queryClient.invalidateQueries({
-                        queryKey: getAdminServiceGetProjectQueryKey(
-                          organization,
-                          project,
-                          activeBranch ? { branch: activeBranch } : undefined,
-                        ),
-                      }),
-                      queryClient.invalidateQueries({
-                        queryKey: getAdminServiceListDeploymentsQueryKey(
-                          organization,
-                          project,
-                        ),
-                      }),
-                    ]);
-                  },
-                },
-              );
-            }}
-          >
-            {$startDeploymentMutation.isPending
-              ? "Starting..."
-              : "Start deployment"}
-          </button>
-        {/if}
-      </div>
+      <BranchDeploymentStopped
+        {organization}
+        {project}
+        deploymentId={projectData.deployment.id}
+        status={deploymentStatus}
+        canManage={!!effectiveProjectPermissions?.manageDev}
+        branch={activeBranch}
+      />
     {:else}
       <ProjectBuilding />
     {/if}

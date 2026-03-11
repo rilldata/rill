@@ -27,7 +27,7 @@
           {currentPath}
           isCurrentPage={depth === currentPage}
         />
-        {#if depth === 1}
+        {#if depth === 1}<!-- depth 0 = org, depth 1 = project -->
           <slot name="after-project" />
         {/if}
       {/if}

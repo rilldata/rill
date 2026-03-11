@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import {
   extractBranchFromPath,
   injectBranchIntoPath,
@@ -183,7 +183,12 @@ describe("branch-utils", () => {
 
   describe("skipBranchInjection flag", () => {
     beforeEach(() => {
+      vi.useFakeTimers();
       consumeSkipBranchInjection();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
     it("returns false when not requested", () => {
@@ -199,6 +204,12 @@ describe("branch-utils", () => {
     it("only fires once per request", () => {
       requestSkipBranchInjection();
       consumeSkipBranchInjection();
+      expect(consumeSkipBranchInjection()).toBe(false);
+    });
+
+    it("expires after 500ms if not consumed", () => {
+      requestSkipBranchInjection();
+      vi.advanceTimersByTime(501);
       expect(consumeSkipBranchInjection()).toBe(false);
     });
   });

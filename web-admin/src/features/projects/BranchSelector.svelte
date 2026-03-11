@@ -44,6 +44,7 @@
     for (const d of rawDeployments) {
       const branch = d.branch ?? "";
       const existing = byBranch.get(branch);
+      // updatedOn is an ISO 8601 timestamp; lexicographic comparison is correct.
       if (!existing || (d.updatedOn ?? "") > (existing.updatedOn ?? "")) {
         byBranch.set(branch, d);
       }
@@ -72,7 +73,7 @@
     : deployments.find((d) => d.branch === primaryBranch);
   $: triggerLabel = isOnBranch
     ? truncateBranch(activeBranch ?? "")
-    : (primaryBranch ?? "main");
+    : truncateBranch(primaryBranch ?? "");
 
   function truncateBranch(branch: string): string {
     if (branch.length <= 12) return branch;
@@ -146,7 +147,7 @@
                 )}"
               />
               <span class="truncate">
-                {deployment.branch ?? "main"}
+                {deployment.branch ?? primaryBranch ?? ""}
               </span>
               {#if prod}
                 <span class="text-[10px] text-fg-muted flex-none">

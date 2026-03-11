@@ -58,15 +58,20 @@ export function branchPathPrefix(branch: string | undefined): string {
  * Shared flag: when set, the next `beforeNavigate` call in the project layout
  * will skip `@branch` injection. Used by the BranchSelector and the "Back to
  * production" banner to navigate to production without re-injection.
+ *
+ * Auto-expires after 500ms to prevent a stale flag from leaking if the
+ * expected navigation never fires (e.g., cancelled by another hook).
  */
-let _skipNext = false;
+const SKIP_TTL_MS = 500;
+let _skipRequestedAt = 0;
 export function requestSkipBranchInjection(): void {
-  _skipNext = true;
+  _skipRequestedAt = Date.now();
 }
 export function consumeSkipBranchInjection(): boolean {
-  if (_skipNext) {
-    _skipNext = false;
+  if (_skipRequestedAt && Date.now() - _skipRequestedAt < SKIP_TTL_MS) {
+    _skipRequestedAt = 0;
     return true;
   }
+  _skipRequestedAt = 0;
   return false;
 }
