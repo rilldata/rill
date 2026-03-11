@@ -69,7 +69,7 @@
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
   class:shadow={allowBorder || open}
-  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative bg-surface-card overflow-hidden rounded-[6px] border border-border"
+  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative bg-surface-card overflow-hidden rounded-sm border border-border"
 >
   <Toolbar
     {component}
