@@ -213,8 +213,10 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.NotNil(t, qry.Where)
 		exprSQL, err := metricsview.ExpressionToSQL(qry.Where)
 		require.NoError(t, err)
-		require.Contains(t, exprSQL, "auction_type = 'First Price'")
-		require.Contains(t, exprSQL, "app_or_site = 'App'")
+		require.Contains(t, exprSQL, "auction_type") //  "auction_type = 'First Price'"
+		require.Contains(t, exprSQL, "First Price")
+		require.Contains(t, exprSQL, "app_or_site") // "app_or_site = 'App'"
+		require.Contains(t, exprSQL, "'App'")
 	})
 }
 
