@@ -113,8 +113,8 @@
   // Inject @branch into project-internal navigations that are missing it.
   // This catches links from components that build /${org}/${project}/... URLs
   // without branch awareness (dashboards, alerts, reports, breadcrumbs, etc.).
-  // The `skipBranchInjection` flag lets the "Back to production" banner
-  // bypass injection so the user can return to the production deployment.
+  // The `skipBranchInjection` flag lets the BranchSelector bypass injection
+  // so the user can navigate to production without re-injection.
   beforeNavigate((nav) => {
     if (consumeSkipBranchInjection()) return;
     if (!activeBranch || !nav.to?.url) return;

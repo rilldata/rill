@@ -78,8 +78,8 @@ export function getBranchRedirect(
 
 /**
  * Shared flag: when set, the next `beforeNavigate` call in the project layout
- * will skip `@branch` injection. Used by the BranchSelector and the "Back to
- * production" banner to navigate to production without re-injection.
+ * will skip `@branch` injection. Used by the BranchSelector to navigate
+ * to production without the layout re-injecting the current branch.
  *
  * Auto-expires after 500ms to prevent a stale flag from leaking if the
  * expected navigation never fires (e.g., cancelled by another hook).
