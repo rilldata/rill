@@ -296,6 +296,7 @@
           manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
           manageOrgMembers={organizationPermissions?.manageOrgMembers}
           readProjects={organizationPermissions?.readProjects}
+          primaryBranch={projectData?.project?.primaryBranch}
           {planDisplayName}
           {organizationLogoUrl}
         />

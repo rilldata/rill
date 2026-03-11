@@ -188,13 +188,12 @@ describe("branch-utils", () => {
     const org = "acme";
     const proj = "analytics";
     const branch = "staging";
+    const url = (path: string) => new URL(`http://localhost${path}`);
 
     it("returns redirect URL for a project-internal path missing @branch", () => {
       expect(
         getBranchRedirect(
-          "/acme/analytics/explore/revenue-overview",
-          "",
-          "",
+          url("/acme/analytics/explore/revenue-overview"),
           branch,
           org,
           proj,
@@ -205,9 +204,7 @@ describe("branch-utils", () => {
     it("preserves search params and hash", () => {
       expect(
         getBranchRedirect(
-          "/acme/analytics/explore/revenue-overview",
-          "?filter=us",
-          "#section",
+          url("/acme/analytics/explore/revenue-overview?filter=us#section"),
           branch,
           org,
           proj,
@@ -220,9 +217,7 @@ describe("branch-utils", () => {
     it("returns null if path already has @branch", () => {
       expect(
         getBranchRedirect(
-          "/acme/analytics/@staging/explore/revenue-overview",
-          "",
-          "",
+          url("/acme/analytics/@staging/explore/revenue-overview"),
           branch,
           org,
           proj,
@@ -232,10 +227,14 @@ describe("branch-utils", () => {
 
     it("returns null for paths outside the project", () => {
       expect(
+        getBranchRedirect(url("/other-org/other-project"), branch, org, proj),
+      ).toBeNull();
+    });
+
+    it("returns null for a different project that shares a name prefix", () => {
+      expect(
         getBranchRedirect(
-          "/other-org/other-project",
-          "",
-          "",
+          url("/acme/analytics-v2/explore/dashboard"),
           branch,
           org,
           proj,
@@ -246,9 +245,7 @@ describe("branch-utils", () => {
     it("returns null for public share URLs", () => {
       expect(
         getBranchRedirect(
-          "/acme/analytics/-/share/abc123",
-          "",
-          "",
+          url("/acme/analytics/-/share/abc123"),
           branch,
           org,
           proj,
@@ -257,9 +254,9 @@ describe("branch-utils", () => {
     });
 
     it("handles the bare project path", () => {
-      expect(
-        getBranchRedirect("/acme/analytics", "", "", branch, org, proj),
-      ).toBe("/acme/analytics/@staging");
+      expect(getBranchRedirect(url("/acme/analytics"), branch, org, proj)).toBe(
+        "/acme/analytics/@staging",
+      );
     });
   });
 
@@ -321,20 +318,15 @@ describe("branch-utils", () => {
       expect(navigateFn).not.toHaveBeenCalled();
     });
 
-    it("does nothing when URL already has @branch", () => {
+    it("preserves search params and hash in redirect", () => {
       const { nav, navigateFn } = makeNav(
-        "/acme/analytics/@staging/explore/revenue-overview",
+        "/acme/analytics/explore/revenue-overview?filter=us#section",
       );
       handleBranchNavigation(nav, branch, org, proj, navigateFn);
-      expect(nav.cancel).not.toHaveBeenCalled();
-      expect(navigateFn).not.toHaveBeenCalled();
-    });
-
-    it("does nothing for URLs outside the project", () => {
-      const { nav, navigateFn } = makeNav("/other-org/other-project");
-      handleBranchNavigation(nav, branch, org, proj, navigateFn);
-      expect(nav.cancel).not.toHaveBeenCalled();
-      expect(navigateFn).not.toHaveBeenCalled();
+      expect(nav.cancel).toHaveBeenCalled();
+      expect(navigateFn).toHaveBeenCalledWith(
+        "/acme/analytics/@staging/explore/revenue-overview?filter=us#section",
+      );
     });
 
     it("respects the skip flag", () => {

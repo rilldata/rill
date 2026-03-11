@@ -60,22 +60,21 @@ export function branchPathPrefix(branch: string | undefined): string {
  * Given a navigation target, returns the branch-injected URL string if
  * the navigation should be redirected, or null if no redirect is needed.
  *
- * Used by the project layout's `beforeNavigate` hook to transparently
- * preserve the active `@branch` segment on project-internal navigations.
+ * Used by `handleBranchNavigation` to transparently preserve the active
+ * `@branch` segment on project-internal navigations.
  */
 export function getBranchRedirect(
-  toPath: string,
-  toSearch: string,
-  toHash: string,
+  to: URL,
   activeBranch: string,
   organization: string,
   project: string,
 ): string | null {
   const prefix = `/${organization}/${project}`;
-  if (!toPath.startsWith(prefix + "/") && toPath !== prefix) return null;
-  if (toPath.includes("/-/share/")) return null;
-  if (extractBranchFromPath(toPath)) return null;
-  return injectBranchIntoPath(toPath, activeBranch) + toSearch + toHash;
+  if (!to.pathname.startsWith(prefix + "/") && to.pathname !== prefix)
+    return null;
+  if (to.pathname.includes("/-/share/")) return null;
+  if (extractBranchFromPath(to.pathname)) return null;
+  return injectBranchIntoPath(to.pathname, activeBranch) + to.search + to.hash;
 }
 
 /**
@@ -95,13 +94,11 @@ export function handleBranchNavigation(
   project: string,
   navigateFn: (url: string) => Promise<void>,
 ): void {
-  if (consumeSkipBranchInjection()) return;
   if (!activeBranch || !nav.to?.url) return;
+  if (consumeSkipBranchInjection()) return;
   if (nav.type === "popstate") return;
   const redirect = getBranchRedirect(
-    nav.to.url.pathname,
-    nav.to.url.search,
-    nav.to.url.hash,
+    nav.to.url,
     activeBranch,
     organization,
     project,
@@ -125,10 +122,8 @@ export function requestSkipBranchInjection(): void {
   _skipRequestedAt = Date.now();
 }
 export function consumeSkipBranchInjection(): boolean {
-  if (_skipRequestedAt && Date.now() - _skipRequestedAt < SKIP_TTL_MS) {
-    _skipRequestedAt = 0;
-    return true;
-  }
+  if (!_skipRequestedAt) return false;
+  const elapsed = Date.now() - _skipRequestedAt;
   _skipRequestedAt = 0;
-  return false;
+  return elapsed < SKIP_TTL_MS;
 }

@@ -50,6 +50,7 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
+  export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
 
@@ -202,7 +203,7 @@
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
         {#if !onPublicURLPage && projectPermissions?.readDev}
-          <BranchSelector {organization} {project} />
+          <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
     </Breadcrumbs>

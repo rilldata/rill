@@ -8,22 +8,20 @@
     removeBranchFromPath,
     requestSkipBranchInjection,
   } from "./branch-utils";
+  import { getStatusDotClass } from "../projects/status/display-utils";
   import {
     V1DeploymentStatus,
-    createAdminServiceGetProject,
     createAdminServiceListDeployments,
     type V1Deployment,
   } from "../../client";
 
   export let organization: string;
   export let project: string;
+  export let primaryBranch: string | undefined = undefined;
 
   let open = false;
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
-
-  $: projectQuery = createAdminServiceGetProject(organization, project);
-  $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
 
   $: deploymentsQuery = createAdminServiceListDeployments(
     organization,
@@ -99,18 +97,10 @@
     open = false;
   }
 
-  function getStatusColor(status: V1DeploymentStatus | undefined): string {
-    switch (status) {
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
-        return "bg-green-500";
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
-        return "bg-yellow-500";
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
-        return "bg-red-500";
-      default:
-        return "bg-gray-400";
-    }
+  function statusDot(status: V1DeploymentStatus | undefined): string {
+    return getStatusDotClass(
+      status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
+    );
   }
 </script>
 
@@ -119,9 +109,7 @@
     <DropdownMenu.Root bind:open>
       <DropdownMenu.Trigger asChild let:builder>
         <button use:builder.action {...builder} class="chip">
-          <span
-            class="status-dot {getStatusColor(currentDeployment?.status)}"
-          />
+          <span class="status-dot {statusDot(currentDeployment?.status)}" />
           <span>{triggerLabel}</span>
           <span class="caret" class:open>
             <CaretDownIcon size="10px" />
@@ -142,7 +130,7 @@
           >
             <div class="flex items-center gap-x-2 truncate">
               <span
-                class="inline-block size-1.5 rounded-full flex-none {getStatusColor(
+                class="inline-block size-1.5 rounded-full flex-none {statusDot(
                   deployment.status,
                 )}"
               />
@@ -167,7 +155,7 @@
     @apply flex items-center mr-2;
   }
 
-  /* Match Chip's .dimension.compact styles exactly */
+  /* Styled to match the dimension chip used elsewhere in the header */
   .chip {
     @apply flex items-center gap-x-1;
     @apply px-2 py-0 rounded-2xl border;
