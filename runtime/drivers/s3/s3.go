@@ -405,9 +405,21 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, 
 
 	opts := []func(*config.LoadOptions) error{
 		config.WithCredentialsProvider(provider),
+		config.WithClientLogMode(
+			aws.LogRequestWithBody |
+				aws.LogResponseWithBody |
+				aws.LogRetries |
+				aws.LogSigning,
+		),
 	}
 	if confProp.Region != "" {
 		opts = append(opts, config.WithRegion(confProp.Region))
+	}
+
+	// For GCS, we need to set the checksum validation and request calculation to required
+	if confProp.Endpoint != "" && strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
+		opts = append(opts, config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired))
+		opts = append(opts, config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired))
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
