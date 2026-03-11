@@ -73,31 +73,38 @@
     ? getColors(selectedOption.value)
     : { bg: "bg-surface-secondary", text: "text-fg-muted" };
 
-  // Query existing connectors only when requiredDrivers is non-empty
+  // Query existing connectors and derive disabled options via a selector
   const client = useRuntimeClient();
   $: hasRequiredDrivers = Object.keys(requiredDrivers).length > 0;
-  $: analyzedConnectors = createRuntimeServiceAnalyzeConnectors(
+  $: disabledOptionsQuery = createRuntimeServiceAnalyzeConnectors(
     client,
     {},
-    { query: { enabled: hasRequiredDrivers } },
+    {
+      query: {
+        enabled: hasRequiredDrivers,
+        select: (data) => {
+          const existingDrivers = new Set(
+            (data.connectors ?? [])
+              .map((c) => c.driver?.name ?? "")
+              .filter(Boolean),
+          );
+          const disabled: Record<string, string> = {};
+          for (const [optionValue, driverName] of Object.entries(
+            requiredDrivers,
+          )) {
+            if (!existingDrivers.has(driverName)) {
+              const optLabel =
+                options.find((o) => o.value === optionValue)?.label ??
+                optionValue;
+              disabled[optionValue] = `Create a ${optLabel} connector first`;
+            }
+          }
+          return disabled;
+        },
+      },
+    },
   );
-  $: disabledOptions = (() => {
-    if (!hasRequiredDrivers) return {};
-    const existingDrivers = new Set(
-      ($analyzedConnectors?.data?.connectors ?? [])
-        .map((c) => c.driver?.name ?? "")
-        .filter(Boolean),
-    );
-    const disabled: Record<string, string> = {};
-    for (const [optionValue, driverName] of Object.entries(requiredDrivers)) {
-      if (!existingDrivers.has(driverName)) {
-        const optLabel =
-          options.find((o) => o.value === optionValue)?.label ?? optionValue;
-        disabled[optionValue] = `Create a ${optLabel} connector first`;
-      }
-    }
-    return disabled;
-  })();
+  $: disabledOptions = $disabledOptionsQuery?.data ?? {};
 
   function handleChange(newValue: string | undefined) {
     if (newValue) {
