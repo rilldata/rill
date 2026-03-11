@@ -29,6 +29,11 @@
       hasPermission: true,
     },
     {
+      label: "Dev Environments",
+      route: "/dev",
+      hasPermission: true,
+    },
+    {
       label: "Analytics",
       route: "/analytics",
       hasPermission: false,

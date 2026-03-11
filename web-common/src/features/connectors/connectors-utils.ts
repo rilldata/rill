@@ -1,3 +1,4 @@
+import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
 import type { V1AnalyzedConnector } from "../../runtime-client";
 
 export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
@@ -87,21 +88,35 @@ export function makeTablePreviewHref(
 ): string | null {
   switch (driver) {
     case "clickhouse":
-      return `/connector/clickhouse/${connectorName}/${databaseSchema}/${table}`;
+      return workspaceRoute(
+        `/connector/clickhouse/${connectorName}/${databaseSchema}/${table}`,
+      );
     case "druid":
-      return `/connector/druid/${connectorName}/${databaseSchema}/${table}`;
+      return workspaceRoute(
+        `/connector/druid/${connectorName}/${databaseSchema}/${table}`,
+      );
     case "duckdb":
-      return `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`;
+      return workspaceRoute(
+        `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`,
+      );
     case "snowflake":
-      return `/connector/snowflake/${connectorName}/${database}/${databaseSchema}/${table}`;
+      return workspaceRoute(
+        `/connector/snowflake/${connectorName}/${database}/${databaseSchema}/${table}`,
+      );
     case "bigquery":
-      return `/connector/bigquery/${connectorName}/${database}/${databaseSchema}/${table}`;
+      return workspaceRoute(
+        `/connector/bigquery/${connectorName}/${database}/${databaseSchema}/${table}`,
+      );
     case "redshift":
-      return `/connector/redshift/${connectorName}/${database}/${databaseSchema}/${table}`;
+      return workspaceRoute(
+        `/connector/redshift/${connectorName}/${database}/${databaseSchema}/${table}`,
+      );
     case "athena":
-      return `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`;
+      return workspaceRoute(
+        `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`,
+      );
     case "pinot":
-      return `/connector/pinot/${connectorName}/${table}`;
+      return workspaceRoute(`/connector/pinot/${connectorName}/${table}`);
     default:
       return null;
   }

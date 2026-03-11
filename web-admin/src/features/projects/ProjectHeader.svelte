@@ -27,6 +27,7 @@
   } from "../navigation/breadcrumb-selectors";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
@@ -202,6 +203,9 @@
   <div class="flex gap-x-2 items-center ml-auto">
     {#if $viewAsUserStore}
       <ViewAsUserChip />
+    {/if}
+    {#if onProjectPage && projectPermissions.manageDev}
+      <EditButton {organization} {project} />
     {/if}
     {#if onProjectPage && effectiveManageProjectMembers}
       <ShareProjectPopover

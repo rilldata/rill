@@ -17,6 +17,7 @@
 
   export let host: string;
   export let instanceId: string;
+  export let errorBody = "Try restarting the Rill via the CLI";
 
   // Set client synchronously so children can access it during initial render.
   // init() (in onMount) handles the async resource prefetch.
@@ -59,7 +60,7 @@
     fatal
     statusCode={500}
     header="Error connecting to runtime"
-    body="Try restarting the Rill via the CLI"
+    body={errorBody}
   />
 {:else}
   <slot />
