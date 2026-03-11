@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import {
     extractBranchFromPath,
@@ -16,9 +17,8 @@
 
   export let organization: string;
   export let project: string;
-  export let onSelect: () => void = () => {};
 
-  let subMenuOpen = false;
+  let open = false;
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
 
@@ -66,97 +66,127 @@
     return (a.branch ?? "").localeCompare(b.branch ?? "");
   });
 
+  // Current branch label for the trigger
+  $: currentDeployment = isOnBranch
+    ? deployments.find((d) => d.branch === activeBranch)
+    : deployments.find((d) => d.branch === primaryBranch);
+  $: triggerLabel = isOnBranch
+    ? truncateBranch(activeBranch ?? "")
+    : (primaryBranch ?? "main");
+
+  function truncateBranch(branch: string): string {
+    if (branch.length <= 12) return branch;
+    return branch.slice(0, 11) + "…";
+  }
+
+  function isProd(deployment: V1Deployment): boolean {
+    return deployment.branch === primaryBranch || !deployment.branch;
+  }
+
   function getDeploymentHref(deployment: V1Deployment): string {
     const basePath = removeBranchFromPath($page.url.pathname);
-    const isProd = deployment.branch === primaryBranch || !deployment.branch;
-    const newPath = isProd
-      ? basePath
-      : injectBranchIntoPath(basePath, deployment.branch);
-    return newPath + $page.url.search;
+    if (isProd(deployment)) return basePath + $page.url.search;
+    return (
+      injectBranchIntoPath(basePath, deployment.branch!) + $page.url.search
+    );
   }
 
   function handleClick(deployment: V1Deployment) {
-    const isProd = deployment.branch === primaryBranch || !deployment.branch;
-    if (isProd) {
-      // Navigating to production; tell beforeNavigate to not re-inject @branch
+    if (isProd(deployment)) {
       requestSkipBranchInjection();
     }
-    onSelect();
-  }
-
-  function getStatusLabel(
-    status: V1DeploymentStatus | undefined,
-  ): string | undefined {
-    switch (status) {
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
-        return undefined;
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
-        return "pending";
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
-        return "error";
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED:
-      case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
-        return "stopped";
-      default:
-        return undefined;
-    }
+    open = false;
   }
 
   function getStatusColor(status: V1DeploymentStatus | undefined): string {
     switch (status) {
       case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
-        return "text-green-600";
+        return "bg-green-500";
       case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
       case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
-        return "text-yellow-600";
+        return "bg-yellow-500";
       case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
-        return "text-red-600";
+        return "bg-red-500";
       default:
-        return "text-gray-400";
+        return "bg-gray-400";
     }
   }
 </script>
 
 {#if hasBranchDeployments || isOnBranch}
-  <DropdownMenu.Sub bind:open={subMenuOpen}>
-    <DropdownMenu.SubTrigger
-      on:click={() => {
-        subMenuOpen = !subMenuOpen;
-      }}
-    >
-      Branch
-    </DropdownMenu.SubTrigger>
-    <DropdownMenu.SubContent class="flex flex-col min-w-[200px] max-w-[300px]">
-      {#each sortedDeployments as deployment (deployment.id)}
-        {@const isProd = deployment.branch === primaryBranch}
-        {@const isSelected = isProd
-          ? !isOnBranch
-          : activeBranch === deployment.branch}
-        {@const statusLabel = getStatusLabel(deployment.status)}
-        {@const statusColor = getStatusColor(deployment.status)}
-        <DropdownMenu.CheckboxItem
-          checked={isSelected}
-          href={getDeploymentHref(deployment)}
-          on:click={() => handleClick(deployment)}
-          class="flex items-center gap-x-2"
-        >
-          <div class="flex items-center gap-x-2 truncate">
-            <span
-              class="inline-block size-1.5 rounded-full flex-none {statusColor}"
-              style="background-color: currentColor;"
-            />
-            <span class="truncate">
-              {isProd ? `${deployment.branch} (production)` : deployment.branch}
-            </span>
-          </div>
-          {#if statusLabel}
-            <span class="text-[10px] {statusColor} flex-none"
-              >{statusLabel}</span
-            >
-          {/if}
-        </DropdownMenu.CheckboxItem>
-      {/each}
-    </DropdownMenu.SubContent>
-  </DropdownMenu.Sub>
+  <li class="branch-selector">
+    <DropdownMenu.Root bind:open>
+      <DropdownMenu.Trigger asChild let:builder>
+        <button use:builder.action {...builder} class="chip">
+          <span
+            class="status-dot {getStatusColor(currentDeployment?.status)}"
+          />
+          <span>{triggerLabel}</span>
+          <span class="caret" class:open>
+            <CaretDownIcon size="10px" />
+          </span>
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="min-w-[200px] max-w-[300px]">
+        {#each sortedDeployments as deployment (deployment.id)}
+          {@const prod = isProd(deployment)}
+          {@const isSelected = prod
+            ? !isOnBranch
+            : activeBranch === deployment.branch}
+          <DropdownMenu.CheckboxItem
+            checked={isSelected}
+            href={getDeploymentHref(deployment)}
+            on:click={() => handleClick(deployment)}
+            class="flex items-center gap-x-2"
+          >
+            <div class="flex items-center gap-x-2 truncate">
+              <span
+                class="inline-block size-1.5 rounded-full flex-none {getStatusColor(
+                  deployment.status,
+                )}"
+              />
+              <span class="truncate">
+                {deployment.branch ?? "main"}
+              </span>
+              {#if prod}
+                <span class="text-[10px] text-fg-muted flex-none">
+                  production
+                </span>
+              {/if}
+            </div>
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  </li>
 {/if}
+
+<style lang="postcss">
+  .branch-selector {
+    @apply flex items-center mr-2;
+  }
+
+  /* Match Chip's .dimension.compact styles exactly */
+  .chip {
+    @apply flex items-center gap-x-1;
+    @apply px-2 py-0 rounded-2xl border;
+    @apply bg-primary-50 border-primary-200 text-primary-800;
+    @apply transition-colors;
+  }
+
+  .chip:hover {
+    @apply bg-primary-100;
+  }
+
+  .status-dot {
+    @apply size-1.5 rounded-full flex-none;
+  }
+
+  .caret {
+    @apply flex-none transition-transform;
+  }
+
+  .caret.open {
+    @apply rotate-180;
+  }
+</style>

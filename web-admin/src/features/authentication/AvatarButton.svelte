@@ -26,7 +26,6 @@
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
   } from "../../client";
-  import BranchSelector from "../projects/BranchSelector.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
@@ -111,15 +110,6 @@
             />
           </DropdownMenu.SubContent>
         </DropdownMenu.Sub>
-      {/if}
-      {#if projectPermissions.readDev}
-        <BranchSelector
-          organization={params.organization}
-          project={params.project}
-          onSelect={() => {
-            primaryMenuOpen = false;
-          }}
-        />
       {/if}
       {#if params.dashboard}
         <DropdownMenu.Item

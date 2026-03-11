@@ -27,6 +27,9 @@
           {currentPath}
           isCurrentPage={depth === currentPage}
         />
+        {#if depth === 1}
+          <slot name="after-project" />
+        {/if}
       {/if}
     {/each}
   </ol>

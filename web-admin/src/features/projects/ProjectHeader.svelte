@@ -31,6 +31,7 @@
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
+  import BranchSelector from "./BranchSelector.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
@@ -198,7 +199,13 @@
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
-    <Breadcrumbs {pathParts} {currentPath} />
+    <Breadcrumbs {pathParts} {currentPath}>
+      <svelte:fragment slot="after-project">
+        {#if !onPublicURLPage && projectPermissions?.readDev}
+          <BranchSelector {organization} {project} />
+        {/if}
+      </svelte:fragment>
+    </Breadcrumbs>
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">

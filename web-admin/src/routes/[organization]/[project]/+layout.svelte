@@ -36,8 +36,6 @@
     consumeSkipBranchInjection,
     extractBranchFromPath,
     injectBranchIntoPath,
-    removeBranchFromPath,
-    requestSkipBranchInjection,
   } from "@rilldata/web-admin/lib/branch-utils";
   import {
     V1DeploymentStatus,
@@ -71,7 +69,6 @@
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
@@ -138,10 +135,9 @@
     );
   });
 
-  // Clear view-as state and branch banner when unmounting (e.g., navigating to org page)
+  // Clear view-as state when unmounting (e.g., navigating to org page)
   onDestroy(() => {
     viewAsUserStore.clear();
-    eventBus.emit("remove-banner", "branch-preview");
   });
 
   $: branchPrefix = branchPathPrefix(activeBranch);
@@ -255,33 +251,6 @@
         ),
       });
     }
-  }
-
-  // Branch banner (must be after projectData is defined)
-  $: primaryBranch = projectData?.project?.primaryBranch;
-  $: isOnBranch = !!activeBranch && activeBranch !== primaryBranch;
-  $: if (isOnBranch) {
-    const productionPathname = removeBranchFromPath($page.url.pathname);
-    eventBus.emit("add-banner", {
-      id: "branch-preview",
-      priority: 3,
-      message: {
-        type: "warning",
-        iconType: "alert",
-        message: `Viewing branch deployment: <b>${activeBranch}</b>`,
-        includesHtml: true,
-        cta: {
-          text: "Back to production",
-          type: "link",
-          url: productionPathname + $page.url.search,
-          onClick: () => {
-            requestSkipBranchInjection();
-          },
-        },
-      },
-    });
-  } else {
-    eventBus.emit("remove-banner", "branch-preview");
   }
 
   $: error = projectError as HTTPError;
