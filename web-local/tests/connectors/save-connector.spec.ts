@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 
 test.describe("Save connector feature", () => {
-  test.use({ project: "Blank" });
+  test.use({ project: "Blank", viewport: { width: 1280, height: 900 } });
 
   test("Save button saves connector and redirects to connector file", async ({
     page,
