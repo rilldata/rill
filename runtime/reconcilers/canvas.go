@@ -158,6 +158,9 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	var conditionKinds []string
 	var conditionResources []*runtimev1.ResourceName
 	refs := &rendererRefs{
+		rt:           r.C.Runtime,
+		instanceID:   r.C.InstanceID,
+		claims:       claims,
 		metricsViews: make(map[string]bool),
 	}
 
@@ -217,7 +220,7 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		}
 
 		// Track refs
-		err = refs.populateRendererRefs(componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
+		err = refs.populateRendererRefs(ctx, componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse renderer properties for component %q: %w", componentName, err)
 		}
@@ -319,20 +322,57 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 // We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields not present on the canvas).
 // See this PR for details in case we want to reintroduce it: https://github.com/rilldata/rill/pull/8370
 type rendererRefs struct {
+	rt           *runtime.Runtime
+	instanceID   string
+	claims       *runtime.SecurityClaims
 	metricsViews map[string]bool
 }
 
 // populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
-func (r *rendererRefs) populateRendererRefs(_ string, rendererProps map[string]any) error {
-	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
-	if !ok {
-		return nil
-	}
-	err := r.metricsView(mv)
-	if err != nil {
-		return err
+func (r *rendererRefs) populateRendererRefs(ctx context.Context, _ string, rendererProps map[string]any) error {
+	// Check for a direct metrics_view reference.
+	if mv, ok := pathutil.GetPath(rendererProps, "metrics_view"); ok {
+		return r.metricsView(mv)
 	}
 
+	// Check for a metrics_sql reference; use a resolver to discover the referenced metrics views.
+	if sql, ok := pathutil.GetPath(rendererProps, "metrics_sql"); ok {
+		sqlStr, ok := sql.(string)
+		if !ok {
+			return fmt.Errorf("metrics_sql field is not a string")
+		}
+		return r.resolveMetricsSQLRefs(ctx, sqlStr)
+	}
+
+	return nil
+}
+
+// resolveMetricsSQLRefs initializes a metrics_sql resolver and discovers referenced metrics views from its Refs().
+func (r *rendererRefs) resolveMetricsSQLRefs(ctx context.Context, sql string) error {
+	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
+	if !ok {
+		return fmt.Errorf("metrics_sql resolver not registered")
+	}
+	resolver, err := initializer(ctx, &runtime.ResolverOptions{
+		Runtime:    r.rt,
+		InstanceID: r.instanceID,
+		Properties: map[string]any{"sql": sql},
+		Claims: &runtime.SecurityClaims{
+			UserID:         r.claims.UserID,
+			UserAttributes: r.claims.UserAttributes,
+			SkipChecks:     true, // To avoid infinite recursion
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize metrics_sql resolver: %w", err)
+	}
+	defer resolver.Close()
+
+	for _, ref := range resolver.Refs() {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			r.metricsViews[ref.Name] = true
+		}
+	}
 	return nil
 }
 

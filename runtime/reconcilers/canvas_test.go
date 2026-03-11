@@ -297,3 +297,79 @@ rows:
 	refreshedOn2 := getAndCheckRefreshedOn()
 	require.Greater(t, refreshedOn2, refreshedOn1)
 }
+
+func TestCanvasResolveTransitiveAccess(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
+
+	// Create two models, two metrics views, and a canvas with one component using metrics_view and another using metrics_sql.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"m2.sql": `SELECT 'bar' as bar, 2 as y`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"mv2.yaml": `
+version: 1
+type: metrics_view
+model: m2
+dimensions:
+- column: bar
+measures:
+- name: y
+  expression: sum(y)
+`,
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+  - items:
+      - kpi_grid:
+          metrics_sql: "SELECT bar, y FROM mv2"
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 8, 0, 0)
+
+	// Build claims with a transitive access rule on the canvas
+	ctx := t.Context()
+	claims := &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": true},
+		AdditionalRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{
+							Kind: runtime.ResourceKindCanvas,
+							Name: "c1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Resolve security for mv1 (referenced via metrics_view); should be accessible
+	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+	sec, err := rt.ResolveSecurity(ctx, id, claims, mv1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess(), "mv1 should be accessible via transitive access from canvas")
+
+	// Resolve security for mv2 (referenced via metrics_sql); should be accessible
+	mv2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv2")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv2)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess(), "mv2 should be accessible via transitive access from canvas (metrics_sql)")
+}
