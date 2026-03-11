@@ -29,12 +29,13 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ChevronDownIcon } from "lucide-svelte";
 
   export let fileArtifact: FileArtifact;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
   $: ({
     hasUnsavedChanges,
     autoSave,
@@ -45,17 +46,18 @@
   } = fileArtifact);
 
   $: apiName = $resourceName?.name ?? getNameFromFile(filePath);
-  $: host = $runtime.host || "http://localhost:9009";
+  $: host = runtimeClient.host || "http://localhost:9009";
+  $: instanceId = runtimeClient.instanceId;
 
-  $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: allErrorsQuery = fileArtifact.getAllErrors(queryClient);
   $: allErrors = $allErrorsQuery;
-  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: ({ data: resource } = $resourceQuery);
   $: isReconciling = resourceIsLoading($resourceQuery.data);
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,
