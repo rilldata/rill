@@ -5,6 +5,7 @@ export const salesforceSchema: MultiStepFormSchema = {
   type: "object",
   title: "Salesforce",
   "x-category": "fileStore",
+  "x-form-height": "medium",
   properties: {
     username: {
       type: "string",

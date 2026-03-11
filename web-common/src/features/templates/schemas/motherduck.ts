@@ -5,6 +5,7 @@ export const motherduckSchema: MultiStepFormSchema = {
   type: "object",
   title: "MotherDuck",
   "x-category": "olap",
+  "x-form-width": "wide",
   properties: {
     path: {
       type: "string",

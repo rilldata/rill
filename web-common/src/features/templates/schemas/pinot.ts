@@ -5,6 +5,8 @@ export const pinotSchema: MultiStepFormSchema = {
   type: "object",
   title: "Apache Pinot",
   "x-category": "olap",
+  "x-form-height": "xtall",
+  "x-form-width": "wide",
   properties: {
     connection_mode: {
       type: "string",

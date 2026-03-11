@@ -272,12 +272,8 @@ driver: ${driverName}`;
       }
 
       // For boolean fields with x-yaml-value, emit the mapped value instead of true/false
-      const schemaPropForMap =
-        options?.schema?.properties?.[key];
-      if (
-        schemaPropForMap?.["x-yaml-value"] !== undefined &&
-        value === true
-      ) {
+      const schemaPropForMap = options?.schema?.properties?.[key];
+      if (schemaPropForMap?.["x-yaml-value"] !== undefined && value === true) {
         return `${key}: ${schemaPropForMap["x-yaml-value"]}`;
       }
 

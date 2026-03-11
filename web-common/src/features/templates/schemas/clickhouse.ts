@@ -5,7 +5,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
   type: "object",
   title: "ClickHouse",
   "x-category": "olap",
-  "x-form-height": "tall",
+  "x-form-height": "xtall",
   "x-form-width": "wide",
   "x-button-labels": {
     deployment_type: {

@@ -4,6 +4,7 @@ export const duckdbSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "DuckDB",
+  "x-form-width": "wide",
   "x-category": "olap",
   "x-button-labels": {
     connector_type: {

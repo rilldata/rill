@@ -5,7 +5,8 @@ export const starrocksSchema: MultiStepFormSchema = {
   type: "object",
   title: "StarRocks",
   "x-category": "olap",
-  "x-form-height": "tall",
+  "x-form-height": "xtall",
+  "x-form-width": "wide",
   properties: {
     connection_mode: {
       type: "string",

@@ -20,7 +20,14 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value" | "toggle";
+  "x-display"?:
+    | "radio"
+    | "select"
+    | "textarea"
+    | "file"
+    | "tabs"
+    | "key-value"
+    | "toggle";
   /** Visual style for select fields. "rich" renders with icons and colored cards. */
   "x-select-style"?: "standard" | "rich";
   /** Render the field value in a monospace font. */
@@ -136,7 +143,7 @@ export type JSONSchemaObject = {
    * "tall" = larger form for connectors with more fields
    * "default" = standard form height
    */
-  "x-form-height"?: "default" | "tall";
+  "x-form-height"?: "default" | "medium" | "tall" | "xtall";
   /**
    * Form width for the add data modal.
    * "wide" = wider form for connectors with templates or more content

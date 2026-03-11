@@ -5,6 +5,7 @@ export const postgresSchema: MultiStepFormSchema = {
   type: "object",
   title: "PostgreSQL",
   "x-category": "sqlStore",
+  "x-form-height": "medium",
   properties: {
     connection_mode: {
       type: "string",

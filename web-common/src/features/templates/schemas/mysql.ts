@@ -5,6 +5,7 @@ export const mysqlSchema: MultiStepFormSchema = {
   type: "object",
   title: "MySQL",
   "x-category": "sqlStore",
+  "x-form-height": "tall",
   properties: {
     connection_mode: {
       type: "string",

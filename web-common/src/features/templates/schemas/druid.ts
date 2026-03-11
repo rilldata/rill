@@ -5,6 +5,7 @@ export const druidSchema: MultiStepFormSchema = {
   type: "object",
   title: "Apache Druid",
   "x-category": "olap",
+  "x-form-width": "wide",
   properties: {
     connection_mode: {
       type: "string",
