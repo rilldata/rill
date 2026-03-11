@@ -405,12 +405,6 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, 
 
 	opts := []func(*config.LoadOptions) error{
 		config.WithCredentialsProvider(provider),
-		config.WithClientLogMode(
-			aws.LogRequestWithBody |
-				aws.LogResponseWithBody |
-				aws.LogRetries |
-				aws.LogSigning,
-		),
 	}
 	if confProp.Region != "" {
 		opts = append(opts, config.WithRegion(confProp.Region))
