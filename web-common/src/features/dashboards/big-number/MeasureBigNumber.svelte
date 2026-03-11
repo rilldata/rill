@@ -282,8 +282,9 @@
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit text-fg-secondary"
-                class:text-red-500={!isComparisonPositive}
+                class="w-fit"
+                class:text-kpi-negative={!isComparisonPositive}
+                class:text-kpi-positive={isComparisonPositive}
               >
                 <WithTween
                   value={comparisonPercChange}

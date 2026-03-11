@@ -2695,6 +2695,24 @@ dark:
 				},
 			},
 		},
+		{
+			name: "kpi semantic variables are accepted",
+			yaml: `
+type: theme
+light:
+  kpi-positive: "#16a34a"
+  kpi-negative: "#dc2626"
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"kpi-positive": "#16a34a",
+						"kpi-negative": "#dc2626",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

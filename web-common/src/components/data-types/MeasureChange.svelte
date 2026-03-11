@@ -37,10 +37,10 @@
     : ''}"
 >
   {#if isValueNegative}
-    <span class="text-red-500">
+    <span class="text-kpi-negative">
       {value}
     </span>
   {:else}
-    <span class="text-fg-secondary">{value}</span>
+    <span class="text-kpi-positive">{value}</span>
   {/if}
 </Base>

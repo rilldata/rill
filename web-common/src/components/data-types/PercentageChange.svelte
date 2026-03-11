@@ -78,7 +78,10 @@
     {#if isNoData}
       <span class="text-fg-secondary">-</span>
     {:else if value !== null && assembled}
-      <span class:text-destructive={diffIsNegative}>
+      <span
+        class:text-kpi-negative={diffIsNegative}
+        class:text-kpi-positive={!diffIsNegative}
+      >
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
           >%</span
         >

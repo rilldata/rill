@@ -137,6 +137,10 @@ export default {
           foreground: oklabString("measure-foreground"),
           border: oklabString("measure-border"),
         },
+        kpi: {
+          positive: oklabString("kpi-positive"),
+          negative: oklabString("kpi-negative"),
+        },
         tooltip: oklabString("tooltip"),
         "theme-secondary": {
           DEFAULT: oklabString("color-theme-secondary-500"),
