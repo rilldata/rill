@@ -19,6 +19,7 @@ import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -51,7 +52,9 @@ export class ScatterPlotChartProvider {
   createChartDataQuery(
     client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
     const measures: V1MetricsViewAggregationMeasure[] = [];
@@ -93,10 +96,11 @@ export class ScatterPlotChartProvider {
     }
 
     const topNColorQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           !!timeRange?.start &&
           !!timeRange?.end &&
           hasColorDimension &&
@@ -133,11 +137,12 @@ export class ScatterPlotChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNColorQuery],
-      ([$timeAndFilterStore, $topNColorQuery]) => {
+      [timeAndFilterStore, topNColorQuery, visibleStore],
+      ([$timeAndFilterStore, $topNColorQuery, $visible]) => {
         const { timeRange, where, timeGrain } = $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
+          $visible &&
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!measures?.length &&
