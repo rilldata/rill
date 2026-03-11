@@ -412,8 +412,10 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, 
 
 	// For GCS, we need to set the checksum validation and request calculation to required
 	if confProp.Endpoint != "" && strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
-		opts = append(opts, config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired))
-		opts = append(opts, config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired))
+		opts = append(opts,
+			config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+			config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
+		)
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
