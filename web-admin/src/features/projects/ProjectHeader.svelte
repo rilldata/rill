@@ -40,6 +40,7 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isCanvasDashboardPage,
+    isEditPage,
     isMetricsExplorerPage,
     isProjectPage,
     isPublicURLPage,
@@ -73,6 +74,7 @@
   $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
+  $: onEditPage = isEditPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
 
   // When "View As" is active, fetch deployment credentials for the mocked user.
@@ -214,7 +216,7 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if onProjectPage && projectPermissions.manageDev}
+    {#if onProjectPage && !onEditPage && projectPermissions.manageDev}
       <EditButton {organization} {project} />
     {/if}
     {#if onProjectPage && effectiveManageProjectMembers}
