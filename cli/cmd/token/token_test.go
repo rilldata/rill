@@ -23,7 +23,8 @@ func TestToken(t *testing.T) {
 	token := strings.TrimSpace(strings.ReplaceAll(res.Output, "Token: ", ""))
 	uTmp := testcli.New(t, adm, token)
 	res = uTmp.Run(t, "whoami")
-	require.Equal(t, 0, res.ExitCode)
+	t.Logf("whoami output: %s", res.Output)
+	require.Equal(t, 0, res.ExitCode, "token should work for authentication: %s", res.Output)
 	require.Contains(t, res.Output, "Email: ")
 
 	// Issue a token with a description
