@@ -7,7 +7,7 @@ export default function llmsTxtPlugin(context: LoadContext): Plugin<any> {
         name: "llms-txt-plugin",
         loadContent: async () => {
             const { siteDir } = context;
-            const contentDir = path.join(siteDir, "docs");
+            const contentDir = path.join(siteDir, "docs-duckdb");
             const allMdx: string[] = [];
             const docsRecords: {
                 title: string;
