@@ -63,6 +63,10 @@ var allowedCSSVariables = map[string]bool{
 	"fg-disabled":  true,
 	"fg-accent":    true,
 
+	// KPI semantic variables
+	"kpi-positive": true,
+	"kpi-negative": true,
+
 	// Accent semantic variables
 	"accent-primary":          true,
 	"accent-primary-action":   true,

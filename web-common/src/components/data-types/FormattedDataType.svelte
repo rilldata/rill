@@ -51,7 +51,14 @@ so instantiating these directly clears a ton of warnings
 about unknown props.
 -->
 {#if type === "RILL_PERCENTAGE_CHANGE" && typeof value !== "boolean"}
-  <PercentageChange {value} {isNull} {inTable} {customStyle} {color} />
+  <PercentageChange
+    {value}
+    {isNull}
+    {inTable}
+    {customStyle}
+    {color}
+    useKpiColors
+  />
 {:else if type === "RILL_CHANGE" && typeof value !== "boolean"}
   <MeasureChange {value} {inTable} {customStyle} {color} />
 {:else}

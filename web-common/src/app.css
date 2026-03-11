@@ -82,6 +82,8 @@
     --fg-muted: var(--color-neutral-500);
     --fg-disabled: var(--color-neutral-400);
     --fg-accent: var(--color-primary-900);
+    --kpi-positive: var(--fg-secondary);
+    --kpi-negative: var(--color-red-500);
 
     --accent-primary: var(--color-primary-500);
     --accent-primary-action: var(--color-primary-500);
@@ -298,6 +300,8 @@
     --fg-muted: var(--color-neutral-light-400);
     --fg-disabled: var(--color-neutral-light-600);
     --fg-accent: var(--color-primary-light-100);
+    --kpi-positive: var(--fg-secondary);
+    --kpi-negative: var(--color-red-500);
 
     --accent-primary: var(--color-primary-light-600);
     --accent-primary-action: var(--color-primary-light-400);

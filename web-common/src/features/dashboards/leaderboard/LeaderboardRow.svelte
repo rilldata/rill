@@ -286,9 +286,12 @@
           value={deltaAbsMap[measureName]
             ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
-          customStyle={deltaAbsMap[measureName] !== null &&
-          deltaAbsMap[measureName] < 0
-            ? "text-red-500"
+          customStyle={deltaAbsMap[measureName] !== null
+            ? deltaAbsMap[measureName] > 0
+              ? "text-kpi-positive"
+              : deltaAbsMap[measureName] < 0
+                ? "text-kpi-negative"
+                : ""
             : ""}
           truncate={true}
         />
@@ -306,6 +309,7 @@
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
           color="text-fg-secondary"
+          useKpiColors
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />

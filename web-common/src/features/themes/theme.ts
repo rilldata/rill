@@ -190,6 +190,10 @@ type Colors = {
   "fg-disabled"?: Color;
   "fg-accent"?: Color;
 
+  // KPI comparison semantic variables
+  "kpi-positive"?: Color;
+  "kpi-negative"?: Color;
+
   // Accent semantic variables
   "accent-primary"?: Color;
   "accent-primary-action"?: Color;

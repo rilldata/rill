@@ -111,6 +111,10 @@ export default {
           disabled: oklabString("fg-disabled"),
           accent: oklabString("fg-accent"),
         },
+        kpi: {
+          positive: oklabString("kpi-positive"),
+          negative: oklabString("kpi-negative"),
+        },
         theme: {
           DEFAULT: oklabString("color-theme-500"),
           foreground: oklabString("theme-foreground"),

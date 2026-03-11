@@ -146,9 +146,10 @@
       ? value - comparisonValue
       : 0;
   $: noChange = !comparisonValue;
-  $: isComparisonPositive = diff >= 0;
+  $: isComparisonPositive = diff > 0;
+  $: isComparisonNegative = diff < 0;
 
-  $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
+  $: formattedDiff = `${!isComparisonNegative ? "+" : ""}${measureValueFormatter(
     diff,
   )}`;
 
@@ -241,6 +242,8 @@
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
                 class:font-semibold={isComparisonPositive}
+                class:text-kpi-positive={isComparisonPositive}
+                class:text-kpi-negative={isComparisonNegative}
                 on:mouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
@@ -283,7 +286,8 @@
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
                 class="w-fit text-fg-secondary"
-                class:text-red-500={!isComparisonPositive}
+                class:text-kpi-positive={isComparisonPositive}
+                class:text-kpi-negative={isComparisonNegative}
               >
                 <WithTween
                   value={comparisonPercChange}
@@ -292,6 +296,7 @@
                 >
                   <PercentageChange
                     tabularNumber={false}
+                    useKpiColors
                     value={formatMeasurePercentageDifference(output)}
                   />
                 </WithTween>

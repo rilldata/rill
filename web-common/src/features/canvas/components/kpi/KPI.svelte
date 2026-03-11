@@ -106,6 +106,10 @@
         : null,
     percent: comparisonPercChange,
   } as const;
+  $: isDeltaPositive =
+    computedValues.delta !== null && computedValues.delta > 0;
+  $: isDeltaNegative =
+    computedValues.delta !== null && computedValues.delta < 0;
 
   // Get value based on hover type
   function getValueForType(type: typeof hoveredValue) {
@@ -245,6 +249,8 @@
                   class:ui-copy-disabled-faint={computedValues.delta === null}
                   class:italic={computedValues.delta === null}
                   class:text-sm={computedValues.delta === null}
+                  class:text-kpi-positive={isDeltaPositive}
+                  class:text-kpi-negative={isDeltaNegative}
                   role="button"
                   tabindex="0"
                   on:mouseover={() => handleHoverOrFocus("delta")}
@@ -263,7 +269,6 @@
               {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
                 <span
                   class="w-fit font-semibold text-fg-disabled"
-                  class:text-red-500={computedValues.percent < 0}
                   role="button"
                   tabindex="0"
                   on:mouseover={() => handleHoverOrFocus("percent")}
@@ -273,6 +278,7 @@
                 >
                   <PercentageChange
                     color="text-fg-secondary"
+                    useKpiColors
                     showPosSign
                     tabularNumber={false}
                     value={formatMeasurePercentageDifference(

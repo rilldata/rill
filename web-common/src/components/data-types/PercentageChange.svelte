@@ -6,7 +6,7 @@
   export let isNull = false;
   export let inTable = false;
   export let showPosSign = false;
-  export let color = "!text-fg-secondary";
+  export let color = "text-fg-secondary";
   export let customStyle = "";
   export let value:
     | string
@@ -17,8 +17,10 @@
     | PERC_DIFF;
   export let tabularNumber = true;
   export let assembled = true;
+  export let useKpiColors = false;
 
   let diffIsNegative = false;
+  let diffIsPositive = false;
   let intValue: string;
   let negSign = "";
   let posSign = "";
@@ -48,6 +50,8 @@
     intValue = Math.round(intPart + fracPart).toString();
 
     diffIsNegative = value?.neg === "-";
+    diffIsPositive =
+      !diffIsNegative && !value?.approxZero && intPart + fracPart > 0;
     negSign = diffIsNegative && !value?.approxZero ? "-" : "";
     approxSign = value?.approxZero ? "~" : "";
     posSign = !diffIsNegative && !approxSign && showPosSign ? "+" : "";
@@ -58,11 +62,15 @@
     // but this whole thing is a mess and needs to be cleaned up.
 
     diffIsNegative = value < 0;
+    diffIsPositive = value > 0;
     intValue = Math.round(100 * value).toString();
     approxSign = Math.abs(value) < 0.005 ? "~" : "";
     posSign = !diffIsNegative && !approxSign && showPosSign ? "+" : "";
     negSign = "";
     suffix = "";
+  } else {
+    diffIsNegative = false;
+    diffIsPositive = false;
   }
 </script>
 
@@ -78,7 +86,11 @@
     {#if isNoData}
       <span class="text-fg-secondary">-</span>
     {:else if value !== null && assembled}
-      <span class:text-destructive={diffIsNegative}>
+      <span
+        class:text-destructive={!useKpiColors && diffIsNegative}
+        class:text-kpi-negative={useKpiColors && diffIsNegative}
+        class:text-kpi-positive={useKpiColors && diffIsPositive}
+      >
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
           >%</span
         >

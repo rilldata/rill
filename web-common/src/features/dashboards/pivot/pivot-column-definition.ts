@@ -325,6 +325,7 @@ function getFlatColumnDef(
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
             color: "text-fg-secondary",
+            useKpiColors: true,
             value:
               measureValue !== null && measureValue !== undefined
                 ? formatMeasurePercentageDifference(measureValue)
@@ -504,6 +505,7 @@ function getNestedColumnDef(
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
               color: "text-fg-secondary",
+              useKpiColors: true,
               value:
                 measureValue !== null && measureValue !== undefined
                   ? formatMeasurePercentageDifference(measureValue)
