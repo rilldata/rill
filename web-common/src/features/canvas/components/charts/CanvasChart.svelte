@@ -30,6 +30,7 @@
     parent: { name: canvasName, theme },
     timeAndFilterStore,
     chartType: type,
+    visible,
   } = component);
 
   $: chartType = $type;
@@ -68,6 +69,7 @@
     chartSpec,
     timeAndFilterStore,
     isThemeModeDark,
+    visible,
   );
 
   $: ({ isFetching, error } = $chartData);
