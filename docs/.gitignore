@@ -1,1 +1,10 @@
 .docusaurus/
+dist/
+
+# Shared docs copied by scripts/copy-shared.sh — do not edit in place
+docs-duckdb/contact/
+docs-duckdb/guide/
+docs-duckdb/reference/
+docs-clickhouse/contact/
+docs-clickhouse/guide/
+docs-clickhouse/reference/

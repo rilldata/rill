@@ -3,8 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "npm install && docusaurus start --port 4002",
-    "build": "docusaurus build --out-dir dist",
+    "copy-shared": "bash scripts/copy-shared.sh",
+    "dev": "npm run copy-shared && npm install && docusaurus start --port 4002",
+    "build": "npm run copy-shared && docusaurus build --out-dir dist",
     "preview": "docusaurus serve --port 4002 --dir dist",
     "docusaurus": "docusaurus "
   },
