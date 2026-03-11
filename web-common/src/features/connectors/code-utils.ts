@@ -179,6 +179,7 @@ export function compileConnectorYAML(
           default?: string | number | boolean;
           type?: string;
           "x-yaml-value"?: string | number | boolean;
+          "x-advanced"?: boolean;
         }
       >;
     };
@@ -218,17 +219,27 @@ driver: ${driverName}`;
       if (typeof value === "string" && value.trim() === "") return false;
       // Filter out empty arrays (e.g. key-value inputs with no entries)
       if (Array.isArray(value) && value.length === 0) return false;
-      // Skip values that match the field's effective default.
+      // For ClickHouse, exclude managed: false as it's the default behavior
+      // When managed=false, it's the default self-managed mode and doesn't need to be explicit
+      if (
+        connector.name === "clickhouse" &&
+        property.key === "managed" &&
+        value === false
+      )
+        return false;
+      // For advanced fields, skip values that match the field's effective default.
       // For booleans without an explicit default, false is the effective default.
       const schemaProp = options?.schema?.properties?.[property.key as string];
-      const effectiveDefault =
-        schemaProp?.default !== undefined
-          ? schemaProp.default
-          : schemaProp?.type === "boolean"
-            ? false
-            : undefined;
-      if (effectiveDefault !== undefined && value === effectiveDefault)
-        return false;
+      if (schemaProp?.["x-advanced"]) {
+        const effectiveDefault =
+          schemaProp.default !== undefined
+            ? schemaProp.default
+            : schemaProp.type === "boolean"
+              ? false
+              : undefined;
+        if (effectiveDefault !== undefined && value === effectiveDefault)
+          return false;
+      }
       return true;
     })
     .map((property) => {
