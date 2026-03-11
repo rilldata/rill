@@ -7,6 +7,7 @@
   import ConnectionTypeSelector from "./ConnectionTypeSelector.svelte";
   import GroupedFieldsRenderer from "./GroupedFieldsRenderer.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
+  import { slide } from "svelte/transition";
   import {
     buildEnumOptions,
     getConditionalValues,
@@ -73,6 +74,11 @@
   $: renderOrder = schema
     ? computeRenderOrder(visibleEntries, groupedChildKeys)
     : [];
+  $: regularFields = renderOrder.filter(([, prop]) => !prop["x-advanced"]);
+  $: advancedFields = renderOrder.filter(([, prop]) => prop["x-advanced"]);
+  $: hasAdvancedFields = advancedFields.length > 0;
+
+  let showAdvanced = false;
 
   // Seed defaults for initial render: use explicit defaults, and for enum fields
   // with an explicit x-display, fall back to first option when no value is set.
@@ -406,7 +412,7 @@
 </script>
 
 {#if schema}
-  {#each renderOrder as [key, prop] (key)}
+  {#each regularFields as [key, prop] (key)}
     {#if isRichSelectEnum(prop)}
       {@const options = getSelectOptions(prop)}
       <div class="py-1.5 first:pt-0 last:pb-0">
@@ -540,4 +546,195 @@
       </div>
     {/if}
   {/each}
+
+  {#if hasAdvancedFields}
+    <div class="pt-2">
+      <button
+        type="button"
+        class="advanced-toggle"
+        on:click={() => (showAdvanced = !showAdvanced)}
+      >
+        <svg
+          class="chevron"
+          class:open={showAdvanced}
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M4.5 2.5L8 6L4.5 9.5"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Advanced options
+      </button>
+      {#if showAdvanced}
+        <div class="pt-1" transition:slide={{ duration: 150 }}>
+          {#each advancedFields as [key, prop] (key)}
+            {#if isRichSelectEnum(prop)}
+              {@const options = getSelectOptions(prop)}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                <ConnectionTypeSelector
+                  bind:value={$form[key]}
+                  {options}
+                  label={prop.title ?? ""}
+                  onChange={(newValue) => handleSelectChange(key, newValue)}
+                />
+                {#if groupedFields.get(key)}
+                  <GroupedFieldsRenderer
+                    fields={getGroupedFieldsForOption(key, $form[key])}
+                    formStore={form}
+                    {errors}
+                    {onStringInputChange}
+                    {handleFileUpload}
+                    {isRequired}
+                    {isDisabled}
+                    {getTabFieldsForOption}
+                    {tabGroupedFields}
+                    buildEnumOptions={buildEnumOptionsWithIconMap}
+                  />
+                {/if}
+              </div>
+            {:else if isSelectEnum(prop)}
+              {@const options = getSelectOptions(prop)}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                <Select
+                  id={key}
+                  bind:value={$form[key]}
+                  {options}
+                  label={prop.title ?? ""}
+                  placeholder={prop["x-placeholder"] ?? "Select an option"}
+                  tooltip={prop.description ?? ""}
+                  optional={!isRequired(key)}
+                  full
+                  onChange={(newValue) => handleSelectChange(key, newValue)}
+                />
+                {#if groupedFields.get(key)}
+                  <GroupedFieldsRenderer
+                    fields={getGroupedFieldsForOption(key, $form[key])}
+                    formStore={form}
+                    {errors}
+                    {onStringInputChange}
+                    {handleFileUpload}
+                    {isRequired}
+                    {isDisabled}
+                    {getTabFieldsForOption}
+                    {tabGroupedFields}
+                    buildEnumOptions={buildEnumOptionsWithIconMap}
+                  />
+                {/if}
+              </div>
+            {:else if isRadioEnum(prop)}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if prop.title}
+                  <div class="text-sm font-medium mb-3">{prop.title}</div>
+                {/if}
+                <Radio
+                  bind:value={$form[key]}
+                  options={radioOptions(prop)}
+                  name={`${key}-radio`}
+                >
+                  <svelte:fragment slot="custom-content" let:option>
+                    {#if groupedFields.get(key)}
+                      <GroupedFieldsRenderer
+                        fields={getGroupedFieldsForOption(key, option.value)}
+                        formStore={form}
+                        {errors}
+                        {onStringInputChange}
+                        {handleFileUpload}
+                        {isRequired}
+                        {isDisabled}
+                        {getTabFieldsForOption}
+                        {tabGroupedFields}
+                        buildEnumOptions={buildEnumOptionsWithIconMap}
+                      />
+                    {/if}
+                  </svelte:fragment>
+                </Radio>
+              </div>
+            {:else if isTabsEnum(prop)}
+              {@const options = tabOptions(prop)}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if prop.title}
+                  <div class="text-sm font-medium mb-3">{prop.title}</div>
+                {/if}
+                <Tabs bind:value={$form[key]} {options} disableMarginTop>
+                  {#each options as option (option.value)}
+                    <TabsContent value={option.value}>
+                      {#if tabGroupedFields.get(key)}
+                        {#each getTabFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
+                          <div class="py-1.5 first:pt-0 last:pb-0">
+                            <SchemaField
+                              id={childKey}
+                              prop={childProp}
+                              optional={!isRequired(childKey)}
+                              errors={errors?.[childKey]}
+                              bind:value={$form[childKey]}
+                              bind:checked={$form[childKey]}
+                              {onStringInputChange}
+                              {handleFileUpload}
+                              options={isRadioEnum(childProp)
+                                ? radioOptions(childProp)
+                                : undefined}
+                              name={`${childKey}-radio`}
+                              disabled={isDisabled(childKey)}
+                            />
+                          </div>
+                        {/each}
+                      {/if}
+                    </TabsContent>
+                  {/each}
+                </Tabs>
+              </div>
+            {:else}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                <SchemaField
+                  id={key}
+                  {prop}
+                  optional={!isRequired(key)}
+                  errors={errors?.[key]}
+                  bind:value={$form[key]}
+                  bind:checked={$form[key]}
+                  {onStringInputChange}
+                  {handleFileUpload}
+                  options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+                  name={`${key}-radio`}
+                  disabled={isDisabled(key)}
+                />
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
 {/if}
+
+<style>
+  .advanced-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary, #6b7280);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .advanced-toggle:hover {
+    color: var(--color-text-primary, #374151);
+  }
+  .chevron {
+    transition: transform 150ms ease;
+  }
+  .chevron.open {
+    transform: rotate(90deg);
+  }
+</style>

@@ -5,6 +5,7 @@ export const postgresSchema: MultiStepFormSchema = {
   type: "object",
   title: "PostgreSQL",
   "x-category": "sqlStore",
+  "x-form-height": "medium",
   properties: {
     connection_mode: {
       type: "string",
@@ -70,6 +71,12 @@ export const postgresSchema: MultiStepFormSchema = {
       title: "SSL mode",
       enum: ["disable", "allow", "prefer", "require"],
       "x-placeholder": "Select SSL mode",
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
     },
     sql: {
       type: "string",
