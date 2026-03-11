@@ -28,7 +28,9 @@
   } from "../navigation/breadcrumb-selectors";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
+  import { editSessionState } from "@rilldata/web-admin/features/edit-session/use-edit-session";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
@@ -213,20 +215,24 @@
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if $viewAsUserStore}
-      <ViewAsUserChip />
-    {/if}
-    {#if onProjectPage && !onEditPage && projectPermissions.manageDev}
-      <EditButton {organization} {project} />
-    {/if}
-    {#if onProjectPage && effectiveManageProjectMembers}
-      <ShareProjectPopover
-        {organization}
-        {project}
-        manageProjectAdmins={projectPermissions.manageProjectAdmins}
-        {manageOrgAdmins}
-        {manageOrgMembers}
-      />
+    {#if onEditPage && $editSessionState}
+      <EditActions />
+    {:else}
+      {#if $viewAsUserStore}
+        <ViewAsUserChip />
+      {/if}
+      {#if onProjectPage && projectPermissions.manageDev}
+        <EditButton {organization} {project} />
+      {/if}
+      {#if onProjectPage && effectiveManageProjectMembers}
+        <ShareProjectPopover
+          {organization}
+          {project}
+          manageProjectAdmins={projectPermissions.manageProjectAdmins}
+          {manageOrgAdmins}
+          {manageOrgMembers}
+        />
+      {/if}
     {/if}
 
     {#if onMetricsExplorerPage && isDashboardValid}

@@ -25,8 +25,8 @@
   import { get } from "svelte/store";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import EditSessionToolbar from "@rilldata/web-admin/features/edit-session/EditSessionToolbar.svelte";
   import {
+    editSessionState,
     invalidateDevDeployments,
     useDevDeploymentByBranch,
     useCreateDevDeployment,
@@ -88,6 +88,17 @@
     fetchCredentials(deployment);
   }
 
+  // Publish edit session state so ProjectHeader can render edit actions
+  $: if (isReady && deployment?.id && instanceId) {
+    $editSessionState = {
+      deploymentId: deployment.id,
+      instanceId,
+      organization,
+      project,
+      branch,
+    };
+  }
+
   $: deploymentStatus = deployment?.status;
   $: isLoading =
     $branchDeployment.isLoading ||
@@ -140,6 +151,7 @@
   }
 
   onDestroy(() => {
+    $editSessionState = null;
     $workspaceRoutePrefix = "";
   });
 </script>
@@ -170,13 +182,6 @@
     {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} jwt={accessToken}>
         <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
-        <EditSessionToolbar
-          {organization}
-          {project}
-          deploymentId={deployment.id}
-          {instanceId}
-          {branch}
-        />
         <FileAndResourceWatcher
           host={runtimeHost}
           {instanceId}
