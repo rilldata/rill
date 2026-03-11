@@ -23,10 +23,7 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 	var example string
 	var agent string
 
-	exampleOptions, err := examples.List()
-	if err != nil {
-		ch.Printf("Warning: failed to list example projects: %v\n", err)
-	}
+	exampleOptions, _ := examples.List()
 
 	var long strings.Builder
 	long.WriteString("Initialize a new Rill project. Use flags to customize the project or run interactively to be prompted for each option.")
