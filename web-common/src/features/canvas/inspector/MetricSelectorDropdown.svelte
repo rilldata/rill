@@ -28,8 +28,14 @@
     .map((view) => view.meta?.name?.name)
     .filter(isString);
 
+  $: isOptional = inputParam.optional === true;
+
   $: metricsView =
-    "metrics_view" in $spec ? $spec.metrics_view : metricsViewNames[0];
+    "metrics_view" in $spec
+      ? $spec.metrics_view
+      : isOptional
+        ? ""
+        : metricsViewNames[0];
 </script>
 
 <Select
@@ -39,6 +45,9 @@
   full
   size="sm"
   sameWidth
+  optional={isOptional}
+  clearable={isOptional}
+  placeholder={isOptional ? "None" : ""}
   options={metricsViewNames.map((name) => ({
     label: name,
     value: name,

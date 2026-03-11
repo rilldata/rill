@@ -1,5 +1,8 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  AllKeys,
+  InputParams,
+} from "@rilldata/web-common/features/canvas/inspector/types";
 import {
   type CanvasComponentType,
   type ComponentAlignment,
@@ -7,7 +10,9 @@ import {
 } from "../types";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import { get } from "svelte/store";
 import Markdown from "./Markdown.svelte";
+import { extractMetricsViewFromContent } from "./util";
 
 export { default as Markdown } from "./Markdown.svelte";
 
@@ -18,6 +23,7 @@ export const defaultMarkdownAlignment: ComponentAlignment = {
 
 export interface MarkdownSpec extends ComponentCommonProperties {
   content: string;
+  metrics_view?: string;
   alignment?: ComponentAlignment;
   apply_formatting?: boolean;
 }
@@ -44,9 +50,35 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
     return typeof spec.content === "string" && spec.content.trim().length > 0;
   }
 
+  updateProperty(
+    key: AllKeys<MarkdownSpec>,
+    value: MarkdownSpec[AllKeys<MarkdownSpec>],
+  ) {
+    super.updateProperty(key, value);
+
+    // Auto-detect metrics_view when content changes
+    if (key === "content" && typeof value === "string") {
+      const currentSpec = get(this.specStore);
+      if (!currentSpec.metrics_view) {
+        const detected = extractMetricsViewFromContent(value);
+        if (detected) {
+          super.updateProperty(
+            "metrics_view" as AllKeys<MarkdownSpec>,
+            detected as MarkdownSpec[AllKeys<MarkdownSpec>],
+          );
+        }
+      }
+    }
+  }
+
   inputParams(): InputParams<MarkdownSpec> {
     return {
       options: {
+        metrics_view: {
+          type: "metrics",
+          label: "Metrics view",
+          optional: true,
+        },
         content: {
           type: "textArea",
           label: "Markdown",

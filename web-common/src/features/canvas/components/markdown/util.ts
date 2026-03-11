@@ -48,6 +48,36 @@ export function hasTemplatingSyntax(content: string): boolean {
   return /\{\{[\s\S]*?\}\}/.test(content);
 }
 
+/**
+ * Extracts the first metrics view name referenced in metrics_sql() or
+ * metrics_sql_rows() template calls within markdown content.
+ * Parses the SQL's FROM clause to identify the metrics view.
+ *
+ * Supports both Go template syntax and function-call syntax:
+ *   {{ $rows := metrics_sql_rows "SELECT ... FROM mv" }}
+ *   {{ metrics_sql("SELECT ... FROM mv") }}
+ */
+export function extractMetricsViewFromContent(
+  content: string,
+): string | undefined {
+  // Match both Go template syntax (space + quotes) and function-call syntax (parens + quotes)
+  // Go template:  {{ $var := metrics_sql_rows "SELECT ..." }}
+  // Function call: {{ metrics_sql("SELECT ...") }}
+  const callRegex =
+    /metrics_sql(?:_rows)?\s+["'`]([\s\S]*?)["'`]|metrics_sql(?:_rows)?\s*\(\s*["'`]([\s\S]*?)["'`]\s*\)/g;
+  let match: RegExpExecArray | null;
+  while ((match = callRegex.exec(content)) !== null) {
+    const sql = match[1] ?? match[2];
+    if (!sql) continue;
+    // Extract table name from FROM clause
+    const fromMatch = sql.match(/\bFROM\s+([^\s;,()]+)/i);
+    if (fromMatch) {
+      return fromMatch[1].replace(/[`"[\]]/g, "");
+    }
+  }
+  return undefined;
+}
+
 export function formatResolvedContent(
   text: string,
   metricsViews: Record<string, V1MetricsView | undefined>,
