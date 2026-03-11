@@ -7,12 +7,14 @@ import {
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { getFileHref } from "@rilldata/web-common/features/workspaces/workspace-routing";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "../../lib/svelte-query/globalQueryClient";
 import { getFileNamesInDirectory } from "./file-selectors";
 
 export async function handleEntityRename(
-  instanceId: string,
+  client: RuntimeClient,
   newName: string,
   existingPath: string,
   existingName: string,
@@ -31,7 +33,7 @@ export async function handleEntityRename(
   // Check if the new name is already in use
   const fileNamesInDirectory = await getFileNamesInDirectory(
     queryClient,
-    instanceId,
+    client,
     folder,
   );
   if (isDuplicateName(newName, existingName, fileNamesInDirectory)) {
@@ -46,10 +48,10 @@ export async function handleEntityRename(
   try {
     const newFilePath = (folder ? `${folder}/` : "/") + newName;
 
-    await renameFileArtifact(instanceId, existingPath, newFilePath);
+    await renameFileArtifact(client, existingPath, newFilePath);
 
     return getFileHref(`/${removeLeadingSlash(newFilePath)}`);
   } catch (err) {
-    console.error(err.response?.data?.message ?? err);
+    console.error(extractErrorMessage(err));
   }
 }

@@ -21,7 +21,7 @@
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
@@ -30,36 +30,41 @@
 
   export let hasUnsaved: boolean;
 
-  $: ({ instanceId } = $runtime);
-  $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        if (!data || !data.files?.length) return;
+  const runtimeClient = useRuntimeClient();
 
-        const files = data.files
-          // Sort alphabetically case-insensitive
-          .sort(
-            (a, b) =>
-              a.path?.localeCompare(b.path ?? "", undefined, {
-                sensitivity: "base",
-              }) ?? 0,
-          )
-          // Hide dot directories
-          .filter(
-            (file) =>
-              !(
-                file.isDir &&
-                // Check both the top-level directory and subdirectories
-                (file.path?.startsWith(".") || file.path?.includes("/."))
-              ),
-          )
-          // Hide the `tmp` directory
-          .filter((file) => !file.path?.startsWith("/tmp"));
+  $: getFileTree = createRuntimeServiceListFiles(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => {
+          if (!data || !data.files?.length) return;
 
-        return transformFileList(files);
+          const files = data.files
+            // Sort alphabetically case-insensitive
+            .sort(
+              (a, b) =>
+                a.path?.localeCompare(b.path ?? "", undefined, {
+                  sensitivity: "base",
+                }) ?? 0,
+            )
+            // Hide dot directories
+            .filter(
+              (file) =>
+                !(
+                  file.isDir &&
+                  // Check both the top-level directory and subdirectories
+                  (file.path?.startsWith(".") || file.path?.includes("/."))
+                ),
+            )
+            // Hide the `tmp` directory
+            .filter((file) => !file.path?.startsWith("/tmp"));
+
+          return transformFileList(files);
+        },
       },
     },
-  });
+  );
 
   $: ({ data: fileTree } = $getFileTree);
 
@@ -79,7 +84,7 @@
     }
 
     try {
-      const newFilePath = await duplicateFileArtifact(instanceId, filePath);
+      const newFilePath = await duplicateFileArtifact(runtimeClient, filePath);
       await navigateToFile(newFilePath);
     } catch {
       eventBus.emit("notification", {
@@ -102,14 +107,14 @@
         return;
       }
     }
-    await deleteFileArtifact(instanceId, filePath);
+    await deleteFileArtifact(runtimeClient, filePath);
     if (isCurrentActivePage(filePath, isDir)) {
       await navigateToHome();
     }
   }
 
   async function onForceDelete() {
-    await deleteFileArtifact(instanceId, forceDeletePath, true);
+    await deleteFileArtifact(runtimeClient, forceDeletePath, true);
     // onForceDelete is only called on folders, so isDir is always true
     if (isCurrentActivePage(forceDeletePath, true)) {
       await navigateToHome();
@@ -133,7 +138,7 @@
         });
         return;
       }
-      await renameFileArtifact(instanceId, fromPath, newFilePath);
+      await renameFileArtifact(runtimeClient, fromPath, newFilePath);
 
       if (isCurrentFile) {
         await navigateToFile(newFilePath);

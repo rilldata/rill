@@ -21,7 +21,7 @@ test.describe("explores", () => {
   test.use({ project: "Blank" });
 
   test("Autogenerate explore from source", async ({ page }) => {
-    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
+    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
     await createExploreFromSource(page);
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);

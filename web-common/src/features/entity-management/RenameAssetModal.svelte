@@ -13,10 +13,11 @@
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { renameFileArtifact } from "./actions";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -29,7 +30,7 @@
   export let filePath: string;
   export let isDir: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   let error: string;
 
@@ -90,7 +91,7 @@
       }
       try {
         const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-        await renameFileArtifact(instanceId, filePath, newPath);
+        await renameFileArtifact(runtimeClient, filePath, newPath);
         if (isDir) {
           const oldHref = getFileHref(`/${removeLeadingSlash(filePath)}`);
           if ($page.url.pathname.startsWith(oldHref)) {
@@ -105,13 +106,16 @@
         }
         closeModal();
       } catch (err) {
-        error = err.response.data?.message;
+        error = extractErrorMessage(err);
       }
     },
   });
 
-  $: existingDirectories = useDirectoryNamesInDirectory(instanceId, folderName);
-  $: fileNamesInDirectory = useFileNamesInDirectory(instanceId, folderName);
+  $: existingDirectories = useDirectoryNamesInDirectory(
+    runtimeClient,
+    folderName,
+  );
+  $: fileNamesInDirectory = useFileNamesInDirectory(runtimeClient, folderName);
 </script>
 
 <Dialog.Root

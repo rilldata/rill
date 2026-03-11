@@ -27,6 +27,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**MySQL**](#mysql) - MySQL databases
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
 - [**SQLite**](#sqlite) - SQLite databases
+- [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
 ### _Object Storage_
 - [**Azure**](#azure) - Azure Blob Storage
@@ -648,6 +649,14 @@ _[string]_ - API key for connecting to OpenAI _(required)_
 
 _[string]_ - The OpenAI model to use (e.g., 'gpt-4o') 
 
+### `max_output_tokens`
+
+_[number]_ - Maximum number of tokens to generate in the completion (default: 8192) 
+
+### `reasoning_effort`
+
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high') 
+
 ### `base_url`
 
 _[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1') 
@@ -666,6 +675,8 @@ type: connector # Must be `connector` (required)
 driver: openai # Must be `openai` _(required)_
 api_key: "{{ .env.OPENAI_API_KEY }}" # API key for connecting to OpenAI
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')
+max_output_tokens: 8192 # Maximum number of tokens to generate in the completion (default: 8192)
+reasoning_effort: "medium" # Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
 api_type: "openai" # The type of OpenAI API to use
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
@@ -945,6 +956,67 @@ sslmode: prefer
 type: connector
 driver: postgres
 dsn: "{{ .env.POSTGRES_DSN }}" # Define DSN in .env file
+```
+
+## Supabase
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `postgres` _(required)_
+
+### `dsn`
+
+_[string]_ - **Data Source Name (DSN)** for the Supabase connection, provided in
+[PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+Supabase uses PostgreSQL under the hood, so all PostgreSQL connection formats are supported.
+
+URI format example:
+```text
+postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+```
+ 
+
+### `host`
+
+_[string]_ - Hostname of the Supabase database (e.g. aws-0-us-east-1.pooler.supabase.com) 
+
+### `port`
+
+_[string]_ - Port number for the Supabase database 
+
+### `dbname`
+
+_[string]_ - Name of the Supabase database 
+
+### `user`
+
+_[string]_ - Username for authentication (e.g. postgres.[your-project-ref]) 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `sslmode`
+
+_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
+
+```yaml
+# Example: Supabase connector configured using individual properties
+type: connector
+driver: postgres
+host: aws-0-us-east-1.pooler.supabase.com
+port: 5432
+dbname: postgres
+user: "postgres.[your-project-ref]"
+password: "{{ .env.SUPABASE_PASSWORD }}"
+sslmode: require
+```
+
+```yaml
+# Example: Supabase connector configured using dsn
+type: connector
+driver: postgres
+dsn: "{{ .env.SUPABASE_DSN }}" # Define DSN in .env file
 ```
 
 ## Redshift

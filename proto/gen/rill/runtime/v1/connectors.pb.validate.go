@@ -290,18 +290,9 @@ func (m *ListObjectsRequest) validate(all bool) error {
 
 	// no validation rules for Delimiter
 
-	if m.GetPageSize() != 0 {
+	// no validation rules for Glob
 
-		if m.GetPageSize() > 100 {
-			err := ListObjectsRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	if m.GetPageSize() != 0 {
 
 	}
 

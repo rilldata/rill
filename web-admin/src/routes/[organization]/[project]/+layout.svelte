@@ -8,7 +8,8 @@
   > = {
     gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
     refetchInterval: (query) => {
-      switch (query.state.data?.deployment?.status) {
+      const status = query.state.data?.deployment?.status;
+      switch (status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
         case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
           return PollTimeWhenProjectDeploymentPending;
@@ -20,6 +21,7 @@
           return false;
       }
     },
+    refetchIntervalInBackground: true, // Keep polling while the tab is hidden (e.g. deploy loader)
     refetchOnMount: true,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
@@ -27,9 +29,11 @@
 </script>
 
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     V1DeploymentStatus,
+    type V1Organization,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
@@ -44,27 +48,63 @@
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
+  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
+  import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
+  import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
   $: ({
     url: { pathname },
     params: { organization, project, token },
+    data: pageData,
   } = $page);
+
+  // Root layout data used by ProjectHeader / SlimProjectHeader
+  $: organizationPermissions = pageData?.organizationPermissions ?? {};
+  $: planDisplayName = pageData?.planDisplayName;
+  $: organizationLogoUrl = getThemedLogoUrl(
+    $themeControl,
+    pageData?.organization as V1Organization | undefined,
+  );
+
+  // Initialize view-as store for this project scope (loads from sessionStorage)
+  $: if (organization && project) {
+    viewAsUserStore.initForProject(organization, project);
+  }
+
+  // Clear view-as state when navigating to a different project
+  onNavigate(({ from, to }) => {
+    const changedProject =
+      !from ||
+      !to ||
+      from.params?.organization !== to.params?.organization ||
+      from.params?.project !== to.params?.project;
+    if (changedProject) {
+      viewAsUserStore.clear();
+    }
+  });
+
+  // Clear view-as state when unmounting (e.g., navigating to org page)
+  onDestroy(() => {
+    viewAsUserStore.clear();
+  });
 
   $: onProjectPage = isProjectPage($page);
   $: onEditPage = isEditPage($page);
@@ -124,7 +164,34 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
+  /**
+   * When "View As" is active, fetch the project using the mocked user's JWT.
+   * This returns the impersonated user's `projectPermissions` from the server.
+   */
+  $: mockedUserProjectQuery = createAdminServiceGetProjectWithBearerToken(
+    organization,
+    project,
+    mockedUserDeploymentCredentials?.accessToken ?? "",
+    undefined,
+    {
+      query: {
+        enabled: !!mockedUserDeploymentCredentials?.accessToken,
+      },
+    },
+  );
+
   $: ({ data: projectData, error: projectError } = $projectQuery);
+
+  /**
+   * Compute effective project permissions.
+   * When "View As" is active, use the impersonated user's permissions (from server).
+   * Otherwise, use the actual user's permissions.
+   */
+  $: effectiveProjectPermissions =
+    mockedUserId && $mockedUserProjectQuery.data?.projectPermissions
+      ? $mockedUserProjectQuery.data.projectPermissions
+      : projectData?.projectPermissions;
+
   $: deploymentStatus = projectData?.deployment?.status;
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
   $: isProjectAvailable =
@@ -156,6 +223,20 @@
         : "user"
   ) as AuthContext;
 
+  // Derive effective runtime connection props
+  $: effectiveHost =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.runtimeHost
+      : projectData?.deployment?.runtimeHost;
+  $: effectiveInstanceId =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.instanceId
+      : projectData?.deployment?.runtimeInstanceId;
+  $: effectiveJwt =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.accessToken
+      : projectData?.jwt;
+
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
     metricsService?.loadCloudFields({
@@ -168,54 +249,75 @@
   }
 </script>
 
-{#if onProjectPage && !onEditPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-  <ProjectTabs
-    projectPermissions={projectData.projectPermissions}
-    {organization}
-    {pathname}
-    {project}
-  />
-{/if}
-
 {#if error}
+  <SlimProjectHeader
+    {organization}
+    {project}
+    readProjects={organizationPermissions?.readProjects}
+    {planDisplayName}
+    {organizationLogoUrl}
+  />
   <ErrorPage
     statusCode={error.response.status}
     header="Error fetching deployment"
     body={error.response.data?.message}
   />
 {:else if projectData}
-  {#if !projectData.deployment}
-    <!-- No deployment = the project is "hibernating" -->
-    <RedeployProjectCta {organization} {project} />
-  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-    <ProjectBuilding />
-  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
-    <ErrorPage
-      statusCode={500}
-      header="Deployment Error"
-      body={projectData.deployment.statusMessage !== ""
-        ? projectData.deployment.statusMessage
-        : "There was an error deploying your project. Please contact support."}
-    />
-  {:else if isProjectAvailable}
-    {#if onEditPage}
-      <!-- Edit session manages its own runtime; skip RuntimeProvider to avoid conflicts -->
-      <slot />
-    {:else}
+  {#if onEditPage && isProjectAvailable}
+    <!-- Edit session manages its own runtime; skip RuntimeProvider to avoid conflicts -->
+    <slot />
+  {:else if isProjectAvailable && effectiveHost != null && effectiveInstanceId}
+    {#key `${effectiveHost}::${effectiveInstanceId}`}
       <RuntimeProvider
-        instanceId={mockedUserId && mockedUserDeploymentCredentials
-          ? mockedUserDeploymentCredentials.instanceId
-          : projectData.deployment.runtimeInstanceId}
-        host={mockedUserId && mockedUserDeploymentCredentials
-          ? mockedUserDeploymentCredentials.runtimeHost
-          : projectData.deployment.runtimeHost}
-        jwt={mockedUserId && mockedUserDeploymentCredentials
-          ? mockedUserDeploymentCredentials.accessToken
-          : projectData.jwt}
+        host={effectiveHost}
+        instanceId={effectiveInstanceId}
+        jwt={effectiveJwt}
         {authContext}
       >
+        <ProjectHeader
+          {organization}
+          {project}
+          projectPermissions={effectiveProjectPermissions}
+          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+          manageOrgMembers={organizationPermissions?.manageOrgMembers}
+          readProjects={organizationPermissions?.readProjects}
+          {planDisplayName}
+          {organizationLogoUrl}
+        />
+        {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+          <ProjectTabs
+            projectPermissions={effectiveProjectPermissions}
+            {organization}
+            {pathname}
+            {project}
+          />
+        {/if}
         <slot />
       </RuntimeProvider>
+    {/key}
+  {:else}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
+    {#if !projectData.deployment}
+      <!-- No deployment = the project is "hibernating" -->
+      <RedeployProjectCta {organization} {project} />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+      <ProjectBuilding />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
+      <ErrorPage
+        statusCode={500}
+        header="Deployment Error"
+        body={projectData.deployment.statusMessage !== ""
+          ? projectData.deployment.statusMessage
+          : "There was an error deploying your project. Please contact support."}
+      />
+    {:else}
+      <ProjectBuilding />
     {/if}
   {/if}
 {/if}

@@ -402,11 +402,12 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 		req.ArchiveAssetId = assetID
 	} else {
-		gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
+		gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx, opts.PrimaryBranch)
 		if err != nil {
 			return err
 		}
 		req.GitRemote = gitRepo.Remote
+		req.PrimaryBranch = gitRepo.DefaultBranch
 	}
 	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
@@ -483,7 +484,11 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			DefaultBranch: opts.pushToProject.PrimaryBranch,
 			Subpath:       subpath,
 		}
-		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", nil, "1")
+		author, err := ch.GitSignature(ctx, repoRoot)
+		if err != nil {
+			return err
+		}
+		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", author, "1")
 		if err != nil {
 			return err
 		}
@@ -506,14 +511,15 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			}
 		} else {
 			// need to migrate to rill managed git
-			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, opts.LocalProjectPath()).PushToNewManagedRepo(ctx)
+			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, opts.LocalProjectPath()).PushToNewManagedRepo(ctx, opts.PrimaryBranch)
 			if err != nil {
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				Org:       ch.Org,
-				Project:   opts.Name,
-				GitRemote: &gitRepo.Remote,
+				Org:           ch.Org,
+				Project:       opts.Name,
+				GitRemote:     &gitRepo.Remote,
+				PrimaryBranch: &gitRepo.DefaultBranch,
 			}
 		}
 		// Update the project

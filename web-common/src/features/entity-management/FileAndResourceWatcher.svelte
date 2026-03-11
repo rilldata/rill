@@ -5,6 +5,7 @@
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { fileAndResourceWatcher } from "./file-and-resource-watcher";
   import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const {
     status: statusStore,
@@ -12,9 +13,18 @@
     scheduleAutoClose,
   } = fileAndResourceWatcher;
 
+  const runtimeClient = useRuntimeClient();
+
   export let host: string;
   export let instanceId: string;
   export let errorBody = "Try restarting the Rill via the CLI";
+
+  // Set client synchronously so children can access it during initial render.
+  // init() (in onMount) handles the async resource prefetch.
+  fileArtifacts.setClient(runtimeClient);
+
+  $: fileAndResourceWatcher.setRuntimeClient(runtimeClient);
+  $: fileAndResourceWatcher.setInstanceId(instanceId);
 
   $: watcherEndpoint = `${host}/v1/instances/${instanceId}/sse?events=file,resource`;
 
@@ -23,7 +33,7 @@
   $: status = $statusStore;
 
   onMount(() => {
-    void fileArtifacts.init(queryClient, instanceId);
+    void fileArtifacts.init(runtimeClient, queryClient);
 
     return () => fileAndResourceWatcher.close(true);
   });

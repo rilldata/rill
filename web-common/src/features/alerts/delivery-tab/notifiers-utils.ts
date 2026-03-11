@@ -1,9 +1,14 @@
 import { createRuntimeServiceListNotifierConnectors } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-export function getHasSlackConnection(runtimeId: string) {
-  return createRuntimeServiceListNotifierConnectors(runtimeId, {
-    query: {
-      select: (data) => !!data.connectors?.some((c) => c.name === "slack"),
+export function getHasSlackConnection(client: RuntimeClient) {
+  return createRuntimeServiceListNotifierConnectors(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => !!data.connectors?.some((c) => c.name === "slack"),
+      },
     },
-  });
+  );
 }

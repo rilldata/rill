@@ -4,7 +4,7 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import {
-    COMPARIONS_COLORS,
+    COMPARISON_COLORS,
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
@@ -23,20 +23,20 @@
   function getColor(i: number) {
     const posInSelection = selectedIndex.indexOf(i);
     if (posInSelection >= 7) return SELECTED_NOT_COMPARED_COLOR;
-    return COMPARIONS_COLORS[posInSelection];
+    return COMPARISON_COLORS[posInSelection];
   }
 
   const config: VirtualizedTableConfig = getContext("config");
 </script>
 
 <div
-  class="sticky left-0 top-0 z-20 bg-transparent"
+  class="sticky left-0 top-0 z-20 bg-surface-background"
   style:height="{totalHeight}px"
   style:width="{config.indexWidth}px"
 >
   <div
     style:height="{config.columnHeaderHeight}px"
-    class="sticky left-0 top-0 bg-transparent z-40 flex items-center"
+    class="sticky left-0 top-0 bg-surface-background z-40 flex items-center"
   >
     <DimensionCompareMenu
       {dimensionName}
