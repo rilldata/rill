@@ -7,7 +7,6 @@
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import EditSessionLoading from "./EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "./EditSessionTimeoutBanner.svelte";
   import EditSessionToolbar from "./EditSessionToolbar.svelte";
@@ -102,19 +101,6 @@
       runtimeHost = resp.runtimeHost ?? null;
       instanceId = resp.instanceId ?? null;
       accessToken = resp.accessToken ?? null;
-
-      // Update the runtime store so runtime client functions (e.g. GitPush) target the dev deployment
-      if (runtimeHost && instanceId && accessToken) {
-        $runtime = {
-          host: runtimeHost,
-          instanceId,
-          jwt: {
-            token: accessToken,
-            receivedAt: Date.now(),
-            authContext: "user",
-          },
-        };
-      }
     } catch (err) {
       credentialsError =
         getRpcErrorMessage(err as any) ??

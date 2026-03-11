@@ -11,7 +11,7 @@
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { workspaceRoutePrefix } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onDestroy } from "svelte";
   import { get } from "svelte/store"; // used for synchronous page.params read
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
@@ -104,19 +104,6 @@
       runtimeHost = resp.runtimeHost ?? null;
       instanceId = resp.instanceId ?? null;
       accessToken = resp.accessToken ?? null;
-
-      // Point runtime at the dev deployment
-      if (runtimeHost && instanceId && accessToken) {
-        $runtime = {
-          host: runtimeHost,
-          instanceId,
-          jwt: {
-            token: accessToken,
-            receivedAt: Date.now(),
-            authContext: "user",
-          },
-        };
-      }
     } catch (err) {
       credentialsError =
         getRpcErrorMessage(err as any) ??
@@ -125,35 +112,37 @@
   }
 
   onDestroy(() => {
-    // Clear runtime so RuntimeProvider's render gate ({#if host && instanceId})
-    // blocks until setRuntime sets production values. Without this, the gate
-    // passes immediately with stale dev deployment values.
-    runtime.set({ host: "", instanceId: "" });
     $workspaceRoutePrefix = "";
   });
 </script>
 
 <div class="edit-session">
-  {#if isReady && activeDeployment?.id && instanceId && runtimeHost}
-    <EditSessionTimeoutBanner sessionStartedAt={activeDeployment.createdOn} />
-    <EditSessionToolbar
-      {organization}
-      {project}
-      deploymentId={activeDeployment.id}
-      {instanceId}
-    />
-    <FileAndResourceWatcher
-      host={runtimeHost}
-      {instanceId}
-      errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
-    >
-      <div class="flex flex-1 overflow-hidden">
-        <Navigation showFooterLinks={false} />
-        <section class="flex-1 overflow-hidden">
-          <slot />
-        </section>
-      </div>
-    </FileAndResourceWatcher>
+  {#if isReady && activeDeployment?.id && instanceId && runtimeHost && accessToken}
+    {#key `${runtimeHost}::${instanceId}`}
+      <RuntimeProvider host={runtimeHost} {instanceId} jwt={accessToken}>
+        <EditSessionTimeoutBanner
+          sessionStartedAt={activeDeployment.createdOn}
+        />
+        <EditSessionToolbar
+          {organization}
+          {project}
+          deploymentId={activeDeployment.id}
+          {instanceId}
+        />
+        <FileAndResourceWatcher
+          host={runtimeHost}
+          {instanceId}
+          errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
+        >
+          <div class="flex flex-1 overflow-hidden">
+            <Navigation showFooterLinks={false} />
+            <section class="flex-1 overflow-hidden">
+              <slot />
+            </section>
+          </div>
+        </FileAndResourceWatcher>
+      </RuntimeProvider>
+    {/key}
   {:else if isErrored}
     <ErrorPage
       statusCode={500}

@@ -1,19 +1,23 @@
 <script lang="ts">
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { navigateToFile } from "@rilldata/web-common/features/workspaces/workspace-routing";
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   // List project files to auto-navigate to the first one
-  $: filesQuery = createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) =>
-        data?.files
-          ?.filter((f) => !f.isDir && !f.path?.startsWith("/tmp"))
-          ?.sort((a, b) => (a.path ?? "").localeCompare(b.path ?? "")) ?? [],
+  $: filesQuery = createRuntimeServiceListFiles(
+    client,
+    {},
+    {
+      query: {
+        select: (data) =>
+          data?.files
+            ?.filter((f) => !f.isDir && !f.path?.startsWith("/tmp"))
+            ?.sort((a, b) => (a.path ?? "").localeCompare(b.path ?? "")) ?? [],
+      },
     },
-  });
+  );
 
   // Navigate to the first file when available
   $: if ($filesQuery.data?.length) {
