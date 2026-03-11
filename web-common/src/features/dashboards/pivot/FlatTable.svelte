@@ -18,7 +18,7 @@
   import { flexRender } from "@tanstack/svelte-table";
   import type { PivotClickSelectionState } from "./pivot-click-selection";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
-  import type { PivotDataRow } from "./types";
+  import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
   // State props
   export let assembled: boolean;
@@ -30,6 +30,7 @@
   export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
   export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
+  export let config: PivotDataStoreConfig | undefined = undefined;
 
   // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
@@ -196,12 +197,12 @@
       {@const rowId = rows[row.index].id}
       {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
-      {@const isRowHeaderSelected =
-        clickSelection?.isRowHeaderSelected(rowId) ?? false}
       {@const hasClickedCell =
         clickSelection?.hasSelectedCellInRow(rowId) ?? false}
+      {@const clickedDimIdx =
+        clickSelection?.getClickedDimensionIndex(rowId) ?? -1}
       <tr
-        class:selected-row={isSelected && isRowHeaderSelected}
+        class:selected-row={isSelected && !hasClickedCell}
         class:dimmed-row={hasSelection && !isSelected && !hasClickedCell}
       >
         {#each cells as cell (cell.id)}
@@ -211,10 +212,17 @@
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
           {@const isClicked = isCellClicked(cell)}
+          {@const colDimIdx =
+            config?.rowDimensionNames.indexOf(cell.column.id) ?? -1}
+          {@const isLeftOfClick =
+            clickedDimIdx >= 0 && colDimIdx >= 0 && colDimIdx < clickedDimIdx}
+          {@const isMutedCell = clickedDimIdx >= 0 && colDimIdx > clickedDimIdx}
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
             class:selected-cell={isClicked}
+            class:selected-context-cell={isLeftOfClick}
+            class:muted-cell={isMutedCell}
             class:interactive-cell={(canShowDataViewer ||
               enableClickToFilter) &&
               cell.getValue() !== undefined}
@@ -353,5 +361,21 @@
 
   .dimmed-row .cell {
     @apply opacity-50;
+  }
+
+  /* Dimension cells to the left of the clicked cell: same primary background, no ring */
+  .selected-context-cell.cell {
+    @apply bg-primary-50;
+  }
+  .selected-context-cell.cell:hover {
+    @apply bg-primary-100;
+  }
+
+  /* Dimension cells to the right of the clicked cell: muted background */
+  .muted-cell.cell {
+    @apply bg-gray-50;
+  }
+  .muted-cell.cell:hover {
+    @apply bg-gray-100;
   }
 </style>

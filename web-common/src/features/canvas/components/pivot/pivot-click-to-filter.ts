@@ -75,6 +75,9 @@ export function createPivotClickToFilter(
     createEmptyClickSelectionState(),
   );
 
+  // Maps rowId → dimension column index for dimension-cell clicks (flat table only)
+  const rowDimClickIndex = new Map<string, number>();
+
   // --- Prune selfFilteredDimensions when filters are cleared externally ---
   const pruneUnsub = whereFilterStore.subscribe(($whereFilter) => {
     const activeDims = new Set(
@@ -98,6 +101,7 @@ export function createPivotClickToFilter(
   // --- Clear click selection when no self-filtered dimensions remain ---
   const clearUnsub = selfFilteredDimensions.subscribe(($selfFiltered) => {
     if ($selfFiltered.size === 0) {
+      rowDimClickIndex.clear();
       clickSelectionStore.set(createEmptyClickSelectionState());
     }
   });
@@ -158,12 +162,18 @@ export function createPivotClickToFilter(
       if (separatorIndex === -1) continue;
       const rowId = selectionKey.slice(0, separatorIndex);
       const columnId = selectionKey.slice(separatorIndex + 1);
+      // For flat-table dimension cell clicks, only include dims up to the clicked column
+      const dimIdx = $config.isFlat
+        ? $config.rowDimensionNames.indexOf(columnId)
+        : -1;
+      const upToDimensionIndex = dimIdx >= 0 ? dimIdx : undefined;
       const cellFilter = getFiltersForCell(
         $config,
         rowId,
         columnId,
         $data.columnDimensionAxes ?? {},
         $data.data,
+        upToDimensionIndex,
       );
       if (cellFilter.filters) {
         const extractedFilters = extractDimensionFiltersFromExpression(
@@ -265,7 +275,12 @@ export function createPivotClickToFilter(
     }
 
     clickSelectionStore.set(
-      buildClickSelection(updatedRowHeaders, updatedCells, updatedColHeaders),
+      buildClickSelection(
+        updatedRowHeaders,
+        updatedCells,
+        updatedColHeaders,
+        rowDimClickIndex,
+      ),
     );
 
     // Mark these dimensions as self-filtered by the pivot
@@ -301,6 +316,14 @@ export function createPivotClickToFilter(
       ? $clickSelection.isRowHeaderSelected(rowId)
       : $clickSelection.isCellSelected(rowId, columnId);
 
+    // For flat-table dimension cell clicks, only filter up to (and including) the
+    // clicked column's dimension index, not all row dimensions.
+    const flatDimIdx =
+      !isRowHeader && $config.isFlat
+        ? $config.rowDimensionNames.indexOf(columnId)
+        : -1;
+    const upToDimensionIndex = flatDimIdx >= 0 ? flatDimIdx : undefined;
+
     const cellFilters = isRowHeader
       ? getFiltersForRowHeader($config, rowId, $data.data)
       : getFiltersForCell(
@@ -309,6 +332,7 @@ export function createPivotClickToFilter(
           columnId,
           $data.columnDimensionAxes ?? {},
           $data.data,
+          upToDimensionIndex,
         );
 
     if (!cellFilters.filters) return;
@@ -322,8 +346,18 @@ export function createPivotClickToFilter(
           else nextRowHeaders.add(rowId);
         } else {
           const key = cellKey(rowId, columnId);
-          if (nextCells.has(key)) nextCells.delete(key);
-          else nextCells.add(key);
+          if (nextCells.has(key)) {
+            nextCells.delete(key);
+            rowDimClickIndex.delete(rowId);
+          } else {
+            nextCells.add(key);
+            // Track which dimension index was clicked for visual classification
+            if (upToDimensionIndex !== undefined) {
+              rowDimClickIndex.set(rowId, upToDimensionIndex);
+            } else {
+              rowDimClickIndex.delete(rowId);
+            }
+          }
         }
       },
     );

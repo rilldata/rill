@@ -561,6 +561,7 @@ export function getFiltersForCell(
   colId: string,
   colDimensionAxes: Record<string, string[]> = {},
   tableData: PivotDataRow[],
+  upToDimensionIndex?: number,
 ): PivotFilter {
   const { rowDimensionNames, measureNames, isFlat } = config;
   const defaultTimeRange = {
@@ -578,6 +579,11 @@ export function getFiltersForCell(
       rowId,
       measureNames.length > 0,
     );
+    // When clicking a dimension cell, only include dimensions up to (and including)
+    // the clicked column's index.
+    if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
+      values = values.slice(0, upToDimensionIndex + 1);
+    }
   } else {
     values = getValuesForExpandedKey(
       tableData,

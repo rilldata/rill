@@ -21,6 +21,12 @@ export interface PivotClickSelectionState {
   hasSelectedCellInRow: (rowId: string) => boolean;
   /** Check if a column header was selected via click */
   isColumnHeaderSelected: (dimensionPath: Record<string, string>) => boolean;
+  /**
+   * Returns the dimension column index that was clicked in this row
+   * (i.e. the index into rowDimensionNames), or -1 if no dimension cell
+   * was clicked (measure click, row-header click, or no selection).
+   */
+  getClickedDimensionIndex: (rowId: string) => number;
 }
 
 export function createEmptyClickSelectionState(): PivotClickSelectionState {
@@ -33,6 +39,7 @@ export function createEmptyClickSelectionState(): PivotClickSelectionState {
     isCellSelected: () => false,
     hasSelectedCellInRow: () => false,
     isColumnHeaderSelected: () => false,
+    getClickedDimensionIndex: () => -1,
   };
 }
 
@@ -50,6 +57,8 @@ export function buildClickSelection(
   rowHeaders: Set<string>,
   cells: Set<string>,
   colHeaders: Set<string>,
+  /** Maps rowId → dimension column index for dimension-cell clicks in flat tables */
+  rowDimClickIndex: Map<string, number> = new Map(),
 ): PivotClickSelectionState {
   const hasAny = rowHeaders.size > 0 || cells.size > 0 || colHeaders.size > 0;
 
@@ -69,5 +78,6 @@ export function buildClickSelection(
     isCellSelected: (rid, cid) => cells.has(cellKey(rid, cid)),
     hasSelectedCellInRow: (rid) => rowsWithSelectedCells.has(rid),
     isColumnHeaderSelected: (path) => colHeaders.has(columnHeaderKey(path)),
+    getClickedDimensionIndex: (rid) => rowDimClickIndex.get(rid) ?? -1,
   };
 }

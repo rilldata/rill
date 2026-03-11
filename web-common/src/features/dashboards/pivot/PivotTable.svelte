@@ -353,6 +353,7 @@
       {hasMeasureContextColumns}
       {rowSelectionState}
       {clickSelection}
+      config={$config}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
