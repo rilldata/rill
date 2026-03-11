@@ -289,8 +289,7 @@
           customStyle={deltaAbsMap[measureName] !== null &&
           deltaAbsMap[measureName] < 0
             ? "text-kpi-negative"
-            : deltaAbsMap[measureName] !== null &&
-                deltaAbsMap[measureName] > 0
+            : deltaAbsMap[measureName] !== null && deltaAbsMap[measureName] > 0
               ? "text-kpi-positive"
               : ""}
           truncate={true}
