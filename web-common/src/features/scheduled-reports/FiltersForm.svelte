@@ -23,10 +23,13 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types.ts";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
+
+  const runtimeClient = useRuntimeClient();
 
   export let filters: Filters;
   export let timeControls: TimeControls;
@@ -200,11 +203,12 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     const { interval, grain } = await deriveInterval(
       name,
+      runtimeClient,
       metricsViewName,
       $selectedTimezone,
       timeDimension,

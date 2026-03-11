@@ -31,7 +31,9 @@ const MetricsResolverQueryURLEncoded = encodeURIComponent(
 describe("mapMetricsResolverQueryToUrlParams", () => {
   beforeAll(() => {
     const metricsViewTimeRangeQueryKey =
-      getQueryServiceMetricsViewTimeRangeQueryKey("", AD_BIDS_METRICS_NAME, {});
+      getQueryServiceMetricsViewTimeRangeQueryKey("", {
+        metricsViewName: AD_BIDS_METRICS_NAME,
+      });
     queryClient.setQueryData(metricsViewTimeRangeQueryKey, {
       timeRangeSummary: AD_BIDS_TIME_RANGE_SUMMARY,
     });
@@ -132,6 +134,7 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
   for (const { title, url, expectedUrl } of testCases) {
     it(title, () => {
       const result = mapMetricsResolverQueryToUrl(
+        "",
         new URL(url),
         mockPage,
         MockMetricsViewAndExploreSpecs,

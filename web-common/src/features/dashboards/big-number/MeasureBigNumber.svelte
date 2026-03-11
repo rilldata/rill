@@ -16,6 +16,7 @@
     createQueryServiceMetricsViewAggregation,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     crossfade,
@@ -29,7 +30,6 @@
   export let measure: MetricsViewSpecMeasure;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
-  export let instanceId: string;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
@@ -40,18 +40,20 @@
   export let showComparison = false;
   export let ready: boolean = true;
 
+  const client = useRuntimeClient();
+
   $: measureName = measure.name ?? "";
 
   // Primary totals query
   $: primaryQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: measureName }],
       where,
       timeRange: {
-        start: timeStart,
-        end: timeEnd,
+        start: timeStart as any,
+        end: timeEnd as any,
         timeDimension,
       },
     },
@@ -66,14 +68,14 @@
 
   // Comparison totals query
   $: comparisonQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: measureName }],
       where,
       timeRange: {
-        start: comparisonTimeStart,
-        end: comparisonTimeEnd,
+        start: comparisonTimeStart as any,
+        end: comparisonTimeEnd as any,
         timeDimension,
       },
     },
@@ -105,8 +107,8 @@
       : EntityStatus.Idle;
 
   $: errorMessage = isError
-    ? (($primaryQuery.error as any)?.response?.data?.message ??
-      ($comparisonQuery.error as any)?.response?.data?.message ??
+    ? ($primaryQuery.error?.message ??
+      $comparisonQuery.error?.message ??
       undefined)
     : undefined;
 

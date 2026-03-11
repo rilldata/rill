@@ -484,7 +484,11 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			DefaultBranch: opts.pushToProject.PrimaryBranch,
 			Subpath:       subpath,
 		}
-		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", nil, "1")
+		author, err := ch.GitSignature(ctx, repoRoot)
+		if err != nil {
+			return err
+		}
+		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", author, "1")
 		if err != nil {
 			return err
 		}
