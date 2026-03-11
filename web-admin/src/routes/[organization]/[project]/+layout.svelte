@@ -272,6 +272,8 @@
     {organization}
     {project}
     readProjects={organizationPermissions?.readProjects}
+    readDev={!!effectiveProjectPermissions?.readDev}
+    primaryBranch={projectData?.project?.primaryBranch}
     {planDisplayName}
     {organizationLogoUrl}
   />
@@ -317,6 +319,8 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
+      readDev={!!effectiveProjectPermissions?.readDev}
+      primaryBranch={projectData?.project?.primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
