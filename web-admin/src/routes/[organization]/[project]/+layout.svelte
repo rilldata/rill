@@ -33,9 +33,8 @@
   import { page } from "$app/stores";
   import {
     branchPathPrefix,
-    consumeSkipBranchInjection,
     extractBranchFromPath,
-    getBranchRedirect,
+    handleBranchNavigation,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
     V1DeploymentStatus,
@@ -110,27 +109,9 @@
     }
   });
 
-  // Inject @branch into project-internal navigations that are missing it.
-  // This catches links from components that build /${org}/${project}/... URLs
-  // without branch awareness (dashboards, alerts, reports, breadcrumbs, etc.).
-  // The `skipBranchInjection` flag lets the BranchSelector bypass injection
-  // so the user can navigate to production without re-injection.
-  beforeNavigate((nav) => {
-    if (consumeSkipBranchInjection()) return;
-    if (!activeBranch || !nav.to?.url) return;
-    if (nav.type === "popstate") return; // don't modify back/forward navigations
-    const redirect = getBranchRedirect(
-      nav.to.url.pathname,
-      nav.to.url.search,
-      nav.to.url.hash,
-      activeBranch,
-      organization,
-      project,
-    );
-    if (!redirect) return;
-    nav.cancel();
-    void goto(redirect);
-  });
+  beforeNavigate((nav) =>
+    handleBranchNavigation(nav, activeBranch, organization, project, goto),
+  );
 
   // Clear view-as state when unmounting (e.g., navigating to org page)
   onDestroy(() => {

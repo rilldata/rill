@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import type { BeforeNavigate } from "@sveltejs/kit";
 import {
   extractBranchFromPath,
   injectBranchIntoPath,
@@ -7,6 +8,7 @@ import {
   requestSkipBranchInjection,
   consumeSkipBranchInjection,
   getBranchRedirect,
+  handleBranchNavigation,
 } from "./branch-utils";
 
 describe("branch-utils", () => {
@@ -258,6 +260,106 @@ describe("branch-utils", () => {
       expect(
         getBranchRedirect("/acme/analytics", "", "", branch, org, proj),
       ).toBe("/acme/analytics/@staging");
+    });
+  });
+
+  describe("handleBranchNavigation", () => {
+    const org = "acme";
+    const proj = "analytics";
+    const branch = "staging";
+
+    function makeNav(
+      pathname: string,
+      type: BeforeNavigate["type"] = "link",
+    ): { nav: BeforeNavigate; navigateFn: ReturnType<typeof vi.fn> } {
+      const nav = {
+        from: null,
+        to: {
+          params: {},
+          route: { id: null },
+          url: new URL(`http://localhost${pathname}`),
+        },
+        type,
+        willUnload: false,
+        complete: Promise.resolve(),
+        cancel: vi.fn(),
+      } as unknown as BeforeNavigate;
+      return { nav, navigateFn: vi.fn().mockResolvedValue(undefined) };
+    }
+
+    beforeEach(() => {
+      consumeSkipBranchInjection();
+    });
+
+    it("redirects a branch-unaware project URL", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).toHaveBeenCalled();
+      expect(navigateFn).toHaveBeenCalledWith(
+        "/acme/analytics/@staging/explore/revenue-overview",
+      );
+    });
+
+    it("does nothing when there is no active branch", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+      );
+      handleBranchNavigation(nav, undefined, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("does nothing for popstate navigations", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+        "popstate",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when URL already has @branch", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/@staging/explore/revenue-overview",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("does nothing for URLs outside the project", () => {
+      const { nav, navigateFn } = makeNav("/other-org/other-project");
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("respects the skip flag", () => {
+      requestSkipBranchInjection();
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when nav.to is null", () => {
+      const nav = {
+        from: null,
+        to: null,
+        type: "link" as const,
+        willUnload: false,
+        complete: Promise.resolve(),
+        cancel: vi.fn(),
+      } as unknown as BeforeNavigate;
+      const navigateFn = vi.fn();
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
     });
   });
 

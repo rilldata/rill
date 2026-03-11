@@ -1,3 +1,5 @@
+import type { BeforeNavigate } from "@sveltejs/kit";
+
 /**
  * Utilities for encoding branch names as `@branch` path segments.
  *
@@ -74,6 +76,39 @@ export function getBranchRedirect(
   if (toPath.includes("/-/share/")) return null;
   if (extractBranchFromPath(toPath)) return null;
   return injectBranchIntoPath(toPath, activeBranch) + toSearch + toHash;
+}
+
+/**
+ * Intercept a client-side navigation and inject `@branch` if needed.
+ *
+ * Many components build project URLs without branch awareness. This function
+ * is called from the project layout's `beforeNavigate` hook to transparently
+ * add the active branch segment to those navigations.
+ *
+ * Pass `goto` as `navigateFn` to keep this module decoupled from SvelteKit's
+ * `$app/navigation` (which can only be imported inside components).
+ */
+export function handleBranchNavigation(
+  nav: BeforeNavigate,
+  activeBranch: string | undefined,
+  organization: string,
+  project: string,
+  navigateFn: (url: string) => Promise<void>,
+): void {
+  if (consumeSkipBranchInjection()) return;
+  if (!activeBranch || !nav.to?.url) return;
+  if (nav.type === "popstate") return;
+  const redirect = getBranchRedirect(
+    nav.to.url.pathname,
+    nav.to.url.search,
+    nav.to.url.hash,
+    activeBranch,
+    organization,
+    project,
+  );
+  if (!redirect) return;
+  nav.cancel();
+  void navigateFn(redirect);
 }
 
 /**
