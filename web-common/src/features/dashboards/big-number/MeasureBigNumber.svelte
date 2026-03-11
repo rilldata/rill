@@ -146,7 +146,8 @@
       ? value - comparisonValue
       : 0;
   $: noChange = !comparisonValue;
-  $: isComparisonPositive = diff >= 0;
+  $: isComparisonPositive = diff > 0;
+  $: isComparisonNegative = diff < 0;
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
     diff,
@@ -282,8 +283,8 @@
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit"
-                class:text-kpi-negative={!isComparisonPositive}
+                class="w-fit text-fg-secondary"
+                class:text-kpi-negative={isComparisonNegative}
                 class:text-kpi-positive={isComparisonPositive}
               >
                 <WithTween

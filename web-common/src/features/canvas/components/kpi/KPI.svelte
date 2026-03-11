@@ -262,9 +262,9 @@
 
               {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
                 <span
-                  class="w-fit font-semibold"
+                  class="w-fit font-semibold text-fg-disabled"
                   class:text-kpi-negative={computedValues.percent < 0}
-                  class:text-kpi-positive={computedValues.percent >= 0}
+                  class:text-kpi-positive={computedValues.percent > 0}
                   role="button"
                   tabindex="0"
                   on:mouseover={() => handleHoverOrFocus("percent")}
