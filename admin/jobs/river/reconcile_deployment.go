@@ -74,8 +74,20 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 			}
 
 			// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-			err := w.admin.StartDeploymentInner(ctx, depl)
-			if err != nil {
+			if err := w.admin.StartDeploymentInner(ctx, depl); err != nil {
+				// On the last attempt, mark the deployment as errored so the user
+				// isn't stuck on a loading screen indefinitely. On earlier attempts,
+				// surface the error in statusMessage while keeping the PENDING status
+				// so River can retry.
+				if job.Attempt >= job.MaxAttempts {
+					if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, "Provisioning failed: "+err.Error()); dbErr != nil {
+						w.admin.Logger.Error("reconcile deployment: failed to set errored status", observability.ZapCtx(ctx), zap.Error(dbErr))
+					}
+				} else {
+					if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning failed: "+err.Error()); dbErr != nil {
+						w.admin.Logger.Error("reconcile deployment: failed to update status message after provisioning error", observability.ZapCtx(ctx), zap.Error(dbErr))
+					}
+				}
 				return err
 			}
 		}

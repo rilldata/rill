@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     V1DeploymentStatus,
     createAdminServiceDeleteDeployment,
     createAdminServiceGetCurrentUser,
-    getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
@@ -13,39 +11,35 @@
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
     useDevDeployments,
-    useCreateDevDeployment,
     invalidateDeployments,
   } from "@rilldata/web-admin/features/edit-session/use-edit-session";
   import {
     getStatusDotClass,
     getStatusLabel,
   } from "@rilldata/web-admin/features/projects/status/display-utils";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { PlayIcon, Trash2Icon } from "lucide-svelte";
+  import { EyeIcon, PlayIcon, Trash2Icon } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let organization: string;
   export let project: string;
 
   const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
-  const createMutation = useCreateDevDeployment();
   const deleteMutation = createAdminServiceDeleteDeployment();
 
   $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
-  $: visibleDeployments = deployments.filter(
-    (d) =>
-      d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
-      d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
-  );
-
-  $: isCreating = $createMutation.isPending;
+  $: visibleDeployments = deployments
+    .filter(
+      (d) =>
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
+    )
+    .sort((a, b) => (b.updatedOn ?? "").localeCompare(a.updatedOn ?? ""));
 
   function isOwnDeployment(ownerUserId: string | undefined): boolean {
     return !!currentUserId && ownerUserId === currentUserId;
@@ -77,35 +71,8 @@
     return `/${organization}/${project}${branchPathPrefix(branch)}`;
   }
 
-  async function handleNewSession() {
-    try {
-      const resp = await $createMutation.mutateAsync({
-        org: organization,
-        project,
-        data: {
-          environment: "dev",
-          editable: true,
-        },
-      });
-      void invalidateDeployments(organization, project);
-      requestSkipBranchInjection();
-      await goto(editUrl(resp.deployment?.branch));
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to start edit session: ${getRpcErrorMessage(err as any)}`,
-      });
-    }
-  }
-
-  async function handleResume(branch: string | undefined) {
+  function handleNavClick() {
     requestSkipBranchInjection();
-    await goto(editUrl(branch));
-  }
-
-  async function handlePreview(branch: string | undefined) {
-    requestSkipBranchInjection();
-    await goto(previewUrl(branch));
   }
 
   let openDropdownId = "";
@@ -115,13 +82,7 @@
     deletingIds = deletingIds;
     try {
       await $deleteMutation.mutateAsync({ deploymentId });
-      void queryClient.invalidateQueries({
-        queryKey: getAdminServiceListDeploymentsQueryKey(
-          organization,
-          project,
-          { environment: "dev" },
-        ),
-      });
+      void invalidateDeployments(organization, project);
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
@@ -137,16 +98,6 @@
 <section class="flex flex-col gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Dev Environments</h2>
-    <Button
-      type="secondary"
-      large
-      disabled={isCreating}
-      loading={isCreating}
-      loadingCopy="Starting..."
-      onClick={handleNewSession}
-    >
-      New edit session
-    </Button>
   </div>
 
   {#if $devDeployments.isLoading}
@@ -164,7 +115,7 @@
         No dev environments
       </span>
       <span class="text-fg-muted text-sm">
-        Click "New edit session" to start editing this project in the cloud.
+        Use the "Edit" button in the header to start editing this project.
       </span>
     </div>
   {:else}
@@ -226,20 +177,23 @@
                 {#if own}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    on:click={() => handleResume(deployment.branch)}
+                    href={editUrl(deployment.branch)}
+                    on:click={handleNavClick}
                   >
                     <div class="flex items-center">
                       <PlayIcon size="12px" />
-                      <span class="ml-2">Resume</span>
+                      <span class="ml-2">Open editor</span>
                     </div>
                   </DropdownMenu.Item>
                 {/if}
                 <DropdownMenu.Item
                   class="font-normal flex items-center"
-                  on:click={() => handlePreview(deployment.branch)}
+                  href={previewUrl(deployment.branch)}
+                  on:click={handleNavClick}
                 >
                   <div class="flex items-center">
-                    <span class="ml-0.5">Preview</span>
+                    <EyeIcon size="12px" />
+                    <span class="ml-2">Preview</span>
                   </div>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item

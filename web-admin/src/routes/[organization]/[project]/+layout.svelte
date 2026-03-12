@@ -136,13 +136,16 @@
    * This returns the deployment credentials for the current logged-in user.
    * When `activeBranch` is set, the branch param is passed to GetProject
    * so the API returns the branch deployment instead of production.
+   *
+   * On the edit page, the edit layout manages its own readiness detection,
+   * so we skip aggressive polling here to avoid unnecessary requests.
    */
   $: cookieProjectQuery = createAdminServiceGetProject(
     organization,
     project,
     activeBranch ? { branch: activeBranch } : undefined,
     {
-      query: baseGetProjectQueryOptions,
+      query: onEditPage ? {} : baseGetProjectQueryOptions,
     },
   );
 

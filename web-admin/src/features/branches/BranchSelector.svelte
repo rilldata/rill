@@ -23,13 +23,9 @@
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
 
-  const TRANSITIONAL_STATUSES = new Set([
-    V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
-    V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING,
-    V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
-    V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
-  ]);
-
+  // Poll at 2s only while the dropdown is open (so the user sees live status
+  // transitions). When closed, the cached data is sufficient; freshness is
+  // maintained by invalidateDeployments() calls after create/delete mutations.
   $: deploymentsQuery = createAdminServiceListDeployments(
     organization,
     project,
@@ -37,14 +33,7 @@
     {
       query: {
         enabled: !!organization && !!project,
-        refetchInterval: (query) => {
-          const deps = query.state.data?.deployments;
-          if (!deps) return false;
-          const hasTransitioning = deps.some((d) =>
-            TRANSITIONAL_STATUSES.has(d.status as V1DeploymentStatus),
-          );
-          return hasTransitioning ? 2000 : false;
-        },
+        refetchInterval: open ? 2000 : false,
       },
     },
   );

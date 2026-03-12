@@ -2,17 +2,14 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeployment,
     createAdminServiceGetProject,
     V1DeploymentStatus,
-    type V1Deployment,
     type V1Organization,
   } from "@rilldata/web-admin/client";
   import {
     extractBranchFromPath,
     branchPathPrefix,
   } from "@rilldata/web-admin/features/branches/branch-utils";
-  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -29,7 +26,6 @@
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import { useDevDeploymentByBranch } from "@rilldata/web-admin/features/edit-session/use-edit-session";
 
   // Read params synchronously at initialization; they're stable for the
   // lifetime of this layout (navigating away from /-/edit/ destroys it).
@@ -50,57 +46,52 @@
     pageData?.organization as V1Organization | undefined,
   );
 
-  // GetProject({branch}) for ProjectHeader metadata (project permissions, primary branch).
-  // TanStack Query deduplicates with the project layout's identical query.
+  // GetProject({branch}): returns deployment status, credentials (runtimeHost,
+  // runtimeInstanceId, jwt), and project permissions. Polls at 2s while the
+  // deployment is provisioning or updating; stops once it reaches a terminal
+  // state (RUNNING, ERRORED, etc.). The parent layout skips its own polling
+  // on the edit page to avoid duplicate requests.
   const projectQuery = createAdminServiceGetProject(
     organization,
     project,
     branch ? { branch } : undefined,
+    {
+      query: {
+        refetchInterval: (query) => {
+          const status = query.state.data?.deployment?.status;
+          if (
+            status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+            status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
+          ) {
+            return 2000;
+          }
+          return false;
+        },
+      },
+    },
   );
   $: projectPermissions = $projectQuery.data?.projectPermissions ?? {};
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
 
-  const user = createAdminServiceGetCurrentUser();
-  const branchDeployment = useDevDeploymentByBranch(
-    organization,
-    project,
-    branch,
-  );
-  const getCredentialsMutation = createAdminServiceGetDeployment();
+  // Deployment data and credentials come from GetProject (no separate API needed)
+  $: deployment = $projectQuery.data?.deployment;
+  $: deploymentStatus = deployment?.status;
+  $: runtimeHost = deployment?.runtimeHost ?? null;
+  $: instanceId = deployment?.runtimeInstanceId ?? null;
+  $: jwt = $projectQuery.data?.jwt ?? null;
 
-  let runtimeHost: string | null = null;
-  let instanceId: string | null = null;
-  let accessToken: string | null = null;
-  let credentialsError: string | null = null;
+  const user = createAdminServiceGetCurrentUser();
 
   $: currentUserId = $user.data?.user?.id;
-  $: deployment = $branchDeployment.data;
-  $: deploymentStatus = deployment?.status;
 
   $: isOtherOwner =
     !!deployment && !!currentUserId && deployment.ownerUserId !== currentUserId;
 
-  // When deployment is running and owned by current user, fetch credentials
-  $: if (
-    deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
-    deployment.id &&
-    !isOtherOwner &&
-    !runtimeHost &&
-    !credentialsError
-  ) {
-    fetchCredentials(deployment);
-  }
-
   $: isLoading =
-    $branchDeployment.isLoading ||
+    $projectQuery.isLoading ||
     $user.isLoading ||
-    $getCredentialsMutation.isPending ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
-    (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
-      !isOtherOwner &&
-      !runtimeHost &&
-      !credentialsError);
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
   $: isErrored =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
@@ -108,23 +99,12 @@
   $: isReady =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
     runtimeHost !== null &&
+    instanceId !== null &&
+    jwt !== null &&
     !isOtherOwner;
 
-  async function fetchCredentials(dep: V1Deployment) {
-    try {
-      const resp = await $getCredentialsMutation.mutateAsync({
-        deploymentId: dep.id!,
-        data: {},
-      });
-      runtimeHost = resp.runtimeHost ?? null;
-      instanceId = resp.instanceId ?? null;
-      accessToken = resp.accessToken ?? null;
-    } catch (err) {
-      credentialsError =
-        getRpcErrorMessage(err as any) ??
-        "Failed to get deployment credentials";
-    }
-  }
+  $: projectUrl = `/${organization}/${project}`;
+  $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
   onDestroy(() => {
     $workspaceRoutePrefix = "";
@@ -144,17 +124,14 @@
           This editing session belongs to another user
         </h2>
         <CtaMessage>You can preview this branch in read-only mode.</CtaMessage>
-        <CtaButton
-          variant="secondary"
-          href="/{organization}/{project}{branchPathPrefix(branch)}"
-        >
+        <CtaButton variant="secondary" href={branchUrl}>
           Preview this branch
         </CtaButton>
       </CtaContentContainer>
     </CtaLayoutContainer>
-  {:else if isReady && deployment?.id && instanceId && runtimeHost && accessToken}
+  {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}`}
-      <RuntimeProvider host={runtimeHost} {instanceId} jwt={accessToken}>
+      <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
         <ProjectHeader
           {organization}
           {project}
@@ -165,7 +142,7 @@
           {primaryBranch}
           {planDisplayName}
           {organizationLogoUrl}
-          editContext={{ deploymentId: deployment.id }}
+          editContext={true}
         />
         <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         <FileAndResourceWatcher
@@ -189,16 +166,11 @@
       body={deployment?.statusMessage ||
         "The editing environment encountered an error. Please try again."}
     />
-  {:else if credentialsError}
-    <ErrorPage
-      statusCode={500}
-      header="Failed to connect"
-      body={credentialsError}
-    />
   {:else if isLoading}
     <EditSessionLoading
       status={deploymentStatus}
       statusMessage={deployment?.statusMessage}
+      cancelHref={projectUrl}
     />
   {:else}
     <ErrorPage

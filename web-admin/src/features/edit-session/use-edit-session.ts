@@ -3,39 +3,44 @@ import {
   createAdminServiceListDeployments,
   getAdminServiceListDeploymentsQueryKey,
   V1DeploymentStatus,
-  type AdminServiceListDeploymentsParams,
   type V1Deployment,
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived, type Readable } from "svelte/store";
 
-const DEV_DEPLOYMENT_POLL_INTERVAL = 2000;
-
-const DEV_DEPLOYMENTS_PARAMS: AdminServiceListDeploymentsParams = {
-  environment: "dev",
-};
+/**
+ * Lists all deployments for a project (no polling).
+ *
+ * Uses an empty params object (`{}`) so the TanStack Query cache key matches
+ * the BranchSelector's query. This avoids duplicate ListDeployments requests
+ * when both components are mounted on the same page; callers filter to dev
+ * deployments client-side.
+ *
+ * Freshness is maintained by:
+ * - BranchSelector polling at 2s while its dropdown is open
+ * - invalidateDeployments() called after create/delete mutations
+ */
+export function useAllDeployments(org: string, project: string) {
+  return createAdminServiceListDeployments(org, project, {});
+}
 
 /**
- * Lists dev deployments for a project, polling while any are in a transitional state.
+ * Lists dev deployments for a project. Shares the same underlying query as
+ * useAllDeployments (and BranchSelector) to avoid duplicate network requests.
  */
 export function useDevDeployments(org: string, project: string) {
-  return createAdminServiceListDeployments(
-    org,
-    project,
-    DEV_DEPLOYMENTS_PARAMS,
-    {
-      query: {
-        refetchInterval: (query) => {
-          const deployments = query.state.data?.deployments;
-          if (!deployments?.length) return false;
-          const hasTransitional = deployments.some((d) =>
-            isTransitionalStatus(d.status),
-          );
-          return hasTransitional ? DEV_DEPLOYMENT_POLL_INTERVAL : false;
-        },
-      },
-    },
-  );
+  const allQuery = useAllDeployments(org, project);
+  return derived(allQuery, ($query) => ({
+    ...$query,
+    data: $query.data
+      ? {
+          ...$query.data,
+          deployments: $query.data.deployments?.filter(
+            (d) => d.environment === "dev",
+          ),
+        }
+      : $query.data,
+  }));
 }
 
 /**
@@ -60,7 +65,6 @@ export function useActiveDevDeployment(
 
 /**
  * Returns the dev deployment for a specific branch (if any).
- * Used by the edit layout to find the deployment matching the `@branch` URL.
  */
 export function useDevDeploymentByBranch(
   org: string,
@@ -104,15 +108,6 @@ export function invalidateDeployments(org: string, project: string) {
   return queryClient.invalidateQueries({
     queryKey: getAdminServiceListDeploymentsQueryKey(org, project),
   });
-}
-
-function isTransitionalStatus(status: V1DeploymentStatus | undefined): boolean {
-  return (
-    status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-    status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
-    status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING ||
-    status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING
-  );
 }
 
 export function isActiveDeployment(d: V1Deployment): boolean {

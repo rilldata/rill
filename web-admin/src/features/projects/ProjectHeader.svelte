@@ -55,7 +55,7 @@
   export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
-  export let editContext: { deploymentId: string } | undefined = undefined;
+  export let editContext: boolean = false;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
@@ -205,7 +205,17 @@
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
-        {#if !onPublicURLPage && projectPermissions?.readDev}
+        {#if editContext && activeBranch}
+          <li class="flex items-center mr-2">
+            <span
+              class="flex items-center gap-x-1 px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+            >
+              {activeBranch.length > 12
+                ? activeBranch.slice(0, 11) + "…"
+                : activeBranch}
+            </span>
+          </li>
+        {:else if !onPublicURLPage && projectPermissions?.readDev}
           <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
@@ -214,17 +224,13 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
-      <EditActions
-        deploymentId={editContext.deploymentId}
-        {organization}
-        {project}
-      />
+      <EditActions {organization} {project} branch={activeBranch ?? ""} />
     {:else}
       {#if $viewAsUserStore}
         <ViewAsUserChip />
       {/if}
       {#if onProjectPage && projectPermissions.manageDev}
-        <EditButton {organization} {project} />
+        <EditButton {organization} {project} {activeBranch} />
       {/if}
       {#if onProjectPage && effectiveManageProjectMembers}
         <ShareProjectPopover
