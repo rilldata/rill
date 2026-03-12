@@ -51,7 +51,6 @@ Set project-wide default time ranges and available options for all canvas dashbo
 [Learn more about canvas defaults →](/developers/build/project-configuration#canvas-defaults)
 ::: 
 
-
 ## Default Filters
 
 Dashboard creators can configure default filters to establish a consistent starting point for viewers. Filters are defined as Metrics SQL WHERE expressions, keyed by the metrics view name they apply to.
