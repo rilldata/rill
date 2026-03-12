@@ -11,4 +11,7 @@
       >
     </div>
   {/if}
+  <div class="px-3 py-2 flex flex-col gap-y-1.5">
+    <slot />
+  </div>
 </div>

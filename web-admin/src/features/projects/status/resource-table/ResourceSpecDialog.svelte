@@ -7,7 +7,9 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import CanvasDescribe from "./describe/CanvasDescribe.svelte";
   import ConnectorDescribe from "./describe/ConnectorDescribe.svelte";
+  import ExploreDescribe from "./describe/ExploreDescribe.svelte";
   import FallbackDescribe from "./describe/FallbackDescribe.svelte";
   import MetricsViewDescribe from "./describe/MetricsViewDescribe.svelte";
   import SourceModelDescribe from "./describe/SourceModelDescribe.svelte";
@@ -26,11 +28,17 @@
   $: displayName =
     kind === ResourceKind.MetricsView
       ? resource?.metricsView?.spec?.displayName
-      : undefined;
+      : kind === ResourceKind.Explore
+        ? resource?.explore?.spec?.displayName
+        : kind === ResourceKind.Canvas
+          ? resource?.canvas?.spec?.displayName
+          : undefined;
   $: description =
     kind === ResourceKind.MetricsView
       ? resource?.metricsView?.spec?.description
-      : undefined;
+      : kind === ResourceKind.Explore
+        ? resource?.explore?.spec?.description
+        : undefined;
 </script>
 
 <Dialog.Root bind:open>
@@ -73,6 +81,10 @@
         <SourceModelDescribe model={resource.model} />
       {:else if kind === ResourceKind.MetricsView && resource.metricsView}
         <MetricsViewDescribe metricsView={resource.metricsView} />
+      {:else if kind === ResourceKind.Explore && resource.explore}
+        <ExploreDescribe explore={resource.explore} />
+      {:else if kind === ResourceKind.Canvas && resource.canvas}
+        <CanvasDescribe canvas={resource.canvas} />
       {:else}
         <FallbackDescribe {resource} />
       {/if}
