@@ -15,6 +15,7 @@
   import FallbackDescribe from "./describe/FallbackDescribe.svelte";
   import MetricsViewDescribe from "./describe/MetricsViewDescribe.svelte";
   import SourceModelDescribe from "./describe/SourceModelDescribe.svelte";
+  import ThemeDescribe from "./describe/ThemeDescribe.svelte";
 
   export let open = false;
   export let resourceName = "";
@@ -39,22 +40,30 @@
   $: filePath = resource?.meta?.filePaths?.[0];
 
   // Extract display name and description from resource
-  $: displayName =
-    kind === ResourceKind.MetricsView
-      ? resource?.metricsView?.spec?.displayName
-      : kind === ResourceKind.Explore
-        ? resource?.explore?.spec?.displayName
-        : kind === ResourceKind.Canvas
-          ? resource?.canvas?.spec?.displayName
-          : undefined;
-  $: description =
-    kind === ResourceKind.MetricsView
-      ? resource?.metricsView?.spec?.description
-      : kind === ResourceKind.Explore
-        ? resource?.explore?.spec?.description
-        : kind === ResourceKind.Component
-          ? resource?.component?.spec?.description
-          : undefined;
+  $: displayName = (() => {
+    switch (kind) {
+      case ResourceKind.MetricsView:
+        return resource?.metricsView?.spec?.displayName;
+      case ResourceKind.Explore:
+        return resource?.explore?.spec?.displayName;
+      case ResourceKind.Canvas:
+        return resource?.canvas?.spec?.displayName;
+      default:
+        return undefined;
+    }
+  })();
+  $: description = (() => {
+    switch (kind) {
+      case ResourceKind.MetricsView:
+        return resource?.metricsView?.spec?.description;
+      case ResourceKind.Explore:
+        return resource?.explore?.spec?.description;
+      case ResourceKind.Component:
+        return resource?.component?.spec?.description;
+      default:
+        return undefined;
+    }
+  })();
 </script>
 
 <Dialog.Root bind:open>
@@ -115,6 +124,8 @@
           canvas={resource.canvas}
           on:view-component={(e) => dispatch("view-component", e.detail)}
         />
+      {:else if kind === ResourceKind.Theme && resource.theme}
+        <ThemeDescribe theme={resource.theme} />
       {:else}
         <FallbackDescribe {resource} />
       {/if}

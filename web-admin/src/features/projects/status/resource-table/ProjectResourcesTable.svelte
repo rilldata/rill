@@ -70,6 +70,18 @@
     resourceKind: string,
     resource: V1Resource,
   ) => {
+    // Navigate to detail page for alerts and reports
+    if (resourceKind === ResourceKind.Alert) {
+      const basePath = $page.url.pathname.replace(/\/status\/resources\/?$/, "");
+      void goto(`${basePath}/alerts/${resourceName}`);
+      return;
+    }
+    if (resourceKind === ResourceKind.Report) {
+      const basePath = $page.url.pathname.replace(/\/status\/resources\/?$/, "");
+      void goto(`${basePath}/reports/${resourceName}`);
+      return;
+    }
+
     specResourceName = resourceName;
     specResourceKind = resourceKind;
     specResource = resource;

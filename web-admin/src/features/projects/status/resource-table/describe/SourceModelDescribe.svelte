@@ -136,31 +136,6 @@
 
   {/if}
 
-  <!-- Incremental / Partitions (model only) -->
-  {#if !isSource && modelSpec}
-    {#if modelSpec.incremental || modelSpec.partitionsResolver || modelSpec.incrementalStateResolver}
-      <DescribeSection title="Incremental / Partitions">
-        <DescribeRow
-          label="Incremental state resolver"
-          value={modelSpec.incrementalStateResolver}
-        />
-        <DescribeRow
-          label="Partitions resolver"
-          value={modelSpec.partitionsResolver}
-        />
-        <DescribeRow
-          label="Partitions watermark field"
-          value={modelSpec.partitionsWatermarkField}
-        />
-        <DescribeRow
-          label="Partitions concurrency limit"
-          value={modelSpec.partitionsConcurrencyLimit}
-          mono={false}
-        />
-      </DescribeSection>
-    {/if}
-  {/if}
-
   <!-- Retry (model only) -->
   {#if !isSource && modelSpec?.retryAttempts}
     <DescribeSection title="Retry">
@@ -174,59 +149,15 @@
         value={modelSpec.retryDelaySeconds}
         mono={false}
       />
-      <DescribeRow
-        label="Exponential backoff"
-        value={modelSpec.retryExponentialBackoff ? "Yes" : "No"}
-      />
       {#if modelSpec.retryIfErrorMatches?.length}
-        <DescribeRow
-          label="Error match patterns"
-          value={modelSpec.retryIfErrorMatches.join(", ")}
-        />
+        <div class="flex flex-col gap-y-0.5">
+          <span class="text-xs text-fg-secondary">Error match patterns</span>
+          {#each modelSpec.retryIfErrorMatches as pattern}
+            <span class="text-xs font-mono text-fg-primary text-right">{pattern}</span>
+          {/each}
+        </div>
       {/if}
     </DescribeSection>
-  {/if}
-
-  <!-- Source options -->
-  {#if isSource && sourceSpec}
-    {#if sourceSpec.timeoutSeconds || sourceSpec.stageChanges !== undefined || sourceSpec.streamIngestion !== undefined}
-      <DescribeSection title="Options">
-        <DescribeRow
-          label="Timeout (seconds)"
-          value={sourceSpec.timeoutSeconds}
-          mono={false}
-        />
-        <DescribeRow
-          label="Stage changes"
-          value={sourceSpec.stageChanges !== undefined
-            ? sourceSpec.stageChanges
-              ? "Yes"
-              : "No"
-            : undefined}
-        />
-        <DescribeRow
-          label="Stream ingestion"
-          value={sourceSpec.streamIngestion !== undefined
-            ? sourceSpec.streamIngestion
-              ? "Yes"
-              : "No"
-            : undefined}
-        />
-      </DescribeSection>
-    {/if}
-  {/if}
-
-  <!-- Model options -->
-  {#if !isSource && modelSpec}
-    {#if modelSpec.timeoutSeconds}
-      <DescribeSection title="Options">
-        <DescribeRow
-          label="Timeout (seconds)"
-          value={modelSpec.timeoutSeconds}
-          mono={false}
-        />
-      </DescribeSection>
-    {/if}
   {/if}
 
   <!-- Runtime Info -->
@@ -280,11 +211,6 @@
       {#each modelSpec.tests as test}
         <DescribeRow label={test.name ?? "test"} value={test.resolver} />
       {/each}
-      {#if modelState?.testErrors?.length}
-        {#each modelState.testErrors as err, i}
-          <DescribeRow label="Test error {i + 1}" value={err} />
-        {/each}
-      {/if}
     </DescribeSection>
   {/if}
 </div>
