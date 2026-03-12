@@ -4,6 +4,10 @@ import {
   splitDimensionSearchText,
 } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { V1Operation } from "web-common/src/runtime-client";
+import {
+  createBinaryExpression,
+  createSubQueryExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 describe("splitDimensionSearchText", () => {
   it("should split by comma and return trimmed parts", () => {
@@ -72,5 +76,19 @@ describe("getFiltersFromText", () => {
       { val: "Ashwani Yadav" },
       { val: "John Doe" },
     ]);
+  });
+
+  it("should leave measure filters alone", () => {
+    const { expr } = getFiltersFromText(
+      "publisher having (total_records gte 100)",
+    );
+    const inExpr = expr.cond?.exprs?.[0];
+    expect(inExpr).toEqual(
+      createSubQueryExpression(
+        "publisher",
+        ["total_records"],
+        createBinaryExpression("total_records", V1Operation.OPERATION_GTE, 100),
+      ),
+    );
   });
 });
