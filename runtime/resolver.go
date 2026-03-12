@@ -22,12 +22,12 @@ import (
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
 
-type UndefinedFieldsInResolverPropsError struct {
+type ResolverUnusedFieldsError struct {
 	Name   string
 	Fields []string
 }
 
-func (e *UndefinedFieldsInResolverPropsError) Error() string {
+func (e *ResolverUnusedFieldsError) Error() string {
 	return fmt.Sprintf("undefined fields in resolver(%q) properties: %q, will be ignored", e.Name, e.Fields)
 }
 
@@ -117,17 +117,6 @@ type ResolveOptions struct {
 	Claims             *SecurityClaims
 }
 
-func (opts *ResolveOptions) toResolverOptions(runtime *Runtime, forExport bool) *ResolverOptions {
-	return &ResolverOptions{
-		Runtime:    runtime,
-		InstanceID: opts.InstanceID,
-		Properties: opts.ResolverProperties,
-		Args:       opts.Args,
-		Claims:     opts.Claims,
-		ForExport:  forExport,
-	}
-}
-
 type ResolveInfo struct {
 	Warnings []string
 }
@@ -156,7 +145,14 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	if !ok {
 		return nil, nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
-	resolver, err := initializer(ctx, opts.toResolverOptions(r, false))
+	resolver, err := initializer(ctx, &ResolverOptions{
+		Runtime:    r,
+		InstanceID: opts.InstanceID,
+		Properties: opts.ResolverProperties,
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  false,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -164,7 +160,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 
 	err = resolver.Validate(ctx)
 	if err != nil {
-		var invalidErr *UndefinedFieldsInResolverPropsError
+		var invalidErr *ResolverUnusedFieldsError
 		if !errors.As(err, &invalidErr) {
 			return nil, nil, err
 		}

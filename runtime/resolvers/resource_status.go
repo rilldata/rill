@@ -33,8 +33,8 @@ type resourceStatusResolver struct {
 // resourceStatusProps declares the properties for the "resource_status" resolver.
 type resourceStatusProps struct {
 	// WhereError is a flag to only return resources that are in the error state.
-	WhereError       bool           `mapstructure:"where_error"`
-	AdditionalFields map[string]any `mapstructure:",remain"`
+	WhereError   bool           `mapstructure:"where_error"`
+	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
 // newResourceStatus creates a new resourceStatusResolver.
@@ -64,10 +64,10 @@ func (r *resourceStatusResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *resourceStatusResolver) Validate(ctx context.Context) error {
-	if len(r.props.AdditionalFields) > 0 {
-		return &runtime.UndefinedFieldsInResolverPropsError{
+	if len(r.props.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
 			Name:   "resource_status",
-			Fields: maps.Keys(r.props.AdditionalFields),
+			Fields: maps.Keys(r.props.UnusedFields),
 		}
 	}
 	return nil

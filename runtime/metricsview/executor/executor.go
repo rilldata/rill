@@ -533,7 +533,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 				RequireTimeRange: false,
 				MaxTimeRangeDays: 0, // not enforced
 			},
-			AdditionalFields: nil,
+			UnusedFields: nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -679,7 +679,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 			RequireTimeRange: false,
 			MaxTimeRangeDays: 0, // not enforced
 		},
-		AdditionalFields: nil,
+		UnusedFields: nil,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {

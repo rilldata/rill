@@ -100,7 +100,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         outer.QueryLimits,
-		AdditionalFields:    nil,
+		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery

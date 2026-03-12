@@ -194,6 +194,7 @@ type Parser struct {
 	deletedResources          []*Resource
 }
 
+// HasParseErrors returns true if the parser has any non-warning parse errors.
 func (p *Parser) HasParseErrors() bool {
 	for _, err := range p.Errors {
 		if !err.Warning {

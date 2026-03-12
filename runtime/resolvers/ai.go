@@ -36,8 +36,8 @@ type aiProps struct {
 	Measures   []string       `mapstructure:"measures"`
 	Where      map[string]any `mapstructure:"where"`
 	// IsReport indicates if the AI resolver is used for an automated report.
-	IsReport         bool           `mapstructure:"is_report"`
-	AdditionalFields map[string]any `mapstructure:",remain"`
+	IsReport     bool           `mapstructure:"is_report"`
+	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
 // aiArgs contains the dynamic arguments for the AI resolver.
@@ -153,10 +153,10 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 	if !r.props.IsReport && r.props.Prompt == "" {
 		return errors.New("prompt is required for non-report AI sessions")
 	}
-	if len(r.props.AdditionalFields) > 0 {
-		return &runtime.UndefinedFieldsInResolverPropsError{
+	if len(r.props.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
 			Name:   "ai",
-			Fields: maps.Keys(r.props.AdditionalFields),
+			Fields: maps.Keys(r.props.UnusedFields),
 		}
 	}
 	return nil

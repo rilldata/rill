@@ -21,18 +21,18 @@ type DataYAML struct {
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
 	AI             map[string]any `yaml:"ai"`      // AI resolver properties
-	ExtraFields    map[string]any `yaml:",inline"` // Capture any extra fields for validation
+	UnusedFields   map[string]any `yaml:",inline"` // Capture any unused fields for validation
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
 // The contextualConnector argument is optional; if provided and the resolver supports a connector, it becomes the default connector for the resolver.
 // It returns the resolver name, its properties, and refs found in the resolver props.
 func (p *Parser) parseDataYAML(paths []string, raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
-	// If there are any extra fields put it in compiler warnings
-	if len(raw.ExtraFields) > 0 {
+	// If there are any unused fields put it in compiler warnings
+	if len(raw.UnusedFields) > 0 {
 		for _, path := range paths {
 			p.Errors = append(p.Errors, &runtimev1.ParseError{
-				Message:  fmt.Sprintf("undefined fields in resolver properties: %q, will be ignored", maps.Keys(raw.ExtraFields)),
+				Message:  fmt.Sprintf("undefined fields in resolver properties: %q, will be ignored", maps.Keys(raw.UnusedFields)),
 				FilePath: path,
 				Warning:  !p.StrictResolverProps,
 			})

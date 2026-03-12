@@ -71,8 +71,8 @@ type globProps struct {
 	RollupFiles bool `mapstructure:"rollup_files"`
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
-	TransformSQL     string         `mapstructure:"transform_sql"`
-	AdditionalFields map[string]any `mapstructure:",remain"`
+	TransformSQL string         `mapstructure:"transform_sql"`
+	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
 // globArgs declares the arguments for a "glob" resolver.
@@ -170,10 +170,10 @@ func (r *globResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *globResolver) Validate(ctx context.Context) error {
-	if len(r.props.AdditionalFields) > 0 {
-		return &runtime.UndefinedFieldsInResolverPropsError{
+	if len(r.props.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
 			Name:   "glob",
-			Fields: maps.Keys(r.props.AdditionalFields),
+			Fields: maps.Keys(r.props.UnusedFields),
 		}
 	}
 	return nil

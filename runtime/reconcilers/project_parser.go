@@ -287,14 +287,22 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
 				continue
 			}
-			r.C.Logger.Warn("Parser error", zap.Bool("warning", e.Warning), zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
+			if e.Warning {
+				r.C.Logger.Warn("Parser warning", zap.String("path", e.FilePath), zap.String("warning", e.Message), observability.ZapCtx(ctx))
+			} else {
+				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
+			}
 		}
 	} else if diff.Skipped {
 		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml", observability.ZapCtx(ctx))
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
-				r.C.Logger.Warn("Parser error", zap.Bool("warning", e.Warning), zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
+				if e.Warning {
+					r.C.Logger.Warn("Parser warning", zap.String("path", e.FilePath), zap.String("warning", e.Message), observability.ZapCtx(ctx))
+				} else {
+					r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
+				}
 			}
 		}
 	}
