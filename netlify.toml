@@ -11,7 +11,7 @@
   [headers.values]
     Content-Security-Policy = """\
       default-src 'self'; \
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com; \
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.app-us1.com/  https://*.usepylon.com https://*.pusher.com; \
       style-src 'self' 'unsafe-inline' https://*.usepylon.com; \
       img-src https: data: blob:; \
       frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
