@@ -74,8 +74,7 @@
     } catch (err) {
       const axiosError = err as AxiosError<RpcStatus>;
       eventBus.emit("notification", {
-        message:
-          axiosError.response?.data?.message ?? "Failed to update slots",
+        message: axiosError.response?.data?.message ?? "Failed to update slots",
         type: "error",
       });
     }
@@ -88,13 +87,13 @@
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
         {#if isRillManaged}
-          Rill-managed projects are billed at ${SLOT_RATE_PER_HR}/slot/hr.
-          Data storage is charged separately based on usage.
-          Monthly estimates assume ~{HOURS_PER_MONTH} hours/month.
+          Rill-managed projects are billed at ${SLOT_RATE_PER_HR}/slot/hr. Data
+          storage is charged separately based on usage. Monthly estimates assume
+          ~{HOURS_PER_MONTH} hours/month.
         {:else}
-          We provide minimum slots based on your ClickHouse Cloud / Self Managed cluster settings. You're
-          free to increase if required but cannot go below your cluster's
-          minimum specs.
+          We provide minimum slots based on your ClickHouse Cloud / Self Managed
+          cluster settings. You're free to increase if required but cannot go
+          below your cluster's minimum specs.
         {/if}
       </Dialog.Description>
     </Dialog.Header>
@@ -130,7 +129,9 @@
             </span>
             <span class="tier-cell">${SLOT_RATE_PER_HR.toFixed(2)}</span>
             <span class="tier-cell">
-              ~${Math.round(tier.slots * SLOT_RATE_PER_HR * HOURS_PER_MONTH).toLocaleString()}
+              ~${Math.round(
+                tier.slots * SLOT_RATE_PER_HR * HOURS_PER_MONTH,
+              ).toLocaleString()}
             </span>
           </button>
         {/each}
