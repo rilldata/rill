@@ -28,7 +28,9 @@ const (
 )
 
 func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
-	opts := &DeployOpts{}
+	opts := &DeployOpts{
+		ProdVersion: "latest",
+	}
 
 	deployCmd := &cobra.Command{
 		Use:   "connect-github [<path>]",
@@ -51,7 +53,6 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
-	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
