@@ -79,8 +79,14 @@ export class FileAndResourceWatcher {
     this.setupSSEEventHandlers();
   }
 
+  private currentUrl: string | undefined;
+
   public watch = (url: string) => {
-    void this.client.start(url);
+    if (url === this.currentUrl) return;
+    this.currentUrl = url;
+    void this.client.start(url, {
+      getJwt: () => this._runtimeClient?.getJwt(),
+    });
   };
 
   public heartbeat = () => {
@@ -88,6 +94,7 @@ export class FileAndResourceWatcher {
   };
 
   public close = (cleanup = false) => {
+    this.currentUrl = undefined;
     this.client.close(cleanup);
   };
 
