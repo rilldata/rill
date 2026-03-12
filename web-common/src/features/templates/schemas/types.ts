@@ -67,6 +67,12 @@ export type JSONSchemaField = {
    */
   "x-tab-group"?: Record<string, string[]>;
   /**
+   * Maps enum option values to required connector driver names.
+   * Options whose required driver is not found among existing connectors
+   * are rendered as disabled in ConnectionTypeSelector.
+   */
+  "x-required-driver"?: Record<string, string>;
+  /**
    * Explicit environment variable name for secret fields.
    * When set, this name is used instead of computing it from driver + property key.
    */
@@ -102,7 +108,8 @@ export type ConnectorCategory =
   | "olap"
   | "objectStore"
   | "fileStore"
-  | "warehouse";
+  | "warehouse"
+  | "ai";
 
 export type ButtonLabels = {
   idle: string;

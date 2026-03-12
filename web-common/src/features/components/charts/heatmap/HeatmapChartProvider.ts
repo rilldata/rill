@@ -20,6 +20,7 @@ import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -70,7 +71,9 @@ export class HeatmapChartProvider {
   createChartDataQuery(
     client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
@@ -81,10 +84,11 @@ export class HeatmapChartProvider {
 
     // Create top level options store for X axis
     const xAxisQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.x?.field &&
           config?.x?.type !== "temporal" &&
@@ -125,10 +129,11 @@ export class HeatmapChartProvider {
 
     // Create top level options store for Y axis
     const yAxisQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.y?.field &&
           config?.y?.type !== "temporal" &&
@@ -171,14 +176,15 @@ export class HeatmapChartProvider {
     const yAxisQuery = createQuery(yAxisQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, xAxisQuery, yAxisQuery],
-      ([$timeAndFilterStore, $xAxisQuery, $yAxisQuery]) => {
+      [timeAndFilterStore, xAxisQuery, yAxisQuery, visibleStore],
+      ([$timeAndFilterStore, $xAxisQuery, $yAxisQuery, $visible]) => {
         const { timeRange, where, timeGrain, hasTimeSeries } =
           $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
         const yTopNData = $yAxisQuery?.data?.data;
 
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined
