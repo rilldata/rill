@@ -2813,6 +2813,29 @@ func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind,
 	return res, nil
 }
 
+func (c *connection) FindBookmarksForProject(ctx context.Context, projectID, userID, afterID string, limit int) ([]*database.Bookmark, error) {
+	var res []*database.Bookmark
+
+	var err error
+	if afterID != "" {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT * FROM bookmarks
+			WHERE project_id = $1 AND (user_id = $2 or shared = true or "default" = true) AND id > $3
+			ORDER BY id LIMIT $4
+		`, projectID, userID, afterID, limit)
+	} else {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT * FROM bookmarks
+			WHERE project_id = $1 AND (user_id = $2 or shared = true or "default" = true)
+			ORDER BY id LIMIT $3
+		`, projectID, userID, limit)
+	}
+	if err != nil {
+		return nil, parseErr("bookmarks", err)
+	}
+	return res, nil
+}
+
 // FindBookmark returns a bookmark for given bookmark id
 func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*database.Bookmark, error) {
 	res := &database.Bookmark{}

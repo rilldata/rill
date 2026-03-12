@@ -9662,6 +9662,16 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
    */
   resourceName = "";
 
+  /**
+   * @generated from field: uint32 page_size = 4;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 5;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<ListBookmarksRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9673,6 +9683,8 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksRequest {
@@ -9701,6 +9713,11 @@ export class ListBookmarksResponse extends Message<ListBookmarksResponse> {
    */
   bookmarks: Bookmark[] = [];
 
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<ListBookmarksResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9710,6 +9727,7 @@ export class ListBookmarksResponse extends Message<ListBookmarksResponse> {
   static readonly typeName = "rill.admin.v1.ListBookmarksResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "bookmarks", kind: "message", T: Bookmark, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksResponse {

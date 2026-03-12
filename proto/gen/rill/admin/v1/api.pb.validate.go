@@ -27312,11 +27312,37 @@ func (m *ListBookmarksRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if utf8.RuneCountInString(m.GetProjectId()) < 1 {
+		err := ListBookmarksRequestValidationError{
+			field:  "ProjectId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for ResourceKind
 
 	// no validation rules for ResourceName
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListBookmarksRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
 
 	if len(errors) > 0 {
 		return ListBookmarksRequestMultiError(errors)
@@ -27453,6 +27479,8 @@ func (m *ListBookmarksResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListBookmarksResponseMultiError(errors)

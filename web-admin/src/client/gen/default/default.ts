@@ -15104,6 +15104,102 @@ export const getAdminServiceListBookmarksQueryKey = (
   return [`/v1/users/bookmarks`, ...(params ? [params] : [])] as const;
 };
 
+export const getAdminServiceListBookmarksInfiniteQueryOptions = <
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+    AdminServiceListBookmarksParams["pageToken"]
+  >,
+  TError = RpcStatus,
+>(
+  params?: AdminServiceListBookmarksParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+        QueryKey,
+        AdminServiceListBookmarksParams["pageToken"]
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListBookmarksQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+    QueryKey,
+    AdminServiceListBookmarksParams["pageToken"]
+  > = ({ signal, pageParam }) =>
+    adminServiceListBookmarks(
+      { ...params, pageToken: pageParam || params?.["pageToken"] },
+      signal,
+    );
+
+  return { queryKey, queryFn, ...queryOptions } as CreateInfiniteQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+    TError,
+    TData,
+    Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+    QueryKey,
+    AdminServiceListBookmarksParams["pageToken"]
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListBookmarksInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListBookmarks>>
+>;
+export type AdminServiceListBookmarksInfiniteQueryError = RpcStatus;
+
+/**
+ * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+ */
+
+export function createAdminServiceListBookmarksInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+    AdminServiceListBookmarksParams["pageToken"]
+  >,
+  TError = RpcStatus,
+>(
+  params?: AdminServiceListBookmarksParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+        QueryKey,
+        AdminServiceListBookmarksParams["pageToken"]
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListBookmarksInfiniteQueryOptions(
+    params,
+    options,
+  );
+
+  const query = createInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as CreateInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const getAdminServiceListBookmarksQueryOptions = <
   TData = Awaited<ReturnType<typeof adminServiceListBookmarks>>,
   TError = RpcStatus,

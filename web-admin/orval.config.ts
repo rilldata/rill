@@ -56,6 +56,13 @@ export default defineConfig({
               useInfiniteQueryParam: "pageToken",
             },
           },
+          AdminService_ListBookmarks: {
+            query: {
+              useQuery: true,
+              useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
+            },
+          },
         },
       },
     },
