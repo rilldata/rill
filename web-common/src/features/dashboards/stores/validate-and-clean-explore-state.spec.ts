@@ -123,7 +123,8 @@ const TestCases: {
     ],
   },
   {
-    title: "Leaderboard sync invariant - sort measure not in leaderboard measures",
+    title:
+      "Leaderboard sync invariant - sort measure not in leaderboard measures",
     exploreState: {
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
       allMeasuresVisible: false,

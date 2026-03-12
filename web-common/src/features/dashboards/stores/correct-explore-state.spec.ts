@@ -140,12 +140,9 @@ describe("correctExploreState", () => {
     } as V1MetricsViewSpec;
     correctExploreState(updatedMetricsView, dashboard);
     // Should correct to a valid measure - either a non-advanced measure or clear invalid state
-    expect(dashboard.leaderboardSortByMeasureName).toBeTruthy();
-    expect([
-      AD_BIDS_IMPRESSIONS_MEASURE,
+    expect(dashboard.leaderboardSortByMeasureName).toEqual(
       AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
-      AD_BIDS_IMPRESSIONS_MEASURE_DAY_GRAIN,
-    ]).toContain(dashboard.leaderboardSortByMeasureName);
+    );
     expect(dashboard.dimensionThresholdFilters.length).toEqual(0);
   });
 });

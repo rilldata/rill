@@ -19,9 +19,6 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { parseRillTime } from "../../url-state/time-ranges/parser";
-import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -159,8 +156,6 @@ export class DashboardStateSync {
         undefined,
         initExploreState.selectedTimeDimension,
       );
-
-      deriveIntervalFromRillTimeName(initExploreState.selectedTimeRange);
     }
 
     // Init the store with state we got from dataLoader
@@ -254,8 +249,6 @@ export class DashboardStateSync {
         undefined,
         partialExplore.selectedTimeDimension,
       );
-
-      deriveIntervalFromRillTimeName(partialExplore.selectedTimeRange);
     }
 
     // Merge the partial state from url into the store
@@ -354,22 +347,5 @@ export class DashboardStateSync {
     // dashboard changed so we should update the url
     await goto(newUrl);
     this.updating = false;
-  }
-}
-
-/**
- * Derives and sets the interval (time grain) on a time range from its RillTime name.
- * This is needed when the URL doesn't explicitly specify a grain.
- */
-function deriveIntervalFromRillTimeName(
-  selectedRange: DashboardTimeControls | undefined,
-): void {
-  if (!selectedRange?.name || selectedRange.interval) return;
-
-  try {
-    const parsed = parseRillTime(selectedRange.name);
-    selectedRange.interval = getRangePrecision(parsed);
-  } catch {
-    // Parsing fails for non-rill-time names like "CUSTOM" - use undefined
   }
 }

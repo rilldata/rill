@@ -7,7 +7,6 @@ import {
   type MetricsViewSpecMeasure,
   type V1MetricsViewSpec,
   V1TimeGrain,
-  type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
 /**
@@ -88,7 +87,10 @@ export class AdvancedMeasureCorrector {
       this.exploreState.leaderboardMeasureNames.filter((lm) =>
         validLeaderboardMeasures.includes(lm),
       );
-    if (this.exploreState.leaderboardMeasureNames.length === 0) {
+    if (
+      this.exploreState.leaderboardMeasureNames.length === 0 &&
+      this.exploreState.leaderboardSortByMeasureName
+    ) {
       this.exploreState.leaderboardMeasureNames = [
         this.exploreState.leaderboardSortByMeasureName,
       ];

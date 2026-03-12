@@ -1,6 +1,9 @@
 import { type V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector.ts";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
 
 /**
  * Corrects the final merged explore state.
@@ -15,6 +18,10 @@ export function correctExploreState(
   AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
 
   correctLeaderboardMeasures(exploreState);
+
+  if (exploreState.selectedTimeRange) {
+    deriveIntervalFromRillTimeName(exploreState.selectedTimeRange);
+  }
 }
 
 function correctLeaderboardMeasures(exploreState: ExploreState) {
@@ -36,5 +43,22 @@ function correctLeaderboardMeasures(exploreState: ExploreState) {
     exploreState.leaderboardMeasureNames = [
       exploreState.leaderboardSortByMeasureName,
     ];
+  }
+}
+
+/**
+ * Derives and sets the interval (time grain) on a time range from its RillTime name.
+ * This is needed when the URL doesn't explicitly specify a grain.
+ */
+function deriveIntervalFromRillTimeName(
+  selectedRange: DashboardTimeControls | undefined,
+): void {
+  if (!selectedRange?.name || selectedRange.interval) return;
+
+  try {
+    const parsed = parseRillTime(selectedRange.name);
+    selectedRange.interval = getRangePrecision(parsed);
+  } catch {
+    // Parsing fails for non-rill-time names like "CUSTOM" - use undefined
   }
 }
