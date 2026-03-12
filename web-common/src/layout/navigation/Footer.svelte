@@ -10,15 +10,10 @@
   import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import RuntimeTrafficLights from "@rilldata/web-common/features/entity-management/RuntimeTrafficLights.svelte";
 
-  // When false, hides links and version info (local-only) but keeps the traffic light
-  export let showFooterLinks = true;
+  const metadataQuery = createLocalServiceGetMetadata();
 
-  const metadataQuery = showFooterLinks
-    ? createLocalServiceGetMetadata()
-    : null;
-
-  $: version = metadataQuery ? $metadataQuery?.data?.version : null;
-  $: commitHash = metadataQuery ? $metadataQuery?.data?.buildCommit : null;
+  $: version = $metadataQuery?.data?.version ?? null;
+  $: commitHash = $metadataQuery?.data?.buildCommit ?? null;
 
   const lineItems = [
     {
@@ -34,67 +29,63 @@
 <div
   class="flex flex-col pt-3 pb-3 gap-y-1 bg-surface-subtle border-t sticky bottom-0"
 >
-  {#if showFooterLinks}
-    {#each lineItems as lineItem, i (i)}
-      <a href={lineItem.href} target="_blank" rel="noreferrer noopener"
-        ><div
-          class="flex flex-row items-center px-4 py-1 gap-x-2 text-fg-secondary font-normal hover:bg-popover-accent"
-        >
-          <!-- workaround to resize the github and discord icons to match -->
-          <div
-            class="grid place-content-center"
-            style:width="16px"
-            style:height="16px"
-          >
-            <svelte:component
-              this={lineItem.icon}
-              className={lineItem.className}
-              size="14px"
-            />
-          </div>
-          {lineItem.label}
-        </div></a
+  {#each lineItems as lineItem, i (i)}
+    <a href={lineItem.href} target="_blank" rel="noreferrer noopener"
+      ><div
+        class="flex flex-row items-center px-4 py-1 gap-x-2 text-fg-secondary font-normal hover:bg-popover-accent"
       >
-    {/each}
-  {/if}
+        <!-- workaround to resize the github and discord icons to match -->
+        <div
+          class="grid place-content-center"
+          style:width="16px"
+          style:height="16px"
+        >
+          <svelte:component
+            this={lineItem.icon}
+            className={lineItem.className}
+            size="14px"
+          />
+        </div>
+        {lineItem.label}
+      </div></a
+    >
+  {/each}
   <div
     class="px-4 py-1 text-fg-secondary flex items-center flex-row w-full gap-x-2 truncate line-clamp-1"
     style:font-size="10px"
   >
-    {#if showFooterLinks}
-      <span>
-        <Tooltip alignment="start" distance={16} location="top">
-          <a
-            href="https://docs.rilldata.com"
-            target="_blank"
-            rel="noreferrer noopener"
-            class="text-fg-secondary"
-          >
-            <InfoCircle size="16px" />
-          </a>
-          <div
-            slot="tooltip-content"
-            transition:fly|global={{ duration: 100, y: 8 }}
-          >
-            <TooltipContent>
-              <TooltipTitle>
-                <svelte:fragment slot="name">Rill Developer</svelte:fragment>
-              </TooltipTitle>
-              <TooltipShortcutContainer>
-                <div>View documentation</div>
-                <Shortcut>Click</Shortcut>
-              </TooltipShortcutContainer>
-            </TooltipContent>
-          </div>
-        </Tooltip>
-      </span>
+    <span>
+      <Tooltip alignment="start" distance={16} location="top">
+        <a
+          href="https://docs.rilldata.com"
+          target="_blank"
+          rel="noreferrer noopener"
+          class="text-fg-secondary"
+        >
+          <InfoCircle size="16px" />
+        </a>
+        <div
+          slot="tooltip-content"
+          transition:fly|global={{ duration: 100, y: 8 }}
+        >
+          <TooltipContent>
+            <TooltipTitle>
+              <svelte:fragment slot="name">Rill Developer</svelte:fragment>
+            </TooltipTitle>
+            <TooltipShortcutContainer>
+              <div>View documentation</div>
+              <Shortcut>Click</Shortcut>
+            </TooltipShortcutContainer>
+          </TooltipContent>
+        </div>
+      </Tooltip>
+    </span>
 
-      <span class="truncate">
-        version {version || "unknown (built from source)"}{commitHash
-          ? ` – ${commitHash}`
-          : ""}
-      </span>
-    {/if}
+    <span class="truncate">
+      version {version || "unknown (built from source)"}{commitHash
+        ? ` – ${commitHash}`
+        : ""}
+    </span>
     <RuntimeTrafficLights />
   </div>
 </div>

@@ -22,8 +22,8 @@
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
 
-  // Hide the "Report an issue" link and version info (local-only).
-  // The traffic light (runtime connection status) is always shown.
+  // When false, hides the footer (version info, links, traffic light).
+  // Used in cloud editing where the footer isn't relevant.
   export let showFooterLinks = true;
 
   const DEFAULT_PERCENTAGE = 0.4;
@@ -166,7 +166,9 @@
         {/if}
       </div>
     </div>
-    <Footer {showFooterLinks} />
+    {#if showFooterLinks}
+      <Footer />
+    {/if}
   </div>
 </nav>
 
