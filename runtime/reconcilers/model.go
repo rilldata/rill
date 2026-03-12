@@ -38,7 +38,7 @@ const (
 	_modelPendingPartitionsBatchSize = 1000
 )
 
-var errPartitionsHaveErrors = errors.New("some partitions have errors")
+const warningPartitionsHaveErrors = "some partitions have errors"
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -293,15 +293,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			}
 		}
 
-		// Show if any partitions errored
+		// Surface any partition or test failures as non-blocking warnings
+		var warnings []string
 		if model.State.PartitionsHaveErrors {
-			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+			warnings = append(warnings, warningPartitionsHaveErrors)
 		}
-		// Show if any model tests failed
 		if len(model.State.TestErrors) > 0 {
-			return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
+			warnings = append(warnings, newTestsWarning(model.State.TestErrors))
 		}
-		return runtime.ReconcileResult{Retrigger: refreshOn}
+		return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
 	}
 
 	// Acquire the execution semaphore for the remainder of the function.
@@ -450,18 +450,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	// Show if any partitions errored
+	// Surface any partition or test failures as non-blocking warnings
+	var warnings []string
 	if model.State.PartitionsHaveErrors {
-		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+		warnings = append(warnings, warningPartitionsHaveErrors)
 	}
-
-	// Show if the model has tests that failed
 	if len(model.State.TestErrors) > 0 {
-		return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
+		warnings = append(warnings, newTestsWarning(model.State.TestErrors))
 	}
-
-	// Return the next refresh time
-	return runtime.ReconcileResult{Retrigger: refreshOn}
+	return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -2005,12 +2002,12 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	return fmt.Sprintf("%s: test did not pass", test.Name), nil
 }
 
-// newTestsError creates a new error that summarizes the messages returned from runModelTests.
-func newTestsError(msgs []string) error {
+// newTestsWarning creates a warning message that summarizes the messages returned from runModelTests.
+func newTestsWarning(msgs []string) string {
 	if len(msgs) == 0 {
-		return nil // No errors
+		return ""
 	}
-	return fmt.Errorf("tests failed:\n%s", strings.Join(msgs, "\n"))
+	return fmt.Sprintf("tests failed:\n%s", strings.Join(msgs, "\n"))
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.

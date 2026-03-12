@@ -87,8 +87,8 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 	// Build the resources list with optional filtering
 	resources := []map[string]any{}
 	for _, r := range rs {
-		// Apply where_error filter
-		if args.WhereError && r.Meta.ReconcileError == "" {
+		// Apply where_error filter (includes resources with warnings)
+		if args.WhereError && r.Meta.ReconcileError == "" && len(r.Meta.ReconcileWarnings) == 0 {
 			continue
 		}
 
@@ -97,8 +97,8 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			continue
 		}
 
-		// If there's no kind filter, apply the default filter: only resources that have errors OR match certain kinds.
-		if args.Kind == "" && r.Meta.ReconcileError == "" && !slices.Contains(projectStatusDefaultResourceKinds, r.Meta.Name.Kind) {
+		// If there's no kind filter, apply the default filter: only resources that have errors/warnings OR match certain kinds.
+		if args.Kind == "" && r.Meta.ReconcileError == "" && len(r.Meta.ReconcileWarnings) == 0 && !slices.Contains(projectStatusDefaultResourceKinds, r.Meta.Name.Kind) {
 			continue
 		}
 
@@ -131,10 +131,12 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
 			status = "Reconciling"
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-			if r.Meta.ReconcileError == "" {
-				status = "OK"
-			} else {
+			if r.Meta.ReconcileError != "" {
 				status = fmt.Sprintf("Error: %s", r.Meta.ReconcileError)
+			} else if len(r.Meta.ReconcileWarnings) > 0 {
+				status = fmt.Sprintf("Warning: %s", strings.Join(r.Meta.ReconcileWarnings, "; "))
+			} else {
+				status = "OK"
 			}
 		default:
 			status = "Unknown"

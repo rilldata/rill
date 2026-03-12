@@ -156,10 +156,11 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 	resources = []map[string]any{}
 	for _, r := range rs {
 		resources = append(resources, map[string]any{
-			"kind":             r.Meta.Name.Kind,
-			"name":             r.Meta.Name.Name,
-			"reconcile_status": r.Meta.ReconcileStatus.String(),
-			"reconcile_error":  r.Meta.ReconcileError,
+			"kind":               r.Meta.Name.Kind,
+			"name":               r.Meta.Name.Name,
+			"reconcile_status":   r.Meta.ReconcileStatus.String(),
+			"reconcile_error":    r.Meta.ReconcileError,
+			"reconcile_warnings": r.Meta.ReconcileWarnings,
 		})
 	}
 	return resources, "", parseWarnings, nil

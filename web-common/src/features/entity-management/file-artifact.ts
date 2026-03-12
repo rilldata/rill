@@ -372,6 +372,39 @@ export class FileArtifact {
     );
   }
 
+  getAllWarnings = (queryClient: QueryClient): Readable<V1ParseError[]> => {
+    const store = derived(
+      [
+        useProjectParser(queryClient, this.client),
+        this.getResource(queryClient),
+      ],
+      ([projectParser, resource]) => {
+        if (projectParser.isFetching || resource.isFetching) {
+          return get(store);
+        }
+
+        return [
+          ...(
+            projectParser.data?.projectParser?.state?.parseErrors ?? []
+          ).filter((e) => e.filePath === this.path && e.warning),
+          ...(resource.data?.meta?.reconcileWarnings ?? []).map((w) => ({
+            filePath: this.path,
+            message: w,
+          })),
+        ];
+      },
+      [],
+    );
+    return store;
+  };
+
+  getHasWarnings(queryClient: QueryClient) {
+    return derived(
+      this.getAllWarnings(queryClient),
+      (warnings) => warnings.length > 0,
+    );
+  }
+
   private updateResourceNameIfChanged(resource: V1Resource) {
     const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;

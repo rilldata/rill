@@ -438,6 +438,11 @@ export class ResourceMeta extends Message<ResourceMeta> {
   reconcileError = "";
 
   /**
+   * @generated from field: repeated string reconcile_warnings = 18;
+   */
+  reconcileWarnings: string[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp reconcile_on = 17;
    */
   reconcileOn?: Timestamp;
@@ -469,6 +474,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 12, name: "deleted_on", kind: "message", T: Timestamp, opt: true },
     { no: 16, name: "reconcile_status", kind: "enum", T: proto3.getEnumType(ReconcileStatus) },
     { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "reconcile_warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 17, name: "reconcile_on", kind: "message", T: Timestamp },
     { no: 13, name: "renamed_from", kind: "message", T: ResourceName, opt: true },
   ]);
