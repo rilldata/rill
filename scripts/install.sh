@@ -66,11 +66,17 @@ downloadBinary() {
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        CURL_PROGRESS="--silent --show-error"
+    else
+        CURL_PROGRESS="--progress-bar"
+    fi
+
     printf "Downloading binary: %s\n" "$BINARY_URL"
-    curl --location --progress-bar "${BINARY_URL}" --output rill_${PLATFORM}.zip
+    curl --location ${CURL_PROGRESS} "${BINARY_URL}" --output rill_${PLATFORM}.zip
 
     printf "\nDownloading checksum: %s\n" "$CHECKSUM_URL"
-    curl --location --progress-bar "${CHECKSUM_URL}" --output checksums.txt
+    curl --location ${CURL_PROGRESS} "${CHECKSUM_URL}" --output checksums.txt
 
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
     ${sha256_verify} checksums.txt
