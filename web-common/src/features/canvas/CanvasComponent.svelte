@@ -7,6 +7,8 @@
 </script>
 
 <script lang="ts">
+  import { get } from "svelte/store";
+
   const observer = new IntersectionObserver(
     ([entry]) => {
       if (entry.isIntersecting) {
@@ -21,11 +23,26 @@
     },
   );
 
+  let mounted = false;
+
   onMount(() => {
+    mounted = true;
     observer.observe(container);
   });
 
   export let component: BaseCanvasComponent;
+
+  let prevComponent: BaseCanvasComponent | undefined;
+  $: if (mounted && component !== prevComponent) {
+    const wasVisible = prevComponent ? get(prevComponent.visible) : false;
+    prevComponent = component;
+    if (wasVisible) {
+      component.visible.set(true);
+    } else {
+      observer.unobserve(container);
+      observer.observe(container);
+    }
+  }
   export let selected = false;
   export let ghost = false;
   export let allowPointerEvents = true;

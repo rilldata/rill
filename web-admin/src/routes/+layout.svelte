@@ -25,7 +25,7 @@
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
-  import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
+  import OrgHeader from "../features/organizations/OrgHeader.svelte";
   import "@rilldata/web-common/app.css";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
@@ -34,7 +34,6 @@
   export let data;
 
   $: ({
-    projectPermissions,
     organizationPermissions,
     organization: organizationObj,
     planDisplayName,
@@ -148,13 +147,8 @@
     {#if !hideBillingManager}
       <BillingBannerManager {organization} {organizationPermissions} />
     {/if}
-    {#if !isEmbed && !hideTopBar}
-      <TopNavigationBar
-        createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-        manageProjectMembers={projectPermissions?.manageProjectMembers}
-        manageProjectAdmins={projectPermissions?.manageProjectAdmins}
-        manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-        manageOrgMembers={organizationPermissions?.manageOrgMembers}
+    {#if !isEmbed && !hideTopBar && !withinProject($page)}
+      <OrgHeader
         readProjects={organizationPermissions?.readProjects}
         {planDisplayName}
         {organizationLogoUrl}

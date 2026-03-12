@@ -107,6 +107,19 @@ func CopyEmbedDir(fs embed.FS, src, dst string) error {
 	return nil
 }
 
+// ShellEscape returns s wrapped in single quotes if it contains characters
+// that are special in POSIX shells (spaces, globs, etc.). Safe strings are
+// returned unchanged.
+func ShellEscape(s string) string {
+	const safe = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./:@+=,"
+	for _, c := range s {
+		if !strings.ContainsRune(safe, c) {
+			return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+		}
+	}
+	return s
+}
+
 // IsGlob reports whether path contains any unescaped glob meta
 // characters: '*', '?', '[', or '{'. A backslash '\' escapes the
 // following character.

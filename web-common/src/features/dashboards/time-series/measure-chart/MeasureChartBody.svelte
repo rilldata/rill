@@ -72,6 +72,7 @@
   export let scrubController: ScrubController;
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
+  export let forceLineChart: boolean = false;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
@@ -97,7 +98,8 @@
   $: pb = config.plotBounds;
 
   // Chart series & mode
-  $: mode = determineMode(data);
+  $: mode =
+    forceLineChart || showTimeDimensionDetail ? "line" : determineMode(data);
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
   $: barSeries =
     mode === "bar" && showComparison && chartSeries.length === 2
