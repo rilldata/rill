@@ -16,6 +16,7 @@
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
+  import ManageSlotsModal from "./ManageSlotsModal.svelte";
   import OverviewCard from "./OverviewCard.svelte";
 
   export let organization: string;
@@ -64,6 +65,17 @@
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
+
+  // Slots
+  $: currentSlots = Number(projectData?.prodSlots) || 0;
+  // Live Connect only when a non-DuckDB connector explicitly has provision=false.
+  // DuckDB is always Rill-managed (including local dev where provision=false).
+  $: isRillManaged =
+    !olapConnector ||
+    olapConnector.type === "duckdb" ||
+    olapConnector.provision === true;
+  $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
+  let slotsModalOpen = false;
 </script>
 
 <OverviewCard title="Deployment">
@@ -160,8 +172,31 @@
         {/if}
       </span>
     </div>
+
+    <div class="info-row">
+      <span class="info-label">Slots</span>
+      <span class="info-value flex items-center gap-2">
+        {currentSlots}
+        {#if canManage}
+          <button
+            class="manage-slots-btn"
+            on:click={() => (slotsModalOpen = true)}
+          >
+            Manage Slots
+          </button>
+        {/if}
+      </span>
+    </div>
   </div>
 </OverviewCard>
+
+<ManageSlotsModal
+  bind:open={slotsModalOpen}
+  {organization}
+  {project}
+  {currentSlots}
+  {isRillManaged}
+/>
 
 <style lang="postcss">
   .info-grid {
@@ -187,5 +222,11 @@
   }
   .repo-link:hover {
     @apply underline;
+  }
+  .manage-slots-btn {
+    @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0;
+  }
+  .manage-slots-btn:hover {
+    @apply text-primary-600;
   }
 </style>
