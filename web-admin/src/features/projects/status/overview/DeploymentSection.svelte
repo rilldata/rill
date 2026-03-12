@@ -76,6 +76,11 @@
     olapConnector.provision === true;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
   let slotsModalOpen = false;
+
+  // Slot usage breakdown (dev edit modes coming soon; each consumes 1 slot)
+  $: prodSlots = currentSlots; // today all slots go to prod
+  $: devSlots = 0; // will increase when dev edit modes are active
+  $: usedSlots = prodSlots + devSlots;
 </script>
 
 <OverviewCard title="Deployment">
@@ -175,8 +180,22 @@
 
     <div class="info-row">
       <span class="info-label">Slots</span>
-      <span class="info-value flex items-center gap-2">
-        {currentSlots}
+      <span class="info-value flex items-center gap-3">
+        {#if currentSlots > 0}
+          <div class="slots-pill">
+            <div
+              class="slots-fill-prod"
+              style="width: {(prodSlots / currentSlots) * 100}%"
+            ></div>
+            <div
+              class="slots-fill-dev"
+              style="width: {(devSlots / currentSlots) * 100}%"
+            ></div>
+          </div>
+          <span class="slots-count">{usedSlots}/{currentSlots}</span>
+        {:else}
+          <span>0</span>
+        {/if}
         {#if canManage}
           <button
             class="manage-slots-btn"
@@ -222,6 +241,18 @@
   }
   .repo-link:hover {
     @apply underline;
+  }
+  .slots-pill {
+    @apply flex h-2.5 w-28 rounded-full bg-gray-200 overflow-hidden;
+  }
+  .slots-fill-prod {
+    @apply h-full bg-primary-500;
+  }
+  .slots-fill-dev {
+    @apply h-full bg-amber-400;
+  }
+  .slots-count {
+    @apply text-sm text-fg-primary font-medium tabular-nums;
   }
   .manage-slots-btn {
     @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0;
