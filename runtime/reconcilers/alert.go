@@ -185,7 +185,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Run alert queries and send notifications
-	executeErr := r.executeAll(ctx, self, a, triggerTime, adhocTrigger)
+	warnings, executeErr := r.executeAll(ctx, self, a, triggerTime, adhocTrigger)
 
 	// If we were cancelled, exit without updating any other trigger-related state.
 	// NOTE: We don't set Retrigger here because we'll leave re-scheduling to whatever cancelled the reconciler.
@@ -218,9 +218,9 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Done
 	if a.State.NextRunOn != nil {
-		return runtime.ReconcileResult{Err: executeErr, Retrigger: a.State.NextRunOn.AsTime()}
+		return runtime.ReconcileResult{Err: executeErr, Warnings: warnings, Retrigger: a.State.NextRunOn.AsTime()}
 	}
-	return runtime.ReconcileResult{Err: executeErr}
+	return runtime.ReconcileResult{Err: executeErr, Warnings: warnings}
 }
 
 func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -529,7 +529,7 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 
 // executeAll runs queries and (maybe) sends notifications for the alert. It also adds entries to a.State.ExecutionHistory.
 // By default, an alert is checked once for the current watermark, but if a.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
-func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) error {
+func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) ([]string, error) {
 	// Enforce timeout
 	timeout := alertCheckDefaultTimeout
 	if a.Spec.TimeoutSeconds > 0 {
@@ -542,7 +542,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	var adminMeta *drivers.AlertMetadata
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil && !errors.Is(err, runtime.ErrAdminNotConfigured) {
-		return fmt.Errorf("failed to get admin client: %w", err)
+		return nil, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	if err == nil { // Connected successfully
 		defer release()
@@ -561,14 +561,14 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		}
 		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
 		if err != nil {
-			return fmt.Errorf("failed to get alert metadata: %w", err)
+			return nil, fmt.Errorf("failed to get alert metadata: %w", err)
 		}
 	}
 
 	// Run alert queries and send notifications
-	executeErr := r.executeAllWrapped(ctx, self, a, adminMeta, triggerTime, adhocTrigger)
+	warnings, executeErr := r.executeAllWrapped(ctx, self, a, adminMeta, triggerTime, adhocTrigger)
 	if executeErr == nil {
-		return nil
+		return warnings, nil
 	}
 
 	// If it's a cancellation, don't add the error to the execution history.
@@ -579,10 +579,10 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			a.State.CurrentExecution = nil
 			err := r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
-		return executeErr
+		return nil, executeErr
 	}
 
 	// There was an execution error. Add it to the execution history.
@@ -601,18 +601,18 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	err = r.popCurrentExecution(ctx, self, a, adminMeta)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return executeErr
+	return nil, executeErr
 }
 
 // executeAllWrapped is called by executeAll, which wraps it with timeout and writing of errors to the execution history.
-func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, triggerTime time.Time, adhocTrigger bool) error {
+func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, triggerTime time.Time, adhocTrigger bool) ([]string, error) {
 	// Check refs
 	err := checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Evaluate watermark unless refs check failed.
@@ -620,7 +620,7 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	if a.Spec.WatermarkInherit {
 		t, ok, err := r.computeInheritedWatermark(ctx, self.Meta.Refs)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if ok {
 			watermark = t
@@ -643,30 +643,32 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 		skipErr := &skipError{}
 		if errors.As(err, skipErr) {
 			r.C.Logger.Info("Skipped alert check", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration), observability.ZapCtx(ctx))
-			return nil
+			return nil, nil
 		}
 		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-		return err
+		return nil, err
 	}
 	if len(ts) == 0 {
 		// This should never happen
 		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-		return nil
+		return nil, nil
 	}
 
 	// Evaluate alert for each execution time
+	var allWarnings []string
 	for _, t := range ts {
-		err := r.executeSingle(ctx, self, a, adminMeta, t, adhocTrigger)
+		warnings, err := r.executeSingle(ctx, self, a, adminMeta, t, adhocTrigger)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		allWarnings = append(allWarnings, warnings...)
 	}
 
-	return nil
+	return allWarnings, nil
 }
 
 // executeSingleAlert runs the alert query and maybe sends notifications for a single execution time.
-func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time, adhocTrigger bool) error {
+func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time, adhocTrigger bool) ([]string, error) {
 	// Create new execution and save in State.CurrentExecution
 	a.State.CurrentExecution = &runtimev1.AlertExecution{
 		Adhoc:         adhocTrigger,
@@ -675,15 +677,15 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	}
 	err := r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Check the alert and get the result
-	res, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
+	res, warnings, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
 
 	// If the error is a cancellation/timeout, return (will be retried)
 	if errors.Is(executeErr, context.Canceled) || errors.Is(executeErr, context.DeadlineExceeded) {
-		return executeErr
+		return nil, executeErr
 	}
 
 	// The error is not a cancellation/timeout. Add it to the execution history. (We don't return it since we want to continue evaluating other execution times.)
@@ -701,18 +703,18 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	err = r.popCurrentExecution(ctx, self, a, adminMeta)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return warnings, nil
 }
 
 // checkAlert runs the alert query and returns the result.
-func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
+func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, []string, error) {
 	// Log
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	if a.Spec.Resolver == "" {
-		return nil, fmt.Errorf("alert has no resolver")
+		return nil, nil, fmt.Errorf("alert has no resolver")
 	}
 
 	// Evaluate query attributes
@@ -737,21 +739,22 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		Claims: &runtime.SecurityClaims{UserAttributes: queryForAttrs},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve alert: %w", err)
+		return nil, nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}
 	defer res.Close()
 
-	if info != nil && len(info.Warnings) > 0 {
-		r.C.Logger.Warn("Alert resolver returned warnings", zap.String("name", self.Meta.Name.Name), zap.String("resolver", a.Spec.Resolver), zap.Strings("warnings", info.Warnings), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+	var warnings []string
+	if info != nil {
+		warnings = info.Warnings
 	}
 
 	row, err := res.Next()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
+			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, warnings, nil
 		}
-		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
+		return nil, nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 	}
 
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
@@ -759,9 +762,9 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	// Return fail row
 	failRow, err := structpb.NewStruct(row)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+		return nil, nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
-	return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, nil
+	return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, warnings, nil
 }
 
 // popCurrentExecution moves the current execution into the execution history and sends notifications if the execution matched the notification criteria.

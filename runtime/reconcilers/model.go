@@ -362,10 +362,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			return runtime.ReconcileResult{Err: err}
 		}
 
-		// log the warnings from execution if any
-		if len(execRes.Warnings) > 0 {
-			r.C.Logger.Warn("model execution completed with warnings", zap.String("model", n.Name), zap.Strings("warnings", execRes.Warnings), observability.ZapCtx(ctx))
-		}
 		// Emit telemetry
 		runType := "full"
 		if firstRunIncremental {
@@ -450,7 +446,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	// Surface any partition or test failures as non-blocking warnings
+	// Surface any partition errors, test failures, and execution warnings as non-blocking warnings
 	var warnings []string
 	if model.State.PartitionsHaveErrors {
 		warnings = append(warnings, warningPartitionsHaveErrors)
@@ -458,6 +454,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if len(model.State.TestErrors) > 0 {
 		warnings = append(warnings, newTestsWarning(model.State.TestErrors))
 	}
+	warnings = append(warnings, execRes.Warnings...)
 	return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
 }
 
