@@ -42,6 +42,7 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
+    getAdminServiceListDeploymentsQueryKey,
     type RpcStatus,
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
@@ -231,6 +232,12 @@
         ),
       });
     }
+    // Keep BranchSelector's ListDeployments query in sync with deployment
+    // status changes detected by GetProject (which polls more aggressively).
+    // Using the base key (no params) invalidates all ListDeployments queries.
+    void queryClient.invalidateQueries({
+      queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
+    });
   }
 
   $: error = projectError as HTTPError;
@@ -333,7 +340,7 @@
       <!-- No deployment = the project is "hibernating" -->
       <RedeployProjectCta {organization} {project} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-      <ProjectBuilding />
+      <ProjectBuilding branch={activeBranch} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
       <ErrorPage
         statusCode={500}
@@ -352,7 +359,7 @@
         branch={activeBranch}
       />
     {:else}
-      <ProjectBuilding />
+      <ProjectBuilding branch={activeBranch} />
     {/if}
   {/if}
 {/if}

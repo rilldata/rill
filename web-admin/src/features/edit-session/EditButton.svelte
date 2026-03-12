@@ -14,7 +14,7 @@
     isActiveDeployment,
     useDevDeployments,
     useCreateDevDeployment,
-    invalidateDevDeployments,
+    invalidateDeployments,
   } from "./use-edit-session";
 
   export let organization: string;
@@ -79,7 +79,7 @@
           editable: true,
         },
       });
-      void invalidateDevDeployments(organization, project);
+      void invalidateDeployments(organization, project);
       requestSkipBranchInjection();
       await goto(editUrl(resp.deployment?.branch));
     } catch (err) {

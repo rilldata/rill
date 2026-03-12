@@ -11,7 +11,7 @@
   import EditSessionTimeoutBanner from "./EditSessionTimeoutBanner.svelte";
   import EditSessionToolbar from "./EditSessionToolbar.svelte";
   import {
-    invalidateDevDeployments,
+    invalidateDeployments,
     useActiveDevDeployment,
     useCreateDevDeployment,
   } from "./use-edit-session";
@@ -83,7 +83,7 @@
           editable: true,
         },
       });
-      void invalidateDevDeployments(organization, project);
+      void invalidateDeployments(organization, project);
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",

@@ -23,6 +23,13 @@
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
 
+  const TRANSITIONAL_STATUSES = new Set([
+    V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+    V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING,
+    V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
+    V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
+  ]);
+
   $: deploymentsQuery = createAdminServiceListDeployments(
     organization,
     project,
@@ -30,6 +37,14 @@
     {
       query: {
         enabled: !!organization && !!project,
+        refetchInterval: (query) => {
+          const deps = query.state.data?.deployments;
+          if (!deps) return false;
+          const hasTransitioning = deps.some((d) =>
+            TRANSITIONAL_STATUSES.has(d.status as V1DeploymentStatus),
+          );
+          return hasTransitioning ? 2000 : false;
+        },
       },
     },
   );

@@ -89,28 +89,20 @@ export function useCreateDevDeployment() {
   return createAdminServiceCreateDeployment({
     mutation: {
       onSuccess: (_data, variables) => {
-        void queryClient.invalidateQueries({
-          queryKey: getAdminServiceListDeploymentsQueryKey(
-            variables.org,
-            variables.project,
-            DEV_DEPLOYMENTS_PARAMS,
-          ),
-        });
+        void invalidateDeployments(variables.org, variables.project);
       },
     },
   });
 }
 
 /**
- * Invalidates the dev deployments query, triggering a refetch.
+ * Invalidates all deployment queries for a project, triggering a refetch.
+ * Uses the base key (no params) so it matches both dev-scoped and
+ * unscoped queries (e.g., BranchSelector).
  */
-export function invalidateDevDeployments(org: string, project: string) {
+export function invalidateDeployments(org: string, project: string) {
   return queryClient.invalidateQueries({
-    queryKey: getAdminServiceListDeploymentsQueryKey(
-      org,
-      project,
-      DEV_DEPLOYMENTS_PARAMS,
-    ),
+    queryKey: getAdminServiceListDeploymentsQueryKey(org, project),
   });
 }
 

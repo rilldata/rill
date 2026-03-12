@@ -14,7 +14,7 @@
   import {
     useDevDeployments,
     useCreateDevDeployment,
-    invalidateDevDeployments,
+    invalidateDeployments,
   } from "@rilldata/web-admin/features/edit-session/use-edit-session";
   import {
     getStatusDotClass,
@@ -87,7 +87,7 @@
           editable: true,
         },
       });
-      void invalidateDevDeployments(organization, project);
+      void invalidateDeployments(organization, project);
       requestSkipBranchInjection();
       await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
