@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     createAdminServiceDeleteDeployment,
     getAdminServiceListDeploymentsQueryKey,
@@ -52,15 +51,17 @@
     isDiscarding = true;
     try {
       await $deleteMutation.mutateAsync({ deploymentId });
+      // Invalidate all deployment queries (dev-scoped and BranchSelector)
       void queryClient.invalidateQueries({
-        queryKey: getAdminServiceListDeploymentsQueryKey(
-          organization,
-          project,
-          { environment: "dev" },
-        ),
+        queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
       });
+      // Full page navigation: the project layout creates a RuntimeProvider
+      // from GetProject data, but during a SvelteKit client-side goto the
+      // page component mounts before the layout resolves the new deployment
+      // credentials, causing useRuntimeClient() to throw. A full reload
+      // avoids the race by starting fresh.
       requestSkipBranchInjection();
-      await goto(`/${organization}/${project}`);
+      window.location.href = `/${organization}/${project}`;
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
