@@ -14,7 +14,7 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { derived, type Readable } from "svelte/store";
-import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
+import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -35,20 +35,29 @@ export function useProjectDeployment(orgName: string, projName: string) {
 /**
  * Filters resources for display, removing hidden and internal resource kinds.
  */
+/**
+ * Returns true for resources that should be shown on the status page.
+ * Excludes hidden resources and internal kinds (ProjectParser stays
+ * RUNNING indefinitely in dev/branch deployments due to repo watching;
+ * polling on its status would never stop).
+ */
+function isDisplayResource(resource: V1Resource): boolean {
+  return (
+    !resource?.meta?.hidden &&
+    resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
+    resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
+    resource?.meta?.name?.kind !== ResourceKind.Component &&
+    resource?.meta?.name?.kind !== ResourceKind.Migration
+  );
+}
+
 export function filterResourcesForDisplay(
   resources: V1Resource[] | undefined,
 ): V1Resource[] {
-  return (
-    resources?.filter(
-      (resource) =>
-        !resource?.meta?.hidden &&
-        resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
-        resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
-        resource?.meta?.name?.kind !== ResourceKind.Component &&
-        resource?.meta?.name?.kind !== ResourceKind.Migration,
-    ) ?? []
-  );
+  return resources?.filter(isDisplayResource) ?? [];
 }
+
+const statusRefetchInterval = createSmartRefetchInterval(isDisplayResource);
 
 export function useResources(client: RuntimeClient) {
   return createRuntimeServiceListResources(
@@ -60,7 +69,7 @@ export function useResources(client: RuntimeClient) {
           ...data,
           resources: filterResourcesForDisplay(data?.resources),
         }),
-        refetchInterval: smartRefetchIntervalFunc,
+        refetchInterval: statusRefetchInterval,
       },
     },
   );

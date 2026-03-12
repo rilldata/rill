@@ -64,11 +64,41 @@ const queryRefetchStateMap = new WeakMap<
 >();
 
 /**
+ * Creates a smart refetch interval function that only considers resources
+ * matching a predicate. Use this when the query fetches all resources but
+ * only a subset is relevant (e.g., useDashboards fetches everything but
+ * only cares about canvas/explore).
+ */
+export function createSmartRefetchInterval(
+  isRelevant: (resource: V1Resource) => boolean,
+) {
+  return function refetchInterval(
+    query: Query<
+      V1ListResourcesResponse,
+      ConnectError,
+      V1ListResourcesResponse,
+      readonly unknown[]
+    >,
+  ): number | false {
+    if (!query.state.data?.resources) {
+      return false;
+    }
+
+    const resources = query.state.data.resources.filter(isRelevant);
+
+    const currentState = queryRefetchStateMap.get(query) || {};
+    const updatedState = updateSmartRefetchMeta(resources, currentState);
+    queryRefetchStateMap.set(query, updatedState);
+
+    return updatedState.refetchInterval;
+  };
+}
+
+/**
  * A smart refetch interval function that uses a WeakMap to store state.
  * This approach keeps refetch state per query without mutating the query object.
- *
- * @param query The TanStack query object
- * @returns The refetch interval (number in ms or false to disable)
+ * Checks ALL resources in the response; use createSmartRefetchInterval
+ * when you need to scope to a subset.
  */
 export function smartRefetchIntervalFunc(
   query: Query<
