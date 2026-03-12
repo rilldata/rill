@@ -14,7 +14,10 @@
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { editSessionState } from "./use-edit-session";
+
+  export let deploymentId: string;
+  export let organization: string;
+  export let project: string;
 
   let isCommitting = false;
   let isDiscarding = false;
@@ -46,9 +49,6 @@
   }
 
   async function handleDiscard() {
-    if (!$editSessionState) return;
-    const { deploymentId, organization, project } = $editSessionState;
-
     isDiscarding = true;
     try {
       await $deleteMutation.mutateAsync({ deploymentId });

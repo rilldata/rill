@@ -286,29 +286,7 @@
   />
 {:else if projectData}
   {#if onEditPage}
-    <!-- Edit session manages its own runtime; project layout provides the header -->
-    {#if isProjectAvailable && effectiveHost != null && effectiveInstanceId}
-      {#key `${effectiveHost}::${effectiveInstanceId}`}
-        <RuntimeProvider
-          host={effectiveHost}
-          instanceId={effectiveInstanceId}
-          jwt={effectiveJwt}
-          {authContext}
-        >
-          <ProjectHeader
-            {organization}
-            {project}
-            projectPermissions={effectiveProjectPermissions}
-            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-            manageOrgMembers={organizationPermissions?.manageOrgMembers}
-            readProjects={organizationPermissions?.readProjects}
-            primaryBranch={projectData?.project?.primaryBranch}
-            {planDisplayName}
-            {organizationLogoUrl}
-          />
-        </RuntimeProvider>
-      {/key}
-    {/if}
+    <!-- Edit layout manages its own runtime and header -->
     <slot />
   {:else if isProjectAvailable && effectiveHost != null && effectiveInstanceId}
     {#key `${effectiveHost}::${effectiveInstanceId}`}

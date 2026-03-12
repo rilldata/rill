@@ -3,34 +3,33 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeployment,
+    createAdminServiceGetProject,
     V1DeploymentStatus,
     type V1Deployment,
+    type V1Organization,
   } from "@rilldata/web-admin/client";
   import {
     extractBranchFromPath,
     branchPathPrefix,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { workspaceRoutePrefix } from "@rilldata/web-common/features/workspaces/workspace-routing";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onDestroy } from "svelte";
   import { get } from "svelte/store";
+  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import {
-    editSessionState,
-    invalidateDevDeployments,
-    useDevDeploymentByBranch,
-    useCreateDevDeployment,
-  } from "@rilldata/web-admin/features/edit-session/use-edit-session";
+  import { useDevDeploymentByBranch } from "@rilldata/web-admin/features/edit-session/use-edit-session";
 
   // Read params synchronously at initialization; they're stable for the
   // lifetime of this layout (navigating away from /-/edit/ destroys it).
@@ -42,70 +41,66 @@
   // Set the workspace route prefix for cloud editing
   $workspaceRoutePrefix = `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
 
+  // Root layout data: org permissions, plan display name, organization object
+  $: pageData = $page.data;
+  $: organizationPermissions = pageData?.organizationPermissions ?? {};
+  $: planDisplayName = pageData?.planDisplayName;
+  $: organizationLogoUrl = getThemedLogoUrl(
+    $themeControl,
+    pageData?.organization as V1Organization | undefined,
+  );
+
+  // GetProject({branch}) for ProjectHeader metadata (project permissions, primary branch).
+  // TanStack Query deduplicates with the project layout's identical query.
+  const projectQuery = createAdminServiceGetProject(
+    organization,
+    project,
+    branch ? { branch } : undefined,
+  );
+  $: projectPermissions = $projectQuery.data?.projectPermissions ?? {};
+  $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
+
   const user = createAdminServiceGetCurrentUser();
   const branchDeployment = useDevDeploymentByBranch(
     organization,
     project,
     branch,
   );
-  const createMutation = useCreateDevDeployment();
+  const getCredentialsMutation = createAdminServiceGetDeployment();
 
-  let createAttempted = false;
   let runtimeHost: string | null = null;
   let instanceId: string | null = null;
   let accessToken: string | null = null;
   let credentialsError: string | null = null;
 
-  const getCredentialsMutation = createAdminServiceGetDeployment();
-
   $: currentUserId = $user.data?.user?.id;
   $: deployment = $branchDeployment.data;
+  $: deploymentStatus = deployment?.status;
 
-  // Check ownership: if the deployment belongs to another user, show error
-  $: isOwnDeployment = !deployment || deployment.ownerUserId === currentUserId;
   $: isOtherOwner =
     !!deployment && !!currentUserId && deployment.ownerUserId !== currentUserId;
 
-  // When there's no deployment for this branch, create one
-  $: if (
-    !$branchDeployment.isLoading &&
-    !deployment &&
-    !createAttempted &&
-    !$createMutation.isPending &&
-    !$user.isLoading
-  ) {
-    createAttempted = true;
-    handleCreateDevDeployment();
-  }
-
-  // When we have an active running deployment owned by user, fetch credentials
+  // When deployment is running and owned by current user, fetch credentials
   $: if (
     deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
     deployment.id &&
-    isOwnDeployment &&
-    !runtimeHost
+    !isOtherOwner &&
+    !runtimeHost &&
+    !credentialsError
   ) {
     fetchCredentials(deployment);
   }
 
-  // Publish edit session state so ProjectHeader can render edit actions
-  $: if (isReady && deployment?.id && instanceId) {
-    $editSessionState = {
-      deploymentId: deployment.id,
-      instanceId,
-      organization,
-      project,
-      branch,
-    };
-  }
-
-  $: deploymentStatus = deployment?.status;
   $: isLoading =
     $branchDeployment.isLoading ||
     $user.isLoading ||
-    $createMutation.isPending ||
+    $getCredentialsMutation.isPending ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
+    (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
+      !isOtherOwner &&
+      !runtimeHost &&
+      !credentialsError);
 
   $: isErrored =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
@@ -113,26 +108,7 @@
   $: isReady =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
     runtimeHost !== null &&
-    isOwnDeployment;
-
-  async function handleCreateDevDeployment() {
-    try {
-      await $createMutation.mutateAsync({
-        org: organization,
-        project,
-        data: {
-          environment: "dev",
-          editable: true,
-        },
-      });
-      void invalidateDevDeployments(organization, project);
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to start edit session: ${getRpcErrorMessage(err as any)}`,
-      });
-    }
-  }
+    !isOtherOwner;
 
   async function fetchCredentials(dep: V1Deployment) {
     try {
@@ -151,14 +127,12 @@
   }
 
   onDestroy(() => {
-    $editSessionState = null;
     $workspaceRoutePrefix = "";
   });
 </script>
 
 <div class="edit-session">
   {#if isOtherOwner}
-    <!-- Edit URL for a branch the user doesn't own -->
     <CtaLayoutContainer>
       <CtaContentContainer>
         <h1
@@ -181,6 +155,18 @@
   {:else if isReady && deployment?.id && instanceId && runtimeHost && accessToken}
     {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} jwt={accessToken}>
+        <ProjectHeader
+          {organization}
+          {project}
+          {projectPermissions}
+          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+          manageOrgMembers={organizationPermissions?.manageOrgMembers}
+          readProjects={organizationPermissions?.readProjects}
+          {primaryBranch}
+          {planDisplayName}
+          {organizationLogoUrl}
+          editContext={{ deploymentId: deployment.id }}
+        />
         <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         <FileAndResourceWatcher
           host={runtimeHost}
@@ -213,6 +199,12 @@
     <EditSessionLoading
       status={deploymentStatus}
       statusMessage={deployment?.statusMessage}
+    />
+  {:else}
+    <ErrorPage
+      statusCode={404}
+      header="No active edit session"
+      body="This editing session is no longer active. Use the Edit button to start a new one."
     />
   {/if}
 </div>

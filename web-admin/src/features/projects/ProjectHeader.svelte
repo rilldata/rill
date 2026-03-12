@@ -30,7 +30,6 @@
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
-  import { editSessionState } from "@rilldata/web-admin/features/edit-session/use-edit-session";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
@@ -42,7 +41,6 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isCanvasDashboardPage,
-    isEditPage,
     isMetricsExplorerPage,
     isProjectPage,
     isPublicURLPage,
@@ -57,6 +55,7 @@
   export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
+  export let editContext: { deploymentId: string } | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
@@ -76,7 +75,6 @@
   $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
-  $: onEditPage = isEditPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
 
   // When "View As" is active, fetch deployment credentials for the mocked user.
@@ -215,8 +213,12 @@
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if onEditPage && $editSessionState}
-      <EditActions />
+    {#if editContext}
+      <EditActions
+        deploymentId={editContext.deploymentId}
+        {organization}
+        {project}
+      />
     {:else}
       {#if $viewAsUserStore}
         <ViewAsUserChip />

@@ -7,19 +7,7 @@ import {
   type V1Deployment,
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { derived, writable, type Readable } from "svelte/store";
-
-/**
- * Shared state for the active edit session, set by the edit layout and
- * read by ProjectHeader to render edit action buttons in the header.
- */
-export const editSessionState = writable<{
-  deploymentId: string;
-  instanceId: string;
-  organization: string;
-  project: string;
-  branch: string | undefined;
-} | null>(null);
+import { derived, type Readable } from "svelte/store";
 
 const DEV_DEPLOYMENT_POLL_INTERVAL = 2000;
 

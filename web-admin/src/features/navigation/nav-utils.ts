@@ -20,7 +20,8 @@ export function isProjectPage(page: Page): boolean {
     routeId === "/[organization]/[project]" ||
     (routeId.startsWith("/[organization]/[project]/-/") &&
       !routeId.startsWith("/[organization]/[project]/-/invite") &&
-      !routeId.startsWith("/[organization]/[project]/-/share"))
+      !routeId.startsWith("/[organization]/[project]/-/share") &&
+      !routeId.startsWith("/[organization]/[project]/-/edit"))
   );
 }
 
