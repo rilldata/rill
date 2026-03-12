@@ -335,7 +335,7 @@ func (c *Client) ReconcileDeployment(ctx context.Context, deploymentID string) (
 	res, err := c.riverClient.Insert(ctx, ReconcileDeploymentArgs{
 		DeploymentID: deploymentID,
 	}, &river.InsertOpts{
-		MaxAttempts: 25, // Last retry, ~3 weeks after first run
+		MaxAttempts: 5, // Retries at ~15s, 30s, 60s, 120s (see NextRetryAt override)
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 			ByState: []rivertype.JobState{

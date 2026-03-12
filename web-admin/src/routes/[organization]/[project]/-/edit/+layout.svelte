@@ -26,6 +26,7 @@
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
+  import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
 
   // Read params synchronously at initialization; they're stable for the
   // lifetime of this layout (navigating away from /-/edit/ destroys it).
@@ -113,6 +114,15 @@
 
 <div class="edit-session">
   {#if isOtherOwner}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      readDev={!!projectPermissions?.readDev}
+      {primaryBranch}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
     <CtaLayoutContainer>
       <CtaContentContainer>
         <h1
@@ -160,6 +170,15 @@
       </RuntimeProvider>
     {/key}
   {:else if isErrored}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      readDev={!!projectPermissions?.readDev}
+      {primaryBranch}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
     <ErrorPage
       statusCode={500}
       header="Edit session failed"
@@ -167,12 +186,17 @@
         "The editing environment encountered an error. Please try again."}
     />
   {:else if isLoading}
-    <EditSessionLoading
-      status={deploymentStatus}
-      statusMessage={deployment?.statusMessage}
-      cancelHref={projectUrl}
-    />
+    <EditSessionLoading status={deploymentStatus} cancelHref={projectUrl} />
   {:else}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      readDev={!!projectPermissions?.readDev}
+      {primaryBranch}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
     <ErrorPage
       statusCode={404}
       header="No active edit session"

@@ -37,7 +37,8 @@
     .filter(
       (d) =>
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
+        !deletedIds.has(d.id ?? ""),
     )
     .sort((a, b) => (b.updatedOn ?? "").localeCompare(a.updatedOn ?? ""));
 
@@ -77,11 +78,15 @@
 
   let openDropdownId = "";
   let deletingIds = new Set<string>();
+  let deletedIds = new Set<string>();
   async function handleDelete(deploymentId: string) {
     deletingIds.add(deploymentId);
     deletingIds = deletingIds;
     try {
       await $deleteMutation.mutateAsync({ deploymentId });
+      // Optimistically hide the row; the server-side status transition is async
+      deletedIds.add(deploymentId);
+      deletedIds = deletedIds;
       void invalidateDeployments(organization, project);
     } catch (err) {
       eventBus.emit("notification", {

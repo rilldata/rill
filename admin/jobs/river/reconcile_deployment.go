@@ -3,6 +3,8 @@ package river
 import (
 	"context"
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rilldata/rill/admin"
@@ -22,6 +24,12 @@ func (ReconcileDeploymentArgs) Kind() string { return "reconcile_deployment" }
 type ReconcileDeploymentWorker struct {
 	river.WorkerDefaults[ReconcileDeploymentArgs]
 	admin *admin.Service
+}
+
+// NextRetryAt uses exponential backoff starting at 15s: ~15s, ~30s, ~60s, ~120s.
+// This keeps total retry duration under ~4 minutes so users aren't stuck waiting.
+func (w *ReconcileDeploymentWorker) NextRetryAt(job *river.Job[ReconcileDeploymentArgs]) time.Time {
+	return time.Now().Add(15 * time.Second * time.Duration(1<<(job.Attempt-1)))
 }
 
 // NewReconcileDeploymentWorker creates a new ReconcileDeploymentWorker. Only to be used in tests to trigger the worker directly.
@@ -75,18 +83,12 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 			// Initialize the deployment (by provisioning a runtime and creating an instance on it)
 			if err := w.admin.StartDeploymentInner(ctx, depl); err != nil {
-				// On the last attempt, mark the deployment as errored so the user
-				// isn't stuck on a loading screen indefinitely. On earlier attempts,
-				// surface the error in statusMessage while keeping the PENDING status
-				// so River can retry.
-				if job.Attempt >= job.MaxAttempts {
-					if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, "Provisioning failed: "+err.Error()); dbErr != nil {
+				// Check if this is a non-retryable error (fail fast instead of waiting for all retries)
+				if isNonRetryable(err) || job.Attempt >= job.MaxAttempts {
+					if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
 						w.admin.Logger.Error("reconcile deployment: failed to set errored status", observability.ZapCtx(ctx), zap.Error(dbErr))
 					}
-				} else {
-					if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning failed: "+err.Error()); dbErr != nil {
-						w.admin.Logger.Error("reconcile deployment: failed to update status message after provisioning error", observability.ZapCtx(ctx), zap.Error(dbErr))
-					}
+					return river.JobCancel(err)
 				}
 				return err
 			}
@@ -164,4 +166,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	}
 
 	return nil
+}
+
+// isNonRetryable returns true for errors that won't resolve with retries,
+// such as capacity limits or configuration errors.
+func isNonRetryable(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "no runtimes found with sufficient available slots") ||
+		strings.Contains(msg, "Invalid environment") ||
+		strings.Contains(msg, "not a valid version")
 }

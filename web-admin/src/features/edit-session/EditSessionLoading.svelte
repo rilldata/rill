@@ -2,19 +2,9 @@
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
-  import { AlertCircleIcon } from "lucide-svelte";
 
   export let status: V1DeploymentStatus | undefined;
-  export let statusMessage: string | undefined;
   export let cancelHref: string;
-
-  $: hasError = statusMessage?.startsWith("Provisioning failed:");
-  $: heading = hasError
-    ? "Failed to provision editing environment"
-    : getHeading(status);
-  $: errorDetail = hasError
-    ? statusMessage!.replace("Provisioning failed: ", "")
-    : null;
 
   function getHeading(s: V1DeploymentStatus | undefined): string {
     switch (s) {
@@ -36,19 +26,10 @@
 
 <div class="loading-container">
   <div class="loading-content">
-    {#if hasError}
-      <AlertCircleIcon size="32" class="text-red-500" />
-    {:else}
-      <LoadingSpinner />
-    {/if}
-    <h2 class="text-lg font-semibold">{heading}</h2>
-    {#if errorDetail}
-      <p class="text-sm text-fg-muted max-w-md text-center">{errorDetail}</p>
-    {/if}
+    <LoadingSpinner />
+    <h2 class="text-lg font-semibold">{getHeading(status)}</h2>
   </div>
-  <Button type="secondary" onClick={handleCancel}>
-    {hasError ? "Go back" : "Cancel"}
-  </Button>
+  <Button type="secondary" onClick={handleCancel}>Cancel</Button>
 </div>
 
 <style lang="postcss">
