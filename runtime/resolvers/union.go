@@ -45,7 +45,7 @@ func newUnion(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resol
 	for _, entry := range props.Resolvers {
 		initializer, ok := runtime.ResolverInitializers[entry.Name]
 		if !ok {
-			closeResolvers(resolvers)
+			_ = closeResolvers(resolvers)
 			return nil, fmt.Errorf("no resolver found of type %q", entry.Name)
 		}
 		r, err := initializer(ctx, &runtime.ResolverOptions{
@@ -57,7 +57,7 @@ func newUnion(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resol
 			ForExport:  opts.ForExport,
 		})
 		if err != nil {
-			closeResolvers(resolvers)
+			_ = closeResolvers(resolvers)
 			return nil, fmt.Errorf("failed to initialize %q resolver in union: %w", entry.Name, err)
 		}
 		resolvers = append(resolvers, r)
