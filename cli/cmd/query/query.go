@@ -56,11 +56,11 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(cmdArgs) > 0 {
 				project = cmdArgs[0]
 			}
-			if !local && !cmd.Flags().Changed("project") && len(cmdArgs) == 0 && ch.Interactive {
+			if !local && project == "" {
 				var err error
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name or --local to target a local Rill process")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 

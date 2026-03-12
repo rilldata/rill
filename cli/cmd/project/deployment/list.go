@@ -1,8 +1,6 @@
 package deployment
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -25,16 +23,11 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// Get project name from flag or infer it
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+			if project == "" {
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
 				if err != nil {
 					return err
 				}
-			}
-
-			if project == "" {
-				return fmt.Errorf("project name is required")
 			}
 
 			// fetch the project

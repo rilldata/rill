@@ -1,6 +1,8 @@
 package deploy
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -32,7 +34,10 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !opts.Managed && !opts.ArchiveUpload && !opts.Github {
-				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
+				if !ch.Interactive {
+					return fmt.Errorf("must specify --managed or --github in non-interactive mode")
+				}
+				confirmed, err := cmdutil.YesNoPrompt("Enable automatic deploys to Rill Cloud from GitHub?", false)
 				if err != nil {
 					return err
 				}
