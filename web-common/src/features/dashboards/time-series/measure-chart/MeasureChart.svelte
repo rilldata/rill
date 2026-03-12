@@ -61,6 +61,7 @@
   export let onPanRight: (() => void) | undefined = undefined;
   export let scrubController: ScrubController;
   export let connectNulls: boolean = true;
+  export let forceLineChart: boolean = false;
 
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
 
@@ -315,6 +316,7 @@
       {scrubController}
       {metricsViewName}
       {connectNulls}
+      {forceLineChart}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">
