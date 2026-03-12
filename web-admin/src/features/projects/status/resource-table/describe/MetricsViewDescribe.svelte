@@ -2,11 +2,7 @@
   import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
   import DescribeSection from "./DescribeSection.svelte";
   import DescribeRow from "./DescribeRow.svelte";
-  import {
-    formatTimeGrain,
-    formatDayOfWeek,
-    formatMonthOfYear,
-  } from "./utils";
+  import { formatTimeGrain, formatDayOfWeek, formatMonthOfYear } from "./utils";
 
   export let metricsView: V1MetricsView;
 
@@ -74,9 +70,7 @@
   <DescribeSection title="Dimensions ({dimensions.length})">
     {#each dimensions as dim}
       <div class="flex flex-col gap-y-0.5">
-        <div
-          class="flex items-baseline justify-between gap-x-4 min-h-[20px]"
-        >
+        <div class="flex items-baseline justify-between gap-x-4 min-h-[20px]">
           <span class="text-xs font-mono text-fg-primary">{dim.name}</span>
           {#if dim.type && dim.type !== "DIMENSION_TYPE_UNSPECIFIED"}
             {@const label = dim.type.replace("DIMENSION_TYPE_", "")}
@@ -110,9 +104,7 @@
   <DescribeSection title="Measures ({measures.length})">
     {#each measures as m}
       <div class="flex flex-col gap-y-0.5">
-        <div
-          class="flex items-baseline justify-between gap-x-4 min-h-[20px]"
-        >
+        <div class="flex items-baseline justify-between gap-x-4 min-h-[20px]">
           <span class="text-xs font-mono text-fg-primary">{m.name}</span>
           {#if m.type && m.type !== "MEASURE_TYPE_UNSPECIFIED"}
             {@const label = m.type.replace("MEASURE_TYPE_", "")}
@@ -122,8 +114,7 @@
           {/if}
         </div>
         {#if m.description}
-          <span class="text-[11px] text-fg-secondary pl-2"
-            >{m.description}</span
+          <span class="text-[11px] text-fg-secondary pl-2">{m.description}</span
           >
         {/if}
         {#if m.expression}
@@ -140,9 +131,7 @@
           <span class="text-[11px] text-fg-muted pl-2">windowed</span>
         {/if}
         {#if m.validPercentOfTotal}
-          <span class="text-[11px] text-fg-muted pl-2"
-            >valid % of total</span
-          >
+          <span class="text-[11px] text-fg-muted pl-2">valid % of total</span>
         {/if}
       </div>
     {/each}
@@ -151,10 +140,7 @@
   <!-- Caching -->
   {#if spec?.cacheEnabled !== undefined}
     <DescribeSection title="Cache">
-      <DescribeRow
-        label="Enabled"
-        value={spec.cacheEnabled ? "Yes" : "No"}
-      />
+      <DescribeRow label="Enabled" value={spec.cacheEnabled ? "Yes" : "No"} />
       <DescribeRow label="Cache key SQL" value={spec.cacheKeySql} />
       <DescribeRow
         label="Cache TTL (seconds)"
@@ -166,21 +152,29 @@
 
   <!-- AI Instructions -->
   <DescribeSection title="AI Instructions">
-    <DescribeRow
-      label="AI instructions"
-      value={spec?.aiInstructions || "None defined"}
-      mono={!spec?.aiInstructions}
-    />
+    <span
+      class="text-xs {spec?.aiInstructions
+        ? 'text-fg-primary'
+        : 'text-fg-muted'}"
+    >
+      {spec?.aiInstructions || "None defined"}
+    </span>
   </DescribeSection>
 
   <!-- Security -->
   <DescribeSection title="Security Policy">
     {#if spec?.securityRules?.length}
       {#each spec.securityRules as rule, i}
-        <div class="flex flex-col gap-y-1 {i > 0 ? 'mt-1 pt-1 border-t border-border' : ''}">
+        <div
+          class="flex flex-col gap-y-1 {i > 0
+            ? 'mt-1 pt-1 border-t border-border'
+            : ''}"
+        >
           {#if rule.access}
             <div class="flex flex-col gap-y-0.5">
-              <span class="text-[11px] text-fg-secondary font-medium">Access</span>
+              <span class="text-[11px] text-fg-secondary font-medium"
+                >Access</span
+              >
               <DescribeRow
                 label={rule.access.allow ? "Allow" : "Deny"}
                 value={rule.access.conditionExpression || "all"}
@@ -192,12 +186,19 @@
           {/if}
           {#if rule.rowFilter}
             <div class="flex flex-col gap-y-0.5">
-              <span class="text-[11px] text-fg-secondary font-medium">Row filter</span>
+              <span class="text-[11px] text-fg-secondary font-medium"
+                >Row filter</span
+              >
               {#if rule.rowFilter.sql}
-                <span class="text-[11px] text-fg-muted font-mono pl-2">{rule.rowFilter.sql}</span>
+                <span class="text-[11px] text-fg-muted font-mono pl-2"
+                  >{rule.rowFilter.sql}</span
+                >
               {/if}
               {#if rule.rowFilter.conditionExpression}
-                <DescribeRow label="Condition" value={rule.rowFilter.conditionExpression} />
+                <DescribeRow
+                  label="Condition"
+                  value={rule.rowFilter.conditionExpression}
+                />
               {/if}
             </div>
           {/if}
@@ -214,7 +215,10 @@
                 </span>
               {/if}
               {#if rule.fieldAccess.conditionExpression}
-                <DescribeRow label="Condition" value={rule.fieldAccess.conditionExpression} />
+                <DescribeRow
+                  label="Condition"
+                  value={rule.fieldAccess.conditionExpression}
+                />
               {/if}
               {#if rule.fieldAccess.exclusive}
                 <span class="text-[11px] text-fg-muted pl-2">exclusive</span>

@@ -76,7 +76,10 @@
           on:click={() => dispatch("back")}
         >
           <span>&larr;</span>
-          <span>Back to {resourceLabelMapping[parentResourceKind] ?? parentResourceKind}</span>
+          <span
+            >Back to {resourceLabelMapping[parentResourceKind] ??
+              parentResourceKind}</span
+          >
         </button>
       {/if}
       <div class="flex items-center gap-x-2">

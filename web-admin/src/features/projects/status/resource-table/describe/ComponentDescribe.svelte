@@ -36,7 +36,9 @@
         {@const val = rendererProps[key]}
         <DescribeRow
           label={key}
-          value={typeof val === "object" ? JSON.stringify(val) : String(val ?? "")}
+          value={typeof val === "object"
+            ? JSON.stringify(val)
+            : String(val ?? "")}
         />
       {/each}
     {:else}
@@ -48,7 +50,10 @@
   <DescribeSection title="Input">
     {#if inputs.length > 0}
       {#each inputs as v}
-        <DescribeRow label={v.name ?? ""} value={String(v.defaultValue ?? "")} />
+        <DescribeRow
+          label={v.name ?? ""}
+          value={String(v.defaultValue ?? "")}
+        />
       {/each}
     {:else}
       <span class="text-xs text-fg-muted">None</span>
@@ -58,7 +63,10 @@
   <!-- Output Variable -->
   {#if spec?.output}
     <DescribeSection title="Output">
-      <DescribeRow label={spec.output.name ?? ""} value={spec.output.type ?? ""} />
+      <DescribeRow
+        label={spec.output.name ?? ""}
+        value={spec.output.type ?? ""}
+      />
     </DescribeSection>
   {/if}
 </div>

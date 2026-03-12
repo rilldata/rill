@@ -17,8 +17,7 @@
   }
 
   $: primaryHex = spec?.primaryColorRaw || colorToHex(spec?.primaryColor);
-  $: secondaryHex =
-    spec?.secondaryColorRaw || colorToHex(spec?.secondaryColor);
+  $: secondaryHex = spec?.secondaryColorRaw || colorToHex(spec?.secondaryColor);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -64,7 +63,9 @@
               class="inline-block w-3 h-3 rounded-sm border border-border"
               style="background-color: {spec.light.primary}"
             />
-            <span class="text-xs font-mono text-fg-primary">{spec.light.primary}</span>
+            <span class="text-xs font-mono text-fg-primary"
+              >{spec.light.primary}</span
+            >
           </div>
         </div>
       {/if}
@@ -76,7 +77,9 @@
               class="inline-block w-3 h-3 rounded-sm border border-border"
               style="background-color: {spec.light.secondary}"
             />
-            <span class="text-xs font-mono text-fg-primary">{spec.light.secondary}</span>
+            <span class="text-xs font-mono text-fg-primary"
+              >{spec.light.secondary}</span
+            >
           </div>
         </div>
       {/if}
@@ -108,7 +111,9 @@
               class="inline-block w-3 h-3 rounded-sm border border-border"
               style="background-color: {spec.dark.primary}"
             />
-            <span class="text-xs font-mono text-fg-primary">{spec.dark.primary}</span>
+            <span class="text-xs font-mono text-fg-primary"
+              >{spec.dark.primary}</span
+            >
           </div>
         </div>
       {/if}
@@ -120,7 +125,9 @@
               class="inline-block w-3 h-3 rounded-sm border border-border"
               style="background-color: {spec.dark.secondary}"
             />
-            <span class="text-xs font-mono text-fg-primary">{spec.dark.secondary}</span>
+            <span class="text-xs font-mono text-fg-primary"
+              >{spec.dark.secondary}</span
+            >
           </div>
         </div>
       {/if}

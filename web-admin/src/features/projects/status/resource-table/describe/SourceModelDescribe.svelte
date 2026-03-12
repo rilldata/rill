@@ -74,7 +74,10 @@
         value={formatChangeMode(modelSpec.changeMode)}
       />
     {/if}
-    <DescribeRow label="Input / Output" value="{inputConnector} / {outputConnector}" />
+    <DescribeRow
+      label="Input / Output"
+      value="{inputConnector} / {outputConnector}"
+    />
     {#if schedule && !schedule.disable}
       <DescribeRow label="Refresh" value={formatSchedule(schedule)} />
       {#if schedule.timeZone}
@@ -82,10 +85,7 @@
       {/if}
     {/if}
     {#if materialize !== undefined}
-      <DescribeRow
-        label="Materialize"
-        value={String(materialize)}
-      />
+      <DescribeRow label="Materialize" value={String(materialize)} />
     {/if}
     {#if incremental !== undefined}
       <DescribeRow label="Incremental" value={String(incremental)} />
@@ -93,7 +93,6 @@
     {#if partitioned !== undefined}
       <DescribeRow label="Partitioned" value={String(partitioned)} />
     {/if}
-
   </DescribeSection>
 
   <!-- SQL -->
@@ -133,33 +132,7 @@
         {/if}
       </DescribeSection>
     {/if}
-
   {/if}
-
-  <!-- Retry (model only) -->
-  {#if !isSource && modelSpec?.retryAttempts}
-    <DescribeSection title="Retry">
-      <DescribeRow
-        label="Attempts"
-        value={modelSpec.retryAttempts}
-        mono={false}
-      />
-      <DescribeRow
-        label="Delay (seconds)"
-        value={modelSpec.retryDelaySeconds}
-        mono={false}
-      />
-      {#if modelSpec.retryIfErrorMatches?.length}
-        <div class="flex flex-col gap-y-0.5">
-          <span class="text-xs text-fg-secondary">Error match patterns</span>
-          {#each modelSpec.retryIfErrorMatches as pattern}
-            <span class="text-xs font-mono text-fg-primary text-right">{pattern}</span>
-          {/each}
-        </div>
-      {/if}
-    </DescribeSection>
-  {/if}
-
   <!-- Runtime Info -->
   <DescribeSection title="Runtime">
     {#if isSource}
@@ -191,19 +164,49 @@
       {#if modelState.totalExecutionDurationMs}
         <DescribeRow
           label="Total execution duration"
-          value="{Number(modelState.totalExecutionDurationMs).toLocaleString()} ms"
+          value="{Number(
+            modelState.totalExecutionDurationMs,
+          ).toLocaleString()} ms"
           mono={false}
         />
       {/if}
       {#if modelState.latestExecutionDurationMs}
         <DescribeRow
           label="Latest execution duration"
-          value="{Number(modelState.latestExecutionDurationMs).toLocaleString()} ms"
+          value="{Number(
+            modelState.latestExecutionDurationMs,
+          ).toLocaleString()} ms"
           mono={false}
         />
       {/if}
     {/if}
   </DescribeSection>
+
+  <!-- Retry (model only) -->
+  {#if !isSource && modelSpec?.retryAttempts}
+    <DescribeSection title="Retry">
+      <DescribeRow
+        label="Attempts"
+        value={modelSpec.retryAttempts}
+        mono={false}
+      />
+      <DescribeRow
+        label="Delay (seconds)"
+        value={modelSpec.retryDelaySeconds}
+        mono={false}
+      />
+      {#if modelSpec.retryIfErrorMatches?.length}
+        <div class="flex flex-col gap-y-0.5">
+          <span class="text-xs text-fg-secondary">Error match patterns</span>
+          {#each modelSpec.retryIfErrorMatches as pattern}
+            <span class="text-xs font-mono text-fg-primary text-right"
+              >{pattern}</span
+            >
+          {/each}
+        </div>
+      {/if}
+    </DescribeSection>
+  {/if}
 
   <!-- Tests (model only) -->
   {#if !isSource && modelSpec?.tests?.length}

@@ -25,10 +25,7 @@
       label="Defined in metrics view"
       value={String(!!spec?.definedInMetricsView)}
     />
-    <DescribeRow
-      label="Lock time zone"
-      value={String(!!spec?.lockTimeZone)}
-    />
+    <DescribeRow label="Lock time zone" value={String(!!spec?.lockTimeZone)} />
     <DescribeRow
       label="Allow custom time range"
       value={String(!!spec?.allowCustomTimeRange)}
@@ -72,10 +69,16 @@
   <DescribeSection title="Security Policy">
     {#if spec?.securityRules?.length}
       {#each spec.securityRules as rule, i}
-        <div class="flex flex-col gap-y-1 {i > 0 ? 'mt-1 pt-1 border-t border-border' : ''}">
+        <div
+          class="flex flex-col gap-y-1 {i > 0
+            ? 'mt-1 pt-1 border-t border-border'
+            : ''}"
+        >
           {#if rule.access}
             <div class="flex flex-col gap-y-0.5">
-              <span class="text-[11px] text-fg-secondary font-medium">Access</span>
+              <span class="text-[11px] text-fg-secondary font-medium"
+                >Access</span
+              >
               <DescribeRow
                 label={rule.access.allow ? "Allow" : "Deny"}
                 value={rule.access.conditionExpression || "all"}
@@ -87,12 +90,19 @@
           {/if}
           {#if rule.rowFilter}
             <div class="flex flex-col gap-y-0.5">
-              <span class="text-[11px] text-fg-secondary font-medium">Row filter</span>
+              <span class="text-[11px] text-fg-secondary font-medium"
+                >Row filter</span
+              >
               {#if rule.rowFilter.sql}
-                <span class="text-[11px] text-fg-muted font-mono pl-2">{rule.rowFilter.sql}</span>
+                <span class="text-[11px] text-fg-muted font-mono pl-2"
+                  >{rule.rowFilter.sql}</span
+                >
               {/if}
               {#if rule.rowFilter.conditionExpression}
-                <DescribeRow label="Condition" value={rule.rowFilter.conditionExpression} />
+                <DescribeRow
+                  label="Condition"
+                  value={rule.rowFilter.conditionExpression}
+                />
               {/if}
             </div>
           {/if}
@@ -109,7 +119,10 @@
                 </span>
               {/if}
               {#if rule.fieldAccess.conditionExpression}
-                <DescribeRow label="Condition" value={rule.fieldAccess.conditionExpression} />
+                <DescribeRow
+                  label="Condition"
+                  value={rule.fieldAccess.conditionExpression}
+                />
               {/if}
               {#if rule.fieldAccess.exclusive}
                 <span class="text-[11px] text-fg-muted pl-2">exclusive</span>
