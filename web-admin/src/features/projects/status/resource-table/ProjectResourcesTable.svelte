@@ -288,7 +288,6 @@
   resourceName={specResourceName}
   resourceKind={specResourceKind}
   resource={specResource}
-  {parentResourceName}
   {parentResourceKind}
   {parentResource}
   on:view-component={async (e) => {

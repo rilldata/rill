@@ -26,9 +26,6 @@
     ? sourceSpec?.sinkConnector
     : modelSpec?.outputConnector;
 
-  // Table
-  $: tableName = isSource ? sourceState?.table : modelState?.resultTable;
-
   // Schedule
   $: schedule = spec?.refreshSchedule;
 

@@ -6,7 +6,6 @@
   export let connector: V1ConnectorV2;
 
   $: spec = connector?.spec;
-  $: state = connector?.state;
   $: properties = spec?.properties ?? {};
   $: templatedProperties = new Set(spec?.templatedProperties ?? []);
   $: propertyKeys = Object.keys(properties).sort();

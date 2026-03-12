@@ -23,7 +23,6 @@
   export let resource: V1Resource | undefined = undefined;
 
   // Track parent resource for back-navigation (e.g. canvas -> component)
-  export let parentResourceName = "";
   export let parentResourceKind = "";
   export let parentResource: V1Resource | undefined = undefined;
 
