@@ -1,9 +1,14 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import type { V1Canvas } from "@rilldata/web-common/runtime-client";
   import DescribeSection from "./DescribeSection.svelte";
   import DescribeRow from "./DescribeRow.svelte";
 
   export let canvas: V1Canvas;
+
+  const dispatch = createEventDispatcher<{
+    "view-component": { componentName: string };
+  }>();
 
   $: spec = canvas?.spec;
   $: state = canvas?.state;
@@ -66,12 +71,17 @@
   <DescribeSection title="Components ({componentCount})">
     {#each rows as row, rowIdx}
       {#each row.items ?? [] as item}
-        <div class="flex items-baseline justify-between gap-x-4 min-h-[20px]">
-          <span class="text-xs font-mono text-fg-primary">{item.component}</span>
+        <button
+          class="flex items-baseline justify-between gap-x-4 min-h-[20px] w-full text-left hover:bg-surface-subtle rounded px-1 -mx-1 transition-colors"
+          on:click={() => {
+            if (item.component) dispatch("view-component", { componentName: item.component });
+          }}
+        >
+          <span class="text-xs font-mono text-primary-600">{item.component}</span>
           <span class="text-[10px] text-fg-muted">
             row {rowIdx + 1}{#if item.width}, w:{item.width}{/if}
           </span>
-        </div>
+        </button>
       {/each}
     {/each}
   </DescribeSection>

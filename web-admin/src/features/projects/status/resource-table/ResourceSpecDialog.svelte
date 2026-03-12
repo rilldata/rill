@@ -6,8 +6,10 @@
     resourceLabelMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createEventDispatcher } from "svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import CanvasDescribe from "./describe/CanvasDescribe.svelte";
+  import ComponentDescribe from "./describe/ComponentDescribe.svelte";
   import ConnectorDescribe from "./describe/ConnectorDescribe.svelte";
   import ExploreDescribe from "./describe/ExploreDescribe.svelte";
   import FallbackDescribe from "./describe/FallbackDescribe.svelte";
@@ -18,6 +20,18 @@
   export let resourceName = "";
   export let resourceKind = "";
   export let resource: V1Resource | undefined = undefined;
+
+  // Track parent resource for back-navigation (e.g. canvas -> component)
+  export let parentResourceName = "";
+  export let parentResourceKind = "";
+  export let parentResource: V1Resource | undefined = undefined;
+
+  const dispatch = createEventDispatcher<{
+    "view-component": { componentName: string };
+    back: void;
+  }>();
+
+  $: hasParent = !!parentResource;
 
   $: kind = resourceKind as ResourceKind;
   $: icon = resourceIconMapping[kind];
@@ -38,13 +52,24 @@
       ? resource?.metricsView?.spec?.description
       : kind === ResourceKind.Explore
         ? resource?.explore?.spec?.description
-        : undefined;
+        : kind === ResourceKind.Component
+          ? resource?.component?.spec?.description
+          : undefined;
 </script>
 
 <Dialog.Root bind:open>
   <Dialog.Content class="max-w-2xl max-h-[80vh] flex flex-col">
     <!-- Header: icon + type > name -->
     <Dialog.Header>
+      {#if hasParent}
+        <button
+          class="flex items-center gap-x-1 text-xs text-fg-muted hover:text-fg-secondary mb-1 transition-colors"
+          on:click={() => dispatch("back")}
+        >
+          <span>&larr;</span>
+          <span>Back to {resourceLabelMapping[parentResourceKind] ?? parentResourceKind}</span>
+        </button>
+      {/if}
       <div class="flex items-center gap-x-2">
         {#if icon}
           <svelte:component this={icon} size="16px" />
@@ -83,8 +108,13 @@
         <MetricsViewDescribe metricsView={resource.metricsView} />
       {:else if kind === ResourceKind.Explore && resource.explore}
         <ExploreDescribe explore={resource.explore} />
+      {:else if kind === ResourceKind.Component && resource.component}
+        <ComponentDescribe component={resource.component} />
       {:else if kind === ResourceKind.Canvas && resource.canvas}
-        <CanvasDescribe canvas={resource.canvas} />
+        <CanvasDescribe
+          canvas={resource.canvas}
+          on:view-component={(e) => dispatch("view-component", e.detail)}
+        />
       {:else}
         <FallbackDescribe {resource} />
       {/if}

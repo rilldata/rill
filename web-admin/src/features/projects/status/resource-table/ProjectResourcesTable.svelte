@@ -8,6 +8,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
+  import { runtimeServiceGetResource } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
@@ -33,6 +34,11 @@
   let specResourceName = "";
   let specResourceKind = "";
   let specResource: V1Resource | undefined = undefined;
+
+  // Parent tracking for back-navigation (canvas -> component)
+  let parentResourceName = "";
+  let parentResourceKind = "";
+  let parentResource: V1Resource | undefined = undefined;
 
   let isErroredPartitionsDialogOpen = false;
   let erroredPartitionsModelName = "";
@@ -67,6 +73,10 @@
     specResourceName = resourceName;
     specResourceKind = resourceKind;
     specResource = resource;
+    // Clear parent when opening from the table directly
+    parentResourceName = "";
+    parentResourceKind = "";
+    parentResource = undefined;
     isSpecDialogOpen = true;
   };
 
@@ -260,4 +270,37 @@
   resourceName={specResourceName}
   resourceKind={specResourceKind}
   resource={specResource}
+  {parentResourceName}
+  {parentResourceKind}
+  {parentResource}
+  on:view-component={async (e) => {
+    const name = e.detail.componentName;
+    try {
+      const resp = await runtimeServiceGetResource(runtimeClient, {
+        name: { kind: ResourceKind.Component, name },
+      });
+      if (resp.resource) {
+        // Save current canvas as parent before navigating to component
+        parentResourceName = specResourceName;
+        parentResourceKind = specResourceKind;
+        parentResource = specResource;
+        specResourceName = name;
+        specResourceKind = ResourceKind.Component;
+        specResource = resp.resource;
+      }
+    } catch {
+      // Component not found; ignore
+    }
+  }}
+  on:back={() => {
+    // Restore parent resource
+    if (parentResource) {
+      specResourceName = parentResourceName;
+      specResourceKind = parentResourceKind;
+      specResource = parentResource;
+      parentResourceName = "";
+      parentResourceKind = "";
+      parentResource = undefined;
+    }
+  }}
 />

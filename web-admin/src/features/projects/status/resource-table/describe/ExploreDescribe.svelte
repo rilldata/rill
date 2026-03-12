@@ -25,6 +25,18 @@
       label="Defined in metrics view"
       value={String(!!spec?.definedInMetricsView)}
     />
+    <DescribeRow
+      label="Lock time zone"
+      value={String(!!spec?.lockTimeZone)}
+    />
+    <DescribeRow
+      label="Allow custom time range"
+      value={String(!!spec?.allowCustomTimeRange)}
+    />
+    <DescribeRow
+      label="Hide pivot in embeds"
+      value={String(!!spec?.embedsHidePivot)}
+    />
     {#if state?.dataRefreshedOn}
       <DescribeRow
         label="Data refreshed on"
@@ -54,22 +66,6 @@
     {:else}
       <span class="text-xs text-fg-muted">All (from metrics view)</span>
     {/if}
-  </DescribeSection>
-
-  <!-- Options -->
-  <DescribeSection title="Options">
-    <DescribeRow
-      label="Lock time zone"
-      value={String(!!spec?.lockTimeZone)}
-    />
-    <DescribeRow
-      label="Allow custom time range"
-      value={String(!!spec?.allowCustomTimeRange)}
-    />
-    <DescribeRow
-      label="Hide pivot in embeds"
-      value={String(!!spec?.embedsHidePivot)}
-    />
   </DescribeSection>
 
   <!-- Security -->
