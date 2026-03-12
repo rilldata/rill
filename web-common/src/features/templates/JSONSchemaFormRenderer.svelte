@@ -79,8 +79,11 @@
     ? computeRenderOrder(visibleEntries, groupedChildKeys)
     : [];
 
-  // Seed defaults for initial render: use explicit defaults, and for radio enums
-  // fall back to first option when no value is set.
+  // Seed defaults for initial render: use explicit defaults, and for enum fields
+  // with an explicit x-display, fall back to first option when no value is set.
+  // NOTE: Enum fields without x-display (rendered as clearable selects via
+  // SchemaField) are intentionally excluded; auto-populating them would conflict
+  // with the clearable UX that allows returning to empty.
   $: if (schema) {
     form.update(
       ($form) => {
@@ -617,8 +620,8 @@
           bind:checked={$form[key]}
           {onStringInputChange}
           {handleFileUpload}
-          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
-          name={`${key}-radio`}
+          options={prop.enum?.length ? selectOptions(prop) : undefined}
+          name={`${key}-enum`}
           disabled={isDisabled(key)}
         />
       </div>

@@ -16,7 +16,7 @@ import (
 func TestObjectStore(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs")
-	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -29,7 +29,7 @@ func TestObjectStore(t *testing.T) {
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
-	// t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
+	t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
 	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
 }
 
@@ -37,7 +37,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs")
 	cfg["path_prefixes"] = "gcs://integration-test.rilldata.com/glob_test/"
-	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -54,7 +54,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 func TestObjectStoreHMAC(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
-	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -67,7 +67,7 @@ func TestObjectStoreHMAC(t *testing.T) {
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
-	// t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
+	t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
 	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
 }
 
@@ -75,7 +75,7 @@ func TestObjectStoreHMACPathPrefixes(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
 	cfg["path_prefixes"] = "gcs://integration-test.rilldata.com/glob_test/"
-	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -211,10 +211,11 @@ func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket s
 func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 4, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 2, "")
 	require.NoError(t, err)
 	require.NotNil(t, objects)
-	require.Empty(t, nextToken)
+	require.Len(t, objects, 2)
+	require.NotEmpty(t, nextToken)
 }
 
 func testListObjectsNoMatch(t *testing.T, objectStore drivers.ObjectStore, bucket string) {

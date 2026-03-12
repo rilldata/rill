@@ -16,7 +16,7 @@ import (
 func TestObjectStore(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
-	conn, err := drivers.Open("s3", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("s3", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -37,7 +37,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
 	cfg["path_prefixes"] = "s3://integration-test.rilldata.com/glob_test/"
-	conn, err := drivers.Open("s3", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("s3", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -173,10 +173,10 @@ func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket s
 func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 4, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 2, "")
 	require.NoError(t, err)
 	require.NotNil(t, objects)
-	require.Len(t, objects, 4)
+	require.Len(t, objects, 2)
 	require.NotEmpty(t, nextToken)
 }
 

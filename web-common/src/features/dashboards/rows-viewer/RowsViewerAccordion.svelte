@@ -7,8 +7,7 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { get } from "svelte/store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
@@ -42,7 +41,7 @@
     },
   } = stateManagers;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: exploreState = useExploreState(exploreName);
   $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
@@ -71,9 +70,9 @@
       );
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
       timeRange,
       where: filters,
@@ -94,9 +93,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
     },
     {
@@ -131,7 +130,7 @@
   function getExportQuery() {
     return {
       metricsViewRowsRequest: {
-        instanceId: get(runtime).instanceId,
+        instanceId: client.instanceId,
         metricsViewName,
         timeStart: timeRange.start,
         timeEnd: timeRange.end,

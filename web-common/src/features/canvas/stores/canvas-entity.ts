@@ -7,7 +7,6 @@ import {
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  queryServiceConvertExpressionToMetricsSQL,
   V1ExploreComparisonMode,
   type V1CanvasPreset,
   type V1CanvasSpec,
@@ -24,7 +23,7 @@ import {
   type Readable,
   type Unsubscriber,
 } from "svelte/store";
-import { parseDocument, YAMLMap, isMap, Pair } from "yaml";
+import { parseDocument, YAMLMap, isMap, type Pair } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -47,6 +46,8 @@ import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -107,8 +108,9 @@ export class CanvasEntity {
     public name: string,
     public instanceId: string,
     private spec: CanvasResponse,
+    readonly client: RuntimeClient,
   ) {
-    this.specStore = useCanvas(instanceId, name, {}, queryClient);
+    this.specStore = useCanvas(client, name, {}, queryClient);
 
     // This will be deprecated soon - bgh
     const searchParamsStore: SearchParamsStore = (() => {
@@ -150,7 +152,7 @@ export class CanvasEntity {
     this.theme = createResolvedThemeStore(
       this.themeName,
       this.specStore,
-      this.instanceId,
+      this.client,
     );
 
     this.timeManager = new TimeManager(searchParamsStore, this);
@@ -164,7 +166,7 @@ export class CanvasEntity {
     this.processSpec(this.spec);
 
     this.metricsView = new MetricsViewSelectors(
-      this.instanceId,
+      this.client,
       this._metricsViews,
     );
 
@@ -398,8 +400,8 @@ export class CanvasEntity {
             parsed.where,
           ],
           queryFn: () =>
-            queryServiceConvertExpressionToMetricsSQL(this.instanceId, {
-              expression: parsed.where,
+            queryServiceConvertExpressionToMetricsSQL(this.client, {
+              expression: parsed.where as any,
             }),
         });
       });

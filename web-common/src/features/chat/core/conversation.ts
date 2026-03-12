@@ -5,13 +5,13 @@ import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
   runtimeServiceForkConversation,
-  type RpcStatus,
   type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { ConnectError } from "@connectrpc/connect";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   SSEFetchClient,
   SSEHttpError,
@@ -25,7 +25,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import { extractErrorMessage } from "../../../lib/errors";
 import type {
   FeedbackCategory,
   FeedbackSentiment,
@@ -73,12 +73,20 @@ export class Conversation {
   private hasReceivedFirstMessage = false;
   private readonly conversationQuery: CreateQueryResult<
     V1GetConversationResponse,
-    RpcStatus
+    ConnectError
   >;
   private readonly messageById = new Map<string, V1Message>();
 
   // Reactive store for conversationId - enables query to auto-update when ID changes
   private readonly conversationIdStore: Writable<string>;
+
+  private get instanceId(): string {
+    return this.client.instanceId;
+  }
+
+  public get runtimeClient(): RuntimeClient {
+    return this.client;
+  }
 
   public get conversationId(): string {
     return get(this.conversationIdStore);
@@ -89,7 +97,7 @@ export class Conversation {
   }
 
   constructor(
-    private readonly instanceId: string,
+    private readonly client: RuntimeClient,
     initialConversationId: string,
     private readonly agent: string = ToolName.ANALYST_AGENT,
   ) {
@@ -100,8 +108,8 @@ export class Conversation {
       this.conversationIdStore,
       ($conversationId) =>
         getRuntimeServiceGetConversationQueryOptions(
-          this.instanceId,
-          $conversationId,
+          this.client,
+          { conversationId: $conversationId },
           {
             query: {
               enabled: $conversationId !== NEW_CONVERSATION_ID,
@@ -135,7 +143,7 @@ export class Conversation {
    */
   public getConversationQuery(): CreateQueryResult<
     V1GetConversationResponse,
-    RpcStatus
+    ConnectError
   > {
     return this.conversationQuery;
   }
@@ -144,11 +152,10 @@ export class Conversation {
    * Get a reactive store for conversation query errors
    */
   public getConversationQueryError(): Readable<string | null> {
-    return derived(
-      this.getConversationQuery(),
-      ($getConversationQuery) =>
-        ($getConversationQuery.error as HTTPError)?.response?.data?.message ??
-        null,
+    return derived(this.getConversationQuery(), ($getConversationQuery) =>
+      $getConversationQuery.error
+        ? extractErrorMessage($getConversationQuery.error)
+        : null,
     );
   }
 
@@ -334,7 +341,7 @@ export class Conversation {
     this.ensureSSEClient();
     this.sseClient!.stop();
 
-    const baseUrl = `${get(runtime).host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
+    const baseUrl = `${this.client.host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
 
     const requestBody = {
       instanceId: this.instanceId,
@@ -353,6 +360,7 @@ export class Conversation {
     await this.sseClient!.start(baseUrl, {
       method: "POST",
       body: requestBody,
+      getJwt: () => this.client.getJwt(),
     });
   }
 
@@ -464,11 +472,9 @@ export class Conversation {
   private async forkConversation(): Promise<string> {
     const originalConversationId = this.conversationId;
 
-    const response = await runtimeServiceForkConversation(
-      this.instanceId,
-      this.conversationId,
-      {},
-    );
+    const response = await runtimeServiceForkConversation(this.client, {
+      conversationId: this.conversationId,
+    });
 
     if (!response.conversationId) {
       throw new Error("Fork response missing conversation ID");
@@ -480,11 +486,11 @@ export class Conversation {
     // This ensures the UI shows the conversation history immediately
     const originalCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      originalConversationId,
+      { conversationId: originalConversationId },
     );
     const forkedCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      forkedConversationId,
+      { conversationId: forkedConversationId },
     );
     const originalData =
       queryClient.getQueryData<V1GetConversationResponse>(originalCacheKey);
@@ -513,12 +519,12 @@ export class Conversation {
   private transitionToRealConversation(realConversationId: string): void {
     const oldCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      this.conversationId, // This is still "new"
+      { conversationId: this.conversationId }, // This is still "new"
     );
 
     const newCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      realConversationId,
+      { conversationId: realConversationId },
     );
 
     // Get existing data from "new" conversation cache
@@ -571,10 +577,9 @@ export class Conversation {
    * Add message to TanStack Query cache
    */
   private addMessageToCache(message: V1Message): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
+    const cacheKey = getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+      conversationId: this.conversationId,
+    });
     queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
       if (!old?.conversation) {
         // Create initial conversation structure if it doesn't exist
@@ -606,10 +611,9 @@ export class Conversation {
    * Remove message from TanStack Query cache (for rollback)
    */
   private removeMessageFromCache(messageId: string): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
+    const cacheKey = getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+      conversationId: this.conversationId,
+    });
 
     queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
       if (!old?.conversation) return old;

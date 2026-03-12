@@ -11,8 +11,10 @@
 
   export let open = false;
   export let name: string;
-  export let onRefresh: () => void;
+  export let onRefresh: () => Promise<void> | void;
   export let refreshType: "full" | "incremental" = "full";
+
+  let isRefreshing = false;
 
   const MAX_NAME_LENGTH = 37;
 
@@ -23,12 +25,15 @@
     return str;
   }
 
-  function handleRefresh() {
+  async function handleRefresh() {
     try {
-      onRefresh();
+      isRefreshing = true;
+      await onRefresh();
       open = false;
     } catch (error) {
       console.error("Failed to refresh resource:", error);
+    } finally {
+      isRefreshing = false;
     }
   }
 </script>
@@ -56,11 +61,17 @@
     <AlertDialogFooter>
       <Button
         type="tertiary"
+        disabled={isRefreshing}
         onClick={() => {
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" onClick={handleRefresh}>Yes, refresh</Button>
+      <Button
+        type="primary"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+        loading={isRefreshing}>Yes, refresh</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

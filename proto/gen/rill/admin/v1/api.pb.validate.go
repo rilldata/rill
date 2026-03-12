@@ -3693,6 +3693,10 @@ func (m *ListProjectsForOrganizationAndUserRequest) validate(all bool) error {
 
 	// no validation rules for PageToken
 
+	// no validation rules for Direct
+
+	// no validation rules for IncludeRoles
+
 	if len(errors) > 0 {
 		return ListProjectsForOrganizationAndUserRequestMultiError(errors)
 	}
@@ -3834,6 +3838,52 @@ func (m *ListProjectsForOrganizationAndUserResponse) validate(all bool) error {
 	}
 
 	// no validation rules for NextPageToken
+
+	{
+		sorted_keys := make([]string, len(m.GetProjectRoles()))
+		i := 0
+		for key := range m.GetProjectRoles() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetProjectRoles()[key]
+			_ = val
+
+			// no validation rules for ProjectRoles[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, ListProjectsForOrganizationAndUserResponseValidationError{
+							field:  fmt.Sprintf("ProjectRoles[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, ListProjectsForOrganizationAndUserResponseValidationError{
+							field:  fmt.Sprintf("ProjectRoles[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return ListProjectsForOrganizationAndUserResponseValidationError{
+						field:  fmt.Sprintf("ProjectRoles[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
 
 	if len(errors) > 0 {
 		return ListProjectsForOrganizationAndUserResponseMultiError(errors)

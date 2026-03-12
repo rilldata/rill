@@ -6,7 +6,7 @@
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { flexRender } from "@tanstack/svelte-table";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards } from "./selectors";
@@ -15,12 +15,12 @@
   export let isPreview = false;
   export let previewLimit = 5;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
   $: ({
     params: { organization, project },
   } = $page);
 
-  $: dashboards = useDashboards(instanceId);
+  $: dashboards = useDashboards(runtimeClient);
   $: ({
     data: dashboardsData,
     isLoading,

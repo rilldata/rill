@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const embedVersion = "25.6.12.10"
+const embedVersion = "25.12.5.44"
 
 var (
 	embed             *embedClickHouse
@@ -352,6 +352,10 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
     <tmp_path>%s</tmp_path>
 
     <mlock_executable>true</mlock_executable>
+
+    <!-- Disable cgroup memory usage; it causes errors on WSL where cgroup files are unavailable -->
+    <cgroups_memory_usage_observer_wait_time>0</cgroups_memory_usage_observer_wait_time>
+    <memory_worker_use_cgroup>false</memory_worker_use_cgroup>
 
     <users>
         <default>

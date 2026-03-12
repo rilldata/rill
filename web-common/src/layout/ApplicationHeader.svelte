@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type {
     PathOption,
@@ -8,6 +7,7 @@
   } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
@@ -17,20 +17,20 @@
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
+  import Header from "@rilldata/web-common/layout/header/Header.svelte";
+  import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
-  import { fileArtifacts } from "../features/entity-management/file-artifacts";
-  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import Tag from "../components/tag/Tag.svelte";
+  import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
+  const runtimeClient = useRuntimeClient();
 
   export let mode: string;
-
-  $: ({ instanceId } = $runtime);
 
   $: ({
     params: { name: dashboardName },
@@ -43,9 +43,9 @@
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
 
-  $: exploresQuery = useValidExplores(instanceId);
-  $: canvasQuery = useValidCanvases(instanceId);
-  $: projectTitleQuery = useProjectTitle(instanceId);
+  $: exploresQuery = useValidExplores(runtimeClient);
+  $: canvasQuery = useValidCanvases(runtimeClient);
+  $: projectTitleQuery = useProjectTitle(runtimeClient);
 
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
 
@@ -96,11 +96,9 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage} class="bg-surface-base">
+<Header borderBottom={!onDeployPage}>
   {#if !onDeployPage}
-    <a href="/">
-      <Rill />
-    </a>
+    <HeaderLogo href="/" />
 
     <Tag text={mode} color="gray"></Tag>
 
@@ -121,7 +119,7 @@
     {/if}
   {/if}
 
-  <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
+  <div class="flex gap-x-2 items-center ml-auto">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
@@ -129,19 +127,11 @@
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {:else if showDeveloperChat}
-      <ChatToggle beta />
+      <ChatToggle />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
     <LocalAvatarButton />
   </div>
-</header>
-
-<style lang="postcss">
-  header {
-    @apply w-full box-border;
-    @apply flex gap-x-2 items-center px-4 flex-none;
-    @apply h-11;
-  }
-</style>
+</Header>
