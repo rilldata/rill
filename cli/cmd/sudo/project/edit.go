@@ -27,6 +27,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			isEditRequested := false
 			if cmd.Flags().Changed("prod-slots") {
+				if prodSlots <= 0 {
+					return fmt.Errorf("--prod-slots must be greater than zero")
+				}
 				prodSlotsInt64 := int64(prodSlots)
 				req.ProdSlots = &prodSlotsInt64
 				isEditRequested = true
@@ -39,10 +42,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !isEditRequested {
 				ch.Printf("No edit requested\n")
 				return nil
-			}
-
-			if req.ProdSlots != nil && *req.ProdSlots <= 0 {
-				return fmt.Errorf("--prod-slots must be greater than zero")
 			}
 
 			client, err := ch.Client()
