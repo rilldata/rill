@@ -673,20 +673,6 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
-
-### `soql`
-
-_[string]_ - SOQL query to execute against the Salesforce instance. 
-
-### `sobject`
-
-_[string]_ - Salesforce object (e.g., Account, Contact) targeted by the query. 
-
-### `queryAll`
-
-_[boolean]_ - Whether to include deleted and archived records in the query (uses queryAll API). 
-
 ## Examples
 
 ```yaml

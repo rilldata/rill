@@ -26,7 +26,6 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### _Databases_
 - [**MySQL**](#mysql) - MySQL databases
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
-- [**SQLite**](#sqlite) - SQLite databases
 - [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
 ### _Object Storage_
@@ -42,7 +41,6 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 ### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**Salesforce**](#salesforce) - Salesforce data
 
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{ .env.KEY_NAME }}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
@@ -1127,43 +1125,6 @@ endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-com
 region: "us-east-1" # AWS region of the S3 bucket
 ```
 
-## Salesforce
-
-### `driver`
-
-_[string]_ - Refers to the driver type and must be driver `salesforce` _(required)_
-
-### `username`
-
-_[string]_ - Salesforce account username _(required)_
-
-### `password`
-
-_[string]_ - Salesforce account password (secret) 
-
-### `key`
-
-_[string]_ - Authentication key for Salesforce (secret) 
-
-### `endpoint`
-
-_[string]_ - Salesforce API endpoint URL _(required)_
-
-### `client_id`
-
-_[string]_ - Client ID used for Salesforce OAuth authentication _(required)_
-
-```yaml
-# Example: Salesforce connector configuration
-type: connector # Must be `connector` (required)
-driver: salesforce # Must be `salesforce` _(required)_
-username: "myusername" # Salesforce account username
-password: "{{ .env.SALESFORCE_PASSWORD }}" # Salesforce account password (secret)
-key: "{{ .env.SALESFORCE_KEY }}" # Authentication key for Salesforce (secret)
-endpoint: "https://login.salesforce.com" # Salesforce API endpoint URL
-client_id: "my-client-id" # Client ID used for Salesforce OAuth authentication
-```
-
 ## Slack
 
 ### `driver`
@@ -1275,21 +1236,4 @@ type: connector
 driver: snowflake
 dsn: "{{ .env.SNOWFLAKE_DSN }}" # define SNOWFLAKE_DSN in .env file
 parallel_fetch_limit: 2
-```
-
-## SQLite
-
-### `driver`
-
-_[string]_ - Refers to the driver type and must be driver `sqlite` _(required)_
-
-### `dsn`
-
-_[string]_ - DSN(Data Source Name) for the sqlite connection _(required)_
-
-```yaml
-# Example: SQLite connector configuration
-type: connector # Must be `connector` (required)
-driver: sqlite # Must be `sqlite` _(required)_
-dsn: "file:mydatabase.db" # DSN for the sqlite connection
 ```
