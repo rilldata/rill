@@ -6,8 +6,8 @@
   import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
   import AmazonS3Icon from "@rilldata/web-common/components/icons/connectors/AmazonS3Icon.svelte";
   import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
-  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ComponentType, SvelteComponent } from "svelte";
 
   type ConnectionOption = {
@@ -74,10 +74,11 @@
     : { bg: "bg-surface-secondary", text: "text-fg-muted" };
 
   // Query existing connectors and derive disabled options via a selector
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
   $: hasRequiredDrivers = Object.keys(requiredDrivers).length > 0;
   $: disabledOptionsQuery = createRuntimeServiceAnalyzeConnectors(
-    instanceId,
+    client,
+    {},
     {
       query: {
         enabled: hasRequiredDrivers,
