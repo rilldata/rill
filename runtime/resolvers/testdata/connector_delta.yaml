@@ -9,7 +9,7 @@ project_files:
     materialize: true
     sql: |
       SELECT *
-      FROM delta_scan('gs://rilldata-public/delta/orders_delta')
+      FROM delta_scan('gs://integration-test.rilldata.com/delta/orders_delta')
 tests:
   - name: test_delta_gcs_row_count
     resolver: sql

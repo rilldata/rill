@@ -42,7 +42,6 @@
   export let isSubmitDisabled = true;
   export let formId = baseFormId;
   export let shouldShowSkipLink = false;
-  export let disabledOptions: Record<string, string> = {};
 
   const selectedAuthMethodStore = {
     subscribe: (run: (value: string) => void) =>
@@ -207,6 +206,5 @@
     {onStringInputChange}
     {handleFileUpload}
     iconMap={ICONS}
-    {disabledOptions}
   />
 </AddDataFormSection>
