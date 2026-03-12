@@ -20,9 +20,27 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.ResourceKind, req.ResourceName, claims.OwnerID())
+	var bookmarks []*database.Bookmark
+	var err error
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	if req.ResourceName != "" {
+		bookmarks, err = s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.ResourceKind, req.ResourceName, claims.OwnerID())
+	} else {
+		bookmarks, err = s.admin.DB.FindBookmarksForProject(ctx, req.ProjectId, claims.OwnerID(), token.Val, pageSize)
+	}
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(bookmarks) >= pageSize {
+		nextToken = marshalPageToken(bookmarks[len(bookmarks)-1].ID)
 	}
 
 	dtos := make([]*adminv1.Bookmark, len(bookmarks))
@@ -31,7 +49,8 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 	}
 
 	return &adminv1.ListBookmarksResponse{
-		Bookmarks: dtos,
+		Bookmarks:     dtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 

@@ -2473,13 +2473,16 @@ message RevokeCurrentAuthTokenResponse {
 }
 
 message ListBookmarksRequest {
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.min_len = 1];
   string resource_kind = 2;
   string resource_name = 3;
+  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 5;
 }
 
 message ListBookmarksResponse {
   repeated Bookmark bookmarks = 1;
+  string next_page_token = 2;
 }
 
 message GetBookmarkRequest {

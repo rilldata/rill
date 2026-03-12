@@ -4271,6 +4271,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
     post:
       summary: CreateBookmark creates a bookmark for the given user or for all users for the dashboard
       operationId: AdminService_CreateBookmark
@@ -5367,6 +5376,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Bookmark'
+      nextPageToken:
+        type: string
   v1ListDeploymentsResponse:
     type: object
     properties:

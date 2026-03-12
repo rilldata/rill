@@ -296,6 +296,7 @@ type DB interface {
 	DeleteProjectAccessRequest(ctx context.Context, id string) error
 
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
+	FindBookmarksForProject(ctx context.Context, projectID, userID, afterID string, limit int) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)

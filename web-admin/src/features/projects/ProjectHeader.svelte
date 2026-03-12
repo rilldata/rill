@@ -41,6 +41,7 @@
     isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
+  import Bookmarks from "@rilldata/web-admin/features/project-wide-bookmarks/Bookmarks.svelte";
 
   export let organization: string;
   export let project: string;
@@ -245,6 +246,8 @@
           </StateManagersProvider>
         {/key}
       {/if}
+    {:else}
+      <Bookmarks {organization} {project} />
     {/if}
 
     {#if onCanvasDashboardPage && hasUserAccess}
