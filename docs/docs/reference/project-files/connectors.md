@@ -33,9 +33,6 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**GCS**](#gcs) - Google Cloud Storage
 - [**S3**](#s3) - Amazon S3 storage
 
-### _Table Formats_
-- [**Delta Lake**](#delta) - Delta Lake tables via DuckDB
-
 ### Service Integrations
 - [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
@@ -1126,85 +1123,6 @@ aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Ke
 aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # Optional AWS session token for temporary credentials
 endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage
 region: "us-east-1" # AWS region of the S3 bucket
-```
-
-## Delta
-
-Read [Delta Lake](https://delta.io/) tables from object storage via DuckDB's [Delta extension](https://duckdb.org/docs/stable/core_extensions/delta). Delta tables are configured as DuckDB models using `delta_scan()`. Supports S3, Azure, and local storage. For details, see [Delta Lake](/developers/build/connectors/data-source/delta).
-
-
-### `connector`
-
-_[string]_ - Must be `duckdb`
-
-### `create_secrets_from_connectors`
-
-_[string, array]_ - Storage connector name for authentication (e.g., `s3` or `azure`). Required for cloud storage backends.
-
-### `materialize`
-
-_[boolean]_ - Whether to materialize the model results
-
-### `sql`
-
-_[string]_ - SQL query using `delta_scan()` to read the Delta table
-
-```yaml
-# Example: Delta Lake model reading from S3
-type: model
-connector: duckdb
-create_secrets_from_connectors: s3
-materialize: true
-sql: |
-    SELECT *
-    FROM delta_scan('s3://my-bucket/path/to/delta_table')
-```
-
-```yaml
-# Example: Delta Lake model reading from local filesystem
-type: model
-connector: duckdb
-materialize: true
-sql: |
-    SELECT *
-    FROM delta_scan('/path/to/delta_table')
-```
-
-## Salesforce
-
-### `driver`
-
-_[string]_ - Refers to the driver type and must be driver `salesforce` _(required)_
-
-### `username`
-
-_[string]_ - Salesforce account username _(required)_
-
-### `password`
-
-_[string]_ - Salesforce account password (secret)
-
-### `key`
-
-_[string]_ - Authentication key for Salesforce (secret)
-
-### `endpoint`
-
-_[string]_ - Salesforce API endpoint URL _(required)_
-
-### `client_id`
-
-_[string]_ - Client ID used for Salesforce OAuth authentication _(required)_
-
-```yaml
-# Example: Salesforce connector configuration
-type: connector # Must be `connector` (required)
-driver: salesforce # Must be `salesforce` _(required)_
-username: "myusername" # Salesforce account username
-password: "{{ .env.SALESFORCE_PASSWORD }}" # Salesforce account password (secret)
-key: "{{ .env.SALESFORCE_KEY }}" # Authentication key for Salesforce (secret)
-endpoint: "https://login.salesforce.com" # Salesforce API endpoint URL
-client_id: "my-client-id" # Client ID used for Salesforce OAuth authentication
 ```
 
 ## Slack
