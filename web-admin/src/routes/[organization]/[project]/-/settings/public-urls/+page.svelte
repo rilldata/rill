@@ -8,8 +8,8 @@
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import PublicURLsResourceTable from "@rilldata/web-admin/features/public-urls/PublicURLsResourceTable.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const runtimeClient = useRuntimeClient();
@@ -44,17 +44,28 @@
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
     const dashboard = $dashboards.data?.find(
-      (d) => d.meta?.name?.name === token.resourceName,
+      (d) => d.meta?.name?.name === token.resources?.[0]?.name,
     );
+
     return {
       ...token,
       dashboardTitle:
         dashboard?.explore?.spec?.displayName ||
+        dashboard?.canvas?.spec?.displayName ||
         dashboard?.meta?.name?.name ||
         "",
     };
   });
 
+  // function useValidDashboardTitle(dashboard: V1Resource) {
+  //   return (
+  //     dashboard?.explore?.spec?.displayName ||
+  //     dashboard?.canvas?.spec?.displayName ||
+  //     dashboard?.meta.name.name
+  //   );
+  // }
+
+  // REVISIT when server-side sorting is implemented
   $: sortedAllRowsWithDashboardTitle = allRowsWithDashboardTitle.sort(
     (a, b) =>
       new Date(b.createdOn ?? 0).getTime() -
