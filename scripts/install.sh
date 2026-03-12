@@ -234,8 +234,11 @@ resolveInstallDir() {
         fi
 
         # If the install directory is not set, or the previous installation path requires sudo, we default to installing in the current directory
-        if [ -z "$INSTALL_DIR" ] || ! installDirIsWritable; then
+        if [ -z "$INSTALL_DIR" ]; then
             printf "Non-interactive shell detected; defaulting to install in current directory.\n"
+            INSTALL_DIR=$(pwd)
+        elif ! installDirIsWritable; then
+            printf "Non-interactive shell detected; previous installation at '%s' requires elevated permissions; defaulting to install in current directory.\n" "$INSTALL_DIR"
             INSTALL_DIR=$(pwd)
         fi
 
