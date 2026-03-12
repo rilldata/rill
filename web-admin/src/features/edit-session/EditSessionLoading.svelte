@@ -4,8 +4,7 @@
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
 
   export let status: V1DeploymentStatus | undefined;
   export let statusMessage: string | undefined;
@@ -26,9 +25,7 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <div class="h-16">
-      <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
-    </div>
+    <LoadingSpinner />
     <CtaHeader variant="bold">
       {message}
     </CtaHeader>
