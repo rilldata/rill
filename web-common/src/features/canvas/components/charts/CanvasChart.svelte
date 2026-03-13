@@ -80,7 +80,7 @@
   };
 </script>
 
-<div class="size-full flex flex-col overflow-hidden">
+<div class="size-full flex flex-col overflow-hidden gap-y-4">
   {#if schema.isValid}
     {#if isFetching}
       <div class="flex items-center justify-center h-full w-full">
@@ -97,15 +97,17 @@
         {filters}
         {component}
       />
-      <Chart
-        {chartType}
-        {chartSpec}
-        {chartData}
-        measures={$measures}
-        isCanvas
-        themeMode={$isThemeModeDark ? "dark" : "light"}
-        theme={currentTheme}
-      />
+      <div class="grow overflow-hidden">
+        <Chart
+          {chartType}
+          {chartSpec}
+          {chartData}
+          measures={$measures}
+          isCanvas
+          themeMode={$isThemeModeDark ? "dark" : "light"}
+          theme={currentTheme}
+        />
+      </div>
     {/if}
   {:else}
     <ComponentError error={schema.error} />
