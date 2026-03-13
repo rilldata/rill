@@ -174,7 +174,6 @@
   style:--node-accent={color}
   style:width={width ? `${width}px` : undefined}
   style:height={height ? `${height}px` : undefined}
-  title={filePath}
   data-kind={kind}
   role="button"
   tabindex="0"
