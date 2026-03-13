@@ -65,6 +65,7 @@ type Reconciler interface {
 // ReconcileResult propagates results from a reconciler invocation
 type ReconcileResult struct {
 	Err       error
+	Warnings  []string // Non-fatal; stored in reconcile_warnings, does not block downstream
 	Retrigger time.Time
 }
 
@@ -661,7 +662,7 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 	return nil
 }
 
-// UpdateError updates a resource's error.
+// UpdateError updates a resource's error. It also clears warnings, if any.
 // Unlike UpdateMeta and UpdateSpec, it does not cancel or enqueue reconciliation for the resource.
 func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error) error {
 	if err := c.checkRunning(); err != nil {
@@ -673,7 +674,7 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
-	err := c.catalog.updateError(name, reconcileErr)
+	err := c.catalog.updateErrorAndWarning(name, reconcileErr, nil)
 	if err != nil {
 		return err
 	}
@@ -1115,8 +1116,8 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		return true, nil
 	}
 
-	// Not running - clear error and mark pending
-	err = c.catalog.updateError(n, nil)
+	// Not running - clear error/warning and mark pending
+	err = c.catalog.updateErrorAndWarning(n, nil, nil)
 	if err != nil {
 		return false, err
 	}
@@ -1132,7 +1133,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 
 	// If resource is cyclic, set error and skip it
 	if c.catalog.isCyclic(n) {
-		err = c.catalog.updateError(n, errCyclicDependency)
+		err = c.catalog.updateErrorAndWarning(n, errCyclicDependency, nil)
 		if err != nil {
 			return false, err
 		}
@@ -1157,8 +1158,8 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		}
 		switch dr.Meta.ReconcileStatus {
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-			// Clear error and mark it pending
-			err = c.catalog.updateError(n, nil)
+			// Clear error/warning and mark it pending
+			err = c.catalog.updateErrorAndWarning(n, nil, nil)
 			if err != nil {
 				return fmt.Errorf("error updating dag node %q: %w", ds, err)
 			}
@@ -1489,7 +1490,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		if err != nil {
 			return err
 		}
-		err = c.catalog.updateError(r.Meta.Name, inv.result.Err)
+		err = c.catalog.updateErrorAndWarning(r.Meta.Name, inv.result.Err, inv.result.Warnings)
 		if err != nil {
 			return err
 		}

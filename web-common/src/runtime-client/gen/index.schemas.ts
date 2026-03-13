@@ -2352,6 +2352,7 @@ export interface V1ResourceMeta {
   deletedOn?: string;
   reconcileStatus?: V1ReconcileStatus;
   reconcileError?: string;
+  reconcileWarnings?: string[];
   reconcileOn?: string;
   renamedFrom?: V1ResourceName;
 }

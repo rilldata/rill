@@ -38,7 +38,7 @@ const (
 	_modelPendingPartitionsBatchSize = 1000
 )
 
-var errPartitionsHaveErrors = errors.New("some partitions have errors")
+const warningPartitionsHaveErrors = "some partitions have errors"
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -293,15 +293,24 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			}
 		}
 
-		// Show if any partitions errored
+		// Surface partition and test failures as warnings or errors based on instance config
+		var warnings []string
 		if model.State.PartitionsHaveErrors {
-			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+			if cfg.ModelPartitionsWarnOnFailure {
+				warnings = append(warnings, warningPartitionsHaveErrors)
+			} else {
+				return runtime.ReconcileResult{Err: errors.New(warningPartitionsHaveErrors), Retrigger: refreshOn}
+			}
 		}
-		// Show if any model tests failed
 		if len(model.State.TestErrors) > 0 {
-			return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
+			msg := newTestsWarning(model.State.TestErrors)
+			if cfg.ModelTestsWarnOnFailure {
+				warnings = append(warnings, msg)
+			} else {
+				return runtime.ReconcileResult{Err: errors.New(msg), Retrigger: refreshOn}
+			}
 		}
-		return runtime.ReconcileResult{Retrigger: refreshOn}
+		return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
 	}
 
 	// Acquire the execution semaphore for the remainder of the function.
@@ -362,10 +371,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			return runtime.ReconcileResult{Err: err}
 		}
 
-		// log the warnings from execution if any
-		if len(execRes.Warnings) > 0 {
-			r.C.Logger.Warn("model execution completed with warnings", zap.String("model", n.Name), zap.Strings("warnings", execRes.Warnings), observability.ZapCtx(ctx))
-		}
 		// Emit telemetry
 		runType := "full"
 		if firstRunIncremental {
@@ -450,18 +455,28 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	// Show if any partitions errored
+	// Surface partition and test failures as warnings or errors based on instance config;
+	// append execution warnings regardless.
+	var warnings []string
 	if model.State.PartitionsHaveErrors {
-		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+		if cfg.ModelPartitionsWarnOnFailure {
+			warnings = append(warnings, warningPartitionsHaveErrors)
+		} else {
+			warnings = append(warnings, execRes.Warnings...)
+			return runtime.ReconcileResult{Err: errors.New(warningPartitionsHaveErrors), Warnings: warnings, Retrigger: refreshOn}
+		}
 	}
-
-	// Show if the model has tests that failed
 	if len(model.State.TestErrors) > 0 {
-		return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
+		msg := newTestsWarning(model.State.TestErrors)
+		if cfg.ModelTestsWarnOnFailure && msg != "" {
+			warnings = append(warnings, msg)
+		} else {
+			warnings = append(warnings, execRes.Warnings...)
+			return runtime.ReconcileResult{Err: errors.New(msg), Warnings: warnings, Retrigger: refreshOn}
+		}
 	}
-
-	// Return the next refresh time
-	return runtime.ReconcileResult{Retrigger: refreshOn}
+	warnings = append(warnings, execRes.Warnings...)
+	return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -2005,12 +2020,12 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	return fmt.Sprintf("%s: test did not pass", test.Name), nil
 }
 
-// newTestsError creates a new error that summarizes the messages returned from runModelTests.
-func newTestsError(msgs []string) error {
+// newTestsWarning creates a warning message that summarizes the messages returned from runModelTests.
+func newTestsWarning(msgs []string) string {
 	if len(msgs) == 0 {
-		return nil // No errors
+		panic("newTestsWarning should not be called with an empty array")
 	}
-	return fmt.Errorf("tests failed:\n%s", strings.Join(msgs, "\n"))
+	return fmt.Sprintf("tests failed:\n%s", strings.Join(msgs, "\n"))
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.

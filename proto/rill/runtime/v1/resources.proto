@@ -52,6 +52,7 @@ message ResourceMeta {
   optional google.protobuf.Timestamp deleted_on = 12;
   ReconcileStatus reconcile_status = 16;
   string reconcile_error = 8;
+  repeated string reconcile_warnings = 18;
   google.protobuf.Timestamp reconcile_on = 17;
   optional ResourceName renamed_from = 13;
 }

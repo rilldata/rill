@@ -7537,6 +7537,10 @@ definitions:
         $ref: '#/definitions/v1ReconcileStatus'
       reconcileError:
         type: string
+      reconcileWarnings:
+        type: array
+        items:
+          type: string
       reconcileOn:
         type: string
         format: date-time
