@@ -15,9 +15,9 @@
 {#if asChild}
   <PopoverPrimitive.Trigger {...restProps}>
     {#snippet child({ props })}
-      <span style="display:contents" {...props}>
+      <div {...props}>
         {@render children?.()}
-      </span>
+      </div>
     {/snippet}
   </PopoverPrimitive.Trigger>
 {:else}

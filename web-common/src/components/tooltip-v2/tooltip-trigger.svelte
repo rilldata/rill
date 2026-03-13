@@ -15,9 +15,9 @@
 {#if asChild}
   <TooltipPrimitive.Trigger {...restProps}>
     {#snippet child({ props })}
-      <span style="display:contents" {...props}>
+      <div {...props}>
         {@render children?.()}
-      </span>
+      </div>
     {/snippet}
   </TooltipPrimitive.Trigger>
 {:else}

@@ -15,9 +15,9 @@
 {#if asChild}
   <DropdownMenuPrimitive.Trigger {...restProps}>
     {#snippet child({ props })}
-      <span style="display:contents" {...props}>
+      <div {...props}>
         {@render children?.()}
-      </span>
+      </div>
     {/snippet}
   </DropdownMenuPrimitive.Trigger>
 {:else}
