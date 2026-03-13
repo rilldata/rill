@@ -2104,7 +2104,19 @@ definitions:
                   type:
                     - string
                     - boolean
-                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
+                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)
+                lookup_table:
+                  type: string
+                  description: the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details
+                lookup_key_column:
+                  type: string
+                  description: the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table
+                lookup_value_column:
+                  type: string
+                  description: the attribute column in the lookup dictionary whose values will be displayed for this dimension
+                lookup_default_expression:
+                  type: string
+                  description: an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
               anyOf:
                 - required:
                     - column

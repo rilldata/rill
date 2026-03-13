@@ -103,7 +103,7 @@ WHERE publisher_id IN (
 This allows ClickHouse to first resolve the small set of matching keys from the dictionary, then use the index on `publisher_id` to efficiently scan only the relevant rows in the fact table.
 
 :::tip Optimizing GROUP BY with INJECTIVE
-If the key-to-value mapping in your dictionary is 1:1 (e.g. every `country_code` maps to exactly one `country_name`), you can mark the attribute columns as `INJECTIVE` in the ClickHouse dictionary definition. This tells ClickHouse that the mapping preserves uniqueness, allowing it to optimize `GROUP BY` queries by grouping on the key column instead of evaluating `dictGet` for every group. Note that this only helps with grouping; for filter optimization, use the `lookup_*` properties described above.
+If the key-to-value mapping in your dictionary is 1:1 (e.g. every `code` maps to exactly one `name`), you can additionally mark the attribute columns as `INJECTIVE` in the ClickHouse dictionary definition. This tells ClickHouse that the mapping preserves uniqueness, allowing it to optimize `GROUP BY` queries by grouping on the key column instead of evaluating `dictGet` for every group. Combined with `lookup_*` properties, this gives you optimized performance for both filtering (via Rill's subquery rewrite) and grouping (via ClickHouse's INJECTIVE optimization).
 :::
 
 ## Druid Lookups

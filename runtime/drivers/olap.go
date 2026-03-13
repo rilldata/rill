@@ -270,9 +270,9 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	}
 }
 
-// EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table")
-// by escaping each part individually. Use this instead of EscapeIdentifier when
-// the input may contain dots that represent schema/table separators.
+// EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.
+// Use this instead of EscapeIdentifier when the input may contain dots that represent schema/table separators.
+// WARNING: Only use it for edge features where it is an acceptable trade-off to NOT support tables with a dot in their name (which we occasionally see in real-world use cases).
 func (d Dialect) EscapeQualifiedIdentifier(name string) string {
 	if name == "" {
 		return name
