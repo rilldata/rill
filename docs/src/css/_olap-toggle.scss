@@ -119,6 +119,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme='dark'] .olap-toggle__logo {
+[data-theme='dark'] .olap-toggle__logo[alt="ClickHouse"] {
   filter: brightness(0) invert(1);
 }
