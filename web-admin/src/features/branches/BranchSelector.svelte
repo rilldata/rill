@@ -121,6 +121,7 @@
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="min-w-[200px] max-w-[300px]">
+        <DropdownMenu.Label>All branches</DropdownMenu.Label>
         {#each sortedDeployments as deployment (deployment.id)}
           {@const prod = isProd(deployment)}
           {@const isSelected = prod

@@ -229,7 +229,7 @@
       {#if $viewAsUserStore}
         <ViewAsUserChip />
       {/if}
-      {#if onProjectPage && projectPermissions.manageDev}
+      {#if (onProjectPage || onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
       {#if onProjectPage && effectiveManageProjectMembers}
