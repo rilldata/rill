@@ -38,6 +38,7 @@ type ModelOutputProperties struct {
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 	PartitionBy         string                      `mapstructure:"partition_by"`
+	MergeBatchSize      int                         `mapstructure:"merge_batch_size"`
 }
 
 func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions, ip *ModelInputProperties, op *ModelOutputProperties) error {

@@ -318,6 +318,124 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func Test_connection_InsertTableAsSelect_WithMergeStrategy_Batched(t *testing.T) {
+	temp := t.TempDir()
+
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	// Create a base table with 10 rows: range 0..9, strategy='insert'
+	_, err = c.createTableAsSelect(context.Background(), "test-merge-batch", "SELECT range, 'insert' AS strategy FROM range(0, 10)", &createTableOptions{})
+	require.NoError(t, err)
+
+	// Merge 6 rows (range 5..10) with a batch size of 2 to force multiple batches
+	opts := &InsertTableOptions{
+		ByName:         false,
+		Strategy:       drivers.IncrementalStrategyMerge,
+		UniqueKey:      []string{"range"},
+		MergeBatchSize: 2,
+	}
+	_, err = c.insertTableAsSelect(context.Background(), "test-merge-batch", "SELECT range, 'merge' AS strategy FROM range(5, 11)", opts)
+	require.NoError(t, err)
+
+	// Expect 11 rows total: range 0..4 with 'insert', range 5..10 with 'merge'
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT range, strategy FROM 'test-merge-batch' ORDER BY range"})
+	require.NoError(t, err)
+
+	var results []struct {
+		Range    int
+		Strategy string
+	}
+	for res.Next() {
+		var r struct {
+			Range    int
+			Strategy string
+		}
+		require.NoError(t, res.Scan(&r.Range, &r.Strategy))
+		results = append(results, r)
+	}
+	require.NoError(t, res.Err())
+	require.NoError(t, res.Close())
+
+	expected := []struct {
+		Range    int
+		Strategy string
+	}{
+		{0, "insert"},
+		{1, "insert"},
+		{2, "insert"},
+		{3, "insert"},
+		{4, "insert"},
+		{5, "merge"},
+		{6, "merge"},
+		{7, "merge"},
+		{8, "merge"},
+		{9, "merge"},
+		{10, "merge"},
+	}
+	require.Equal(t, expected, results)
+}
+
+func Test_connection_InsertTableAsSelect_WithMergeStrategy_Batched_DuplicateKeys(t *testing.T) {
+	temp := t.TempDir()
+
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	// Create a base table with 5 rows
+	_, err = c.createTableAsSelect(context.Background(), "test-merge-batch-dup", "SELECT range, 'insert' AS strategy FROM range(0, 5)", &createTableOptions{})
+	require.NoError(t, err)
+
+	// Merge with duplicate keys in the incoming data (range 2 appears twice) and small batch size
+	opts := &InsertTableOptions{
+		ByName:         false,
+		Strategy:       drivers.IncrementalStrategyMerge,
+		UniqueKey:      []string{"range"},
+		MergeBatchSize: 2,
+	}
+	_, err = c.insertTableAsSelect(context.Background(), "test-merge-batch-dup",
+		"SELECT * FROM (VALUES (2, 'merge_a'), (3, 'merge'), (2, 'merge_b')) AS t(range, strategy)", opts)
+	require.NoError(t, err)
+
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT range, strategy FROM 'test-merge-batch-dup' ORDER BY range, strategy"})
+	require.NoError(t, err)
+
+	var results []struct {
+		Range    int
+		Strategy string
+	}
+	for res.Next() {
+		var r struct {
+			Range    int
+			Strategy string
+		}
+		require.NoError(t, res.Scan(&r.Range, &r.Strategy))
+		results = append(results, r)
+	}
+	require.NoError(t, res.Err())
+	require.NoError(t, res.Close())
+
+	// Original rows 2, 3 deleted; both duplicate rows from tmp inserted
+	expected := []struct {
+		Range    int
+		Strategy string
+	}{
+		{0, "insert"},
+		{1, "insert"},
+		{2, "merge_a"},
+		{2, "merge_b"},
+		{3, "merge"},
+		{4, "insert"},
+	}
+	require.Equal(t, expected, results)
+}
+
 func verifyCount(t *testing.T, c *connection, table string, expected int) {
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) from %s", table)})
 	require.NoError(t, err)

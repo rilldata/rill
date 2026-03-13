@@ -68,6 +68,9 @@ type InsertTableOptions struct {
 	UniqueKey    []string
 	// PartitionBy is a SQL expression to use for dropping/replacing partitions with the partition_overwrite incremental strategy.
 	PartitionBy string
+	// MergeBatchSize controls how many rows from the temp table are matched per DELETE batch during merge.
+	// If 0, defaults to 10000.
+	MergeBatchSize int
 }
 
 func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
@@ -136,16 +139,16 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			// check the count of the new data
 			// skip if the count is 0
 			// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
-			var empty bool
-			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
+			var count int
+			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", safeSQLName(tmp))).Scan(&count)
 			if err != nil {
 				return err
 			}
-			if empty {
+			if count == 0 {
 				return nil
 			}
 
-			// Drop the rows from the target table where the unique key is present in the temporary table
+			// Build the WHERE clause for unique key matching
 			where := ""
 			for i, key := range opts.UniqueKey {
 				key = safeSQLName(key)
@@ -154,9 +157,20 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 				where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
 			}
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
-			if err != nil {
-				return err
+
+			// Drop the rows from the target table in batches
+			deleteBatchSize := opts.MergeBatchSize
+			if deleteBatchSize <= 0 {
+				deleteBatchSize = 10000
+			}
+			for offset := 0; offset < count; offset += deleteBatchSize {
+				_, err = conn.ExecContext(ctx, fmt.Sprintf(
+					"DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM (SELECT * FROM %s LIMIT %d OFFSET %d) tmp WHERE %s)",
+					safeSQLName(name), safeSQLName(tmp), deleteBatchSize, offset, where,
+				))
+				if err != nil {
+					return err
+				}
 			}
 
 			// Insert the new data into the target table
@@ -210,7 +224,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
 				safeSQLName(name),
 				opts.PartitionBy,
-				opts.PartitionBy,
+				opts.–,
 				safeSQLName(tmp),
 			))
 			if err != nil {
