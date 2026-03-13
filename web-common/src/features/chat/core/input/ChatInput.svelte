@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.svelte.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { Editor } from "@tiptap/core";
