@@ -41,8 +41,8 @@ When setting the OLAP Engine via the UI, the `olap_connector` key will automatic
 
 Rill supports the use of several different OLAP engines to power your dashboards, including:
 
-### DuckDB
 ### ClickHouse
+### DuckDB
 ### MotherDuck
 ### Druid
 ### Pinot
@@ -50,21 +50,19 @@ Rill supports the use of several different OLAP engines to power your dashboards
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<DuckDBLogo />}
-    content="Add extra parameters to Rill's embedded DuckDB or connect your own."
-    link="/developers/build/connectors/olap/duckdb"
-    linkLabel="Learn more"
-    referenceLink="duckdb"
-  />
-
-  <ConnectorIcon
     icon={<ClickHouseLogo />}
     content="High-performance columnar database for real-time analytics and data warehousing."
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
   />
-
+  <ConnectorIcon
+    icon={<DuckDBLogo />}
+    content="Add extra parameters to Rill's embedded DuckDB or connect your own."
+    link="/developers/build/connectors/olap/duckdb"
+    linkLabel="Learn more"
+    referenceLink="duckdb"
+  />
   <ConnectorIcon
     icon={<MotherDuckLogo />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."

@@ -7,6 +7,7 @@ const lightCodeTheme = themes.github;
 const darkCodeTheme = themes.dracula;
 
 const llmsTxtPlugin = require('./plugins/llms-txt-plugin');
+const svgFixPlugin = require('./plugins/svg-fix-plugin');
 
 const def = require("redocusaurus");
 const path = require('path');
@@ -241,6 +242,7 @@ const config = {
   plugins: [
     // @ts-ignore
     llmsTxtPlugin,
+    svgFixPlugin,
     'docusaurus-plugin-sass',
     [
       require.resolve('docusaurus-gtm-plugin'),

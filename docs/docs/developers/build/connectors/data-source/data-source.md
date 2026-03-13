@@ -28,6 +28,26 @@ managed: true
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
 import OLAPToggle from '@site/src/components/OLAPToggle';
+import AthenaLogo from '@site/static/img/build/connectors/icons/Logo-Athena.svg';
+import BigQueryLogo from '@site/static/img/build/connectors/icons/Logo-BigQuery.svg';
+import RedshiftLogo from '@site/static/img/build/connectors/icons/Logo-Redshift.svg';
+import SnowflakeLogo from '@site/static/img/build/connectors/icons/Logo-Snowflake.svg';
+import MySQLLogo from '@site/static/img/build/connectors/icons/Logo-MySQL.svg';
+import PostgresLogo from '@site/static/img/build/connectors/icons/Logo-Postgres.svg';
+import SQLiteLogo from '@site/static/img/build/connectors/icons/Logo-SQLite.svg';
+import SupabaseLogo from '@site/static/img/build/connectors/icons/Logo-Supabase.svg';
+import S3Logo from '@site/static/img/build/connectors/icons/Logo-S3.svg';
+import GCSLogo from '@site/static/img/build/connectors/icons/Logo-GCS.svg';
+import AzureLogo from '@site/static/img/build/connectors/icons/Logo-Azure.svg';
+import IcebergLogo from '@site/static/img/build/connectors/icons/Logo-Iceberg.svg';
+import DuckDBLogo from '@site/static/img/build/connectors/icons/Logo-DuckDB.svg';
+import SheetsLogo from '@site/static/img/build/connectors/icons/Logo-Sheets.svg';
+import LocalLogo from '@site/static/img/build/connectors/icons/Logo-Local.svg';
+import SalesforceLogo from '@site/static/img/build/connectors/icons/Logo-Salesforce.svg';
+import ClickHouseLogo from '@site/static/img/build/connectors/icons/Logo-ClickHouse.svg';
+import MongoDBLogo from '@site/static/img/build/connectors/icons/Logo-MongoDB.svg';
+import HadoopLogo from '@site/static/img/build/connectors/icons/Logo-Hadoop.svg';
+import DeltaLakeLogo from '@site/static/img/build/connectors/icons/Logo-DeltaLake.svg';
 
 
 In order to connect and browse through your data, you'll need to create a connector file. Browse through the options below for our supported connectors. Each connector is designed to handle the specific authentication and configuration requirements of your data source.
@@ -48,7 +68,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Athena.svg" alt="Athena" />}
+    icon={<AthenaLogo />}
     header="Athena"
     content="Connect to Amazon Athena for serverless querying of data stored in S3 using standard SQL."
     link="/developers/build/connectors/data-source/duckdb/athena"
@@ -56,7 +76,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="athena"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="BigQuery" />}
+    icon={<BigQueryLogo />}
     header="BigQuery"
     content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
     link="/developers/build/connectors/data-source/duckdb/bigquery"
@@ -65,7 +85,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
   />
 
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Redshift.svg" alt="Redshift" />}
+    icon={<RedshiftLogo />}
     header="Redshift"
     content="Connect to Amazon Redshift data warehouse with AWS credentials and support for both provisioned and serverless clusters."
     link="/developers/build/connectors/data-source/duckdb/redshift"
@@ -73,7 +93,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="redshift"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Snowflake.svg" alt="Snowflake" />}
+    icon={<SnowflakeLogo />}
     header="Snowflake"
     content="Connect to Snowflake data warehouse with support for individual credentials and JWT authentication."
     link="/developers/build/connectors/data-source/duckdb/snowflake"
@@ -91,7 +111,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-MySQL.svg" alt="MySQL" />}
+    icon={<MySQLLogo />}
     header="MySQL"
     content="Connect to MySQL databases with support for various authentication methods and SSL connections."
     link="/developers/build/connectors/data-source/duckdb/mysql"
@@ -99,7 +119,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="mysql"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Postgres.svg" alt="PostgreSQL" />}
+    icon={<PostgresLogo />}
     header="PostgreSQL"
     content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
     link="/developers/build/connectors/data-source/duckdb/postgres"
@@ -107,14 +127,14 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="postgresql"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}
+    icon={<SQLiteLogo />}
     header="SQLite"
     content="Connect to SQLite databases for lightweight, file-based data storage and querying."
     link="/developers/build/connectors/data-source/duckdb/sqlite"
     linkLabel="Learn more"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Supabase.svg" alt="Supabase" className="supabase-icon"/>}
+    icon={<SupabaseLogo />}
     header="Supabase"
     content="Connect to Supabase's managed PostgreSQL databases with SSL support and standard connection methods."
     link="/developers/build/connectors/data-source/duckdb/supabase"
@@ -134,7 +154,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 <div className="connector-icon-grid">
 
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-S3.svg" alt="Amazon S3" />}
+    icon={<S3Logo />}
     header="Amazon S3"
     content="Connect to Amazon S3 buckets to read data files including CSV, JSON, Parquet, and compressed formats."
     link="/developers/build/connectors/data-source/duckdb/s3"
@@ -142,7 +162,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="s3"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
+    icon={<GCSLogo />}
     header="Google Cloud Storage"
     content="Google Cloud Storage for scalable object storage and data lakes."
     link="/developers/build/connectors/data-source/duckdb/gcs"
@@ -150,7 +170,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="gcs"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
+    icon={<AzureLogo />}
     header="Azure"
     content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
     link="/developers/build/connectors/data-source/duckdb/azure"
@@ -164,7 +184,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Iceberg.svg" alt="Apache Iceberg" />}
+    icon={<IcebergLogo />}
     header="Apache Iceberg"
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/duckdb/iceberg"
@@ -183,7 +203,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckDB" className="duckdb-icon"/>}
+    icon={<DuckDBLogo />}
     header="DuckDB"
     content="Attach your local DuckDB database to Rill's embedded database."
     link="/developers/build/connectors/data-source/duckdb/duckdb"
@@ -191,7 +211,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="external-duckdb"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
+    icon={<SheetsLogo />}
     header="Google Sheets"
     content="Connect to Google Sheets to read data from spreadsheets."
     link="/developers/build/connectors/data-source/duckdb/googlesheets"
@@ -206,14 +226,14 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="https"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Local.svg" alt="Local File" />}
+    icon={<LocalLogo />}
     header="Local File"
     content="Read data from local files including CSV, JSON, Parquet, and compressed formats."
     link="/developers/build/connectors/data-source/duckdb/local-file"
     linkLabel="Learn more"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Salesforce.svg" alt="Salesforce" />}
+    icon={<SalesforceLogo />}
     header="Salesforce"
     content="Connect to Salesforce to extract data from objects and queries using the Salesforce API."
     link="/developers/build/connectors/data-source/duckdb/salesforce"
@@ -237,14 +257,14 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-ClickHouse.svg" alt="MongoDB" />}
+    icon={<MongoDBLogo />}
     header="MongoDB"
     content="Connect to MongoDB collections using ClickHouse's mongodb() table function."
     link="/developers/build/connectors/data-source/clickhouse/mongodb"
     linkLabel="Learn more"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-MySQL.svg" alt="MySQL" />}
+    icon={<MySQLLogo />}
     header="MySQL"
     content="Connect to MySQL databases using ClickHouse's mysql() table function."
     link="/developers/build/connectors/data-source/clickhouse/mysql"
@@ -252,7 +272,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     referenceLink="mysql"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Postgres.svg" alt="PostgreSQL" />}
+    icon={<PostgresLogo />}
     header="PostgreSQL"
     content="Connect to PostgreSQL databases using ClickHouse's postgresql() table function."
     link="/developers/build/connectors/data-source/clickhouse/postgres"
@@ -260,7 +280,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     referenceLink="postgresql"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Supabase.svg" alt="Supabase" className="supabase-icon"/>}
+    icon={<SupabaseLogo />}
     header="Supabase"
     content="Connect to Supabase's managed PostgreSQL databases via ClickHouse's postgresql() table function."
     link="/developers/build/connectors/data-source/clickhouse/supabase"
@@ -278,7 +298,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-S3.svg" alt="Amazon S3" />}
+    icon={<S3Logo />}
     header="Amazon S3"
     content="Connect to Amazon S3 buckets using ClickHouse's s3() table function."
     link="/developers/build/connectors/data-source/clickhouse/s3"
@@ -286,7 +306,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     referenceLink="s3"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
+    icon={<GCSLogo />}
     header="Google Cloud Storage"
     content="Connect to GCS via ClickHouse's S3-compatible API using HMAC keys."
     link="/developers/build/connectors/data-source/clickhouse/gcs"
@@ -294,14 +314,14 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     referenceLink="gcs"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Hadoop.svg" alt="HDFS" />}
+    icon={<HadoopLogo />}
     header="HDFS"
     content="Read data files from HDFS with support for Parquet, CSV, JSON, and other formats."
     link="/developers/build/connectors/data-source/clickhouse/hdfs"
     linkLabel="Learn more"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
+    icon={<AzureLogo />}
     header="Azure"
     content="Connect to Azure Blob Storage using ClickHouse's azureBlobStorage() table function."
     link="/developers/build/connectors/data-source/clickhouse/azure"
@@ -317,21 +337,21 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Iceberg.svg" alt="Apache Iceberg" />}
+    icon={<IcebergLogo />}
     header="Apache Iceberg"
     content="Read Iceberg tables using ClickHouse's icebergS3() table function."
     link="/developers/build/connectors/data-source/clickhouse/iceberg"
     linkLabel="Learn more"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-DeltaLake.svg" alt="Delta Lake" className="deltalake-icon" />}
+    icon={<DeltaLakeLogo />}
     header="Delta Lake"
     content="Read Delta Lake tables using ClickHouse's deltaLake() table function."
     link="/developers/build/connectors/data-source/clickhouse/delta-lake"
     linkLabel="Learn more"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Hudi.png" alt="Apache Hudi" className="hudi-icon" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Hudi.png" alt="Apache Hudi" />}
     header="Apache Hudi"
     content="Read Hudi tables using ClickHouse's hudi() table function."
     link="/developers/build/connectors/data-source/clickhouse/hudi"
@@ -353,7 +373,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     referenceLink="https"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-ClickHouse.svg" alt="Remote ClickHouse" />}
+    icon={<ClickHouseLogo />}
     header="Remote ClickHouse"
     content="Query data from other ClickHouse servers for cross-cluster analytics."
     link="/developers/build/connectors/data-source/clickhouse/remote-clickhouse"
