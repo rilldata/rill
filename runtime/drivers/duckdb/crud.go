@@ -128,7 +128,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
@@ -189,7 +189,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
