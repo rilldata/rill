@@ -69,7 +69,7 @@ type InsertTableOptions struct {
 	// PartitionBy is a SQL expression to use for dropping/replacing partitions with the partition_overwrite incremental strategy.
 	PartitionBy string
 	// MergeBatchSize controls how many rows from the temp table are matched per DELETE batch during merge.
-	// If 0, defaults to 10000.
+	// If 0, defaults to 1000000.
 	MergeBatchSize int
 }
 
@@ -161,10 +161,10 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 
 			// Drop the rows from the target table in batches to limit peak memory usage
-			// from the hash join on the tmp table.
+			// from the join on the tmp table.
 			deleteBatchSize := opts.MergeBatchSize
 			if deleteBatchSize <= 0 {
-				deleteBatchSize = 10000
+				deleteBatchSize = 1000000
 			}
 			for num := 0; num <= count; num += deleteBatchSize {
 				_, err = conn.ExecContext(ctx, fmt.Sprintf(

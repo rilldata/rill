@@ -436,12 +436,71 @@ func Test_connection_InsertTableAsSelect_WithMergeStrategy_Batched_DuplicateKeys
 	require.Equal(t, expected, results)
 }
 
-func verifyCount(t *testing.T, c *connection, table string, expected int) {
-	res, err := c.Query(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) from %s", table)})
+func Test_connection_InsertTableAsSelect_WithMergeStrategy_CompositeKey(t *testing.T) {
+	temp := t.TempDir()
+
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-	require.True(t, res.Next())
-	var count int
-	require.NoError(t, res.Scan(&count))
-	require.Equal(t, expected, count)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	// Base table: (country, product, revenue). The composite key is (country, product).
+	_, err = c.createTableAsSelect(context.Background(), "test-merge-composite",
+		`SELECT * FROM (VALUES
+			('US', 'A', 100),
+			('US', 'B', 200),
+			('EU', 'A', 300),
+			('EU', 'B', 400)
+		) AS t(country, product, revenue)`,
+		&createTableOptions{})
+	require.NoError(t, err)
+
+	// Merge: update ('US','A') and ('EU','B'), add new ('EU','C'); ('US','B') is untouched.
+	opts := &InsertTableOptions{
+		ByName:    true,
+		Strategy:  drivers.IncrementalStrategyMerge,
+		UniqueKey: []string{"country", "product"},
+	}
+	_, err = c.insertTableAsSelect(context.Background(), "test-merge-composite",
+		`SELECT * FROM (VALUES
+			('US', 'A', 999),
+			('EU', 'B', 888),
+			('EU', 'C', 777)
+		) AS t(country, product, revenue)`,
+		opts)
+	require.NoError(t, err)
+
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT country, product, revenue FROM 'test-merge-composite' ORDER BY country, product"})
+	require.NoError(t, err)
+
+	var results []struct {
+		Country string
+		Product string
+		Revenue int
+	}
+	for res.Next() {
+		var r struct {
+			Country string
+			Product string
+			Revenue int
+		}
+		require.NoError(t, res.Scan(&r.Country, &r.Product, &r.Revenue))
+		results = append(results, r)
+	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
+
+	expected := []struct {
+		Country string
+		Product string
+		Revenue int
+	}{
+		{"EU", "A", 300}, // untouched
+		{"EU", "B", 888}, // updated
+		{"EU", "C", 777}, // new
+		{"US", "A", 999}, // updated
+		{"US", "B", 200}, // untouched
+	}
+	require.Equal(t, expected, results)
 }

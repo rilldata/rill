@@ -353,6 +353,8 @@ _[object]_ - to define the properties of output
 
   - **`partition_by`** - _[string]_ - Column or expression to partition the table by 
 
+  - **`merge_batch_size`** - _[integer]_ - Batch size for merge operations when using the 'merge' incremental strategy 
+
   **Additional properties for `output` when `connector` is `clickhouse`**
 
   - **`type`** - _[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 

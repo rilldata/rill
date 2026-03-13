@@ -1473,6 +1473,9 @@ definitions:
               partition_by:
                 type: string
                 description: Column or expression to partition the table by
+              merge_batch_size:
+                type: integer
+                description: Batch size for merge operations when using the 'merge' incremental strategy
             allOf:
               - if:
                   title: Additional properties for `output` when `connector` is `clickhouse`
