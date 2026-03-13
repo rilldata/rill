@@ -219,10 +219,12 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			continue
 		}
 
-		// Track refs
-		err = refs.populateRendererRefs(ctx, componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse renderer properties for component %q: %w", componentName, err)
+		// Track refs.
+		// We silently ignore parse errors because some components may be malformed, which we don't want to block access to the entire canvas.
+		// Hopefully the parse errors were caught in normal validation; otherwise, the UI will probably fail the component at render time.
+		_ = refs.populateRendererRefs(ctx, componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
+		if ctx.Err() != nil { // Return ctx errors immediately.
+			return nil, ctx.Err()
 		}
 	}
 
