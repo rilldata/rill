@@ -642,7 +642,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		return nil, err
 	}
 
-	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         req.InstanceId,
 		Resolver:           "metrics_annotations",
 		ResolverProperties: props,

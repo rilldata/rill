@@ -83,7 +83,7 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	}
 
 	// Execute via the SQL resolver
-	res, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         s.InstanceID(),
 		Resolver:           "sql",
 		ResolverProperties: props,
