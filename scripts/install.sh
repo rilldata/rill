@@ -303,9 +303,11 @@ set -e
 
 # Default values
 INSTALL_DIR_EXPLICIT=false
-if ! [ -t 0 ]; then # Detect non-interactive environments (e.g. piped input, CI, subprocesses)
-    # When invoked as a subprocess of the Rill CLI (e.g. `rill upgrade`), stay interactive.
-    # Older versions of Rill don't pass stdin through, but the user is still at a terminal.
+
+# Default to non-interactive if STDIN is not a terminal (usually indicates e.g. agent, CI, subprocess).
+if ! [ -t 0 ]; then
+    # Backwards compatibility: old versions of `rill upgrade` didn't pass STDIN through.
+    # So we stay interactive if the parent process is `rill`.
     PARENT_NAME=""
     if [ -f "/proc/$PPID/comm" ]; then
         PARENT_NAME=$(cat "/proc/$PPID/comm" 2>/dev/null)
