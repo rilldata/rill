@@ -1008,7 +1008,7 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 	})
 }
 
-func (p *Parser) addParseWarning(path string, warning string) {
+func (p *Parser) addParseWarning(path, warning string) {
 	p.Errors = append(p.Errors, &runtimev1.ParseError{
 		Message:  warning,
 		FilePath: path,
