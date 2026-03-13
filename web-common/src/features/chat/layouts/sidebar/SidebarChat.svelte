@@ -2,7 +2,7 @@
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getConversationManager } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
@@ -17,10 +17,10 @@
 
   export let config: ChatConfig;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // Initialize conversation manager with browser storage for conversation management
-  $: conversationManager = getConversationManager(instanceId, {
+  $: conversationManager = getConversationManager(runtimeClient, {
     conversationState: "browserStorage",
     agent: config.agent,
   });

@@ -36,10 +36,10 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					return fmt.Errorf("the --local flag cannot be used with <project-name> positional argument")
 				}
 			} else {
-				if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-					name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+				if name == "" {
+					name, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name or --local to target a local Rill process")
 					if err != nil {
-						return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+						return err
 					}
 				}
 				// Project info and deployment info not available --local mode

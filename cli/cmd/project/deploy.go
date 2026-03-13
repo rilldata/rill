@@ -90,12 +90,8 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		}
 		if p != nil {
 			if ch.Interactive {
-				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), "", true)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), true); err != nil {
 					return err
-				}
-				if !ok {
-					return fmt.Errorf("aborting deploy")
 				}
 			}
 			o.pushToProject = p
@@ -158,14 +154,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		if !ch.Interactive {
 			return nil
 		}
-		ok, err := cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", "", true)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return fmt.Errorf("aborting deploy")
-		}
-		return nil
+		return cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", true)
 	}
 
 	if o.remoteURL == "" {
@@ -185,14 +174,14 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 	if o.Managed {
 		// if user explicitly wants managed deploys confirm if they want to really skip github connection
-		ok, err := cmdutil.ConfirmPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", "", true)
+		ok, err := cmdutil.YesNoPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", true)
 		if err != nil {
 			return err
 		}
 		connectToGithub = !ok
 	} else if !o.Github && ch.Interactive {
 		// still confirm if user wants to connect to github
-		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+		connectToGithub, err = cmdutil.YesNoPrompt("Enable automatic deploys to Rill Cloud from GitHub?", true)
 		if err != nil {
 			return err
 		}
@@ -356,6 +345,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	// We create a default org based on the user name.
 	// TODO : Ask user prompt similar to UI instead of silently creating org based on email
 	if ch.Org == "" {
+		if !ch.Interactive {
+			return fmt.Errorf("--org flag is required when not running interactively")
+		}
 		err = createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
@@ -402,11 +394,12 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 		req.ArchiveAssetId = assetID
 	} else {
-		gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
+		gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx, opts.PrimaryBranch)
 		if err != nil {
 			return err
 		}
 		req.GitRemote = gitRepo.Remote
+		req.PrimaryBranch = gitRepo.DefaultBranch
 	}
 	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
@@ -483,7 +476,11 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			DefaultBranch: opts.pushToProject.PrimaryBranch,
 			Subpath:       subpath,
 		}
-		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", nil, "1")
+		author, err := ch.GitSignature(ctx, repoRoot)
+		if err != nil {
+			return err
+		}
+		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", author, "1")
 		if err != nil {
 			return err
 		}
@@ -506,14 +503,15 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			}
 		} else {
 			// need to migrate to rill managed git
-			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, opts.LocalProjectPath()).PushToNewManagedRepo(ctx)
+			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, opts.LocalProjectPath()).PushToNewManagedRepo(ctx, opts.PrimaryBranch)
 			if err != nil {
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				Org:       ch.Org,
-				Project:   opts.Name,
-				GitRemote: &gitRepo.Remote,
+				Org:           ch.Org,
+				Project:       opts.Name,
+				GitRemote:     &gitRepo.Remote,
+				PrimaryBranch: &gitRepo.DefaultBranch,
 			}
 		}
 		// Update the project

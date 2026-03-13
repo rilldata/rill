@@ -11,7 +11,7 @@
     getColorForValues,
     resolveCSSVariable,
   } from "@rilldata/web-common/features/components/charts/util";
-  import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+  import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
   import { slide } from "svelte/transition";
 
@@ -40,7 +40,7 @@
   function handleColorChange(value: string, newColor: string) {
     const valueIndex = colorValues.findIndex((v) => v === value);
     const defaultColorVar =
-      COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
+      COMPARISON_COLORS[valueIndex % COMPARISON_COLORS.length];
 
     // Convert the color back to a CSS variable reference if it matches a palette color
     const colorToSave = colorToVariableReference(newColor);

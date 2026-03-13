@@ -61,9 +61,9 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 
 	// Find the cloud project name
 	if projectName == "" {
-		projectName, err = ch.InferProjectName(ctx, ch.Org, projectPath)
+		projectName, err = ch.InferProjectName(ctx, projectPath, "use --project to specify the name")
 		if err != nil {
-			return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+			return err
 		}
 	}
 	client, err := ch.Client()

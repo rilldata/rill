@@ -27,6 +27,12 @@ export function createUserFacingError(
       body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
       fatal: true,
     };
+  } else if (status === 401) {
+    return {
+      statusCode: 401,
+      header: "Authentication error",
+      body: "Try refreshing the page. If the problem persists, try signing out and back in.",
+    };
   } else if (status === 403) {
     return {
       statusCode: status,
