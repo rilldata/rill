@@ -1,4 +1,7 @@
-import { sortAcessors } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import {
+  sortAcessors,
+  sortNumericDimensionAxisValues,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { describe, expect, it } from "vitest";
 
 describe("sortAcessors function", () => {
@@ -24,5 +27,24 @@ describe("sortAcessors function", () => {
     const input = ["c1v10_c2v20m30", "c1v2_c2v3m4", "c1v10_c2v3m4"];
     const expected = ["c1v2_c2v3m4", "c1v10_c2v3m4", "c1v10_c2v20m30"];
     expect(sortAcessors(input)).toEqual(expected);
+  });
+});
+
+describe("sortNumericDimensionAxisValues", () => {
+  it("sorts numeric dimension values in ascending order", () => {
+    const input = ["5", "6", "0", "2"];
+    const expected = ["0", "2", "5", "6"];
+    expect(sortNumericDimensionAxisValues(input)).toEqual(expected);
+  });
+
+  it("sorts signed and decimal numeric values", () => {
+    const input = ["3.5", "-1", "0", "2"];
+    const expected = ["-1", "0", "2", "3.5"];
+    expect(sortNumericDimensionAxisValues(input)).toEqual(expected);
+  });
+
+  it("does not reorder non-numeric dimensions", () => {
+    const input = ["north", "south", "east"];
+    expect(sortNumericDimensionAxisValues(input)).toEqual(input);
   });
 });

@@ -54,6 +54,7 @@ import {
   getTimeGrainFromDimension,
   getTotalColumnCount,
   isTimeDimension,
+  sortNumericDimensionAxes,
   splitPivotChips,
 } from "./pivot-utils";
 import {
@@ -271,6 +272,9 @@ export function createPivotDataStore(
         if (columnDimensionAxes?.error && columnDimensionAxes?.error.length) {
           return columnSet(getErrorState(columnDimensionAxes.error));
         }
+        const columnDimensionAxesData = sortNumericDimensionAxes(
+          columnDimensionAxes?.data,
+        );
         const anchorDimension = rowDimensionNames[0];
 
         const rowPage = config.pivot.rowPage;
@@ -293,7 +297,7 @@ export function createPivotDataStore(
         } = getSortForAccessor(
           anchorDimension,
           config,
-          columnDimensionAxes?.data,
+          columnDimensionAxesData,
         );
 
         const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
@@ -369,7 +373,7 @@ export function createPivotDataStore(
           totalsRowQuery = getTotalsRowQuery(
             ctx,
             config,
-            columnDimensionAxes?.data,
+            columnDimensionAxesData,
           );
         }
 
@@ -390,7 +394,7 @@ export function createPivotDataStore(
             ) {
               const skeletonTotalsRowData = getTotalsRowSkeleton(
                 config,
-                columnDimensionAxes?.data,
+                columnDimensionAxesData,
               );
               return axesSet({
                 isFetching: true,
@@ -437,7 +441,7 @@ export function createPivotDataStore(
 
             const totalsRowData = getTotalsRow(
               config,
-              columnDimensionAxes?.data,
+              columnDimensionAxesData,
               totalsRowResponse?.data?.data,
               globalTotalsResponse?.data?.data,
             );
@@ -497,7 +501,7 @@ export function createPivotDataStore(
             ) {
               const slicedAxesDataForDef = sliceColumnAxesDataForDef(
                 config,
-                columnDimensionAxes?.data,
+                columnDimensionAxesData,
                 totalsRowData,
               );
 
@@ -510,7 +514,7 @@ export function createPivotDataStore(
               tableCellQuery = createTableCellQuery(
                 ctx,
                 config,
-                columnDimensionAxes?.data,
+                columnDimensionAxesData,
                 totalsRowData,
                 rowDimensionValues,
                 isFlat ? NUM_ROWS_PER_PAGE.toString() : "5000",
@@ -519,7 +523,7 @@ export function createPivotDataStore(
             } else {
               columnDef = getColumnDefForPivot(
                 config,
-                columnDimensionAxes?.data,
+                columnDimensionAxesData,
                 totalsRowData,
               );
             }
@@ -604,7 +608,7 @@ export function createPivotDataStore(
                       config,
                       anchorDimension,
                       rowDimensionValues || [],
-                      columnDimensionAxes?.data || {},
+                      columnDimensionAxesData,
                       pivotSkeleton as PivotDataRow[],
                       cellData,
                     );
@@ -616,7 +620,7 @@ export function createPivotDataStore(
                   ctx,
                   config,
                   pivotData,
-                  columnDimensionAxes?.data,
+                  columnDimensionAxesData,
                   totalsRowData,
                 );
 
@@ -638,7 +642,7 @@ export function createPivotDataStore(
                         config,
                         pivotData,
                         rowDimensionNames,
-                        columnDimensionAxes?.data || {},
+                        columnDimensionAxesData,
                         expandedRowMeasureValues,
                       );
 
@@ -670,7 +674,7 @@ export function createPivotDataStore(
                         config,
                         activeCell.rowId,
                         activeCell.columnId,
-                        columnDimensionAxes?.data,
+                        columnDimensionAxesData,
                         tableDataExpanded,
                       );
                     }
