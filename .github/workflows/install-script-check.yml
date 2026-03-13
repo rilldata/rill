@@ -20,4 +20,4 @@ jobs:
         with:
           ignore_paths: |
             *
-          additional_files: script/install.sh
+          additional_files: scripts/install.sh
