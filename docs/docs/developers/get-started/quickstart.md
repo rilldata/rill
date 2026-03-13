@@ -125,6 +125,6 @@ This quick start covered the basics, but Rill offers much more:
 
 - **[Data Modeling](/developers/build/models)** - Transform and prepare your data with SQL
 - **[Metrics Layer](/developers/build/metrics-view)** - Define business KPIs and calculations
-- **[Deployment](/developers/deploy/deploy-dashboard)** - Share your dashboards with your team
+- **[Deployment](/developers/deploy/deploy-to-cloud)** - Share your dashboards with your team
 
 Ready to build something more complex? Check out our [comprehensive tutorial](/developers/tutorials/rill-basics/launch) for a complete walkthrough of Rill's advanced features.

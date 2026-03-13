@@ -42,7 +42,7 @@ Rill Developer is great for building and testing locally, but once you're ready 
 
 <FeatureList items={[
   { name: "Local vs Cloud", description: "Understand the differences between local and cloud", link: "/developers/deploy/cloud-vs-developer" },
-  { name: "Deploy to Rill Cloud", description: "Publish your project to Rill Cloud", link: "/developers/deploy/deploy-dashboard" },
+  { name: "Deploy to Rill Cloud", description: "Publish your project to Rill Cloud", link: "/developers/deploy/deploy-to-cloud" },
   { name: "Credentials", description: "Configure deployment credentials", link: "/developers/deploy/deploy-credentials" },
 ]} />
 
