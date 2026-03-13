@@ -41,6 +41,8 @@
   import {
     constructAsOfString,
     constructNewString,
+    convertLegacyTime,
+    isUsingLegacyTime,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
   import { Clock, Check } from "lucide-svelte";
@@ -79,9 +81,21 @@
   let timeAxisPickerOpen = false;
   let searchValue: string | undefined = timeString;
 
+  let hasAsOfClause = false;
+  let snapToEnd = true;
+  let ref: RillTimeLabel | string | undefined = undefined;
+
   $: if (timeString) {
     try {
       parsedTime = parseRillTime(timeString);
+
+      if (parsedTime?.asOfLabel) {
+        hasAsOfClause = true;
+        snapToEnd = !!parsedTime.asOfLabel.offset;
+        ref = parsedTime.asOfLabel.label;
+      } else if (ref === undefined) {
+        ref = RillTimeLabel.Latest;
+      }
     } catch {
       parsedTime = undefined;
     }
@@ -92,13 +106,6 @@
     parsedTime?.interval instanceof RillAllTimeInterval;
 
   $: usingLegacyTime = parsedTime?.isOldFormat;
-
-  $: hasAsOfClause = !!parsedTime?.asOfLabel;
-
-  $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
-  $: ref = usingLegacyTime
-    ? RillTimeLabel.Latest
-    : parsedTime?.asOfLabel?.label;
 
   $: truncationGrain = getTruncationGrain(parsedTime);
 
@@ -114,7 +121,10 @@
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
     try {
-      const parsed = parseRillTime(range);
+      const normalizedRange = isUsingLegacyTime(range)
+        ? convertLegacyTime(range)
+        : range;
+      const parsed = parseRillTime(normalizedRange);
 
       const isPeriodToDate =
         parsed.interval instanceof RillPeriodToGrainInterval;
