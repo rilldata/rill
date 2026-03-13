@@ -64,13 +64,13 @@
       />
 
       <Popover.Root bind:open>
-        <Popover.Trigger asChild let:builder>
+        <Popover.Trigger asChild>
           <button
             class="trigger"
             class:error-trigger={!isColorValid}
-            use:builder.action
+
             class:open
-            {...builder}
+
             style:--hsl={hsl}
           >
             {#if !isColorValid}
@@ -130,13 +130,13 @@
     </div>
   {:else}
     <Popover.Root bind:open>
-      <Popover.Trigger asChild let:builder>
+      <Popover.Trigger asChild>
         <button
           class="trigger"
           class:error-trigger={!isColorValid}
-          use:builder.action
+
           class:open
-          {...builder}
+
           style:--hsl={hsl}
         >
           {#if !isColorValid}

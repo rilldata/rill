@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
   import type { ButtonType } from "./types";
 
@@ -20,7 +19,6 @@
   export let rounded = false;
   export let href: string | null = null;
   export let rel: string | undefined = undefined;
-  export let builders: Builder[] = [];
   export let loading = false;
   export let target: string | undefined = undefined;
   export let fit = false;
@@ -71,8 +69,6 @@
   {target}
   aria-disabled={disabled}
   rel={target === "_blank" ? "noopener noreferrer" : rel}
-  {...getAttrs(builders)}
-  use:builderActions={{ builders }}
   on:click={handleClick}
   style={forcedStyle}
   {...href ? { "data-sveltekit-preload-data": preload ? "hover" : "off" } : {}}

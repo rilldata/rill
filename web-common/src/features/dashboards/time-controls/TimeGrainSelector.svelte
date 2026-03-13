@@ -48,11 +48,11 @@
 
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
   <DropdownMenu.Root bind:open>
-    <DropdownMenu.Trigger asChild let:builder>
+    <DropdownMenu.Trigger asChild>
       <button
         class:tdd
-        use:builder.action
-        {...builder}
+
+
         aria-label="Select a time grain"
         class="flex items-center gap-x-1"
       >

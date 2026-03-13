@@ -23,7 +23,7 @@
 >
   <div class="flex flex-row items-center gap-x-2 w-full">
     {#if isManaged}
-      <Tooltip.Root portal="body">
+      <Tooltip.Root>
         <Tooltip.Trigger>
           <RillFilled size="14" />
         </Tooltip.Trigger>
@@ -35,7 +35,7 @@
     <span class="w-full">{project.orgName}/{project.name}</span>
   </div>
   {#if hovered}
-    <Tooltip.Root portal="body">
+    <Tooltip.Root>
       <Tooltip.Trigger>
         <a
           target="_blank"

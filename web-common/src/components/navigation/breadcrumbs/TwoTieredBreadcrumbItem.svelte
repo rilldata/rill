@@ -40,8 +40,8 @@
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <button use:builder.action {...builder} class="trigger">
+        <DropdownMenu.Trigger asChild>
+          <button class="trigger">
             <CaretDownIcon size="14px" />
           </button>
         </DropdownMenu.Trigger>

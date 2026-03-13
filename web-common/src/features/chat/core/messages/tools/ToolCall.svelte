@@ -6,7 +6,6 @@
   - "block": Before output blocks like ChartBlock/FileDiffBlock (always complete)
 -->
 <script lang="ts">
-  import { builderActions, getAttrs } from "bits-ui";
   import CodeBlock from "../../../../../components/code-block/CodeBlock.svelte";
   import * as Collapsible from "../../../../../components/collapsible";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
@@ -75,11 +74,9 @@
     bind:open={isExpanded}
     class="tool-call {variant === 'block' ? 'block' : 'inline'}"
   >
-    <Collapsible.Trigger asChild let:builder>
+    <Collapsible.Trigger asChild>
       <button
         class="tool-button"
-        {...getAttrs([builder])}
-        use:builderActions={{ builders: [builder] }}
       >
         <div class="tool-icon">
           {#if !hasResult && !isExpanded}
@@ -96,7 +93,7 @@
       </button>
     </Collapsible.Trigger>
 
-    <Collapsible.Content transition={undefined} class="tool-content">
+    <Collapsible.Content class="tool-content">
       <div class="tool-tabs">
         <button
           class="tool-tab"

@@ -9,7 +9,6 @@
     ResourceKind,
     type UserFacingResourceKinds,
   } from "../entity-management/resource-selectors";
-  import { builderActions } from "bits-ui";
   import { GitBranch } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
 
@@ -109,20 +108,10 @@
 {#if !componentsOnly}
   <div class="crumb">
     <div class="crumb__trigger">
-      <DropdownMenu.Root bind:open>
-        <DropdownMenu.Trigger asChild let:builder>
-          <svelte:element
-            this={dropdown ? "button" : "a"}
-            class:open
-            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
-            class:selected={current}
-            href={dropdown
-              ? undefined
-              : exampleResource
-                ? `/files${exampleResource?.meta?.filePaths?.[0]}`
-                : "#"}
-            {...dropdown ? builder : {}}
-            use:builderActions={{ builders: dropdown ? [builder] : [] }}
+      {#if dropdown}
+        <DropdownMenu.Root bind:open>
+          <DropdownMenu.Trigger
+            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 {open ? 'open' : ''} {current ? 'selected' : ''}"
           >
             <CrumbTrigger
               {filePath}
@@ -131,10 +120,8 @@
                 ? generateLabel(resources)
                 : resourceName}
             />
-          </svelte:element>
-        </DropdownMenu.Trigger>
+          </DropdownMenu.Trigger>
 
-        {#if dropdown}
           <DropdownMenu.Content align="start">
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
@@ -151,8 +138,22 @@
               </DropdownMenu.Item>
             {/each}
           </DropdownMenu.Content>
-        {/if}
-      </DropdownMenu.Root>
+        </DropdownMenu.Root>
+      {:else}
+        <a
+          class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
+          class:selected={current}
+          href={exampleResource
+            ? `/files${exampleResource?.meta?.filePaths?.[0]}`
+            : "#"}
+        >
+          <CrumbTrigger
+            {filePath}
+            kind={resourceKind}
+            label={resourceName}
+          />
+        </a>
+      {/if}
     </div>
     {#if current && graphSupported && openGraph}
       <Button

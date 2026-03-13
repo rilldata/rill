@@ -98,10 +98,10 @@
         Create a metrics view
       </Button>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
+        <DropdownMenu.Trigger asChild>
           <Button
             type="tertiary"
-            builders={[builder]}
+           
             large
             forcedStyle="height: 3rem;"
           >
@@ -111,7 +111,7 @@
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}
-            <DropdownMenu.Item on:click={() => unpackProject(example)}>
+            <DropdownMenu.Item onclick={() => unpackProject(example)}>
               {example.title}
             </DropdownMenu.Item>
           {/each}

@@ -26,11 +26,9 @@
 </script>
 
 <DropdownMenu.Root
-  closeOnItemClick={false}
-  typeahead={false}
   bind:open={active}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     <Tooltip
       activeDelay={60}
       alignment="start"
@@ -38,7 +36,7 @@
       location="bottom"
       suppress={active}
     >
-      <Button builders={[builder]} type="text" label={tooltipText}>
+      <Button type="text" label={tooltipText}>
         <div
           class="flex items-center gap-x-0.5 px-1 text-fg-primary hover:text-inherit"
         >

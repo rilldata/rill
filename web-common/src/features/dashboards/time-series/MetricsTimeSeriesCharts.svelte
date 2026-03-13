@@ -290,10 +290,10 @@
 
       {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
-          <DropdownMenu.Trigger asChild let:builder>
+          <DropdownMenu.Trigger asChild>
             <button
-              {...builder}
-              use:builder.action
+
+
               aria-label="Select aggregation grain"
               class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
             >

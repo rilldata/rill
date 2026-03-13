@@ -154,9 +154,9 @@
     }
   }}
 >
-  <Dialog.Trigger asChild let:builder>
+  <Dialog.Trigger asChild>
     <Button
-      builders={[builder]}
+     
       type="primary"
       class="w-fit mt-1"
       loading={$userStatus.isFetching}

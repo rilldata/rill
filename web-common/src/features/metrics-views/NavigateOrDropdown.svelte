@@ -2,7 +2,6 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import type { Builder } from "bits-ui";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import {
     displayResourceKind,
@@ -10,7 +9,6 @@
   } from "../entity-management/resource-selectors";
 
   export let resources: V1Resource[];
-  export let builder: Builder;
 
   $: firstResource = resources?.[0];
   $: firstResourceType = displayResourceKind(
@@ -30,15 +28,14 @@
     </a>
     <button
       aria-label="Create resource menu"
-      use:builder.action
-      {...builder}
       class="text-inherit h-full aspect-square grid place-content-center hover:bg-surface-hover hover:text-fg-accent"
+      on:click
     >
       <CaretDownIcon />
     </button>
   </div>
 {:else}
-  <Button type="secondary" builders={[builder]}>
+  <Button type="secondary">
     Go to {firstResourceType}
     <CaretDownIcon />
   </Button>

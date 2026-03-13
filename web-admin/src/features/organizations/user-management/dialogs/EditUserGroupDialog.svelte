@@ -274,9 +274,6 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-  }}
   onOpenChange={(open) => {
     if (!open) {
       handleClose();
@@ -286,7 +283,10 @@
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    interactOutsideBehavior="ignore"
+  >
     <DialogHeader>
       <DialogTitle>Edit group</DialogTitle>
     </DialogHeader>
@@ -330,7 +330,7 @@
             onSelectedChange={(values) => {
               if (!values) return;
 
-              const newEmails = values.map((v) => v.value);
+              const newEmails = values;
               const currentEmails = selectedUsers.map((u) => u.userEmail);
 
               // Find emails to add (in new but not in current)

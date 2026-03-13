@@ -19,14 +19,13 @@
 
 <DropdownMenu.Root
   bind:open
-  typeahead={false}
   onOpenChange={(open) => {
     if (!open) {
       searchText = "";
     }
   }}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     <Tooltip
       activeDelay={60}
       alignment="start"
@@ -34,7 +33,7 @@
       location="bottom"
       suppress={open}
     >
-      <Chip theme type="measure" active={open} {label} builders={[builder]}>
+      <Chip theme type="measure" active={open} {label}>
         <div slot="body" class="font-bold truncate">
           {label}
         </div>

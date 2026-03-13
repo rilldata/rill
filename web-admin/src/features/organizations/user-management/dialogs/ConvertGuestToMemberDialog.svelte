@@ -65,17 +65,17 @@
   }
 </script>
 
-<Dialog.Root
-  bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-  }}
->
+<Dialog.Root bind:open>
   <Dialog.Trigger asChild>
     <div class="hidden"></div>
   </Dialog.Trigger>
-  <Dialog.Content class="translate-y-[-200px] md:w-[425px] w-[425px]">
+  <Dialog.Content
+    class="translate-y-[-200px] md:w-[425px] w-[425px]"
+    onInteractOutside={(e) => {
+      e.preventDefault();
+      open = false;
+    }}
+  >
     <Dialog.Header>
       <Dialog.Title>Convert to member</Dialog.Title>
       <div class="text-sm">Convert {userName} to {role}</div>

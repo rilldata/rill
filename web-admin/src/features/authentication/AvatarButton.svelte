@@ -143,9 +143,9 @@
     >
       Join us on Discord
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={handlePylon}>
+    <DropdownMenu.Item onclick={handlePylon}>
       Contact Rill support
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={redirectToLogout}>Logout</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={redirectToLogout}>Logout</DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -140,9 +140,9 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     <Button
-      builders={[builder]}
+     
       label="Add Asset"
       class="w-full"
       type="secondary"
@@ -261,10 +261,10 @@
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddFolder}>
           <Folder size="14px" class="stroke-icon-muted" /> Folder
         </DropdownMenu.Item>
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddBlankFile}>
           <File size="14px" class="stroke-icon-muted" /> Blank file
         </DropdownMenu.Item>
         {#if $developerChat}
@@ -311,7 +311,7 @@
           Theme
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
-        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
+        <!-- <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-fg-primary"
@@ -319,7 +319,7 @@
             />
             Report
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
+          <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
               className="text-fg-primary"

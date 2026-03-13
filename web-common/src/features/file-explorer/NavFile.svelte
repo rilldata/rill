@@ -125,9 +125,9 @@
   </a>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
+      <DropdownMenu.Trigger asChild>
         <ContextButton
-          builders={[builder]}
+         
           id="more-actions-{filePath}"
           label="{filePath} actions menu trigger"
           suppressTooltip={contextMenuOpen}

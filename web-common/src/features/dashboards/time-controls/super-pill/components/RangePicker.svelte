@@ -38,13 +38,11 @@
   onOpenChange={() => {
     showSelector = selected === "CUSTOM";
   }}
-  closeOnItemClick={false}
-  typeahead={!showSelector}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     <button
-      {...builder}
-      use:builder.action
+
+
       class="flex gap-x-1"
       aria-label="Select time range"
       type="button"

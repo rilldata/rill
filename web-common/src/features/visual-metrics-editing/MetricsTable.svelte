@@ -203,11 +203,12 @@
         />
       {:else}
         <tr style:height="40px" class="relative">
-          <div
+          <td
+            colspan="100"
             class="absolute left-0 h-10 px-6 items-center flex w-full italic"
           >
             No items matching search
-          </div>
+          </td>
         </tr>
       {/each}
 

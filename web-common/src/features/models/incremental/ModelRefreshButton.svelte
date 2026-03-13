@@ -30,12 +30,12 @@
 
 {#if isIncrementalModel}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
+    <DropdownMenu.Trigger asChild>
       <Tooltip distance={8}>
         <Button
           square
           type="secondary"
-          builders={[builder]}
+         
           disabled={!isModelIdle || hasUnsavedChanges}
           label="Refresh Incremental Model"
         >
@@ -51,10 +51,10 @@
       </Tooltip>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
-      <DropdownMenu.Item on:click={() => refreshModel(false)}>
+      <DropdownMenu.Item onclick={() => refreshModel(false)}>
         Incremental refresh
       </DropdownMenu.Item>
-      <DropdownMenu.Item on:click={() => refreshModel(true)}>
+      <DropdownMenu.Item onclick={() => refreshModel(true)}>
         Full refresh
       </DropdownMenu.Item>
     </DropdownMenu.Content>

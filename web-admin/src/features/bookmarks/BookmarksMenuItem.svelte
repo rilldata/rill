@@ -102,15 +102,15 @@
               <Pencil size="16px" />
             </Button>
           {/if}
-          <Tooltip.Root portal="body">
-            <Tooltip.Trigger asChild let:builder>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
               <Button
                 square
                 type="tertiary"
                 onClick={deleteBookmark}
                 disabled={disableDelete}
                 label="Delete bookmark"
-                builders={[builder]}
+               
               >
                 <Trash size="16px" />
               </Button>

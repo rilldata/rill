@@ -37,8 +37,8 @@
 </script>
 
 <Popover.Root bind:open>
-  <Popover.Trigger asChild let:builder>
-    <Button type="primary" builders={[builder]}>
+  <Popover.Trigger asChild>
+    <Button type="primary">
       <Rocket size="16px" />
 
       Deploy

@@ -178,7 +178,7 @@
           on:keydown={onKeydown}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}
-        />
+        ></textarea>
       {:else}
         <input
           title={label || title}

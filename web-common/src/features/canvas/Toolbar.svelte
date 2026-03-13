@@ -60,7 +60,7 @@
         alignOffset={-4}
         class="w-40"
       >
-        <DropdownMenu.Item on:click={onDuplicate}>
+        <DropdownMenu.Item onclick={onDuplicate}>
           <Copy size="14px" />
           Duplicate
         </DropdownMenu.Item>

@@ -33,7 +33,7 @@
   import TruncationSelector from "./TruncationSelector.svelte";
   import { overrideRillTimeRef } from "../../../url-state/time-ranges/parser";
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
-  import { builderActions, Tooltip, getAttrs } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import ZoneContent from "../components/ZoneContent.svelte";
   import SyntaxElement from "../components/SyntaxElement.svelte";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
@@ -220,16 +220,10 @@
     }
   }}
 >
-  <Popover.Trigger asChild let:builder id="super-pill-trigger-{context}">
-    <Tooltip.Root openDelay={800}>
-      <Tooltip.Trigger
-        asChild
-        let:builder={tooltipBuilder}
-        id="super-pill-trigger-{context}"
-      >
-        <button
-          use:builderActions={{ builders: [builder, tooltipBuilder] }}
-          {...getAttrs([builder, tooltipBuilder])}
+  <Tooltip.Root delayDuration={800}>
+    <Tooltip.Trigger asChild id="super-pill-trigger-{context}">
+      <Popover.Trigger
+          id="super-pill-trigger-{context}"
           class="flex gap-x-1.5"
           aria-label="Select time range"
           type="button"
@@ -257,16 +251,15 @@
           <span class="flex-none transition-transform" class:-rotate-180={open}>
             <CaretDownIcon />
           </span>
-        </button>
-      </Tooltip.Trigger>
+      </Popover.Trigger>
+    </Tooltip.Trigger>
 
-      <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        {#if interval}
-          <PrimaryRangeTooltip {timeString} {interval} />
-        {/if}
-      </Tooltip.Content>
-    </Tooltip.Root>
-  </Popover.Trigger>
+    <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
+      {#if interval}
+        <PrimaryRangeTooltip {timeString} {interval} />
+      {/if}
+    </Tooltip.Content>
+  </Tooltip.Root>
 
   <Popover.Content
     align="start"
@@ -380,21 +373,12 @@
             <div class="h-px w-full bg-border my-1" />
 
             <Popover.Root portal="#rill-portal" bind:open={timeZonePickerOpen}>
-              <Popover.Trigger asChild let:builder>
-                <div
-                  {...builder}
-                  use:builder.action
-                  on:click={() => {
+              <Popover.Trigger
+                  onclick={() => {
                     showCalendarPicker = false;
                   }}
-                  role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-popover-accent flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 overflow-hidden hover:bg-popover-accent flex-none rounded-sm w-full select-none flex items-center truncate text-left gap-x-1 pr-1 pl-2"
                 >
-                  <button
-                    type="button"
-                    class:font-bold={false}
-                    class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
-                  >
                     <div class="flex-none">
                       <Globe size="14px" className="text-fg-primary" />
                     </div>
@@ -406,8 +390,6 @@
                       className="-rotate-90 text-fg-secondary"
                       size="14px"
                     />
-                  </button>
-                </div>
               </Popover.Trigger>
 
               <Popover.Content
@@ -440,24 +422,13 @@
 
             <Popover.Root portal="#rill-portal" bind:open={timeAxisPickerOpen}>
               <Popover.Trigger
-                asChild
-                let:builder
                 id="time-axis-trigger-{context}"
+                onclick={() => {
+                  showCalendarPicker = false;
+                }}
+                aria-label="Select time axis"
+                class="group h-7 overflow-hidden hover:bg-surface-hover flex-none rounded-sm w-full select-none flex items-center truncate text-left gap-x-1 pr-1 pl-2"
               >
-                <div
-                  {...builder}
-                  use:builder.action
-                  on:click={() => {
-                    showCalendarPicker = false;
-                  }}
-                  role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-surface-hover flex-none rounded-sm w-full select-none flex items-center"
-                >
-                  <button
-                    class:font-bold={false}
-                    class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
-                    aria-label="Select time axis"
-                  >
                     <div class="flex-none">
                       <Clock size="14px" />
                     </div>
@@ -468,8 +439,6 @@
                       />
                     </div>
                     <CaretDownIcon className="-rotate-90" size="14px" />
-                  </button>
-                </div>
               </Popover.Trigger>
 
               <Popover.Content

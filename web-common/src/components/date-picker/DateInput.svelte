@@ -32,10 +32,11 @@
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
 
-  enum ErrorType {
-    INVALID = "invalid",
-    OUT_OF_RANGE = "out-of-range",
-  }
+  const ErrorType = {
+    INVALID: "invalid",
+    OUT_OF_RANGE: "out-of-range",
+  } as const;
+  type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 
   export let date: DateTime;
   export let zone: string;
@@ -158,9 +159,9 @@
       }}
     />
     {#if errorType === ErrorType.OUT_OF_RANGE || (errorType && !inputIsFocused)}
-      <Tooltip.Root portal="body">
-        <Tooltip.Trigger asChild let:builder>
-          <button use:builder.action {...builder} on:click={resetDate}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <button on:click={resetDate}>
             <AlertTriangle
               className="size-4 text-{errorType === ErrorType.INVALID
                 ? 'red'

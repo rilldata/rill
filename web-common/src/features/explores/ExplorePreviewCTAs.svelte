@@ -53,8 +53,8 @@
   </StateManagersProvider>
   {#if !$readOnly}
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button type="secondary" builders={[builder]}>
+      <DropdownMenu.Trigger asChild>
+        <Button type="secondary">
           Edit
           <CaretDownIcon />
         </Button>

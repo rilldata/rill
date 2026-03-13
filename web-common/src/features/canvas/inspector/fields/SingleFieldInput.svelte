@@ -48,15 +48,15 @@
     {/if}
   </div>
 
-  <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
-    <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Root bind:open>
+    <DropdownMenu.Trigger asChild>
       <Chip
         fullWidth
         caret
         removable={isRemovable && !!selectedItem}
         {onRemove}
         type={isTimeSelected ? "time" : type}
-        builders={[builder]}
+       
       >
         <span
           class="font-bold truncate"

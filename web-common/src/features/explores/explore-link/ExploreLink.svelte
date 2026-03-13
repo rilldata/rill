@@ -65,7 +65,7 @@
 </script>
 
 {#if mode === "dropdown-item"}
-  <DropdownMenu.Item on:click={gotoExplorePage}>
+  <DropdownMenu.Item onclick={gotoExplorePage}>
     {#if isNavigating}
       <Spinner status={EntityStatus.Running} size="14px" />
     {:else}

@@ -52,11 +52,11 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger asChild>
     <button
-      use:builder.action
-      {...builder}
+
+
       class="flex items-center gap-x-1"
       aria-label="Timezone selector"
       title={!availableTimeZones.length ? "No timezones configured" : ""}

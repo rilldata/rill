@@ -28,7 +28,7 @@
       transition:fade|global={{ duration: 200 }}
       style:background={bg}
       class={classes}
-    />
+    ></div>
   {/key}
   <div transition:fade|global={{ duration: 300 }} class={classes}>
     <slot />

@@ -1,13 +1,14 @@
 import { GutterMarker, gutter } from "@codemirror/view";
 import LineNumberGutterMarkerComponent from "./LineNumberGutterMarker.svelte";
 import { lineStatusesStateField, updateLineStatuses } from "./state";
-import type { SvelteComponent } from "svelte";
+import { mount, unmount } from "svelte";
 
 export const LINE_NUMBER_GUTTER_CLASS = "cm-line-number-gutter";
 
 class NumberMarker extends GutterMarker {
   element: HTMLElement;
-  component: SvelteComponent;
+  component: Record<string, unknown>;
+  props: { line: number; level: string | undefined; active: boolean };
   line: number;
   level: "error" | "warning" | "info" | "success" | undefined;
   active: boolean;
@@ -22,10 +23,20 @@ class NumberMarker extends GutterMarker {
     this.level = level;
     this.active = active;
     this.element = document.createElement("div");
-    this.component = new LineNumberGutterMarkerComponent({
+    this.props = $state({ line, level, active });
+    this.component = mount(LineNumberGutterMarkerComponent, {
       target: this.element,
-      props: { line, level, active },
+      props: this.props,
     });
+  }
+  setProps(
+    line: number,
+    level: "error" | "warning" | "info" | "success" | undefined,
+    active: boolean,
+  ) {
+    this.props.line = line;
+    this.props.level = level;
+    this.props.active = active;
   }
   eq(mkr) {
     return (
@@ -38,7 +49,7 @@ class NumberMarker extends GutterMarker {
     return this.element;
   }
   destroy() {
-    this.component.$destroy();
+    unmount(this.component);
   }
 }
 
@@ -48,11 +59,7 @@ export const createLineNumberGutter = () =>
     initialSpacer: (view) =>
       new NumberMarker(view.state.doc.lines, undefined, false),
     updateSpacer: (spacer: NumberMarker, update) => {
-      spacer.component.$set({
-        line: update.state.doc.lines,
-        level: undefined,
-        active: false,
-      });
+      spacer.setProps(update.state.doc.lines, undefined, false);
       return spacer;
     },
     lineMarker(view, line) {

@@ -110,14 +110,12 @@
 </script>
 
 <DropdownMenu.Root
-  closeOnItemClick={false}
-  typeahead={false}
   bind:open={active}
   onOpenChange={(open) => {
     if (!open) searchText = "";
   }}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     <Tooltip
       activeDelay={60}
       alignment="start"
@@ -126,7 +124,7 @@
       suppress={active}
     >
       <Button
-        builders={[builder]}
+       
         type="text"
         theme
         dataAttributes={{
@@ -153,7 +151,6 @@
         align="start"
         class="flex flex-col w-72 p-0 overflow-hidden"
         strategy="absolute"
-        fitViewport={true}
       >
         <div class="px-3 pt-3 pb-1">
           <Search

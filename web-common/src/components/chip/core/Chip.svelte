@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slideRight } from "../../../lib/transitions";
@@ -19,8 +18,7 @@
   export let grab = false;
   export let compact = false;
   export let fullWidth = false;
-  export let builders: Builder[] = [];
-  export let caret = builders.length > 0;
+  export let caret = false;
   export let slideDuration = 150;
   export let supressTooltip = false;
   export let label: string | undefined = undefined;
@@ -53,8 +51,6 @@
     class:compact
     class:fullWidth
     class:pointer-events-none={readOnly && !allowPointerEvents}
-    {...getAttrs(builders)}
-    use:builderActions={{ builders }}
     aria-label={label}
   >
     {#if removable && !readOnly}

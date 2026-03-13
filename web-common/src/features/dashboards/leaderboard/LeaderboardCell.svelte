@@ -7,7 +7,6 @@
     copyToClipboard,
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard.ts";
-  import { builderActions, getAttrs } from "bits-ui";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config.ts";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click.ts";
   import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store.ts";
@@ -63,53 +62,51 @@
   onDestroy(clearHideTimer);
 </script>
 
-<Tooltip.Root
-  bind:open={tooltipActive}
-  openDelay={1000}
-  closeOnPointerDown={false}
+<td
+  role="button"
+  tabindex="0"
+  on:click={modified({
+    shift: () => shiftClickHandler(value),
+  })}
+  on:pointerover={() => cellInspectorStore.updateValue(value)}
+  on:focus={() => cellInspectorStore.updateValue(value)}
+  on:mouseleave={() => (tooltipActive = false)}
+  style:background
+  class="{cellType}-cell {className}"
 >
-  <Tooltip.Trigger asChild let:builder {disabled}>
-    <td
-      role="button"
-      tabindex="0"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      on:click={modified({
-        shift: () => shiftClickHandler(value),
-      })}
-      on:pointerover={() => cellInspectorStore.updateValue(value)}
-      on:focus={() => cellInspectorStore.updateValue(value)}
-      on:mouseleave={() => (tooltipActive = false)}
-      style:background
-      class="{cellType}-cell {className}"
-    >
+  <Tooltip.Root
+    bind:open={tooltipActive}
+    openDelay={1000}
+    closeOnPointerDown={false}
+  >
+    <Tooltip.Trigger {disabled} class="w-full h-full text-inherit">
       <slot />
-    </td>
-  </Tooltip.Trigger>
+    </Tooltip.Trigger>
 
-  {#if clipboardSupported && !disabled}
-    <Tooltip.Content
-      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-fg-inverse"
-      sideOffset={16}
-    >
-      <FormattedDataType
-        customStyle="font-semibold !text-fg-inverse"
-        isNull={value === null || value === undefined}
-        type={dataType}
-        {value}
-      />
-      <div class="flex flex-row gap-x-6 items-baseline text-fg-muted">
-        <div>
-          <StackingWord key="shift">Copy</StackingWord>
-          this value to clipboard
+    {#if clipboardSupported && !disabled}
+      <Tooltip.Content
+        class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-fg-inverse"
+        sideOffset={16}
+      >
+        <FormattedDataType
+          customStyle="font-semibold !text-fg-inverse"
+          isNull={value === null || value === undefined}
+          type={dataType}
+          {value}
+        />
+        <div class="flex flex-row gap-x-6 items-baseline text-fg-muted">
+          <div>
+            <StackingWord key="shift">Copy</StackingWord>
+            this value to clipboard
+          </div>
+          <Shortcut>
+            <span style="font-family: var(--system);">⇧</span> + Click
+          </Shortcut>
         </div>
-        <Shortcut>
-          <span style="font-family: var(--system);">⇧</span> + Click
-        </Shortcut>
-      </div>
-    </Tooltip.Content>
-  {/if}
-</Tooltip.Root>
+      </Tooltip.Content>
+    {/if}
+  </Tooltip.Root>
+</td>
 
 <style lang="postcss">
   td {

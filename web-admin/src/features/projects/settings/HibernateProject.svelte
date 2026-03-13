@@ -67,9 +67,9 @@
 
   <svelte:fragment slot="action">
     <AlertDialog bind:open={dialogOpen}>
-      <AlertDialogTrigger asChild let:builder>
+      <AlertDialogTrigger asChild>
         <Button
-          builders={[builder]}
+         
           type="secondary-destructive"
           disabled={isHibernated}
         >

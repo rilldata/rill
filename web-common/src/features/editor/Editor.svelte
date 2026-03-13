@@ -161,9 +161,9 @@
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
-        <AlertDialog.Action asChild let:builder>
+        <AlertDialog.Action asChild>
           <Button
-            builders={[builder]}
+           
             type="primary"
             large
             onClick={() => {
@@ -174,7 +174,7 @@
           </Button>
 
           <Button
-            builders={[builder]}
+           
             type="secondary"
             large
             onClick={revertContent}

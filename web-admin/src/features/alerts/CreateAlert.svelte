@@ -40,13 +40,13 @@
     let:onCancel
     let:onClose
   >
-    <DialogTrigger asChild let:builder>
+    <DialogTrigger asChild>
       <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
         <Button
           compact
           disabled={$isCustomTimeRange}
           type="secondary"
-          builders={[builder]}
+         
           label="Create alert"
         >
           <BellPlusIcon class="inline-flex" size="16px" />

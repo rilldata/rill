@@ -10,9 +10,9 @@
   let open = false;
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Button builders={[builder]} type="secondary">
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger asChild>
+    <Button type="secondary">
       <Plus class="flex items-center justify-center" size="16px" />
       <div class="flex gap-x-1 items-center">
         Add component
@@ -23,7 +23,7 @@
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">
     <DropdownMenu.Group>
       {#each menuItems as item, i (i)}
-        <DropdownMenu.Item on:click={() => addComponent(item.id)}>
+        <DropdownMenu.Item onclick={() => addComponent(item.id)}>
           <div class="flex flex-row gap-x-2">
             <svelte:component this={item.icon} />
             <span class=" text-xs font-normal">{item.label}</span>

@@ -218,7 +218,7 @@
         resizingMeasure = false;
       }}
     >
-      <div class="resize-bar" />
+      <div class="resize-bar"></div>
     </Resizer>
   </div>
 
@@ -250,7 +250,7 @@
               resizingMeasure = false;
             }}
           >
-            <div class="resize-bar" />
+            <div class="resize-bar"></div>
           </Resizer>
         </div>
       {/each}

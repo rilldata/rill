@@ -1,7 +1,7 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { DateTime, Duration } from "luxon";
-  import { Tooltip } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
 
   export let date: DateTime = DateTime.now();
   export let zone: string;
@@ -30,10 +30,10 @@
 </script>
 
 <Tooltip.Root disableHoverableContent={true}>
-  <Tooltip.Trigger asChild let:builder id="{id}-timestamp-trigger">
+  <Tooltip.Trigger asChild id="{id}-timestamp-trigger">
     <button
-      use:builder.action
-      {...builder}
+
+
       class:italic
       class="text-xs text-inherit"
       on:click={() => {

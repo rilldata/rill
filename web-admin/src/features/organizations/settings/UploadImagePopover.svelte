@@ -10,8 +10,6 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover/index.js";
   import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
-  import { builderActions, getAttrs } from "bits-ui";
-
   export let imageUrl: string;
   export let accept: string;
   export let label: string;
@@ -75,14 +73,8 @@
     if (!o) onCancel();
   }}
 >
-  <PopoverTrigger asChild let:builder>
-    <button
-      class:dark
-      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      class:w-24={!imageUrl}
-      class:w-20={!!imageUrl}
+  <PopoverTrigger
+      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit {dark ? 'dark' : ''} {!imageUrl ? 'w-24' : 'w-20'}"
     >
       <div class="m-auto px-4 w-fit h-10">
         {#if imageUrl}
@@ -101,7 +93,6 @@
           />
         </div>
       {/if}
-    </button>
   </PopoverTrigger>
   <PopoverContent
     align="start"

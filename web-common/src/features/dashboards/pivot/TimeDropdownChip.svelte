@@ -34,8 +34,8 @@
 
 {#if timeGrainOptions.length > 0}
   <DropdownMenu.Root bind:open={dropdownOpen}>
-    <DropdownMenu.Trigger asChild let:builder>
-      <div use:builder.action {...builder}>
+    <DropdownMenu.Trigger asChild>
+      <div>
         <PivotChip
           {item}
           {removable}

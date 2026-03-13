@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
-  import { builderActions, getAttrs } from "bits-ui";
   import { ChevronDownIcon } from "lucide-svelte";
   import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
   import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
@@ -87,12 +86,8 @@
   >
     {#if tooltip}
       <Tooltip.Root bind:open={tooltipOpen}>
-        <Tooltip.Trigger asChild let:builder>
-          <span
-            {...getAttrs([builder])}
-            use:builderActions={{ builders: [builder] }}
-            class="cursor-pointer"
-          >
+        <Tooltip.Trigger asChild>
+          <span class="cursor-pointer">
             {label}
           </span>
         </Tooltip.Trigger>

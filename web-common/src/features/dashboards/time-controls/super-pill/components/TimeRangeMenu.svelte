@@ -6,7 +6,6 @@
     NamedRange,
     ISODurationString,
   } from "../../new-time-controls";
-  import type { CustomEventHandler } from "bits-ui";
   import { RILL_TO_LABEL, ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
 
   export let ranges: RangeBuckets;
@@ -17,8 +16,8 @@
   export let onSelectCustomOption: () => void;
   export let allowCustomTimeRange = true;
 
-  function handleClick(e: CustomEventHandler<MouseEvent, HTMLDivElement>) {
-    const range = e.detail.currentTarget.dataset.range;
+  function handleClick(e: MouseEvent) {
+    const range = (e.currentTarget as HTMLElement)?.dataset?.range;
     if (!range) {
       throw new Error("No range provided");
     }
@@ -28,7 +27,7 @@
 </script>
 
 {#if showDefaultItem && defaultTimeRange}
-  <DropdownMenu.Item data-range={defaultTimeRange} on:click={handleClick}>
+  <DropdownMenu.Item data-range={defaultTimeRange} onclick={handleClick}>
     <div class:font-bold={selected === defaultTimeRange}>
       Last {humaniseISODuration(defaultTimeRange)}
     </div>
@@ -80,7 +79,7 @@
 
 {#if ranges.allTime}
   <DropdownMenu.Separator />
-  <DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
+  <DropdownMenu.Item onclick={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
     <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
       {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
     </span>
@@ -89,7 +88,7 @@
 
 {#if allowCustomTimeRange}
   <DropdownMenu.Separator />
-  <DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
+  <DropdownMenu.Item onclick={onSelectCustomOption} data-range="custom">
     <span class:font-bold={selected === "CUSTOM"}> Custom </span>
   </DropdownMenu.Item>
 {/if}

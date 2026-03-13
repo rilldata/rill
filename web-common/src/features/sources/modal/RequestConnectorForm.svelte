@@ -76,7 +76,7 @@
     bind:value={$form.email}
   />
   <div class="flex gap-x-2">
-    <div class="grow" />
+    <div class="grow"></div>
     <Button onClick={onBack} type="secondary">Back</Button>
     <Button
       type="primary"

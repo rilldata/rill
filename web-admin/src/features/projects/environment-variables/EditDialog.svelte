@@ -272,12 +272,14 @@
 <Dialog
   bind:open
   onOpenChange={() => handleReset()}
-  onOutsideClick={() => handleReset()}
 >
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={() => handleReset()}
+  >
     <DialogHeader>
       <DialogTitle>Edit environment variable</DialogTitle>
     </DialogHeader>

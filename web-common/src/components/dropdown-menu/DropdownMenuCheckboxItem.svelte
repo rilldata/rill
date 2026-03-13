@@ -6,13 +6,10 @@
   type $$Props = DropdownMenuPrimitive.CheckboxItemProps & {
     checkSize?: string;
     checkRight?: boolean;
-    // See: https://www.bits-ui.com/docs/components/dropdown-menu#dropdownmenucheckboxitem
-    // Converts div to anchor tag
     href?: string;
     preloadData?: boolean;
     showXForSelected?: boolean;
   };
-  // type $$Events = DropdownMenuPrimitive.CheckboxItemEvents;
 
   let className: $$Props["class"] = undefined;
   export let checked: $$Props["checked"] = undefined;
@@ -39,13 +36,6 @@
       checkRight && "flex-row-reverse justify-between",
     )}
     {...$$restProps}
-    on:click
-    on:keydown
-    on:focusin
-    on:focusout
-    on:pointerdown
-    on:pointerleave
-    on:pointermove
   >
     <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
       {#if checked}

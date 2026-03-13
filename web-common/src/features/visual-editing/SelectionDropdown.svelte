@@ -32,8 +32,6 @@
 
 <DropdownMenu.Root
   bind:open
-  typeahead={false}
-  closeOnItemClick={false}
   onOpenChange={() => {
     if (!open) {
       selectedProxy = new Set(selectedItems);
@@ -41,10 +39,10 @@
     }
   }}
 >
-  <DropdownMenu.Trigger asChild let:builder {id}>
+  <DropdownMenu.Trigger asChild {id}>
     <button
-      use:builder.action
-      {...builder}
+
+
       class:open
       class:small
       class="dropdown-trigger"

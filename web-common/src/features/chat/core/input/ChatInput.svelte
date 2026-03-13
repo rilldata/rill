@@ -122,7 +122,7 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div class="chat-input-container" bind:this={element} />
+  <div class="chat-input-container" bind:this={element}></div>
   <div class="chat-input-footer">
     <button
       class="text-base text-fg-muted"

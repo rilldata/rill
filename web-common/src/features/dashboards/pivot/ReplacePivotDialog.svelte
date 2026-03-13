@@ -17,14 +17,14 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} type="secondary" onClick={onCancel}>
+      <AlertDialog.Cancel asChild>
+        <Button large type="secondary" onClick={onCancel}>
           Cancel
         </Button>
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild let:builder>
-        <Button large builders={[builder]} type="primary" onClick={onReplace}>
+      <AlertDialog.Action asChild>
+        <Button large type="primary" onClick={onReplace}>
           Replace
         </Button>
       </AlertDialog.Action>
