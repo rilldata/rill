@@ -34,7 +34,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get repo for project path: %w", err)
 			}
-			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
+			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb", true)
 			if err != nil {
 				return fmt.Errorf("failed to parse project: %w", err)
 			}

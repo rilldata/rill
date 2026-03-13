@@ -362,6 +362,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			return runtime.ReconcileResult{Err: err}
 		}
 
+		// log the warnings from execution if any
+		if len(execRes.Warnings) > 0 {
+			r.C.Logger.Warn("model execution completed with warnings", zap.String("model", n.Name), zap.Strings("warnings", execRes.Warnings), observability.ZapCtx(ctx))
+		}
 		// Emit telemetry
 		runType := "full"
 		if firstRunIncremental {
@@ -839,7 +843,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		return nil, nil, nil
 	}
 
-	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.IncrementalStateResolver,
 		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
@@ -849,6 +853,10 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		return nil, nil, err
 	}
 	defer res.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("incremental state resolver produced warnings", zap.String("resolver", mdl.Spec.IncrementalStateResolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	row, err := res.Next()
 	if err != nil {
@@ -882,7 +890,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 	}
 
 	// Resolve partition rows
-	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.PartitionsResolver,
 		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
@@ -893,6 +901,10 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		return err
 	}
 	defer res.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("partitions resolver produced warnings", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	// Consume the rows and sync them in batches
 	var batch []map[string]any
@@ -1396,6 +1408,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	// Execute the stage step if configured
 	return r.executeWithRetry(ctx, self, mdl, func(ctx context.Context) (*drivers.ModelResult, error) {
 		var stageDuration time.Duration
+		var warnings []string
 		if executor.stage != nil {
 			// Also resolve templating in the stage props
 			stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
@@ -1432,6 +1445,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 					r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 				}
 			}()
+			warnings = append(warnings, stageResult.Warnings...)
 		}
 
 		// Execute the final step
@@ -1450,6 +1464,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			return nil, err
 		}
 		finalResult.ExecDuration += stageDuration
+		finalResult.Warnings = append(finalResult.Warnings, warnings...)
 
 		return finalResult, nil
 	})
@@ -1781,6 +1796,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context, inst *drivers.Instanc
 		RepoRoot:           repoRoot,
 		StageChanges:       instCfg.StageChanges,
 		DefaultMaterialize: instCfg.ModelDefaultMaterialize,
+		StrictModelProps:   instCfg.StrictModelProps,
 		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil
@@ -1952,7 +1968,7 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 
 // execModelTest runs a single model test and returns an error if it fails.
 func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, error) {
-	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           test.Resolver,
 		ResolverProperties: test.ResolverProperties.AsMap(),
@@ -1966,6 +1982,10 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 		return fmt.Sprintf("%s: %v", test.Name, err), nil
 	}
 	defer result.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("Model test resolver returned warnings", zap.String("test", test.Name), zap.String("resolver", test.Resolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	row, err := result.Next()
 	if err != nil {

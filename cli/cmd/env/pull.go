@@ -51,7 +51,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	if err != nil {
 		return err
 	}
-	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb", true)
 	if err != nil {
 		return fmt.Errorf("failed to parse project: %w", err)
 	}
