@@ -1080,7 +1080,7 @@
   }
 
   .graph-toolbar-bar {
-    @apply flex flex-row items-center px-4 min-h-[3rem] flex-none gap-x-4;
+    @apply flex flex-row items-center min-h-[3rem] flex-none gap-x-4;
     transition: padding-left 300ms ease-in-out;
   }
 
