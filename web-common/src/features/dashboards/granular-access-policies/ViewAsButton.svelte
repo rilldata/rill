@@ -24,11 +24,11 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     {#if $selectedMockUserStore === null}
       <button
-        use:builder.action
-        {...builder}
+
+
         class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-surface-hover items-center"
       >
         <EyeIcon size={"16px"} />
@@ -38,7 +38,7 @@
       </button>
     {:else}
       <Chip
-        builders={[builder]}
+       
         removable
         slideDuration={0}
         active={viewAsMenuOpen}

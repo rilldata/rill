@@ -12,7 +12,7 @@ import type {
   ColumnDef,
   ExpandedState,
   SortingState,
-} from "@tanstack/svelte-table";
+} from "tanstack-table-8-svelte-5";
 import type { Readable } from "svelte/motion";
 
 export const COMPARISON_VALUE = "__previous";

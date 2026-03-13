@@ -14,8 +14,13 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
-  import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type {
+    Cell,
+    Column,
+    HeaderGroup,
+    Row,
+  } from "tanstack-table-8-svelte-5";
+  import { flexRender } from "tanstack-table-8-svelte-5";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -120,7 +125,7 @@
             return lengths.set(header.column.id, d);
           })}
       >
-        <div class="resize-bar" />
+        <div class="resize-bar"></div>
       </Resizer>
     </div>
   {/each}
@@ -181,7 +186,7 @@
     {/each}
   </thead>
   <tbody>
-    <tr style:height="{before}px" />
+    <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       <tr>
@@ -222,7 +227,7 @@
         {/each}
       </tr>
     {/each}
-    <tr style:height="{after}px" />
+    <tr style:height="{after}px"></tr>
   </tbody>
 </table>
 

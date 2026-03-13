@@ -581,10 +581,10 @@
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel asChild let:builder>
+        <AlertDialog.Cancel asChild>
           <Button
             large
-            builders={[builder]}
+           
             type="secondary"
             onClick={() => {
               pendingComponentDelete = undefined;
@@ -594,10 +594,10 @@
           </Button>
         </AlertDialog.Cancel>
 
-        <AlertDialog.Action asChild let:builder>
+        <AlertDialog.Action asChild>
           <Button
             large
-            builders={[builder]}
+           
             type="destructive"
             onClick={() => {
               if (!pendingComponentDelete) return;

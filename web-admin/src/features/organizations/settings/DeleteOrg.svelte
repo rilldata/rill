@@ -58,8 +58,8 @@
     error={deleteOrgResult.error?.message}
     onConfirm={deleteOrg}
   >
-    <svelte:fragment let:builder>
-      <Button builders={[builder]} type="destructive"
+    <svelte:fragment>
+      <Button type="destructive"
         >Delete Organization</Button
       >
     </svelte:fragment>

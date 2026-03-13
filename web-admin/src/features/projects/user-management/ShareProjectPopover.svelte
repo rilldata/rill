@@ -34,9 +34,9 @@
 </script>
 
 <Popover bind:open>
-  <PopoverTrigger asChild let:builder>
+  <PopoverTrigger asChild>
     <Tooltip distance={8} suppress={open}>
-      <Button builders={[builder]} type="secondary" selected={open}
+      <Button type="secondary" selected={open}
         >Share</Button
       >
       <TooltipContent slot="tooltip-content">Share project</TooltipContent>

@@ -47,10 +47,10 @@
 </script>
 
 {#if manageProject}
-  <DropdownMenu bind:open typeahead={false}>
-    <DropdownMenuTrigger asChild let:builder>
+  <DropdownMenu bind:open>
+    <DropdownMenuTrigger asChild>
       <Button
-        builders={[builder]}
+       
         compact
         square
         type="secondary"
@@ -104,8 +104,8 @@
     </DropdownMenuContent>
   </DropdownMenu>
 {:else}
-  <Tooltip.Root portal="body">
-    <Tooltip.Trigger asChild let:builder>
+  <Tooltip.Root>
+    <Tooltip.Trigger asChild>
       <Button
         type="secondary"
         compact
@@ -113,7 +113,7 @@
         href={fullHomeBookmarkUrl}
         onClick={goToDashboardHome}
         class="border border-primary-300"
-        builders={[builder]}
+       
         label="Go to home bookmark"
         active={isHomeBookmarkActive}
       >

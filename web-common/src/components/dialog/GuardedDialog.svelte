@@ -33,27 +33,21 @@
   }
 </script>
 
-<!-- Dialog with confirm on cancel need a strong intent. Hence we are setting closeOnOutsideClick to false
-     If we ever need this to change we should add that as a parameter to this component -->
+<!-- Dialog with confirm on cancel need a strong intent. We intercept all close
+     attempts via onOpenChange and show a cancel confirmation dialog instead. -->
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    onCancel();
-  }}
   onOpenChange={(o) => {
-    // Hack to intercept cancel from clicking X or pressing escape
+    // Intercept cancel from clicking X, pressing escape, or clicking outside
     if (!o && open) onCancel();
     setTimeout(() => (open = true));
   }}
-  closeOnOutsideClick={false}
-  closeOnEscape={false}
 >
   <slot {onCancel} {onClose} />
 </Dialog>
 
 <AlertDialog bind:open={showCancelDialog}>
-  <AlertDialogTrigger asChild>
+  <AlertDialogTrigger>
     <div class="hidden"></div>
   </AlertDialogTrigger>
   <AlertDialogContent>

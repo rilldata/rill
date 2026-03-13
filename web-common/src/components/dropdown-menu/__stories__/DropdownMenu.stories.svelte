@@ -15,8 +15,8 @@
 
 <Story name="Simple">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} type="secondary">Open menu</Button>
+    <DropdownMenu.Trigger asChild>
+      <Button type="secondary">Open menu</Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item>Option 1</DropdownMenu.Item>
@@ -27,8 +27,8 @@
 
 <Story name="With icons">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} type="secondary">Open menu</Button>
+    <DropdownMenu.Trigger asChild>
+      <Button type="secondary">Open menu</Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item>
@@ -45,14 +45,14 @@
 
 <Story name="With submenu">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} type="secondary">Open menu</Button>
+    <DropdownMenu.Trigger asChild>
+      <Button type="secondary">Open menu</Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Sub bind:open={subMenuOpen}>
         <DropdownMenu.SubTrigger
           disabled={true}
-          on:click={() => (subMenuOpen = !subMenuOpen)}
+          onclick={() => (subMenuOpen = !subMenuOpen)}
         >
           Option 1
         </DropdownMenu.SubTrigger>

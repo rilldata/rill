@@ -28,10 +28,10 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Action asChild let:builder>
+      <AlertDialog.Action asChild>
         <Button
           large
-          builders={[builder]}
+         
           onClick={() => {
             handleClose();
             onDelete();
@@ -42,10 +42,10 @@
         </Button>
       </AlertDialog.Action>
 
-      <AlertDialog.Cancel asChild let:builder>
+      <AlertDialog.Cancel asChild>
         <Button
           large
-          builders={[builder]}
+         
           onClick={handleClose}
           type="tertiary"
         >

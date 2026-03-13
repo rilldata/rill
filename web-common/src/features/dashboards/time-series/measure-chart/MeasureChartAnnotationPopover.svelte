@@ -2,8 +2,6 @@
   import type { AnnotationGroup } from "./annotation-utils";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import { builderActions, getAttrs } from "bits-ui";
-
   export let hoveredGroup: AnnotationGroup | null;
   export let onHover: (hovered: boolean) => void;
 
@@ -66,14 +64,10 @@
 {#if hoveredGroup}
   <div class="relative">
     <Popover.Root bind:open onOpenChange={() => (showingMore = false)}>
-      <Popover.Trigger asChild let:builder>
-        <button
+      <Popover.Trigger
           class="absolute bottom-2 w-0 h-0"
           style="left: {hoveredGroup.left}px;"
-          {...getAttrs([builder])}
-          use:builderActions={{ builders: [builder] }}
-        ></button>
-      </Popover.Trigger>
+      ></Popover.Trigger>
       <Popover.Content side="right" sideOffset={12} class="w-80" padding="0">
         <div
           class="flex flex-col gap-y-1 p-2 max-h-[600px] overflow-y-auto"

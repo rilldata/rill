@@ -64,10 +64,10 @@
   {#if isModelingSupported}
     Auto-generate a
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild let:builder>
+      <DropdownMenu.Trigger asChild>
         <button
-          use:builder.action
-          {...builder}
+
+
           class={buttonClasses}
           disabled={!$models?.data?.length}
         >
@@ -78,7 +78,7 @@
         {#each $models?.data ?? [] as model, i (i)}
           {#if model?.model?.state?.resultTable}
             <DropdownMenu.Item
-              on:click={() => {
+              onclick={() => {
                 void onAutogenerateConfigFromModel(model);
               }}
             >

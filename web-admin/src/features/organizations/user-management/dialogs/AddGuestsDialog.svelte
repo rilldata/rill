@@ -195,11 +195,6 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-    resetDialogState();
-  }}
   onOpenChange={(dialogOpen) => {
     if (!dialogOpen) {
       resetDialogState();
@@ -209,7 +204,14 @@
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={(e) => {
+      e.preventDefault();
+      open = false;
+      resetDialogState();
+    }}
+  >
     <DialogHeader>
       <DialogTitle>Add guest users</DialogTitle>
     </DialogHeader>
@@ -254,7 +256,6 @@
         {:else}
           <Dropdown.Root
             bind:open={projectDropdownOpen}
-            closeOnItemClick={false}
           >
             <Dropdown.Trigger
               class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen

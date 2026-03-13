@@ -563,10 +563,10 @@
             </svelte:fragment>
           </InputLabel>
           <DropdownMenu.Root bind:open={tableSelectionOpen}>
-            <DropdownMenu.Trigger asChild let:builder>
+            <DropdownMenu.Trigger asChild>
               <button
-                use:builder.action
-                {...builder}
+
+
                 class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
                 focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
                "

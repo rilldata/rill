@@ -93,15 +93,15 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Action asChild let:builder>
-        <AlertDialog.Cancel asChild let:builder>
-          <Button builders={[builder]} onClick={goToSource} type="secondary">
+      <AlertDialog.Action asChild>
+        <AlertDialog.Cancel asChild>
+          <Button onClick={goToSource} type="secondary">
             View this source
           </Button>
         </AlertDialog.Cancel>
 
         <Button
-          builders={[builder]}
+         
           disabled={createDashboardFromTable === null}
           onClick={generateMetrics}
           type="primary"

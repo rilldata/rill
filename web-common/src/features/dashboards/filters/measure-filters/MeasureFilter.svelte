@@ -43,7 +43,7 @@
     }
   }}
 >
-  <Popover.Trigger asChild let:builder>
+  <Popover.Trigger asChild>
     <Tooltip
       activeDelay={60}
       alignment="start"
@@ -54,7 +54,7 @@
       <Chip
         type="measure"
         active={open}
-        builders={[builder]}
+       
         {label}
         gray={!filter}
         theme

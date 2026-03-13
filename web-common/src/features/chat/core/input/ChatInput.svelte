@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.svelte.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { Editor } from "@tiptap/core";
@@ -122,7 +122,7 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div class="chat-input-container" bind:this={element} />
+  <div class="chat-input-container" bind:this={element}></div>
   <div class="chat-input-footer">
     <button
       class="text-base text-fg-muted"

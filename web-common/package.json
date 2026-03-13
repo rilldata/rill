@@ -47,7 +47,6 @@
     "@storybook/test": "^7.6.20",
     "@sveltejs/kit": "^2.7.1",
     "@tanstack/svelte-query": "^5.69.0",
-    "@tanstack/svelte-table": "^8.11.8",
     "@tanstack/svelte-virtual": "^3.0.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/svelte": "^5.2.7",
@@ -67,10 +66,9 @@
     "@types/memoizee": "^0.4.11",
     "@xyflow/svelte": "^0.1.39",
     "autoprefixer": "^10.4.20",
-    "bits-ui": "^0.22.0",
+    "bits-ui": "^2.14.4",
     "chroma-js": "^3.1.2",
     "clsx": "^2.0.0",
-    "cmdk-sv": "^0.0.19",
     "codemirror-json-schema": "^0.7.8",
     "crypto-js": "^4.1.1",
     "d3-array": "^3.1.1",
@@ -98,7 +96,7 @@
     "prismjs": "^1.30.0",
     "regular-table": "^0.5.9",
     "storybook": "^7.0.18",
-    "svelte": "^4.2.19",
+    "svelte": "^5.0.0",
     "svelte-preprocess": "^6.0.3",
     "svelte-radix": "^1.1.0",
     "svelte-vega": "^2.3.0",
@@ -106,6 +104,7 @@
     "tailwind-merge": "^2.1.0",
     "tailwind-variants": "^0.1.19",
     "tailwindcss": "^3.4.13",
+    "tanstack-table-8-svelte-5": "^0.1.2",
     "ts-json-schema-generator": "^2.3.0",
     "tsx": "^4.7.0",
     "ua-parser-js": "^1.0.2",
@@ -117,5 +116,10 @@
     "yaml": "^2.4.5",
     "yup": "^1.4.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@internationalized/date": "^3.10.1",
+    "@tiptap/suggestion": "^3.20.1",
+    "vega-embed": "^7.1.0"
+  }
 }

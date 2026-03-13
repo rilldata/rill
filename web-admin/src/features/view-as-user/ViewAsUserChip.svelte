@@ -10,11 +10,11 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     <Chip
       removable
       {active}
-      builders={[builder]}
+     
       removeTooltipText="Clear view"
       onRemove={() => {
         viewAsUserStore.set(null);

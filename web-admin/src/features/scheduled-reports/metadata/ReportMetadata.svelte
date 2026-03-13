@@ -161,7 +161,7 @@
               >
                 Edit report
               </DropdownMenu.Item>
-              <DropdownMenu.Item on:click={handleDeleteReport}>
+              <DropdownMenu.Item onclick={handleDeleteReport}>
                 Delete report
               </DropdownMenu.Item>
             </DropdownMenu.Content>

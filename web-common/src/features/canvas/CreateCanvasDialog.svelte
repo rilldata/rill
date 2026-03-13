@@ -62,15 +62,15 @@
     />
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} type="secondary">Cancel</Button>
+      <AlertDialog.Cancel asChild>
+        <Button large type="secondary">Cancel</Button>
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild let:builder>
+      <AlertDialog.Action asChild>
         <Button
           disabled={!selectedMetricsView}
           large
-          builders={[builder]}
+         
           type="primary"
           onClick={createResource}
         >

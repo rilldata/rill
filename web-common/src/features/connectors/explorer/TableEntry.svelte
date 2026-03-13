@@ -96,13 +96,13 @@
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
+        <DropdownMenu.Trigger asChild>
           <ContextButton
             id="more-actions-{tableId}"
             testId="more-actions-context-button"
             tooltipText="More actions"
             label="{tableId} actions menu trigger"
-            builders={[builder]}
+           
             suppressTooltip={contextMenuOpen}
           >
             <MoreHorizontal />

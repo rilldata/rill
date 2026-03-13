@@ -284,15 +284,17 @@
       handleReset();
     }
   }}
-  onOutsideClick={() => {
-    open = false;
-    handleReset();
-  }}
 >
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={() => {
+      open = false;
+      handleReset();
+    }}
+  >
     <DialogHeader>
       <DialogTitle>Add environment variables</DialogTitle>
     </DialogHeader>

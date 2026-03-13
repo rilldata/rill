@@ -21,7 +21,7 @@
   $: selected = PROJECT_ROLES_OPTIONS.find((o) => o.value === value);
 </script>
 
-<DropdownMenu bind:open typeahead={false}>
+<DropdownMenu bind:open>
   <DropdownMenuTrigger
     class="{width} flex flex-row gap-1 items-center rounded-sm {open
       ? 'bg-surface-active'

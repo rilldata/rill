@@ -68,8 +68,8 @@
   </svelte:fragment>
 
   <AlertDialog bind:open slot="action">
-    <AlertDialogTrigger asChild let:builder>
-      <Button builders={[builder]} type="tertiary">Cancel plan</Button>
+    <AlertDialogTrigger asChild>
+      <Button type="tertiary">Cancel plan</Button>
     </AlertDialogTrigger>
     <AlertDialogContent>
       <AlertDialogHeader>

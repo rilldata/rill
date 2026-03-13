@@ -83,16 +83,16 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     {#if workspace}
       <Tooltip distance={8} suppress={open}>
-        <Button {label} {disabled} type="secondary" builders={[builder]} square>
+        <Button {label} {disabled} type="secondary" square>
           <Export size="15px" />
         </Button>
         <TooltipContent slot="tooltip-content">Export model</TooltipContent>
       </Tooltip>
     {:else}
-      <Button {label} {disabled} type="toolbar" builders={[builder]}>
+      <Button {label} {disabled} type="toolbar">
         <Export size="15px" />
         Export
         <CaretDownIcon

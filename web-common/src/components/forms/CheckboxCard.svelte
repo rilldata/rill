@@ -31,11 +31,9 @@
     tabindex={-1}
   >
     {#if checked}
-      <CheckboxPrimitive.Indicator
-        class="flex items-center justify-center text-white"
-      >
+      <span class="flex items-center justify-center text-white">
         <Check class="h-3.5 w-3.5" />
-      </CheckboxPrimitive.Indicator>
+      </span>
     {/if}
   </CheckboxPrimitive.Root>
 

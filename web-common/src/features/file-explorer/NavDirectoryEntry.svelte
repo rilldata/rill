@@ -99,9 +99,9 @@
   </span>
   {#if !isProtectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
+      <DropdownMenu.Trigger asChild>
         <ContextButton
-          builders={[builder]}
+         
           id="more-actions-{dir.path}"
           label="{dir.name} actions menu trigger"
           suppressTooltip={contextMenuOpen}

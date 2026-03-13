@@ -37,13 +37,13 @@
     bind:searchValue
   >
     <svelte:fragment slot="trigger">
-      <DropdownMenu.Trigger asChild let:builder>
+      <DropdownMenu.Trigger asChild>
         <div class="flex justify-between gap-x-2">
           <InputLabel small {label} {id} />
           <button
             aria-label={`Add ${types.join(", ")} fields`}
-            use:builder.action
-            {...builder}
+
+
             class="text-sm px-2 h-6"
           >
             <PlusIcon size="14px" />

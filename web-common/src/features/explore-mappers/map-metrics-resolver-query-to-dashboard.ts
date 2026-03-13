@@ -35,7 +35,7 @@ import type {
   Sort,
   TimeRange,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
-import type { SortingState } from "@tanstack/svelte-table";
+import type { SortingState } from "tanstack-table-8-svelte-5";
 
 export function mapMetricsResolverQueryToDashboard(
   metricsViewSpec: V1MetricsViewSpec,

@@ -43,12 +43,12 @@
     bind:searchValue
   >
     <svelte:fragment slot="trigger">
-      <DropdownMenu.Trigger asChild let:builder>
+      <DropdownMenu.Trigger asChild>
         <div class="flex justify-between gap-x-2">
           <button
             aria-label={`Add ${types.join(", ")} fields`}
-            use:builder.action
-            {...builder}
+
+
             class="flex flex-row items-center gap-x-1 text-xs"
           >
             <PlusIcon size="14px" /> add measure

@@ -161,15 +161,6 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-    email = "";
-    role = "";
-    isSuperUser = false;
-    failedInvites = [];
-    $form.emails = [""];
-  }}
   onOpenChange={(open) => {
     if (!open) {
       email = "";
@@ -183,7 +174,18 @@
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={(e) => {
+      e.preventDefault();
+      open = false;
+      email = "";
+      role = "";
+      isSuperUser = false;
+      failedInvites = [];
+      $form.emails = [""];
+    }}
+  >
     <DialogHeader>
       <DialogTitle>Add users</DialogTitle>
     </DialogHeader>
@@ -203,7 +205,7 @@
         plural="emails"
       >
         <div slot="within-input" class="flex items-center h-full">
-          <DropdownMenu typeahead={false}>
+          <DropdownMenu>
             <DropdownMenuTrigger
               class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 hover:bg-surface-hover"
             >

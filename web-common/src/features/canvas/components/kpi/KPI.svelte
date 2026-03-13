@@ -19,7 +19,6 @@
     type V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { QueryObserverResult } from "@tanstack/svelte-query";
-  import { builderActions, getAttrs } from "bits-ui";
   import { AlertTriangleIcon } from "lucide-svelte";
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
@@ -167,10 +166,8 @@
 
 <div class="wrapper" class:spark-right={isSparkRight}>
   <Tooltip.Root>
-    <Tooltip.Trigger asChild let:builder>
+    <Tooltip.Trigger asChild>
       <div
-        {...getAttrs([builder])}
-        use:builderActions={{ builders: [builder] }}
         class="data-wrapper overflow-hidden cursor-pointer"
         style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
         aria-label="{measure?.name ?? ''} KPI data"

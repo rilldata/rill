@@ -12,7 +12,7 @@
   on:click={onTogglePin}
   aria-label={pinned ? "Unpin filter" : "Pin filter"}
 >
-  <BitsTooltip.Root portal="body">
+  <BitsTooltip.Root>
     <BitsTooltip.Trigger id="pin-measure-filter-tooltip">
       {#if pinned}
         <PinOff size="15px" />

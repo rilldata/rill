@@ -1,6 +1,6 @@
 <script lang="ts">
   import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { flexRender, type ColumnDef } from "tanstack-table-8-svelte-5";
   import type { V1OlapTableInfo } from "@rilldata/web-common/runtime-client";
   import { compareSizes } from "./utils";
   import ModelSizeCell from "./ModelSizeCell.svelte";

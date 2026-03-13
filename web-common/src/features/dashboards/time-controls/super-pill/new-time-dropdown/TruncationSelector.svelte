@@ -9,7 +9,7 @@
   } from "@rilldata/web-common/lib/time/new-grains";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { builderActions, getAttrs, Tooltip } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import { onDestroy, onMount } from "svelte";
@@ -140,73 +140,65 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open disableFocusFirstItem>
-  <DropdownMenu.Trigger asChild let:builder id="truncation-selector-trigger">
-    <button
-      type="button"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      class="flex gap-x-1 items-center flex-none truncate"
-      aria-label="Select reference time and grain"
-      data-state={open ? "open" : "closed"}
-      on:mouseenter={() => {
-        if (!open) disableTooltip = false;
-      }}
-      on:mouseleave={() => {
-        disableTooltip = true;
-      }}
+<DropdownMenu.Root bind:open>
+  <Tooltip.Root delayDuration={800}>
+    <Tooltip.Trigger asChild
+      id="truncation-selector-trigger"
     >
-      <Tooltip.Root openDelay={800}>
-        <Tooltip.Trigger asChild id="truncation-selector-trigger" let:builder>
-          <div
-            class:pointer-events-none={disableTooltip}
-            class="flex gap-x-1 items-center flex-none truncate"
-            use:builderActions={{ builders: [builder] }}
-            {...getAttrs([builder])}
-          >
-            <p>
-              as of
-              <b>
-                {humanizedRef}
-                {#if dateTimeUnit}
-                  {dateTimeUnit}
-                {/if}
-              </b>
-              {#if grain}
-                {#if snapToEnd || ref === RillTimeLabel.Watermark}
-                  end
-                {:else}
-                  start
-                {/if}
-              {/if}
-            </p>
+      <DropdownMenu.Trigger
+        id="truncation-selector-trigger"
+        type="button"
+        class="flex gap-x-1 items-center flex-none truncate"
+        aria-label="Select reference time and grain"
+        data-state={open ? "open" : "closed"}
+        onmouseenter={() => {
+          if (!open) disableTooltip = false;
+        }}
+        onmouseleave={() => {
+          disableTooltip = true;
+        }}
+      >
+        <p>
+          as of
+          <b>
+            {humanizedRef}
+            {#if dateTimeUnit}
+              {dateTimeUnit}
+            {/if}
+          </b>
+          {#if grain}
+            {#if snapToEnd || ref === RillTimeLabel.Watermark}
+              end
+            {:else}
+              start
+            {/if}
+          {/if}
+        </p>
 
-            <span
-              class="flex-none transition-transform"
-              class:-rotate-180={open}
-            >
-              <CaretDownIcon />
-            </span>
-          </div>
-        </Tooltip.Trigger>
+        <span
+          class="flex-none transition-transform"
+          class:-rotate-180={open}
+        >
+          <CaretDownIcon />
+        </span>
+      </DropdownMenu.Trigger>
+    </Tooltip.Trigger>
 
-        <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-          <TooltipContent>
-            <TooltipTitle>
-              <svelte:fragment slot="name">
-                {derivedAnchor.toLocaleString(
-                  DateTime.DATETIME_MED_WITH_SECONDS,
-                )}
-              </svelte:fragment>
-            </TooltipTitle>
-            <TooltipDescription>
-              {getColloquialOffset(derivedAnchor)}
-            </TooltipDescription>
-          </TooltipContent>
-        </Tooltip.Content>
-      </Tooltip.Root>
-    </button>
-  </DropdownMenu.Trigger>
+    <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
+      <TooltipContent>
+        <TooltipTitle>
+          <svelte:fragment slot="name">
+            {derivedAnchor.toLocaleString(
+              DateTime.DATETIME_MED_WITH_SECONDS,
+            )}
+          </svelte:fragment>
+        </TooltipTitle>
+        <TooltipDescription>
+          {getColloquialOffset(derivedAnchor)}
+        </TooltipDescription>
+      </TooltipContent>
+    </Tooltip.Content>
+  </Tooltip.Root>
 
   <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
     <DropdownMenu.Group class="p-1">
@@ -219,24 +211,16 @@
             checkRight
             checked={ref === id}
             preloadData={false}
-            on:click={() => {
+            onclick={() => {
               onSelectAsOfOption(id);
             }}
           >
-            <Tooltip.Root openDelay={800}>
+            <Tooltip.Root delayDuration={800}>
               <Tooltip.Trigger
-                asChild
-                class="size-full flex justify-between"
+                class="w-full"
                 id="{label}-tooltip-trigger"
-                let:builder
               >
-                <div
-                  class="w-full"
-                  {...getAttrs([builder])}
-                  use:builderActions={{ builders: [builder] }}
-                >
                   {label}
-                </div>
               </Tooltip.Trigger>
 
               {#if timestamp}
@@ -281,7 +265,7 @@
         <DropdownMenu.CheckboxItem
           checkRight
           checked={option === grain}
-          on:click={() => {
+          onclick={() => {
             onSelectEnding(option);
           }}
         >
@@ -303,7 +287,7 @@
             disabled={ref === RillTimeLabel.Watermark}
             small
             checked={snapToEnd || ref === RillTimeLabel.Watermark}
-            on:click={() => {
+            onclick={() => {
               onToggleAlignment(!snapToEnd);
             }}
           />

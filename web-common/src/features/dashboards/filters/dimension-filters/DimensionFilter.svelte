@@ -409,11 +409,9 @@
 
 <DropdownMenu.Root
   bind:open
-  typeahead={false}
-  closeOnItemClick={false}
   onOpenChange={handleOpenChange}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild>
     <Tooltip
       activeDelay={500}
       alignment="start"
@@ -422,7 +420,7 @@
       suppress={open || readOnly}
     >
       <Chip
-        builders={[builder]}
+       
         type="dimension"
         gray={selectedValues.length === 0 && !inputText}
         active={open}

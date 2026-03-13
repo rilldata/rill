@@ -151,7 +151,7 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item on:click={handleDeleteAlert}>
+              <DropdownMenu.Item onclick={handleDeleteAlert}>
                 Delete Alert
               </DropdownMenu.Item>
             </DropdownMenu.Content>

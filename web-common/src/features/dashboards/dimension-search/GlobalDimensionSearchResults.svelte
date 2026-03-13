@@ -56,8 +56,8 @@
   open={open && !!$results && !!searchText}
   onOpenChange={(o) => (open = o)}
 >
-  <DropdownMenuTrigger asChild let:builder>
-    <button use:builder.action {...builder} class="absolute left-32"></button>
+  <DropdownMenuTrigger asChild>
+    <button class="absolute left-32"></button>
   </DropdownMenuTrigger>
   <DropdownMenuContent
     class="w-64 max-h-96 overflow-scroll right-2"

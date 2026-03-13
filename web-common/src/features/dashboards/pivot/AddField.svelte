@@ -96,12 +96,12 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger asChild>
     <button
       class:active={open}
-      use:builder.action
-      {...builder}
+
+
       aria-label="Add filter button"
     >
       <Add size="17px" />

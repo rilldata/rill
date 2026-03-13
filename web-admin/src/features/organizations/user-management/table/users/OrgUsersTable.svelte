@@ -12,7 +12,7 @@
   import UserRoleCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserRoleCell.svelte";
   import UserGroupsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserGroupsCell.svelte";
   import UserProjectsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserProjectsCell.svelte";
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { flexRender, type ColumnDef } from "tanstack-table-8-svelte-5";
   import type {
     InfiniteData,
     InfiniteQueryObserverResult,

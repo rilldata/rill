@@ -53,9 +53,9 @@
 
 {#if $developerChat}
   <Dialog.Root bind:open>
-    <Dialog.Trigger asChild let:builder>
+    <Dialog.Trigger asChild>
       {#if type === "init"}
-        <Button builders={[builder]} type="secondary" large>
+        <Button type="secondary" large>
           <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
           <span>Generate sample data</span>
         </Button>
@@ -63,7 +63,6 @@
         <Button
           class="button-home"
           type="tertiary"
-          builders={[builder]}
           large
           forcedStyle="height: 3rem;"
         >
@@ -100,7 +99,7 @@
           bind:value={$form.prompt}
           class:empty={$form.prompt.length === 0}
           on:keydown={handleKeydown}
-        />
+        ></textarea>
         <div class="absolute right-3 bottom-8">
           <IconButton ariaLabel="Send message" on:click={submit}>
             <SendIcon size="1.3em" />

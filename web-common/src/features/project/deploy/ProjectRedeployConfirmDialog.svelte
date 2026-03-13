@@ -24,9 +24,9 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild let:builder>
+  <AlertDialogTrigger asChild>
     <Tooltip distance={8}>
-      <Button loading={isLoading} type="secondary" builders={[builder]}>
+      <Button loading={isLoading} type="secondary">
         <CloudIcon size="16px" />
         Update
       </Button>

@@ -126,12 +126,12 @@
       />
     {/if}
 
-    <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
-      <DropdownMenu.Trigger asChild let:builder>
+    <DropdownMenu.Root bind:open>
+      <DropdownMenu.Trigger asChild>
         <Button
           label={`Add ${label} fields`}
           active={open}
-          builders={[builder]}
+         
           class="w-[34px] ml-2 border border-dashed border-gray-300"
           compact
           rounded

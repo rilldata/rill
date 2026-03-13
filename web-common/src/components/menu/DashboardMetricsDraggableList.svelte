@@ -9,7 +9,7 @@
     MetricsViewSpecDimension,
     MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
-  import { Tooltip } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
 
@@ -89,8 +89,8 @@
 </script>
 
 <Popover.Root bind:open={active}>
-  <Popover.Trigger asChild let:builder>
-    <Button builders={[builder]} type="text" theme label={tooltipText}>
+  <Popover.Trigger asChild>
+    <Button type="text" theme label={tooltipText}>
       <div class="flex items-center gap-x-0.5 px-1">
         <strong
           >{`${numShownString} ${type === "measure" ? "Measures" : "Dimensions"}`}</strong
@@ -105,7 +105,6 @@
     class="p-0 z-popover text-fg-primary"
     align="start"
     strategy="absolute"
-    fitViewport={true}
     overflowY="auto"
     overflowX="hidden"
     minHeight="100px"
@@ -161,7 +160,7 @@
               itemData?.displayName ??
               `Unknown ${type === "measure" ? "measure" : "dimension"}`}
             {#if itemData?.description || selectedItems.length === 1}
-              <Tooltip.Root openDelay={200} portal="body">
+              <Tooltip.Root delayDuration={200}>
                 <Tooltip.Trigger class="w-full flex gap-x-1 items-center">
                   <DragHandle
                     size="16px"
@@ -274,7 +273,7 @@
                 itemData?.displayName ??
                 `Unknown ${type === "measure" ? "measure" : "dimension"}`}
               {#if itemData?.description}
-                <Tooltip.Root openDelay={200} portal="body">
+                <Tooltip.Root delayDuration={200}>
                   <Tooltip.Trigger
                     class="w-full flex gap-x-1 justify-between items-center"
                   >

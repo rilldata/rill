@@ -165,10 +165,10 @@
   {manageProject}
 />
 
-<DropdownMenu bind:open typeahead={false}>
-  <DropdownMenuTrigger asChild let:builder>
+<DropdownMenu bind:open>
+  <DropdownMenuTrigger asChild>
     <Button
-      builders={[builder]}
+     
       compact
       square
       type="secondary"

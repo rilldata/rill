@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Collapsible from "@rilldata/web-common/components/collapsible";
-  import { getAttrs, builderActions } from "bits-ui";
   import { ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
   import type { Readable } from "svelte/store";
   import type { PickerTreeNode } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
@@ -62,13 +61,11 @@
 </script>
 
 <Collapsible.Root open={$openStore}>
-  <Collapsible.Trigger asChild let:builder>
+  <Collapsible.Trigger asChild>
     <button
       class="context-item parent-context-item"
       class:focused
       type="button"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
       use:enhancePickerNode={item}
       on:click={onClick}
     >

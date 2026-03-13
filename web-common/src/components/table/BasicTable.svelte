@@ -5,13 +5,13 @@
     OnChangeFn,
     SortingState,
     TableOptions,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createSvelteTable,
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import { writable } from "svelte/store";
 
   export let data: any[];

@@ -92,20 +92,18 @@
 
 <DropdownMenu.Root
   bind:open
-  closeOnItemClick={false}
   onOpenChange={() => {
     showSelector = !!(
       comparisonOption === TimeComparisonOption.CUSTOM && showComparison
     );
   }}
-  typeahead={!showSelector}
 >
-  <DropdownMenu.Trigger asChild let:builder {disabled}>
+  <DropdownMenu.Trigger asChild {disabled}>
     <button
       {disabled}
       aria-disabled={disabled}
-      use:builder.action
-      {...builder}
+
+
       aria-label="Select time comparison option"
       type="button"
     >
