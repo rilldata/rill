@@ -129,9 +129,11 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}()
 			}
 
-			// Create a temporary table with the new data
+			// Create a temporary table with the new data.
+			// ROW_NUMBER() OVER () adds a stable, sequential row number without sorting,
+			// enabling deterministic batch pagination for the DELETE phase below.
 			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT ROW_NUMBER() OVER () AS __rill_row_num, * FROM (%s\n))", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
@@ -158,23 +160,24 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
 			}
 
-			// Drop the rows from the target table in batches
+			// Drop the rows from the target table in batches to limit peak memory usage
+			// from the hash join on the tmp table.
 			deleteBatchSize := opts.MergeBatchSize
 			if deleteBatchSize <= 0 {
 				deleteBatchSize = 10000
 			}
-			for offset := 0; offset < count; offset += deleteBatchSize {
+			for num := 0; num <= count; num += deleteBatchSize {
 				_, err = conn.ExecContext(ctx, fmt.Sprintf(
-					"DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM (SELECT * FROM %s LIMIT %d OFFSET %d) tmp WHERE %s)",
-					safeSQLName(name), safeSQLName(tmp), deleteBatchSize, offset, where,
+					"DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE tmp.__rill_row_num >= %d AND tmp.__rill_row_num < %d AND %s)",
+					safeSQLName(name), safeSQLName(tmp), num, num+deleteBatchSize, where,
 				))
 				if err != nil {
 					return err
 				}
 			}
 
-			// Insert the new data into the target table
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
+			// Insert the new data into the target table, excluding the internal row number column.
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * EXCLUDE (__rill_row_num) FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
 			return err
 		})
 		if err != nil {
