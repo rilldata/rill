@@ -12,15 +12,17 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
-  import { useExplore } from "@rilldata/web-common/features/explores/selectors";
+  import {
+    useExplore,
+    isExploreReconcilingForFirstTime,
+    isExploreErrored,
+    PollIntervalWhenExploreReconciling,
+    PollIntervalWhenExploreErrored,
+  } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
-
-  const PollIntervalWhenDashboardFirstReconciling = 1000;
-  const PollIntervalWhenDashboardErrored = 5000;
 
   export let data: PageData;
   $: ({ project } = data);
@@ -36,9 +38,9 @@
     refetchInterval: (query) => {
       if (!query.state.data) return false;
       if (isExploreReconcilingForFirstTime(query.state.data))
-        return PollIntervalWhenDashboardFirstReconciling;
+        return PollIntervalWhenExploreReconciling;
       if (isExploreErrored(query.state.data))
-        return PollIntervalWhenDashboardErrored;
+        return PollIntervalWhenExploreErrored;
       return false;
     },
   });
@@ -89,27 +91,6 @@
       eventBus.emit("remove-banner", DashboardBannerID);
     }
   });
-
-  function isExploreReconcilingForFirstTime(
-    exploreResponse: V1GetExploreResponse,
-  ) {
-    if (!exploreResponse) return undefined;
-    const isExploreReconcilingForFirstTime =
-      !exploreResponse.explore?.explore?.state?.validSpec &&
-      !exploreResponse.explore?.meta?.reconcileError;
-    return isExploreReconcilingForFirstTime;
-  }
-
-  function isExploreErrored(exploreResponse: V1GetExploreResponse) {
-    if (!exploreResponse) return undefined;
-    // We only consider a dashboard errored (from the end-user perspective) when BOTH a reconcile error exists AND a validSpec does not exist.
-    // If there's any validSpec (which can persist from a previous, non-current spec), then we serve that version of the dashboard to the user,
-    // so the user does not see an error state.
-    const isExploreErrored =
-      !exploreResponse.explore?.explore?.state?.validSpec &&
-      !!exploreResponse.explore?.meta?.reconcileError;
-    return isExploreErrored;
-  }
 
   let reconcilingForFirstTime: boolean | undefined;
   $: if ($explore.isSuccess) {
