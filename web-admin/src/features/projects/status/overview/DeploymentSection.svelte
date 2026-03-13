@@ -20,17 +20,22 @@
 
   export let organization: string;
   export let project: string;
+  export let branch: string | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
 
   // Deployment
-  $: projectDeployment = useProjectDeployment(organization, project);
+  $: projectDeployment = useProjectDeployment(organization, project, branch);
   $: deployment = $projectDeployment.data;
   $: deploymentStatus =
     deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
 
   // Project
-  $: proj = createAdminServiceGetProject(organization, project);
+  $: proj = createAdminServiceGetProject(
+    organization,
+    project,
+    branch ? { branch } : undefined,
+  );
   $: projectData = $proj.data?.project;
   $: primaryBranch = projectData?.primaryBranch;
   // Last synced
@@ -107,10 +112,10 @@
       </div>
     {/if}
 
-    {#if isGithubConnected && primaryBranch}
+    {#if isGithubConnected && (deployment?.branch || primaryBranch)}
       <div class="info-row">
         <span class="info-label">Branch</span>
-        <span class="info-value">{primaryBranch}</span>
+        <span class="info-value">{deployment?.branch || primaryBranch}</span>
       </div>
     {/if}
 

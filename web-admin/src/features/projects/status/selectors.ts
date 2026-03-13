@@ -16,11 +16,15 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { derived, type Readable } from "svelte/store";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 
-export function useProjectDeployment(orgName: string, projName: string) {
+export function useProjectDeployment(
+  orgName: string,
+  projName: string,
+  branch?: string,
+) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
     orgName,
     projName,
-    undefined,
+    branch ? { branch } : undefined,
     {
       query: {
         select: (data: { deployment?: V1Deployment }) => {
