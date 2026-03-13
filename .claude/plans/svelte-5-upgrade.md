@@ -4,44 +4,22 @@
 
 The frontend is on Svelte 4.2.19 with SvelteKit 2.7.1 across ~1,142 `.svelte` files (web-common, web-admin, web-local). Svelte 5 has a **legacy compatibility mode** — Svelte 4 syntax works unchanged, and components only enter "runes mode" when they use runes. This means we can bump to Svelte 5 and keep all existing code working, then migrate incrementally.
 
-**Strategy: Two PRs.**
+**Strategy: Single PR** — Svelte 5 bump + bits-ui 2.x upgrade together.
 
-- **PR 1** — Minimal Svelte 5 bump. Only fix what breaks.
-- **PR 2** — Upgrade bits-ui from 0.22 to 2.x (dedicated effort).
+bits-ui 2.x requires Svelte 5 (peer dep `^5.33.0`), and bits-ui 0.22 is not reliably compatible with Svelte 5: its dependency `@melt-ui/svelte` 0.76.2 explicitly excludes Svelte 5 (`>=3 <5`) and has known runtime bugs on Svelte 5. The bits-ui maintainer has confirmed that 0.x will not be updated for Svelte 5 compatibility. These upgrades must happen atomically.
+
+**Commit structure** (within the single PR):
+
+1. Svelte 5 bump + vite plugin + tanstack table replacement
+2. bits-ui 0.22 → 2.x wrapper rewrites
+3. bits-ui consumer component updates
+4. cmdk-sv → bits-ui Command replacement + cmdk-sv removal
 
 ---
 
-# PR 1: Svelte 5 Bump (Minimal)
+## Step 1: Bump Svelte, Vite Plugin, and Replace TanStack Table
 
-## What Must Change
-
-Only two packages import from `svelte/internal` (removed in Svelte 5) and will **hard break**:
-
-1. **`@tanstack/svelte-table` v8** → replace with [`tanstack-table-8-svelte-5`](https://github.com/dummdidumm/tanstack-table-8-svelte-5) (by dummdidumm/Simon Holthausen, Svelte maintainer)
-2. **`@sveltejs/vite-plugin-svelte` v3** → upgrade to v5 (Svelte 5 requires v4+)
-
-One package has **behavioral breakage** (doesn't crash, but filtering stops working):
-
-3. **`cmdk-sv` 0.0.19** → DOM filtering breaks due to Svelte 5 rendering changes. Package is archived (May 2025). Only used in 3 files in web-admin.
-
-## What Works in Legacy Mode (No Changes Needed for PR 1)
-
-| Package                          | Why                                                                                                                                                                                                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bits-ui` 0.22.0                 | No `svelte/internal` imports; melt-ui runtime is clean                                                                                                                                                                                                                  |
-| `@melt-ui/svelte` (transitive)   | No `svelte/internal` in runtime                                                                                                                                                                                                                                         |
-| `svelte-radix` 1.1.0             | Ships `.svelte` source files; compiler handles legacy syntax                                                                                                                                                                                                            |
-| `lucide-svelte` 0.298.0          | Ships `.svelte` source; Vite resolves source files via export conditions                                                                                                                                                                                                |
-| `@tanstack/svelte-virtual` 3.0.1 | Store-based adapter; works in legacy mode. Has known issues with runes (`$state` element binding, count reactivity) but these only surface when components are migrated to runes. No fix exists in any version — the Svelte adapter has never been rewritten for runes. |
-| `@tanstack/svelte-query` 5.69.0  | Only imports from `svelte/store` (public API)                                                                                                                                                                                                                           |
-| `sveltekit-superforms` 2.19.1    | Works in legacy mode                                                                                                                                                                                                                                                    |
-| `@xyflow/svelte` 0.1.39          | Needs testing, but should work in legacy mode                                                                                                                                                                                                                           |
-| `svelte-vega` 2.3.0              | Needs testing                                                                                                                                                                                                                                                           |
-| `@storybook/svelte` 7.6.17       | Needs testing; may require upgrade to 8.x                                                                                                                                                                                                                               |
-
-## Steps
-
-### Step 1: Bump Svelte and Vite Plugin
+### Svelte and Vite Plugin
 
 **Files to modify:**
 
@@ -56,7 +34,9 @@ One package has **behavioral breakage** (doesn't crash, but filtering stops work
 - `svelte-check` — currently `^4.0.4`, v4 already supports Svelte 5 (it was released for Svelte 5)
 - `@sveltejs/kit` — `^2.7.1` already supports Svelte 5 (SvelteKit 2.12+ has Svelte 5 support)
 
-### Step 2: Replace `@tanstack/svelte-table`
+### Replace `@tanstack/svelte-table`
+
+`@tanstack/svelte-table` v8 imports from `svelte/internal` (removed in Svelte 5) and will hard break.
 
 **Install:** `npm install tanstack-table-8-svelte-5 -w web-common` (and web-admin if listed there)
 **Remove:** `npm uninstall @tanstack/svelte-table -w web-common -w web-admin`
@@ -77,44 +57,32 @@ One package has **behavioral breakage** (doesn't crash, but filtering stops work
 - `web-common/src/components/table/tanstack-table-column-meta.ts`
 - All files importing from `@tanstack/svelte-table`
 
-### Step 3: Handle `cmdk-sv` Breakage
+### Other Packages (Legacy Mode — No Changes Needed)
 
-`cmdk-sv` (archived May 2025) has behavioral breakage in Svelte 5 — DOM filtering stops working. The footprint is small:
-
-- **Wrapper layer:** 8 files + index.ts in `web-common/src/components/command/`
-- **Consumers:** only 3 files in web-admin:
-  - `web-admin/src/features/view-as-user/ViewAsUserPopover.svelte`
-  - `web-admin/src/features/organizations/ShareOrganizationCTA.svelte`
-  - `web-admin/src/features/ai/mcp/OAuthSection.svelte`
-
-**Approach:** Test first after the Svelte 5 bump. If filtering is broken, rewrite the 8 wrapper files to use a simple custom implementation (basic input + filtered list) without pulling in a new dependency. The consumer components should need no changes since they use the wrapper API.
-
-### Step 4: Verify
-
-- `npm run build` in all three workspaces
-- `npm run test -w web-common` (unit tests)
-- `npm run quality` (lint/format)
-- Manual smoke test:
-  - Dashboard table rendering (TanStack Table)
-  - Virtualized tables / pivot tables
-  - Dialog, Select, Combobox interactions (bits-ui)
-  - Command palette (cmdk-sv)
-  - General navigation and page loads
-- Playwright E2E: `npm run test -w web-admin` and `npm run test -w web-local`
+| Package                          | Why it works                                                                                                                                                                                                                                                            |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `svelte-radix` 1.1.0             | Ships `.svelte` source files; compiler handles legacy syntax                                                                                                                                                                                                            |
+| `lucide-svelte` 0.298.0          | Ships `.svelte` source; Vite resolves source files via export conditions                                                                                                                                                                                                |
+| `@tanstack/svelte-virtual` 3.0.1 | Store-based adapter; works in legacy mode. Has known issues with runes (`$state` element binding, count reactivity) but these only surface when components are migrated to runes. No fix exists in any version — the Svelte adapter has never been rewritten for runes. |
+| `@tanstack/svelte-query` 5.69.0  | Only imports from `svelte/store` (public API)                                                                                                                                                                                                                           |
+| `sveltekit-superforms` 2.19.1    | Works in legacy mode                                                                                                                                                                                                                                                    |
+| `@xyflow/svelte` 0.1.39          | Needs testing, but should work in legacy mode                                                                                                                                                                                                                           |
+| `svelte-vega` 2.3.0              | Needs testing                                                                                                                                                                                                                                                           |
+| `@storybook/svelte` 7.6.17       | Needs testing; may require upgrade to 8.x                                                                                                                                                                                                                               |
 
 ---
 
-# PR 2: bits-ui 0.22 → 2.x
+## Step 2: Upgrade bits-ui 0.22 → 2.x
 
-## Why Upgrade
+### Why This Can't Be Deferred
 
-bits-ui 0.22 works in Svelte 5 legacy mode, so it's not blocking PR 1. However:
+- bits-ui 0.22's dependency `@melt-ui/svelte` 0.76.2 declares `svelte: ">=3 <5"` — explicitly excludes Svelte 5
+- Known melt-ui runtime bugs on Svelte 5: broken component actions (issue #749), incorrect PIN input updates (issue #1263)
+- bits-ui maintainer (issue #1023): *"We aren't going to be bumping Melt in `bits-ui@0.x`. If you're using Svelte 5, it's recommended to use `bits-ui@next`."*
+- bits-ui 2.x requires Svelte 5 (`^5.33.0`); it cannot run on Svelte 4
+- Therefore the two upgrades must happen atomically
 
-- bits-ui 2.x is the actively maintained version; 0.22 will stop getting fixes
-- bits-ui 2.x replaces cmdk-sv with a built-in Command component (fixes the cmdk-sv breakage from PR 1)
-- bits-ui 2.x uses Svelte 5 snippets instead of the Melt UI builder pattern, which is cleaner
-
-## Breaking Changes (0.22 → 2.x)
+### Breaking Changes (0.22 → 2.x)
 
 | Pattern            | bits-ui 0.22                                        | bits-ui 2.x                     |
 | ------------------ | --------------------------------------------------- | ------------------------------- |
@@ -127,7 +95,7 @@ bits-ui 0.22 works in Svelte 5 legacy mode, so it's not blocking PR 1. However:
 
 Full migration guide: https://bits-ui.com/docs/migration-guide
 
-## Scope
+### Scope
 
 **Wrapper components to rewrite (15 component folders in `web-common/src/components/`):**
 
@@ -154,20 +122,44 @@ Full migration guide: https://bits-ui.com/docs/migration-guide
 - **9 files using `builderActions`/`getAttrs`** — these are the deepest builder integrations (Button, Chip, DropdownMenuItem, SelectorButton, ExpandableOption)
 - **Direct bits-ui imports** in ~79 web-common files and ~2 web-admin files
 
-**Strategy:** Since all bits-ui usage goes through the wrapper layer in `web-common/src/components/`, the wrapper rewrite absorbs most of the API changes. Consumer components mostly need:
+**Strategy:** All bits-ui usage goes through the wrapper layer in `web-common/src/components/`. The wrapper rewrite absorbs most of the API changes. Consumer components mostly need:
 
 - Remove `asChild` + `let:builder` and use the new composition pattern
 - Update any `Selected` type usage
 - Update event handler patterns
 
-**Also in this PR:**
+---
 
-- Replace `cmdk-sv` with bits-ui 2.x `Command` component (8 wrapper files in `web-common/src/components/command/`, 3 consumers in web-admin)
-- Remove `cmdk-sv` dependency
+## Step 3: Replace `cmdk-sv` with bits-ui Command
+
+`cmdk-sv` (archived May 2025) has behavioral breakage in Svelte 5 and is no longer maintained. bits-ui 2.x includes a built-in `Command` component that replaces it.
+
+- **Wrapper layer:** 8 files + index.ts in `web-common/src/components/command/`
+- **Consumers:** 3 files in web-admin:
+  - `web-admin/src/features/view-as-user/ViewAsUserPopover.svelte`
+  - `web-admin/src/features/organizations/ShareOrganizationCTA.svelte`
+  - `web-admin/src/features/ai/mcp/OAuthSection.svelte`
+
+**Approach:** Rewrite the 8 wrapper files to use bits-ui 2.x `Command` component. Remove `cmdk-sv` dependency.
 
 ---
 
-# Future Work (After PR 1 and PR 2)
+## Step 4: Verify
+
+- `npm run build` in all three workspaces
+- `npm run test -w web-common` (unit tests)
+- `npm run quality` (lint/format)
+- Manual smoke test:
+  - Dashboard table rendering (TanStack Table)
+  - Virtualized tables / pivot tables
+  - Dialog, Select, Combobox interactions (bits-ui 2.x)
+  - Command palette (bits-ui Command)
+  - General navigation and page loads
+- Playwright E2E: `npm run test -w web-admin` and `npm run test -w web-local`
+
+---
+
+# Future Work (After This PR)
 
 Deferred upgrades that can be done incrementally:
 
