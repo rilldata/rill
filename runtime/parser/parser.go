@@ -1008,6 +1008,14 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 	})
 }
 
+func (p *Parser) addParseWarning(path string, warning string) {
+	p.Errors = append(p.Errors, &runtimev1.ParseError{
+		Message:  warning,
+		FilePath: path,
+		Warning:  true,
+	})
+}
+
 // driverForConnector resolves a connector name to a connector driver.
 // It should not be invoked until after rill.yaml has been parsed.
 func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error) {

@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
@@ -31,11 +30,7 @@ func (p *Parser) parseDataYAML(paths []string, raw *DataYAML, contextualConnecto
 	// If there are any unused fields put it in compiler warnings
 	if len(raw.UnusedFields) > 0 {
 		for _, path := range paths {
-			p.Errors = append(p.Errors, &runtimev1.ParseError{
-				Message:  fmt.Sprintf("undefined fields in resolver properties: %q, will be ignored", maps.Keys(raw.UnusedFields)),
-				FilePath: path,
-				Warning:  !p.StrictResolverProps,
-			})
+			p.addParseWarning(path, fmt.Sprintf("undefined fields in resolver properties: %q, will be ignored", maps.Keys(raw.UnusedFields)))
 		}
 	}
 
