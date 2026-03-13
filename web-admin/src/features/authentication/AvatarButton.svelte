@@ -22,10 +22,14 @@
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
   import { posthogIdentify } from "@rilldata/web-common/lib/analytics/posthog";
-  import { createAdminServiceGetCurrentUser } from "../../client";
-  import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
+  import {
+    createAdminServiceGetCurrentUser,
+    type V1ProjectPermissions,
+  } from "../../client";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
+
+  export let projectPermissions: V1ProjectPermissions | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -83,35 +87,30 @@
     <div bind:this={imgContainer} class="h-7 w-7" />
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
-    {#if params.organization && params.project}
-      <ProjectAccessControls
-        organization={params.organization}
-        project={params.project}
-      >
-        <svelte:fragment slot="manage-project">
-          <DropdownMenu.Sub bind:open={subMenuOpen}>
-            <DropdownMenu.SubTrigger
-              on:click={() => {
-                subMenuOpen = !subMenuOpen;
+    {#if params.organization && params.project && projectPermissions}
+      {#if projectPermissions.manageProject}
+        <DropdownMenu.Sub bind:open={subMenuOpen}>
+          <DropdownMenu.SubTrigger
+            on:click={() => {
+              subMenuOpen = !subMenuOpen;
+            }}
+          >
+            View as
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent
+            class="flex flex-col min-w-[150px] max-w-[300px]"
+          >
+            <ViewAsUserPopover
+              organization={params.organization}
+              project={params.project}
+              onSelectUser={() => {
+                subMenuOpen = false;
+                primaryMenuOpen = false;
               }}
-            >
-              View as
-            </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent
-              class="flex flex-col min-w-[150px] max-w-[300px]"
-            >
-              <ViewAsUserPopover
-                organization={params.organization}
-                project={params.project}
-                onSelectUser={() => {
-                  subMenuOpen = false;
-                  primaryMenuOpen = false;
-                }}
-              />
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-        </svelte:fragment>
-      </ProjectAccessControls>
+            />
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+      {/if}
       {#if params.dashboard}
         <DropdownMenu.Item
           href={`/${params.organization}/${params.project}/-/alerts`}

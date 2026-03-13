@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
@@ -27,6 +28,7 @@
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
+  import BranchSelector from "../branches/BranchSelector.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
@@ -49,6 +51,7 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
+  export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
 
@@ -74,11 +77,12 @@
 
   // When "View As" is active, fetch deployment credentials for the mocked user.
   $: mockedUserId = $viewAsUserStore?.id;
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
     organization,
     project,
-    { userId: mockedUserId },
+    { userId: mockedUserId, ...(activeBranch ? { branch: activeBranch } : {}) },
     {
       query: {
         enabled: !!mockedUserId && !!organization && !!project,
@@ -206,7 +210,13 @@
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
-    <Breadcrumbs {pathParts} {currentPath} />
+    <Breadcrumbs {pathParts} {currentPath}>
+      <svelte:fragment slot="after-project">
+        {#if !onPublicURLPage && projectPermissions?.readDev}
+          <BranchSelector {organization} {project} {primaryBranch} />
+        {/if}
+      </svelte:fragment>
+    </Breadcrumbs>
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
@@ -269,7 +279,7 @@
 
     {#if $user.isSuccess}
       {#if $user.data?.user}
-        <AvatarButton />
+        <AvatarButton {projectPermissions} />
       {:else}
         <SignIn />
       {/if}
