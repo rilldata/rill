@@ -73,7 +73,7 @@ downloadBinary() {
     fi
 
     printf "Downloading binary: %s\n" "$BINARY_URL"
-    curl --location ${CURL_PROGRESS} "${BINARY_URL}" --output rill_${PLATFORM}.zip
+    curl --location "${CURL_PROGRESS}" "${BINARY_URL}" --output rill_${PLATFORM}.zip
 
     printf "\nDownloading checksum: %s\n" "$CHECKSUM_URL"
     curl --location ${CURL_PROGRESS} "${CHECKSUM_URL}" --output checksums.txt
