@@ -47,13 +47,8 @@ Example:
 
 			// If interactive, confirm the deletion
 			if ch.Interactive {
-				confirm, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Are you sure you want to delete user %q?", email), "", false)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Are you sure you want to delete user %q?", email), false); err != nil {
 					return err
-				}
-				if !confirm {
-					ch.PrintfWarn("Aborted\n")
-					return nil
 				}
 			}
 

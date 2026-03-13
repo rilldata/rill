@@ -79,7 +79,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	// If unary is true, it expects the query to return exactly one row with one column.
 	resolveMetricsSQL := func(sql string, unary bool) ([]map[string]any, error) {
 		// Run metrics SQL resolver
-		resolveRes, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		resolveRes, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 			InstanceID: req.InstanceId,
 			Resolver:   "metrics_sql",
 			ResolverProperties: map[string]any{

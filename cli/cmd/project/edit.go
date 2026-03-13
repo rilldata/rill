@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, prodVersion, primaryBranch, subpath, path, provisioner, gitRemote string
+	var name, description, primaryBranch, subpath, path, provisioner, gitRemote string
 	var public bool
 	var prodTTL int64
 
@@ -45,10 +45,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if cmd.Flags().Changed("description") {
 				flagSet = true
 				req.Description = &description
-			}
-			if cmd.Flags().Changed("prod-version") {
-				flagSet = true
-				req.ProdVersion = &prodVersion
 			}
 			if cmd.Flags().Changed("primary-branch") {
 				flagSet = true
@@ -97,7 +93,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")
-	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Specify the Rill version for production deployment (default: current version)")
 
 	return editCmd
 }

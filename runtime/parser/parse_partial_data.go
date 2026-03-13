@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -18,13 +19,21 @@ type DataYAML struct {
 	Args           map[string]any `yaml:"args"`
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
-	AI             map[string]any `yaml:"ai"` // AI resolver properties
+	AI             map[string]any `yaml:"ai"`      // AI resolver properties
+	UnusedFields   map[string]any `yaml:",inline"` // Capture any unused fields for validation
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
 // The contextualConnector argument is optional; if provided and the resolver supports a connector, it becomes the default connector for the resolver.
 // It returns the resolver name, its properties, and refs found in the resolver props.
-func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
+func (p *Parser) parseDataYAML(paths []string, raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
+	// If there are any unused fields put it in compiler warnings
+	if len(raw.UnusedFields) > 0 {
+		for _, path := range paths {
+			p.addParseWarning(path, fmt.Sprintf("undefined fields in resolver properties: %q, will be ignored", maps.Keys(raw.UnusedFields)))
+		}
+	}
+
 	// Parse the resolver and its properties
 	var count int
 	var resolver string

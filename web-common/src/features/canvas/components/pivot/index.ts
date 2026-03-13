@@ -104,6 +104,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       this.parent,
       derived(this.specStore, ($specStore) => $specStore.metrics_view),
       this.config,
+      this.visible,
     );
   }
 

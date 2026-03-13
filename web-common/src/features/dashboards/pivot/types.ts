@@ -45,7 +45,7 @@ export interface PivotDashboardContext {
   runtimeClient: RuntimeClient;
   metricsViewName: Readable<string>;
   queryClient: QueryClient;
-  enabled: boolean;
+  enabled: Readable<boolean>;
 }
 
 export interface PivotState {
