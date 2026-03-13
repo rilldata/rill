@@ -11,7 +11,8 @@ type CustomInputTypes =
   | "rill_time"
   | "sparkline"
   | "comparison_options"
-  | "switcher_tab";
+  | "switcher_tab"
+  | "map_color";
 type PositionalInputTypes = "alignment";
 
 export type InputType =
