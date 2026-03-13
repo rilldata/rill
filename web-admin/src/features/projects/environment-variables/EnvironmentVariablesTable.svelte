@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { flexRender } from "tanstack-table-8-svelte-5";
   import type { V1ProjectVariable } from "@rilldata/web-admin/client";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import KeyIcon from "@rilldata/web-common/components/icons/KeyIcon.svelte";

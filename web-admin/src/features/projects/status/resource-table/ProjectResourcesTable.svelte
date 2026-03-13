@@ -12,8 +12,8 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { flexRender } from "tanstack-table-8-svelte-5";
   import ActionsCell from "./ActionsCell.svelte";
   import NameCell from "./NameCell.svelte";
   import RefreshCell from "./RefreshCell.svelte";

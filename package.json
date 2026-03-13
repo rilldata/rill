@@ -45,6 +45,6 @@
     ]
   },
   "overrides": {
-    "@sveltejs/vite-plugin-svelte": "^3.1.2"
+    "@sveltejs/vite-plugin-svelte": "^4.0.0"
   }
 }

@@ -22,7 +22,7 @@
     createSvelteTable,
     getCoreRowModel,
     getExpandedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createVirtualizer,
     defaultRangeExtractor,

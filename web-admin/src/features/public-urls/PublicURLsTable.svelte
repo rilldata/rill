@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { flexRender } from "tanstack-table-8-svelte-5";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
   import DashboardLink from "./DashboardLink.svelte";
   import type {

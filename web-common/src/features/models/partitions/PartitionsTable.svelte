@@ -7,7 +7,7 @@
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
   import {
