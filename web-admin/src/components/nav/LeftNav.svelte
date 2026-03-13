@@ -9,17 +9,20 @@
     label: string;
     route: string;
     hasPermission?: boolean;
+    matchPrefix?: boolean;
   }[];
 </script>
 
 <div class="nav-items" style:min-width={minWidth}>
   <!-- if hasPermission is not provided, it will be undefined -->
-  {#each navItems as { label, route, hasPermission = true } (route)}
+  {#each navItems as { label, route, hasPermission = true, matchPrefix = false } (route)}
     {#if hasPermission}
       <LeftNavItem
         {label}
         link={`${basePage}${route}`}
-        selected={$page.route.id === `${baseRoute}${route}`}
+        selected={matchPrefix
+          ? $page.route.id?.startsWith(`${baseRoute}${route}`) ?? false
+          : $page.route.id === `${baseRoute}${route}`}
       />
     {/if}
   {/each}

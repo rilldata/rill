@@ -42,6 +42,8 @@
   ]);
   filterSync.init($page.url);
 
+  export let showHeader = true;
+
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
@@ -158,7 +160,9 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <h2 class="text-lg font-medium">Resources</h2>
+  {#if showHeader}
+    <h2 class="text-lg font-medium">Resources</h2>
+  {/if}
 
   <!-- Search, Filter, and Action Controls -->
   <div class="flex flex-row items-center gap-x-4 min-h-9">
