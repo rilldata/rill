@@ -13,11 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
       - name: Run ShellCheck on install script
-        uses: ludeeus/action-shellcheck@2.0.0
-        env:
-          SHELLCHECK_OPTS: --shell=dash
-        with:
-          ignore_paths: |
-            *
-          additional_files: scripts/install.sh
+        run: |
+            shellcheck --shell=dash scripts/install.sh
