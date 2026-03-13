@@ -18,11 +18,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
-  import {
-    ResourceKind,
-    useResource,
-  } from "../entity-management/resource-selectors";
-
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
 
@@ -38,8 +33,6 @@
   $: ({ url } = $page);
 
   $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
-
-  $: resourceQuery = useResource(client, canvasName, ResourceKind.Canvas, {});
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
@@ -72,11 +65,7 @@
   $: isReconciling =
     !existingStore && !validSpec && !reconcileError && !isLoading;
 
-  $: resource = resourceQuery ? $resourceQuery?.data : undefined;
-
-  $: reconcileErrorMessage = !validSpec
-    ? reconcileError || resource?.meta?.reconcileError
-    : undefined;
+  $: reconcileErrorMessage = !validSpec ? reconcileError : undefined;
 
   $: resolvedStore = getResolvedStore(
     fetchedCanvas,
