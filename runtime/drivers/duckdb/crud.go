@@ -224,7 +224,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
 				safeSQLName(name),
 				opts.PartitionBy,
-				opts.–,
+				opts.PartitionBy,
 				safeSQLName(tmp),
 			))
 			if err != nil {
