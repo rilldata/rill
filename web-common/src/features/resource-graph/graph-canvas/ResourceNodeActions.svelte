@@ -31,6 +31,9 @@
   import type { ResourceNodeData } from "../shared/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { tokenForKind } from "../navigation/seed-parser";
+  import { getGraphNavigation } from "../shared/graph-navigation-context";
+
+  const graphNav = getGraphNavigation();
 
   export let data: ResourceNodeData;
 
@@ -133,6 +136,10 @@
   function openFile() {
     if (!filePath) return;
     isOpen = false;
+    if (graphNav?.openFile) {
+      graphNav.openFile(filePath);
+      return;
+    }
     try {
       const prefs = JSON.parse(localStorage.getItem(filePath) || "{}");
       localStorage.setItem(
@@ -160,6 +167,10 @@
   function viewNodeTree() {
     isOpen = false;
     const kindToken = tokenForKind(kind);
+    if (graphNav?.viewLineage) {
+      graphNav.viewLineage(kindToken, resourceName);
+      return;
+    }
     const params = new URLSearchParams();
     if (kindToken) params.set("kind", kindToken);
     if (resourceName) params.set("resource", resourceName);

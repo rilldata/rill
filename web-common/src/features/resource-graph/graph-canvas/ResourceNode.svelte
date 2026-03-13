@@ -16,6 +16,9 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import { goto } from "$app/navigation";
+  import { getGraphNavigation } from "../shared/graph-navigation-context";
+
+  const graphNav = getGraphNavigation();
 
   export let id: string;
   export let type: string;
@@ -121,6 +124,10 @@
 
   function navigateToFile() {
     if (!rawFilePath) return;
+    if (graphNav?.openFile) {
+      graphNav.openFile(rawFilePath);
+      return;
+    }
     try {
       const prefs = JSON.parse(localStorage.getItem(rawFilePath) || "{}");
       localStorage.setItem(

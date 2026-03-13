@@ -8,6 +8,7 @@
     tokenForSeedString,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
   import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
+  import { setGraphNavigation } from "@rilldata/web-common/features/resource-graph/shared/graph-navigation-context";
   import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
   import {
     createRuntimeServiceCreateTriggerMutation,
@@ -20,6 +21,27 @@
   const queryClient = useQueryClient();
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
+
+  setGraphNavigation({
+    viewLineage(kindToken, resourceName) {
+      const params = new URLSearchParams();
+      if (kindToken) params.set("kind", kindToken);
+      if (resourceName) params.set("resource", resourceName);
+      goto(`/graph?${params.toString()}`);
+    },
+    openFile(filePath) {
+      try {
+        const prefs = JSON.parse(localStorage.getItem(filePath) || "{}");
+        localStorage.setItem(
+          filePath,
+          JSON.stringify({ ...prefs, view: "code" }),
+        );
+      } catch {
+        // ignore
+      }
+      goto(`/files${filePath}`);
+    },
+  });
 
   $: ({ instanceId } = runtimeClient);
 

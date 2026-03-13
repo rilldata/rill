@@ -18,6 +18,9 @@
     RESOURCE_SECTION_ORDER,
     RESOURCE_SECTION_LABELS,
   } from "../shared/config";
+  import { getGraphNavigation } from "../shared/graph-navigation-context";
+
+  const graphNav = getGraphNavigation();
 
   export let resources: V1Resource[] = [];
   export let activeResourceId: string | null = null;
@@ -103,10 +106,18 @@
 
   function handleSelect(entry: ResourceEntry) {
     const shortKind = resourceShorthandMapping[entry.kind];
+    if (graphNav?.viewLineage) {
+      graphNav.viewLineage(shortKind, entry.name);
+      return;
+    }
     goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${entry.name}`)}`);
   }
 
   function handleSelectAll() {
+    if (graphNav?.viewLineage) {
+      graphNav.viewLineage(null, "");
+      return;
+    }
     goto("/graph");
   }
 </script>
