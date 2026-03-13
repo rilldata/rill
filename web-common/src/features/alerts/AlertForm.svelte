@@ -153,7 +153,7 @@
       invalidateAll: false,
     },
   );
-  $: ({ form, errors, enhance, submit, submitting, tainted, validate } =
+  $: ({ form, errors, enhance, submitting, tainted, validate } =
     superFormInstance);
 
   $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
