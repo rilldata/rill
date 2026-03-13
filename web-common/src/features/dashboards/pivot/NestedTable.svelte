@@ -600,7 +600,7 @@
 
   /* The totals row */
   .with-totals-row tbody > tr:nth-of-type(2) {
-    @apply bg-surface-muted sticky z-20;
+    @apply bg-surface-background sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
@@ -610,7 +610,7 @@
     tbody
     > tr:nth-of-type(2)
     > td:first-of-type {
-    @apply font-semibold bg-surface-muted;
+    @apply font-semibold bg-surface-background;
   }
 
   .with-expandable-rows.with-totals-row
