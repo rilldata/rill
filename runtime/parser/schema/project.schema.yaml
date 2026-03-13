@@ -307,6 +307,8 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
+        # See /developers/build/connectors/data-source/delta for configuration details.
         - type: object
           title: Druid
           properties:
