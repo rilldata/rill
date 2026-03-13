@@ -52,17 +52,6 @@ func TestManagedDeploy(t *testing.T) {
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
 
-	// cleanup repo
-	t.Cleanup(func() {
-		// delete github repo
-		// currently github repos are deleted by a background job
-		// but for test cleanup we will delete it here directly
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		err = adm.Admin.Github.DeleteManagedRepo(context.Background(), repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s", owner, repo)
-	})
-
 	// redeploy the same project with changes
 	changes := map[string]string{
 		"models/model.sql": `SELECT 1 AS one`,
@@ -110,14 +99,6 @@ func TestManagedDeployWithPrimaryBranch(t *testing.T) {
 	installationID, err := adm.Admin.Github.ManagedOrgInstallationID()
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
-
-	// cleanup repo
-	t.Cleanup(func() {
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		err = adm.Admin.Github.DeleteManagedRepo(context.Background(), repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s", owner, repo)
-	})
 
 	// verify the model file is present on the "staging" branch
 	verifyGithubRepoBranchContents(t, ghClient, resp.Project.GitRemote, "staging", map[string]string{
