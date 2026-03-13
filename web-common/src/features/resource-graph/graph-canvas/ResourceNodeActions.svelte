@@ -59,6 +59,7 @@
   $: kind = data?.kind;
   $: resourceName = resource?.meta?.name?.name ?? "";
   $: filePath = resource?.meta?.filePaths?.[0];
+  $: canOpenFile = !!filePath && (!!graphNav?.openFile || !graphNav);
   $: canRefresh =
     (kind === ResourceKind.Model || kind === ResourceKind.Source) &&
     !!resourceName;
@@ -206,7 +207,7 @@
           <span>View Lineage</span>
         </div>
       </DropdownMenu.Item>
-      {#if filePath}
+      {#if canOpenFile}
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={openFile}

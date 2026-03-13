@@ -140,8 +140,11 @@
     goto(`/files${rawFilePath}`);
   }
 
+  $: canOpenFile = !!rawFilePath && (!!graphNav?.openFile || !graphNav);
+
   function handleClick(e: MouseEvent) {
     if (!(e.metaKey || e.ctrlKey)) return;
+    if (!canOpenFile) return;
     e.preventDefault();
     e.stopPropagation();
     navigateToFile();
@@ -149,6 +152,7 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      if (!canOpenFile) return;
       e.preventDefault();
       navigateToFile();
     }
