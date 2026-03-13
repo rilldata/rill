@@ -331,7 +331,7 @@ type rendererRefs struct {
 }
 
 // populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
-func (r *rendererRefs) populateRendererRefs(ctx context.Context, _ string, rendererProps map[string]any) error {
+func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string, rendererProps map[string]any) error {
 	// Check for a direct metrics_view reference.
 	if mv, ok := pathutil.GetPath(rendererProps, "metrics_view"); ok {
 		return r.metricsView(mv)
@@ -340,6 +340,13 @@ func (r *rendererRefs) populateRendererRefs(ctx context.Context, _ string, rende
 	// Check for a metrics_sql reference; use a resolver to discover the referenced metrics views.
 	if sql, ok := pathutil.GetPath(rendererProps, "metrics_sql"); ok {
 		return r.metricsSQL(ctx, sql)
+	}
+
+	// For markdown renderers, analyze the content text for embedded metrics_sql references.
+	if renderer == "markdown" {
+		if content, ok := pathutil.GetPath(rendererProps, "content"); ok {
+			return r.text(ctx, content)
+		}
 	}
 
 	return nil
@@ -352,6 +359,40 @@ func (r *rendererRefs) metricsView(mv any) error {
 		return nil
 	}
 	return fmt.Errorf("metrics view field is not a string")
+}
+
+// text initializes a text resolver to discover metrics view references in a template string.
+func (r *rendererRefs) text(ctx context.Context, content any) error {
+	contentStr, ok := content.(string)
+	if !ok {
+		return fmt.Errorf("content field is not a string")
+	}
+
+	initializer, ok := runtime.ResolverInitializers["text"]
+	if !ok {
+		return fmt.Errorf("text resolver not registered")
+	}
+	resolver, err := initializer(ctx, &runtime.ResolverOptions{
+		Runtime:    r.rt,
+		InstanceID: r.instanceID,
+		Properties: map[string]any{"text": contentStr},
+		Claims: &runtime.SecurityClaims{
+			UserID:         r.claims.UserID,
+			UserAttributes: r.claims.UserAttributes,
+			SkipChecks:     true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize text resolver: %w", err)
+	}
+	defer resolver.Close()
+
+	for _, ref := range resolver.Refs() {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			r.metricsViews[ref.Name] = true
+		}
+	}
+	return nil
 }
 
 // metricsSQL parses and registers metrics view references found in a metrics SQL string.
