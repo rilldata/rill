@@ -19,11 +19,15 @@
     },
   );
 
-  // Navigate to the first file when available
-  $: if ($filesQuery.data?.length) {
-    const firstFile = $filesQuery.data[0].path;
-    if (firstFile) {
-      void navigateToFile(firstFile);
+  // Navigate to the first file once. Prefer rill.yaml as the landing file;
+  // fall back to the first alphabetical file.
+  let navigated = false;
+  $: if (!navigated && $filesQuery.data?.length) {
+    const files = $filesQuery.data;
+    const target = files.find((f) => f.path === "/rill.yaml") ?? files[0];
+    if (target?.path) {
+      navigated = true;
+      void navigateToFile(target.path, { replaceState: true });
     }
   }
 </script>

@@ -456,6 +456,13 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			runtime.EditTrigger,
 		)
 	}
+	if req.Branch != "" && permissions.ManageDev {
+		instancePermissions = append(
+			instancePermissions,
+			runtime.ReadRepo,
+			runtime.EditRepo,
+		)
+	}
 
 	var systemPermissions []runtime.Permission
 	if req.IssueSuperuserToken {

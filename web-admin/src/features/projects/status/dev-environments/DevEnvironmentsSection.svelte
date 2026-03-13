@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     V1DeploymentStatus,
     createAdminServiceDeleteDeployment,
@@ -7,6 +8,7 @@
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
     branchPathPrefix,
+    extractBranchFromPath,
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
@@ -17,6 +19,16 @@
     getStatusDotClass,
     getStatusLabel,
   } from "@rilldata/web-admin/features/projects/status/display-utils";
+  import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@rilldata/web-common/components/alert-dialog/index.js";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -31,6 +43,7 @@
   const devDeployments = useDevDeployments(organization, project);
   const deleteMutation = createAdminServiceDeleteDeployment();
 
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
   $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: visibleDeployments = deployments
@@ -79,7 +92,23 @@
   let openDropdownId = "";
   let deletingIds = new Set<string>();
   let deletedIds = new Set<string>();
-  async function handleDelete(deploymentId: string) {
+
+  // Confirmation dialog state
+  let deleteConfirmOpen = false;
+  let pendingDeleteId = "";
+  let pendingDeleteBranch = "";
+
+  function requestDelete(deploymentId: string, branch: string | undefined) {
+    pendingDeleteId = deploymentId;
+    pendingDeleteBranch = branch ?? "";
+    deleteConfirmOpen = true;
+  }
+
+  async function handleDelete() {
+    const deploymentId = pendingDeleteId;
+    const branch = pendingDeleteBranch;
+    deleteConfirmOpen = false;
+
     deletingIds.add(deploymentId);
     deletingIds = deletingIds;
     try {
@@ -88,6 +117,12 @@
       deletedIds.add(deploymentId);
       deletedIds = deletedIds;
       void invalidateDeployments(organization, project);
+
+      // If we deleted the branch we're currently viewing, navigate to production
+      if (branch && branch === activeBranch) {
+        requestSkipBranchInjection();
+        window.location.href = `/${organization}/${project}/-/status/dev`;
+      }
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
@@ -204,7 +239,7 @@
                 <DropdownMenu.Item
                   class="font-normal flex items-center"
                   disabled={deleting}
-                  on:click={() => handleDelete(id)}
+                  on:click={() => requestDelete(id, deployment.branch)}
                 >
                   <div class="flex items-center">
                     <Trash2Icon size="12px" />
@@ -221,6 +256,36 @@
     </div>
   {/if}
 </section>
+
+<AlertDialog bind:open={deleteConfirmOpen}>
+  <AlertDialogTrigger asChild>
+    <div class="hidden"></div>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete this dev environment?</AlertDialogTitle>
+      <AlertDialogDescription>
+        <div class="mt-1">
+          The dev environment on branch <span
+            class="font-mono text-xs font-medium"
+            >{pendingDeleteBranch || "main"}</span
+          > will be deleted. Any unpushed changes will be lost.
+        </div>
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <Button
+        type="tertiary"
+        onClick={() => {
+          deleteConfirmOpen = false;
+        }}
+      >
+        Cancel
+      </Button>
+      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
 <style lang="postcss">
   .empty-container {

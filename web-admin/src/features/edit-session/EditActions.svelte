@@ -40,14 +40,22 @@
     }
   }
 
-  function handleClose() {
+  $: closeHref = `/${organization}/${project}${branchPathPrefix(branch)}`;
+
+  function handleClose(e: MouseEvent) {
     // Full page navigation avoids a race where useRuntimeClient() is called
     // before the project layout's RuntimeProvider remounts.
-    window.location.href = `/${organization}/${project}${branchPathPrefix(branch)}`;
+    e.preventDefault();
+    window.location.href = closeHref;
   }
 </script>
 
-<Button type="secondary" disabled={isCommitting} onClick={handleClose}>
+<Button
+  type="secondary"
+  href={closeHref}
+  disabled={isCommitting}
+  onClick={handleClose}
+>
   Close editor
 </Button>
 <Button

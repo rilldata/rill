@@ -68,14 +68,19 @@
     );
   }
 
+  // When the user owns a deployment on the active branch, the button
+  // links directly to that editor (no popover).
+  $: directEditHref = activeBranchDeployment
+    ? editUrl(activeBranchDeployment.branch)
+    : undefined;
+
   function handleButtonClick(e: MouseEvent) {
-    // If on a branch the user owns, go directly to that editor
-    if (activeBranchDeployment) {
+    if (directEditHref) {
       e.preventDefault();
       e.stopPropagation();
       open = false;
       requestSkipBranchInjection();
-      void goto(editUrl(activeBranchDeployment.branch));
+      void goto(directEditHref);
     }
     // Otherwise the Popover.Trigger handles the click naturally
   }
@@ -121,6 +126,7 @@
   <Popover.Trigger asChild let:builder>
     <Button
       type="secondary"
+      href={directEditHref}
       builders={[builder]}
       disabled={isStarting || isLoading}
       loading={isStarting}
@@ -136,9 +142,10 @@
       {#if hasOwnSessions}
         <!-- List of active branches -->
         {#each ownDeployments as deployment (deployment.id)}
-          <button
+          <a
             class="branch-item"
-            on:click={() => handleNavigate(deployment.branch)}
+            href={editUrl(deployment.branch)}
+            on:click|preventDefault={() => handleNavigate(deployment.branch)}
           >
             <span
               class="inline-block size-1.5 rounded-full flex-none {statusDot(
@@ -148,7 +155,7 @@
             <span class="font-mono text-xs truncate">
               {deployment.branch || "main"}
             </span>
-          </button>
+          </a>
         {/each}
 
         <!-- Separator + New branch -->
