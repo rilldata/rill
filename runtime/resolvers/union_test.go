@@ -14,7 +14,7 @@ import (
 func TestUnionSQLResolvers(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "union",
 		ResolverProperties: map[string]any{
@@ -48,7 +48,7 @@ func TestUnionSQLResolvers(t *testing.T) {
 func TestUnionDifferentSchemas(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "union",
 		ResolverProperties: map[string]any{
@@ -84,7 +84,7 @@ func TestUnionDifferentSchemas(t *testing.T) {
 func TestUnionEmpty(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 
-	_, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	_, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "union",
 		ResolverProperties: map[string]any{
@@ -98,7 +98,7 @@ func TestUnionEmpty(t *testing.T) {
 func TestUnionPassesArgs(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "union",
 		ResolverProperties: map[string]any{
