@@ -16,15 +16,21 @@
   export let project: string;
   export let currentSlots: number;
   export let isRillManaged: boolean;
+  // When required, the user cannot dismiss the modal and must select + apply slots.
+  export let required = false;
+  // ClickHouse Cloud cluster memory (GB per replica) for auto-detecting the right tier.
+  export let detectedMemoryGb: number | undefined = undefined;
+  // When true, the user can only view the detected tier and apply it (no selection).
+  export let viewOnly = false;
 
   // Live Connect tiers: Rill bill is ~20% of infrastructure cost
   const LIVE_CONNECT_TIERS = [
-    { slots: 4, instance: "Basic (8GB / 2vCPU) × 2", rillBill: 88 },
-    { slots: 6, instance: "Basic (12GB / 3vCPU) × 2", rillBill: 131 },
-    { slots: 8, instance: "Scale (16GB / 4vCPU) × 2", rillBill: 175 },
-    { slots: 16, instance: "Scale (32GB / 8vCPU) × 2", rillBill: 350 },
-    { slots: 32, instance: "Scale (64GB / 16vCPU) × 2", rillBill: 701 },
-    { slots: 60, instance: "Scale (120GB / 30vCPU) × 2", rillBill: 1314 },
+    { slots: 4, instance: "8GiB / 2vCPU", rillBill: 100 }, 
+    { slots: 6, instance: "12GiB / 3vCPU", rillBill: 130 },
+    { slots: 8, instance: "16GiB / 4vCPU", rillBill: 175 },
+    { slots: 16, instance: "32GiB / 8vCPU", rillBill: 350 },
+    { slots: 32, instance: "64GiB / 16vCPU", rillBill: 700 },
+    { slots: 60, instance: "120GiB / 30vCPU", rillBill: 1300 },
   ];
 
   // Rill-managed tiers: billed per slot/hr; data charged separately
@@ -40,11 +46,40 @@
   const SLOT_RATE_PER_HR = 0.03;
   const HOURS_PER_MONTH = 730; // ~365.25 * 24 / 12
 
-  // For Live Connect: can scale up but not below initial cluster baseline
-  $: minimumSlots = isRillManaged ? 0 : currentSlots;
+  // Auto-detect matching tier from CHC cluster memory (memory per replica)
+  $: detectedTierSlots = (() => {
+    if (!detectedMemoryGb || isRillManaged) return undefined;
+    // Find the tier whose per-replica memory (slots * 2 GB) is closest to detected
+    const match = LIVE_CONNECT_TIERS.reduce((best, tier) => {
+      const tierMemory = tier.slots * 2; // GB per replica
+      const bestMemory = best.slots * 2;
+      return Math.abs(tierMemory - detectedMemoryGb) <
+        Math.abs(bestMemory - detectedMemoryGb)
+        ? tier
+        : best;
+    });
+    return match.slots;
+  })();
+
+  // Rill-managed and self-managed: no minimum floor
+  // CHC (detectedTierSlots set): can downgrade below current but not below detected tier
+  $: minimumSlots = detectedTierSlots ?? 0;
+
+  // In required mode, pre-select detected tier or minimum; otherwise default to current
+  $: minimumTierSlots = isRillManaged
+    ? RILL_MANAGED_TIERS[0].slots
+    : LIVE_CONNECT_TIERS[0].slots;
 
   let selectedSlots = currentSlots;
-  $: if (open) selectedSlots = currentSlots;
+  $: if (open) {
+    if (viewOnly) {
+      selectedSlots = detectedTierSlots ?? minimumTierSlots;
+    } else if (required && currentSlots === 0) {
+      selectedSlots = detectedTierSlots ?? minimumTierSlots;
+    } else {
+      selectedSlots = currentSlots;
+    }
+  }
 
   const updateProject = createAdminServiceUpdateProject();
 
@@ -81,12 +116,27 @@
   }
 </script>
 
-<Dialog.Root bind:open>
-  <Dialog.Content class="max-w-2xl">
+<Dialog.Root
+  bind:open
+  onOpenChange={(isOpen) => {
+    if (required && !isOpen) return; // prevent closing when required
+    open = isOpen;
+  }}
+  closeOnEscape={!required}
+  closeOnOutsideClick={!required}
+>
+  <Dialog.Content class="max-w-2xl" noClose={required}>
     <Dialog.Header>
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
-        {#if isRillManaged}
+        {#if viewOnly}
+          Based on your ClickHouse Cloud cluster, we recommend the following
+          slot configuration. <a
+            href="/{organization}/-/settings/billing"
+            class="text-primary-500 hover:underline"
+            >Start a Growth plan</a
+          > to customize your slot allocation.
+        {:else if isRillManaged}
           Rill-managed projects are billed at ${SLOT_RATE_PER_HR}/slot/hr. Data
           storage is charged separately based on usage. Monthly estimates assume
           ~{HOURS_PER_MONTH} hours/month.
@@ -116,10 +166,12 @@
         {#each RILL_MANAGED_TIERS as tier}
           <button
             class="tier-row"
-            class:tier-active={tier.slots === currentSlots}
-            class:tier-selected={tier.slots === selectedSlots &&
+            class:tier-active={tier.slots === currentSlots || (viewOnly && tier.slots === selectedSlots)}
+            class:tier-selected={!viewOnly && tier.slots === selectedSlots &&
               tier.slots !== currentSlots}
-            on:click={() => (selectedSlots = tier.slots)}
+            class:tier-disabled={viewOnly && tier.slots !== selectedSlots}
+            disabled={viewOnly && tier.slots !== selectedSlots}
+            on:click={() => { if (!viewOnly) selectedSlots = tier.slots; }}
           >
             <span class="tier-cell">
               {tier.slots}
@@ -142,25 +194,31 @@
         <div class="tier-header">
           <span class="tier-cell tier-cell-wide">CHC Cluster</span>
           <span class="tier-cell">Rill Slots</span>
-          <span class="tier-cell">Rill $/mo</span>
+          <span class="tier-cell">Estimated Rill $/mo</span>
         </div>
         {#each LIVE_CONNECT_TIERS as tier}
           <button
             class="tier-row"
-            class:tier-active={tier.slots === currentSlots}
-            class:tier-selected={tier.slots === selectedSlots &&
+            class:tier-active={tier.slots === currentSlots || (viewOnly && tier.slots === selectedSlots)}
+            class:tier-selected={!viewOnly && tier.slots === selectedSlots &&
               tier.slots !== currentSlots}
-            class:tier-disabled={tier.slots < minimumSlots}
-            disabled={tier.slots < minimumSlots}
-            on:click={() => (selectedSlots = tier.slots)}
+            class:tier-disabled={tier.slots < minimumSlots || (viewOnly && tier.slots !== selectedSlots)}
+            disabled={tier.slots < minimumSlots || (viewOnly && tier.slots !== selectedSlots)}
+            on:click={() => { if (!viewOnly) selectedSlots = tier.slots; }}
           >
             <span class="tier-cell tier-cell-wide">
               {tier.instance}
+              {#if detectedTierSlots === tier.slots}
+                <span class="detected-badge">detected</span>
+              {/if}
             </span>
             <span class="tier-cell">
               {tier.slots}
               {#if tier.slots === currentSlots}
                 <span class="current-badge">current</span>
+              {/if}
+              {#if minimumSlots > 0 && tier.slots === minimumSlots && tier.slots !== currentSlots}
+                <span class="detected-badge">minimum</span>
               {/if}
             </span>
             <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
@@ -168,18 +226,24 @@
         {/each}
       </div>
       <p class="chc-note">
-        Cluster specs shown for ClickHouse Cloud reference. Self-managed users
-        can ignore cluster details.
+        Estimated costs are calculated at a full month. Billing is charged at
+        compute/hr, therefore variable based on your needs.
+      </p>
+      <p class="chc-note">
+        Cluster specs assume 2 replicas. Self-managed users can ignore cluster
+        details.
       </p>
     {/if}
 
     <div class="footer">
-      <button class="cancel-btn" on:click={() => (open = false)}>
-        Cancel
-      </button>
+      {#if !required}
+        <button class="cancel-btn" on:click={() => (open = false)}>
+          Cancel
+        </button>
+      {/if}
       <button
         class="apply-btn"
-        disabled={!hasChanged || $updateProject.isPending}
+        disabled={(viewOnly ? false : required ? selectedSlots === 0 : !hasChanged) || $updateProject.isPending}
         on:click={applySlotChange}
       >
         {#if $updateProject.isPending}
@@ -237,6 +301,9 @@
   }
   .current-badge {
     @apply text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
+  }
+  .detected-badge {
+    @apply text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
   }
   .chc-note {
     @apply text-xs text-fg-tertiary mt-2 italic;

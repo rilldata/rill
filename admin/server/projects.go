@@ -890,6 +890,12 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	// Enforce minimum slots if rill_min_slots is set on the project
+	prodSlots := int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots)))
+	if proj.RillMinSlots != nil && prodSlots < int(*proj.RillMinSlots) {
+		return nil, status.Errorf(codes.InvalidArgument, "prod_slots cannot be less than %d (minimum required for this ClickHouse Cloud cluster)", *proj.RillMinSlots)
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -904,12 +910,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		PrimaryBranch:        primaryBranch,
 		PrimaryDeploymentID:  proj.PrimaryDeploymentID,
-		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
+		ProdSlots:            prodSlots,
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
+		ChcClusterSize:       proj.ChcClusterSize,
+		RillMinSlots:         proj.RillMinSlots,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {

@@ -1,8 +1,14 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetProjectVariables,
+    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import {
+    isTrialPlan,
+    isEnterprisePlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
@@ -17,7 +23,10 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import ManageSlotsModal from "./ManageSlotsModal.svelte";
+  import ClickHouseCloudKeyModal from "./ClickHouseCloudKeyModal.svelte";
+  import ClickHouseCloudDetailsModal from "./ClickHouseCloudDetailsModal.svelte";
   import OverviewCard from "./OverviewCard.svelte";
+  import { onMount } from "svelte";
 
   export let organization: string;
   export let project: string;
@@ -77,10 +86,125 @@
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
   let slotsModalOpen = false;
 
+  // Billing plan detection
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
+  $: isTrial = isTrialPlan(planName);
+  $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
+
   // Slot usage breakdown (dev edit modes coming soon; each consumes 1 slot)
   $: prodSlots = currentSlots; // today all slots go to prod
   $: devSlots = 0; // will increase when dev edit modes are active
   $: usedSlots = prodSlots + devSlots;
+
+  // ClickHouse Cloud detection: prefer backend flag, fall back to host/DSN check
+  $: isClickHouseCloud =
+    olapConnector?.type === "clickhouse" &&
+    (olapConnector?.config?.is_clickhouse_cloud === true ||
+      (olapConnector?.config?.host as string)
+        ?.toLowerCase()
+        .endsWith(".clickhouse.cloud") ||
+      (olapConnector?.config?.dsn as string)
+        ?.toLowerCase()
+        .includes(".clickhouse.cloud"));
+
+  // CHC service details from the runtime (populated after API key is saved and polling runs)
+  $: cloudServiceName = olapConnector?.config?.cloud_service_name as
+    | string
+    | undefined;
+  $: cloudStatus = olapConnector?.config?.cloud_status as string | undefined;
+  $: cloudProvider = olapConnector?.config?.cloud_provider as string | undefined;
+  $: cloudRegion = olapConnector?.config?.cloud_region as string | undefined;
+  $: cloudTier = olapConnector?.config?.cloud_tier as string | undefined;
+  $: cloudMinMemory = olapConnector?.config?.cloud_min_memory_gb as
+    | number
+    | undefined;
+  $: cloudMaxMemory = olapConnector?.config?.cloud_max_memory_gb as
+    | number
+    | undefined;
+  $: cloudReplicas = olapConnector?.config?.cloud_num_replicas as
+    | number
+    | undefined;
+  $: hasCloudDetails = !!cloudServiceName;
+
+  let chcDetailsModalOpen = false;
+
+  $: projectVariablesQuery = isClickHouseCloud
+    ? createAdminServiceGetProjectVariables(organization, project, {
+        environment: "prod",
+      })
+    : undefined;
+  $: hasCloudApiKey = $projectVariablesQuery?.data?.variables?.some(
+    (v) => v.name === "CLICKHOUSE_CLOUD_API_KEY_ID",
+  );
+
+  // "Remind me later" dismisses for this browser session; re-opens on new visits
+  $: dismissKey = `chc-key-dismissed:${organization}/${project}`;
+  let chcDismissedThisSession = false;
+  onMount(() => {
+    chcDismissedThisSession =
+      sessionStorage.getItem(`chc-key-dismissed:${organization}/${project}`) === "true";
+  });
+
+  function handleChcDismiss() {
+    sessionStorage.setItem(dismissKey, "true");
+    chcDismissedThisSession = true;
+  }
+
+  $: shouldPromptChcKey =
+    isClickHouseCloud &&
+    hasCloudApiKey === false &&
+    !chcDismissedThisSession &&
+    canManage;
+  let chcKeyModalOpen = false;
+  $: if (shouldPromptChcKey) {
+    chcKeyModalOpen = true;
+  }
+
+  // If CHC key exists but no slots are configured, open the required slots modal once on page load
+  let slotsPromptChecked = false;
+  $: if (
+    !slotsPromptChecked &&
+    isClickHouseCloud &&
+    hasCloudApiKey === true &&
+    currentSlots === 0 &&
+    canManage
+  ) {
+    slotsPromptChecked = true;
+    slotsRequiredMode = true;
+    slotsModalOpen = true;
+  }
+
+  // Use the resolved host from the runtime (handles DSN parsing server-side)
+  $: connectorHost = olapConnector?.config?.resolved_host as
+    | string
+    | undefined;
+
+  $: console.log("[CHC] connectorHost:", connectorHost, "olapConnector config:", olapConnector?.config);
+
+  // After CHC key is saved, open the slots modal in required mode
+  let slotsRequiredMode = false;
+
+  // Persist detected memory in sessionStorage so it survives modal reopens and navigations
+  const chcMemoryKey = `chc-memory:${organization}/${project}`;
+  let chcDetectedMemoryGb: number | undefined = (() => {
+    const stored = sessionStorage.getItem(chcMemoryKey);
+    return stored ? parseFloat(stored) : undefined;
+  })();
+
+  function handleChcKeySaved(memoryGb?: number) {
+    console.log("[CHC] Key saved, detectedMemoryGb:", memoryGb, "canManage:", canManage);
+    if (memoryGb && memoryGb > 0) {
+      chcDetectedMemoryGb = memoryGb;
+      sessionStorage.setItem(chcMemoryKey, String(memoryGb));
+    }
+    if (canManage) {
+      slotsRequiredMode = true;
+      slotsModalOpen = true;
+    }
+  }
+  // Reset required mode when slots modal closes
+  $: if (!slotsModalOpen) slotsRequiredMode = false;
 </script>
 
 <OverviewCard title="Deployment">
@@ -155,12 +279,24 @@
 
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
-      <span class="info-value">
+      <span class="info-value flex items-center gap-2">
         {olapConnector ? formatConnectorName(olapConnector.type) : "DuckDB"}
         {#if olapConnector && (olapConnector.provision || olapConnector.type !== "duckdb")}
-          <span class="text-fg-tertiary text-xs ml-1">
-            ({olapConnector.provision ? "Rill-managed" : "Self-managed"})
+          <span class="text-fg-tertiary text-xs">
+            ({olapConnector.provision
+              ? "Rill-managed"
+              : isClickHouseCloud
+                ? "ClickHouse Cloud"
+                : "Self-managed"})
           </span>
+        {/if}
+        {#if hasCloudDetails}
+          <button
+            class="manage-slots-btn"
+            on:click={() => (chcDetailsModalOpen = true)}
+          >
+            View Details
+          </button>
         {/if}
       </span>
     </div>
@@ -178,34 +314,43 @@
       </span>
     </div>
 
-    <div class="info-row">
-      <span class="info-label">Slots</span>
-      <span class="info-value flex items-center gap-3">
-        {#if currentSlots > 0}
-          <div class="slots-pill">
-            <div
-              class="slots-fill-prod"
-              style="width: {(prodSlots / currentSlots) * 100}%"
-            ></div>
-            <div
-              class="slots-fill-dev"
-              style="width: {(devSlots / currentSlots) * 100}%"
-            ></div>
-          </div>
-          <span class="slots-count">{usedSlots}/{currentSlots}</span>
-        {:else}
-          <span>0</span>
-        {/if}
-        {#if canManage}
-          <button
-            class="manage-slots-btn"
-            on:click={() => (slotsModalOpen = true)}
-          >
-            Manage Slots
-          </button>
-        {/if}
-      </span>
-    </div>
+    {#if !isEnterprise}
+      <div class="info-row">
+        <span class="info-label">Slots</span>
+        <span class="info-value flex items-center gap-3">
+          {#if currentSlots > 0}
+            <div class="slots-pill">
+              <div
+                class="slots-fill-prod"
+                style="width: {(prodSlots / currentSlots) * 100}%"
+              ></div>
+              <div
+                class="slots-fill-dev"
+                style="width: {(devSlots / currentSlots) * 100}%"
+              ></div>
+            </div>
+            <span class="slots-count">{usedSlots}/{currentSlots}</span>
+          {:else}
+            <span>0</span>
+          {/if}
+          {#if canManage && isTrial}
+            <a
+              class="manage-slots-btn"
+              href="/{organization}/-/settings/billing"
+            >
+              Upgrade to Growth Plan
+            </a>
+          {:else if canManage}
+            <button
+              class="manage-slots-btn"
+              on:click={() => (slotsModalOpen = true)}
+            >
+              Manage Slots
+            </button>
+          {/if}
+        </span>
+      </div>
+    {/if}
   </div>
 </OverviewCard>
 
@@ -215,7 +360,35 @@
   {project}
   {currentSlots}
   {isRillManaged}
+  required={slotsRequiredMode}
+  viewOnly={isTrial}
+  detectedMemoryGb={chcDetectedMemoryGb ?? cloudMaxMemory}
 />
+
+{#if isClickHouseCloud && canManage}
+  <ClickHouseCloudKeyModal
+    bind:open={chcKeyModalOpen}
+    {organization}
+    {project}
+    {connectorHost}
+    onDismiss={handleChcDismiss}
+    onSave={handleChcKeySaved}
+  />
+{/if}
+
+{#if hasCloudDetails}
+  <ClickHouseCloudDetailsModal
+    bind:open={chcDetailsModalOpen}
+    serviceName={cloudServiceName}
+    status={cloudStatus}
+    provider={cloudProvider}
+    region={cloudRegion}
+    tier={cloudTier}
+    minMemoryGb={cloudMinMemory}
+    maxMemoryGb={cloudMaxMemory}
+    replicas={cloudReplicas}
+  />
+{/if}
 
 <style lang="postcss">
   .info-grid {
@@ -255,7 +428,7 @@
     @apply text-sm text-fg-primary font-medium tabular-nums;
   }
   .manage-slots-btn {
-    @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0;
+    @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 no-underline;
   }
   .manage-slots-btn:hover {
     @apply text-primary-600;
