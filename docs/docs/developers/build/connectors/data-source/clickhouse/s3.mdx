@@ -2,20 +2,32 @@
 title: Amazon S3
 description: Connect ClickHouse to data in S3
 sidebar_label: S3
-sidebar_position: 60
+sidebar_position: 120
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to data stored in Amazon S3 using ClickHouse's [`s3()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/s3).
+[Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) is a scalable object storage service from AWS. ClickHouse reads S3 data directly using its [`s3()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/s3), which supports Parquet, CSV, JSON, and other formats.
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add your AWS credentials to your project's `.env` file:
+
+```bash
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Model Configuration
-
-Create `models/s3_data.yaml`:
 
 ```yaml
 type: model
@@ -25,29 +37,53 @@ sql: |
   SELECT *
   FROM s3(
     'https://my-bucket.s3.amazonaws.com/path/to/data/*.parquet',
-    '{{ .env.connector.s3.aws_access_key_id }}',
-    '{{ .env.connector.s3.aws_secret_access_key }}',
+    '{{ .env.AWS_ACCESS_KEY_ID }}',
+    '{{ .env.AWS_SECRET_ACCESS_KEY }}',
     'Parquet'
   )
 ```
 
 :::info
-ClickHouse uses the `s3()` table function with HTTPS-style URLs rather than `s3://` URIs. See the [ClickHouse S3 documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/s3) for full syntax.
+ClickHouse uses HTTPS-style URLs (`https://my-bucket.s3.amazonaws.com/...`) rather than `s3://` URIs.
 :::
 
 ## Path Patterns
+
+Use wildcards and globs to read multiple files:
 
 ```sql
 -- Single file
 SELECT * FROM s3('https://my-bucket.s3.amazonaws.com/data/file.parquet', ...)
 
--- Wildcard patterns
+-- All Parquet files in a directory
 SELECT * FROM s3('https://my-bucket.s3.amazonaws.com/data/*.parquet', ...)
 
--- Glob patterns
+-- Specific partitions
 SELECT * FROM s3('https://my-bucket.s3.amazonaws.com/data/{2024,2025}/*.parquet', ...)
+
+-- Numbered ranges
+SELECT * FROM s3('https://my-bucket.s3.amazonaws.com/data/part_{1..10}.parquet', ...)
+```
+
+## Supported Formats
+
+The last argument to `s3()` specifies the file format. Common options include `Parquet`, `CSVWithNames`, `JSONEachRow`, and `TSVWithNames`. See the [ClickHouse formats documentation](https://clickhouse.com/docs/en/interfaces/formats) for the full list.
+
+## S3-Compatible Storage
+
+You can also use `s3()` with S3-compatible services (MinIO, DigitalOcean Spaces, etc.) by specifying the service's endpoint URL:
+
+```yaml
+sql: |
+  SELECT *
+  FROM s3(
+    'https://my-space.nyc3.digitaloceanspaces.com/path/to/data.parquet',
+    '{{ .env.S3_ACCESS_KEY_ID }}',
+    '{{ .env.S3_SECRET_ACCESS_KEY }}',
+    'Parquet'
+  )
 ```
 
 ## Reference
 
-For general S3 authentication setup, see the [DuckDB S3 connector guide](/developers/build/connectors/data-source/duckdb/s3) — the same credentials can be reused via `{{ .env.connector.s3.<key> }}` template references.
+For general S3 authentication setup, see the [DuckDB S3 connector guide](/developers/build/connectors/data-source/duckdb/s3). See also the [ClickHouse S3 documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/s3) for full syntax details.

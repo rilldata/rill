@@ -2,7 +2,7 @@
 title: Apache Iceberg
 description: Read Iceberg tables from object storage
 sidebar_label: Apache Iceberg
-sidebar_position: 27
+sidebar_position: 5
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';

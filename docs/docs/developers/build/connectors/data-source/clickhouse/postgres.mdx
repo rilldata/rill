@@ -2,20 +2,35 @@
 title: PostgreSQL
 description: Connect ClickHouse to data in PostgreSQL
 sidebar_label: PostgreSQL
-sidebar_position: 50
+sidebar_position: 100
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to data in PostgreSQL using ClickHouse's [`postgresql()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/postgresql).
+[PostgreSQL](https://www.postgresql.org/) is one of the most popular open-source relational databases. ClickHouse can query PostgreSQL tables directly using its [`postgresql()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/postgresql), pulling data into your Rill models without intermediate exports.
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add your PostgreSQL credentials to your project's `.env` file:
+
+```bash
+POSTGRES_HOST=your_host
+POSTGRES_PORT=5432
+POSTGRES_DATABASE=your_database
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Model Configuration
-
-Create `models/postgres_data.yaml`:
 
 ```yaml
 type: model
@@ -24,14 +39,35 @@ connector: my_clickhouse
 sql: |
   SELECT *
   FROM postgresql(
-    '{{ .env.connector.postgresql.host }}:{{ .env.connector.postgresql.port }}',
-    '{{ .env.connector.postgresql.dbname }}',
+    '{{ .env.POSTGRES_HOST }}:{{ .env.POSTGRES_PORT }}',
+    '{{ .env.POSTGRES_DATABASE }}',
     'my_table',
-    '{{ .env.connector.postgresql.user }}',
-    '{{ .env.connector.postgresql.password }}'
+    '{{ .env.POSTGRES_USER }}',
+    '{{ .env.POSTGRES_PASSWORD }}'
   )
 ```
 
+### Querying a Specific Schema
+
+To query a table in a non-default schema, pass the schema name as an additional argument:
+
+```yaml
+sql: |
+  SELECT *
+  FROM postgresql(
+    '{{ .env.POSTGRES_HOST }}:{{ .env.POSTGRES_PORT }}',
+    '{{ .env.POSTGRES_DATABASE }}',
+    'my_table',
+    '{{ .env.POSTGRES_USER }}',
+    '{{ .env.POSTGRES_PASSWORD }}',
+    'my_schema'
+  )
+```
+
+:::tip Network Access
+Your ClickHouse instance must be able to reach the PostgreSQL server. If you're using Rill-Managed ClickHouse, ensure your PostgreSQL database is accessible from the internet or configure appropriate network peering.
+:::
+
 ## Reference
 
-For PostgreSQL authentication setup, see the [DuckDB PostgreSQL connector guide](/developers/build/connectors/data-source/duckdb/postgres). The same credentials can be reused via `{{ .env.connector.postgresql.<key> }}` template references.
+For PostgreSQL authentication setup, see the [DuckDB PostgreSQL connector guide](/developers/build/connectors/data-source/duckdb/postgres). See also the [ClickHouse PostgreSQL documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/postgresql) for full syntax details.

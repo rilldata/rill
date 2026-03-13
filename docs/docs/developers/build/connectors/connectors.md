@@ -38,6 +38,7 @@ import ClaudeLogo from '@site/static/img/build/connectors/icons/Logo-Claude.svg'
 import GeminiLogo from '@site/static/img/build/connectors/icons/Logo-Gemini.svg';
 import AILogo from '@site/static/img/build/connectors/icons/Logo-AI.svg';
 import SlackLogo from '@site/static/img/build/connectors/icons/Logo-Slack.svg';
+import KafkaLogo from '@site/static/img/build/connectors/icons/Logo-Kafka.svg';
 
 ## Connection Strategies
 
@@ -207,8 +208,8 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 ## Object Storage
 
 ### Amazon S3
-### Google Cloud Storage
 ### Microsoft Azure Blob Storage
+### Google Cloud Storage
 
 
 
@@ -222,14 +223,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="s3"
   />
-    <ConnectorIcon
-    icon={<GCSLogo />}
-    header="Google Cloud Storage"
-    content="Google Cloud Storage provides scalable object storage and data lakes."
-    link="/developers/build/connectors/data-source/duckdb/gcs"
-    linkLabel="Learn more"
-    referenceLink="gcs"
-  />
 
   <ConnectorIcon
     icon={<AzureLogo />}
@@ -240,6 +233,14 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     referenceLink="azure"
   />
 
+  <ConnectorIcon
+    icon={<GCSLogo />}
+    header="Google Cloud Storage"
+    content="Google Cloud Storage provides scalable object storage and data lakes."
+    link="/developers/build/connectors/data-source/duckdb/gcs"
+    linkLabel="Learn more"
+    referenceLink="gcs"
+  />
 
 </div>
 
@@ -356,9 +357,9 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 ## Object Storage
 
 ### Amazon S3
+### Microsoft Azure Blob Storage
 ### Google Cloud Storage
 ### HDFS
-### Microsoft Azure Blob Storage
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -370,9 +371,17 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     referenceLink="s3"
   />
   <ConnectorIcon
+    icon={<AzureLogo />}
+    header="Azure"
+    content="Connect to Azure Blob Storage using ClickHouse's azureBlobStorage() table function."
+    link="/developers/build/connectors/data-source/clickhouse/azure"
+    linkLabel="Learn more"
+    referenceLink="azure"
+  />
+  <ConnectorIcon
     icon={<GCSLogo />}
     header="Google Cloud Storage"
-    content="Connect to GCS via ClickHouse's S3-compatible API using HMAC keys."
+    content="Connect to GCS using ClickHouse's gcs() table function with HMAC keys."
     link="/developers/build/connectors/data-source/clickhouse/gcs"
     linkLabel="Learn more"
     referenceLink="gcs"
@@ -384,22 +393,21 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     link="/developers/build/connectors/data-source/clickhouse/hdfs"
     linkLabel="Learn more"
   />
-  <ConnectorIcon
-    icon={<AzureLogo />}
-    header="Azure"
-    content="Connect to Azure Blob Storage using ClickHouse's azureBlobStorage() table function."
-    link="/developers/build/connectors/data-source/clickhouse/azure"
-    linkLabel="Learn more"
-    referenceLink="azure"
-  />
 </div>
 
 ## Table Formats
+### Apache Hudi
 ### Apache Iceberg
 ### Delta Lake
-### Apache Hudi
 
 <div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Hudi.png" alt="Apache Hudi" />}
+    header="Apache Hudi"
+    content="Read Hudi tables using ClickHouse's hudi() table function."
+    link="/developers/build/connectors/data-source/clickhouse/hudi"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<IcebergLogo />}
     header="Apache Iceberg"
@@ -414,17 +422,11 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     link="/developers/build/connectors/data-source/clickhouse/delta-lake"
     linkLabel="Learn more"
   />
-  <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Hudi.png" alt="Apache Hudi" />}
-    header="Apache Hudi"
-    content="Read Hudi tables using ClickHouse's hudi() table function."
-    link="/developers/build/connectors/data-source/clickhouse/hudi"
-    linkLabel="Learn more"
-  />
 </div>
 
 ## Other Data Connectors
 ### HTTPS
+### Kafka
 ### Remote ClickHouse
 
 <div className="connector-icon-grid">
@@ -435,6 +437,13 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     link="/developers/build/connectors/data-source/clickhouse/https"
     linkLabel="Learn more"
     referenceLink="https"
+  />
+  <ConnectorIcon
+    icon={<KafkaLogo />}
+    header="Kafka"
+    content="Stream data from Kafka topics into ClickHouse using the Kafka table engine."
+    link="/developers/build/connectors/data-source/clickhouse/kafka"
+    linkLabel="Learn more"
   />
   <ConnectorIcon
     icon={<ClickHouseLogo />}

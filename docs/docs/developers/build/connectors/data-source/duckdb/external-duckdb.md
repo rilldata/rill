@@ -2,7 +2,7 @@
 title: External DuckDB
 description: Connect to external DuckDB databases and ingest data into Rill
 sidebar_label: External DuckDB
-sidebar_position: 11
+sidebar_position: 40
 slug: duckdb
 ---
 

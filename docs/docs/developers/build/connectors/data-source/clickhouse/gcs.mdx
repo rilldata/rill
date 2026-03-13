@@ -2,20 +2,36 @@
 title: Google Cloud Storage (GCS)
 description: Connect ClickHouse to data in GCS
 sidebar_label: GCS
-sidebar_position: 15
+sidebar_position: 50
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to data stored in Google Cloud Storage. ClickHouse accesses GCS via its S3-compatible API, so you must use **HMAC keys** (not JSON service account credentials).
+[Google Cloud Storage](https://cloud.google.com/storage/docs) is Google's object storage service. ClickHouse accesses GCS using its [`gcs()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/gcs), which wraps the S3-compatible API. You must use **HMAC keys** rather than JSON service account credentials.
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add your GCS HMAC keys to your project's `.env` file:
+
+```bash
+GCS_HMAC_KEY_ID=your_hmac_key_id
+GCS_HMAC_SECRET=your_hmac_secret
+```
+
+:::warning HMAC Keys Required
+The `gcs()` function uses the S3-compatible API under the hood, which requires HMAC keys. JSON service account credentials are not supported. See [how to create HMAC keys](/developers/build/connectors/data-source/duckdb/gcs#how-to-create-hmac-keys-for-gcs) for setup instructions.
+:::
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Model Configuration
-
-Create `models/gcs_data.yaml`:
 
 ```yaml
 type: model
@@ -23,18 +39,26 @@ connector: my_clickhouse
 
 sql: |
   SELECT *
-  FROM s3(
+  FROM gcs(
     'https://storage.googleapis.com/my-bucket/path/to/data/*.parquet',
-    '{{ .env.connector.gcs.key_id }}',
-    '{{ .env.connector.gcs.secret }}',
+    '{{ .env.GCS_HMAC_KEY_ID }}',
+    '{{ .env.GCS_HMAC_SECRET }}',
     'Parquet'
   )
 ```
 
-:::warning HMAC Keys Required
-ClickHouse connects to GCS via the S3-compatible API. You must configure your GCS connector with HMAC keys, not a JSON service account credential. See [how to create HMAC keys](/developers/build/connectors/data-source/duckdb/gcs#how-to-create-hmac-keys-for-gcs).
-:::
+## Path Patterns
+
+Use wildcards and globs to read multiple files:
+
+```sql
+-- All Parquet files in a directory
+SELECT * FROM gcs('https://storage.googleapis.com/my-bucket/data/*.parquet', ...)
+
+-- Specific partitions
+SELECT * FROM gcs('https://storage.googleapis.com/my-bucket/data/{2024,2025}/*.parquet', ...)
+```
 
 ## Reference
 
-For GCS authentication setup, see the [DuckDB GCS connector guide](/developers/build/connectors/data-source/duckdb/gcs). The same HMAC credentials can be reused via `{{ .env.connector.gcs.<key> }}` template references.
+For GCS authentication setup, see the [DuckDB GCS connector guide](/developers/build/connectors/data-source/duckdb/gcs). See also the [ClickHouse GCS documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/gcs) for full syntax details.

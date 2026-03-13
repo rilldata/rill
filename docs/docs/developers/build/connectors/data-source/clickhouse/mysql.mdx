@@ -2,20 +2,35 @@
 title: MySQL
 description: Connect ClickHouse to data in MySQL
 sidebar_label: MySQL
-sidebar_position: 40
+sidebar_position: 90
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to data in MySQL using ClickHouse's [`mysql()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/mysql).
+[MySQL](https://www.mysql.com/) is one of the most widely used relational databases. ClickHouse can query MySQL tables directly using its [`mysql()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/mysql), pulling data into your Rill models without intermediate exports.
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add your MySQL credentials to your project's `.env` file:
+
+```bash
+MYSQL_HOST=your_host
+MYSQL_PORT=3306
+MYSQL_DATABASE=your_database
+MYSQL_USER=your_user
+MYSQL_PASSWORD=your_password
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Model Configuration
-
-Create `models/mysql_data.yaml`:
 
 ```yaml
 type: model
@@ -24,14 +39,18 @@ connector: my_clickhouse
 sql: |
   SELECT *
   FROM mysql(
-    '{{ .env.connector.mysql.host }}:{{ .env.connector.mysql.port }}',
-    '{{ .env.connector.mysql.database }}',
+    '{{ .env.MYSQL_HOST }}:{{ .env.MYSQL_PORT }}',
+    '{{ .env.MYSQL_DATABASE }}',
     'my_table',
-    '{{ .env.connector.mysql.user }}',
-    '{{ .env.connector.mysql.password }}'
+    '{{ .env.MYSQL_USER }}',
+    '{{ .env.MYSQL_PASSWORD }}'
   )
 ```
 
+:::tip Network Access
+Your ClickHouse instance must be able to reach the MySQL server. If you're using Rill-Managed ClickHouse, ensure your MySQL database is accessible from the internet or configure appropriate network peering.
+:::
+
 ## Reference
 
-For MySQL authentication setup, see the [DuckDB MySQL connector guide](/developers/build/connectors/data-source/duckdb/mysql). The same credentials can be reused via `{{ .env.connector.mysql.<key> }}` template references.
+For MySQL authentication setup, see the [DuckDB MySQL connector guide](/developers/build/connectors/data-source/duckdb/mysql). See also the [ClickHouse MySQL documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/mysql) for full syntax details.

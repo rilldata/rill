@@ -2,22 +2,32 @@
 title: Apache Hudi
 description: Read Hudi tables from object storage via ClickHouse
 sidebar_label: Apache Hudi
-sidebar_position: 29
+sidebar_position: 10
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" solo />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to Apache Hudi tables using ClickHouse's [`hudi()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/hudi).
+[Apache Hudi](https://hudi.apache.org/) is an open-source data lake framework that provides record-level insert, update, and delete capabilities. ClickHouse can read Hudi tables directly from S3 using its [`hudi()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/hudi).
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add your AWS credentials to your project's `.env` file:
+
+```bash
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Model Configuration
-
-### Reading from S3
-
-Create `models/hudi_data.yaml`:
 
 ```yaml
 type: model
@@ -27,10 +37,14 @@ sql: |
   SELECT *
   FROM hudi(
     'https://my-bucket.s3.amazonaws.com/path/to/hudi/table',
-    '{{ .env.connector.s3.aws_access_key_id }}',
-    '{{ .env.connector.s3.aws_secret_access_key }}'
+    '{{ .env.AWS_ACCESS_KEY_ID }}',
+    '{{ .env.AWS_SECRET_ACCESS_KEY }}'
   )
 ```
+
+:::info
+The `hudi()` function points to the table's root directory. ClickHouse reads the latest committed snapshot by default.
+:::
 
 ## Reference
 

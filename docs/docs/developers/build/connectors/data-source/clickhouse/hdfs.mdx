@@ -2,20 +2,23 @@
 title: HDFS
 description: Read data files from HDFS via ClickHouse
 sidebar_label: HDFS
-sidebar_position: 63
+sidebar_position: 60
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" solo />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to files stored in HDFS using ClickHouse's [`hdfs()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/hdfs). Supports Parquet, CSV, JSON, and other formats.
+[HDFS](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html) (Hadoop Distributed File System) is a distributed storage system designed for large-scale data processing. ClickHouse can read files directly from HDFS using its [`hdfs()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/hdfs), with support for Parquet, CSV, JSON, and other formats.
+
+<ClickHousePrereq />
 
 ## Model Configuration
 
-Create `models/hdfs_data.yaml`:
+### Reading Parquet Files
 
 ```yaml
 type: model
@@ -29,7 +32,9 @@ sql: |
   )
 ```
 
-### With explicit schema
+### With Explicit Schema
+
+For formats that don't include column metadata (e.g., CSV), define the schema explicitly:
 
 ```yaml
 type: model
@@ -43,6 +48,29 @@ sql: |
     'id UInt64, name String, created_at DateTime'
   )
 ```
+
+### Path Patterns
+
+Use wildcards to read multiple files:
+
+```sql
+-- All Parquet files in a directory
+SELECT * FROM hdfs('hdfs://namenode:9000/data/*.parquet', 'Parquet')
+
+-- Recursive glob
+SELECT * FROM hdfs('hdfs://namenode:9000/data/**/*.parquet', 'Parquet')
+
+-- Numbered ranges
+SELECT * FROM hdfs('hdfs://namenode:9000/data/part_{1..10}.parquet', 'Parquet')
+```
+
+## Supported Formats
+
+Common format options include `Parquet`, `CSVWithNames`, `JSONEachRow`, `TSVWithNames`, and `ORC`. See the [ClickHouse formats documentation](https://clickhouse.com/docs/en/interfaces/formats) for the full list.
+
+:::tip Network Access
+Your ClickHouse instance must have network access to the HDFS NameNode and DataNodes. This typically requires ClickHouse to be deployed within the same network as your Hadoop cluster.
+:::
 
 ## Reference
 

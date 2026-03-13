@@ -2,20 +2,35 @@
 title: MongoDB
 description: Connect ClickHouse to data in MongoDB
 sidebar_label: MongoDB
-sidebar_position: 41
+sidebar_position: 80
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" solo />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to data in MongoDB using ClickHouse's [`mongodb()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/mongodb).
+[MongoDB](https://www.mongodb.com/) is a document-oriented NoSQL database. ClickHouse can query MongoDB collections directly using its [`mongodb()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/mongodb), pulling data into your Rill models without intermediate exports.
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add your MongoDB credentials to your project's `.env` file:
+
+```bash
+MONGODB_HOST=your_host
+MONGODB_PORT=27017
+MONGODB_DATABASE=your_database
+MONGODB_USER=your_user
+MONGODB_PASSWORD=your_password
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Model Configuration
-
-Create `models/mongo_data.yaml`:
 
 ```yaml
 type: model
@@ -24,17 +39,34 @@ connector: my_clickhouse
 sql: |
   SELECT *
   FROM mongodb(
-    '{{ .env.connector.mongodb.host }}:{{ .env.connector.mongodb.port }}',
-    '{{ .env.connector.mongodb.database }}',
+    '{{ .env.MONGODB_HOST }}:{{ .env.MONGODB_PORT }}',
+    '{{ .env.MONGODB_DATABASE }}',
     'my_collection',
-    '{{ .env.connector.mongodb.user }}',
-    '{{ .env.connector.mongodb.password }}',
+    '{{ .env.MONGODB_USER }}',
+    '{{ .env.MONGODB_PASSWORD }}',
     'id Int64, name String, created_at DateTime'
   )
 ```
 
-:::info
-MongoDB is schema-less, so you must explicitly define the column names and types in the last argument. ClickHouse will map BSON fields to the specified types.
+:::info Explicit Schema Required
+MongoDB is schema-less, so you must define column names and ClickHouse types in the last argument. ClickHouse maps BSON fields to the specified types. Only the fields you list will be read from MongoDB.
+:::
+
+### Common Type Mappings
+
+| BSON Type | ClickHouse Type |
+|---|---|
+| String | `String` |
+| 32-bit integer | `Int32` |
+| 64-bit integer | `Int64` |
+| Double | `Float64` |
+| Boolean | `Bool` |
+| Date | `DateTime` |
+| ObjectId | `String` |
+| Array | `Array(T)` |
+
+:::tip Network Access
+Your ClickHouse instance must be able to reach the MongoDB server. If you're using Rill-Managed ClickHouse, ensure your MongoDB database is accessible from the internet or configure appropriate network peering.
 :::
 
 ## Reference

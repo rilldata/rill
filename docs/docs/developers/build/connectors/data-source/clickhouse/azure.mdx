@@ -2,20 +2,42 @@
 title: Azure Blob Storage
 description: Connect ClickHouse to data in Azure Blob Storage
 sidebar_label: Azure Blob Storage
-sidebar_position: 05
+sidebar_position: 30
 ---
 
 import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
 <WrongOLAP engine="clickhouse" />
 
 ## Overview
 
-Connect your ClickHouse OLAP engine to data stored in Azure Blob Storage using ClickHouse's [`azureBlobStorage()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/azureBlobStorage).
+[Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is Microsoft's object storage service. ClickHouse reads Azure data directly using its [`azureBlobStorage()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/azureBlobStorage), which supports Parquet, CSV, JSON, and other formats.
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add your Azure credentials to your project's `.env` file. You can use either a connection string or account key:
+
+**Connection string (simplest):**
+
+```bash
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net
+```
+
+**Account name and key:**
+
+```bash
+AZURE_STORAGE_ACCOUNT=myaccount
+AZURE_STORAGE_KEY=mykey
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Model Configuration
 
-Create `models/azure_data.yaml`:
+### Using a Connection String
 
 ```yaml
 type: model
@@ -24,14 +46,14 @@ connector: my_clickhouse
 sql: |
   SELECT *
   FROM azureBlobStorage(
-    '{{ .env.connector.azure.azure_storage_connection_string }}',
+    '{{ .env.AZURE_STORAGE_CONNECTION_STRING }}',
     'my-container',
     'path/to/data/*.parquet',
     'Parquet'
   )
 ```
 
-## Alternative: Account Key Authentication
+### Using Account Key
 
 ```yaml
 type: model
@@ -40,13 +62,25 @@ connector: my_clickhouse
 sql: |
   SELECT *
   FROM azureBlobStorage(
-    'DefaultEndpointsProtocol=https;AccountName={{ .env.connector.azure.azure_storage_account }};AccountKey={{ .env.connector.azure.azure_storage_key }};EndpointSuffix=core.windows.net',
+    'DefaultEndpointsProtocol=https;AccountName={{ .env.AZURE_STORAGE_ACCOUNT }};AccountKey={{ .env.AZURE_STORAGE_KEY }};EndpointSuffix=core.windows.net',
     'my-container',
     'path/to/data/*.parquet',
     'Parquet'
   )
+```
+
+## Path Patterns
+
+Use wildcards to read multiple files from a container:
+
+```sql
+-- All Parquet files in a path
+SELECT * FROM azureBlobStorage(..., 'my-container', 'data/*.parquet', 'Parquet')
+
+-- Specific partitions
+SELECT * FROM azureBlobStorage(..., 'my-container', 'data/{2024,2025}/*.parquet', 'Parquet')
 ```
 
 ## Reference
 
-For Azure authentication setup, see the [DuckDB Azure connector guide](/developers/build/connectors/data-source/duckdb/azure). The same credentials can be reused via `{{ .env.connector.azure.<key> }}` template references.
+For Azure authentication setup, see the [DuckDB Azure connector guide](/developers/build/connectors/data-source/duckdb/azure). See also the [ClickHouse Azure Blob Storage documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/azureBlobStorage) for full syntax details.

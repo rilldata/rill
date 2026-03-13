@@ -70,7 +70,7 @@ function OLAPToggleInner({ children, defaultEngine = 'duckdb' }) {
           <img
             src="/img/build/connectors/icons/Logo-DuckDB.svg"
             alt="DuckDB"
-            className=""
+            className="olap-toggle__logo"
           />
         </button>
         <button
