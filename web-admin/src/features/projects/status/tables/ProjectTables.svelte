@@ -25,7 +25,7 @@
     applyTableFilters,
     splitTablesByModel,
   } from "./utils";
-  import ResourceSpecDialog from "../resource-table/ResourceSpecDialog.svelte";
+  import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "../resource-table/RefreshResourceConfirmDialog.svelte";
@@ -33,7 +33,7 @@
     createUrlFilterSync,
     parseEnumParam,
     parseStringParam,
-  } from "../url-filter-sync";
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
   const runtimeClient = useRuntimeClient();

@@ -25,7 +25,7 @@
   export let target: string | undefined = undefined;
   export let fit = false;
   export let noWrap = false;
-  // export let gray = false;
+  export let gray = false;
   export let preload = true;
   export let active = false;
   export let loadingCopy = "Loading";
@@ -62,6 +62,7 @@
   class:compact
   class:rounded
   class:active
+  class:gray
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
   class:no-stroke={noStroke}

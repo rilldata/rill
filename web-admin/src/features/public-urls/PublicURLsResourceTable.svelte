@@ -5,7 +5,7 @@
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
   import type { V1Expression } from "@rilldata/web-admin/client";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
-  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
 
   interface PublicURLRow extends V1MagicAuthToken {
     dashboardTitle: string;
