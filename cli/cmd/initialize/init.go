@@ -133,7 +133,7 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// Agent instructions
-				agent, err = cmdutil.SelectPrompt("Agent instructions", []string{"claude", "cursor", "all", "none"}, "claude")
+				agent, err = cmdutil.SelectPrompt("Agent instructions", agentOptions, "claude")
 				if err != nil {
 					return err
 				}
@@ -252,6 +252,7 @@ var olapOptions = []string{
 var agentOptions = []string{
 	"claude",
 	"cursor",
+	"agentsmd",
 	"all",
 	"none",
 }
@@ -268,6 +269,15 @@ func writeAgentInstructions(ctx context.Context, ch *cmdutil.Helper, repo driver
 			return fmt.Errorf("failed to add Cursor rules: %w", err)
 		}
 		ch.Printf("Added Cursor rules in .cursor\n")
+		if err := instructions.InitAgentsMD(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add AGENTS.md files: %w", err)
+		}
+		ch.Printf("Added agent instructions in AGENTS.md and .agents\n")
+	case "agentsmd":
+		if err := instructions.InitAgentsMD(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add AGENTS.md files: %w", err)
+		}
+		ch.Printf("Added agent instructions in AGENTS.md and .agents\n")
 	case "claude":
 		if err := instructions.InitClaudeCode(ctx, repo, true); err != nil {
 			return fmt.Errorf("failed to add Claude Code files: %w", err)
