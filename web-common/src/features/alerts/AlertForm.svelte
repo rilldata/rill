@@ -287,13 +287,7 @@
   }
 </script>
 
-<form
-  autocomplete="off"
-  class="flex flex-col gap-y-3"
-  id={formId}
-  on:submit|preventDefault={submit}
-  use:enhance
->
+<form autocomplete="off" class="flex flex-col gap-y-3" id={formId} use:enhance>
   <DialogTitle
     class="px-6 py-4 text-fg-primary text-lg font-semibold leading-7 flex flex-row items-center justify-between"
   >
