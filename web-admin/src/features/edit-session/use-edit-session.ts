@@ -6,7 +6,7 @@ import {
   type V1Deployment,
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { derived, type Readable } from "svelte/store";
+import { derived } from "svelte/store";
 
 /**
  * Lists all deployments for a project (no polling).
@@ -41,49 +41,6 @@ export function useDevDeployments(org: string, project: string) {
         }
       : $query.data,
   }));
-}
-
-/**
- * Returns the first active dev deployment for the project (if any).
- * "Active" means not stopped, deleted, or errored.
- */
-export function useActiveDevDeployment(
-  org: string,
-  project: string,
-): Readable<{ data: V1Deployment | null; isLoading: boolean }> {
-  const deploymentsQuery = useDevDeployments(org, project);
-
-  return derived(deploymentsQuery, ($query) => {
-    if ($query.isLoading) {
-      return { data: null, isLoading: true };
-    }
-    const active =
-      $query.data?.deployments?.find((d) => isActiveDeployment(d)) ?? null;
-    return { data: active, isLoading: false };
-  });
-}
-
-/**
- * Returns the dev deployment for a specific branch (if any).
- */
-export function useDevDeploymentByBranch(
-  org: string,
-  project: string,
-  branch: string | undefined,
-): Readable<{ data: V1Deployment | null; isLoading: boolean }> {
-  const deploymentsQuery = useDevDeployments(org, project);
-
-  return derived(deploymentsQuery, ($query) => {
-    if ($query.isLoading) {
-      return { data: null, isLoading: true };
-    }
-    if (!branch) {
-      return { data: null, isLoading: false };
-    }
-    const found =
-      $query.data?.deployments?.find((d) => d.branch === branch) ?? null;
-    return { data: found, isLoading: false };
-  });
 }
 
 /**
