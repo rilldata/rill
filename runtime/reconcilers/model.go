@@ -293,13 +293,22 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			}
 		}
 
-		// Surface any partition or test failures as non-blocking warnings
+		// Surface partition and test failures as warnings or errors based on instance config
 		var warnings []string
 		if model.State.PartitionsHaveErrors {
-			warnings = append(warnings, warningPartitionsHaveErrors)
+			if cfg.ModelPartitionsWarnOnFailure {
+				warnings = append(warnings, warningPartitionsHaveErrors)
+			} else {
+				return runtime.ReconcileResult{Err: errors.New(warningPartitionsHaveErrors), Retrigger: refreshOn}
+			}
 		}
 		if len(model.State.TestErrors) > 0 {
-			warnings = append(warnings, newTestsWarning(model.State.TestErrors))
+			msg := newTestsWarning(model.State.TestErrors)
+			if cfg.ModelTestsWarnOnFailure {
+				warnings = append(warnings, msg)
+			} else {
+				return runtime.ReconcileResult{Err: errors.New(msg), Retrigger: refreshOn}
+			}
 		}
 		return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
 	}
@@ -446,13 +455,25 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	// Surface any partition errors, test failures, and execution warnings as non-blocking warnings
+	// Surface partition and test failures as warnings or errors based on instance config;
+	// append execution warnings regardless.
 	var warnings []string
 	if model.State.PartitionsHaveErrors {
-		warnings = append(warnings, warningPartitionsHaveErrors)
+		if cfg.ModelPartitionsWarnOnFailure {
+			warnings = append(warnings, warningPartitionsHaveErrors)
+		} else {
+			warnings = append(warnings, execRes.Warnings...)
+			return runtime.ReconcileResult{Err: errors.New(warningPartitionsHaveErrors), Warnings: warnings, Retrigger: refreshOn}
+		}
 	}
 	if len(model.State.TestErrors) > 0 {
-		warnings = append(warnings, newTestsWarning(model.State.TestErrors))
+		msg := newTestsWarning(model.State.TestErrors)
+		if cfg.ModelTestsWarnOnFailure {
+			warnings = append(warnings, msg)
+		} else {
+			warnings = append(warnings, execRes.Warnings...)
+			return runtime.ReconcileResult{Err: errors.New(msg), Warnings: warnings, Retrigger: refreshOn}
+		}
 	}
 	warnings = append(warnings, execRes.Warnings...)
 	return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}

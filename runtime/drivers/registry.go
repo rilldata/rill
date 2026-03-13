@@ -127,6 +127,10 @@ type InstanceConfig struct {
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
 	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
 	StrictModelProps bool `mapstructure:"rill.strict_model_properties"`
+	// ModelPartitionsWarnOnFailure: when true, partition execution failures are surfaced as non-blocking warnings instead of errors.
+	ModelPartitionsWarnOnFailure bool `mapstructure:"rill.model.partitions_warn_on_failure"`
+	// ModelTestsWarnOnFailure: when true, model test failures are surfaced as non-blocking warnings instead of errors.
+	ModelTestsWarnOnFailure bool `mapstructure:"rill.model.tests_warn_on_failure"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
