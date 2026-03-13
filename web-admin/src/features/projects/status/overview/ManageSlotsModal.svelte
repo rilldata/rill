@@ -217,9 +217,6 @@
               {#if tier.slots === currentSlots}
                 <span class="current-badge">current</span>
               {/if}
-              {#if minimumSlots > 0 && tier.slots === minimumSlots && tier.slots !== currentSlots}
-                <span class="detected-badge">minimum</span>
-              {/if}
             </span>
             <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
           </button>
