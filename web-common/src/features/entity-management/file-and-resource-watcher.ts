@@ -102,6 +102,14 @@ export class FileAndResourceWatcher {
     this.client.scheduleAutoClose(useShortTimeout);
   };
 
+  public disableAutoClose = () => {
+    this.client.disableAutoClose();
+  };
+
+  public enableAutoClose = () => {
+    this.client.enableAutoClose();
+  };
+
   private setupSSEEventHandlers() {
     if (!this.client) return;
 

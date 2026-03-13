@@ -59,6 +59,7 @@ export class SSEConnectionManager {
   private client = new SSEFetchClient();
 
   private autoCloseThrottler: Throttler | undefined;
+  private autoCloseDisabled = false;
   private retryAttempts = writable(0);
   private isReconnecting = false;
   private connectionCount = 0;
@@ -151,8 +152,26 @@ export class SSEConnectionManager {
    * Enable auto-close behavior to manage HTTP connection quota (browsers limit ~6 concurrent connections per host)
    */
   public scheduleAutoClose(prioritize: boolean = false) {
+    if (this.autoCloseDisabled) return;
     this.autoCloseThrottler?.cancel();
     this.autoCloseThrottler?.throttle(() => this.pause(), prioritize);
+  }
+
+  /**
+   * Disable auto-close so the SSE connection stays open indefinitely.
+   * Used by the cloud editor where a persistent connection is required
+   * to receive file-write events for save confirmation.
+   */
+  public disableAutoClose() {
+    this.autoCloseDisabled = true;
+    this.autoCloseThrottler?.cancel();
+  }
+
+  /**
+   * Re-enable auto-close (reverses disableAutoClose).
+   */
+  public enableAutoClose() {
+    this.autoCloseDisabled = false;
   }
 
   private handleError = (error: Error) => {

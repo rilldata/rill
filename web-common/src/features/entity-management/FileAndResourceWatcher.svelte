@@ -18,6 +18,8 @@
   export let host: string;
   export let instanceId: string;
   export let errorBody = "Try restarting the Rill via the CLI";
+  /** Keep the SSE connection open indefinitely (no auto-close on idle). */
+  export let keepAlive = false;
 
   // Set client synchronously so children can access it during initial render.
   // init() (in onMount) handles the async resource prefetch.
@@ -33,15 +35,23 @@
   $: status = $statusStore;
 
   onMount(() => {
+    if (keepAlive) {
+      fileAndResourceWatcher.disableAutoClose();
+    }
     void fileArtifacts.init(runtimeClient, queryClient);
 
-    return () => fileAndResourceWatcher.close(true);
+    return () => {
+      if (keepAlive) {
+        fileAndResourceWatcher.enableAutoClose();
+      }
+      fileAndResourceWatcher.close(true);
+    };
   });
 
   function handleVisibilityChange() {
     if (document.visibilityState === "visible") {
       heartbeat();
-    } else {
+    } else if (!keepAlive) {
       scheduleAutoClose(true);
     }
   }
@@ -49,7 +59,9 @@
 
 <svelte:window
   on:visibilitychange={handleVisibilityChange}
-  on:blur={() => scheduleAutoClose()}
+  on:blur={() => {
+    if (!keepAlive) scheduleAutoClose();
+  }}
   on:click={heartbeat}
   on:keydown={heartbeat}
   on:focus={heartbeat}
