@@ -70,7 +70,7 @@ The required permissions are:
 
 At this point, you have the option to connect your Rill project to a GitHub Repository.
 
-Navigating to the Status page and selecting `Connect to GitHub` will prompt you to login and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
+Navigating to the Settings page and selecting `Connect to GitHub` will prompt you to login and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
 
 :::info Check with your GitHub organization admin
 
@@ -86,7 +86,7 @@ Once the permissions to the repository have been confirmed and set, you can cont
 ![Select Repo](/img/deploy/existing-project/select-repo.png)
 
 
-Once completed, you'll see the newly updated repository on the UI of your status page!
+Once completed, you'll see the newly updated repository on the UI of your settings page!
 
 ![Finished](/img/deploy/existing-project/finished.png)
 
@@ -171,7 +171,7 @@ Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tuto
 Opening project in browser...
 ```
 
-Once completed, you will see the following the in the status page. Note that the GitHub repository is already setup!
+Once completed, you will see the following in the settings page. Note that the GitHub repository is already setup!
 
 ![Cli Upload](/img/deploy/existing-project/cli-upload.png)
 
@@ -231,7 +231,7 @@ rill deploy
 
 ### Enable Automatic deploys
 
-Like running `rill project connect-github`, you will be [prompted to create a github repository](#deploy-project-with-repository). Once created, Rill will deploy the project. You can confirm that the project has the correct repository linked from the UI on the status page.
+Like running `rill project connect-github`, you will be [prompted to create a github repository](#deploy-project-with-repository). Once created, Rill will deploy the project. You can confirm that the project has the correct repository linked from the UI on the settings page.
 
 
 ### Disable Automatic deploys
