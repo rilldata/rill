@@ -305,16 +305,20 @@ set -e
 INSTALL_DIR_EXPLICIT=false
 
 # Default to non-interactive if STDIN is not a terminal (usually indicates e.g. agent, CI, subprocess).
+# Backwards compatibility: Old versions of `rill upgrade` didn't pass STDIN through, so we stay interactive if the parent process is named `rill`.
 if ! [ -t 0 ]; then
-    # Backwards compatibility: old versions of `rill upgrade` didn't pass STDIN through.
-    # So we stay interactive if the parent process is `rill`.
+    # Get parent process name
     PARENT_NAME=""
-    if [ -f "/proc/$PPID/comm" ]; then
-        PARENT_NAME=$(cat "/proc/$PPID/comm" 2>/dev/null)
-    elif command -v ps >/dev/null 2>&1; then
-        PARENT_NAME=$(ps -o comm= -p "$PPID" 2>/dev/null)
+    if [ -n "$PPID" ]; then
+        if [ -f "/proc/$PPID/comm" ]; then
+            PARENT_NAME=$(basename "$(cat "/proc/$PPID/comm" 2>/dev/null)" 2>/dev/null)
+        elif command -v ps >/dev/null 2>&1; then
+            PARENT_NAME=$(basename "$(ps -o comm= -p "$PPID" 2>/dev/null)" 2>/dev/null)
+        fi
     fi
-    if [ "$(basename "$PARENT_NAME" 2>/dev/null)" != "rill" ]; then
+
+    # Apply the default
+    if [ "$PARENT_NAME" != "rill" ]; then
         NON_INTERACTIVE=${NON_INTERACTIVE:-true}
     fi
 fi
