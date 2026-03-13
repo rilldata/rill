@@ -8,8 +8,10 @@
   {#if value !== null && value !== undefined}
     <span
       class="pointer-events-none {value > 0
-        ? 'text-fg-secondary'
-        : 'text-destructive'}"
+        ? 'text-kpi-positive'
+        : value < 0
+          ? 'text-kpi-negative'
+          : 'text-fg-secondary'}"
     >
       {formattedValue}
     </span>
