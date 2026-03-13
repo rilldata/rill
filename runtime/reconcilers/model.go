@@ -468,7 +468,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 	if len(model.State.TestErrors) > 0 {
 		msg := newTestsWarning(model.State.TestErrors)
-		if cfg.ModelTestsWarnOnFailure {
+		if cfg.ModelTestsWarnOnFailure && msg != "" {
 			warnings = append(warnings, msg)
 		} else {
 			warnings = append(warnings, execRes.Warnings...)
@@ -2023,7 +2023,7 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 // newTestsWarning creates a warning message that summarizes the messages returned from runModelTests.
 func newTestsWarning(msgs []string) string {
 	if len(msgs) == 0 {
-		return ""
+		panic("newTestsWarning should not be called with an empty array")
 	}
 	return fmt.Sprintf("tests failed:\n%s", strings.Join(msgs, "\n"))
 }

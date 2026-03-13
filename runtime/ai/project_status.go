@@ -87,8 +87,8 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 	// Build the resources list with optional filtering
 	resources := []map[string]any{}
 	for _, r := range rs {
-		// Apply where_error filter (includes resources with warnings)
-		if args.WhereError && r.Meta.ReconcileError == "" && len(r.Meta.ReconcileWarnings) == 0 {
+		// Apply where_error filter
+		if args.WhereError && r.Meta.ReconcileError == "" {
 			continue
 		}
 
@@ -97,8 +97,8 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			continue
 		}
 
-		// If there's no kind filter, apply the default filter: only resources that have errors/warnings OR match certain kinds.
-		if args.Kind == "" && r.Meta.ReconcileError == "" && len(r.Meta.ReconcileWarnings) == 0 && !slices.Contains(projectStatusDefaultResourceKinds, r.Meta.Name.Kind) {
+		// If there's no kind filter, apply the default filter: only resources that have errors OR match certain kinds.
+		if args.Kind == "" && r.Meta.ReconcileError == "" && !slices.Contains(projectStatusDefaultResourceKinds, r.Meta.Name.Kind) {
 			continue
 		}
 

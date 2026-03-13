@@ -662,7 +662,7 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 	return nil
 }
 
-// UpdateError updates a resource's error.
+// UpdateError updates a resource's error. It also clears warnings, if any.
 // Unlike UpdateMeta and UpdateSpec, it does not cancel or enqueue reconciliation for the resource.
 func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error) error {
 	if err := c.checkRunning(); err != nil {

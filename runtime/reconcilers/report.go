@@ -383,7 +383,7 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 				return false, nil, err
 			}
 		}
-		return retry, nil, executeErr
+		return retry, warnings, executeErr
 	}
 
 	// There was an execution error. Add it to the execution history.
@@ -399,10 +399,9 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	err := r.popCurrentExecution(ctx, self, rep)
 	if err != nil {
-		return false, nil, err
+		return false, warnings, err
 	}
-
-	return retry, nil, executeErr
+	return retry, warnings, executeErr
 }
 
 // executeAllWrapped is called by executeAll, which wraps it with timeout and writing of errors to the execution history.

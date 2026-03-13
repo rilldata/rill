@@ -582,7 +582,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 				return nil, err
 			}
 		}
-		return nil, executeErr
+		return warnings, executeErr
 	}
 
 	// There was an execution error. Add it to the execution history.
@@ -604,7 +604,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		return nil, err
 	}
 
-	return nil, executeErr
+	return warnings, executeErr
 }
 
 // executeAllWrapped is called by executeAll, which wraps it with timeout and writing of errors to the execution history.
