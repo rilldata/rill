@@ -38,6 +38,14 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "init [<path>]",
 		Short: "Initialize a new Rill project",
 		Long:  long.String(),
+		Example: `  # Interactive initialization (prompts for all options)
+  rill init
+
+  # Create an empty DuckDB project with Claude agent instructions
+  rill init my-project --olap duckdb --agent claude
+
+  # Add Claude agent instructions to an existing Rill project
+  rill init ./existing-project --agent claude`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Assess what flags were set
 			numFlags := 0
