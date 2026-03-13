@@ -1,0 +1,52 @@
+---
+title: Delta Lake
+description: Read Delta Lake tables from object storage via ClickHouse
+sidebar_label: Delta Lake
+sidebar_position: 28
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" solo />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to Delta Lake tables using ClickHouse's [`deltaLake()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/deltalake).
+
+## Model Configuration
+
+### Reading from S3
+
+Create `models/delta_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM deltaLake(
+    'https://my-bucket.s3.amazonaws.com/path/to/delta/table',
+    '{{ .env.connector.s3.aws_access_key_id }}',
+    '{{ .env.connector.s3.aws_secret_access_key }}'
+  )
+```
+
+### Reading from Azure
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM deltaLake(
+    '{{ .env.connector.azure.azure_storage_connection_string }}',
+    'my-container',
+    'path/to/delta/table'
+  )
+```
+
+## Reference
+
+See the [ClickHouse Delta Lake documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/deltalake) for full syntax details and supported storage backends.

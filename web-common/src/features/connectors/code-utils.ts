@@ -29,7 +29,7 @@ import { getDocsCategory } from "../sources/modal/connector-schemas";
 
 function yamlModelTemplate(driverName: string) {
   return `# Model YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/duckdb/${driverName}
 
 type: model
 materialize: true
@@ -715,7 +715,7 @@ export async function createSqlModelFromTable(
   );
 
   // Create model
-  const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
+  const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/duckdb/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,

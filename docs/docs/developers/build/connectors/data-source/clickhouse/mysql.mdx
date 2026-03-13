@@ -1,0 +1,37 @@
+---
+title: MySQL
+description: Connect ClickHouse to data in MySQL
+sidebar_label: MySQL
+sidebar_position: 40
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to data in MySQL using ClickHouse's [`mysql()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/mysql).
+
+## Model Configuration
+
+Create `models/mysql_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM mysql(
+    '{{ .env.connector.mysql.host }}:{{ .env.connector.mysql.port }}',
+    '{{ .env.connector.mysql.database }}',
+    'my_table',
+    '{{ .env.connector.mysql.user }}',
+    '{{ .env.connector.mysql.password }}'
+  )
+```
+
+## Reference
+
+For MySQL authentication setup, see the [DuckDB MySQL connector guide](/developers/build/connectors/data-source/duckdb/mysql). The same credentials can be reused via `{{ .env.connector.mysql.<key> }}` template references.

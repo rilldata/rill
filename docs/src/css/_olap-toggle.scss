@@ -1,0 +1,124 @@
+/* =========================
+   DuckDB-Only Banner
+   ========================= */
+
+.duckdb-only-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--ifm-color-emphasis-200, #e5e7eb);
+  border-radius: 6px;
+  background: var(--ifm-color-emphasis-0, #f9fafb);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ifm-color-emphasis-700, #4b5563);
+}
+
+.duckdb-only-banner__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.duckdb-only-banner__content {
+  flex: 1;
+}
+
+.duckdb-only-banner__content a {
+  font-weight: 600;
+}
+
+[data-theme='dark'] .duckdb-only-banner {
+  border-color: var(--ifm-color-emphasis-300, #4b5563);
+  background: var(--ifm-color-emphasis-100, #1e1e1e);
+  color: var(--ifm-color-emphasis-600, #d1d5db);
+}
+
+[data-theme='dark'] .duckdb-only-banner__icon img {
+  filter: brightness(0) invert(1);
+}
+
+
+/* =========================
+   OLAP Engine Toggle
+   ========================= */
+
+.olap-toggle {
+  margin-bottom: 1.5rem;
+}
+
+// Segmented control: full-width bar, buttons pushed to the right
+.olap-toggle__tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--ifm-color-emphasis-100, #f3f4f6);
+  margin-bottom: 1.25rem;
+}
+
+.olap-toggle__tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.olap-toggle__tab:hover {
+  opacity: 0.8;
+}
+
+.olap-toggle__tab--active {
+  opacity: 1;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+// DuckDB SVG is 85x24 (3.54:1), ClickHouse is 108x18 (6:1).
+// Normalize on visual text height so the wordmarks look the same size.
+.olap-toggle__logo {
+  width: auto;
+}
+
+.olap-toggle__logo[alt="DuckDB"] {
+  height: 20px;
+}
+
+.olap-toggle__logo[alt="ClickHouse"] {
+  height: 14px;
+}
+
+.olap-toggle__content {
+  min-height: 2rem;
+}
+
+[data-theme='dark'] .olap-toggle__tabs {
+  background: var(--ifm-color-emphasis-200, #2a2a2a);
+}
+
+[data-theme='dark'] .olap-toggle__tab {
+  opacity: 0.4;
+}
+
+[data-theme='dark'] .olap-toggle__tab:hover {
+  opacity: 0.75;
+}
+
+[data-theme='dark'] .olap-toggle__tab--active {
+  opacity: 1;
+  background: var(--ifm-color-emphasis-300, #3a3a3a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .olap-toggle__logo {
+  filter: brightness(0) invert(1);
+}

@@ -1,0 +1,49 @@
+---
+title: HDFS
+description: Read data files from HDFS via ClickHouse
+sidebar_label: HDFS
+sidebar_position: 63
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" solo />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to files stored in HDFS using ClickHouse's [`hdfs()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/hdfs). Supports Parquet, CSV, JSON, and other formats.
+
+## Model Configuration
+
+Create `models/hdfs_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM hdfs(
+    'hdfs://namenode:9000/path/to/data/*.parquet',
+    'Parquet'
+  )
+```
+
+### With explicit schema
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM hdfs(
+    'hdfs://namenode:9000/path/to/data.csv',
+    'CSV',
+    'id UInt64, name String, created_at DateTime'
+  )
+```
+
+## Reference
+
+See the [ClickHouse HDFS documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/hdfs) for full syntax details and supported formats.

@@ -4,12 +4,9 @@ sidebar_label: Quickstart
 sidebar_position: 10
 ---
 import Video from '@site/src/components/Video';
+import OLAPToggle from '@site/src/components/OLAPToggle';
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
-
-:::tip Rill's Default Engine
-This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/developers/tutorials/rill-clickhouse)!
-:::
 
 ## What is Rill Developer?
 
@@ -116,8 +113,6 @@ Once your dashboard is created, you can:
 - **Drill down into data** - Click on any element to explore deeper insights
 - **Customize visualizations** - Adjust charts, filters, and layouts
 - **Export insights** - Share findings with your team
-
-
 
 ## What else can Rill do?
 

@@ -190,13 +190,32 @@ h3:has(~ div.component-icon-grid) {
   height: 2rem !important;
 }
 
+.supabase-icon {
+  height: 1.5rem !important;
+}
+
 .starrocks-icon {
   height: 1.5rem !important;
+}
+
+.deltalake-icon {
+  height: 1.5rem !important;
+}
+
+.hudi-icon {
+  height: 2rem !important;
 }
 
 .https-icon {
   font-size: 1.8rem !important;
   font-style: italic !important;
+  font-weight: 500 !important;
+  color: #181818 !important;
+  margin: 0 !important;
+}
+
+.hdfs-icon {
+  font-size: 1.8rem !important;
   font-weight: 500 !important;
   color: #181818 !important;
   margin: 0 !important;

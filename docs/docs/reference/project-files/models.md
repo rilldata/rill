@@ -595,7 +595,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/local-file) of local_file
+## Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/duckdb/local-file) of local_file
 
 ### `path`
 

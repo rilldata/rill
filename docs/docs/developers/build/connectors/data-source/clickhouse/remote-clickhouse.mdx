@@ -1,0 +1,58 @@
+---
+title: Remote ClickHouse
+description: Query data from other ClickHouse servers
+sidebar_label: Remote ClickHouse
+sidebar_position: 62
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" solo />
+
+## Overview
+
+Pull data from other ClickHouse servers into your models using ClickHouse's [`remote()` and `remoteSecure()` table functions](https://clickhouse.com/docs/en/sql-reference/table-functions/remote). This enables cross-cluster analytics and data federation across ClickHouse instances.
+
+## Model Configuration
+
+### Using `remoteSecure()` (recommended)
+
+Create `models/remote_ch_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM remoteSecure(
+    '{{ .env.connector.remote_ch.host }}:{{ .env.connector.remote_ch.port }}',
+    '{{ .env.connector.remote_ch.database }}.my_table',
+    '{{ .env.connector.remote_ch.user }}',
+    '{{ .env.connector.remote_ch.password }}'
+  )
+```
+
+### Using `remote()` (unencrypted)
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM remote(
+    '{{ .env.connector.remote_ch.host }}:{{ .env.connector.remote_ch.port }}',
+    '{{ .env.connector.remote_ch.database }}.my_table',
+    '{{ .env.connector.remote_ch.user }}',
+    '{{ .env.connector.remote_ch.password }}'
+  )
+```
+
+:::tip
+Use `remoteSecure()` for production workloads; it connects over TLS. `remote()` uses an unencrypted connection.
+:::
+
+## Reference
+
+See the [ClickHouse remote documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/remote) for full syntax details, including support for sharding and replication patterns.

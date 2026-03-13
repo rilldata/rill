@@ -1,0 +1,37 @@
+---
+title: Supabase
+description: Connect ClickHouse to data in Supabase
+sidebar_label: Supabase
+sidebar_position: 52
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to data in Supabase. Since Supabase uses PostgreSQL under the hood, ClickHouse connects via its [`postgresql()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/postgresql).
+
+## Model Configuration
+
+Create `models/supabase_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM postgresql(
+    '{{ .env.connector.supabase.host }}:{{ .env.connector.supabase.port }}',
+    '{{ .env.connector.supabase.dbname }}',
+    'my_table',
+    '{{ .env.connector.supabase.user }}',
+    '{{ .env.connector.supabase.password }}'
+  )
+```
+
+## Reference
+
+For Supabase authentication setup, see the [DuckDB Supabase connector guide](/developers/build/connectors/data-source/duckdb/supabase). The same credentials can be reused via `{{ .env.connector.supabase.<key> }}` template references.

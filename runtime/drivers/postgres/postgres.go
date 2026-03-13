@@ -29,7 +29,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/postgres",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/duckdb/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -94,7 +94,7 @@ var spec = drivers.Spec{
 var supabaseSpec = drivers.Spec{
 	DisplayName: "Supabase",
 	Description: "Connect to Supabase.",
-	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/supabase",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/duckdb/supabase",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",

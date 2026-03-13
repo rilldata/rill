@@ -1,0 +1,37 @@
+---
+title: Apache Hudi
+description: Read Hudi tables from object storage via ClickHouse
+sidebar_label: Apache Hudi
+sidebar_position: 29
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" solo />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to Apache Hudi tables using ClickHouse's [`hudi()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/hudi).
+
+## Model Configuration
+
+### Reading from S3
+
+Create `models/hudi_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM hudi(
+    'https://my-bucket.s3.amazonaws.com/path/to/hudi/table',
+    '{{ .env.connector.s3.aws_access_key_id }}',
+    '{{ .env.connector.s3.aws_secret_access_key }}'
+  )
+```
+
+## Reference
+
+See the [ClickHouse Hudi documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/hudi) for full syntax details.

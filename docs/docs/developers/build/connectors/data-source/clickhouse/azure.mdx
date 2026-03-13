@@ -1,0 +1,52 @@
+---
+title: Azure Blob Storage
+description: Connect ClickHouse to data in Azure Blob Storage
+sidebar_label: Azure Blob Storage
+sidebar_position: 05
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to data stored in Azure Blob Storage using ClickHouse's [`azureBlobStorage()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/azureBlobStorage).
+
+## Model Configuration
+
+Create `models/azure_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM azureBlobStorage(
+    '{{ .env.connector.azure.azure_storage_connection_string }}',
+    'my-container',
+    'path/to/data/*.parquet',
+    'Parquet'
+  )
+```
+
+## Alternative: Account Key Authentication
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM azureBlobStorage(
+    'DefaultEndpointsProtocol=https;AccountName={{ .env.connector.azure.azure_storage_account }};AccountKey={{ .env.connector.azure.azure_storage_key }};EndpointSuffix=core.windows.net',
+    'my-container',
+    'path/to/data/*.parquet',
+    'Parquet'
+  )
+```
+
+## Reference
+
+For Azure authentication setup, see the [DuckDB Azure connector guide](/developers/build/connectors/data-source/duckdb/azure). The same credentials can be reused via `{{ .env.connector.azure.<key> }}` template references.

@@ -36,7 +36,7 @@ This setup is designed for local development and testing only. It will not deplo
 - If your DuckDB file is outside the project folder, it cannot be bundled for deployment
 - Files larger than 100MB will fail to deploy due to upload size limits
 
-For production deployments, consider using our [external DuckDB data source](/developers/build/connectors/data-source/duckdb) to ingest your data instead.
+For production deployments, consider using our [external DuckDB data source](/developers/build/connectors/data-source/duckdb/duckdb) to ingest your data instead.
 
 :::
 

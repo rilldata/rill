@@ -1,0 +1,40 @@
+---
+title: Google Cloud Storage (GCS)
+description: Connect ClickHouse to data in GCS
+sidebar_label: GCS
+sidebar_position: 15
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to data stored in Google Cloud Storage. ClickHouse accesses GCS via its S3-compatible API, so you must use **HMAC keys** (not JSON service account credentials).
+
+## Model Configuration
+
+Create `models/gcs_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM s3(
+    'https://storage.googleapis.com/my-bucket/path/to/data/*.parquet',
+    '{{ .env.connector.gcs.key_id }}',
+    '{{ .env.connector.gcs.secret }}',
+    'Parquet'
+  )
+```
+
+:::warning HMAC Keys Required
+ClickHouse connects to GCS via the S3-compatible API. You must configure your GCS connector with HMAC keys, not a JSON service account credential. See [how to create HMAC keys](/developers/build/connectors/data-source/duckdb/gcs#how-to-create-hmac-keys-for-gcs).
+:::
+
+## Reference
+
+For GCS authentication setup, see the [DuckDB GCS connector guide](/developers/build/connectors/data-source/duckdb/gcs). The same HMAC credentials can be reused via `{{ .env.connector.gcs.<key> }}` template references.

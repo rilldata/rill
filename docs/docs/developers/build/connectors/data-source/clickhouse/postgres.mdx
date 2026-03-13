@@ -1,0 +1,37 @@
+---
+title: PostgreSQL
+description: Connect ClickHouse to data in PostgreSQL
+sidebar_label: PostgreSQL
+sidebar_position: 50
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to data in PostgreSQL using ClickHouse's [`postgresql()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/postgresql).
+
+## Model Configuration
+
+Create `models/postgres_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM postgresql(
+    '{{ .env.connector.postgresql.host }}:{{ .env.connector.postgresql.port }}',
+    '{{ .env.connector.postgresql.dbname }}',
+    'my_table',
+    '{{ .env.connector.postgresql.user }}',
+    '{{ .env.connector.postgresql.password }}'
+  )
+```
+
+## Reference
+
+For PostgreSQL authentication setup, see the [DuckDB PostgreSQL connector guide](/developers/build/connectors/data-source/duckdb/postgres). The same credentials can be reused via `{{ .env.connector.postgresql.<key> }}` template references.

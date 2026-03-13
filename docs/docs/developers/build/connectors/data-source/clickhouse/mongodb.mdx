@@ -1,0 +1,42 @@
+---
+title: MongoDB
+description: Connect ClickHouse to data in MongoDB
+sidebar_label: MongoDB
+sidebar_position: 41
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" solo />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to data in MongoDB using ClickHouse's [`mongodb()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/mongodb).
+
+## Model Configuration
+
+Create `models/mongo_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM mongodb(
+    '{{ .env.connector.mongodb.host }}:{{ .env.connector.mongodb.port }}',
+    '{{ .env.connector.mongodb.database }}',
+    'my_collection',
+    '{{ .env.connector.mongodb.user }}',
+    '{{ .env.connector.mongodb.password }}',
+    'id Int64, name String, created_at DateTime'
+  )
+```
+
+:::info
+MongoDB is schema-less, so you must explicitly define the column names and types in the last argument. ClickHouse will map BSON fields to the specified types.
+:::
+
+## Reference
+
+See the [ClickHouse MongoDB documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/mongodb) for full syntax details and type mapping.

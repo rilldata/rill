@@ -660,43 +660,43 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/athena',
-            to: '/developers/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/duckdb/athena',
           },
           {
             from: '/build/connectors/data-source/azure',
-            to: '/developers/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/duckdb/azure',
           },
           {
             from: '/build/connectors/data-source/bigquery',
-            to: '/developers/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/duckdb/bigquery',
           },
           {
             from: '/build/connectors/data-source/duckdb',
-            to: '/developers/build/connectors/data-source/duckdb',
+            to: '/developers/build/connectors/data-source/duckdb/duckdb',
           },
           {
             from: '/build/connectors/data-source/gcs',
-            to: '/developers/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/duckdb/gcs',
           },
           {
             from: '/build/connectors/data-source/googlesheets',
-            to: '/developers/build/connectors/data-source/googlesheets',
+            to: '/developers/build/connectors/data-source/duckdb/googlesheets',
           },
           {
             from: '/build/connectors/data-source/https',
-            to: '/developers/build/connectors/data-source/https',
+            to: '/developers/build/connectors/data-source/duckdb/https',
           },
           {
             from: '/build/connectors/data-source/kafka',
-            to: '/developers/build/connectors/data-source/kafka',
+            to: '/developers/build/connectors/data-source/duckdb/kafka',
           },
           {
             from: '/build/connectors/data-source/local-file',
-            to: '/developers/build/connectors/data-source/local-file',
+            to: '/developers/build/connectors/data-source/duckdb/local-file',
           },
           {
             from: '/build/connectors/data-source/mysql',
-            to: '/developers/build/connectors/data-source/mysql',
+            to: '/developers/build/connectors/data-source/duckdb/mysql',
           },
           {
             from: '/build/connectors/data-source/openai',
@@ -704,19 +704,19 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/postgres',
-            to: '/developers/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/duckdb/postgres',
           },
           {
             from: '/build/connectors/data-source/redshift',
-            to: '/developers/build/connectors/data-source/redshift',
+            to: '/developers/build/connectors/data-source/duckdb/redshift',
           },
           {
             from: '/build/connectors/data-source/s3',
-            to: '/developers/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/duckdb/s3',
           },
           {
             from: '/build/connectors/data-source/salesforce',
-            to: '/developers/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/duckdb/salesforce',
           },
           {
             from: '/build/connectors/data-source/slack',
@@ -724,11 +724,84 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/snowflake',
-            to: '/developers/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/duckdb/snowflake',
           },
           {
             from: '/build/connectors/data-source/sqlite',
-            to: '/developers/build/connectors/data-source/sqlite',
+            to: '/developers/build/connectors/data-source/duckdb/sqlite',
+          },
+          // Redirects from old /developers/ data-source paths to new /duckdb/ subdir
+          {
+            from: '/developers/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/duckdb/athena',
+          },
+          {
+            from: '/developers/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/duckdb/azure',
+          },
+          {
+            from: '/developers/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/duckdb/bigquery',
+          },
+          {
+            from: '/developers/build/connectors/data-source/duckdb',
+            to: '/developers/build/connectors/data-source/duckdb/duckdb',
+          },
+          {
+            from: '/developers/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/duckdb/gcs',
+          },
+          {
+            from: '/developers/build/connectors/data-source/googlesheets',
+            to: '/developers/build/connectors/data-source/duckdb/googlesheets',
+          },
+          {
+            from: '/developers/build/connectors/data-source/https',
+            to: '/developers/build/connectors/data-source/duckdb/https',
+          },
+          {
+            from: '/developers/build/connectors/data-source/iceberg',
+            to: '/developers/build/connectors/data-source/duckdb/iceberg',
+          },
+          {
+            from: '/developers/build/connectors/data-source/kafka',
+            to: '/developers/build/connectors/data-source/duckdb/kafka',
+          },
+          {
+            from: '/developers/build/connectors/data-source/local-file',
+            to: '/developers/build/connectors/data-source/duckdb/local-file',
+          },
+          {
+            from: '/developers/build/connectors/data-source/mysql',
+            to: '/developers/build/connectors/data-source/duckdb/mysql',
+          },
+          {
+            from: '/developers/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/duckdb/postgres',
+          },
+          {
+            from: '/developers/build/connectors/data-source/redshift',
+            to: '/developers/build/connectors/data-source/duckdb/redshift',
+          },
+          {
+            from: '/developers/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/duckdb/s3',
+          },
+          {
+            from: '/developers/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/duckdb/salesforce',
+          },
+          {
+            from: '/developers/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/duckdb/snowflake',
+          },
+          {
+            from: '/developers/build/connectors/data-source/sqlite',
+            to: '/developers/build/connectors/data-source/duckdb/sqlite',
+          },
+          {
+            from: '/developers/build/connectors/data-source/supabase',
+            to: '/developers/build/connectors/data-source/duckdb/supabase',
           },
           {
             from: '/build/connectors/olap',
@@ -842,55 +915,55 @@ const config = {
           },
           {
             from: '/build/connect/data-source/s3',
-            to: '/developers/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/duckdb/s3',
           },
           {
             from: '/build/connect/data-source/gcs',
-            to: '/developers/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/duckdb/gcs',
           },
           {
             from: '/build/connect/data-source/azure',
-            to: '/developers/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/duckdb/azure',
           },
           {
             from: '/build/connect/data-source/athena',
-            to: '/developers/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/duckdb/athena',
           },
           {
             from: '/build/connect/data-source/bigquery',
-            to: '/developers/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/duckdb/bigquery',
           },
           {
             from: '/build/connect/data-source/snowflake',
-            to: '/developers/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/duckdb/snowflake',
           },
           {
             from: '/build/connect/data-source/redshift',
-            to: '/developers/build/connectors/data-source/redshift',
+            to: '/developers/build/connectors/data-source/duckdb/redshift',
           },
           {
             from: '/build/connect/data-source/postgres',
-            to: '/developers/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/duckdb/postgres',
           },
           {
             from: '/build/connect/data-source/mysql',
-            to: '/developers/build/connectors/data-source/mysql',
+            to: '/developers/build/connectors/data-source/duckdb/mysql',
           },
           {
             from: '/build/connect/data-source/sqlite',
-            to: '/developers/build/connectors/data-source/sqlite',
+            to: '/developers/build/connectors/data-source/duckdb/sqlite',
           },
           {
             from: '/build/connect/data-source/salesforce',
-            to: '/developers/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/duckdb/salesforce',
           },
           {
             from: '/build/connect/data-source/duckdb',
-            to: '/developers/build/connectors/data-source/duckdb',
+            to: '/developers/build/connectors/data-source/duckdb/duckdb',
           },
           {
             from: '/build/connect/data-source/googlesheets',
-            to: '/developers/build/connectors/data-source/googlesheets',
+            to: '/developers/build/connectors/data-source/duckdb/googlesheets',
           },
           {
             from: '/build/connect/data-source/slack',
@@ -898,15 +971,15 @@ const config = {
           },
           {
             from: '/build/connect/data-source/local-file',
-            to: '/developers/build/connectors/data-source/local-file',
+            to: '/developers/build/connectors/data-source/duckdb/local-file',
           },
           {
             from: '/build/connect/data-source/https',
-            to: '/developers/build/connectors/data-source/https',
+            to: '/developers/build/connectors/data-source/duckdb/https',
           },
           {
             from: '/build/connect/data-source/kafka',
-            to: '/developers/build/connectors/data-source/kafka',
+            to: '/developers/build/connectors/data-source/duckdb/kafka',
           },
           {
             from: '/build/connect/data-source/openai',
@@ -961,55 +1034,55 @@ const config = {
           },
           {
             from: '/connect/data-source/s3',
-            to: '/developers/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/duckdb/s3',
           },
           {
             from: '/connect/data-source/gcs',
-            to: '/developers/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/duckdb/gcs',
           },
           {
             from: '/connect/data-source/azure',
-            to: '/developers/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/duckdb/azure',
           },
           {
             from: '/connect/data-source/athena',
-            to: '/developers/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/duckdb/athena',
           },
           {
             from: '/connect/data-source/bigquery',
-            to: '/developers/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/duckdb/bigquery',
           },
           {
             from: '/connect/data-source/snowflake',
-            to: '/developers/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/duckdb/snowflake',
           },
           {
             from: '/connect/data-source/redshift',
-            to: '/developers/build/connectors/data-source/redshift',
+            to: '/developers/build/connectors/data-source/duckdb/redshift',
           },
           {
             from: '/connect/data-source/postgres',
-            to: '/developers/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/duckdb/postgres',
           },
           {
             from: '/connect/data-source/mysql',
-            to: '/developers/build/connectors/data-source/mysql',
+            to: '/developers/build/connectors/data-source/duckdb/mysql',
           },
           {
             from: '/connect/data-source/sqlite',
-            to: '/developers/build/connectors/data-source/sqlite',
+            to: '/developers/build/connectors/data-source/duckdb/sqlite',
           },
           {
             from: '/connect/data-source/salesforce',
-            to: '/developers/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/duckdb/salesforce',
           },
           {
             from: '/connect/data-source/duckdb',
-            to: '/developers/build/connectors/data-source/duckdb',
+            to: '/developers/build/connectors/data-source/duckdb/duckdb',
           },
           {
             from: '/connect/data-source/googlesheets',
-            to: '/developers/build/connectors/data-source/googlesheets',
+            to: '/developers/build/connectors/data-source/duckdb/googlesheets',
           },
           {
             from: '/connect/data-source/slack',
@@ -1017,15 +1090,15 @@ const config = {
           },
           {
             from: '/connect/data-source/local-file',
-            to: '/developers/build/connectors/data-source/local-file',
+            to: '/developers/build/connectors/data-source/duckdb/local-file',
           },
           {
             from: '/connect/data-source/https',
-            to: '/developers/build/connectors/data-source/https',
+            to: '/developers/build/connectors/data-source/duckdb/https',
           },
           {
             from: '/connect/data-source/kafka',
-            to: '/developers/build/connectors/data-source/kafka',
+            to: '/developers/build/connectors/data-source/duckdb/kafka',
           },
           {
             from: '/connect/data-source/openai',
@@ -1088,35 +1161,35 @@ const config = {
           },
           {
             from: '/deploy/credentials/s3',
-            to: '/developers/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/duckdb/s3',
           },
           {
             from: '/deploy/credentials/gcs',
-            to: '/developers/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/duckdb/gcs',
           },
           {
             from: '/deploy/credentials/azure',
-            to: '/developers/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/duckdb/azure',
           },
           {
             from: '/deploy/credentials/athena',
-            to: '/developers/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/duckdb/athena',
           },
           {
             from: '/deploy/credentials/bigquery',
-            to: '/developers/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/duckdb/bigquery',
           },
           {
             from: '/deploy/credentials/snowflake',
-            to: '/developers/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/duckdb/snowflake',
           },
           {
             from: '/deploy/credentials/postgres',
-            to: '/developers/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/duckdb/postgres',
           },
           {
             from: '/deploy/credentials/salesforce',
-            to: '/developers/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/duckdb/salesforce',
           },
           {
             from: '/deploy/credentials/motherduck',
@@ -1549,51 +1622,51 @@ const config = {
           },
           {
             from: '/reference/connectors/gcs',
-            to: '/developers/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/duckdb/gcs',
           },
           {
             from: '/reference/connectors/azure',
-            to: '/developers/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/duckdb/azure',
           },
           {
             from: '/reference/connectors/s3',
-            to: '/developers/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/duckdb/s3',
           },
           {
             from: '/reference/connectors/snowflake',
-            to: '/developers/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/duckdb/snowflake',
           },
           {
             from: '/reference/connectors/bigquery',
-            to: '/developers/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/duckdb/bigquery',
           },
           {
             from: '/reference/connectors/redshift',
-            to: '/developers/build/connectors/data-source/redshift',
+            to: '/developers/build/connectors/data-source/duckdb/redshift',
           },
           {
             from: '/reference/connectors/postgres',
-            to: '/developers/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/duckdb/postgres',
           },
           {
             from: '/reference/connectors/athena',
-            to: '/developers/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/duckdb/athena',
           },
           {
             from: '/reference/connectors/mysql',
-            to: '/developers/build/connectors/data-source/mysql',
+            to: '/developers/build/connectors/data-source/duckdb/mysql',
           },
           {
             from: '/reference/connectors/sqlite',
-            to: '/developers/build/connectors/data-source/sqlite',
+            to: '/developers/build/connectors/data-source/duckdb/sqlite',
           },
           {
             from: '/reference/connectors/salesforce',
-            to: '/developers/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/duckdb/salesforce',
           },
           {
             from: '/reference/connectors/sheets',
-            to: '/developers/build/connectors/data-source/googlesheets',
+            to: '/developers/build/connectors/data-source/duckdb/googlesheets',
           },
           {
             from: '/reference/connectors/slack',
@@ -1601,11 +1674,11 @@ const config = {
           },
           {
             from: '/reference/connectors/local-file',
-            to: '/developers/build/connectors/data-source/local-file',
+            to: '/developers/build/connectors/data-source/duckdb/local-file',
           },
           {
             from: '/reference/connectors/https',
-            to: '/developers/build/connectors/data-source/https',
+            to: '/developers/build/connectors/data-source/duckdb/https',
           },
 
           // {

@@ -1,0 +1,53 @@
+---
+title: HTTPS
+description: Connect ClickHouse to remote data via HTTP/HTTPS
+sidebar_label: HTTPS
+sidebar_position: 25
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to remote data sources via HTTP/HTTPS using ClickHouse's [`url()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/url).
+
+## Model Configuration
+
+Create `models/https_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM url(
+    'https://example.com/path/to/data.csv',
+    'CSVWithNames'
+  )
+```
+
+### With Authentication Headers
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM url(
+    'https://api.example.com/v1/data/export.parquet',
+    'Parquet',
+    headers('Authorization' = 'Bearer {{ .env.connector.https.token }}')
+  )
+```
+
+## Supported Formats
+
+ClickHouse's `url()` function supports various formats including `CSVWithNames`, `JSONEachRow`, `Parquet`, `TSVWithNames`, and more. See the [ClickHouse formats documentation](https://clickhouse.com/docs/en/interfaces/formats) for the full list.
+
+## Reference
+
+For general HTTPS authentication setup, see the [DuckDB HTTPS connector guide](/developers/build/connectors/data-source/duckdb/https).

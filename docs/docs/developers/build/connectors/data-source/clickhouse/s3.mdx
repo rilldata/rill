@@ -1,0 +1,53 @@
+---
+title: Amazon S3
+description: Connect ClickHouse to data in S3
+sidebar_label: S3
+sidebar_position: 60
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+Connect your ClickHouse OLAP engine to data stored in Amazon S3 using ClickHouse's [`s3()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/s3).
+
+## Model Configuration
+
+Create `models/s3_data.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM s3(
+    'https://my-bucket.s3.amazonaws.com/path/to/data/*.parquet',
+    '{{ .env.connector.s3.aws_access_key_id }}',
+    '{{ .env.connector.s3.aws_secret_access_key }}',
+    'Parquet'
+  )
+```
+
+:::info
+ClickHouse uses the `s3()` table function with HTTPS-style URLs rather than `s3://` URIs. See the [ClickHouse S3 documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/s3) for full syntax.
+:::
+
+## Path Patterns
+
+```sql
+-- Single file
+SELECT * FROM s3('https://my-bucket.s3.amazonaws.com/data/file.parquet', ...)
+
+-- Wildcard patterns
+SELECT * FROM s3('https://my-bucket.s3.amazonaws.com/data/*.parquet', ...)
+
+-- Glob patterns
+SELECT * FROM s3('https://my-bucket.s3.amazonaws.com/data/{2024,2025}/*.parquet', ...)
+```
+
+## Reference
+
+For general S3 authentication setup, see the [DuckDB S3 connector guide](/developers/build/connectors/data-source/duckdb/s3) — the same credentials can be reused via `{{ .env.connector.s3.<key> }}` template references.
