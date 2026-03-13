@@ -32,10 +32,12 @@
   }
 </script>
 
-<div class="flex items-center justify-center h-full text-fg-muted">
+<div class="flex items-center justify-center h-full text-fg-muted text-sm">
   {#if $filesQuery.isLoading}
     Loading project files...
   {:else if !$filesQuery.data?.length}
     No files in this project
+  {:else}
+    Select a file from the sidebar to start editing
   {/if}
 </div>

@@ -14,6 +14,11 @@
       hasPermission: true,
     },
     {
+      label: "Deployments",
+      route: "/deployments",
+      hasPermission: true,
+    },
+    {
       label: "Resources",
       route: "/resources",
       hasPermission: true,
@@ -26,11 +31,6 @@
     {
       label: "Logs",
       route: "/logs",
-      hasPermission: true,
-    },
-    {
-      label: "Dev Environments",
-      route: "/dev",
       hasPermission: true,
     },
     {

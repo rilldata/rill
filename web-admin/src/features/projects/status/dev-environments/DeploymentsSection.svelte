@@ -4,6 +4,8 @@
     V1DeploymentStatus,
     createAdminServiceDeleteDeployment,
     createAdminServiceGetCurrentUser,
+    createAdminServiceGetProject,
+    type V1Deployment,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
@@ -12,7 +14,8 @@
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
-    useDevDeployments,
+    useAllDeployments,
+    isActiveDeployment,
     invalidateDeployments,
   } from "@rilldata/web-admin/features/edit-session/use-edit-session";
   import {
@@ -31,6 +34,7 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { Progress } from "@rilldata/web-common/components/progress";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EyeIcon, PlayIcon, Trash2Icon } from "lucide-svelte";
@@ -40,31 +44,69 @@
   export let project: string;
 
   const user = createAdminServiceGetCurrentUser();
-  const devDeployments = useDevDeployments(organization, project);
+  const allDeployments = useAllDeployments(organization, project);
   const deleteMutation = createAdminServiceDeleteDeployment();
+
+  $: projectQuery = createAdminServiceGetProject(organization, project);
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
   $: currentUserId = $user.data?.user?.id;
-  $: deployments = $devDeployments.data?.deployments ?? [];
-  $: visibleDeployments = deployments
-    .filter(
-      (d) =>
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
-        !deletedIds.has(d.id ?? ""),
-    )
-    .sort((a, b) => (b.updatedOn ?? "").localeCompare(a.updatedOn ?? ""));
+  $: rawDeployments = $allDeployments.data?.deployments ?? [];
+
+  // Slot quotas (project-level)
+  $: prodSlots = parseInt($projectQuery.data?.project?.prodSlots ?? "0") || 0;
+  $: devSlots = parseInt($projectQuery.data?.project?.devSlots ?? "0") || 0;
+
+  // Deduplicate by branch: keep only the most recently updated deployment per branch.
+  // This mirrors BranchSelector logic and hides stale/historical deployments.
+  $: deduped = (() => {
+    const byBranch = new Map<string, V1Deployment>();
+    for (const d of rawDeployments) {
+      if (
+        d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED ||
+        d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING ||
+        deletedIds.has(d.id ?? "")
+      )
+        continue;
+      const key = d.branch ?? "";
+      const existing = byBranch.get(key);
+      if (!existing || (d.updatedOn ?? "") > (existing.updatedOn ?? "")) {
+        byBranch.set(key, d);
+      }
+    }
+    return [...byBranch.values()];
+  })();
+
+  // Sort: production first, then by updatedOn desc
+  $: visibleDeployments = [...deduped].sort((a, b) => {
+    const aIsProd = a.environment === "prod";
+    const bIsProd = b.environment === "prod";
+    if (aIsProd && !bIsProd) return -1;
+    if (!aIsProd && bIsProd) return 1;
+    return (b.updatedOn ?? "").localeCompare(a.updatedOn ?? "");
+  });
+
+  // Slot usage per environment type
+  $: activeProd = visibleDeployments.filter(
+    (d) => d.environment === "prod" && isActiveDeployment(d),
+  );
+  $: activeDev = visibleDeployments.filter(
+    (d) => d.environment !== "prod" && isActiveDeployment(d),
+  );
+  $: prodSlotsUsed = activeProd.length * prodSlots;
+  $: devSlotsUsed = activeDev.length * devSlots;
+
+  function isProd(d: V1Deployment): boolean {
+    return d.environment === "prod";
+  }
 
   function isOwnDeployment(ownerUserId: string | undefined): boolean {
     return !!currentUserId && ownerUserId === currentUserId;
   }
 
-  function isActive(status: V1DeploymentStatus | undefined): boolean {
-    return (
-      status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
-      status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-      status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
-    );
+  function deploymentSlots(d: V1Deployment): string {
+    if (!isActiveDeployment(d)) return "—";
+    return String(isProd(d) ? prodSlots : devSlots);
   }
 
   function formatDate(dateStr: string | undefined): string {
@@ -113,20 +155,18 @@
     deletingIds = deletingIds;
     try {
       await $deleteMutation.mutateAsync({ deploymentId });
-      // Optimistically hide the row; the server-side status transition is async
       deletedIds.add(deploymentId);
       deletedIds = deletedIds;
       void invalidateDeployments(organization, project);
 
-      // If we deleted the branch we're currently viewing, navigate to production
       if (branch && branch === activeBranch) {
         requestSkipBranchInjection();
-        window.location.href = `/${organization}/${project}/-/status/dev`;
+        window.location.href = `/${organization}/${project}/-/status/deployments`;
       }
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to delete environment: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to delete deployment: ${getRpcErrorMessage(err as any)}`,
       });
     } finally {
       deletingIds.delete(deploymentId);
@@ -135,27 +175,55 @@
   }
 </script>
 
-<section class="flex flex-col gap-y-4">
-  <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Dev Environments</h2>
+<section class="flex flex-col gap-y-5">
+  <h2 class="text-lg font-medium">Deployments</h2>
+
+  <div class="slot-cards">
+    <div class="slot-card">
+      <div class="slot-card-header">
+        <span class="slot-card-label">Production</span>
+        <span class="slot-card-value">{prodSlotsUsed} / {prodSlots}</span>
+      </div>
+      <Progress
+        value={prodSlotsUsed}
+        max={Math.max(prodSlots, 1)}
+        class="h-1.5"
+      />
+      <span class="slot-card-sub">slots</span>
+    </div>
+    <div class="slot-card">
+      <div class="slot-card-header">
+        <span class="slot-card-label">Dev branches</span>
+        <span class="slot-card-value">
+          {devSlotsUsed} / {devSlots * Math.max(activeDev.length, 1)}
+        </span>
+      </div>
+      <Progress
+        value={devSlotsUsed}
+        max={Math.max(devSlots * Math.max(activeDev.length, 1), 1)}
+        class="h-1.5"
+      />
+      <span class="slot-card-sub">
+        slots ({activeDev.length}
+        {activeDev.length === 1 ? "branch" : "branches"} &times; {devSlots} slots
+        each)
+      </span>
+    </div>
   </div>
 
-  {#if $devDeployments.isLoading}
+  {#if $allDeployments.isLoading}
     <div class="empty-container">
       <DelayedSpinner isLoading={true} size="20px" />
-      <span class="text-sm text-fg-secondary">Loading environments</span>
+      <span class="text-sm text-fg-secondary">Loading deployments</span>
     </div>
-  {:else if $devDeployments.isError}
+  {:else if $allDeployments.isError}
     <div class="text-red-500 text-sm">
-      Error loading environments: {$devDeployments.error?.message}
+      Error loading deployments: {$allDeployments.error?.message}
     </div>
   {:else if visibleDeployments.length === 0}
     <div class="empty-container">
       <span class="text-fg-secondary font-semibold text-sm">
-        No dev environments
-      </span>
-      <span class="text-fg-muted text-sm">
-        Use the "Edit" button in the header to start editing this project.
+        No deployments
       </span>
     </div>
   {:else}
@@ -168,13 +236,16 @@
           Status
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
+          Slots
+        </div>
+        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
           Last updated
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm"></div>
       </div>
       {#each visibleDeployments as deployment (deployment.id)}
+        {@const prod = isProd(deployment)}
         {@const own = isOwnDeployment(deployment.ownerUserId)}
-        {@const active = isActive(deployment.status)}
         {@const deleting = deletingIds.has(deployment.id ?? "")}
         {@const id = deployment.id ?? ""}
         <div class="data-row">
@@ -182,7 +253,9 @@
             <span class="font-mono text-xs truncate">
               {deployment.branch || "main"}
             </span>
-            {#if own}
+            {#if prod}
+              <span class="prod-badge">production</span>
+            {:else if own}
               <span class="own-badge">You</span>
             {/if}
           </div>
@@ -197,6 +270,9 @@
               deployment.status ??
                 V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
             )}
+          </div>
+          <div class="pl-4 flex items-center text-sm text-fg-secondary">
+            {deploymentSlots(deployment)}
           </div>
           <div class="pl-4 flex items-center text-sm text-fg-secondary">
             {formatDate(deployment.updatedOn)}
@@ -214,7 +290,7 @@
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start">
-                {#if own}
+                {#if !prod && own}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
                     href={editUrl(deployment.branch)}
@@ -228,26 +304,30 @@
                 {/if}
                 <DropdownMenu.Item
                   class="font-normal flex items-center"
-                  href={previewUrl(deployment.branch)}
+                  href={prod
+                    ? `/${organization}/${project}`
+                    : previewUrl(deployment.branch)}
                   on:click={handleNavClick}
                 >
                   <div class="flex items-center">
                     <EyeIcon size="12px" />
-                    <span class="ml-2">Preview</span>
+                    <span class="ml-2">{prod ? "View" : "Preview"}</span>
                   </div>
                 </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  class="font-normal flex items-center"
-                  disabled={deleting}
-                  on:click={() => requestDelete(id, deployment.branch)}
-                >
-                  <div class="flex items-center">
-                    <Trash2Icon size="12px" />
-                    <span class="ml-2"
-                      >{deleting ? "Deleting..." : "Delete"}</span
-                    >
-                  </div>
-                </DropdownMenu.Item>
+                {#if !prod}
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    disabled={deleting}
+                    on:click={() => requestDelete(id, deployment.branch)}
+                  >
+                    <div class="flex items-center">
+                      <Trash2Icon size="12px" />
+                      <span class="ml-2"
+                        >{deleting ? "Deleting..." : "Delete"}</span
+                      >
+                    </div>
+                  </DropdownMenu.Item>
+                {/if}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
           </div>
@@ -263,11 +343,10 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this dev environment?</AlertDialogTitle>
+      <AlertDialogTitle>Delete this deployment?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          The dev environment on branch <span
-            class="font-mono text-xs font-medium"
+          The deployment on branch <span class="font-mono text-xs font-medium"
             >{pendingDeleteBranch || "main"}</span
           > will be deleted. Any unpushed changes will be lost.
         </div>
@@ -292,6 +371,30 @@
     @apply border border-border rounded-sm py-10 flex flex-col items-center gap-y-2;
   }
 
+  .slot-cards {
+    @apply grid grid-cols-2 gap-4;
+  }
+
+  .slot-card {
+    @apply flex flex-col gap-y-1.5 border border-border rounded-sm p-4;
+  }
+
+  .slot-card-header {
+    @apply flex items-center justify-between;
+  }
+
+  .slot-card-label {
+    @apply text-sm font-semibold text-fg-primary;
+  }
+
+  .slot-card-value {
+    @apply text-sm font-medium text-fg-primary;
+  }
+
+  .slot-card-sub {
+    @apply text-xs text-fg-muted;
+  }
+
   .table-wrapper {
     @apply flex flex-col border rounded-sm overflow-hidden;
   }
@@ -300,16 +403,20 @@
     @apply w-full bg-surface-subtle;
     display: grid;
     grid-template-columns:
-      minmax(150px, 3fr) minmax(100px, 2fr) minmax(120px, 2fr)
-      56px;
+      minmax(150px, 3fr) minmax(100px, 2fr) minmax(60px, 1fr)
+      minmax(120px, 2fr) 56px;
   }
 
   .data-row {
     @apply w-full py-3 border-t border-gray-200;
     display: grid;
     grid-template-columns:
-      minmax(150px, 3fr) minmax(100px, 2fr) minmax(120px, 2fr)
-      56px;
+      minmax(150px, 3fr) minmax(100px, 2fr) minmax(60px, 1fr)
+      minmax(120px, 2fr) 56px;
+  }
+
+  .prod-badge {
+    @apply shrink-0 text-[10px] text-fg-muted;
   }
 
   .own-badge {

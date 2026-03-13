@@ -2185,6 +2185,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Provisioner:         p.Provisioner,
 		ProdVersion:         p.ProdVersion,
 		ProdSlots:           int64(p.ProdSlots),
+		DevSlots:            int64(p.DevSlots),
 		PrimaryBranch:       p.PrimaryBranch,
 		Subpath:             p.Subpath,
 		GitRemote:           safeStr(p.GitRemote),
