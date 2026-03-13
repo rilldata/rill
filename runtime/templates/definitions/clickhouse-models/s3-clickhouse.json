@@ -1,0 +1,57 @@
+{
+  "name": "s3-clickhouse",
+  "display_name": "S3",
+  "description": "Read S3 files into ClickHouse using table functions",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
+  "driver": "s3",
+  "olap": "clickhouse",
+  "tags": ["s3", "aws", "object-storage", "clickhouse", "source"],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "source_only",
+    "x-icon": "AmazonS3",
+    "x-small-icon": "AmazonS3Icon",
+    "properties": {
+      "aws_access_key_id": {
+        "type": "string",
+        "title": "Access Key ID",
+        "description": "AWS access key ID for the bucket",
+        "x-placeholder": "Enter AWS access key ID",
+        "x-secret": true,
+        "x-env-var": "AWS_ACCESS_KEY_ID"
+      },
+      "aws_secret_access_key": {
+        "type": "string",
+        "title": "Secret Access Key",
+        "description": "AWS secret access key for the bucket",
+        "x-placeholder": "Enter AWS secret access key",
+        "x-secret": true,
+        "x-env-var": "AWS_SECRET_ACCESS_KEY"
+      },
+      "path": {
+        "type": "string",
+        "title": "S3 URI",
+        "description": "Path to your S3 bucket or prefix",
+        "pattern": "^s3://[^/]+(/.*)?$",
+        "errorMessage": { "pattern": "Must be an S3 URI (e.g. s3://bucket/path)" },
+        "x-placeholder": "s3://bucket/path"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model"
+      }
+    },
+    "required": ["aws_access_key_id", "aws_secret_access_key", "path", "name"]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  [[ .sql ]]\n"
+    }
+  ]
+}
