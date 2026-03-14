@@ -13,9 +13,9 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { PivotClickSelectionState } from "./pivot-click-selection";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import type { PivotDataRow, PivotDataStoreConfig } from "./types";
@@ -214,9 +214,17 @@
           {@const isClicked = isCellClicked(cell)}
           {@const colDimIdx =
             config?.rowDimensionNames.indexOf(cell.column.id) ?? -1}
+          {@const lastDimIdx = (config?.rowDimensionNames.length ?? 0) - 1}
           {@const isLeftOfClick =
-            clickedDimIdx >= 0 && colDimIdx >= 0 && colDimIdx < clickedDimIdx}
-          {@const isMutedCell = clickedDimIdx >= 0 && colDimIdx > clickedDimIdx}
+            clickedDimIdx >= 0 &&
+            (colDimIdx >= 0
+              ? colDimIdx < clickedDimIdx
+              : clickedDimIdx === lastDimIdx)}
+          {@const isMutedCell =
+            (clickedDimIdx >= 0 && colDimIdx > clickedDimIdx) ||
+            (colDimIdx === -1 &&
+              clickedDimIdx >= 0 &&
+              clickedDimIdx < lastDimIdx)}
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
@@ -373,9 +381,6 @@
 
   /* Dimension cells to the right of the clicked cell: muted background */
   .muted-cell.cell {
-    @apply bg-gray-50;
-  }
-  .muted-cell.cell:hover {
-    @apply bg-gray-100;
+    @apply bg-surface-muted;
   }
 </style>
