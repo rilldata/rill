@@ -495,6 +495,9 @@ message GetInstanceRequest {
 // Response message for RuntimeService.GetInstance
 message GetInstanceResponse {
   Instance instance = 1;
+  // data_size_bytes is the total size of the instance's data directory in bytes.
+  // This is the same value reported to billing/Orb as "data_dir_size_bytes".
+  int64 data_size_bytes = 2;
 }
 
 // Request message for RuntimeService.CreateInstance.

@@ -15,6 +15,7 @@
     getStatusLabel,
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "./OverviewCard.svelte";
 
@@ -51,6 +52,7 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+  $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -160,6 +162,24 @@
         {/if}
       </span>
     </div>
+
+    {#if !olapConnector || olapConnector.type === "duckdb" || olapConnector.provision}
+      <div class="info-row">
+        <span class="info-label">Data usage</span>
+        <span class="info-value">
+          {#if dataSizeBytes}
+            <a
+              href="/{organization}/{project}/-/status/tables"
+              class="data-usage-link"
+            >
+              {formatMemorySize(Number(dataSizeBytes))}
+            </a>
+          {:else}
+            —
+          {/if}
+        </span>
+      </div>
+    {/if}
   </div>
 </OverviewCard>
 
@@ -181,6 +201,9 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
+  }
+  .data-usage-link {
+    @apply text-fg-primary no-underline;
   }
   .repo-link {
     @apply text-primary-500 text-sm;
