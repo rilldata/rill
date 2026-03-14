@@ -7,14 +7,19 @@
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
   import { CheckIcon } from "lucide-svelte";
   import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
+  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let item: PickerItem;
   export let selectedChatContext: InlineContext | null;
   export let keyboardNavigationManager: KeyboardNavigationManager;
   export let onSelect: (ctx: InlineContext) => void;
 
+  const runtimeClient = useRuntimeClient();
+
   const typeConfig = InlineContextConfig[item.context.type];
-  const icon = typeConfig?.getIcon?.(item.context);
+  const contextMetadataStore = getInlineChatContextMetadata(runtimeClient);
+  $: icon = typeConfig?.getIcon?.(item.context, $contextMetadataStore);
   const selectedItemId = selectedChatContext
     ? getIdForContext(selectedChatContext)
     : null;

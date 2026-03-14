@@ -13,15 +13,20 @@
           display: none !important;
           mso-hide: none;
       }
+      .summary {
+          background-color: #F5F5F5;
+          padding: 15px;
+          border-radius: 4px;
+      }
     </mj-style>
   </mj-head>
   <mj-body>
     <mj-section>
       <mj-column>
         <mj-image container-background-color="#FFF" width="100px" src="https://cdn.rilldata.com/email-transactional/rill-logo-purple.png" />
-        
+
         <mj-spacer height="35px" />
-        
+
         <mj-text font-size="20px" font-weight="bold">
           {{ .DisplayName }}
         </mj-text>
@@ -32,20 +37,26 @@
 
         <mj-spacer height="20px" />
 
+        <!-- optional summary -->
+        <mj-text css-class="{{ if not .Summary }}hidden{{ end }} summary" font-size="14px" line-height="1.5" color="#333333">
+          {{ .Summary }}
+        </mj-text>
+        <mj-spacer css-class="{{ if not .Summary }}hidden{{ end }}" height="20px" />
+
         <mj-button css-class="{{ if not .OpenLink }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
-          Open in browser
+        {{ if .Summary }}View full analysis{{ else }}Open in browser{{ end }}
         </mj-button>
 
-        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .DownloadLink }}">
+        <mj-button css-class="{{ if not .DownloadLink }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .DownloadLink }}">
           Download {{ .DownloadFormat }} file
         </mj-button>
-        
+
         <mj-spacer height="20px" />
 
         <mj-divider border-color="#AAA" border-width="1px"></mj-divider>
 
         <mj-spacer height="20px" />
-        
+
         <mj-text align="center" font-size="12px">
           {{ if .EditLink }} To edit this report, <a href="{{ .EditLink }}">click here</a>. {{ end }} {{ if .UnsubscribeLink }} To unsubscribe from this report, <a href="{{ .UnsubscribeLink }}">click here</a>. {{ end }}
         </mj-text>

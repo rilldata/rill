@@ -1,0 +1,76 @@
+import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import {
+  V1ReconcileStatus,
+  type V1Resource,
+} from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { Page } from "playwright";
+
+// Inline the kind string to avoid importing resource-selectors.ts,
+// which imports @tanstack/svelte-query — a package that contains .svelte
+// files that Node can't handle in the Playwright test runner.
+const ProjectParserKind = "rill.runtime.v1.ProjectParser";
+
+/**
+ * Waits for all resources in the instance to finish reconciling,
+ * then asserts that none have errors.
+ */
+export async function waitForReconciliation(page: Page, timeoutMs = 60_000) {
+  const baseUrl = new URL(page.url()).origin;
+  let resources: V1Resource[] = [];
+
+  const settled = await asyncWaitUntil(async () => {
+    try {
+      const response = await page.request.get(
+        `${baseUrl}/v1/instances/default/resources`,
+      );
+      const body = await response.json();
+      resources = body.resources ?? [];
+
+      if (resources.length === 0) return false;
+
+      // Exclude the ProjectParser — it's a meta-resource that stays
+      // running while watching the repo and doesn't represent data errors.
+      const dataResources = resources.filter(
+        (r) => r.meta?.name?.kind !== ProjectParserKind,
+      );
+
+      return dataResources.every(
+        (r) =>
+          r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE,
+      );
+    } catch {
+      return false;
+    }
+  }, timeoutMs);
+
+  const dataResources = resources.filter(
+    (r) => r.meta?.name?.kind !== ProjectParserKind,
+  );
+
+  if (!settled) {
+    const pending = dataResources.filter(
+      (r) =>
+        r.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE,
+    );
+    const details = pending
+      .map(
+        (r) =>
+          `${r.meta?.name?.kind}/${r.meta?.name?.name}: ${r.meta?.reconcileStatus}`,
+      )
+      .join("\n");
+    throw new Error(`Reconciliation timed out. Still pending:\n${details}`);
+  }
+
+  const errors = dataResources.filter((r) => r.meta?.reconcileError);
+  if (errors.length > 0) {
+    const errorDetails = errors
+      .map(
+        (r) =>
+          `${r.meta?.name?.kind}/${r.meta?.name?.name}: ${r.meta?.reconcileError}`,
+      )
+      .join("\n");
+    throw new Error(`Reconciliation errors:\n${errorDetails}`);
+  }
+
+  return dataResources;
+}

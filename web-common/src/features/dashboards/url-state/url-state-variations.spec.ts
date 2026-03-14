@@ -45,6 +45,8 @@ import {
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
+  AD_BIDS_SET_TIME_DIMENSION_OFFSET,
+  AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
   AD_BIDS_SORT_ASC_BY_IMPRESSIONS,
   AD_BIDS_SORT_BY_DELTA_ABS_VALUE,
@@ -52,8 +54,6 @@ import {
   AD_BIDS_SORT_BY_VALUE,
   AD_BIDS_SORT_DESC_BY_BID_PRICE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
-  AD_BIDS_SET_TIME_DIMENSION_OFFSET,
-  AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
   AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
   AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
@@ -304,7 +304,8 @@ const TestCases: {
     title:
       "Leaderboard configs with no preset and leaderboard sort measure in state different than default",
     mutations: [AD_BIDS_SORT_BY_DELTA_ABS_VALUE, AD_BIDS_SORT_ASC_BY_BID_PRICE],
-    expectedSearch: "sort_by=bid_price&sort_type=delta_abs&sort_dir=ASC",
+    expectedSearch:
+      "sort_by=bid_price&sort_type=delta_abs&sort_dir=ASC&leaderboard_measures=bid_price",
   },
   {
     title:
@@ -329,7 +330,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=delta_abs",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price",
   },
   {
     title: "Leaderboard configs with multiple measures",

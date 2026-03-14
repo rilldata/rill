@@ -253,3 +253,38 @@ measures:
 	// Check that it doesn't have any parse or reconcile errors.
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 }
+
+func TestInvalidDefaultOLAP(t *testing.T) {
+	// Setup a project with a misconfigured default OLAP
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AIConnector: "openai",
+		Files: map[string]string{
+			"rill.yaml": `olap_connector: duckdb_missing`,
+			"connectors/duckdb.yaml": `
+type: connector
+driver: duckdb
+managed: true
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Initialize eval
+
+	// Ask it to fix the default OLAP connector
+	s := newEval(t, rt, instanceID)
+	var res *ai.RouterAgentResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt: "The default OLAP connector is misconfigured. Can you fix it?",
+	})
+	require.NoError(t, err)
+	require.Equal(t, ai.DeveloperAgentName, res.Agent)
+
+	// Check that it doesn't have any parse or reconcile errors.
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Check it fixed the default OLAP
+	inst, err := rt.Instance(t.Context(), instanceID)
+	require.NoError(t, err)
+	require.Equal(t, "duckdb", inst.ResolveOLAPConnector())
+}

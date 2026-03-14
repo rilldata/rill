@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	goruntime "runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
@@ -23,10 +24,15 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+// maxMessageSizeBytes is the maximum allowed size of a message's contents.
+// Exceeding it will result in an error.
+const maxMessageSizeBytes = 100 * 1024 // 100 KB
 
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
@@ -49,9 +55,11 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &RouterAgent{Runtime: rt})
 	RegisterTool(r, &AnalystAgent{Runtime: rt})
 	RegisterTool(r, &DeveloperAgent{Runtime: rt})
+	RegisterTool(r, &FeedbackAgent{Runtime: rt})
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
+	RegisterTool(r, &GetCanvas{Runtime: rt})
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
@@ -567,6 +575,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			content := "<redacted>"
+			if msg.ContentType == MessageContentTypeError {
+				content = msg.Content
+			}
 			s.activity.Record(ctx, activity.EventTypeLog, "ai_message",
 				attribute.String("message_id", msg.ID),
 				attribute.String("parent_message_id", msg.ParentID),
@@ -575,6 +587,7 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 				attribute.String("message_type", string(msg.Type)),
 				attribute.String("tool", msg.Tool),
 				attribute.String("content_type", string(msg.ContentType)),
+				attribute.String("content", content),
 			)
 		}
 		s.messagesDirty = false
@@ -935,6 +948,9 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal args: %w", err)
 	}
+	if len(argsJSON) > maxMessageSizeBytes {
+		return nil, fmt.Errorf("call args size %d exceeds maximum of %d bytes", len(argsJSON), maxMessageSizeBytes)
+	}
 
 	var callMsg *Message
 	callSession := s
@@ -957,6 +973,7 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 			attribute.String("ai_session_id", s.id),
 			attribute.String("tool", opts.Name),
 			attribute.String("args", string(argsJSON)),
+			semconv.EnduserID(s.claims.UserID),
 		))
 		s.logger.Info("tool call started", zap.String("tool", opts.Name))
 		start := time.Now()
@@ -987,9 +1004,15 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		return nil, ctx.Err()
 	}
 
-	outJSON, err := json.Marshal(handlerOut)
-	if err != nil {
-		handlerErr = fmt.Errorf("failed to marshal result: %w (out: %v)", err, handlerOut)
+	var outJSON []byte
+	if handlerErr == nil {
+		outJSON, err = json.Marshal(handlerOut)
+		if err != nil {
+			handlerErr = fmt.Errorf("failed to marshal result: %w (out: %v)", err, handlerOut)
+		} else if len(outJSON) > maxMessageSizeBytes {
+			handlerErr = fmt.Errorf("marshaled result size %d exceeds maximum of %d bytes", len(outJSON), maxMessageSizeBytes)
+			outJSON = nil
+		}
 	}
 
 	var resultMsg *Message
@@ -1013,7 +1036,7 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		})
 	}
 
-	if opts.Out != nil {
+	if handlerErr == nil && opts.Out != nil {
 		err := json.Unmarshal(outJSON, opts.Out)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal result: %w", err)
@@ -1078,7 +1101,7 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 	})
 }
 
-const llmRequestTimeout = 60 * time.Second
+const llmRequestTimeout = 3 * time.Minute
 
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
@@ -1249,7 +1272,10 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 			// Handle LLM completion error
 			if err != nil {
-				return nil, fmt.Errorf("completion failed: %w", err)
+				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) {
+					return nil, fmt.Errorf("LLM request timed out after %s: %w", llmRequestTimeout, err)
+				}
+				return nil, fmt.Errorf("completion failed: %w (stack: %s)", err, string(debug.Stack()))
 			}
 
 			// Break the tool call loop if no tool calls were requested.
@@ -1289,11 +1315,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 						Out:  nil,
 						Args: block.ToolCall.Input.AsMap(),
 					})
-					if err != nil && toolResult.Result == nil {
+					if err != nil {
 						if ctx.Err() != nil {
 							return nil, ctx.Err()
 						}
-						return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						if toolResult == nil || toolResult.Result == nil {
+							return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						}
+						// Fall through since it's a structured error that we can capture in the messages.
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {

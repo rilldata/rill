@@ -230,6 +230,9 @@ The `change_mode:` property controls how Rill handles changes to model specifica
 ### Retry configuration
 
 Configure automatic retries for transient failures:
+The default `if_error_matches` values are:
+`".*OvercommitTracker.*"`, `".*Bad Gateway.*"`, `".*Timeout.*"`, and `".*Connection refused.*"`.
+If `retry.if_error_matches` is set, it overrides these defaults instead of adding to them.
 
 ```yaml
 retry:
@@ -237,8 +240,10 @@ retry:
   delay: 10s
   exponential_backoff: true
   if_error_matches:
-    - ".*Timeout.*"
+    - ".*OvercommitTracker.*"
     - ".*Bad Gateway.*"
+    - ".*Timeout.*"
+    - ".*Connection refused.*"
 ```
 
 This is configured by default for common errors, so only add an explicit `retry` clause if you need to support retries for special errors or long delays.
@@ -294,14 +299,6 @@ sql: SELECT ...
 output:
   connector: clickhouse
   order_by: event_time
-```
-
-## JSON Schema
-
-Here is a full JSON schema for the model syntax:
-
-```
-{% json_schema_for_resource "model" %}
 ```
 
 ## Examples
@@ -747,4 +744,12 @@ sql: |
     country,
     costs_usd + profit_usd + tax_usd AS value_usd
   FROM read_parquet('{{ .partition.uri }}/*.parquet')
+```
+
+## Reference documentation
+
+Here is a full JSON schema for the model syntax:
+
+```
+{% json_schema_for_resource "model" %}
 ```

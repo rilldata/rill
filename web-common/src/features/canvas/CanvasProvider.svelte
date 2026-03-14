@@ -14,11 +14,16 @@
   {projectId}
   {showBanner}
   let:ready
-  let:errorMessage
+  let:reconcileErrorMessage
   let:isLoading
   let:isReconciling
 >
-  <CanvasLoadingState {ready} {errorMessage} {isLoading} {isReconciling}>
+  <CanvasLoadingState
+    {ready}
+    errorMessage={reconcileErrorMessage}
+    {isLoading}
+    {isReconciling}
+  >
     <slot />
   </CanvasLoadingState>
 </CanvasInitialization>

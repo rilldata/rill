@@ -19,8 +19,7 @@ When deploying a project, credentials that have been defined in your `.env` file
 
 If you have defined your connector's credentials in your `.env` file, these will be deployed along with your project. You should see the credentials in [your project's settings page]( /guide/administration/project-settings/variables-and-credentials#modifying-variables-and-credentials-via-the-settings-page).
 
-<img src='/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
-<br />
+![Environment Variable UI](/img/tutorials/admin/env-var-ui.png)
 
 ## Service Accounts
 

@@ -46,8 +46,7 @@ In this case, we are using the [embedded DuckDB engine](/developers/build/connec
 
 :::
 
-<img src='/img/deploy/templating/gcs-env-example.png' class='rounded-gif' />
-<br />
+![GCS Environment Example](/img/deploy/templating/gcs-env-example.png)
 
 In this example:
 - **Development**: Reads from a single file (`2025/06/commits_2025_06.parquet`) for faster processing
@@ -150,8 +149,7 @@ If you use templating in SQL models, you must replace references to tables/model
 
 If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e., Rill Cloud, after we've [pushed the changes for the project to GitHub](/developers/deploy/deploy-dashboard)):
 
-<img src='/img/deploy/templating/vars-example.png' class='rounded-gif' />
-<br />
+![Variables Example](/img/deploy/templating/vars-example.png)
 
 **Now**, just to illustrate what a local override might look like, let's say we stop Rill Developer and then restart Rill via the CLI with the following command:
 
@@ -161,5 +159,4 @@ rill start --env language="ja" --env local_limit=100
 
 Even though we have defaults set in `rill.yaml` (and this will be used by any downstream models and dashboards on Rill Cloud), we will instead see these local overrides come into effect with our templated logic to return Japanese movies and the model limit is now 100 rows.
 
-<img src='/img/deploy/templating/vars-override-example.png' class='rounded-gif' />
-<br />
+![Variables Override Example](/img/deploy/templating/vars-override-example.png)

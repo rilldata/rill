@@ -14,6 +14,8 @@
   import type { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import SimpleOption from "@rilldata/web-common/features/chat/core/context/picker/SimpleOption.svelte";
+  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let node: PickerTreeNode;
   export let selectedChatContext: InlineContext | null;
@@ -26,9 +28,12 @@
   const item = node.item;
   const context = item.context;
 
+  const runtimeClient = useRuntimeClient();
+
   const typeConfig = InlineContextConfig[context.type];
   const typeLabel = typeConfig.typeLabel;
-  const icon = typeConfig?.getIcon?.(context);
+  const contextMetadataStore = getInlineChatContextMetadata(runtimeClient);
+  $: icon = typeConfig?.getIcon?.(context, $contextMetadataStore);
   const selectedItemId = selectedChatContext
     ? getIdForContext(selectedChatContext)
     : null;

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
   import { onMount } from "svelte";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     cleanupConversationManager,
     getConversationManager,
@@ -17,11 +18,14 @@
     toggleConversationSidebar,
   } from "./fullpage-store";
 
-  $: ({ instanceId } = $runtime);
+  const { adminServer } = featureFlags;
+
+  const runtimeClient = useRuntimeClient();
+  $: instanceId = runtimeClient.instanceId;
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: conversationManager = getConversationManager(instanceId, {
+  $: conversationManager = getConversationManager(runtimeClient, {
     conversationState: "url",
   });
 
@@ -72,11 +76,10 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
-    {#if currentConversation?.id}
+    {#if currentConversation?.id && $adminServer}
       <div class="chat-header">
         <ShareChatPopover
           conversationId={currentConversation.id}
-          {instanceId}
           {organization}
           {project}
         />

@@ -3,13 +3,13 @@
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
@@ -17,7 +17,7 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
@@ -26,28 +26,24 @@
 
   export let fileArtifact: FileArtifact;
 
+  const runtimeClient = useRuntimeClient();
+
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
-
-  $: ({ instanceId } = $runtime);
 
   $: ({
     autoSave,
     path: filePath,
     fileName,
     getResource,
-    getAllErrors,
     remoteContent,
     hasUnsavedChanges,
     saveState: { saving },
   } = fileArtifact);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
+  $: resourceQuery = getResource(queryClient);
 
   $: ({ data } = $resourceQuery);
-
-  $: allErrorsQuery = getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
 
   $: resourceIsReconciling = resourceIsLoading(data);
 
@@ -57,16 +53,24 @@
 
   $: canvasName = getNameFromFile(filePath);
 
-  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
-    allErrors,
-    $remoteContent ?? "",
-  );
+  // Parse error for the editor gutter and banner
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
+  $: parseError = $parseErrorQuery;
 
-  $: mainError = lineBasedRuntimeErrors?.at(0);
+  // Reconcile error resolved to root cause for the banner
+  $: reconcileError = data?.meta?.reconcileError;
+  $: rootCauseQuery = createRootCauseErrorQuery(
+    runtimeClient,
+    data,
+    reconcileError,
+  );
+  $: rootCauseReconcileError = reconcileError
+    ? ($rootCauseQuery?.data ?? reconcileError)
+    : undefined;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      $runtime.instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,
@@ -78,11 +82,10 @@
 {#key canvasName}
   <CanvasInitialization
     {canvasName}
-    {instanceId}
+    instanceId={runtimeClient.instanceId}
     let:ready
     let:isReconciling
     let:isLoading
-    let:errorMessage
   >
     <WorkspaceContainer>
       <WorkspaceHeader
@@ -97,12 +100,16 @@
       >
         <div class="flex gap-x-2" slot="cta">
           {#if ready}
-            <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
+            <SaveDefaultsButton
+              {canvasName}
+              instanceId={runtimeClient.instanceId}
+              saving={$saving}
+            />
           {/if}
 
           <PreviewButton
             href="/canvas/{canvasName}"
-            disabled={allErrors.length > 0 || resourceIsReconciling}
+            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
             reconciling={resourceIsReconciling}
           />
         </div>
@@ -110,7 +117,7 @@
 
       <WorkspaceEditorContainer
         slot="body"
-        error={mainError}
+        error={parseError?.message ?? rootCauseReconcileError}
         showError={!!$remoteContent && selectedView === "code"}
       >
         {#if selectedView === "code"}
@@ -118,14 +125,14 @@
             bind:autoSave={$autoSave}
             {canvasName}
             {fileArtifact}
-            {lineBasedRuntimeErrors}
+            {parseError}
           />
         {:else if selectedView === "viz"}
           <CanvasLoadingState
             {ready}
             {isReconciling}
             {isLoading}
-            {errorMessage}
+            errorMessage={rootCauseReconcileError}
           >
             <CanvasBuilder
               {canvasName}

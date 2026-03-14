@@ -12,8 +12,7 @@ Projects can be connected to a GitHub repository for continuous deployment. See 
 
 ## Project
 
-<img src = '/img/manage/project-management/project-view.png' class='rounded-gif' />
-<br />
+![Project View](/img/manage/project-management/project-view.png)
 
 
 A project is a single deployed instance from Rill Developer (or what we refer to as a Rill project). Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI or via Rill Cloud.
@@ -26,15 +25,13 @@ After deploying to Rill Cloud, if your projects are not quite ready to view yet,
 You can select the `Refresh all sources and models` in the Status page or run a full project refresh. 
 :::
 
-<img src = '/img/manage/project-management/status.png' class='rounded-gif' />
-<br />
+![Status](/img/manage/project-management/status.png)
 
 
 ### Managing Project settings
 You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials]( /guide/administration/project-settings/variables-and-credentials).
 
-<img src = '/img/manage/project-management/project-settings.png' class='rounded-gif' />
-<br />
+![Project Settings](/img/manage/project-management/project-settings.png)
 
 
 ## Managing Rill project from CLI

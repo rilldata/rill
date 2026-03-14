@@ -1,19 +1,7 @@
-<script lang="ts" context="module">
-  export type ButtonType =
-    | "primary"
-    | "secondary"
-    | "tertiary"
-    | "neutral"
-    | "destructive"
-    | "ghost"
-    | "link"
-    | "text"
-    | "toolbar";
-</script>
-
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
+  import type { ButtonType } from "./types";
 
   export let type: ButtonType = "tertiary";
   export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
@@ -170,6 +158,26 @@
     @apply opacity-50;
   }
 
+  /* SECONDARY DESTRUCTIVE STYLES */
+
+  .secondary-destructive {
+    --focus-color: var(--color-red-600);
+    @apply bg-transparent border text-red-600;
+    border-color: var(--color-red-400);
+  }
+
+  .secondary-destructive:hover:not(:disabled) {
+    @apply bg-red-50 text-red-700;
+  }
+
+  :global(.dark) .secondary-destructive:hover:not(:disabled) {
+    @apply bg-red-950;
+  }
+
+  .secondary-destructive:disabled {
+    @apply opacity-50;
+  }
+
   /* GHOST STYLES */
 
   .ghost {
@@ -178,6 +186,10 @@
 
   .ghost:hover {
     @apply bg-surface-hover;
+  }
+
+  .ghost.selected {
+    @apply bg-primary-100;
   }
 
   .ghost:disabled {

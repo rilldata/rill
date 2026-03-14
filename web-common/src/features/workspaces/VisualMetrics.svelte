@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -25,7 +25,7 @@
     type MetricsViewSpecDimension,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
@@ -73,7 +73,7 @@
   );
 
   export let fileArtifact: FileArtifact;
-  export let errors: LineStatus[];
+  export let parseError: V1ParseError | undefined = undefined;
   export let switchView: () => void;
   export let unsavedChanges = false;
 
@@ -90,9 +90,9 @@
   };
   let storedProperties: Record<string, unknown> = {};
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
+  $: instance = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
 
@@ -111,7 +111,7 @@
   };
 
   $: isModelingSupportedForConnector = olapConnector
-    ? useIsModelingSupportedForConnector(instanceId, olapConnector)
+    ? useIsModelingSupportedForConnector(runtimeClient, olapConnector)
     : null;
   $: isModelingSupported = $isModelingSupportedForConnector?.data;
 
@@ -132,9 +132,9 @@
 
   $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
-  $: modelsQuery = useModels(instanceId);
-  $: sourcesQuery = useSources(instanceId);
-  $: metricsViewQuery = getResource(queryClient, instanceId);
+  $: modelsQuery = useModels(runtimeClient);
+  $: sourcesQuery = useSources(runtimeClient);
+  $: metricsViewQuery = getResource(queryClient);
 
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
@@ -151,7 +151,8 @@
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
   $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
-    instanceId,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => {
@@ -182,7 +183,7 @@
 
   $: resourceQuery =
     resourceKind &&
-    useResource(instanceId, modelOrSourceOrTableName, resourceKind);
+    useResource(runtimeClient, modelOrSourceOrTableName, resourceKind);
 
   $: connector =
     yamlConnector ||
@@ -192,9 +193,9 @@
     olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
-    instanceId,
-    modelOrSourceOrTableName,
+    runtimeClient,
     {
+      tableName: modelOrSourceOrTableName,
       connector,
       database,
       databaseSchema,
@@ -229,9 +230,6 @@
       label: label.charAt(0).toUpperCase() + label.slice(1),
     };
   });
-
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = errors?.at(0);
 
   $: itemGroups = {
     measures:
@@ -274,13 +272,14 @@
   );
 
   $: tablesQuery = createConnectorServiceOLAPListTables(
-    {
-      instanceId,
-      connector,
-    },
+    runtimeClient,
+    { connector },
     {
       query: {
-        enabled: !!instanceId && !!connector && !hasValidModelOrSourceSelection,
+        enabled:
+          !!runtimeClient.instanceId &&
+          !!connector &&
+          !hasValidModelOrSourceSelection,
       },
     },
   );
@@ -795,14 +794,14 @@
       {/each}
     </div>
 
-    {#if mainError}
+    {#if parseError}
       <div
         role="status"
         transition:slide={{ duration: LIST_SLIDE_DURATION }}
         class="flex items-center gap-x-2 border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-40 overflow-auto"
       >
         <CancelCircle className="text-destructive" />
-        {mainError.message}
+        {parseError.message}
       </div>
     {/if}
   </div>

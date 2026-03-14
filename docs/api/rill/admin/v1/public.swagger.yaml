@@ -6537,13 +6537,10 @@ definitions:
         type: string
       prefix:
         type: string
-<<<<<<< HEAD
       refresh:
         type: boolean
-=======
       attributes:
         type: object
->>>>>>> main
       createdOn:
         type: string
         format: date-time

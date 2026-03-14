@@ -1,102 +1,61 @@
 ---
-title: Ready for Fast Dashboards with Rill?
+title: Get Started with Rill
 slug: /
 sidebar_label: Home
 sidebar_position: 00
 ---
 
-import TileIcon from '@site/src/components/TileIcon';
+import FeatureList from '@site/src/components/FeatureList';
 
-## Install 
-Install Rill using the command below, then launch your first project to explore core features hands-on. For more installation methods, see our [complete installation instructions docs](/developers/get-started/install). 
+Rill Developer users encompass the data engineers, analytics engineers, BI developers, and platform teams — all building data pipelines, defining metrics, and delivering interactive dashboards with Rill. In addition to Rill Developer for local project development, these docs cover deploying to Rill Cloud, embedding dashboards into your own applications, and integrating with external tools and APIs.
+
+Looking to **explore dashboards and data** that your team has already set up? Head over to the [User Guide](/guide).
+
+## Install
+
+Install Rill using the command below, then launch your first project to explore core features hands-on. For more installation methods, see our [complete installation instructions](/developers/get-started/install).
 
 ```bash
 curl https://rill.sh | sh
 rill start my-rill-project
 ```
 
-## Quickstart
+New to Rill? Follow the [Quickstart](/developers/get-started/quickstart) to build your first dashboard with a public dataset, or browse our [tutorials](/developers/tutorials/).
 
-Take a look at our [Quick start](/developers/get-started/quickstart) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/developers/build/connectors) for the exact steps to connect to your data.
+## Start Developing
 
-Or, if you're looking for more guides, check out our [Guides](/developers/guides) section!
+Rill Developer is a local application that makes it easy to build end-to-end analytics pipelines. Connect to data sources, write SQL or YAML models for last-mile transformations, define a metrics layer with measures and dimensions, and preview interactive dashboards — all from your local machine. See the full [Build](/developers/build) docs for details.
 
-## Examples
+<FeatureList items={[
+  { name: "Connectors", description: "Connect to S3, GCS, BigQuery, Snowflake, ClickHouse, and more", link: "/developers/build/connectors" },
+  { name: "Models", description: "Transform and prepare data with SQL or YAML models", link: "/developers/build/models" },
+  { name: "Metrics Views", description: "Define measures, dimensions, and time series for dashboards", link: "/developers/build/metrics-view" },
+  { name: "Dashboards", description: "Build Explore and Canvas dashboards", link: "/developers/build/dashboards" },
+  { name: "Custom APIs", description: "Create API endpoints to retrieve data outside of Rill", link: "/developers/build/custom-apis" },
+]} />
 
-Browse our [repository of examples](https://github.com/rilldata/rill-examples) to find a project that suits your needs or see them in action in our demo project by hitting [Live Demo →](https://ui.rilldata.com/demo). Some projects have a walkthrough, too! 
+Looking for hands-on examples? Browse our [tutorials and example projects](/developers/tutorials/) for guided walkthroughs you can clone and explore.
 
-```bash
-git clone https://github.com/rilldata/rill-examples.git
-cd rill-examples/rill-openrtb-prog-ads #swap this to the project that interests you!
-curl https://rill.sh | sh
-rill start
-```
+## Deploy to Rill Cloud
 
-### Programmatic Ads/OpenRTB
+Rill Developer is great for building and testing locally, but once you're ready to share your work, deploy your project to Rill Cloud. Rill Cloud is a fully managed service where your team can explore dashboards, ask questions with AI Chat, set up alerts, and schedule reports — no local setup required for consumers.
 
-Bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance.
+<FeatureList items={[
+  { name: "Local vs Cloud", description: "Understand the differences between local and cloud", link: "/developers/deploy/cloud-vs-developer" },
+  { name: "Deploy to Rill Cloud", description: "Publish your project to Rill Cloud", link: "/developers/deploy/deploy-dashboard" },
+  { name: "Credentials", description: "Configure deployment credentials", link: "/developers/deploy/deploy-credentials" },
+]} />
 
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads">GitHub →</a><br />
-- <a href="/guides/openrtb-analytics">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a> 
+## Integrate into your Application
 
-### Cost Monitoring
+Rill is designed to fit into your existing stack. Embed interactive dashboards directly into your web applications using iframes, programmatically control them with the Embed API, or build custom API endpoints to pull Rill data into external tools and workflows. 
 
-Based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies.
+<FeatureList items={[
+  { name: "Embed Dashboards", description: "Embed Rill dashboards into your applications using iframes", link: "/developers/embed/embedding" },
+  { name: "Embed API", description: "Programmatically control embedded dashboards", link: "/developers/embed/embed-api" },
+  { name: "Custom APIs", description: "Integrate custom APIs in external applications", link: "/developers/build/custom-apis" },
+]} />
 
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring">GitHub →</a><br />
-- <a href="/guides/cost-monitoring-analytics">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-cost-monitoring">Live Demo →</a>
+## Join the Community
 
-### GitHub Analytics
-
-Analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files.
-
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics">GitHub →</a><br />
-- <a href="/guides/github-analytics">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-github-analytics">Live Demo →</a>
-
-### App Engagement
-
-A conversion dataset used by marketers, mobile developers, or product teams to analyze funnel steps.
-
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement">GitHub →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-app-engagement">Live Demo →</a>
-
-### Kitchen-sink example
-
-A compilation of projects that deep dives into Rill's features using ClickHouse's GitHub commit information.
-
-- <a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
-- <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
-
-## Start Building your Project
-
-<div className="tile-icon-grid">
-<TileIcon
-  header="Connect Data Sources"
-  content="Connect to your data sources and start ingesting data into Rill for analysis."
-  link="/developers/build/connectors"
-  icon={<img src="/img/get-started/connect.svg" alt="Connect" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Prepare Your Data"
-  content="Transform and prepare your data with Rill's powerful ETL capabilities."
-  link="/developers/build/models"
-  icon={<img src="/img/get-started/model.svg" alt="Model" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Create a Metrics Layer"
-  content="Build a metrics layer to define key business metrics and KPIs."
-  link="/developers/build/metrics-view"
-  icon={<img src="/img/get-started/metrics.svg" alt="Metrics" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Embed a Dashboard"
-  content="Embed Rill dashboards into your applications and workflows."
-  link="/developers/integrate/embedding"
-  icon={<img src="/img/get-started/embed.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
-/>
-
-</div>
+Rill is open source — browse the code on [GitHub](https://github.com/rilldata/rill) or join the community on [Discord](https://discord.gg/2ubRfjC7Rh). If you're a customer, reach out directly via your dedicated Slack channel or contact support.

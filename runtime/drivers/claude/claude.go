@@ -17,6 +17,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const defaultTemperature = 0.1
+
 func init() {
 	drivers.Register("claude", driver{})
 	drivers.RegisterAsConnector("claude", driver{})
@@ -25,6 +27,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Claude",
 	Description: "Connect to Anthropic's Claude API for language models.",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/services/claude",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "api_key",
@@ -56,7 +59,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Temperature",
 			Description: "Sampling temperature to use.",
-			Default:     "0.0",
+			Default:     "0.1",
 		},
 		{
 			Key:         "base_url",
@@ -80,7 +83,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 // Open implements drivers.Driver.
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -117,11 +120,11 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey      string  `mapstructure:"api_key"`
-	Model       string  `mapstructure:"model"`
-	MaxTokens   int     `mapstructure:"max_tokens"`
-	Temperature float64 `mapstructure:"temperature"`
-	BaseURL     string  `mapstructure:"base_url"`
+	APIKey      string   `mapstructure:"api_key"`
+	Model       string   `mapstructure:"model"`
+	MaxTokens   int      `mapstructure:"max_tokens"`
+	Temperature *float64 `mapstructure:"temperature"`
+	BaseURL     string   `mapstructure:"base_url"`
 }
 
 func (c *configProperties) getModel() string {
@@ -136,6 +139,13 @@ func (c *configProperties) getMaxTokens() int {
 		return c.MaxTokens
 	}
 	return 8192 // Default max tokens
+}
+
+func (c *configProperties) getTemperature() float64 {
+	if c.Temperature != nil {
+		return *c.Temperature
+	}
+	return defaultTemperature
 }
 
 type handle struct {
@@ -257,7 +267,7 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	params := anthropic.BetaMessageNewParams{
 		Model:       anthropic.Model(h.config.getModel()),
 		MaxTokens:   int64(h.config.getMaxTokens()),
-		Temperature: anthropic.Float(h.config.Temperature),
+		Temperature: anthropic.Float(h.config.getTemperature()),
 		Messages:    msgs,
 		System:      system,
 	}

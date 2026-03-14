@@ -5,6 +5,7 @@ import { SSEFetchClient, type SSEMessage } from "./sse-fetch-client";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 const BACKOFF_DELAY = 1000; // Base delay in ms
+const MIN_STABLE_DURATION = 5000; // Connection must stay open this long to count as stable
 
 type Params = {
   autoCloseTimeouts?: {
@@ -44,6 +45,7 @@ export class SSEConnectionManager {
     method?: "GET" | "POST";
     body?: Record<string, unknown>;
     headers?: Record<string, string>;
+    getJwt?: () => string | undefined;
   };
 
   private readonly events = new EventEmitter<SSEConnectionManagerEvents>();
@@ -60,6 +62,7 @@ export class SSEConnectionManager {
   private retryAttempts = writable(0);
   private isReconnecting = false;
   private connectionCount = 0;
+  private openedAt: number | null = null;
 
   constructor(public params?: Params) {
     if (params?.autoCloseTimeouts) {
@@ -80,7 +83,9 @@ export class SSEConnectionManager {
    */
   private async reconnect() {
     // Prevent concurrent reconnection attempts
-    if (this.isReconnecting) return;
+    if (this.isReconnecting) {
+      return;
+    }
     this.isReconnecting = true;
 
     try {
@@ -114,10 +119,13 @@ export class SSEConnectionManager {
   }
 
   /**
-   * Stop the connection, mark closed and clean up resources
+   * Resume the connection if paused, and reset the auto-close timer.
    */
   public heartbeat = async () => {
-    if (get(this.status) !== ConnectionStatus.OPEN) {
+    const status = get(this.status);
+    // Only reconnect if PAUSED (intentionally disconnected to save resources)
+    // Don't reconnect if CONNECTING (already in progress) or CLOSED (fatal error)
+    if (status === ConnectionStatus.PAUSED) {
       await this.reconnect();
     }
 
@@ -165,14 +173,29 @@ export class SSEConnectionManager {
     this.events.emit("error", errorArg);
   };
 
-  // This can happen in one of three situations:
+  // Fired by SSEFetchClient when the underlying fetch ends for any reason:
   // 1. The connection was paused intentionally (AbortError)
-  // 2. There has been a network error causing the connection to close (FetchError)
+  // 2. A network error caused the connection to close (FetchError)
   // 3. The application was terminated
+  // Client-initiated closes (case 1) are ignored here; pause() handles its
+  // own cleanup before setting status to PAUSED, so the guard below skips them.
   private handleCloseEvent = () => {
     const status = get(this.status);
 
+    // Only handle server-initiated or unexpected closes
     if (status !== ConnectionStatus.OPEN) return;
+
+    // Server-initiated close: reset retries if the connection was stable
+    // (open > MIN_STABLE_DURATION). Unstable connections (e.g. server opens
+    // then immediately closes) should still accumulate retries.
+    // See also: pause() resets retries for client-initiated closes.
+    const wasStable =
+      this.openedAt !== null &&
+      Date.now() - this.openedAt >= MIN_STABLE_DURATION;
+    if (wasStable) {
+      this.retryAttempts.set(0);
+    }
+    this.openedAt = null;
 
     if (this.params?.retryOnClose) {
       this.status.set(ConnectionStatus.CONNECTING);
@@ -190,9 +213,8 @@ export class SSEConnectionManager {
 
   private handleSuccessfulConnection = () => {
     this.connectionCount += 1;
+    this.openedAt = Date.now();
     this.status.set(ConnectionStatus.OPEN);
-
-    this.retryAttempts.set(0);
 
     if (this.connectionCount > 1) {
       this.events.emit("reconnect");
@@ -211,6 +233,7 @@ export class SSEConnectionManager {
       method?: "GET" | "POST";
       body?: Record<string, unknown>;
       headers?: Record<string, string>;
+      getJwt?: () => string | undefined;
     } = {},
   ): void {
     this.url = url;
@@ -218,7 +241,7 @@ export class SSEConnectionManager {
 
     this.status.set(ConnectionStatus.CONNECTING);
 
-    void this.client.start(url);
+    void this.client.start(url, options);
 
     if (this.params?.autoCloseTimeouts) {
       this.scheduleAutoClose();
@@ -237,10 +260,15 @@ export class SSEConnectionManager {
     )
       return;
 
+    // Client-initiated close (auto-close after idle): reset retries because
+    // an intentional pause is not a connection failure.
+    // See also: handleCloseEvent() resets retries for server-initiated closes.
+    this.retryAttempts.set(0);
+
     this.status.set(ConnectionStatus.PAUSED);
 
-    // This will trigger an AbortError event and subsequently a "close" event
-    // Which we ignore based on the current status
+    // This will trigger a "close" event on the SSEFetchClient, but
+    // handleCloseEvent ignores it because status is already PAUSED.
     this.client.stop();
   }
 

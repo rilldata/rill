@@ -21,7 +21,7 @@
     V1TimeGrain,
     type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -48,7 +48,7 @@
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const { rillTime } = featureFlags;
 
@@ -101,9 +101,9 @@
 
   let showDefaultItem = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
-  $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
+  $: timeRangeQuery = useMetricsViewTimeRange(client, metricsViewName);
 
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 
@@ -224,7 +224,7 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     metricsExplorerStore.setTimeDimension($exploreName, column);
@@ -234,6 +234,7 @@
 
     const { interval, grain } = await deriveInterval(
       timeRangeName,
+      client,
       metricsViewName,
       activeTimeZone,
       column,
@@ -276,7 +277,7 @@
     );
   }
 
-  async function onSelectRange(alias: string) {
+  async function onSelectRange(alias: string, tz = activeTimeZone) {
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
@@ -291,13 +292,14 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     const { interval, grain } = await deriveInterval(
       alias,
+      client,
       metricsViewName,
-      activeTimeZone,
+      tz,
       selectedTimeDimension,
     );
 
@@ -366,7 +368,7 @@
     } as DashboardTimeControls);
   }
 
-  function onSelectTimeZone(timeZone: string) {
+  async function onSelectTimeZone(timeZone: string) {
     if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
@@ -379,8 +381,10 @@
           ?.setZone(timeZone, { keepLocalTime: true })
           .toJSDate(),
       });
+    } else if (selectedRangeAlias) {
+      // Trigger range selection so that MetricsViewTimeRanges is called with the new time zone
+      await onSelectRange(selectedRangeAlias, timeZone);
     }
-
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 

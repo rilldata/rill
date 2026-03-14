@@ -5,6 +5,8 @@ sidebar_label: "Dashboards"
 sidebar_position: 0
 ---
 
+import ThemedImage from '@theme/ThemedImage';
+
 # Dashboards
 
 Rill Cloud provides powerful interactive dashboards for exploring, analyzing, and sharing your data. Dashboards make it easy to slice, dice, and drill down into your metrics to discover insights.

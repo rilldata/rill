@@ -10,31 +10,35 @@ import type {
   RuntimeServiceCompleteBody,
   V1AnalystAgentContext,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, type Readable } from "svelte/store";
 
-const activeExploreContextStore = getActiveExploreContext();
-
-export const dashboardChatConfig = {
-  agent: ToolName.ANALYST_AGENT,
-  additionalContextStoreGetter: () => activeExploreContextStore, // TODO: add canvas context as well
-  emptyChatLabel: "Happy to help explore your data",
-  placeholder:
-    "Type a question, or press @ to insert a metric, dimension, or measure.",
-  minChatHeight: "min-h-[4rem]",
-} satisfies ChatConfig;
+export function createDashboardChatConfig(client: RuntimeClient): ChatConfig {
+  const activeExploreContextStore = getActiveExploreContext(client);
+  return {
+    agent: ToolName.ANALYST_AGENT,
+    additionalContextStoreGetter: () => activeExploreContextStore,
+    emptyChatLabel: "Happy to help explore your data",
+    placeholder:
+      "Type a question, or press @ to insert a metric, dimension, or measure.",
+    minChatHeight: "min-h-[4rem]",
+  };
+}
 
 /**
  * Creates a store that contains the active explore context sent to the Complete API.
  * It returns RuntimeServiceCompleteBody with V1AnalystAgentContext that is passed to the API.
  */
-function getActiveExploreContext(): Readable<
-  Partial<RuntimeServiceCompleteBody>
-> {
+function getActiveExploreContext(
+  client: RuntimeClient,
+): Readable<Partial<RuntimeServiceCompleteBody>> {
   const exploreNameStore = getExploreNameStore();
 
   const exploreState = useStableExploreState(exploreNameStore);
-  const timeControlsStore =
-    createStableTimeControlStoreFromName(exploreNameStore);
+  const timeControlsStore = createStableTimeControlStoreFromName(
+    client,
+    exploreNameStore,
+  );
 
   return derived(
     [exploreNameStore, exploreState, timeControlsStore],
@@ -43,9 +47,28 @@ function getActiveExploreContext(): Readable<
         explore: exploreName,
       };
 
-      if (timeControlsStore?.timeStart && timeControlsStore?.timeEnd) {
-        analystAgentContext.timeStart = timeControlsStore.timeStart;
-        analystAgentContext.timeEnd = timeControlsStore.timeEnd;
+      if (
+        timeControlsStore.selectedTimeRange?.start &&
+        timeControlsStore.selectedTimeRange?.end
+      ) {
+        analystAgentContext.timeStart =
+          timeControlsStore.selectedTimeRange.start.toISOString();
+        analystAgentContext.timeEnd =
+          timeControlsStore.selectedTimeRange.end.toISOString();
+      }
+
+      if (
+        exploreState?.visibleDimensions.length &&
+        !exploreState?.allDimensionsVisible
+      ) {
+        analystAgentContext.dimensions = exploreState.visibleDimensions;
+      }
+
+      if (
+        exploreState?.visibleMeasures.length &&
+        !exploreState?.allMeasuresVisible
+      ) {
+        analystAgentContext.measures = exploreState.visibleMeasures;
       }
 
       const filterIsAvailable = !isExpressionEmpty(exploreState?.whereFilter);

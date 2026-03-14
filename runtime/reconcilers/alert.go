@@ -724,7 +724,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
 
-	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
@@ -740,6 +740,10 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		return nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}
 	defer res.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("Alert resolver returned warnings", zap.String("name", self.Meta.Name.Name), zap.String("resolver", a.Spec.Resolver), zap.Strings("warnings", info.Warnings), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+	}
 
 	row, err := res.Next()
 	if err != nil {

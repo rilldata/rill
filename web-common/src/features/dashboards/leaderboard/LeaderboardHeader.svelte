@@ -233,7 +233,7 @@
   }
 
   th[data-dimension-header] {
-    @apply sticky left-0 z-30 bg-transparent text-left;
+    @apply sticky left-0 z-30 bg-surface-background text-left;
   }
 
   th:not(:first-of-type) {

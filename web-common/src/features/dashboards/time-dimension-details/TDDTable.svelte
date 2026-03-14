@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    COMPARIONS_COLORS,
+    COMPARISON_COLORS,
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
@@ -33,8 +33,8 @@
   export let sortType: SortType;
   export let measure: MetricsViewSpecMeasure;
   export let highlightedRow: number | undefined;
-  export let highlightedCol: number | undefined;
-  export let scrubPos: { start?: number; end?: number };
+  export let highlightedColStart: number | undefined;
+  export let highlightedColEnd: number | undefined;
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
@@ -105,23 +105,14 @@
       classesToAdd.push("border-b");
     }
 
-    const isScrubbed =
-      scrubPos?.start !== undefined &&
-      scrubPos?.end !== undefined &&
-      data.x >= scrubPos.start &&
-      data.x <= scrubPos.end - 1;
-
-    const palette = isScrubbed
-      ? "scrubbed"
-      : data.y === 0
-        ? "fixed"
-        : "default";
+    const palette = data.y === 0 ? "fixed" : "default";
 
     classesToAdd.push(
       getClassForCell(
         palette,
         rowIdxHover ?? highlightedRow,
-        colIdxHover ?? highlightedCol,
+        colIdxHover ?? highlightedColStart,
+        colIdxHover ?? highlightedColEnd,
         data.y,
         data.x,
       ),
@@ -139,8 +130,8 @@
 
   // Any time visible line list changes, redraw the table
   $: {
-    scrubPos;
-    highlightedCol;
+    highlightedColStart;
+    highlightedColEnd;
     highlightedRow;
     tableData?.selectedValues;
     pivot?.draw();
@@ -177,7 +168,7 @@
         return {
           icon: SelectedCheckmark(
             visibleIdx < 11
-              ? COMPARIONS_COLORS[visibleIdx]
+              ? COMPARISON_COLORS[visibleIdx]
               : SELECTED_NOT_COMPARED_COLOR,
           ),
           muted: false,
@@ -209,7 +200,8 @@
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
-      colIdxHover ?? highlightedCol,
+      colIdxHover ?? highlightedColStart,
+      colIdxHover ?? highlightedColEnd,
       y,
       x - tableData?.fixedColCount,
     );

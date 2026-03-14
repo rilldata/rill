@@ -3,7 +3,7 @@ import type {
   V1ConnectorDriver,
   V1Source,
 } from "@rilldata/web-common/runtime-client";
-import { makeDotEnvConnectorKey } from "../connectors/code-utils";
+import { makeEnvVarKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 import { getConnectorSchema } from "./modal/connector-schemas";
 import {
@@ -29,6 +29,7 @@ export function compileSourceYAML(
     stringKeys?: string[];
     connectorInstanceName?: string;
     originalDriverName?: string;
+    existingEnvBlob?: string;
   },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
@@ -67,10 +68,12 @@ export function compileSourceYAML(
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         // For source files, we include secret properties
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeEnvVarKey(
           connector.name as string,
           key,
-        )} }}"`;
+          opts?.existingEnvBlob,
+          schema ?? undefined,
+        )} }}"`; // uses standard Go template syntax
       }
 
       if (key === "sql") {
@@ -113,7 +116,10 @@ export function compileLocalFileSourceYAML(path: string) {
   return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
-function buildDuckDbQuery(path: string | undefined): string {
+export function buildDuckDbQuery(
+  path: string | undefined,
+  options?: { defaultToJson?: boolean },
+): string {
   const safePath = typeof path === "string" ? path : "";
   const extension = extractFileExtension(safePath);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
@@ -121,6 +127,10 @@ function buildDuckDbQuery(path: string | undefined): string {
   } else if (extensionContainsParts(extension, [".parquet"])) {
     return `select * from read_parquet('${safePath}')`;
   } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
+    return `select * from read_json('${safePath}', auto_detect=true, format='auto')`;
+  }
+
+  if (options?.defaultToJson) {
     return `select * from read_json('${safePath}', auto_detect=true, format='auto')`;
   }
 
@@ -223,15 +233,6 @@ export function maybeRewriteToDuckDb(
         }
       }
     // falls through to rewrite as DuckDB
-    case "https":
-      // HTTP sources are typically public; avoid surfacing secret wiring unless
-      // the user is explicitly targeting a configured connector instance.
-      if (connectorInstanceName && secretConnectorName) {
-        if (!formValues.create_secrets_from_connectors) {
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
-      }
-    // falls through to rewrite as DuckDB
     case "local_file":
       connectorCopy.name = "duckdb";
 
@@ -239,6 +240,25 @@ export function maybeRewriteToDuckDb(
       delete formValues.path;
 
       break;
+    case "https": {
+      // HTTP sources are typically public; avoid surfacing secret wiring unless
+      // the user is explicitly targeting a configured connector instance.
+      if (connectorInstanceName && secretConnectorName) {
+        if (!formValues.create_secrets_from_connectors) {
+          formValues.create_secrets_from_connectors = secretConnectorName;
+        }
+      }
+
+      connectorCopy.name = "duckdb";
+      // Default to read_json for HTTPS URLs without a recognized file extension,
+      // since most HTTP endpoints return JSON responses.
+      formValues.sql = buildDuckDbQuery(formValues.path as string, {
+        defaultToJson: true,
+      });
+      delete formValues.path;
+
+      break;
+    }
     case "sqlite":
       connectorCopy.name = "duckdb";
 
@@ -249,6 +269,91 @@ export function maybeRewriteToDuckDb(
       delete formValues.table;
 
       break;
+    case "delta": {
+      connectorCopy.name = "duckdb";
+
+      // Determine which path field has a value
+      const deltaPath = (formValues.gcs_path ||
+        formValues.s3_path ||
+        formValues.azure_path ||
+        formValues.public_path ||
+        formValues.local_path) as string;
+      const deltaStorageType = formValues.storage_type as string;
+
+      // Set create_secrets_from_connectors for cloud storage backends
+      if (
+        deltaStorageType &&
+        deltaStorageType !== "local" &&
+        deltaStorageType !== "public"
+      ) {
+        formValues.create_secrets_from_connectors = deltaStorageType;
+      }
+
+      formValues.sql = `SELECT *\nFROM delta_scan('${deltaPath}')`;
+
+      // Clean up intermediate fields
+      delete formValues.storage_type;
+      delete formValues.gcs_path;
+      delete formValues.s3_path;
+      delete formValues.azure_path;
+      delete formValues.public_path;
+      delete formValues.local_path;
+      delete formValues.gcs_info;
+      delete formValues.s3_info;
+      delete formValues.azure_info;
+
+      break;
+    }
+    case "iceberg": {
+      connectorCopy.name = "duckdb";
+
+      // Determine which path field has a value
+      const icebergPath = (formValues.gcs_path ||
+        formValues.s3_path ||
+        formValues.azure_path ||
+        formValues.public_path ||
+        formValues.local_path) as string;
+      const storageType = formValues.storage_type as string;
+
+      // Set create_secrets_from_connectors for cloud storage backends
+      if (storageType && storageType !== "local" && storageType !== "public") {
+        formValues.create_secrets_from_connectors = storageType;
+      }
+
+      // Build iceberg_scan parameter list
+      const scanParams: string[] = [];
+
+      const allowMovedPaths = formValues.allow_moved_paths;
+      if (allowMovedPaths !== undefined && allowMovedPaths !== "") {
+        scanParams.push(`allow_moved_paths = ${allowMovedPaths}`);
+      }
+
+      const icebergVersion = formValues.version as string;
+      if (icebergVersion?.trim()) {
+        scanParams.push(`version = '${icebergVersion.trim()}'`);
+      }
+
+      const paramsStr = scanParams.length
+        ? `,\n  ${scanParams.join(",\n  ")}`
+        : "";
+
+      formValues.sql = `SELECT *\nFROM iceberg_scan('${icebergPath}'${paramsStr})`;
+
+      // Clean up intermediate fields
+      delete formValues.storage_type;
+      delete formValues.gcs_path;
+      delete formValues.s3_path;
+      delete formValues.azure_path;
+      delete formValues.public_path;
+      delete formValues.local_path;
+      delete formValues.gcs_info;
+      delete formValues.s3_info;
+      delete formValues.azure_info;
+      delete formValues.allow_moved_paths;
+      delete formValues.version;
+
+      break;
+    }
   }
 
   return [connectorCopy, formValues];

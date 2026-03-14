@@ -223,6 +223,13 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// 1. The request is cancelled. The ctx used by the streams is cancelled, so they return with context.Canceled. The grp.Wait() returns, this goroutine closes the events channel, making serveSSEUntilClose return.
 	// 2. An error occurs in a stream. The errgroup cancels the ctx, so the other streams also returns. The grp.Wait() returns the original error, which this goroutine sends as a final message, then closes the events channel, making serveSSEUntilClose return.
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in SSEHandler subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
 		// This goroutine must close the events channel to ensure the call to serveSSEUntilClose returns.
 		defer close(events)
 
@@ -280,6 +287,13 @@ func serveSSEUntilClose(w http.ResponseWriter, events chan *sseEvent) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	// Send an initial SSE comment to force proxies to forward the response.
+	// Without body bytes, reverse proxies (Codespaces, Cloudflare, nginx) buffer the
+	// response indefinitely, preventing the client from detecting the connection is open.
+	// SSE comments (lines starting with ':') are no-ops per the spec.
+	fmt.Fprint(w, ":ok\n\n")
 	flusher.Flush()
 
 	// Consume events from channel and write to response (the loop ends when the channel is closed)

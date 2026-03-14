@@ -59,8 +59,11 @@ export function roundToNearestTimeUnit(date: Date, unit: DateTimeUnit): Date {
 export function roundDownToTimeUnit(
   date: Date,
   unit: DateTimeUnit | keyof DateTime,
+  zone?: string,
 ) {
-  const dateTime = DateTime.fromJSDate(date);
+  let dateTime = DateTime.fromJSDate(date);
+  if (zone) dateTime = dateTime.setZone(zone);
+
   if (!DateTime.isDateTime(dateTime)) {
     throw new Error("Invalid Luxon DateTime object");
   }

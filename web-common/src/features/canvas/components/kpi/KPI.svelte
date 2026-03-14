@@ -18,7 +18,6 @@
     type V1MetricsViewAggregationResponse,
     type V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import type { QueryObserverResult } from "@tanstack/svelte-query";
   import { builderActions, getAttrs } from "bits-ui";
   import { AlertTriangleIcon } from "lucide-svelte";
@@ -26,7 +25,7 @@
   import type { KPISpec } from ".";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
 
-  type Query<T> = QueryObserverResult<T, HTTPError>;
+  type Query<T> = QueryObserverResult<T, Error>;
   type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
   type AggregationQuery = Query<V1MetricsViewAggregationResponse>;
 
@@ -353,6 +352,7 @@
   .spark-right .data-wrapper {
     @apply items-start h-full;
     flex: 0 4 20%;
+    min-width: 0;
   }
 
   .measure-name {
@@ -391,6 +391,7 @@
   .spark-right .sparkline-wrapper {
     @apply mt-2;
     flex: 4 1 80%;
+    min-width: 0;
   }
 
   .comparison-value {

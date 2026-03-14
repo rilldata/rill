@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/duckdb",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/duckdb",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -91,7 +91,7 @@ var spec = drivers.Spec{
 var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "MotherDuck SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/motherduck",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -154,7 +154,7 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(connectorName, instanceID string, cfgMap map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("duckdb driver can't be shared")
 	}
@@ -191,6 +191,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
 		instanceID:     instanceID,
+		connectorName:  connectorName,
 		config:         cfg,
 		logger:         logger,
 		activity:       ac,
@@ -287,7 +288,8 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	instanceID string
+	instanceID    string
+	connectorName string
 	// do not use directly it can also be nil or closed
 	// use acquireOLAPConn/acquireMetaConn for select and acquireDB for write queries
 	db rduckdb.DB
@@ -446,6 +448,9 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 				return &selfToFileExecutor{c}, nil
 			}
 		}
+		if _, ok := opts.OutputHandle.AsObjectStore(); ok {
+			return &selfToObjectStoreExecutor{c}, nil
+		}
 	}
 	return nil, drivers.ErrNotImplemented
 }
@@ -498,6 +503,25 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
+	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
+	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
+	if !c.config.AllowHostAccess {
+		extensionDir, err := extensions.ExtensionsDir()
+		if err != nil {
+			return err
+		}
+
+		secretDir, err := c.storage.DataDir("secrets")
+		if err != nil {
+			return err
+		}
+		dbInitQueries = append(dbInitQueries,
+			"SET GLOBAL preserve_insertion_order TO false",
+			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
+			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)), // should be set before `InitSQL` is set because it can have secrets
+		)
+	}
+
 	if c.driverName == "motherduck" || c.config.isMotherduck() {
 		dbInitQueries = append(dbInitQueries,
 			"INSTALL 'motherduck'",
@@ -539,14 +563,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	dataDir, err := c.storage.DataDir()
 	if err != nil {
 		return err
-	}
-
-	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
-	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
-	if !c.config.AllowHostAccess {
-		dbInitQueries = append(dbInitQueries,
-			"SET GLOBAL preserve_insertion_order TO false",
-		)
 	}
 
 	// Add init SQL if provided

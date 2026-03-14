@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -70,7 +71,8 @@ type globProps struct {
 	RollupFiles bool `mapstructure:"rollup_files"`
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
-	TransformSQL string `mapstructure:"transform_sql"`
+	TransformSQL string         `mapstructure:"transform_sql"`
+	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
 // globArgs declares the arguments for a "glob" resolver.
@@ -168,6 +170,12 @@ func (r *globResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *globResolver) Validate(ctx context.Context) error {
+	if len(r.props.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
+			Name:   "glob",
+			Fields: maps.Keys(r.props.UnusedFields),
+		}
+	}
 	return nil
 }
 
@@ -187,7 +195,12 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", r.props.Path, err)
 	}
-	entries, err := store.ListObjectsForGlob(ctx, url.Host, url.Path)
+
+	entries, err := pagination.CollectAll(ctx,
+		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
+			return store.ListObjectsForGlob(ctx, url.Host, url.Path, pz, tk)
+		},
+		1000)
 	if err != nil {
 		return nil, err
 	}

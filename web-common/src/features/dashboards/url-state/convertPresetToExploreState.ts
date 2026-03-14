@@ -34,6 +34,7 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
+  MetricsViewSpecDimensionType,
   type MetricsViewSpecMeasure,
   V1ExploreComparisonMode,
   type V1ExplorePreset,
@@ -469,14 +470,21 @@ function fromPivotUrlParams(
 
   const sorting: SortingState = [];
   if (preset.pivotSortBy) {
-    const sortById =
-      preset.pivotSortBy in FromURLParamTimeDimensionMap
-        ? FromURLParamTimeDimensionMap[preset.pivotSortBy]
-        : preset.pivotSortBy;
-    sorting.push({
-      id: sortById,
-      desc: !preset.pivotSortAsc,
-    });
+    const isTimeDim = preset.pivotSortBy in FromURLParamTimeDimensionMap;
+    const sortById = isTimeDim
+      ? FromURLParamTimeDimensionMap[preset.pivotSortBy]
+      : preset.pivotSortBy;
+    const isValidMeasure = !isTimeDim && measures.has(sortById);
+    const isValidDimension =
+      !isTimeDim &&
+      dimensions.get(sortById)?.type ===
+        MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL;
+    if (isTimeDim || isValidMeasure || isValidDimension) {
+      sorting.push({
+        id: sortById,
+        desc: !preset.pivotSortAsc,
+      });
+    }
   }
 
   let tableMode: PivotTableMode = "nest";

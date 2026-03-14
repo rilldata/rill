@@ -28,6 +28,9 @@ func DeleteIssueCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if issueType == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("--type flag is required in non-interactive mode")
+				}
 				issueType, err = cmdutil.SelectPrompt("Select issue type to delete", errors, "")
 				if err != nil {
 					return err

@@ -13,7 +13,7 @@ Data models are built using SQL SELECT statements applied to your source data. T
 
 By default, data transformations in Rill Developer are powered by DuckDB and its dialect of SQL (DuckDB SQL). Please visit the [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn how to write your queries.
 
-You can change the default [OLAP engine](https://docs.rilldata.com/build/connectors/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
+You can change the default [OLAP engine](https://docs.rilldata.com/developers/build/connectors/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
 :::tip Supported OLAP engines for modeling
 
@@ -53,8 +53,7 @@ The right panel displays comprehensive information about your dataset and column
 
 This information helps you validate your model configuration and ensure data quality before proceeding with the full data ingestion.
 
-<img src='/img/build/model/preview.png' class='rounded-gif' />
-<br />
+![Preview](/img/build/model/preview.png)
 
 ## One Big Table and Dashboarding
 

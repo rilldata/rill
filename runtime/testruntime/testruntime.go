@@ -36,6 +36,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
+	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
@@ -175,7 +176,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			{
 				Type:   olapDriver,
 				Name:   olapDriver,
-				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN})),
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN, "mode": "readwrite"})),
 			},
 			{
 				Type: "sqlite",
@@ -278,7 +279,7 @@ func newInstanceHelper(t TestingT, name string, instConfig map[string]string) (*
 			{
 				Type:   olapDriver,
 				Name:   olapDriver,
-				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN})),
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN, "mode": "readwrite"})),
 			},
 			{
 				Type: "sqlite",

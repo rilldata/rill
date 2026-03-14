@@ -20,8 +20,7 @@ In this section, we will outline:
 - Pushing changes to Git
 - Deploying Rill to your new org to share dashboards, set up alerts and receive scheduled reports
   
-<img src = '/img/deploy/github-101/process.png' class='rounded-gif' />
-<br />
+![Process](/img/deploy/github-101/process.png)
 
 
 ## Installing Git
@@ -41,20 +40,17 @@ Once you have downloaded GitHub and connected your account, you'll be able to cr
 
 - First, go to GitHub.com and create a new repository - clicking the ```New``` button on the homepage\
   
-<img src = '/img/deploy/github-101/new.png' class='rounded-gif' />
-<br />
+![New](/img/deploy/github-101/new.png)
 
 
 - After you name your repository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer.
 - 
-<img src = '/img/deploy/github-101/repo.png' class='rounded-gif' />
-<br />
+![Repo](/img/deploy/github-101/repo.png)
 
 
 - Select the folder on your computer where you'd like to build with Rill. Confirm the location you cloned for the next step.
 
-<img src = '/img/deploy/github-101/clone.png' class='rounded-gif' />
-<br />
+![Clone](/img/deploy/github-101/clone.png)
 
 
 - Open the Terminal and go to your local copy of the repo (e.g. the above would be ```cd Documents/GitHub/rill-poc/testrepo```)
@@ -70,8 +66,7 @@ After installing Rill and adding sources, your local project will now contain a 
 First, open the GitHub app and select your repo. You should now see a variety of new changes (that can then be committed):
 
 
-<img src = '/img/deploy/github-101/commit.png' class='rounded-gif' />
-<br />
+![Commit](/img/deploy/github-101/commit.png)
 
 
 Now, in order to actually commit these changes to your repo, you can take the following steps:

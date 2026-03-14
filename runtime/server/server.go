@@ -36,7 +36,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
+var ErrForbidden = status.Error(codes.PermissionDenied, "action not allowed")
 
 type Options struct {
 	HTTPPort        int
@@ -209,10 +209,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
 
 	// We need to manually add HTTP handlers for streaming RPCs since Vanguard can't map these to HTTP routes automatically.
-	httpMux.Handle("/v1/instances/{instance_id}/sse", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))
-	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))       // Deprecated: Use /sse?streams=files
-	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))) // Deprecated: Use /sse?streams=resources
-	httpMux.Handle("/v1/instances/{instance_id}/ai/complete/stream", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler)))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/sse", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))       // Deprecated: Use /sse?streams=files
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/resources/-/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))) // Deprecated: Use /sse?streams=resources
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -300,7 +300,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
-		return time.Minute * 5
+		return time.Minute * 10
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Health_FullMethodName || fullMethodName == runtimev1.RuntimeService_InstanceHealth_FullMethodName {
@@ -331,21 +331,36 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+	// Extract trace data if present (will be attached after error mapping)
+	var te *traceError
+	errors.As(err, &te)
+
 	if errors.Is(err, context.DeadlineExceeded) {
-		return status.Error(codes.DeadlineExceeded, err.Error())
+		err = status.Error(codes.DeadlineExceeded, err.Error())
+	} else if errors.Is(err, context.Canceled) {
+		err = status.Error(codes.Canceled, err.Error())
+	} else if errors.Is(err, queries.ErrForbidden) {
+		err = ErrForbidden
+	} else if errors.Is(err, runtime.ErrForbidden) {
+		err = ErrForbidden
+	} else if errors.Is(err, metricsview.ErrForbidden) {
+		err = ErrForbidden
 	}
-	if errors.Is(err, context.Canceled) {
-		return status.Error(codes.Canceled, err.Error())
+
+	// Attach trace details to the gRPC status after error mapping
+	if te != nil {
+		t := te.collector.ToProto()
+		if t != nil {
+			st, ok := status.FromError(err)
+			if !ok {
+				st = status.New(codes.Unknown, err.Error())
+			}
+			if detailed, detailErr := st.WithDetails(t); detailErr == nil {
+				return detailed.Err()
+			}
+		}
 	}
-	if errors.Is(err, queries.ErrForbidden) {
-		return ErrForbidden
-	}
-	if errors.Is(err, runtime.ErrForbidden) {
-		return ErrForbidden
-	}
-	if errors.Is(err, metricsview.ErrForbidden) {
-		return ErrForbidden
-	}
+
 	return err
 }
 
@@ -401,4 +416,28 @@ func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequ
 	return &runtimev1.IssueDevJWTResponse{
 		Jwt: jwt,
 	}, nil
+}
+
+// traceError wraps an error with trace data collected during request execution.
+// It is handled by mapGRPCError, which attaches the trace as gRPC error details after normal error mapping is applied.
+type traceError struct {
+	err       error
+	collector *observability.RequestScopedCollector
+}
+
+// Error and Unwrap implement the error interface and allow errors.Is and errors.As to work with traceError.
+func (e *traceError) Error() string { return e.err.Error() }
+func (e *traceError) Unwrap() error { return e.err }
+
+// withTrace wraps an error with trace data if a collector is present.
+func withTrace(err error, collector *observability.RequestScopedCollector) error {
+	if collector == nil {
+		return err
+	}
+	return &traceError{err: err, collector: collector}
+}
+
+// canTrace returns true for Rill Developer (SkipChecks=true) and project admins (ReadInstance).
+func canTrace(claims *runtime.SecurityClaims) bool {
+	return claims.Can(runtime.ReadInstance)
 }

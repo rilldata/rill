@@ -15,6 +15,7 @@ Dimensions are the "who," "what,", and "where" of your data. They provide contex
 
 Explore these advanced capabilities to enhance your dimensions:
 
+- [**Time Dimensions**](/developers/build/metrics-view/dimensions/time-dimensions) - Add multiple time-based dimensions for filtering across different date columns
 - [**Clickable Dimension URI**](/developers/build/metrics-view/dimensions/dimension-uri) - Generate navigable URIs for your dimension values
 - [**Unnesting Arrays**](/developers/build/metrics-view/dimensions/unnesting) - Work with array data by expanding nested structures
 - [**Lookup Dimensions**](/developers/build/metrics-view/dimensions/lookup) - Create dimensions that reference data from other sources

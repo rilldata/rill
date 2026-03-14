@@ -273,6 +273,21 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, release, err := c.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	ddl, err := db.DDL(ctx, table.Database, table.DatabaseSchema, table.Name)
+	if err != nil {
+		return c.checkErr(err)
+	}
+	table.DDL = ddl
+	return nil
+}
+
 func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 	var res []*drivers.OlapTable
 

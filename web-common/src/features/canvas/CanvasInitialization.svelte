@@ -13,10 +13,11 @@
   import { onNavigate } from "$app/navigation";
   import { writable } from "svelte/store";
   import {
-    createQueryServiceResolveCanvas,
     type V1MetricsView,
     type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
   import {
     ResourceKind,
     useResource,
@@ -30,24 +31,20 @@
   export let showBanner = false;
   export let projectId: string | undefined = undefined;
 
+  const client = useRuntimeClient();
+
   let resolvedStore: CanvasStore | undefined = undefined;
 
   $: ({ url } = $page);
 
   $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
 
-  $: resourceQuery = useResource(
-    instanceId,
-    canvasName,
-    ResourceKind.Canvas,
-    {},
-  );
+  $: resourceQuery = useResource(client, canvasName, ResourceKind.Canvas, {});
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
-        instanceId,
-        canvasName,
-        {},
+        client,
+        { canvas: canvasName },
         {
           query: {
             retry: 5,
@@ -77,7 +74,7 @@
 
   $: resource = resourceQuery ? $resourceQuery?.data : undefined;
 
-  $: errorMessage = !validSpec
+  $: reconcileErrorMessage = !validSpec
     ? reconcileError || resource?.meta?.reconcileError
     : undefined;
 
@@ -168,7 +165,7 @@
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
         };
 
-        return setCanvasStore(canvasName, instanceId, processed);
+        return setCanvasStore(canvasName, instanceId, processed, client);
       }
     }
 
@@ -180,4 +177,4 @@
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<slot {ready} {errorMessage} {isLoading} {isReconciling} />
+<slot {ready} {reconcileErrorMessage} {isLoading} {isReconciling} />

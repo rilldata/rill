@@ -1,5 +1,9 @@
-const nameSanitiserRegex = /[^\w-]/g;
+import { sanitizeSlug } from "@rilldata/web-common/lib/string-utils";
 
-export function sanitizeOrgName(name: string) {
-  return name.replace(nameSanitiserRegex, "-");
+/**
+ * Sanitizes an organization name for use in URLs.
+ * @deprecated Use sanitizeSlug from @rilldata/web-common/lib/string-utils instead
+ */
+export function sanitizeOrgName(name: string): string {
+  return sanitizeSlug(name);
 }

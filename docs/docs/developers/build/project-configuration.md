@@ -259,7 +259,7 @@ See our embedded example, [here](https://rill-embedding-example.netlify.app/rowa
 
 ### Custom Attributes
 
-Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code. For more information on embedding dashboards, see our [embedding documentation](/developers/integrate/embedding).
+Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code. For more information on embedding dashboards, see our [embedding documentation](/developers/embed/dashboards).
 
 To test embedded dashboards locally with custom attributes, add them to `mock_users`:
 
@@ -298,8 +298,7 @@ You can create a test mock user to ensure that this dashboard is working as desi
   pub_name: 'MobilityWare'
 ```
 
-<img src = '/img/tutorials/admin/custom-attribute-mock-user.png' class='rounded-gif' />
-<br />
+![Custom Attribute Mock User](/img/tutorials/admin/custom-attribute-mock-user.png)
 
 ## Feature Flags
 

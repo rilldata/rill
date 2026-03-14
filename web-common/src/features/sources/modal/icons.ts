@@ -6,7 +6,9 @@ import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte
 import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
 import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
 import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
+import DeltaLake from "../../../components/icons/connectors/DeltaLake.svelte";
 import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
+import ApacheIceberg from "../../../components/icons/connectors/ApacheIceberg.svelte";
 import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
 import Https from "../../../components/icons/connectors/HTTPS.svelte";
 import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
@@ -16,11 +18,13 @@ import Postgres from "../../../components/icons/connectors/Postgres.svelte";
 import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
 import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
 import SQLite from "../../../components/icons/connectors/SQLite.svelte";
-import ClickHouseCloud from "../../../components/icons/connectors/ClickHouseCloud.svelte";
 import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
+import Supabase from "../../../components/icons/connectors/Supabase.svelte";
 
 export const ICONS = {
+  delta: DeltaLake,
   gcs: GoogleCloudStorage,
+  iceberg: ApacheIceberg,
   s3: AmazonS3,
   azure: MicrosoftAzureBlobStorage,
   bigquery: GoogleBigQuery,
@@ -36,8 +40,8 @@ export const ICONS = {
   local_file: LocalFile,
   https: Https,
   clickhouse: ClickHouse,
-  clickhousecloud: ClickHouseCloud,
   druid: ApacheDruid,
   pinot: ApachePinot,
   starrocks: StarRocks,
+  supabase: Supabase,
 };

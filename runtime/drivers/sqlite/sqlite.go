@@ -34,7 +34,7 @@ type configProperties struct {
 	ID string `mapstructure:"id"`
 }
 
-func (d driver) Open(_ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	// Parse config
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
@@ -84,7 +84,7 @@ func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
-		DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/sqlite",
+		DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/sqlite",
 		// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 		SourceProperties: []*drivers.PropertySpec{
 			{

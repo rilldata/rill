@@ -255,6 +255,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 			Paths: []string{"/sources/s1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "s3"}},
 			ModelSpec: &runtimev1.ModelSpec{
 				InputConnector:   "s3",
 				OutputConnector:  "duckdb",
@@ -269,6 +270,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s2"},
 			Paths: []string{"/sources/s2.sql"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "postgres"}},
 			ModelSpec: &runtimev1.ModelSpec{
 				InputConnector:   "postgres",
 				OutputConnector:  "duckdb",
@@ -409,7 +411,7 @@ schema: default
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -448,7 +450,7 @@ FRO m1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, errors)
 }
@@ -459,7 +461,7 @@ func TestReparse(t *testing.T) {
 
 	// Create empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 
@@ -617,7 +619,7 @@ SELECT 10
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
 
@@ -705,7 +707,7 @@ SELECT * FROM m1
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
 		{
@@ -746,7 +748,7 @@ func TestReparseRillYAML(t *testing.T) {
 	}
 
 	// Parse empty project. Expect rill.yaml error.
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	require.Nil(t, p.RillYAML)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
@@ -808,7 +810,7 @@ func TestRefInferrence(t *testing.T) {
 		// model foo
 		`models/foo.sql`: `SELECT * FROM bar`,
 	})
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
 
@@ -846,6 +848,82 @@ func TestRefInferrence(t *testing.T) {
 		Modified: []ResourceName{foo.Name},
 		Deleted:  []ResourceName{bar.Name},
 	}, diff)
+}
+
+func TestConnectorRef(t *testing.T) {
+	ctx := context.Background()
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// connector duckdb
+		`connectors/duckdb.yaml`: `
+driver: duckdb
+`,
+		// model m1
+		`models/m1.sql`: `
+SELECT 1
+`,
+	}
+	resources := []*Resource{
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "duckdb"}},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		// duckdb connector
+		{
+			Name:  ResourceName{Kind: ResourceKindConnector, Name: "duckdb"},
+			Paths: []string{"/connectors/duckdb.yaml"},
+			ConnectorSpec: &runtimev1.ConnectorSpec{
+				Driver: "duckdb",
+			},
+		},
+	}
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestConnectorDeletion(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`connectors/duckdb.yaml`: `
+type: connector
+driver: duckdb
+`,
+		`models/m1.sql`: `SELECT 1`,
+	})
+
+	// Initial parse - model should ref the connector
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+
+	m1 := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+	require.NotNil(t, m1)
+	require.Contains(t, m1.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"})
+
+	// Delete the connector file
+	deleteRepo(t, repo, "/connectors/duckdb.yaml")
+
+	// Reparse - model should no longer ref the deleted connector
+	diff, err := p.Reparse(ctx, []string{"/connectors/duckdb.yaml"})
+	require.NoError(t, err)
+	require.Contains(t, diff.Deleted, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"})
+	require.Contains(t, diff.Modified, ResourceName{Kind: ResourceKindModel, Name: "m1"}, "model should be modified when connector is deleted")
+
+	m1Updated := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+	require.NotNil(t, m1Updated)
+	require.NotContains(t, m1Updated.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"}, "model should not ref deleted connector")
 }
 
 func BenchmarkReparse(b *testing.B) {
@@ -894,7 +972,7 @@ materialize: true
 		},
 	}
 	repo := makeRepo(b, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(b, err)
 	requireResourcesAndErrors(b, p, resources, nil)
 
@@ -957,7 +1035,7 @@ SELECT * FROM t2
 	}
 
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1053,7 +1131,7 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1182,12 +1260,12 @@ environment_overrides:
 	}
 
 	// Parse without environment
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Base, m1Base, m2Base, m3Base}, nil)
 
 	// Parse in environment "dev"
-	p, err = Parse(ctx, repo, "", "dev", "duckdb")
+	p, err = Parse(ctx, repo, "", "dev", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test, m1Base, m2Base, m3Test}, nil)
 }
@@ -1269,7 +1347,7 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1358,8 +1436,11 @@ annotations:
 					Cron:     "0 * * * *",
 					TimeZone: "America/Los_Angeles",
 				},
-				QueryName:           "MetricsViewToplist",
-				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				Resolver: "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": "{\"metrics_view\":\"mv1\"}",
+				})),
 				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportIncludeHeader: true,
 				ExportLimit:         10000,
@@ -1382,8 +1463,11 @@ annotations:
 					Cron:     "0 * * * *",
 					TimeZone: "America/Los_Angeles",
 				},
-				QueryName:           "MetricsViewToplist",
-				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				Resolver: "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": "{\"metrics_view\":\"mv1\"}",
+				})),
 				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportIncludeHeader: false,
 				ExportLimit:         10000,
@@ -1399,7 +1483,7 @@ annotations:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1489,7 +1573,7 @@ annotations:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1531,7 +1615,7 @@ measures:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1662,7 +1746,7 @@ theme:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1823,7 +1907,7 @@ rows:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1905,7 +1989,7 @@ select 3
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2003,7 +2087,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2054,7 +2138,7 @@ refresh:
 	}
 
 	// Parse for prod and check
-	p, err := Parse(ctx, repo, "", "prod", "duckdb")
+	p, err := Parse(ctx, repo, "", "prod", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
 
@@ -2062,7 +2146,7 @@ refresh:
 	m1.ModelSpec.RefreshSchedule.Cron = ""
 
 	// Parse for dev and check
-	p, err = Parse(ctx, repo, "", "dev", "duckdb")
+	p, err = Parse(ctx, repo, "", "dev", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
 }
@@ -2084,7 +2168,7 @@ driver: clickhouse
 			Driver: "clickhouse",
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
 
@@ -2103,7 +2187,7 @@ managed: true
 			Provision: true,
 		},
 	}
-	p, err = Parse(ctx, repo, "", "", "duckdb")
+	p, err = Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
 
@@ -2126,7 +2210,7 @@ time_zone: America/Los_Angeles
 			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
 		},
 	}
-	p, err = Parse(ctx, repo, "", "", "duckdb")
+	p, err = Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
 
@@ -2137,7 +2221,7 @@ driver: clickhouse
 managed: 10
 `,
 	})
-	p, err = Parse(ctx, repo, "", "", "duckdb")
+	p, err = Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
 		{Message: "failed to decode 'managed'", FilePath: "/connectors/clickhouse.yaml"},
@@ -2185,7 +2269,7 @@ metrics_view: missing
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2252,7 +2336,7 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 
@@ -2315,7 +2399,7 @@ change_mode: patch
 				`models/m1.yaml`: tt.yamlInput,
 			})
 
-			p, err := Parse(ctx, repo, "", "", "duckdb")
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
 			require.NoError(t, err)
 			require.Len(t, p.Resources, 1)
 			resource := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
@@ -2405,7 +2489,7 @@ tests:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2464,7 +2548,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("file", "", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")
@@ -2621,7 +2705,7 @@ dark:
 				"themes/test.yaml": tt.yaml,
 			})
 
-			p, err := Parse(ctx, repo, "", "", "duckdb")
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
 			require.NoError(t, err)
 
 			if tt.expectError {

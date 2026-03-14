@@ -24,6 +24,21 @@ export default defineConfig({
   define: {
     RillPublicEmailDomains: readPublicEmailDomains(),
   },
+  optimizeDeps: {
+    include: [
+      "@tanstack/svelte-query",
+      "@tanstack/svelte-table",
+      "@codemirror/view",
+      "@codemirror/state",
+      "@codemirror/language",
+      "d3-scale",
+      "d3-format",
+      "d3-array",
+      "luxon",
+      "bits-ui",
+      "vega-lite",
+    ],
+  },
   plugins: [sveltekit()],
   envDir: "../",
   envPrefix: "RILL_UI_PUBLIC_",

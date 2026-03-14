@@ -2,13 +2,18 @@
    Utility Classes
    ========================= */
 
-.rounded-gif {
+/* Apply rounded styling to .rounded-gif class and standalone markdown images in docs */
+/* Exclude images inside components (tile-icon, connector-icon, etc.) */
+.rounded-gif,
+.theme-doc-markdown > p > img,
+.theme-doc-markdown > img,
+article .markdown > p > img,
+article .markdown > img {
   border-radius: 0.625rem; /* 10px */
   display: block;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
-  box-shadow: 0.25rem 0.25rem 0.625rem rgba(0, 0, 0, 0.2); 
 }
 
 .centered {

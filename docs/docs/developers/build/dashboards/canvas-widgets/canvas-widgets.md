@@ -47,6 +47,7 @@ Rill Canvas dashboards are built using a variety of widgets that can display dat
 ### Funnel
 ### Heat Map
 ### Combo
+### Scatter Plot
 
 <div className="component-icon-grid">
     <ComponentTile
@@ -102,6 +103,12 @@ Rill Canvas dashboards are built using a variety of widgets that can display dat
         link="/developers/build/dashboards/canvas-widgets/chart#combo-chart"
         multiple_measures="False"
         image={<img src="/img/build/dashboard/canvas/components/combo.png" alt="Combo Chart" />}
+    />
+    <ComponentTile
+        header="Scatter Plot"
+        link="/developers/build/dashboards/canvas-widgets/chart#scatter-plot"
+        multiple_measures="True"
+        image={<img src="/img/build/dashboard/canvas/components/scatter-plot.png" alt="Scatter Plot" />}
     />
 </div>
 

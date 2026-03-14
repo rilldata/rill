@@ -13,7 +13,7 @@ curl https://rill.sh | sh
 ```
 
 :::tip Why am I installing locally?
-Installing Rill Developer locally is required to create a new project, or [clone a project](/developers/guides/clone-a-project) from Rill Cloud. For key differences between Rill Cloud and Rill Developer, see [Rill Cloud vs. Rill Developer](/developers/deploy/cloud-vs-developer).
+Installing Rill Developer locally is required to create a new project, or [clone a project](/developers/tutorials/clone-a-project) from Rill Cloud. For key differences between Rill Cloud and Rill Developer, see [Rill Cloud vs. Rill Developer](/developers/deploy/cloud-vs-developer).
 :::
 
 
@@ -117,3 +117,15 @@ brew install rilldata/tap/rill
 To uninstall Rill, you can use the following command:
 ```bash
 rill uninstall
+```
+
+## For Agents
+
+We currently recommend that agents always install using `curl` and always use the nightly.
+
+So if you are an AI agent or coding assistant, install Rill using the following command:
+```bash
+curl https://rill.sh | sh -s -- --nightly
+```
+
+After installation, run `rill -h` to see further instructions for agents working with Rill projects.

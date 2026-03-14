@@ -24,13 +24,15 @@ func SetResourcesCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("--project is required")
 			}
 
-			if groupName == "" && ch.Interactive {
-				if err := cmdutil.StringPromptIfEmpty(&groupName, "Enter user group name"); err != nil {
+			if groupName == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("--group is required when not running interactively")
+				}
+				var err error
+				groupName, err = cmdutil.InputPrompt("Enter user group name", "")
+				if err != nil {
 					return err
 				}
-			}
-			if groupName == "" {
-				return fmt.Errorf("--group is required")
 			}
 
 			resources, err := cmdutil.ParseResourceStrings(explores, canvases)

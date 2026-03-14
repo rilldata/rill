@@ -28,36 +28,45 @@ type Query struct {
 	TimeZone            string      `json:"time_zone" mapstructure:"time_zone"`
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
+
+	QueryLimits  *QueryLimits   `json:"query_limits,omitempty" mapstructure:"query_limits"`
+	UnusedFields map[string]any `json:"-" mapstructure:",remain"`
 }
 
 type Dimension struct {
-	Name    string            `json:"name" mapstructure:"name"`
-	Compute *DimensionCompute `json:"compute" mapstructure:"compute"`
+	Name    string            `json:"name,omitempty" mapstructure:"name"`
+	Compute *DimensionCompute `json:"compute,omitempty" mapstructure:"compute"`
 }
 
 type DimensionCompute struct {
-	TimeFloor *DimensionComputeTimeFloor `json:"time_floor" mapstructure:"time_floor"`
+	TimeFloor *DimensionComputeTimeFloor `json:"time_floor,omitempty" mapstructure:"time_floor"`
 }
 
 type DimensionComputeTimeFloor struct {
-	Dimension string    `json:"dimension" mapstructure:"dimension"`
-	Grain     TimeGrain `json:"grain" mapstructure:"grain"`
+	Dimension string    `json:"dimension,omitempty" mapstructure:"dimension"`
+	Grain     TimeGrain `json:"grain,omitempty" mapstructure:"grain"`
 }
 
 type Measure struct {
-	Name    string          `json:"name" mapstructure:"name"`
-	Compute *MeasureCompute `json:"compute" mapstructure:"compute"`
+	Name    string          `json:"name,omitempty" mapstructure:"name"`
+	Compute *MeasureCompute `json:"compute,omitempty" mapstructure:"compute"`
 }
 
 type MeasureCompute struct {
-	Count           bool                           `json:"count" mapstructure:"count"`
-	CountDistinct   *MeasureComputeCountDistinct   `json:"count_distinct" mapstructure:"count_distinct"`
-	ComparisonValue *MeasureComputeComparisonValue `json:"comparison_value" mapstructure:"comparison_value"`
-	ComparisonDelta *MeasureComputeComparisonDelta `json:"comparison_delta" mapstructure:"comparison_delta"`
-	ComparisonRatio *MeasureComputeComparisonRatio `json:"comparison_ratio" mapstructure:"comparison_ratio"`
-	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total" mapstructure:"percent_of_total"`
-	URI             *MeasureComputeURI             `json:"uri" mapstructure:"uri"`
-	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time" mapstructure:"comparison_time"`
+	Count           bool                           `json:"count,omitempty" mapstructure:"count"`
+	CountDistinct   *MeasureComputeCountDistinct   `json:"count_distinct,omitempty" mapstructure:"count_distinct"`
+	ComparisonValue *MeasureComputeComparisonValue `json:"comparison_value,omitempty" mapstructure:"comparison_value"`
+	ComparisonDelta *MeasureComputeComparisonDelta `json:"comparison_delta,omitempty" mapstructure:"comparison_delta"`
+	ComparisonRatio *MeasureComputeComparisonRatio `json:"comparison_ratio,omitempty" mapstructure:"comparison_ratio"`
+	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total,omitempty" mapstructure:"percent_of_total"`
+	URI             *MeasureComputeURI             `json:"uri,omitempty" mapstructure:"uri"`
+	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time,omitempty" mapstructure:"comparison_time"`
+}
+
+// QueryLimits represents limits that should be applied to a query, such as requiring a time range or limiting the maximum time range for interactive queries. These are not part of the Query json itself because they are not intrinsic to the query, but rather are constraints that may be applied to the query before execution.
+type QueryLimits struct {
+	RequireTimeRange bool  `json:"require_time_range,omitempty" mapstructure:"require_time_range"`
+	MaxTimeRangeDays int64 `json:"max_time_range_days,omitempty" mapstructure:"max_time_range_days"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {
@@ -221,10 +230,10 @@ func (tr *TimeRange) AsMap() (map[string]any, error) {
 }
 
 type Expression struct {
-	Name      string     `json:"name" mapstructure:"name"`
-	Value     any        `json:"val" mapstructure:"val"`
-	Condition *Condition `json:"cond" mapstructure:"cond"`
-	Subquery  *Subquery  `json:"subquery" mapstructure:"subquery"`
+	Name      string     `json:"name,omitempty" mapstructure:"name"`
+	Value     any        `json:"val,omitempty" mapstructure:"val"`
+	Condition *Condition `json:"cond,omitempty" mapstructure:"cond"`
+	Subquery  *Subquery  `json:"subquery,omitempty" mapstructure:"subquery"`
 }
 
 func (e *Expression) AsMap() (map[string]any, error) {
@@ -244,15 +253,15 @@ func (e *Expression) AsMap() (map[string]any, error) {
 }
 
 type Condition struct {
-	Operator    Operator      `json:"op" mapstructure:"op"`
-	Expressions []*Expression `json:"exprs" mapstructure:"exprs"`
+	Operator    Operator      `json:"op,omitempty" mapstructure:"op"`
+	Expressions []*Expression `json:"exprs,omitempty" mapstructure:"exprs"`
 }
 
 type Subquery struct {
-	Dimension Dimension   `json:"dimension" mapstructure:"dimension"`
-	Measures  []Measure   `json:"measures" mapstructure:"measures"`
-	Where     *Expression `json:"where" mapstructure:"where"`
-	Having    *Expression `json:"having" mapstructure:"having"`
+	Dimension Dimension   `json:"dimension,omitempty" mapstructure:"dimension"`
+	Measures  []Measure   `json:"measures,omitempty" mapstructure:"measures"`
+	Where     *Expression `json:"where,omitempty" mapstructure:"where"`
+	Having    *Expression `json:"having,omitempty" mapstructure:"having"`
 }
 
 type Operator string
@@ -765,6 +774,7 @@ const QueryJSONSchema = `
     },
     "TimeRange": {
       "type": "object",
+      "description": "Time range for filtering the query. Prefer using absolute 'start' and 'end' parameters if available. Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields other than 'time_dimension' is set as its not supported.",
       "properties": {
         "start": {
           "type": "string",
@@ -778,15 +788,15 @@ const QueryJSONSchema = `
         },
         "expression": {
           "type": "string",
-          "description": "Time range expression"
+          "description": "Time range expression. If specifying this no other TimeRange fields should be set."
         },
         "iso_duration": {
           "type": "string",
-          "description": "ISO 8601 duration"
+          "description": "ISO 8601 duration, supported but deprecated in favor of 'expression' field."
         },
         "iso_offset": {
           "type": "string",
-          "description": "ISO 8601 offset"
+          "description": "ISO 8601 offset, supported but deprecated in favor of 'expression' field."
         },
         "round_to_grain": {
           "$ref": "#/$defs/TimeGrain",

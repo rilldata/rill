@@ -79,8 +79,7 @@ You can verify the current value of your state in the left-hand panel under Incr
 
 When you are testing with incremental models in Rill Developer, you will notice a change in the refresh functionality. Instead of a full refresh, you are given the option for `incremental refresh`.
 
-<img src='/img/tutorials/advanced-models/now-incremental.png' class='rounded-gif' />
-<br />
+![Now Incremental](/img/tutorials/advanced-models/now-incremental.png)
 
 :::tip What's the difference?
 

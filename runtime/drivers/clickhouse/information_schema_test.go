@@ -17,7 +17,7 @@ import (
 func TestInformationSchema(t *testing.T) {
 	testmode.Expensive(t)
 	dsn := testclickhouse.Start(t)
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	infoSchema, ok := conn.AsInformationSchema()
@@ -27,7 +27,7 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, conn) })
 	t.Run("testInformationSchemaSystemAllLike", func(t *testing.T) {
-		conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn + "/system", "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn + "/system", "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		testInformationSchemaSystemAllLike(t, conn)
 	})
@@ -39,6 +39,7 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema) })
 	t.Run("testInformationSchemaListDatabaseSchemasPagination", func(t *testing.T) { testInformationSchemaListDatabaseSchemasPagination(t, infoSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema) })
+	t.Run("testLoadDDL", func(t *testing.T) { testLoadDDL(t, conn) })
 }
 
 func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
@@ -373,4 +374,25 @@ func prepareConn(t *testing.T, conn drivers.Handle) {
 		)`,
 	})
 	require.NoError(t, err)
+}
+
+func testLoadDDL(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+	ctx := context.Background()
+
+	// Test DDL for a table
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, table)
+	require.NoError(t, err)
+	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "foo")
+
+	// Test DDL for a view
+	view, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, view)
+	require.NoError(t, err)
+	require.Contains(t, view.DDL, "CREATE VIEW")
+	require.Contains(t, view.DDL, "model")
 }
