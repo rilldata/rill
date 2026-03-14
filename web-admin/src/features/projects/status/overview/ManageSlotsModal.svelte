@@ -10,6 +10,7 @@
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
+  import { LIVE_CONNECT_TIERS, detectTierSlots } from "./slots-utils";
 
   export let open = false;
   export let organization: string;
@@ -25,16 +26,6 @@
   // When true, the user can only view the detected tier and apply it (no selection).
   export let viewOnly = false;
 
-  // Live Connect tiers: Rill bill is ~20% of infrastructure cost
-  const LIVE_CONNECT_TIERS = [
-    { slots: 4, instance: "8GiB / 2vCPU", rillBill: 99 }, 
-    { slots: 6, instance: "12GiB / 3vCPU", rillBill: 130 },
-    { slots: 8, instance: "16GiB / 4vCPU", rillBill: 175 },
-    { slots: 16, instance: "32GiB / 8vCPU", rillBill: 350 },
-    { slots: 32, instance: "64GiB / 16vCPU", rillBill: 700 },
-    { slots: 60, instance: "120GiB / 30vCPU", rillBill: 1300 },
-  ];
-
   // Rill-managed tiers: billed per slot/hr; data charged separately
   const RILL_MANAGED_TIERS = [
     { slots: 4 },
@@ -48,20 +39,10 @@
   const SLOT_RATE_PER_HR = 0.03;
   const HOURS_PER_MONTH = 730; // ~365.25 * 24 / 12
 
-  // Auto-detect matching tier from CHC cluster memory (memory per replica)
-  $: detectedTierSlots = (() => {
-    if (!detectedMemoryGb || isRillManaged) return undefined;
-    // Find the tier whose per-replica memory (slots * 2 GB) is closest to detected
-    const match = LIVE_CONNECT_TIERS.reduce((best, tier) => {
-      const tierMemory = tier.slots * 2; // GB per replica
-      const bestMemory = best.slots * 2;
-      return Math.abs(tierMemory - detectedMemoryGb) <
-        Math.abs(bestMemory - detectedMemoryGb)
-        ? tier
-        : best;
-    });
-    return match.slots;
-  })();
+  // Auto-detect matching tier from cluster memory
+  $: detectedTierSlots = isRillManaged
+    ? undefined
+    : detectTierSlots(detectedMemoryGb);
 
   // Rill-managed and self-managed: no minimum floor
   // CHC (detectedTierSlots set): can downgrade below current but not below detected tier
@@ -136,15 +117,13 @@
             Based on your ClickHouse Cloud cluster, we recommend the following
             slot configuration. <a
               href="/{organization}/-/settings/billing"
-              class="text-primary-500 hover:underline"
-              >Start a Growth plan</a
+              class="text-primary-500 hover:underline">Start a Growth plan</a
             > to customize your slot allocation.
           {:else}
-            Based on your OLAP cluster, we recommend the following
-            slot configuration. <a
+            Based on your OLAP cluster, we recommend the following slot
+            configuration. <a
               href="/{organization}/-/settings/billing"
-              class="text-primary-500 hover:underline"
-              >Start a Growth plan</a
+              class="text-primary-500 hover:underline">Start a Growth plan</a
             > to customize your slot allocation.
           {/if}
         {:else if isRillManaged}
@@ -180,12 +159,16 @@
         {#each RILL_MANAGED_TIERS as tier}
           <button
             class="tier-row"
-            class:tier-active={tier.slots === currentSlots || (viewOnly && tier.slots === selectedSlots)}
-            class:tier-selected={!viewOnly && tier.slots === selectedSlots &&
+            class:tier-active={tier.slots === currentSlots ||
+              (viewOnly && tier.slots === selectedSlots)}
+            class:tier-selected={!viewOnly &&
+              tier.slots === selectedSlots &&
               tier.slots !== currentSlots}
             class:tier-disabled={viewOnly && tier.slots !== selectedSlots}
             disabled={viewOnly && tier.slots !== selectedSlots}
-            on:click={() => { if (!viewOnly) selectedSlots = tier.slots; }}
+            on:click={() => {
+              if (!viewOnly) selectedSlots = tier.slots;
+            }}
           >
             <span class="tier-cell">
               {tier.slots}
@@ -215,12 +198,18 @@
         {#each LIVE_CONNECT_TIERS as tier}
           <button
             class="tier-row"
-            class:tier-active={tier.slots === currentSlots || (viewOnly && tier.slots === selectedSlots)}
-            class:tier-selected={!viewOnly && tier.slots === selectedSlots &&
+            class:tier-active={tier.slots === currentSlots ||
+              (viewOnly && tier.slots === selectedSlots)}
+            class:tier-selected={!viewOnly &&
+              tier.slots === selectedSlots &&
               tier.slots !== currentSlots}
-            class:tier-disabled={tier.slots < minimumSlots || (viewOnly && tier.slots !== selectedSlots)}
-            disabled={tier.slots < minimumSlots || (viewOnly && tier.slots !== selectedSlots)}
-            on:click={() => { if (!viewOnly) selectedSlots = tier.slots; }}
+            class:tier-disabled={tier.slots < minimumSlots ||
+              (viewOnly && tier.slots !== selectedSlots)}
+            disabled={tier.slots < minimumSlots ||
+              (viewOnly && tier.slots !== selectedSlots)}
+            on:click={() => {
+              if (!viewOnly) selectedSlots = tier.slots;
+            }}
           >
             <span class="tier-cell tier-cell-wide">
               {tier.instance}
@@ -244,8 +233,8 @@
       </p>
       {#if isClickHouseCloud}
         <p class="chc-note">
-          Cluster specs are auto-detected from your ClickHouse Cloud service
-          and assume 2 replicas.
+          Cluster specs are auto-detected from your ClickHouse Cloud service and
+          assume 2 replicas.
         </p>
       {:else}
         <p class="chc-note">
@@ -263,7 +252,11 @@
       {/if}
       <button
         class="apply-btn"
-        disabled={(viewOnly ? false : required ? selectedSlots === 0 : !hasChanged) || $updateProject.isPending}
+        disabled={(viewOnly
+          ? false
+          : required
+            ? selectedSlots === 0
+            : !hasChanged) || $updateProject.isPending}
         on:click={applySlotChange}
       >
         {#if $updateProject.isPending}

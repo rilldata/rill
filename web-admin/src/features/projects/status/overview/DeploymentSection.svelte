@@ -113,7 +113,9 @@
     | string
     | undefined;
   $: cloudStatus = olapConnector?.config?.cloud_status as string | undefined;
-  $: cloudProvider = olapConnector?.config?.cloud_provider as string | undefined;
+  $: cloudProvider = olapConnector?.config?.cloud_provider as
+    | string
+    | undefined;
   $: cloudRegion = olapConnector?.config?.cloud_region as string | undefined;
   $: cloudTier = olapConnector?.config?.cloud_tier as string | undefined;
   $: cloudMinMemory = olapConnector?.config?.cloud_min_memory_gb as
@@ -126,8 +128,7 @@
     | number
     | undefined;
   $: hasCloudDetails = !!cloudServiceName;
-  $: isChcHibernated =
-    cloudStatus === "idle" || cloudStatus === "stopped";
+  $: isChcHibernated = cloudStatus === "idle" || cloudStatus === "stopped";
   $: isChcWakingUp = cloudStatus === "idle";
 
   let chcDetailsModalOpen = false;
@@ -146,7 +147,8 @@
   let chcDismissedThisSession = false;
   onMount(() => {
     chcDismissedThisSession =
-      sessionStorage.getItem(`chc-key-dismissed:${organization}/${project}`) === "true";
+      sessionStorage.getItem(`chc-key-dismissed:${organization}/${project}`) ===
+      "true";
   });
 
   function handleChcDismiss() {
@@ -179,11 +181,14 @@
   }
 
   // Use the resolved host from the runtime (handles DSN parsing server-side)
-  $: connectorHost = olapConnector?.config?.resolved_host as
-    | string
-    | undefined;
+  $: connectorHost = olapConnector?.config?.resolved_host as string | undefined;
 
-  $: console.log("[CHC] connectorHost:", connectorHost, "olapConnector config:", olapConnector?.config);
+  $: console.log(
+    "[CHC] connectorHost:",
+    connectorHost,
+    "olapConnector config:",
+    olapConnector?.config,
+  );
 
   // After CHC key is saved, open the slots modal in required mode
   let slotsRequiredMode = false;
@@ -196,7 +201,12 @@
   })();
 
   function handleChcKeySaved(memoryGb?: number) {
-    console.log("[CHC] Key saved, detectedMemoryGb:", memoryGb, "canManage:", canManage);
+    console.log(
+      "[CHC] Key saved, detectedMemoryGb:",
+      memoryGb,
+      "canManage:",
+      canManage,
+    );
     if (memoryGb && memoryGb > 0) {
       chcDetectedMemoryGb = memoryGb;
       sessionStorage.setItem(chcMemoryKey, String(memoryGb));
@@ -361,7 +371,9 @@
               disabled={isChcHibernated}
               on:click={() => (slotsModalOpen = true)}
             >
-              {isChcHibernated ? "Manage Slots (unavailable while CHC is waking)" : "Manage Slots"}
+              {isChcHibernated
+                ? "Manage Slots (unavailable while CHC is waking)"
+                : "Manage Slots"}
             </button>
           {/if}
         </span>
