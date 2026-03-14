@@ -3234,6 +3234,10 @@ message Project {
   string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
+  // ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
+  optional double chc_cluster_size = 27;
+  // RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+  optional int64 rill_min_slots = 28;
   // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
   reserved 10, 11;
 }

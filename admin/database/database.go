@@ -99,6 +99,8 @@ type DB interface {
 	InsertProjectWhitelistedDomain(ctx context.Context, opts *InsertProjectWhitelistedDomainOptions) (*ProjectWhitelistedDomain, error)
 	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
+	FindProjectsWithCHC(ctx context.Context) ([]*Project, error)
+
 	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*Deployment, error)
@@ -507,6 +509,10 @@ type Project struct {
 	// Annotations are internally configured key-value metadata about the project.
 	// They propagate to the project's deployments and telemetry.
 	Annotations map[string]string `db:"annotations"`
+	// ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
+	ChcClusterSize *float64 `db:"chc_cluster_size"`
+	// RillMinSlots is the minimum number of Rill slots required, derived from ChcClusterSize.
+	RillMinSlots *int64 `db:"rill_min_slots"`
 	// CreatedOn is the time the project was created.
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is the time the project was last updated.
@@ -557,6 +563,8 @@ type UpdateProjectOptions struct {
 	DevSlots             int
 	DevTTLSeconds        int64
 	Annotations          map[string]string
+	ChcClusterSize       *float64
+	RillMinSlots         *int64
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

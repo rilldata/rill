@@ -199,6 +199,10 @@ type configProperties struct {
 	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
 	// ReadTimeout is the maximum amount of time a connection may be reused. Default is 300s.
 	ReadTimeout string `mapstructure:"read_timeout"`
+	// ClickHouseCloudAPIKeyID is the key ID for the ClickHouse Cloud Admin API.
+	ClickHouseCloudAPIKeyID string `mapstructure:"clickhouse_cloud_api_key_id"`
+	// ClickHouseCloudAPIKeySecret is the key secret for the ClickHouse Cloud Admin API.
+	ClickHouseCloudAPIKeySecret string `mapstructure:"clickhouse_cloud_api_key_secret"`
 }
 
 func (c *configProperties) validate() error {
@@ -380,6 +384,16 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		embed:           embed,
 	}
 
+	// Initialize ClickHouse Cloud API client if credentials are provided and host looks like CHC
+	if c.isClickHouseCloud() {
+		c.cloudClient = NewCloudAPIClient(conf.ClickHouseCloudAPIKeyID, conf.ClickHouseCloudAPIKeySecret)
+		if c.cloudClient != nil {
+			logger.Info("ClickHouse Cloud detected; API client initialized", zap.String("host", c.resolvedHost()))
+		} else {
+			logger.Info("ClickHouse Cloud detected but no API key configured", zap.String("host", c.resolvedHost()))
+		}
+	}
+
 	c.used()
 	go c.periodicallyEmitStats()
 
@@ -432,6 +446,10 @@ type Connection struct {
 	embed *embedClickHouse
 	// billingTableExists cached state of whether the billing.events table exists in the database
 	billingTableExists *bool
+	// cloudInfo holds metadata fetched from the ClickHouse Cloud API (nil if not CHC or no API key)
+	cloudInfo *CloudServiceInfo
+	// cloudClient is the CHC API client (nil if no API keys configured)
+	cloudClient *CloudAPIClient
 }
 
 // Ping implements drivers.Handle.
@@ -462,6 +480,23 @@ func (c *Connection) Driver() string {
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
+	// Inject ClickHouse Cloud info if available (for frontend consumption)
+	m["is_clickhouse_cloud"] = c.isClickHouseCloud()
+	if host := c.resolvedHost(); host != "" {
+		m["resolved_host"] = host
+	}
+	if c.cloudInfo != nil {
+		m["cloud_service_id"] = c.cloudInfo.ID
+		m["cloud_service_name"] = c.cloudInfo.Name
+		m["cloud_status"] = c.cloudInfo.Status
+		m["cloud_provider"] = c.cloudInfo.CloudProvider
+		m["cloud_region"] = c.cloudInfo.Region
+		m["cloud_tier"] = c.cloudInfo.Tier
+		m["cloud_idle_scaling"] = c.cloudInfo.IdleScaling
+		m["cloud_min_memory_gb"] = c.cloudInfo.MinMemoryGB
+		m["cloud_max_memory_gb"] = c.cloudInfo.MaxMemoryGB
+		m["cloud_num_replicas"] = c.cloudInfo.NumReplicas
+	}
 	return m
 }
 
@@ -596,6 +631,64 @@ func (c *Connection) lastUsedOn() time.Time {
 	return time.Unix(c.lastUsedUnixTime.Load(), 0)
 }
 
+// isClickHouseCloud returns true if the connected host looks like a ClickHouse Cloud endpoint.
+func (c *Connection) isClickHouseCloud() bool {
+	host := c.resolvedHost()
+	return strings.HasSuffix(strings.ToLower(host), ".clickhouse.cloud")
+}
+
+// resolvedHost returns the host this connection targets, checking config, parsed opts, and DSN.
+func (c *Connection) resolvedHost() string {
+	if c.config.Host != "" {
+		return c.config.Host
+	}
+	// Try parsed opts (populated after Open via ParseDSN or manual config)
+	if c.opts != nil && len(c.opts.Addr) > 0 {
+		host, _, err := net.SplitHostPort(c.opts.Addr[0])
+		if err == nil && host != "" {
+			return host
+		}
+		return c.opts.Addr[0]
+	}
+	// Fallback: parse DSN directly (handles https:// and clickhouse:// schemes)
+	if c.config.DSN != "" {
+		return hostFromDSN(c.config.DSN)
+	}
+	return ""
+}
+
+// hostFromDSN extracts the hostname from a DSN string.
+// Handles schemes like clickhouse://, https://, http://.
+func hostFromDSN(dsn string) string {
+	// Strip scheme
+	if idx := strings.Index(dsn, "://"); idx >= 0 {
+		dsn = dsn[idx+3:]
+	}
+	// Strip userinfo
+	if idx := strings.Index(dsn, "@"); idx >= 0 {
+		dsn = dsn[idx+1:]
+	}
+	// Strip query params
+	if idx := strings.Index(dsn, "?"); idx >= 0 {
+		dsn = dsn[:idx]
+	}
+	// Strip path
+	if idx := strings.Index(dsn, "/"); idx >= 0 {
+		dsn = dsn[:idx]
+	}
+	// Strip port
+	host, _, err := net.SplitHostPort(dsn)
+	if err == nil && host != "" {
+		return host
+	}
+	return dsn
+}
+
+// CloudInfo returns the cached ClickHouse Cloud service info, or nil if unavailable.
+func (c *Connection) CloudInfo() *CloudServiceInfo {
+	return c.cloudInfo
+}
+
 // Periodically collects stats about the database and emit them as activity events.
 func (c *Connection) periodicallyEmitStats() {
 	if c.activity == nil {
@@ -610,6 +703,10 @@ func (c *Connection) periodicallyEmitStats() {
 	// Regular ticker for non-sensitive stats
 	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
+
+	// Hourly ticker for ClickHouse Cloud API polling (aligned with billing reporter cadence)
+	chcTicker := time.NewTicker(time.Hour)
+	defer chcTicker.Stop()
 
 	// Cache invalidation ticker to reset billing table existence cache
 	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
@@ -642,6 +739,33 @@ func (c *Connection) periodicallyEmitStats() {
 				}
 
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
+			}
+		case <-chcTicker.C:
+			// Fetch ClickHouse Cloud service info hourly and emit as metrics
+			if c.cloudClient != nil {
+				info, err := c.cloudClient.FindServiceByHost(c.ctx, c.resolvedHost())
+				if err != nil {
+					c.logger.Warn("failed to fetch ClickHouse Cloud service info", zap.Error(err))
+				} else {
+					c.cloudInfo = info
+					c.logger.Info("ClickHouse Cloud service info",
+						zap.String("service_id", info.ID),
+						zap.String("service_name", info.Name),
+						zap.String("status", info.Status),
+						zap.String("cloud_provider", info.CloudProvider),
+						zap.String("region", info.Region),
+						zap.String("tier", info.Tier),
+						zap.Bool("idle_scaling", info.IdleScaling),
+						zap.Float64("min_memory_gb", info.MinMemoryGB),
+						zap.Float64("max_memory_gb", info.MaxMemoryGB),
+						zap.Int("num_replicas", info.NumReplicas),
+					)
+					c.config.CanScaleToZero = info.IdleScaling
+					// Emit CHC cluster memory as a metric for billing/Orb ingestion
+					c.activity.RecordMetric(c.ctx, "clickhouse_cloud_max_memory_gb", info.MaxMemoryGB)
+					c.activity.RecordMetric(c.ctx, "clickhouse_cloud_min_memory_gb", info.MinMemoryGB)
+					c.activity.RecordMetric(c.ctx, "clickhouse_cloud_num_replicas", float64(info.NumReplicas))
+				}
 			}
 		case <-regularTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.

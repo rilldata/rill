@@ -256,6 +256,15 @@ func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterID
 	return c.projectsFromDTOs(res)
 }
 
+func (c *connection) FindProjectsWithCHC(ctx context.Context) ([]*database.Project, error) {
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.chc_cluster_size IS NOT NULL AND p.primary_deployment_id IS NOT NULL")
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return c.projectsFromDTOs(res)
+}
+
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
 	var res []string
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id
@@ -530,8 +539,10 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			prod_version = $17,
 			dev_slots = $18,
 			dev_ttl_seconds = $19,
+			chc_cluster_size = $20,
+			rill_min_slots = $21,
 			updated_on = now()
-		WHERE id = $20
+		WHERE id = $22
 		RETURNING *
 		`,
 		opts.Name,
@@ -553,6 +564,8 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.ProdVersion,
 		opts.DevSlots,
 		opts.DevTTLSeconds,
+		opts.ChcClusterSize,
+		opts.RillMinSlots,
 		id,
 	).StructScan(res)
 	if err != nil {

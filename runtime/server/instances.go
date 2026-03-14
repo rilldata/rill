@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -76,8 +77,15 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	pb := instanceToPB(inst, featureFlags, req.Sensitive)
+
+	// Enrich OLAP connector with runtime metadata (e.g. ClickHouse Cloud info)
+	if req.Sensitive && pb.OlapConnector != "" {
+		s.enrichConnectorWithRuntimeMetadata(ctx, req.InstanceId, pb)
+	}
+
 	return &runtimev1.GetInstanceResponse{
-		Instance: instanceToPB(inst, featureFlags, req.Sensitive),
+		Instance: pb,
 	}, nil
 }
 
@@ -298,6 +306,53 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 		return nil, err
 	}
 	return &runtimev1.ReloadConfigResponse{}, nil
+}
+
+// enrichConnectorWithRuntimeMetadata merges dynamic fields from the live OLAP connector handle
+// into the proto connector config. This lets the frontend access runtime-derived metadata
+// (e.g. ClickHouse Cloud service info) that isn't in the static YAML config.
+func (s *Server) enrichConnectorWithRuntimeMetadata(ctx context.Context, instanceID string, pb *runtimev1.Instance) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, instanceID, pb.OlapConnector)
+	if err != nil {
+		return
+	}
+	defer release()
+
+	runtimeConfig := handle.Config()
+
+	// Find the OLAP connector in ProjectConnectors and merge runtime fields
+	for _, conn := range pb.ProjectConnectors {
+		if conn.Name != pb.OlapConnector {
+			continue
+		}
+		if conn.Config == nil {
+			conn.Config = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+		}
+		// Inject runtime-derived fields
+		for k, v := range runtimeConfig {
+			if k == "is_clickhouse_cloud" || k == "resolved_host" {
+				switch val := v.(type) {
+				case bool:
+					conn.Config.Fields[k] = structpb.NewBoolValue(val)
+				case string:
+					conn.Config.Fields[k] = structpb.NewStringValue(val)
+				}
+			}
+			if len(k) > 6 && k[:6] == "cloud_" {
+				switch val := v.(type) {
+				case string:
+					conn.Config.Fields[k] = structpb.NewStringValue(val)
+				case bool:
+					conn.Config.Fields[k] = structpb.NewBoolValue(val)
+				case float64:
+					conn.Config.Fields[k] = structpb.NewNumberValue(val)
+				case int:
+					conn.Config.Fields[k] = structpb.NewNumberValue(float64(val))
+				}
+			}
+		}
+		break
+	}
 }
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
