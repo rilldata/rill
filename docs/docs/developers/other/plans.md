@@ -111,8 +111,10 @@ Available on Growth and Enterprise plans. The Free plan uses Managed mode only.
     ["Custom APIs", true, true, true],
     ["Embedded dashboards", "\"Made with Rill\" badge", true, true],
     ["Live Connect", false, true, true],
+    ["GitHub sync", false, true, true],
     ["Custom branding", false, true, true],
-    ["SSO / Governance", false, false, true],
+    ["SAML SSO", false, false, true],
+    ["SOC 2 Type II", false, false, true],
     ["SLAs", false, false, true],
     ["Dedicated CSM", false, false, true],
   ]}
