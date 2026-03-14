@@ -1,12 +1,18 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetOrganization,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
+  import {
+    isTeamPlan,
+    isTrialPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
     formatEnvironmentName,
@@ -15,7 +21,6 @@
     getStatusLabel,
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
-  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "./OverviewCard.svelte";
 
@@ -53,6 +58,16 @@
   });
   $: instance = $instanceQuery.data?.instance;
   $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
+
+  // Organization — for storage quota on Teams/Trial plans
+  $: orgQuery = createAdminServiceGetOrganization(organization);
+  $: planName = $orgQuery.data?.billingPlanName ?? "";
+  $: storageLimit = $orgQuery.data?.quotas?.storageLimitBytesPerDeployment;
+  $: hasStorageQuota =
+    (isTeamPlan(planName) || isTrialPlan(planName)) &&
+    !!storageLimit &&
+    storageLimit !== "-1";
+
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -172,7 +187,8 @@
               href="/{organization}/{project}/-/status/tables"
               class="data-usage-link"
             >
-              {formatMemorySize(Number(dataSizeBytes))}
+              {formatMemorySize(Number(dataSizeBytes))}{#if hasStorageQuota}
+                {" "}/ {formatMemorySize(Number(storageLimit))}{/if}
             </a>
           {:else}
             —
