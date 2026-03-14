@@ -126,6 +126,9 @@
     | number
     | undefined;
   $: hasCloudDetails = !!cloudServiceName;
+  $: isChcHibernated =
+    cloudStatus === "idle" || cloudStatus === "stopped";
+  $: isChcWakingUp = cloudStatus === "idle";
 
   let chcDetailsModalOpen = false;
 
@@ -290,12 +293,24 @@
                 : "Self-managed"})
           </span>
         {/if}
+        {#if isChcHibernated}
+          <span class="chc-hibernated-badge">
+            {isChcWakingUp ? "Waking up…" : "Hibernated"}
+          </span>
+        {/if}
         {#if hasCloudDetails}
           <button
             class="manage-slots-btn"
             on:click={() => (chcDetailsModalOpen = true)}
           >
             View Details
+          </button>
+        {:else if isClickHouseCloud && !hasCloudApiKey && canManage}
+          <button
+            class="manage-slots-btn"
+            on:click={() => (chcKeyModalOpen = true)}
+          >
+            Connect to ClickHouse Cloud
           </button>
         {/if}
       </span>
@@ -343,9 +358,10 @@
           {:else if canManage}
             <button
               class="manage-slots-btn"
+              disabled={isChcHibernated}
               on:click={() => (slotsModalOpen = true)}
             >
-              Manage Slots
+              {isChcHibernated ? "Manage Slots (unavailable while CHC is waking)" : "Manage Slots"}
             </button>
           {/if}
         </span>
@@ -360,6 +376,7 @@
   {project}
   {currentSlots}
   {isRillManaged}
+  {isClickHouseCloud}
   required={slotsRequiredMode}
   viewOnly={isTrial}
   detectedMemoryGb={chcDetectedMemoryGb ?? cloudMaxMemory}
@@ -427,8 +444,14 @@
   .slots-count {
     @apply text-sm text-fg-primary font-medium tabular-nums;
   }
+  .chc-hibernated-badge {
+    @apply text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
+  }
   .manage-slots-btn {
     @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 no-underline;
+  }
+  .manage-slots-btn:disabled {
+    @apply text-fg-tertiary cursor-not-allowed;
   }
   .manage-slots-btn:hover {
     @apply text-primary-600;

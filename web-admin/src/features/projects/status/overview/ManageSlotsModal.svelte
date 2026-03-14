@@ -16,6 +16,8 @@
   export let project: string;
   export let currentSlots: number;
   export let isRillManaged: boolean;
+  // Whether the OLAP connector is ClickHouse Cloud (vs generic self-managed Live Connect).
+  export let isClickHouseCloud = false;
   // When required, the user cannot dismiss the modal and must select + apply slots.
   export let required = false;
   // ClickHouse Cloud cluster memory (GB per replica) for auto-detecting the right tier.
@@ -25,7 +27,7 @@
 
   // Live Connect tiers: Rill bill is ~20% of infrastructure cost
   const LIVE_CONNECT_TIERS = [
-    { slots: 4, instance: "8GiB / 2vCPU", rillBill: 100 }, 
+    { slots: 4, instance: "8GiB / 2vCPU", rillBill: 99 }, 
     { slots: 6, instance: "12GiB / 3vCPU", rillBill: 130 },
     { slots: 8, instance: "16GiB / 4vCPU", rillBill: 175 },
     { slots: 16, instance: "32GiB / 8vCPU", rillBill: 350 },
@@ -130,20 +132,32 @@
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
         {#if viewOnly}
-          Based on your ClickHouse Cloud cluster, we recommend the following
-          slot configuration. <a
-            href="/{organization}/-/settings/billing"
-            class="text-primary-500 hover:underline"
-            >Start a Growth plan</a
-          > to customize your slot allocation.
+          {#if isClickHouseCloud}
+            Based on your ClickHouse Cloud cluster, we recommend the following
+            slot configuration. <a
+              href="/{organization}/-/settings/billing"
+              class="text-primary-500 hover:underline"
+              >Start a Growth plan</a
+            > to customize your slot allocation.
+          {:else}
+            Based on your OLAP cluster, we recommend the following
+            slot configuration. <a
+              href="/{organization}/-/settings/billing"
+              class="text-primary-500 hover:underline"
+              >Start a Growth plan</a
+            > to customize your slot allocation.
+          {/if}
         {:else if isRillManaged}
           Rill-managed projects are billed at ${SLOT_RATE_PER_HR}/slot/hr. Data
           storage is charged separately based on usage. Monthly estimates assume
           ~{HOURS_PER_MONTH} hours/month.
+        {:else if isClickHouseCloud}
+          Slots are matched to your ClickHouse Cloud cluster size. We
+          auto-detect the minimum tier from your service configuration. You can
+          increase slots if needed but cannot go below the detected minimum.
         {:else}
-          We provide minimum slots based on your ClickHouse Cloud / Self Managed
-          cluster settings. You're free to increase if required but cannot go
-          below your cluster's minimum specs.
+          Choose the slot tier that matches your OLAP cluster's resources. You
+          can increase slots at any time to handle larger workloads.
         {/if}
       </Dialog.Description>
     </Dialog.Header>
@@ -192,7 +206,9 @@
       <!-- Live Connect tier table -->
       <div class="tier-table">
         <div class="tier-header">
-          <span class="tier-cell tier-cell-wide">CHC Cluster</span>
+          <span class="tier-cell tier-cell-wide">
+            {isClickHouseCloud ? "CHC Cluster" : "Cluster Size"}
+          </span>
           <span class="tier-cell">Rill Slots</span>
           <span class="tier-cell">Estimated Rill $/mo</span>
         </div>
@@ -226,10 +242,17 @@
         Estimated costs are calculated at a full month. Billing is charged at
         compute/hr, therefore variable based on your needs.
       </p>
-      <p class="chc-note">
-        Cluster specs assume 2 replicas. Self-managed users can ignore cluster
-        details.
-      </p>
+      {#if isClickHouseCloud}
+        <p class="chc-note">
+          Cluster specs are auto-detected from your ClickHouse Cloud service
+          and assume 2 replicas.
+        </p>
+      {:else}
+        <p class="chc-note">
+          Select the tier that best matches your cluster's memory and vCPU
+          allocation. The cluster size column is for reference only.
+        </p>
+      {/if}
     {/if}
 
     <div class="footer">
