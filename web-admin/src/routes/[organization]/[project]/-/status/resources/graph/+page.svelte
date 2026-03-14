@@ -194,8 +194,15 @@
 
 <style lang="postcss">
   .graph-wrapper {
-    @apply flex flex-col w-full overflow-hidden;
-    min-height: 600px;
+    @apply flex flex-col w-full min-w-0 overflow-hidden;
+    height: 600px;
+  }
+
+  /* Prevent sidebar-main from overflowing past the toolbar */
+  .graph-wrapper :global(.sidebar-main) {
+    height: 0;
+    min-height: 0;
+    flex: 1 1 0%;
   }
   .parse-errors {
     @apply pt-4 mt-2;

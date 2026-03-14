@@ -6,7 +6,7 @@
     $page.route.id?.endsWith("/graph") ?? false;
 </script>
 
-<div class="flex flex-col size-full gap-y-4">
+<div class="flex flex-col size-full min-w-0 gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
     <div class="view-toggle">
