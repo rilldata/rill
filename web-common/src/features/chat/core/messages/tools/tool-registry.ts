@@ -22,6 +22,7 @@ import {
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
+import { handleApplyToExploreToolCall } from "@rilldata/web-common/features/chat/core/messages/apply-to-dashboard";
 
 // =============================================================================
 // RENDER MODES
@@ -107,6 +108,12 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     renderMode: "block",
     createBlock: createSimpleTooCall,
     onCall: handleNavigateToolCall,
+  },
+
+  [ToolName.APPLY_TO_EXPLORE]: {
+    renderMode: "block",
+    createBlock: createSimpleTooCall,
+    onCall: handleApplyToExploreToolCall,
   },
 
   // All other tools default to "inline" (shown in thinking blocks)
