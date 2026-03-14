@@ -1876,6 +1876,8 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
+		ChcClusterSize:       proj.ChcClusterSize,
+		RillMinSlots:         proj.RillMinSlots,
 	})
 	if err != nil {
 		return nil, err
@@ -2301,6 +2303,8 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		DevTTLSeconds:        p.DevTTLSeconds,
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
+		ChcClusterSize:       p.ChcClusterSize,
+		RillMinSlots:         p.RillMinSlots,
 	})
 	if err != nil {
 		return 0, status.Error(codes.Internal, "failed to update project with github repo id")

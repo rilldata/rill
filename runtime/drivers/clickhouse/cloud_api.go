@@ -108,11 +108,12 @@ func (c *CloudAPIClient) findServiceInOrg(ctx context.Context, orgID, host strin
 	targetHost := strings.Split(host, ":")[0]
 	targetHost = strings.ToLower(targetHost)
 
-	for _, svc := range resp.Result {
+	for i := range resp.Result {
+		svc := &resp.Result[i]
 		for _, ep := range svc.Endpoints {
 			epHost := strings.ToLower(ep.Host)
 			if epHost == targetHost || strings.HasPrefix(targetHost, strings.Split(epHost, ".")[0]) {
-				return mapServiceResponse(&svc), nil
+				return mapServiceResponse(svc), nil
 			}
 		}
 	}
@@ -121,7 +122,7 @@ func (c *CloudAPIClient) findServiceInOrg(ctx context.Context, orgID, host strin
 
 func (c *CloudAPIClient) doGet(ctx context.Context, path string, result any) error {
 	url := cloudAPIBaseURL + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
 	}
@@ -153,19 +154,19 @@ type orgResponse struct {
 }
 
 type serviceResponse struct {
-	ID                  string             `json:"id"`
-	Name                string             `json:"name"`
-	State               string             `json:"state"`
-	CloudProvider       string             `json:"provider"`
-	Region              string             `json:"region"`
-	Tier                string             `json:"tier"`
-	Endpoints           []endpointResponse `json:"endpoints"`
-	IdleScaling         bool               `json:"idleScaling"`
-	MinReplicaMemoryGB  float64            `json:"minReplicaMemoryGb"`
-	MaxReplicaMemoryGB  float64            `json:"maxReplicaMemoryGb"`
-	MinTotalMemoryGB    float64            `json:"minTotalMemoryGb"`
-	MaxTotalMemoryGB    float64            `json:"maxTotalMemoryGb"`
-	NumReplicas         int                `json:"numReplicas"`
+	ID                 string             `json:"id"`
+	Name               string             `json:"name"`
+	State              string             `json:"state"`
+	CloudProvider      string             `json:"provider"`
+	Region             string             `json:"region"`
+	Tier               string             `json:"tier"`
+	Endpoints          []endpointResponse `json:"endpoints"`
+	IdleScaling        bool               `json:"idleScaling"`
+	MinReplicaMemoryGB float64            `json:"minReplicaMemoryGb"`
+	MaxReplicaMemoryGB float64            `json:"maxReplicaMemoryGb"`
+	MinTotalMemoryGB   float64            `json:"minTotalMemoryGb"`
+	MaxTotalMemoryGB   float64            `json:"maxTotalMemoryGb"`
+	NumReplicas        int                `json:"numReplicas"`
 }
 
 type endpointResponse struct {
