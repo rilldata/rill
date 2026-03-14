@@ -2,26 +2,17 @@
   import { page } from "$app/stores";
 
   $: basePath = `/${$page.params.organization}/${$page.params.project}/-/status/resources`;
-  $: isGraphView =
-    $page.route.id?.endsWith("/graph") ?? false;
+  $: isGraphView = $page.route.id?.endsWith("/graph") ?? false;
 </script>
 
 <div class="flex flex-col size-full min-w-0 gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
     <div class="view-toggle">
-      <a
-        href={basePath}
-        class="toggle-btn"
-        class:active={!isGraphView}
-      >
+      <a href={basePath} class="toggle-btn" class:active={!isGraphView}>
         List
       </a>
-      <a
-        href="{basePath}/graph"
-        class="toggle-btn"
-        class:active={isGraphView}
-      >
+      <a href="{basePath}/graph" class="toggle-btn" class:active={isGraphView}>
         Graph
       </a>
     </div>

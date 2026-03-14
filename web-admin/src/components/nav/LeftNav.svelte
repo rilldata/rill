@@ -21,7 +21,7 @@
         {label}
         link={`${basePage}${route}`}
         selected={matchPrefix
-          ? $page.route.id?.startsWith(`${baseRoute}${route}`) ?? false
+          ? ($page.route.id?.startsWith(`${baseRoute}${route}`) ?? false)
           : $page.route.id === `${baseRoute}${route}`}
       />
     {/if}
