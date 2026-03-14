@@ -63,7 +63,6 @@ definitions:
       ### _Databases_
       - [**MySQL**](#mysql) - MySQL databases
       - [**PostgreSQL**](#postgres) - PostgreSQL databases
-      - [**SQLite**](#sqlite) - SQLite databases
       - [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
       ### _Object Storage_
@@ -79,7 +78,6 @@ definitions:
 
       ### _Other_
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-      - [**Salesforce**](#salesforce) - Salesforce data
 
       :::warning Security Recommendation
       For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{ .env.KEY_NAME }}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
@@ -309,6 +307,8 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
+        # See /developers/build/connectors/data-source/delta for configuration details.
         - type: object
           title: Druid
           properties:
@@ -526,6 +526,8 @@ definitions:
           required:
             - driver
             - path
+        # Note: Iceberg is not a standalone connector. It uses DuckDB's iceberg_scan() function.
+        # See /developers/build/connectors/data-source/iceberg for configuration details.
         - type: object
           title: MotherDuck
           properties:
@@ -1058,42 +1060,6 @@ definitions:
             - driver
             - bucket
         - type: object
-          title: Salesforce
-          properties:
-            driver:
-              type: string
-              description: Refers to the driver type and must be driver `salesforce`
-            username:
-              type: string
-              description: Salesforce account username
-            password:
-              type: string
-              description: Salesforce account password (secret)
-            key:
-              type: string
-              description: Authentication key for Salesforce (secret)
-            endpoint:
-              type: string
-              description: Salesforce API endpoint URL
-            client_id:
-              type: string
-              description: Client ID used for Salesforce OAuth authentication
-          examples:
-            - # Example: Salesforce connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: salesforce                               # Must be `salesforce` _(required)_
-
-              username: "myusername"                           # Salesforce account username
-              password: "{{ .env.SALESFORCE_PASSWORD }}"      # Salesforce account password (secret)
-              key: "{{ .env.SALESFORCE_KEY }}"                # Authentication key for Salesforce (secret)
-              endpoint: "https://login.salesforce.com"         # Salesforce API endpoint URL
-              client_id: "my-client-id"                        # Client ID used for Salesforce OAuth authentication
-          required: 
-            - driver
-            - username
-            - endpoint
-            - client_id
-        - type: object
           title: Slack
           properties:
             driver:
@@ -1197,26 +1163,8 @@ definitions:
           required:
           - type
           - driver
-        - type: object
-          title: SQLite
-          properties:
-            driver:
-              type: string
-              description: Refers to the driver type and must be driver `sqlite`
-            dsn:
-              type: string
-              description: DSN(Data Source Name) for the sqlite connection
-          examples:
-            - # Example: SQLite connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: sqlite                                   # Must be `sqlite` _(required)_
 
-              dsn: "file:mydatabase.db"                        # DSN for the sqlite connection
-          required:
-            - driver
-            - dsn
 
-    
   # Source YAML
   sources:
     title: Source YAML
@@ -1252,7 +1200,6 @@ definitions:
               - redshift
               - postgres
               - supabase
-              - sqlite
               - snowflake
               - bigquery
               - duckdb
@@ -1729,15 +1676,6 @@ definitions:
                 - connector
             then:
               $ref: '#/definitions/models/definitions/s3'
-          - if:
-              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
-              properties:
-                connector:
-                  const: salesforce
-              required:
-                - connector
-            then:
-              $ref: '#/definitions/models/definitions/salesforce'
     definitions:
       athena:
         type: object
@@ -1919,18 +1857,6 @@ definitions:
           batch_size:
             type: string
             description: 'Size of a batch (e.g., ''100MB'')'
-      salesforce:
-        type: object
-        properties:
-          soql:
-            type: string
-            description: SOQL query to execute against the Salesforce instance.
-          sobject:
-            type: string
-            description: Salesforce object (e.g., Account, Contact) targeted by the query.
-          queryAll:
-            type: boolean
-            description: Whether to include deleted and archived records in the query (uses queryAll API).
     examples: 
       - ### Incremental model 
         type: model
@@ -2104,7 +2030,19 @@ definitions:
                   type:
                     - string
                     - boolean
-                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
+                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)
+                lookup_table:
+                  type: string
+                  description: the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details
+                lookup_key_column:
+                  type: string
+                  description: the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table
+                lookup_value_column:
+                  type: string
+                  description: the attribute column in the lookup dictionary whose values will be displayed for this dimension
+                lookup_default_expression:
+                  type: string
+                  description: an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
               anyOf:
                 - required:
                     - column
@@ -2413,19 +2351,12 @@ definitions:
             description: |
               defines the defaults YAML struct
                 ```yaml
-                defaults: #define all the defaults within here
+                defaults:
                   time_range: P1M
-                  comparison_mode: dimension #time, none
+                  comparison_mode: dimension # time, none
                   comparison_dimension: filename
                   filters:
-                    dimensions:
-                      - dimension: country
-                        values: ["US", "CA"]
-                        mode: in_list
-                    measures:
-                      - measure: revenue
-                        operator: gt
-                        values: ["1000"]
+                    metrics_view_name: "dimension_name = 'value' AND measure_name > 1000"
                 ```
             properties:
               time_range:
@@ -2443,70 +2374,9 @@ definitions:
                 type: string
               filters:
                 type: object
-                description: Default filter configuration
-                properties:
-                  dimensions:
-                    type: array
-                    description: List of default dimension filters
-                    items:
-                      type: object
-                      properties:
-                        dimension:
-                          type: string
-                          description: Name of the dimension to filter on
-                        values:
-                          type: array
-                          items:
-                            type: string
-                          description: List of values to filter by
-                        limit:
-                          type: integer
-                          description: Maximum number of values to show in the filter
-                        removable:
-                          type: boolean
-                          description: Whether the filter can be removed by the user
-                        locked:
-                          type: boolean
-                          description: Whether the filter is locked and cannot be modified
-                        hidden:
-                          type: boolean
-                          description: Whether the filter is hidden from the UI
-                        mode:
-                          type: string
-                          enum: [select, in_list, contains]
-                          description: Filter mode - select for dropdown, in_list for multi-select, contains for text search
-                        exclude:
-                          type: boolean
-                          description: Whether to exclude the specified values instead of including them
-                  measures:
-                    type: array
-                    description: List of default measure filters
-                    items:
-                      type: object
-                      properties:
-                        measure:
-                          type: string
-                          description: Name of the measure to filter on
-                        by_dimension:
-                          type: string
-                          description: Dimension to group the measure filter by
-                        operator:
-                          type: string
-                          description: Operator for the measure filter (e.g., eq, gt, lt, gte, lte)
-                        values:
-                          type: array
-                          items:
-                            type: string
-                          description: List of values to filter by
-                        removable:
-                          type: boolean
-                          description: Whether the filter can be removed by the user
-                        locked:
-                          type: boolean
-                          description: Whether the filter is locked and cannot be modified
-                        hidden:
-                          type: boolean
-                          description: Whether the filter is hidden from the UI
+                description: Default filter expressions keyed by metrics view name. Each value is a Metrics SQL WHERE expression.
+                additionalProperties:
+                  type: string
           theme:
             oneOf:
               - type: string
@@ -3513,11 +3383,32 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
-        examples: 
+        examples:
           - type: api
             resource_status:
               where_error: true
- 
+
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - type: api
+            union:
+              - connector: duckdb
+                sql: SELECT 1
+              - connector: clickhouse
+                sql: SELECT 2
+
   data_properties:
     oneOf:
       - title: SQL Query
@@ -3589,6 +3480,26 @@ definitions:
           -
             resource_status:
               where_error: true
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - union:
+              - glob:
+                  path: s3://bucket/year=*/month=*
+              - glob:
+                  path: s3://bucket/year=*/month=*/day=*
+                  last: 30
       - title: AI Resolver
         type: object
         description: Uses AI to generate insights and analysis from metrics data. Only available for reports.

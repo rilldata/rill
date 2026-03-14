@@ -323,3 +323,98 @@ rows:
 	refreshedOn2 := getAndCheckRefreshedOn()
 	require.Greater(t, refreshedOn2, refreshedOn1)
 }
+
+func TestCanvasResolveTransitiveAccess(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
+
+	// Create three models, three metrics views, and a canvas with components using metrics_view, metrics_sql, and markdown.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"m2.sql": `SELECT 'bar' as bar, 2 as y`,
+		"m3.sql": `SELECT 'baz' as baz, 3 as z`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"mv2.yaml": `
+version: 1
+type: metrics_view
+model: m2
+dimensions:
+- column: bar
+measures:
+- name: y
+  expression: sum(y)
+`,
+		"mv3.yaml": `
+version: 1
+type: metrics_view
+model: m3
+dimensions:
+- column: baz
+measures:
+- name: z
+  expression: sum(z)
+`,
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+  - items:
+      - kpi_grid:
+          metrics_sql: "SELECT bar, y FROM mv2"
+  - items:
+      - markdown:
+          content: 'Total z: {{ metrics_sql "SELECT z FROM mv3" }}'
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 11, 0, 0)
+
+	// Build claims with a transitive access rule on the canvas
+	ctx := t.Context()
+	claims := &runtime.SecurityClaims{
+		AdditionalRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{
+							Kind: runtime.ResourceKindCanvas,
+							Name: "c1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Resolve security for mv1 (referenced via metrics_view); should be accessible
+	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+	sec, err := rt.ResolveSecurity(ctx, id, claims, mv1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+
+	// Resolve security for mv2 (referenced via metrics_sql); should be accessible
+	mv2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv2")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv2)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+
+	// Resolve security for mv3 (referenced via metrics_sql in markdown content); should be accessible
+	mv3 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv3")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv3)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+}

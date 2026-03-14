@@ -205,10 +205,12 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
   createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery {
     return this.provider.createChartDataQuery(
       ctx.runtimeClient,
       timeAndFilterStore,
+      visible,
     );
   }
 

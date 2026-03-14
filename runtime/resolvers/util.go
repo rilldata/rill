@@ -30,7 +30,7 @@ func normalizeRefs(refs []*runtimev1.ResourceName) []*runtimev1.ResourceName {
 }
 
 func cacheKeyForMetricsView(ctx context.Context, r *runtime.Runtime, instanceID, name string, priority int) ([]byte, bool, error) {
-	cacheKeyResolver, err := r.Resolve(ctx, &runtime.ResolveOptions{
+	cacheKeyResolver, _, err := r.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           "metrics_cache_key",
 		ResolverProperties: map[string]any{"metrics_view": name},

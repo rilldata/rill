@@ -13,7 +13,7 @@ import (
 // InitClaudeCode generates Claude Code instruction files from Rill instruction files.
 // The main instructions are written to .claude/CLAUDE.md.
 // Resource-specific instructions are written as skills to .claude/skills/<name>/SKILL.md.
-// Skills are loaded on-demand when invoked, keeping the context lean.
+// MCP server config is written to /.mcp.json.
 // If force is false, it skips files that already exist.
 // If force is true, it overwrites any existing files.
 func InitClaudeCode(ctx context.Context, repo drivers.RepoStore, force bool) error {

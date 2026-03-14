@@ -4,12 +4,12 @@
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField } from "./schemas/types";
+  import ConnectionTypeSelector from "./ConnectionTypeSelector.svelte";
   import {
     type EnumOption,
-    isRadioEnum,
+    isRichSelectEnum,
     isSelectEnum,
     isTabsEnum,
-    radioOptions,
     tabOptions,
   } from "./schema-utils";
 
@@ -46,6 +46,20 @@
     includeIcons?: boolean,
   ) => EnumOption[];
 
+  // Props for rich select support (nested ConnectionTypeSelector)
+  export let groupedFieldsMap: Map<
+    string,
+    Record<string, string[]>
+  > = new Map();
+  export let getGroupedFieldsForOption: (
+    controllerKey: string,
+    optionValue: string | number | boolean,
+  ) => FieldEntry[] = () => [];
+  export let handleSelectChange: (
+    key: string,
+    newValue: string,
+  ) => void = () => {};
+
   function getSelectOptions(prop: JSONSchemaField) {
     return buildEnumOptions(prop, true, true);
   }
@@ -53,7 +67,33 @@
 
 {#each fields as [childKey, childProp] (childKey)}
   <div class="py-1.5 first:pt-0 last:pb-0">
-    {#if isTabsEnum(childProp)}
+    {#if isRichSelectEnum(childProp)}
+      {@const richOptions = getSelectOptions(childProp)}
+      <ConnectionTypeSelector
+        bind:value={$formStore[childKey]}
+        options={richOptions}
+        requiredDrivers={childProp["x-required-driver"] ?? {}}
+        label={childProp.title ?? ""}
+        onChange={(newValue) => handleSelectChange(childKey, newValue)}
+      />
+      {#if groupedFieldsMap.get(childKey)}
+        <svelte:self
+          fields={getGroupedFieldsForOption(childKey, $formStore[childKey])}
+          {formStore}
+          {errors}
+          {onStringInputChange}
+          {handleFileUpload}
+          {isRequired}
+          {isDisabled}
+          {getTabFieldsForOption}
+          {tabGroupedFields}
+          {buildEnumOptions}
+          {groupedFieldsMap}
+          {getGroupedFieldsForOption}
+          {handleSelectChange}
+        />
+      {/if}
+    {:else if isTabsEnum(childProp)}
       {@const childOptions = tabOptions(childProp)}
       {#if childProp.title}
         <div class="text-sm font-medium mb-3">
@@ -94,10 +134,10 @@
                       bind:checked={$formStore[tabKey]}
                       {onStringInputChange}
                       {handleFileUpload}
-                      options={isRadioEnum(tabProp)
-                        ? radioOptions(tabProp)
+                      options={tabProp.enum?.length
+                        ? buildEnumOptions(tabProp, true, true)
                         : undefined}
-                      name={`${tabKey}-radio`}
+                      name={`${tabKey}-enum`}
                       disabled={isDisabled(tabKey)}
                     />
                   {/if}
@@ -130,8 +170,10 @@
         bind:checked={$formStore[childKey]}
         {onStringInputChange}
         {handleFileUpload}
-        options={isRadioEnum(childProp) ? radioOptions(childProp) : undefined}
-        name={`${childKey}-radio`}
+        options={childProp.enum?.length
+          ? buildEnumOptions(childProp, true, true)
+          : undefined}
+        name={`${childKey}-enum`}
         disabled={isDisabled(childKey)}
       />
     {/if}
