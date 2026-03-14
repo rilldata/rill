@@ -54,6 +54,9 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   config: Readable<PivotDataStoreConfig>;
   pivotDataStore: ReturnType<typeof usePivotForCanvas>;
   pivotState: Writable<PivotState>;
+  /** Dimensions the pivot itself has filtered via click-to-filter.
+   *  These are excluded from the pivot's own data query so all rows remain visible. */
+  selfFilteredDimensions: Writable<Set<string>>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const type = resource.component?.state?.validSpec
@@ -87,12 +90,14 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     this.type = type;
 
     this.pivotState = writable(this.getInitPivotState(type));
+    this.selfFilteredDimensions = writable(new Set<string>());
 
     this.config = createPivotConfig(
       this.parent,
       this.specStore,
       this.pivotState,
       this.timeAndFilterStore,
+      this.selfFilteredDimensions,
     );
 
     this.pivotDataStore = usePivotForCanvas(

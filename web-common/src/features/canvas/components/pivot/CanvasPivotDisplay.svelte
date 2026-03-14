@@ -78,4 +78,5 @@
   {pivotDataStore}
   pivotConfig={config}
   {pivotState}
+  {component}
 />

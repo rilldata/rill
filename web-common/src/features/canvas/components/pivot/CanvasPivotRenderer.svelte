@@ -4,13 +4,19 @@
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
-  import {
-    type PivotDataStore,
-    type PivotDataStoreConfig,
-    type PivotState,
+  import type {
+    PivotDataStore,
+    PivotDataStoreConfig,
+    PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import type { PivotCanvasComponent } from "./index";
+  import {
+    createPivotClickToFilter,
+    type PivotClickToFilterResult,
+  } from "./pivot-click-to-filter";
 
-  import type { Readable, Writable } from "svelte/store";
+  import { onDestroy } from "svelte";
+  import { derived, get, type Readable, type Writable } from "svelte/store";
 
   export let schema: {
     isValid: boolean;
@@ -20,11 +26,62 @@
   export let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
   export let pivotState: Writable<PivotState>;
   export let hasHeader = false;
+  export let component: PivotCanvasComponent;
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
 
   $: hasColumnAndNoMeasure =
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
+
+  // FilterManager and metrics view for filter application
+  $: canvasEntity = component.parent;
+  $: filterManager = canvasEntity.filterManager;
+  $: spec = component.specStore;
+  $: metricsViewName = $spec?.metrics_view;
+  $: selfFilteredDimensions = component.selfFilteredDimensions;
+
+  $: whereFilterStore = derived(filterManager.filterMapStore, (filterMap) => {
+    return metricsViewName ? filterMap.get(metricsViewName) : undefined;
+  });
+
+  // Create click-to-filter orchestration; recreated when inputs become available
+  let clickToFilter: PivotClickToFilterResult | undefined;
+
+  $: {
+    clickToFilter?.destroy();
+    clickToFilter = undefined;
+
+    if (pivotDataStore && pivotConfig && metricsViewName) {
+      const componentId = component.id;
+      clickToFilter = createPivotClickToFilter({
+        pivotConfig,
+        pivotDataStore,
+        filterManager,
+        metricsViewName,
+        componentId,
+        activeComponent: canvasEntity.activeComponent,
+        selfFilteredDimensions,
+        whereFilterStore,
+        onBecomeActive: () => canvasEntity.setActiveComponent(componentId),
+        onBecomeInactive: () => {
+          if (get(canvasEntity.activeComponent) === componentId) {
+            canvasEntity.clearActiveComponent();
+          }
+        },
+      });
+    }
+  }
+
+  onDestroy(() => clickToFilter?.destroy());
+
+  // Unwrap stores from the factory result for template use
+  $: clickSelectionStore = clickToFilter?.clickSelection;
+  $: clickSelection = clickSelectionStore ? $clickSelectionStore : undefined;
+
+  $: rowSelectionStateStore = clickToFilter?.rowSelectionState;
+  $: rowSelectionState = rowSelectionStateStore
+    ? $rowSelectionStateStore
+    : undefined;
 </script>
 
 <div
@@ -51,6 +108,9 @@
         {pivotDataStore}
         config={pivotConfig}
         {pivotState}
+        {rowSelectionState}
+        {clickSelection}
+        enableClickToFilter
         setPivotExpanded={(expanded) => {
           pivotState.update((state) => ({
             ...state,
@@ -71,6 +131,8 @@
             rowPage: page,
           }));
         }}
+        onCellClickToFilter={clickToFilter?.handleCellClickToFilter}
+        onColumnHeaderClick={clickToFilter?.handleColumnHeaderClick}
       />
     {/if}
   {/if}

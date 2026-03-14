@@ -31,6 +31,7 @@ export interface PivotDataState {
   reachedEndForRowData?: boolean;
   totalsRowData?: PivotDataRow;
   activeCellFilters?: PivotFilter;
+  columnDimensionAxes?: Record<string, string[]>;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;

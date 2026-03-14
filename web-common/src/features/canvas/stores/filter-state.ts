@@ -330,6 +330,51 @@ export class FilterState {
     );
   };
 
+  /**
+   * Adds dimension values to the filter without removing existing ones.
+   * Unlike toggleDimensionValueSelections, this never removes a value
+   * that is already present; it only appends new values.
+   */
+  addDimensionValueSelections = (
+    dimensionName: string,
+    dimensionValues: string[],
+  ) => {
+    const {
+      dimensionFilter: wf,
+      dimensionsWithInListFilter,
+      dimensionThresholdFilters,
+    } = get(this.parsed);
+
+    const exprIndex =
+      wf.cond?.exprs?.findIndex(
+        (e) => e.cond?.exprs?.[0].ident === dimensionName,
+      ) ?? -1;
+    const expr = wf.cond?.exprs?.[exprIndex];
+
+    if (!expr?.cond?.exprs) {
+      // No existing filter for this dimension; create one
+      const newExpr = createInExpression(dimensionName, dimensionValues);
+      wf.cond?.exprs?.push(newExpr);
+    } else {
+      // Append only values not already in the filter
+      const existing = getValuesInExpression(expr);
+      const existingSet = new Set(existing);
+      for (const val of dimensionValues) {
+        if (!existingSet.has(val)) {
+          existing.push(val);
+        }
+      }
+      const ident = expr.cond.exprs[0];
+      expr.cond.exprs = [ident, ...existing.map((v) => ({ val: v }))];
+    }
+
+    return getFilterParam(
+      wf,
+      dimensionThresholdFilters,
+      dimensionsWithInListFilter,
+    );
+  };
+
   applyDimensionInListMode = (dimensionName: string, values: string[]) => {
     const {
       dimensionFilter: wf,

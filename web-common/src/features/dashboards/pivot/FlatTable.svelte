@@ -13,10 +13,12 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
-  import type { PivotDataRow } from "./types";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import type { PivotClickSelectionState } from "./pivot-click-selection";
+  import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
   // State props
   export let assembled: boolean;
@@ -24,7 +26,11 @@
   export let dataRows: PivotDataRow[];
   export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
+  export let config: PivotDataStoreConfig | undefined = undefined;
 
   // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
@@ -86,6 +92,10 @@
       cell.row.id === activeCell?.rowId &&
       cell.column.id === activeCell?.columnId
     );
+  }
+
+  function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
+    return clickSelection?.isCellSelected(cell.row.id, cell.column.id) ?? false;
   }
 
   function hasBorderRight(columnId: string): boolean {
@@ -184,17 +194,45 @@
     <tr style:height="{before}px" />
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr>
+      {@const rowId = rows[row.index].id}
+      {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
+      {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
+      {@const hasClickedCell =
+        clickSelection?.hasSelectedCellInRow(rowId) ?? false}
+      {@const clickedDimIdx =
+        clickSelection?.getClickedDimensionIndex(rowId) ?? -1}
+      <tr
+        class:selected-row={isSelected && !hasClickedCell}
+        class:dimmed-row={hasSelection && !isSelected && !hasClickedCell}
+      >
         {#each cells as cell (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
+          {@const isClicked = isCellClicked(cell)}
+          {@const colDimIdx =
+            config?.rowDimensionNames.indexOf(cell.column.id) ?? -1}
+          {@const lastDimIdx = (config?.rowDimensionNames.length ?? 0) - 1}
+          {@const isLeftOfClick =
+            clickedDimIdx >= 0 &&
+            (colDimIdx >= 0
+              ? colDimIdx < clickedDimIdx
+              : clickedDimIdx === lastDimIdx)}
+          {@const isMutedCell =
+            (clickedDimIdx >= 0 && colDimIdx > clickedDimIdx) ||
+            (colDimIdx === -1 &&
+              clickedDimIdx >= 0 &&
+              clickedDimIdx < lastDimIdx)}
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
-            class:interactive-cell={canShowDataViewer &&
+            class:selected-cell={isClicked}
+            class:selected-context-cell={isLeftOfClick}
+            class:muted-cell={isMutedCell}
+            class:interactive-cell={(canShowDataViewer ||
+              enableClickToFilter) &&
               cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
@@ -313,5 +351,36 @@
   }
   .active-cell.cell {
     @apply bg-primary-50;
+  }
+
+  .selected-cell.cell {
+    @apply bg-primary-50 ring-1 ring-inset ring-primary-400;
+  }
+  .selected-cell.cell:hover {
+    @apply bg-primary-100;
+  }
+
+  .selected-row .cell {
+    @apply bg-primary-50;
+  }
+  .selected-row:hover .cell {
+    @apply bg-primary-100;
+  }
+
+  .dimmed-row .cell {
+    @apply opacity-50;
+  }
+
+  /* Dimension cells to the left of the clicked cell: same primary background, no ring */
+  .selected-context-cell.cell {
+    @apply bg-primary-50;
+  }
+  .selected-context-cell.cell:hover {
+    @apply bg-primary-100;
+  }
+
+  /* Dimension cells to the right of the clicked cell: muted background */
+  .muted-cell.cell {
+    @apply bg-surface-muted;
   }
 </style>
