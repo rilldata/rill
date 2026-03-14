@@ -1,12 +1,18 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
+  import {
+    isTeamPlan,
+    isTrialPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
     formatEnvironmentName,
@@ -51,6 +57,18 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+  $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
+
+  // Plan-based storage cap (from root layout data)
+  const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
+  const TRIAL_STORAGE_CAP = 5 * 1024 * 1024 * 1024; // 5GB
+  $: planName = $page.data?.organization?.billingPlanName ?? "";
+  $: storageCap = isTeamPlan(planName)
+    ? TEAM_STORAGE_CAP
+    : isTrialPlan(planName)
+      ? TRIAL_STORAGE_CAP
+      : 0;
+
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -160,6 +178,25 @@
         {/if}
       </span>
     </div>
+
+    {#if !olapConnector || olapConnector.type === "duckdb" || olapConnector.provision}
+      <div class="info-row">
+        <span class="info-label">Data usage</span>
+        <span class="info-value">
+          {#if dataSizeBytes}
+            <a
+              href="/{organization}/{project}/-/status/tables"
+              class="data-usage-link"
+            >
+              {formatMemorySize(Number(dataSizeBytes))}{#if storageCap}
+                {" "}/ {formatMemorySize(storageCap)}{/if}
+            </a>
+          {:else}
+            —
+          {/if}
+        </span>
+      </div>
+    {/if}
   </div>
 </OverviewCard>
 
@@ -181,6 +218,9 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
+  }
+  .data-usage-link {
+    @apply text-fg-primary no-underline;
   }
   .repo-link {
     @apply text-primary-500 text-sm;

@@ -140,6 +140,16 @@ func (r *Runtime) DataDir(instanceID string, elem ...string) (string, error) {
 	return r.storage.WithPrefix(instanceID).DataDir(elem...)
 }
 
+// DataDirSize returns the total size of the instance's data directory in bytes.
+// This is the same value reported to billing/Orb as "data_dir_size_bytes".
+func (r *Runtime) DataDirSize(instanceID string) (int64, error) {
+	dataDir, err := r.storage.WithPrefix(instanceID).DataDir()
+	if err != nil {
+		return 0, err
+	}
+	return sizeOfDir(dataDir), nil
+}
+
 // TempDir returns the path to a temporary directory for the given instance. The directory is created if it doesn't exist.
 // The TempDir is a fixed location. The caller is responsible for cleaning up after use.
 // The TempDir may be cleared after restarts.

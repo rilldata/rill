@@ -76,9 +76,19 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.GetInstanceResponse{
+	resp := &runtimev1.GetInstanceResponse{
 		Instance: instanceToPB(inst, featureFlags, req.Sensitive),
-	}, nil
+	}
+
+	// Compute data dir size (best-effort; don't fail the request if it errors)
+	if sensitiveAccess {
+		size, err := s.runtime.DataDirSize(req.InstanceId)
+		if err == nil {
+			resp.DataSizeBytes = size
+		}
+	}
+
+	return resp, nil
 }
 
 // CreateInstance implements RuntimeService.

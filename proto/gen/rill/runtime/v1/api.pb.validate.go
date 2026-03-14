@@ -1715,6 +1715,8 @@ func (m *GetInstanceResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for DataSizeBytes
+
 	if len(errors) > 0 {
 		return GetInstanceResponseMultiError(errors)
 	}
