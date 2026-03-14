@@ -23,25 +23,32 @@ function makeResource(
 }
 
 describe("getResourceStatus", () => {
-  it("returns 'error' when resource has reconcileError", () => {
+  it("returns 'errored' when resource has reconcileError", () => {
     const r = makeResource(ResourceKind.Model, "m1", {
       reconcileError: "something broke",
     });
-    expect(getResourceStatus(r)).toBe("error");
+    expect(getResourceStatus(r)).toBe("errored");
   });
 
-  it("returns 'warn' for PENDING status", () => {
+  it("returns 'warning' for test-only failures", () => {
+    const r = makeResource(ResourceKind.Model, "m1", {
+      reconcileError: "tests failed: some test",
+    });
+    expect(getResourceStatus(r)).toBe("warning");
+  });
+
+  it("returns 'pending' for PENDING status", () => {
     const r = makeResource(ResourceKind.Model, "m1", {
       reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_PENDING,
     });
-    expect(getResourceStatus(r)).toBe("warn");
+    expect(getResourceStatus(r)).toBe("pending");
   });
 
-  it("returns 'warn' for RUNNING status", () => {
+  it("returns 'pending' for RUNNING status", () => {
     const r = makeResource(ResourceKind.Model, "m1", {
       reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     });
-    expect(getResourceStatus(r)).toBe("warn");
+    expect(getResourceStatus(r)).toBe("pending");
   });
 
   it("returns 'ok' for IDLE status", () => {
@@ -58,12 +65,12 @@ describe("getResourceStatus", () => {
     expect(getResourceStatus(r)).toBe("ok");
   });
 
-  it("error takes priority over warn status", () => {
+  it("error takes priority over pending status", () => {
     const r = makeResource(ResourceKind.Model, "m1", {
       reconcileError: "error msg",
       reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     });
-    expect(getResourceStatus(r)).toBe("error");
+    expect(getResourceStatus(r)).toBe("errored");
   });
 });
 
@@ -112,14 +119,14 @@ describe("filterResources", () => {
     expect(result[0].meta?.name?.name).toBe("my_model");
   });
 
-  it("filters by status 'error'", () => {
-    const result = filterResources(resources, [], "", ["error"]);
+  it("filters by status 'errored'", () => {
+    const result = filterResources(resources, [], "", ["errored"]);
     expect(result).toHaveLength(1);
     expect(result[0].meta?.name?.name).toBe("errored_model");
   });
 
-  it("filters by status 'warn'", () => {
-    const result = filterResources(resources, [], "", ["warn"]);
+  it("filters by status 'pending'", () => {
+    const result = filterResources(resources, [], "", ["pending"]);
     expect(result).toHaveLength(1);
     expect(result[0].meta?.name?.name).toBe("my_metrics");
   });
@@ -131,7 +138,7 @@ describe("filterResources", () => {
 
   it("combines kind + status + search filters", () => {
     const result = filterResources(resources, [ResourceKind.Model], "errored", [
-      "error",
+      "errored",
     ]);
     expect(result).toHaveLength(1);
     expect(result[0].meta?.name?.name).toBe("errored_model");

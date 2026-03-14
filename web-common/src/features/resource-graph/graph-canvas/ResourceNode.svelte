@@ -1,16 +1,24 @@
 <script lang="ts">
-  import { Handle, Position, NodeToolbar } from "@xyflow/svelte";
-  import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    resourceIconMapping,
-    resourceShorthandMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { Handle, Position, useSvelteFlow } from "@xyflow/svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import type { ResourceNodeData } from "../shared/types";
+  import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ResourceNodeActions from "./ResourceNodeActions.svelte";
+
+  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
+  import { AlertTriangle, Zap, Layers, Clock } from "lucide-svelte";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
+  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
   import { goto } from "$app/navigation";
-  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
+  import { getGraphNavigation } from "../shared/graph-navigation-context";
+
+  const graphNav = getGraphNavigation();
 
   export let id: string;
   export let type: string;
@@ -31,101 +39,148 @@
   export let positionAbsoluteX = 0;
   export let positionAbsoluteY = 0;
 
-  // XYFlow injects these props for layout, but we only need them for typing support.
-  const ensureFlowProps = (..._args: unknown[]) => {};
-  $: ensureFlowProps(
-    id,
-    type,
-    height,
-    sourcePosition,
-    targetPosition,
-    dragHandle,
-    parentId,
-    dragging,
-    zIndex,
-    selectable,
-    deletable,
-    draggable,
-    positionAbsoluteX,
-    positionAbsoluteY,
-  );
+  // XYFlow injects these props for layout; declaring them above prevents
+  // "unknown prop" warnings. The reactive reference silences the Svelte
+  // "unused export property" warning without generating meaningful work.
+  // prettier-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  $: [type, height, sourcePosition, targetPosition, dragHandle, parentId, dragging, zIndex, selectable, deletable, draggable, positionAbsoluteX, positionAbsoluteY];
+
+  $: showActions = data?.showNodeActions !== false;
+
+  let actionsRef: { open: () => void } | undefined;
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    actionsRef?.open();
+  }
 
   const DEFAULT_COLOR = "#6B7280";
-  const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
   $: kind = data?.kind;
-  $: icon =
-    kind && resourceIconMapping[kind]
-      ? resourceIconMapping[kind]
-      : DEFAULT_ICON;
+  $: metadata = data?.metadata;
   $: color =
     kind && resourceShorthandMapping[kind]
       ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
-  $: hasError = !!data?.resource?.meta?.reconcileError;
-  $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: statusLabel =
-    reconcileStatus && !isIdle
-      ? reconcileStatus
-          ?.replace("RECONCILE_STATUS_", "")
-          ?.toLowerCase()
-          ?.replaceAll("_", " ")
-      : undefined;
-  $: effectiveStatusLabel = hasError ? "error" : statusLabel;
-  $: routeHighlighted = (data as any)?.routeHighlighted === true;
+  $: reconcileError = data?.resource?.meta?.reconcileError ?? "";
+  // Test failures propagate as "tests failed:..." on the model itself and
+  // "Error in dependency <name>: tests failed:..." on downstream resources.
+  // Treat both as warnings (shown via check indicator), not node errors.
+  $: isTestOnlyError =
+    !!reconcileError && reconcileError.includes(TEST_FAILURE_MARKER);
+  $: hasError = !!reconcileError && !isTestOnlyError;
+  $: isPending =
+    reconcileStatus &&
+    reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: routeHighlighted = data?.routeHighlighted === true;
 
-  let showError = false;
-  function handleClick() {
-    if (hasError && data?.resource?.meta?.reconcileError) {
-      showError = !showError;
+  $: isSourceOrModel =
+    kind === ResourceKind.Source || kind === ResourceKind.Model;
+  $: isMetricsView = kind === ResourceKind.MetricsView;
+  $: isExplore = kind === ResourceKind.Explore;
+  $: isCanvas = kind === ResourceKind.Canvas;
+  $: isConnector = kind === ResourceKind.Connector;
+
+  $: measuresCount = metadata?.measures?.length ?? 0;
+  $: dimensionsCount = metadata?.dimensions?.length ?? 0;
+  $: testCount = metadata?.testCount ?? 0;
+  $: testHasErrors = (metadata?.testErrors?.length ?? 0) > 0;
+  $: componentCount = metadata?.componentCount ?? 0;
+  $: hasSecurityRules = metadata?.hasSecurityRules === true;
+  $: isIncremental = metadata?.incremental === true;
+  $: isPartitioned = metadata?.partitioned === true;
+  $: hasSchedule = metadata?.hasSchedule === true;
+  $: connector = metadata?.connector ?? null;
+  $: connectorIcon = (
+    connector &&
+    connectorIconMapping[connector as keyof typeof connectorIconMapping]
+      ? connectorIconMapping[connector as keyof typeof connectorIconMapping]
+      : null
+  ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
+
+  $: rawFilePath = data?.resource?.meta?.filePaths?.[0] ?? null;
+  $: filePath = rawFilePath?.replace(/^\//, "") ?? null;
+  $: checkTooltip =
+    testCount === 0
+      ? "No checks"
+      : testHasErrors
+        ? `${testCount} check${testCount > 1 ? "s" : ""} failed`
+        : `${testCount} check${testCount > 1 ? "s" : ""} passed`;
+
+  // Connector node metadata
+  $: connectorDriver = metadata?.connectorDriver ?? null;
+  $: driverIcon = (
+    connectorDriver &&
+    connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping]
+      ? connectorIconMapping[
+          connectorDriver as keyof typeof connectorIconMapping
+        ]
+      : null
+  ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
+
+  const { fitView } = useSvelteFlow();
+
+  function navigateToFile() {
+    if (!rawFilePath) return;
+    if (graphNav?.openFile) {
+      graphNav.openFile(rawFilePath);
+      return;
+    }
+    try {
+      const prefs = JSON.parse(localStorage.getItem(rawFilePath) || "{}");
+      localStorage.setItem(
+        rawFilePath,
+        JSON.stringify({ ...prefs, view: "code" }),
+      );
+    } catch {
+      // ignore localStorage errors
+    }
+    goto(`/files${rawFilePath}`);
+  }
+
+  $: canOpenFile = !!rawFilePath && (!!graphNav?.openFile || !graphNav);
+
+  function handleClick(e: MouseEvent) {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    if (!canOpenFile) return;
+    e.preventDefault();
+    e.stopPropagation();
+    navigateToFile();
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      if (!canOpenFile) return;
+      e.preventDefault();
+      navigateToFile();
     }
   }
 
-  $: resourceName = data?.resource?.meta?.name?.name ?? "";
-  $: resourceKind = kind; // already normalized ResourceKind
-  $: artifact =
-    resourceName && resourceKind
-      ? fileArtifacts.findFileArtifact(resourceKind, resourceName)
-      : undefined;
-
-  function openFile(e?: MouseEvent) {
-    e?.stopPropagation();
-    if (!artifact?.path) return;
-
-    // Set code view preference for this file
-    try {
-      const key = artifact.path;
-      const prefs = JSON.parse(localStorage.getItem(key) || "{}");
-      localStorage.setItem(key, JSON.stringify({ ...prefs, view: "code" }));
-    } catch (error) {
-      console.warn(`Failed to save file view preference:`, error);
-    }
-
-    goto(`/files${artifact.path}`);
+  function handleDoubleClick() {
+    fitView({ nodes: [{ id }], duration: 300, padding: 0.5 });
   }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
   class="node"
   class:selected
   class:route-highlighted={routeHighlighted}
   class:error={hasError}
+  class:warned={isTestOnlyError}
+  class:pending={isPending}
   class:root={data?.isRoot}
   style:--node-accent={color}
   style:width={width ? `${width}px` : undefined}
+  style:height={height ? `${height}px` : undefined}
   data-kind={kind}
-  on:click={handleClick}
   role="button"
   tabindex="0"
-  on:keydown={(e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
-    }
-  }}
+  on:click={handleClick}
+  on:keydown={handleKeydown}
+  on:dblclick={handleDoubleClick}
+  on:contextmenu={handleContextMenu}
 >
   <Handle
     id="target"
@@ -139,80 +194,159 @@
     position={Position.Bottom}
     isConnectable={isConnectable ?? true}
   />
-  <div class="icon-wrapper" style={`background:${color}20`}>
-    <svelte:component this={icon} size="20px" {color} />
-  </div>
-  <div class="details">
-    <p class="title" title={data?.label}>{data?.label}</p>
-    <p class="meta">
-      {#if kind}
-        {displayResourceKind(kind)}
-      {:else}
-        Unknown
-      {/if}
-    </p>
-    {#if effectiveStatusLabel}
-      <p
-        class="status"
-        class:error={hasError}
-        title={hasError ? data?.resource?.meta?.reconcileError : undefined}
-      >
-        {effectiveStatusLabel}
-      </p>
-    {/if}
-  </div>
 
-  <NodeToolbar
-    isVisible={selected && !hasError && !!artifact?.path}
-    position={Position.Top}
-    align="center"
-    offset={4}
+  <ConditionalTooltip
+    showTooltip={hasError}
+    location="top"
+    distance={8}
+    activeDelay={150}
   >
-    <button
-      class="toolbar-open-btn"
-      aria-label="Open in code"
-      title={`Open ${artifact?.path}`}
-      on:click|stopPropagation={openFile}
-    >
-      <ExternalLink size="12px" />
-      <span>Open</span>
-    </button>
-  </NodeToolbar>
-
-  {#if showError && hasError}
-    <div class="error-popover" role="alert">
-      <div class="error-popover-header">
-        <span class="error-title">Error</span>
-        <div class="error-actions">
-          {#if artifact?.path}
-            <a
-              href={`/files${artifact.path}`}
-              class="error-open"
-              on:click|stopPropagation={openFile}
-              title={`Open ${artifact.path}`}>Open YAML</a
-            >
-          {/if}
-          <button
-            class="error-close"
-            aria-label="Close error"
-            on:click|stopPropagation={() => (showError = false)}
-          >
-            ✕
-          </button>
+    <!-- Title row: kind badge + name + actions -->
+    <div class="title-row">
+      {#if kind}<ResourceTypeBadge {kind} />{/if}
+      <p class="title" title={data?.label}>{data?.label}</p>
+      {#if showActions}
+        <div class="actions-trigger">
+          <ResourceNodeActions bind:this={actionsRef} {data} />
         </div>
-      </div>
-      <pre
-        class="error-message"
-        title={data?.resource?.meta?.reconcileError}>{data?.resource?.meta
-          ?.reconcileError}</pre>
+      {/if}
     </div>
-  {/if}
+
+    <!-- Content row -->
+    <div class="content">
+      {#if isSourceOrModel}
+        {@const allIndicators = [
+          metadata?.isMaterialized
+            ? { type: "table" }
+            : kind === ResourceKind.Model
+              ? { type: "view" }
+              : null,
+          isIncremental ? { type: "incremental" } : null,
+          isPartitioned ? { type: "partitioned" } : null,
+          hasSchedule ? { type: "schedule" } : null,
+          testCount > 0 ? { type: "checks" } : null,
+        ].filter(Boolean)}
+        {@const rightIndicators = allIndicators.slice(0, 3)}
+        {@const hiddenCount = allIndicators.length - rightIndicators.length}
+        <div class="meta-row meta-row-spread">
+          <span class="badge-group">
+            {#if connectorIcon && kind === ResourceKind.Source}
+              <span title={connector}>
+                <svelte:component this={connectorIcon} size="10px" />
+              </span>
+            {/if}
+          </span>
+          <span class="badge-group">
+            {#each rightIndicators as ind}
+              {#if ind?.type === "table"}
+                <span class="badge" title="Table">Table</span>
+              {:else if ind?.type === "view"}
+                <span class="badge" title="View">View</span>
+              {:else if ind?.type === "incremental"}
+                <span class="icon-indicator" title="Incremental">
+                  <Zap size="10px" />
+                </span>
+              {:else if ind?.type === "partitioned"}
+                <span class="icon-indicator" title="Partitioned">
+                  <Layers size="10px" />
+                </span>
+              {:else if ind?.type === "schedule"}
+                <span class="icon-indicator" title="Scheduled">
+                  <Clock size="10px" />
+                </span>
+              {:else if ind?.type === "checks"}
+                <span
+                  class="check-indicator"
+                  class:checks-pass={!testHasErrors}
+                  class:checks-fail={testHasErrors}
+                  title={checkTooltip}
+                >
+                  {#if testHasErrors}
+                    <AlertTriangle size="10px" />
+                  {:else}
+                    <CheckCircle size="10px" color="currentColor" />
+                  {/if}
+                  {testCount}
+                </span>
+              {/if}
+            {/each}
+            {#if hiddenCount > 0}
+              <span class="icon-indicator" title="{hiddenCount} more"> + </span>
+            {/if}
+          </span>
+        </div>
+      {:else if isMetricsView}
+        <div class="meta-row meta-row-spread">
+          <span class="meta-detail">
+            {measuresCount} measures, {dimensionsCount} dimensions
+          </span>
+          {#if hasSecurityRules}
+            <span
+              class="lock-indicator secured"
+              title="Security policy defined"
+            >
+              <Lock size="10px" color="currentColor" />
+            </span>
+          {/if}
+        </div>
+      {:else if isExplore}
+        <div class="meta-row meta-row-spread">
+          <span class="meta-detail">
+            {metadata?.exploreMeasuresAll
+              ? "all"
+              : (metadata?.exploreMeasuresCount ?? 0)} measures,
+            {metadata?.exploreDimensionsAll
+              ? "all"
+              : (metadata?.exploreDimensionsCount ?? 0)} dimensions
+          </span>
+          {#if hasSecurityRules}
+            <span
+              class="lock-indicator secured"
+              title="Security policy defined"
+            >
+              <Lock size="10px" color="currentColor" />
+            </span>
+          {/if}
+        </div>
+      {:else if isCanvas}
+        <div class="meta-row meta-row-spread">
+          <span class="meta-detail">
+            {componentCount} component{componentCount !== 1 ? "s" : ""}
+          </span>
+          {#if hasSecurityRules}
+            <span
+              class="lock-indicator secured"
+              title="Security policy defined"
+            >
+              <Lock size="10px" color="currentColor" />
+            </span>
+          {/if}
+        </div>
+      {:else if isConnector}
+        {#if driverIcon}
+          <div class="meta-row">
+            <span title={connectorDriver}>
+              <svelte:component this={driverIcon} size="12px" />
+            </span>
+          </div>
+        {/if}
+      {/if}
+    </div>
+
+    <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
+      <div class="error-tooltip-content">
+        <span class="error-tooltip-title">Error</span>
+        <pre class="error-tooltip-message">{data?.resource?.meta
+            ?.reconcileError}</pre>
+      </div>
+    </TooltipContent>
+  </ConditionalTooltip>
 </div>
 
 <style lang="postcss">
   .node {
-    @apply relative border flex items-center gap-x-3 rounded-lg border bg-surface-subtle px-3 py-2 cursor-pointer shadow-sm;
-    border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
+    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle px-2.5 py-2 cursor-pointer shadow overflow-hidden;
+    border-color: var(--border);
     transition:
       box-shadow 120ms ease,
       border-color 120ms ease,
@@ -220,131 +354,121 @@
       background 120ms ease;
   }
 
-  .node.root {
-    border-color: color-mix(in srgb, var(--node-accent) 65%, transparent);
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--node-accent) 35%, transparent),
-      0 8px 18px rgba(15, 23, 42, 0.12);
+  .node.selected {
+    @apply shadow-md;
+    border-width: 2px;
     background-color: color-mix(
       in srgb,
-      var(--node-accent) 8%,
+      var(--node-accent) 14%,
+      var(--surface-background, #ffffff)
+    );
+    border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
+  }
+
+  .node.route-highlighted {
+    border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
+    background-color: color-mix(
+      in srgb,
+      var(--node-accent) 4%,
       var(--surface-background, #ffffff)
     );
   }
 
-  .node.selected {
-    @apply shadow border-2;
-    border-color: var(--node-accent);
-  }
-
   .node.error {
-    @apply border-red-300;
+    border-color: var(--color-red-400);
   }
 
-  .error-popover {
-    @apply absolute -top-2 left-1/2 z-20 w-[420px] max-w-[70vw] -translate-y-full -translate-x-1/2 rounded-md border border-red-300 bg-red-50 shadow-lg;
+  .node.warned {
+    border-color: var(--color-amber-400);
   }
 
-  .error-popover-header {
-    @apply flex items-center justify-between px-3 py-2 border-b border-red-200 gap-2;
+  .node.pending {
+    opacity: 0.5;
   }
 
-  .error-title {
-    @apply text-xs font-semibold text-red-700 uppercase tracking-wide;
-  }
-
-  .error-close {
-    @apply h-6 w-6 rounded border border-red-300 bg-surface-background text-xs text-red-600;
-    line-height: 1rem;
-  }
-
-  .error-close:hover {
-    @apply bg-red-50 text-red-700;
-  }
-
-  .error-actions {
-    @apply flex items-center gap-2;
-  }
-
-  .error-open {
-    @apply text-xs text-red-700 underline;
-  }
-
-  .error-open:hover {
-    @apply text-red-800;
-  }
-
-  .error-message {
-    @apply m-3 max-h-[40vh] overflow-auto whitespace-pre-wrap text-xs text-red-700;
-  }
-
-  .icon-wrapper {
-    @apply flex h-10 w-10 items-center justify-center rounded-md;
-  }
-
-  .details {
-    @apply flex flex-col gap-y-0.5 min-w-0;
+  /* Title row */
+  .title-row {
+    @apply flex items-center gap-x-1.5 min-w-0;
   }
 
   .title {
-    @apply font-medium text-sm leading-snug truncate;
+    @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
   }
 
-  .meta {
-    @apply text-xs text-fg-secondary capitalize;
+  .actions-trigger {
+    @apply flex-shrink-0 ml-auto;
   }
 
-  .status {
-    @apply text-xs text-fg-secondary italic;
+  /* Content section below title */
+  .content {
+    @apply flex flex-col gap-y-0.5;
   }
 
-  .status.error {
-    @apply not-italic text-red-600;
+  .meta-row {
+    @apply flex items-center gap-x-1.5 text-[11px] text-fg-secondary leading-tight;
   }
 
-  .toolbar-open-btn {
-    @apply h-7 px-3 rounded-[2px] border flex items-center justify-center gap-x-1.5 shadow-sm transition-colors;
-    @apply text-xs font-medium;
-    @apply bg-primary-600 text-white border-primary-600;
+  .meta-row-spread {
+    @apply justify-between;
   }
 
-  .toolbar-open-btn:focus {
-    @apply outline-none;
+  .meta-detail {
+    @apply text-fg-muted truncate;
   }
 
-  .toolbar-open-btn:focus-visible {
-    @apply ring-2 ring-primary-400/60 ring-offset-1;
+  .badge-group {
+    @apply inline-flex items-center gap-x-1.5;
   }
 
-  .toolbar-open-btn:hover {
-    @apply bg-primary-700 border-primary-700;
+  .badge {
+    @apply inline-flex items-center px-1 py-px rounded text-[10px] font-medium bg-surface-subtle text-fg-secondary;
+    border: 1px solid var(--border);
   }
 
-  .toolbar-open-btn:active {
-    @apply bg-primary-800 border-primary-800;
+  .icon-indicator {
+    @apply inline-flex items-center text-fg-muted;
   }
 
-  .toolbar-open-btn :global(svg) {
-    width: 12px;
-    height: 12px;
-    display: block;
-    flex-shrink: 0;
+  /* Check indicator with icon */
+  .check-indicator {
+    @apply inline-flex items-center gap-x-0.5 text-[10px] font-medium;
   }
 
-  .toolbar-open-btn :global(svg path) {
-    fill: currentColor;
+  .check-indicator.checks-pass {
+    @apply text-green-600;
   }
 
-  /* Make handles small circular dots, tinted by the node accent */
+  .check-indicator.checks-fail {
+    @apply text-amber-600;
+  }
+
+  /* Lock indicator (only rendered when security rules are present) */
+  .lock-indicator.secured {
+    @apply flex items-center text-amber-600;
+  }
+
+  /* Error tooltip styling */
+  .error-tooltip-content {
+    @apply flex flex-col gap-y-1;
+  }
+
+  .error-tooltip-title {
+    @apply text-xs font-semibold uppercase tracking-wide text-red-500;
+  }
+
+  .error-tooltip-message {
+    @apply max-h-[200px] overflow-auto whitespace-pre-wrap text-xs;
+  }
+
+  /* Hide handle dots — edges connect as plain lines with no anchors */
   :global(.svelte-flow__node[data-id]) :global(.svelte-flow__handle) {
-    width: 6px;
-    height: 6px;
-    min-width: 6px;
-    min-height: 6px;
-    border-radius: 9999px;
-    background-color: color-mix(in srgb, var(--node-accent) 18%, #ffffff);
-    border: 1px solid color-mix(in srgb, var(--node-accent) 55%, #b1b1b7);
-    box-shadow: 0 0 0 1px #ffffff;
-    opacity: 1;
+    width: 1px;
+    height: 1px;
+    min-width: 1px;
+    min-height: 1px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    opacity: 0;
   }
 </style>

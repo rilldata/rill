@@ -21,13 +21,14 @@
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
 
   export let resources: V1Resource[] = [];
+  // Pre-computed layout: when provided, skip internal buildResourceGraph
+  export let precomputedNodes: Node<ResourceNodeData>[] | null = null;
+  export let precomputedEdges: Edge[] | null = null;
   export let title: string | null = null;
   // Fine-grained title rendering: base label + error count with conditional coloring
   export let titleLabel: string | null = null;
   export let titleErrorCount: number | null = null;
   export let anchorError: boolean = false;
-  // Preselect specific nodes by id on initial render (e.g., the seeded anchor)
-  export let preselectNodeIds: string[] | undefined = undefined;
   // Emphasize particular nodes (e.g., the root/seed node for this graph)
   export let rootNodeIds: string[] | undefined = undefined;
   // Unique flow id to isolate multiple SvelteFlow instances
@@ -42,8 +43,8 @@
   export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
-  export let overlay = false;
   export let onExpand: () => void = () => {};
+  export let showNodeActions = true;
 
   let hasNodes = false;
   const nodesStore = writable<Node<ResourceNodeData>[]>([]);
@@ -180,6 +181,16 @@
     });
   }
 
+  // Handle pane click (background) to deselect all nodes
+  function handlePaneClick() {
+    nodesStore.update((nds) =>
+      nds.map((n) => ({
+        ...n,
+        selected: false,
+      })),
+    );
+  }
+
   // Reactively compute highlighted edges tracing strictly upstream and downstream
   // from the selected node(s). We explore both directions only at the start node(s):
   // upstream explores only incoming edges (sources) and continues going up;
@@ -187,9 +198,8 @@
   $: (function updateHighlightedEdges() {
     const nodes = $nodesStore as Node<ResourceNodeData>[];
     const edges = $edgesStore as Edge[];
-    const selectedIds = new Set(
-      nodes.filter((n) => n.selected).map((n) => n.id),
-    );
+    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedIds = new Set(selectedNodes.map((n) => n.id));
 
     // No selection: apply default styling and clear highlights
     if (!selectedIds.size) {
@@ -228,86 +238,92 @@
     );
   })();
 
+  let graphError: string | null = null;
+
   $: {
-    const rootSet = new Set(rootNodeIds ?? []);
-    const graph = buildResourceGraph(resources ?? [], {
-      positionNs: flowId,
-      ignoreCache: true,
-    });
-    const nodeIds = new Set(graph.nodes.map((n) => n.id));
-    const filteredEdges = graph.edges.filter(
-      (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
-    );
-    const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
-      (node) => ({
-        ...node,
-        data: { ...node.data, isRoot: rootSet.has(node.id) },
-      }),
-    );
-    nodesStore.set(nodesWithRoots);
-    edgesStore.set(filteredEdges);
-    hasNodes = nodesWithRoots.length > 0;
-    // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes
+    graphError = null;
     try {
-      const nodeSig = nodesWithRoots
-        .map((n) => n.id)
-        .sort()
-        .join(",");
-      const edgeSig = filteredEdges
-        .map((e) => e.id || `${e.source}->${e.target}`)
-        .sort()
-        .join(",");
-      flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
-    } catch {
-      flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
-    }
-    // Debug logging (only in development)
-    if (import.meta.env.DEV) {
-      console.log("ResourceGraph graph", {
-        title,
-        nodes: nodesWithRoots.map((n) => n.id),
-        edges: filteredEdges.map((e) => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
-        })),
-      });
+      const rootSet = new Set(rootNodeIds ?? []);
+      // Use precomputed layout if provided; otherwise build from resources
+      const graph =
+        precomputedNodes && precomputedEdges
+          ? { nodes: precomputedNodes, edges: precomputedEdges }
+          : buildResourceGraph(resources ?? [], {
+              positionNs: flowId,
+              ignoreCache: true,
+            });
+      const nodeIds = new Set(graph.nodes.map((n) => n.id));
+      const filteredEdges = graph.edges.filter(
+        (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
+      );
+      const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
+        (node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isRoot: rootSet.has(node.id),
+            showNodeActions,
+          },
+        }),
+      );
+      nodesStore.set(nodesWithRoots);
+      edgesStore.set(filteredEdges);
+      hasNodes = nodesWithRoots.length > 0;
+      // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes.
+      // Use node/edge count + hash for large graphs to avoid huge key strings.
+      try {
+        const nodeCount = nodesWithRoots.length;
+        const edgeCount = filteredEdges.length;
+        const nodeSig =
+          nodeCount > 50
+            ? `${nodeCount}:${nodesWithRoots[0]?.id ?? ""}:${nodesWithRoots[nodeCount - 1]?.id ?? ""}`
+            : nodesWithRoots
+                .map((n) => n.id)
+                .sort()
+                .join(",");
+        const edgeSig =
+          edgeCount > 50
+            ? `${edgeCount}:${filteredEdges[0]?.id ?? ""}:${filteredEdges[edgeCount - 1]?.id ?? ""}`
+            : filteredEdges
+                .map((e) => e.id || `${e.source}->${e.target}`)
+                .sort()
+                .join(",");
+        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
+      } catch {
+        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
+      }
+    } catch (err) {
+      console.error("Failed to build resource graph:", err);
+      graphError =
+        err instanceof Error ? err.message : "Failed to build graph layout";
+      nodesStore.set([]);
+      edgesStore.set([]);
+      hasNodes = false;
     }
   }
-
-  // Apply preselection for seeded anchors (runs when preselectNodeIds or nodes change)
-  $: (function applyPreselection() {
-    const ids = new Set(preselectNodeIds ?? []);
-    // Always set selected based on current ids; if empty, clear selection
-    nodesStore.update((nds) =>
-      nds.map((n) => ({ ...n, selected: ids.has(n.id) })),
-    );
-  })();
 </script>
 
 <section class="graph-instance">
-  {#if titleLabel != null}
-    <h2 class="graph-title">
-      <span class:text-red-600={anchorError}>{titleLabel}</span>
-      {#if titleErrorCount && titleErrorCount > 0}
-        <span class="text-red-600">
-          {" "}
-          • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
-        </span>
-      {/if}
-    </h2>
-  {:else if title}
-    <h2 class="graph-title">{title}</h2>
-  {/if}
-
   {#if hasNodes}
     <div
       class="graph-container"
-      class:overlay
       class:h-full={fillParent}
+      class:no-border={fillParent}
       bind:this={containerEl}
       style:height={containerInlineHeight}
     >
+      {#if titleLabel != null}
+        <div class="graph-watermark">
+          <span class:text-red-600={anchorError}>{titleLabel}</span>
+          {#if titleErrorCount && titleErrorCount > 0}
+            <span class="text-red-600">
+              • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
+            </span>
+          {/if}
+        </div>
+      {:else if title}
+        <div class="graph-watermark">{title}</div>
+      {/if}
       {#if enableExpand}
         <button
           class="expand-btn"
@@ -335,14 +351,15 @@
             duration: 0,
           }}
           preventScrolling={false}
-          zoomOnScroll={false}
-          panOnScroll={false}
+          zoomOnScroll
+          panOnScroll
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable
           selectionOnDrag
-          onlyRenderVisibleElements={false}
+          onlyRenderVisibleElements
           defaultEdgeOptions={edgeOptions}
+          on:paneclick={handlePaneClick}
         >
           <Background gap={24} />
           {#if showControls}
@@ -350,6 +367,12 @@
           {/if}
         </SvelteFlow>
       {/key}
+    </div>
+  {:else if graphError}
+    <div class="state error">
+      <p>Failed to render graph</p>
+      <pre
+        class="text-xs text-fg-muted mt-1 max-w-md overflow-auto">{graphError}</pre>
     </div>
   {:else}
     <div class="state">
@@ -360,23 +383,23 @@
 
 <style lang="postcss">
   .graph-instance {
-    @apply flex h-full flex-col gap-y-3;
-  }
-
-  .graph-title {
-    @apply text-sm font-semibold text-fg-primary;
+    @apply flex h-full flex-col;
   }
 
   .graph-container {
     @apply relative w-full overflow-hidden rounded-lg border;
   }
 
+  .graph-container.no-border {
+    @apply border-0 rounded-none;
+  }
+
   .state {
     @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-fg-muted;
   }
 
-  .overlay {
-    @apply border-none rounded-t-none;
+  .state.error {
+    @apply flex-col text-red-600;
   }
 
   .expand-btn {
@@ -386,5 +409,15 @@
 
   .expand-btn:hover {
     @apply bg-surface-muted text-fg-primary;
+  }
+
+  .graph-watermark {
+    @apply absolute bottom-3 right-3 z-10 pointer-events-none;
+    @apply text-xs font-semibold leading-tight text-fg-secondary opacity-70;
+  }
+
+  /* Override xyflow pane background to match app theme - scoped to this component */
+  .graph-container :global(.svelte-flow .svelte-flow__pane) {
+    background-color: var(--surface-background, #ffffff);
   }
 </style>
