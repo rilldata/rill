@@ -1,7 +1,12 @@
 expensive: true
 connectors:
-  - gcs
+  - gcs_s3_compat
 project_files:
+  gcs.yaml:
+    type: connector
+    driver: gcs
+    key_id: '{{.env.connector.gcs_s3_compat.key_id }}'
+    secret: '{{.env.connector.gcs_s3_compat.secret }}'
   iceberg_gcs_with_secrets.yaml:
     type: model
     connector: duckdb
