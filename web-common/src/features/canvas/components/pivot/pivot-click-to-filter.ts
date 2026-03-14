@@ -42,8 +42,12 @@ interface PivotClickToFilterArgs {
   pivotDataStore: PivotDataStore;
   filterManager: FilterManager;
   metricsViewName: string;
+  componentId: string;
+  activeComponent: Readable<string | null>;
   selfFilteredDimensions: Writable<Set<string>>;
   whereFilterStore: Readable<V1Expression | undefined>;
+  onBecomeActive?: () => void;
+  onBecomeInactive?: () => void;
 }
 
 export interface PivotClickToFilterResult {
@@ -66,8 +70,12 @@ export function createPivotClickToFilter(
     pivotDataStore,
     filterManager,
     metricsViewName,
+    componentId,
+    activeComponent,
     selfFilteredDimensions,
     whereFilterStore,
+    onBecomeActive,
+    onBecomeInactive,
   } = args;
 
   // --- Internal click selection state ---
@@ -103,6 +111,14 @@ export function createPivotClickToFilter(
     if ($selfFiltered.size === 0) {
       rowDimClickIndex.clear();
       clickSelectionStore.set(createEmptyClickSelectionState());
+      onBecomeInactive?.();
+    }
+  });
+
+  // --- Yield active state when another component becomes active ---
+  const activeUnsub = activeComponent.subscribe(($activeId) => {
+    if ($activeId !== null && $activeId !== componentId) {
+      selfFilteredDimensions.set(new Set());
     }
   });
 
@@ -215,6 +231,16 @@ export function createPivotClickToFilter(
     const dimensionFilters = extractDimensionFiltersFromExpression(filters);
     if (dimensionFilters.length === 0) return;
 
+    // Capture which dimensions were already in the global filter before this click.
+    // Dimensions present here were not added by this component and should not be
+    // excluded from its own query (they are not "self-filtered").
+    const preClickWhere = get(whereFilterStore);
+    const preExistingDims = new Set(
+      preClickWhere?.cond?.exprs
+        ?.map((e) => e.cond?.exprs?.[0]?.ident)
+        .filter(Boolean) ?? [],
+    );
+
     const filterClass = filterManager.metricsViewFilters.get(metricsViewName);
     if (!filterClass) return;
 
@@ -283,12 +309,22 @@ export function createPivotClickToFilter(
       ),
     );
 
-    // Mark these dimensions as self-filtered by the pivot
+    // Mark only newly-added dimensions as self-filtered. Dimensions that were
+    // already in the global filter before this click are not owned by this
+    // component and must not be stripped from its own query.
+    const wasInactive = get(selfFilteredDimensions).size === 0;
     selfFilteredDimensions.update((dims) => {
       const next = new Set(dims);
-      dimensionFilters.forEach(({ dimensionName }) => next.add(dimensionName));
+      dimensionFilters.forEach(({ dimensionName }) => {
+        if (!preExistingDims.has(dimensionName)) {
+          next.add(dimensionName);
+        }
+      });
       return next;
     });
+    if (wasInactive && get(selfFilteredDimensions).size > 0) {
+      onBecomeActive?.();
+    }
 
     // Single batch URL update with the final filter string
     if (filterString !== null) {
@@ -389,6 +425,7 @@ export function createPivotClickToFilter(
   function destroy() {
     pruneUnsub();
     clearUnsub();
+    activeUnsub();
   }
 
   return {

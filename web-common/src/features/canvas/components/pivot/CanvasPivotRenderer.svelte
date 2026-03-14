@@ -16,7 +16,7 @@
   } from "./pivot-click-to-filter";
 
   import { onDestroy } from "svelte";
-  import { derived, type Readable, type Writable } from "svelte/store";
+  import { derived, get, type Readable, type Writable } from "svelte/store";
 
   export let schema: {
     isValid: boolean;
@@ -34,7 +34,8 @@
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
 
   // FilterManager and metrics view for filter application
-  $: filterManager = component.parent.filterManager;
+  $: canvasEntity = component.parent;
+  $: filterManager = canvasEntity.filterManager;
   $: spec = component.specStore;
   $: metricsViewName = $spec?.metrics_view;
   $: selfFilteredDimensions = component.selfFilteredDimensions;
@@ -51,13 +52,22 @@
     clickToFilter = undefined;
 
     if (pivotDataStore && pivotConfig && metricsViewName) {
+      const componentId = component.id;
       clickToFilter = createPivotClickToFilter({
         pivotConfig,
         pivotDataStore,
         filterManager,
         metricsViewName,
+        componentId,
+        activeComponent: canvasEntity.activeComponent,
         selfFilteredDimensions,
         whereFilterStore,
+        onBecomeActive: () => canvasEntity.setActiveComponent(componentId),
+        onBecomeInactive: () => {
+          if (get(canvasEntity.activeComponent) === componentId) {
+            canvasEntity.clearActiveComponent();
+          }
+        },
       });
     }
   }
