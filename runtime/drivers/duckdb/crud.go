@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
+	"go.uber.org/zap"
 )
 
 type tableWriteMetrics struct {
@@ -128,10 +129,16 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
+			defer func() {
+				_, err := conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
+				if err != nil {
+					c.logger.Warn("failed to drop temporary table", zap.Error(err))
+				}
+			}()
 
 			// check the count of the new data
 			// skip if the count is 0
@@ -189,10 +196,16 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
+			defer func() {
+				_, err := conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
+				if err != nil {
+					c.logger.Warn("failed to drop temporary table", zap.Error(err))
+				}
+			}()
 
 			// Check the count of the new data
 			// Skip if the count is 0
