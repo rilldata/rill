@@ -704,6 +704,10 @@ func (c *Connection) periodicallyEmitStats() {
 	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
 
+	// Hourly ticker for ClickHouse Cloud API polling (aligned with billing reporter cadence)
+	chcTicker := time.NewTicker(time.Hour)
+	defer chcTicker.Stop()
+
 	// Cache invalidation ticker to reset billing table existence cache
 	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
@@ -736,8 +740,8 @@ func (c *Connection) periodicallyEmitStats() {
 
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
-
-			// Fetch ClickHouse Cloud service info (on sensitiveTicker for testing; move to regularTicker later)
+		case <-chcTicker.C:
+			// Fetch ClickHouse Cloud service info hourly and emit as metrics
 			if c.cloudClient != nil {
 				info, err := c.cloudClient.FindServiceByHost(c.ctx, c.resolvedHost())
 				if err != nil {
@@ -756,8 +760,11 @@ func (c *Connection) periodicallyEmitStats() {
 						zap.Float64("max_memory_gb", info.MaxMemoryGB),
 						zap.Int("num_replicas", info.NumReplicas),
 					)
-					// Auto-update canScaleToZero based on CHC idle scaling setting
 					c.config.CanScaleToZero = info.IdleScaling
+					// Emit CHC cluster memory as a metric for billing/Orb ingestion
+					c.activity.RecordMetric(c.ctx, "clickhouse_cloud_max_memory_gb", info.MaxMemoryGB)
+					c.activity.RecordMetric(c.ctx, "clickhouse_cloud_min_memory_gb", info.MinMemoryGB)
+					c.activity.RecordMetric(c.ctx, "clickhouse_cloud_num_replicas", float64(info.NumReplicas))
 				}
 			}
 		case <-regularTicker.C:

@@ -33,49 +33,48 @@
   const queryClient = useQueryClient();
   const updateVariables = createAdminServiceUpdateProjectVariables();
 
+  // Clear validation error when inputs change
+  $: if (keyId || keySecret) validationError = "";
+
   $: canSubmit =
     keyId.trim() !== "" &&
     keySecret.trim() !== "" &&
     !$updateVariables.isPending &&
     !validating;
 
+  let validationError = "";
+
   async function lookupChcService(): Promise<number | undefined> {
     if (!connectorHost) {
-      console.log("[CHC Lookup] No connectorHost, skipping lookup");
       return undefined;
     }
-    try {
-      console.log("[CHC Lookup] Calling /v1/clickhouse-cloud/lookup", {
-        host: connectorHost,
-        org: organization,
-        project,
-      });
-      const resp = await AXIOS_INSTANCE.post("/v1/clickhouse-cloud/lookup", {
-        key_id: keyId.trim(),
-        key_secret: keySecret.trim(),
-        host: connectorHost,
-        org: organization,
-        project,
-      });
-      console.log("[CHC Lookup] Response:", resp.data);
-      return resp.data?.max_memory_gb;
-    } catch (err) {
-      console.error("[CHC Lookup] Failed:", err);
-      return undefined;
-    }
+    const resp = await AXIOS_INSTANCE.post("/v1/clickhouse-cloud/lookup", {
+      key_id: keyId.trim(),
+      key_secret: keySecret.trim(),
+      host: connectorHost,
+      org: organization,
+      project,
+    });
+    return resp.data?.max_memory_gb;
   }
 
   async function handleSubmit() {
+    validationError = "";
     try {
-      console.log(
-        "[CHC Lookup] handleSubmit called, connectorHost:",
-        connectorHost,
-      );
-      // First, validate the key by looking up the service
+      // Validate the key by looking up the service; block save on failure
       validating = true;
-      const memoryGb = await lookupChcService();
+      let memoryGb: number | undefined;
+      try {
+        memoryGb = await lookupChcService();
+      } catch (err) {
+        validating = false;
+        const axiosError = err as AxiosError<RpcStatus>;
+        validationError =
+          axiosError.response?.data?.message ??
+          "Could not validate API key. Check your credentials and try again.";
+        return;
+      }
       validating = false;
-      console.log("[CHC Lookup] memoryGb result:", memoryGb);
 
       // Save the key as project variables
       await $updateVariables.mutateAsync({
@@ -164,6 +163,9 @@
           class="text-primary-500 hover:underline">ClickHouse Cloud console</a
         >. The key needs read access to the Cloud API.
       </p>
+      {#if validationError}
+        <p class="text-xs text-red-600">{validationError}</p>
+      {/if}
     </div>
 
     <DialogFooter>

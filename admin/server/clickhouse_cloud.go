@@ -4,38 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	chdriver "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rs/cors"
 )
-
-// Live Connect tier mapping: cluster memory (GB per replica) → minimum Rill slots.
-// Each tier's memory = slots * 2 GB.
-var chcTiers = []struct {
-	memoryGB int
-	slots    int
-}{
-	{8, 4},
-	{12, 6},
-	{16, 8},
-	{32, 16},
-	{64, 32},
-	{120, 60},
-}
-
-// chcMinSlotsForMemory returns the minimum Rill slots for a given CHC cluster memory (GB per replica).
-// It picks the smallest tier whose memory is >= the cluster memory.
-func chcMinSlotsForMemory(memoryGB float64) int {
-	for _, t := range chcTiers {
-		if memoryGB <= float64(t.memoryGB) {
-			return t.slots
-		}
-	}
-	// Larger than any tier: use the biggest
-	return chcTiers[len(chcTiers)-1].slots
-}
 
 type chcLookupRequest struct {
 	KeyID     string `json:"key_id"`
@@ -95,7 +70,7 @@ func (s *Server) clickhouseCloudLookup(w http.ResponseWriter, r *http.Request) e
 	}
 
 	// info.MaxMemoryGB is already per-replica (from minReplicaMemoryGb/maxReplicaMemoryGb)
-	minSlots := chcMinSlotsForMemory(info.MaxMemoryGB)
+	minSlots := admin.CHCMinSlotsForMemory(info.MaxMemoryGB)
 
 	// Persist cluster info on the project if org/project are provided
 	if req.Org != "" && req.Project != "" {
