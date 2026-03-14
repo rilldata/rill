@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
-    createAdminServiceGetOrganization,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
@@ -59,14 +59,15 @@
   $: instance = $instanceQuery.data?.instance;
   $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
 
-  // Organization — for storage quota on Teams/Trial plans
-  $: orgQuery = createAdminServiceGetOrganization(organization);
-  $: planName = $orgQuery.data?.billingPlanName ?? "";
-  $: storageLimit = $orgQuery.data?.quotas?.storageLimitBytesPerDeployment;
-  $: hasStorageQuota =
-    (isTeamPlan(planName) || isTrialPlan(planName)) &&
-    !!storageLimit &&
-    storageLimit !== "-1";
+  // Plan-based storage cap (from root layout data)
+  const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
+  const TRIAL_STORAGE_CAP = 5 * 1024 * 1024 * 1024; // 5GB
+  $: planName = $page.data?.organization?.billingPlanName ?? "";
+  $: storageCap = isTeamPlan(planName)
+    ? TEAM_STORAGE_CAP
+    : isTrialPlan(planName)
+      ? TRIAL_STORAGE_CAP
+      : 0;
 
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
@@ -187,8 +188,8 @@
               href="/{organization}/{project}/-/status/tables"
               class="data-usage-link"
             >
-              {formatMemorySize(Number(dataSizeBytes))}{#if hasStorageQuota}
-                {" "}/ {formatMemorySize(Number(storageLimit))}{/if}
+              {formatMemorySize(Number(dataSizeBytes))}{#if storageCap}
+                {" "}/ {formatMemorySize(storageCap)}{/if}
             </a>
           {:else}
             —
