@@ -17,7 +17,8 @@ type CustomInputTypes =
   | "sparkline"
   | "comparison_options"
   | "vega_spec"
-  | "switcher_tab";
+  | "switcher_tab"
+  | "ai_prompt";
 type PositionalInputTypes = "alignment";
 
 export type InputType =

@@ -6657,3 +6657,115 @@ export class GitPushResponse extends Message$1<GitPushResponse> {
   }
 }
 
+/**
+ * Request message for RuntimeService.GenerateChart
+ *
+ * @generated from message rill.runtime.v1.GenerateChartRequest
+ */
+export class GenerateChartRequest extends Message$1<GenerateChartRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Natural language description of the desired chart.
+   *
+   * @generated from field: string prompt = 3;
+   */
+  prompt = "";
+
+  /**
+   * Previous metrics_sql queries (for iterative refinement).
+   *
+   * @generated from field: repeated string previous_sql = 4;
+   */
+  previousSql: string[] = [];
+
+  /**
+   * Previous Vega-Lite spec JSON (for iterative refinement).
+   *
+   * @generated from field: string previous_spec = 5;
+   */
+  previousSpec = "";
+
+  constructor(data?: PartialMessage<GenerateChartRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateChartRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "previous_sql", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "previous_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartRequest {
+    return new GenerateChartRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateChartRequest {
+    return new GenerateChartRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateChartRequest {
+    return new GenerateChartRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateChartRequest | PlainMessage<GenerateChartRequest> | undefined, b: GenerateChartRequest | PlainMessage<GenerateChartRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateChartRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateChart
+ *
+ * @generated from message rill.runtime.v1.GenerateChartResponse
+ */
+export class GenerateChartResponse extends Message$1<GenerateChartResponse> {
+  /**
+   * Generated metrics_sql queries.
+   *
+   * @generated from field: repeated string metrics_sql = 1;
+   */
+  metricsSql: string[] = [];
+
+  /**
+   * Generated Vega-Lite specification as a JSON string.
+   *
+   * @generated from field: string vega_spec = 2;
+   */
+  vegaSpec = "";
+
+  constructor(data?: PartialMessage<GenerateChartResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateChartResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "metrics_sql", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "vega_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartResponse {
+    return new GenerateChartResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateChartResponse {
+    return new GenerateChartResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateChartResponse {
+    return new GenerateChartResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateChartResponse | PlainMessage<GenerateChartResponse> | undefined, b: GenerateChartResponse | PlainMessage<GenerateChartResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateChartResponse, a, b);
+  }
+}
+

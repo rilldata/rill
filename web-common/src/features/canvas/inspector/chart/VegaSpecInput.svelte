@@ -94,7 +94,10 @@
   }
 
   :global(.spec-editor-container .cm-editor) {
-    height: 300px;
+    height: 400px;
+    min-height: 100px;
+    resize: vertical;
+    overflow: hidden;
   }
 
   :global(.spec-editor-container .cm-editor .cm-scroller) {

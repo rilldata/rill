@@ -395,6 +395,10 @@ function generateServiceFile(
 
     if (hasOrvalType(availableOrvalTypes, m.outputType)) {
       orvalTypeImports.add(orvalTypeName(m.outputType));
+    } else {
+      // Output type needs PartialMessage wrapper; also need to import the proto type
+      needsPartialMessage = true;
+      protoTypes.add(m.outputType);
     }
   }
 

@@ -8,6 +8,7 @@
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
+  import AIPromptInput from "./AIPromptInput.svelte";
   import AlignmentInput from "./AlignmentInput.svelte";
   import CanvasFieldSwitcher from "./CanvasFieldSwitcher.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
@@ -63,8 +64,12 @@
         class="component-param"
         class:grouped={config.meta?.layout === "grouped"}
       >
-        <!-- TEXT, NUMBER, RILL_TIME -->
-        {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
+        <!-- AI PROMPT -->
+        {#if config.type === "ai_prompt"}
+          <AIPromptInput {component} />
+
+          <!-- TEXT, NUMBER, RILL_TIME -->
+        {:else if config.type === "text" || config.type === "number" || config.type === "rill_time"}
           <Input
             inputType={config.type === "number" ? "number" : "text"}
             capitalizeLabel={false}

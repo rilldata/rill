@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { PartialMessage, Struct } from "@bufbuild/protobuf";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
@@ -9,7 +10,7 @@
     createRuntimeServiceQueryResolver,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
   import { derived } from "svelte/store";
 
@@ -29,7 +30,7 @@
   let selectedView = 0; // 0 = Chart, 1 = Data
   let selectedTable = 0; // For switching between tables if multiple queries
 
-  $: instanceId = $runtime.instanceId;
+  const runtimeClient = useRuntimeClient();
 
   // Create a unique key that includes whereFilter to ensure queries are invalidated when it changes
   $: filterKey = JSON.stringify(whereFilter);
@@ -37,13 +38,13 @@
   // Create queries that are reactive to whereFilter changes
   $: dataQueries = metricsSQL.map((sql, index) =>
     createRuntimeServiceQueryResolver(
-      instanceId,
+      runtimeClient,
       {
         resolver: "metrics_sql",
         resolverProperties: {
           sql,
           ...(whereFilter ? { addition_where: whereFilter } : {}),
-        },
+        } as unknown as PartialMessage<Struct>,
       },
       {
         query: {
@@ -104,9 +105,9 @@
       {/if}
     </div>
   {/if}
-  <div class="flex-1 flex flex-col min-h-0 min-w-0">
+  <div class="size-full flex flex-col overflow-hidden">
     {#if selectedView === 0}
-      <div class="flex-1">
+      <div class="size-full">
         {#if !spec}
           <div class="text-red-500 items-center justify-center">
             No spec provided

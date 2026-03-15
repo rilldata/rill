@@ -16,6 +16,7 @@ import CanvasCustomChart from "./CanvasCustomChart.svelte";
 export interface CustomChart
   extends ComponentCommonProperties,
     ComponentFilterProperties {
+  prompt?: string;
   metrics_sql: string[];
   vega_spec: string;
 }
@@ -47,6 +48,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
   inputParams(): InputParams<CustomChart> {
     return {
       options: {
+        prompt: { type: "ai_prompt", label: "AI Prompt" },
         metrics_sql: { type: "metrics_sql", label: "Metrics SQL" },
         vega_spec: { type: "vega_spec", label: "Vega Lite Spec" },
         ...commonOptions,
