@@ -17,6 +17,14 @@
   export let filter: MeasureFilterEntry | undefined;
   export let labelMaxWidth = "320px";
   export let comparisonLabel = "";
+  export let isPercent = false;
+
+  function formatDisplayValue(rawValue: string): string {
+    if (!isPercent) return rawValue;
+    const num = Number(rawValue);
+    if (Number.isNaN(num)) return rawValue;
+    return String(num * 100);
+  }
 
   let typeLabel: string | undefined;
   let shortLabel: string | undefined;
@@ -33,27 +41,42 @@
       typeLabel += ` from ${comparisonLabel}`;
     }
 
+    const showPercentSuffix =
+      filter.type === MeasureFilterType.PercentChange ||
+      (filter.type === MeasureFilterType.Value && isPercent);
+
     switch (filter.operation) {
       case MeasureFilterOperation.GreaterThan:
       case MeasureFilterOperation.GreaterThanOrEquals:
       case MeasureFilterOperation.LessThan:
       case MeasureFilterOperation.LessThanOrEquals:
       case MeasureFilterOperation.Equals:
-      case MeasureFilterOperation.NotEquals:
+      case MeasureFilterOperation.NotEquals: {
+        const displayValue =
+          filter.type === MeasureFilterType.Value
+            ? formatDisplayValue(filter.value1)
+            : filter.value1;
         shortLabel =
           AllMeasureFilterOperationOptions.find(
             (o) => o.value === filter?.operation,
           )?.shortLabel +
           " " +
-          filter.value1 +
-          (filter.type === MeasureFilterType.PercentChange ? "%" : "");
+          displayValue +
+          (showPercentSuffix ? "%" : "");
         break;
-      case MeasureFilterOperation.Between:
-        shortLabel = `(${filter.value1},${filter.value2})`;
+      }
+      case MeasureFilterOperation.Between: {
+        const v1 = formatDisplayValue(filter.value1);
+        const v2 = formatDisplayValue(filter.value2);
+        shortLabel = `(${v1},${v2})` + (showPercentSuffix ? "%" : "");
         break;
-      case MeasureFilterOperation.NotBetween:
-        shortLabel = `!(${filter.value1},${filter.value2})`;
+      }
+      case MeasureFilterOperation.NotBetween: {
+        const v1 = formatDisplayValue(filter.value1);
+        const v2 = formatDisplayValue(filter.value2);
+        shortLabel = `!(${v1},${v2})` + (showPercentSuffix ? "%" : "");
         break;
+      }
     }
   }
 </script>
