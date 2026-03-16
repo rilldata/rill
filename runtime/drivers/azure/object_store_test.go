@@ -8,9 +8,27 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
+
+func TestObjectStoreCloud(t *testing.T) {
+	testmode.Expensive(t)
+	// using azure cloud for these test because azurite does not support startFrom
+	cfg := testruntime.AcquireConnector(t, "azure_cloud")
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	objectStore, ok := conn.AsObjectStore()
+	require.True(t, ok)
+	bucket := "test-container"
+	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListObjectsForGlobPagination_pageSize5", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 5) })
+}
 
 func TestObjectStore(t *testing.T) {
 	cfg := testruntime.AcquireConnector(t, "azure")
@@ -21,9 +39,6 @@ func TestObjectStore(t *testing.T) {
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test"
-	t.Run("testListObjectsForGlobPagination/pageSize=1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
-	t.Run("testListObjectsForGlobPagination/pageSize=2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
-	t.Run("testListObjectsForGlobPagination/pageSize=3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
@@ -49,18 +64,35 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 }
 
 func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string, pageSize uint32) {
-	ctx := context.Background()
-	path := "glob_test/y=202*/*"
+	ctx := t.Context()
+	path := "listing_glob_test/**/*.csv"
 
 	expected := []string{
-		"glob_test/y=2023/aab.csv",
-		"glob_test/y=2024/aaa.csv",
-		"glob_test/y=2024/bbb.csv",
+		"listing_glob_test/year=2024/month=11/day=30/file1.csv",
+		"listing_glob_test/year=2024/month=11/day=30/file2.csv",
+		"listing_glob_test/year=2024/month=11/day=31/file1.csv",
+
+		"listing_glob_test/year=2025/month=01/day=01/file1.csv",
+		"listing_glob_test/year=2025/month=01/day=01/file2.csv",
+		"listing_glob_test/year=2025/month=01/day=01/file3.csv",
+
+		"listing_glob_test/year=2025/month=01/day=02/file1.csv",
+		"listing_glob_test/year=2025/month=01/day=02/file2.csv",
+
+		"listing_glob_test/year=2025/month=02/day=01/file1.csv",
+
+		"listing_glob_test/year=2025/month=12/day=01/file1.csv",
+		"listing_glob_test/year=2025/month=12/day=01/file2.csv",
+
+		"listing_glob_test/year=2026/month=01/day=01/file1.csv",
+		"listing_glob_test/year=2026/month=01/day=01/hour=01/file1.csv",
+		"listing_glob_test/year=2026/month=01/day=01/hour=02/file1.csv",
 	}
 
 	var pageToken string
 	var collected []string
-	var pageCount int // number of non-final pages
+	var pageCount int
+
 	for {
 		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken)
 		require.NoError(t, err)
@@ -73,6 +105,7 @@ func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectSt
 		}
 
 		for _, obj := range objects {
+			require.False(t, obj.IsDir)
 			collected = append(collected, obj.Path)
 		}
 
@@ -80,11 +113,12 @@ func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectSt
 			break
 		}
 
-		pageCount++
 		pageToken = nextToken
+		pageCount++
 	}
 
 	require.Equal(t, expected, collected)
+
 	expectedPages := (len(expected) + int(pageSize) - 1) / int(pageSize)
 	require.Equal(t, expectedPages, pageCount+1)
 }
