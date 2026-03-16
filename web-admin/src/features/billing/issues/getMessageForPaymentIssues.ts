@@ -18,6 +18,14 @@ export const PaymentBillingIssueTypes: Partial<
   },
 };
 
+export function needsPaymentSetup(issues: V1BillingIssue[]): boolean {
+  const types = new Set(issues.map((i) => i.type));
+  return (
+    types.has(V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD) &&
+    types.has(V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS)
+  );
+}
+
 export function getPaymentIssues(issues: V1BillingIssue[]) {
   return issues?.filter(
     (i) =>

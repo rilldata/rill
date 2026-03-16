@@ -3,7 +3,10 @@
     createAdminServiceGetOrganization,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
-  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+  import {
+    getPaymentIssueErrorText,
+    needsPaymentSetup,
+  } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
@@ -23,12 +26,14 @@
     subscription?.plan && isEnterprisePlan(subscription.plan.name);
   $: onManagedPlan =
     subscription?.plan && isManagedPlan(subscription.plan.name);
-  $: hidePaymentModule =
-    neverSubscribed || onTrial || onEnterprisePlan || onManagedPlan;
+  $: hidePaymentModule = onTrial;
 
   async function handleManagePayment() {
+    const setup = paymentIssues?.length
+      ? needsPaymentSetup(paymentIssues)
+      : false;
     window.open(
-      await fetchPaymentsPortalURL(organization, window.location.href),
+      await fetchPaymentsPortalURL(organization, window.location.href, setup),
       "_self",
     );
   }
