@@ -59,16 +59,6 @@
         resourceKind !== ResourceKind.MetricsView &&
         resourceKind !== ResourceKind.Explore));
 
-  function isItemDisabledInPreview(kind: string | undefined): boolean {
-    return (
-      $previewModeStore &&
-      (kind === ResourceKind.Model ||
-        (upstream &&
-          kind !== ResourceKind.MetricsView &&
-          kind !== ResourceKind.Explore))
-    );
-  }
-
   function getFileHref(filePaths: string[] | undefined): string {
     return `/files${filePaths?.[0] ?? filePath}`;
   }

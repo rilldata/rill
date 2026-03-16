@@ -203,27 +203,42 @@
     <h2 class="text-lg font-medium">Resources</h2>
   </div>
 
-  <!-- Filter and Search Controls -->
-  <div class="flex items-center gap-x-3">
+  <!-- Search, Filter, and Action Controls -->
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
+
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {#if selectedTypes.length === 0}
-              All types
-            {:else if selectedTypes.length === 1}
-              {prettyResourceKind(selectedTypes[0])}
-            {:else}
-              {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
-                1} other{selectedTypes.length > 2 ? "s" : ""}
-            {/if}
-            {#if filterDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {#if selectedTypes.length === 0}
+            All types
+          {:else if selectedTypes.length === 1}
+            {prettyResourceKind(selectedTypes[0])}
+          {:else}
+            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length >
+            2
+              ? "s"
+              : ""}
+          {/if}
+        </span>
+        {#if filterDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableTypes as type}
@@ -238,28 +253,29 @@
     </DropdownMenu.Root>
 
     <DropdownMenu.Root bind:open={statusDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {#if selectedStatuses.length === 0}
-              All statuses
-            {:else if selectedStatuses.length === 1}
-              {statusFilters.find((s) => s.value === selectedStatuses[0])
-                ?.label ?? selectedStatuses[0]}
-            {:else}
-              {statusFilters.find((s) => s.value === selectedStatuses[0])
-                ?.label}, +{selectedStatuses.length - 1} other{selectedStatuses.length >
-              2
-                ? "s"
-                : ""}
-            {/if}
-            {#if statusDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {#if selectedStatuses.length === 0}
+            All statuses
+          {:else if selectedStatuses.length === 1}
+            {statusFilters.find((s) => s.value === selectedStatuses[0])
+              ?.label ?? selectedStatuses[0]}
+          {:else}
+            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
+            +{selectedStatuses.length - 1} other{selectedStatuses.length > 2
+              ? "s"
+              : ""}
+          {/if}
+        </span>
+        {#if statusDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-48">
         {#each statusFilters as status}
@@ -275,32 +291,24 @@
 
     {#if hasActiveFilters}
       <button
-        class="text-sm text-primary-500 hover:text-primary-600"
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         on:click={clearFilters}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
 
-    <!-- Spacer -->
-    <div class="flex-1" />
-
-    <div class="w-64">
-      <Search
-        bind:value={searchText}
-        placeholder="Search by name..."
-        autofocus={false}
-      />
-    </div>
-
     <Button
       type="secondary"
+      large
+      class="shrink-0 whitespace-nowrap"
       onClick={() => {
         isConfirmDialogOpen = true;
       }}
       disabled={isRefreshDisabled}
     >
-      Refresh all sources and models
+      <span class="hidden lg:inline">Refresh all sources and models</span>
+      <span class="lg:hidden">Refresh all</span>
     </Button>
   </div>
 
