@@ -11,6 +11,20 @@
   const PrimaryConnectors = ["clickhouse", "motherduck", "s3", "snowflake"];
   const SecondaryConnectors = ["bigquery", "redshift", "azure"];
 
+  let suppressJitter = false;
+  let suppressJitterTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function handleSuppressJitter() {
+    suppressJitter = true;
+    if (suppressJitterTimeout) clearTimeout(suppressJitterTimeout);
+    suppressJitterTimeout = setTimeout(clearSuppressJitter, 250);
+  }
+  function clearSuppressJitter() {
+    suppressJitter = false;
+    if (suppressJitterTimeout) clearTimeout(suppressJitterTimeout);
+    suppressJitterTimeout = null;
+  }
+
   function selectConnector(e: MouseEvent, connector: string) {
     e.preventDefault();
     e.stopPropagation();
@@ -22,19 +36,25 @@
 <button
   class="container {onWelcomeScreen ? 'container-welcome' : 'container-home'}"
   on:click={() => startConnectorSelection(null)}
+  class:jitter-suppress={suppressJitter}
 >
   <div class="header">
     <DatabaseIcon />
     <span>Connect your data</span>
   </div>
 
-  <div class="primary-connectors">
+  <div
+    class="primary-connectors"
+    on:mouseleave={clearSuppressJitter}
+    role="group"
+  >
     {#each PrimaryConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
       {@const label = connectorLabelMapping[connector] ?? connector}
       <button
         class="primary-connector-entry"
         on:click={(e) => selectConnector(e, connector)}
+        on:mouseleave={handleSuppressJitter}
       >
         <svelte:component this={icon} />
         <span>{label}</span>
@@ -45,12 +65,10 @@
   <div class="secondary-connectors">
     {#each SecondaryConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
-      <button
-        class="secondary-connector-entry"
-        on:click={(e) => selectConnector(e, connector)}
-      >
+      <!-- Note that these are not clickable as per design. It is meant to be a preview only -->
+      <div class="secondary-connector-entry">
         <svelte:component this={icon} size="24px" />
-      </button>
+      </div>
     {/each}
     <span>more</span>
   </div>
@@ -76,10 +94,14 @@
   }
 
   /* We need to toggle off hover when primary connector is hovered */
-  .container-welcome:hover:not(:has(.primary-connector-entry:hover)) {
+  .container-welcome:hover:not(:has(.primary-connector-entry:hover)):not(
+      .jitter-suppress
+    ) {
     @apply border-accent-primary-action shadow-lg cursor-pointer;
   }
-  .container-home:hover:not(:has(.primary-connector-entry:hover)) {
+  .container-home:hover:not(:has(.primary-connector-entry:hover)):not(
+      .jitter-suppress
+    ) {
     @apply bg-surface-hover;
   }
 

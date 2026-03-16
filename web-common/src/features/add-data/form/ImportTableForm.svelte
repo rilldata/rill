@@ -19,12 +19,14 @@
   import {
     type AddDataConfig,
     type ImportAddDataStepConfig,
+    ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
   import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
   import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
+  import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
 
   export let config: AddDataConfig;
   export let connectorName: string;
@@ -34,6 +36,8 @@
   const FormId = "import-table-form";
 
   const runtimeClient = useRuntimeClient();
+
+  $: importSteps = getImportStepsForConnector(config, connectorDriver);
 
   const modeOptions = [
     {
@@ -111,7 +115,7 @@
       );
 
       onSubmit({
-        importSteps: getImportStepsForConnector(config, connectorDriver),
+        importSteps,
         source: modelName,
         sourceSchema: values.schema ?? "",
         sourceDatabase: values.database ?? "",
@@ -127,6 +131,8 @@
   $: analyzedConnector = $connectors.data?.connectors?.find(
     (c) => c.name === connectorName,
   );
+
+  $: sourceFormLabels = getLabelsForSource(importSteps);
 
   function handleTableChange({
     database,
@@ -187,6 +193,8 @@
   <div class="flex flex-row px-6 py-4 gap-2 border-t">
     <Button onClick={() => window.history.back()} type="secondary">Back</Button>
     <div class="grow" />
-    <Button onClick={submit} type="primary">Generate dashboard with AI</Button>
+    <Button onClick={submit} type="primary">
+      {sourceFormLabels.primaryButtonLabel}
+    </Button>
   </div>
 </form>

@@ -15,7 +15,7 @@ import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.sve
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
 import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
-import { GlobeLock, File } from "lucide-svelte";
+import { icons, File } from "lucide-svelte";
 import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
 
 export const connectorIconMapping = {
@@ -39,7 +39,7 @@ export const connectorIconMapping = {
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
   local_file: File,
-  https: GlobeLock,
+  https: icons.GlobeLock, // TODO: why does this fail in `npm run dev`?
 };
 
 export const connectorClassMapping = {

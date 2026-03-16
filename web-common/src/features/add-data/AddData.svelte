@@ -38,7 +38,6 @@
   $: void maybeGetConnectorDriver(runtimeClient, schema, connector).then(
     (d) => (connectorDriver = d),
   );
-  $: console.log("connectorDriver", schema, connector, connectorDriver);
 
   $: isImportStep = stepState.step === AddDataStep.Import;
   $: height = isImportStep ? "h-fit" : "h-[600px]";
@@ -93,6 +92,7 @@
         schemaName={schema}
         connectorName={connector}
         onSubmit={setAndStartImport}
+        onClose={() => {}}
         onBack={() => window.history.back()}
       />
     {:else}

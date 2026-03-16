@@ -15,16 +15,17 @@
   $: config = { runtimeClient, importOnly: true };
   $: initArgs = { schema, connector };
 
-  $: if (open) {
+  async function transitionToInit() {
     pushState(
       "",
-      transitionToNextStep(
+      await transitionToNextStep(
         runtimeClient,
         { step: AddDataStep.SelectConnector },
         initArgs,
       ),
     );
   }
+  $: if (open) void transitionToInit();
 </script>
 
 <Dialog.Root bind:open>

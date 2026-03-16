@@ -89,7 +89,6 @@ export const SOURCES = [
   "postgres",
   "redshift",
   "s3",
-  "salesforce",
   "snowflake",
   "sqlite",
   "supabase",

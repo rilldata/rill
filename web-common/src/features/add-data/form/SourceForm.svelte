@@ -19,6 +19,8 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForSource } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
+  import LocalSourceUpload from "@rilldata/web-common/features/sources/modal/LocalSourceUpload.svelte";
+  import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
 
   export let config: AddDataConfig;
   export let connectorDriver: V1ConnectorDriver;
@@ -26,8 +28,11 @@
   export let connectorName: string;
   export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
   export let onBack: () => void;
+  export let onClose: () => void;
 
   const runtimeClient = useRuntimeClient();
+
+  const importSteps = getImportStepsForSource(config);
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
@@ -64,6 +69,8 @@
     existingEnvBlob,
   });
 
+  $: sourceFormLabels = getLabelsForSource(importSteps);
+
   async function submitImportConfig(formValues: any) {
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connectorDriver,
@@ -87,7 +94,7 @@
     );
 
     const importConfig = {
-      importSteps: getImportStepsForSource(config),
+      importSteps,
       source: formValues.name,
       sourceSchema: "",
       sourceDatabase: "",
@@ -102,11 +109,16 @@
 
 <ConnectorHeader {connectorDriver} />
 
-<AddDataFormStructure
-  {connectorDriver}
-  {schema}
-  {superFormsParams}
-  {yamlPreview}
-  step="source"
-  {onBack}
-/>
+{#if connectorName === "local_file"}
+  <LocalSourceUpload {onClose} {onBack} />
+{:else}
+  <AddDataFormStructure
+    {connectorDriver}
+    {schema}
+    {superFormsParams}
+    labels={sourceFormLabels}
+    {yamlPreview}
+    step="source"
+    {onBack}
+  />
+{/if}

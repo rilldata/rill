@@ -192,7 +192,8 @@ async function getConnectorDriverForConnector(
 
 function isConnectorType(connectorDriver: V1ConnectorDriver) {
   return (
-    connectorDriver?.implementsFileStore ||
+    (connectorDriver?.implementsFileStore &&
+      connectorDriver?.name !== "local_file") ||
     connectorDriver?.implementsObjectStore ||
     connectorDriver?.implementsOlap ||
     connectorDriver?.implementsSqlStore ||
