@@ -15,11 +15,21 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
+
+type ResolverUnusedFieldsError struct {
+	Name   string
+	Fields []string
+}
+
+func (e *ResolverUnusedFieldsError) Error() string {
+	return fmt.Sprintf("undefined fields in resolver(%q) properties: %q, will be ignored", e.Name, e.Fields)
+}
 
 // Resolver represents logic, such as a SQL query, that produces output data.
 // Resolvers are used to evaluate API requests, alerts, reports, etc.
@@ -107,9 +117,13 @@ type ResolveOptions struct {
 	Claims             *SecurityClaims
 }
 
+type ResolveInfo struct {
+	Warnings []string
+}
+
 // Resolve resolves a query using the given options.
 // The caller must call Close on the result when done consuming it.
-func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res ResolverResult, resErr error) {
+func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res ResolverResult, info *ResolveInfo, resErr error) {
 	// Since claims don't really make sense for some resolver use cases, it's easy to forget to set them.
 	// Adding an early panic to catch this.
 	if opts.Claims == nil {
@@ -119,7 +133,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	ctx, span := tracer.Start(ctx, "runtime.Resolve", trace.WithAttributes(attribute.String("resolver", opts.Resolver)))
 	var cacheHit bool
 	defer func() {
-		span.SetAttributes(attribute.Bool("cache_hit", cacheHit))
+		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", cacheHit))
 		if resErr != nil {
 			span.SetAttributes(attribute.String("err", resErr.Error()))
 		}
@@ -129,7 +143,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
-		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
+		return nil, nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
 		Runtime:    r,
@@ -140,37 +154,58 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		ForExport:  false,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resolver.Close()
+
+	err = resolver.Validate(ctx)
+	if err != nil {
+		var invalidErr *ResolverUnusedFieldsError
+		if !errors.As(err, &invalidErr) {
+			return nil, nil, err
+		}
+
+		cfg, cfgErr := r.InstanceConfig(ctx, opts.InstanceID)
+		if cfgErr != nil {
+			return nil, nil, fmt.Errorf("failed to get instance config: %w", cfgErr)
+		}
+
+		if cfg.StrictResolverProps {
+			return nil, nil, err
+		}
+		info = &ResolveInfo{
+			Warnings: []string{invalidErr.Error()},
+		}
+	}
 
 	// Get the cache key
 	cacheKey, ok, err := resolver.CacheKey(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !ok {
 		cacheHit = false
 		// If not cacheable, just resolve and return
-		return resolver.ResolveInteractive(ctx)
+		res, err := resolver.ResolveInteractive(ctx)
+		return res, info, err
 	}
 
 	// Build cache key based on the resolver's key and refs
 	ctrl, err := r.Controller(ctx, opts.InstanceID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	hash := md5.New()
 	if _, err := hash.Write(cacheKey); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if opts.Claims.UserAttributes != nil {
 		h, err := hashstructure.Hash(opts.Claims.UserAttributes, hashstructure.FormatV2, nil)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if _, err = hash.Write([]byte(strconv.FormatUint(h, 16))); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	for _, ref := range resolver.Refs() {
@@ -181,16 +216,16 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		}
 
 		if _, err := hash.Write([]byte(res.Meta.Name.Kind)); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if _, err := hash.Write([]byte(res.Meta.Name.Name)); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Seconds); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Nanos); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	sum := hex.EncodeToString(hash.Sum(nil))
@@ -199,7 +234,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
 		cacheHit = true
-		return val.(*cachedResolverResult).copy(), nil
+		return val.(*cachedResolverResult).copy(), info, nil
 	}
 	// Load with singleflight
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
@@ -227,11 +262,11 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		return cRes, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Need to call copy() even on the first result to prevent the parsed rows staying in memory for a long time.
-	return val.(*cachedResolverResult).copy(), nil
+	return val.(*cachedResolverResult).copy(), info, nil
 }
 
 // NewDriverResolverResult creates a ResolverResult from a drivers.Result.

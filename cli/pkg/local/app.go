@@ -89,8 +89,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		_, err = repo.ListGlob(ctx, "**", false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
-				opts.Ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
-				return nil, nil
+				return nil, fmt.Errorf("the project directory exceeds the limit of %d files; please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml", drivers.RepoListLimit)
 			}
 			return nil, fmt.Errorf("failed to list project files: %w", err)
 		}
@@ -522,7 +521,7 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector, true)
 	if err != nil {
 		return err
 	}

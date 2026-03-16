@@ -7,17 +7,16 @@ import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
 
 export async function generateSampleData(
+  client: RuntimeClient,
   initializeProject: boolean,
-  instanceId: string,
   userPrompt: string,
 ) {
-  const agentPrompt = `Generate a new model with fresh data for the following user prompt: ${userPrompt}`;
-
   try {
     if (initializeProject) {
       overlay.set({
@@ -35,7 +34,7 @@ export async function generateSampleData(
         }, PROJECT_INIT_TIMEOUT_MS);
       });
 
-      await runtimeServiceUnpackEmpty(instanceId, {
+      await runtimeServiceUnpackEmpty(client, {
         displayName: EMPTY_PROJECT_TITLE,
         force: true,
       });
@@ -45,7 +44,7 @@ export async function generateSampleData(
     }
 
     generatingSampleData.set(true);
-    const conversationManager = getConversationManager(instanceId, {
+    const conversationManager = getConversationManager(client, {
       conversationState: "browserStorage",
       agent: ToolName.DEVELOPER_AGENT,
     });
@@ -54,7 +53,7 @@ export async function generateSampleData(
     const conversation = get(conversationManager.getCurrentConversation());
     conversation.cancelStream();
 
-    sidebarActions.startChat(agentPrompt);
+    sidebarActions.startChat(userPrompt);
     // Wait for the stream to start async through the sidebar action.
     await waitUntil(() => get(conversation.isStreaming));
 

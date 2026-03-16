@@ -129,7 +129,7 @@ type ConfigProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("s3 driver can't be shared")
 	}
@@ -408,6 +408,14 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, 
 	}
 	if confProp.Region != "" {
 		opts = append(opts, config.WithRegion(confProp.Region))
+	}
+
+	// For GCS, we need to set the checksum validation and request calculation to required
+	if confProp.Endpoint != "" && strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
+		opts = append(opts,
+			config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+			config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
+		)
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)

@@ -1,0 +1,40 @@
+expensive: true
+connectors:
+  - gcs_s3_compat
+project_files:
+  gcs.yaml:
+    type: connector
+    driver: gcs
+    key_id: '{{.env.connector.gcs_s3_compat.key_id }}'
+    secret: '{{.env.connector.gcs_s3_compat.secret }}'
+  delta_gcs_with_secrets.yaml:
+    type: model
+    connector: duckdb
+    create_secrets_from_connectors: gcs
+    materialize: true
+    sql: |
+      SELECT *
+      FROM delta_scan('gs://integration-test.rilldata.com/delta/orders_delta')
+tests:
+  - name: test_delta_gcs_row_count
+    resolver: sql
+    properties:
+      sql: "SELECT count(*) as count FROM delta_gcs_with_secrets"
+    result_csv: |
+      count
+      1000
+  - name: test_delta_gcs_schema
+    resolver: sql
+    properties:
+      sql: "describe delta_gcs_with_secrets"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      order_id,BIGINT,YES,,,
+      customer_id,VARCHAR,YES,,,
+      product_name,VARCHAR,YES,,,
+      quantity,BIGINT,YES,,,
+      unit_price,DOUBLE,YES,,,
+      discount,DOUBLE,YES,,,
+      order_date,DATE,YES,,,
+      ship_mode,VARCHAR,YES,,,
+      is_returned,BOOLEAN,YES,,,

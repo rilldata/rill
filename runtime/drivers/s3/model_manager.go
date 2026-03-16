@@ -81,6 +81,7 @@ func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.
 		Connector:  a.Connector,
 		Properties: pm,
 		Table:      "",
+		Warnings:   a.Warnings, // it is okay to pick one since the warnings should be the same for both partitions
 	}, nil
 }
 

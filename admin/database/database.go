@@ -79,8 +79,9 @@ type DB interface {
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, rillMgdRemote string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
-	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
+	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user.
+	// When includeGroups is true, projects accessible through usergroup membership are also included.
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
@@ -247,6 +248,8 @@ type DB interface {
 	FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
 	FindProjectMemberUser(ctx context.Context, projectID, userID string) (*ProjectMemberUser, error)
+	// FindProjectMemberUsersForUserAndProjects returns a map of project ID to direct project membership for a user.
+	FindProjectMemberUsersForUserAndProjects(ctx context.Context, userID string, projectIDs []string) (map[string]*ProjectMemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string, restrictResources bool, resources []ResourceName) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
@@ -342,6 +345,7 @@ type DB interface {
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
 
+	FindManagedGitRepos(ctx context.Context, afterRemote string, limit int) ([]*ManagedGitRepo, error)
 	FindManagedGitRepo(ctx context.Context, remote string) (*ManagedGitRepo, error)
 	FindUnusedManagedGitRepos(ctx context.Context, limit int) ([]*ManagedGitRepo, error)
 	CountManagedGitRepos(ctx context.Context, orgID string) (int, error)

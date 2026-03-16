@@ -37,6 +37,9 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				toEnv = args[0]
 			} else {
+				if !ch.Interactive {
+					return fmt.Errorf("environment must be provided as an argument in non-interactive mode")
+				}
 				toEnv, err = cmdutil.SelectPrompt("Select environment", maps.Keys(adminenv.EnvURLs), fromEnv)
 				if err != nil {
 					return err

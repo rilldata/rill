@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -29,7 +30,7 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(ctx, opts)
+	newInputProps, warnings, err := e.modelInputProperties(ctx, opts)
 	if err != nil {
 		if errors.Is(err, errGCSUsesNativeCreds) {
 			e := &objectStoreToSelfExecutorNonNative{c: e.c}
@@ -42,13 +43,26 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 
 	// execute
 	executor := &selfToSelfExecutor{c: e.c}
-	return executor.Execute(ctx, newOpts)
+	res, err := executor.Execute(ctx, newOpts)
+	if err != nil {
+		return nil, err
+	}
+	res.Warnings = append(res.Warnings, warnings...)
+	return res, nil
 }
 
-func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
+func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, []string, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(opts.InputProperties); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	var warnings []string
+	unused, err := parsed.DecodeWithWarnings(opts.InputProperties)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	m := &ModelInputProperties{}
@@ -60,24 +74,23 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, op
 	}
 
 	// Generate secret SQL to access the to access object store using duckdb
-	var err error
 	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, _, err = generateSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Set SQL to read from the external source
 	from, err := sourceReader([]string{parsed.Path}, format, parsed.DuckDB)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	m.SQL = "SELECT * FROM " + from
 
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
-		return nil, err
+		return nil, nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
-	return propsMap, nil
+	return propsMap, warnings, nil
 }
 
 // objectStoreToSelfExecutorNonNative is a non-native implementation of objectStoreToSelfExecutor.
@@ -88,8 +101,16 @@ type objectStoreToSelfExecutorNonNative struct {
 
 func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(opts.InputProperties); err != nil {
+	var warnings []string
+	unused, err := parsed.DecodeWithWarnings(opts.InputProperties)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	store, ok := opts.InputHandle.AsObjectStore()
@@ -141,5 +162,10 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 	opts.InputProperties = propsMap
 
 	executor := &selfToSelfExecutor{c: e.c}
-	return executor.Execute(ctx, opts)
+	res, err := executor.Execute(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	res.Warnings = append(res.Warnings, warnings...)
+	return res, nil
 }

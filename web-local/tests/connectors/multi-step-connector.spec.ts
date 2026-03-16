@@ -185,7 +185,7 @@ test.describe("Multi-step connector wrapper", () => {
     ).toBeVisible();
   });
 
-  test("GCS connector - Save Anyway cleared when advancing to model step after HMAC", async ({
+  test("GCS connector - Save button hidden after advancing to model step", async ({
     page,
   }) => {
     // Skip test if environment variables are not set
@@ -205,7 +205,7 @@ test.describe("Multi-step connector wrapper", () => {
     await page.locator("#gcs").click();
     await page.waitForSelector('form[id*="gcs"]');
 
-    // Trigger Save Anyway on connector step by failing Test and Connect with HMAC.
+    // Fill HMAC credentials on connector step.
     await page.getByRole("radio", { name: "HMAC keys" }).click();
     await page
       .getByRole("textbox", { name: "Access Key ID" })
@@ -214,13 +214,19 @@ test.describe("Multi-step connector wrapper", () => {
       .getByRole("textbox", { name: "Secret Access Key" })
       .fill(process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET!);
 
+    // Save button should be visible on the connector step.
+    const saveButton = page.getByRole("button", { name: "Save", exact: true });
+    await expect(saveButton).toBeVisible();
+
+    // Advance to model step via Test and Connect.
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Test and Connect" })
       .click();
+    await expect(page.getByText("Model preview")).toBeVisible();
 
-    const saveAnywayButton = page.getByRole("button", { name: "Save Anyway" });
-    await expect(saveAnywayButton).toBeHidden();
+    // Save button should not be visible on the source step.
+    await expect(saveButton).toBeHidden();
   });
 
   test("GCS connector - model form resets after first submission (HMAC)", async ({

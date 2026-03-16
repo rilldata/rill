@@ -64,10 +64,13 @@ message ListObjectsRequest {
   string instance_id = 1;
   string connector = 2;
   string bucket = 3 [(validate.rules).string.min_len = 1];
+  // Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
   string path = 4;
   string delimiter = 5;
-  uint32 page_size = 6 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 7;
+  // Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
+  string glob = 6;
+  uint32 page_size = 7 [(validate.rules).uint32 = {ignore_empty: true}];
+  string page_token = 8;
 }
 
 message ListObjectsResponse {

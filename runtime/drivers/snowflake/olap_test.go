@@ -158,11 +158,11 @@ func TestLoadDDL(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestSnowflake(t)
 
-	table, err := olap.InformationSchema().Lookup(t.Context(), "", "", "all_datatypes")
+	table, err := olap.InformationSchema().Lookup(t.Context(), "INTEGRATION_TEST", "public", "all_datatypes")
 	require.NoError(t, err)
 	err = olap.InformationSchema().LoadDDL(t.Context(), table)
 	require.NoError(t, err)
-	require.Contains(t, table.DDL, "CREATE")
+	require.Contains(t, table.DDL, "create")
 	require.Contains(t, strings.ToUpper(table.DDL), "ALL_DATATYPES")
 }
 
@@ -181,7 +181,7 @@ func TestDryRun(t *testing.T) {
 
 func acquireTestSnowflake(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "snowflake")
-	conn, err := drivers.Open("snowflake", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("snowflake", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

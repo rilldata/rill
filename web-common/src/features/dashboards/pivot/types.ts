@@ -6,6 +6,7 @@ import type {
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type {
   ColumnDef,
@@ -40,9 +41,10 @@ export interface PivotCell {
 }
 
 export interface PivotDashboardContext {
+  runtimeClient: RuntimeClient;
   metricsViewName: Readable<string>;
   queryClient: QueryClient;
-  enabled: boolean;
+  enabled: Readable<boolean>;
 }
 
 export interface PivotState {
