@@ -90,11 +90,10 @@
       <div
         role="columnheader"
         tabindex="0"
-        use:dragTableCell
-        onresize={(e) => {
-          onResize(e.detail);
+        use:dragTableCell={{
+          onresize: onResize,
+          onresizeend: suppressClickAfterResize,
         }}
-        onresizeend={suppressClickAfterResize}
         ondblclick={onResetColumnWidth}
         onclick={(e) => {
           e.stopPropagation();

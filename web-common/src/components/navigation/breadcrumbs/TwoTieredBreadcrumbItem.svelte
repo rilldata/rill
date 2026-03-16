@@ -98,8 +98,11 @@
     @apply px-0.5 py-1 rounded;
   }
 
-  .trigger:hover,
-  .trigger[data-state="open"] {
+  .trigger:hover {
+    @apply bg-gray-100;
+  }
+
+  :global(.trigger[data-state="open"]) {
     @apply bg-gray-100;
   }
 </style>
