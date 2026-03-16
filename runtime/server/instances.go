@@ -335,7 +335,7 @@ func (s *Server) enrichConnectorWithRuntimeMetadata(ctx context.Context, instanc
 		}
 		// Inject runtime-derived fields
 		for k, v := range runtimeConfig {
-			if k == "is_clickhouse_cloud" || k == "resolved_host" {
+			if k == "is_clickhouse_cloud" || k == "is_motherduck" || k == "resolved_host" {
 				switch val := v.(type) {
 				case bool:
 					conn.Config.Fields[k] = structpb.NewBoolValue(val)

@@ -110,6 +110,12 @@
         ?.toLowerCase()
         .includes(".clickhouse.cloud"));
 
+  // MotherDuck detection
+  $: isMotherDuck =
+    (olapConnector?.type === "duckdb" || olapConnector?.type === "motherduck") &&
+    (olapConnector?.config?.is_motherduck === true ||
+      (olapConnector?.config?.path as string)?.startsWith("md:"));
+
   // CHC service details from the runtime (populated after API key is saved and polling runs)
   $: cloudServiceName = olapConnector?.config?.cloud_service_name as
     | string
@@ -338,14 +344,20 @@
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
       <span class="info-value flex items-center gap-2">
-        {olapConnector ? formatConnectorName(olapConnector.type) : "DuckDB"}
-        {#if olapConnector && (olapConnector.provision || olapConnector.type !== "duckdb")}
+        {#if isMotherDuck}
+          MotherDuck
+        {:else}
+          {olapConnector ? formatConnectorName(olapConnector.type) : "DuckDB"}
+        {/if}
+        {#if olapConnector && (olapConnector.provision || olapConnector.type !== "duckdb" || isMotherDuck)}
           <span class="text-fg-tertiary text-xs">
             ({olapConnector.provision
               ? "Rill-managed"
               : isClickHouseCloud
                 ? "ClickHouse Cloud"
-                : "Self-managed"})
+                : isMotherDuck
+                  ? "MotherDuck"
+                  : "Self-managed"})
           </span>
         {/if}
         {#if isClickHouseCloud && hasCloudApiKey}

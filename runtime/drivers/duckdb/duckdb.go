@@ -355,7 +355,9 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return maps.Clone(c.driverConfig)
+	m := maps.Clone(c.driverConfig)
+	m["is_motherduck"] = c.driverName == "motherduck" || c.config.isMotherduck()
+	return m
 }
 
 // Close implements drivers.Handle.
