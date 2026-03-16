@@ -66,11 +66,17 @@ downloadBinary() {
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        set -- "--silent" "--show-error"
+    else
+        set -- "--progress-bar"
+    fi
+
     printf "Downloading binary: %s\n" "$BINARY_URL"
-    curl --location --progress-bar "${BINARY_URL}" --output rill_${PLATFORM}.zip
+    curl --location "$@" "${BINARY_URL}" --output rill_${PLATFORM}.zip
 
     printf "\nDownloading checksum: %s\n" "$CHECKSUM_URL"
-    curl --location --progress-bar "${CHECKSUM_URL}" --output checksums.txt
+    curl --location "$@" "${CHECKSUM_URL}" --output checksums.txt
 
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
     ${sha256_verify} checksums.txt
@@ -103,21 +109,9 @@ promptInstallChoice() {
             ;;
         *)
             printf "\nInvalid option '%s'\n\n" "$ans"
-            promtInstallChoice
+            promptInstallChoice
             ;;
     esac
-}
-
-# Detect previous installation
-detectPreviousInstallation() {
-    if [ -x "$(command -v rill)" ] && [ -z "${INSTALL_DIR}" ]; then
-        INSTALLED_RILL="$(command -v rill)"
-        if [ "$INSTALLED_RILL" = "/usr/local/bin/rill" ]; then
-            INSTALL_DIR="/usr/local/bin"
-        elif [ "$INSTALLED_RILL" = "$HOME/.rill/rill" ]; then
-            INSTALL_DIR="$HOME/.rill"
-        fi
-    fi
 }
 
 # Check conflicting installation and exit with a help message
@@ -159,15 +153,30 @@ testInstalledBinary() {
 
 # Print 'rill start' help intrcutions
 printStartHelp() {
-    boldon=$(tput smso)
-    boldoff=$(tput rmso)
-
-    if [ "$INSTALL_DIR" = "/usr/local/bin" ]; then
-        printf "\nTo start a new project in Rill, execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff"
-    elif [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
-        printf "\nTo start a new project in Rill, open a %snew terminal%s and execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff" "$boldon" "$boldoff"
+    # Resolve how to reference the binary in help text.
+    if [ "$INSTALL_DIR" = "/usr/local/bin" ] || [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
+        binary="rill"
     elif [ "$INSTALL_DIR" = "$(pwd)" ]; then
-        printf "\nTo start a new project in Rill, execute the command:\n\n %s./rill start my-rill-project%s\n\n" "$boldon" "$boldoff"
+        binary="./rill"
+    else
+        binary="$INSTALL_DIR/rill"
+    fi
+    
+    # Print instructions for non-interactive callers.
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        printf "\nTo initialize a new project, run '%s init'. Run '%s -h' for an overview of available commands.\n" "$binary" "$binary"
+        return
+    fi
+
+    # Safely get bold formatting codes.
+    boldon=$(tput smso 2>/dev/null) || boldon=""
+    boldoff=$(tput rmso 2>/dev/null) || boldoff=""
+
+    # Print instructions for interactive callers.
+    if [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
+        printf "\nTo start a new project in Rill, open a %snew terminal%s and execute the command:\n\n %s%s start my-rill-project%s\n\n" "$boldon" "$boldoff" "$boldon" "$binary" "$boldoff"
+    else
+        printf "\nTo start a new project in Rill, execute the command:\n\n %s%s start my-rill-project%s\n\n" "$boldon" "$binary" "$boldoff"
     fi
 }
 
@@ -216,29 +225,78 @@ removePathConfigEntries() {
     done
 }
 
+# Check if the install directory (or its parent, if it doesn't exist yet) is writable
+installDirIsWritable() {
+    if [ -d "$INSTALL_DIR" ]; then
+        [ -w "$INSTALL_DIR" ]
+    else
+        [ -w "$(dirname "$INSTALL_DIR")" ]
+    fi
+}
+
+# Resolve the install directory
+resolveInstallDir() {
+    # Detect previous installation
+    if [ -x "$(command -v rill)" ] && [ -z "${INSTALL_DIR}" ]; then
+        INSTALLED_RILL="$(command -v rill)"
+        if [ "$INSTALLED_RILL" = "/usr/local/bin/rill" ]; then
+            INSTALL_DIR="/usr/local/bin"
+        elif [ "$INSTALLED_RILL" = "$HOME/.rill/rill" ]; then
+            INSTALL_DIR="$HOME/.rill"
+        fi
+    fi
+
+    # Handle non-interactive scenarios where prompt or sudo are not possible
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        # If the install directory was explicitly set and requires sudo, we error
+        if [ -n "$INSTALL_DIR" ] && [ "$INSTALL_DIR_EXPLICIT" = "true" ] && ! installDirIsWritable; then
+            printf "Install directory '%s' requires elevated permissions, which are not available in non-interactive mode.\n" "$INSTALL_DIR"
+            exit 1
+        fi
+
+        # If the install directory is not set, or the previous installation path requires sudo, we default to installing in the current directory
+        if [ -z "$INSTALL_DIR" ]; then
+            printf "Non-interactive shell detected; defaulting to install in current directory.\n"
+            INSTALL_DIR=$(pwd)
+        elif ! installDirIsWritable; then
+            printf "Non-interactive shell detected; previous installation at '%s' requires elevated permissions; defaulting to install in current directory.\n" "$INSTALL_DIR"
+            INSTALL_DIR=$(pwd)
+        fi
+
+        return
+    fi
+
+    # If there is a previous or explicit installation path, we're done
+    if [ -n "${INSTALL_DIR}" ]; then
+        return
+    fi
+
+    # Prompt for install directory if there is no previous installation and we are in an interactive shell
+    printInstallOptions
+    promptInstallChoice
+    checkConflictingInstallation # Only check for conflicts in interactive, non-explicit scenarios
+}
+
 # Install Rill on the system
 installRill() {
-    publishSyftEvent install
+    if [ "$NON_INTERACTIVE" != "true" ]; then
+        publishSyftEvent install
+    fi
     checkDependency curl
     checkDependency unzip
     checkGitDependency
     resolveShasumDependency
     initPlatform
-    detectPreviousInstallation
-    if [ -z "${INSTALL_DIR}" ]; then
-        printInstallOptions
-        promptInstallChoice
-        checkConflictingInstallation
-    fi
+    resolveInstallDir
     initTmpDir
     downloadBinary
     installBinary
     testInstalledBinary
-    if [ -z "${NON_INTERACTIVE}" ]; then
+    if [ "$NON_INTERACTIVE" != "true" ]; then
         addPathConfigEntries
+        publishSyftEvent installed
     fi
     printStartHelp
-    publishSyftEvent installed
 }
 
 # Uninstall Rill from the system, this function is aware of both the privileged and unprivileged install methods
@@ -260,6 +318,29 @@ uninstallRill() {
 
 set -e
 
+# Default values
+INSTALL_DIR_EXPLICIT=false
+
+# Default to non-interactive if STDIN is not a terminal (usually indicates e.g. agent, CI, subprocess).
+# Backwards compatibility: Old versions of `rill upgrade` didn't pass STDIN through, so we stay interactive if the parent process is named `rill`.
+if ! [ -t 0 ]; then
+    # Get parent process name
+    PARENT_NAME=""
+    if [ -n "$PPID" ]; then
+        if [ -f "/proc/$PPID/comm" ]; then
+            PARENT_NAME=$(basename "$(cat "/proc/$PPID/comm" 2>/dev/null)" 2>/dev/null)
+        elif command -v ps >/dev/null 2>&1; then
+            PARENT_NAME=$(basename "$(ps -o comm= -p "$PPID" 2>/dev/null)" 2>/dev/null)
+        fi
+    fi
+
+    # Apply the default
+    if [ "$PARENT_NAME" != "rill" ]; then
+        NON_INTERACTIVE=${NON_INTERACTIVE:-true}
+    fi
+fi
+NON_INTERACTIVE=${NON_INTERACTIVE:-false}
+
 # Parse input flag
 case $1 in
     --uninstall)
@@ -274,7 +355,10 @@ case $1 in
         installRill
         ;;
     --non-interactive)
-        INSTALL_DIR=${2:-"/usr/local/bin"}
+        if [ -n "$2" ]; then
+            INSTALL_DIR="$2"
+            INSTALL_DIR_EXPLICIT=true
+        fi
         VERSION=${3:-latest}
         NON_INTERACTIVE=true
         installRill

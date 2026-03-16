@@ -22,54 +22,18 @@ func TestObjectStore(t *testing.T) {
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test.rilldata.com"
-
-	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 1)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 2)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 3)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize4", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 4)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize5", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 5)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize1", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 1)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize2", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 2)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize3", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 3)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize4", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 4)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize5", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 5)
-	})
-
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize1", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 1)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize2", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 2)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize3", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 3)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize4", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 4)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize5", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 5)
-	})
-
+	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListObjectsForGlobPagination_pageSize5", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 5) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize1", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize2", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize3", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize5", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 5) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize1", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize2", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize3", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize5", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 5) })
 	t.Run("testMatchDirectoriesFromGlobTest", func(t *testing.T) { testMatchDirectoriesFromGlobTest(t, objectStore, bucket) })
 	t.Run("testMatchFilesWithLeafWildcardGlobTest", func(t *testing.T) { testMatchFilesWithLeafWildcardGlobTest(t, objectStore, bucket) })
 	t.Run("testMatchFilesWithDoubleStarGlobTest", func(t *testing.T) { testMatchFilesWithDoubleStarGlobTest(t, objectStore, bucket) })
@@ -110,59 +74,23 @@ func TestObjectStoreHMAC(t *testing.T) {
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test.rilldata.com"
-	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 1)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 2)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 3)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize4", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 4)
-	})
-	t.Run("testListObjectsForGlobPagination_pageSize5", func(t *testing.T) {
-		testListObjectsForGlobPagination(t, objectStore, bucket, 5)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize1", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 1)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize2", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 2)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize3", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 3)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize4", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 4)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize5", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 5)
-	})
-
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize1", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 1)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize2", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 2)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize3", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 3)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize4", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 4)
-	})
-	t.Run("testListMonthDirectoriesForGlobPagination_pageSize5", func(t *testing.T) {
-		testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 5)
-	})
-
+	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListObjectsForGlobPagination_pageSize5", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 5) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize1", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize2", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize3", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize5", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 5) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize1", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize2", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize3", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListMonthDirectoriesForGlobPagination_pageSize5", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 5) })
 	t.Run("testMatchDirectoriesFromGlobTest", func(t *testing.T) { testMatchDirectoriesFromGlobTest(t, objectStore, bucket) })
 	t.Run("testMatchFilesWithLeafWildcardGlobTest", func(t *testing.T) { testMatchFilesWithLeafWildcardGlobTest(t, objectStore, bucket) })
 	t.Run("testMatchFilesWithDoubleStarGlobTest", func(t *testing.T) { testMatchFilesWithDoubleStarGlobTest(t, objectStore, bucket) })
 	t.Run("testTrailingSlashNormalized", func(t *testing.T) { testTrailingSlashNormalized(t, objectStore, bucket) })
 	t.Run("testGlobIgnoresNonCSVFiles", func(t *testing.T) { testGlobIgnoresNonCSVFiles(t, objectStore, bucket) })
-
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })

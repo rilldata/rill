@@ -4,9 +4,13 @@ import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.s
 import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
+import ApacheIcebergIcon from "../../components/icons/connectors/ApacheIcebergIcon.svelte";
+import DeltaLakeIcon from "../../components/icons/connectors/DeltaLakeIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
+import GoogleCloudStorageIcon from "../../components/icons/connectors/GoogleCloudStorageIcon.svelte";
+import MicrosoftAzureBlobStorageIcon from "../../components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
@@ -20,14 +24,18 @@ import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte"
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
+  azure: MicrosoftAzureBlobStorageIcon,
   bigquery: GoogleBigQueryIcon,
   claude: ClaudeIcon,
   clickhouse: ClickHouseIcon,
+  delta: DeltaLakeIcon,
   clickhousecloud: ClickHouseCloudIcon,
   gemini: GeminiIcon,
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
+  gcs: GoogleCloudStorageIcon,
+  iceberg: ApacheIcebergIcon,
   mysql: MySqlIcon,
   openai: OpenAIIcon,
   pinot: ApachePinotIcon,
