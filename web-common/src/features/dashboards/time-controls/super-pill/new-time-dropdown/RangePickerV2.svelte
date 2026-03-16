@@ -523,8 +523,4 @@
   .item:hover {
     @apply bg-surface-hover text-fg-primary;
   }
-
-  .separator {
-    @apply h-px w-full bg-gray-200 my-1;
-  }
 </style>

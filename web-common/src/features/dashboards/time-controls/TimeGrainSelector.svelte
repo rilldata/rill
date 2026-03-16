@@ -99,7 +99,7 @@
     @apply bg-surface-background;
   }
 
-  .tdd[data-state="open"] {
+  .tdd:global([data-state="open"]) {
     @apply bg-surface-background border-gray-400;
   }
 </style>

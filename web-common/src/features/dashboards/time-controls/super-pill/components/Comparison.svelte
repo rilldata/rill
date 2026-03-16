@@ -191,8 +191,4 @@
   button {
     @apply gap-x-1;
   }
-
-  .inactive {
-    @apply opacity-50;
-  }
 </style>

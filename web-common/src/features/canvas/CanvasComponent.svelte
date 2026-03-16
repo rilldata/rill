@@ -101,7 +101,7 @@
     @apply shadow-md outline;
   }
 
-  .component-card:has(.component-error) {
+  .component-card:has(:global(.component-error)) {
     @apply outline-destructive;
   }
 

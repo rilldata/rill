@@ -111,8 +111,8 @@
       {#if dropdown}
         <DropdownMenu.Root bind:open>
           <DropdownMenu.Trigger
-            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 {open
-              ? 'open'
+            class="text-fg-muted hover:text-fg-primary px-[5px] py-1 w-full max-w-fit line-clamp-1 {open
+              ? 'bg-surface-active rounded-[2px] text-fg-primary'
               : ''} {current ? 'selected' : ''}"
           >
             <CrumbTrigger
@@ -182,38 +182,11 @@
     @apply flex-1 min-w-0;
   }
 
-  a:hover,
-  button:hover {
+  a:hover {
     @apply text-fg-primary;
   }
 
   .selected {
     @apply text-fg-primary;
-  }
-
-  .open {
-    @apply bg-surface-active rounded-[2px] text-fg-primary;
-  }
-
-  .graph-trigger {
-    @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
-
-    min-width: 30px;
-    height: 26px;
-  }
-
-  .graph-trigger:hover {
-    color: var(--foreground, #1f2937);
-    border-color: color-mix(
-      in srgb,
-      var(--border, #e5e7eb) 70%,
-      var(--foreground, #1f2937)
-    );
-  }
-
-  .graph-trigger:focus-visible {
-    @apply outline-none ring ring-offset-1;
-    ring-color: var(--ring, #93c5fd);
-    ring-offset-color: var(--surface-background, #ffffff);
   }
 </style>

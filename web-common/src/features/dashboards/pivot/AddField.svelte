@@ -120,10 +120,6 @@
     @apply bg-input border;
   }
 
-  button.addBorder {
-    @apply border border-dashed border-gray-300;
-  }
-
   button:hover {
     @apply bg-surface-hover;
   }

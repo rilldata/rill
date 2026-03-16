@@ -159,9 +159,4 @@
     @apply flex flex-row flex-none items-center justify-end;
     @apply gap-x-2 p-2 px-3.5;
   }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
-  }
 </style>
