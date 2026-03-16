@@ -20,8 +20,7 @@
   export let onRefreshErroredClick: (resource: V1Resource) => void;
   export let onIncrementalRefreshClick: (resource: V1Resource) => void;
   export let onFullRefreshClick: (resource: V1Resource) => void;
-  export let onViewLogsClick: ((name: string) => void) | undefined =
-    undefined;
+  export let onViewLogsClick: ((name: string) => void) | undefined = undefined;
 
   $: actions = getAvailableModelActions(resource);
   $: isPartitioned = actions.includes("viewPartitions");

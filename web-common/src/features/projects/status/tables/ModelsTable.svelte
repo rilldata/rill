@@ -23,8 +23,7 @@
     resource: V1Resource,
   ) => void = () => {};
   export let onFullRefreshClick: (resource: V1Resource) => void = () => {};
-  export let onViewLogsClick: ((name: string) => void) | undefined =
-    undefined;
+  export let onViewLogsClick: ((name: string) => void) | undefined = undefined;
 
   let openDropdownTableName = "";
 

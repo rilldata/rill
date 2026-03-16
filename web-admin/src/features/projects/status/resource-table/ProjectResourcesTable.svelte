@@ -5,6 +5,7 @@
   import {
     createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
+    V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { getStatusPriority } from "@rilldata/web-common/features/resources/resource-filter-utils";
