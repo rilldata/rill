@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetOrganization,
-    type V1Subscription,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
   import {
     getPaymentIssueErrorText,
     needsPaymentSetup,
@@ -12,21 +9,13 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
 
   export let organization: string;
-  export let subscription: V1Subscription;
 
   $: org = createAdminServiceGetOrganization(organization);
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
-  $: neverSubscribed = $categorisedIssues.data?.neverSubscribed;
   $: onTrial = !!$categorisedIssues.data?.trial;
-  $: onEnterprisePlan =
-    subscription?.plan && isEnterprisePlan(subscription.plan.name);
-  $: onManagedPlan =
-    subscription?.plan && isManagedPlan(subscription.plan.name);
-  $: hidePaymentModule = onTrial;
 
   async function handleManagePayment() {
     const setup = paymentIssues?.length
@@ -40,7 +29,7 @@
 </script>
 
 <!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
-{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !hidePaymentModule}
+{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !onTrial}
   <SettingsContainer title="Payment Method">
     <div slot="body" class="flex flex-row items-center gap-x-1">
       {#if paymentIssues?.length}
