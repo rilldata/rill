@@ -25,10 +25,6 @@ export function isTrialPlan(planName: string) {
   return planName === "free_trial";
 }
 
-export function isGrowthPlan(planName: string) {
-  return planName === "growth";
-}
-
 export function isTeamPlan(planName: string) {
   return planName === "team";
 }
@@ -39,10 +35,7 @@ export function isManagedPlan(planName: string) {
 
 export function isEnterprisePlan(planName: string) {
   return (
-    !isTrialPlan(planName) &&
-    !isGrowthPlan(planName) &&
-    !isTeamPlan(planName) &&
-    !isManagedPlan(planName)
+    !isTrialPlan(planName) && !isTeamPlan(planName) && !isManagedPlan(planName)
   );
 }
 

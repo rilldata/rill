@@ -398,7 +398,7 @@
               class="manage-slots-btn"
               href="/{organization}/-/settings/billing"
             >
-              Upgrade to Growth Plan
+              Upgrade to Team Plan
             </a>
           {:else if canManage && !isChcAutoScaled && !isChcHibernated}
             <button

@@ -140,13 +140,13 @@
             Based on your ClickHouse Cloud cluster, we recommend the following
             slot configuration. <a
               href="/{organization}/-/settings/billing"
-              class="text-primary-500 hover:underline">Start a Growth plan</a
+              class="text-primary-500 hover:underline">Start a Team plan</a
             > to customize your slot allocation.
           {:else}
             Based on your OLAP cluster, we recommend the following slot
             configuration. <a
               href="/{organization}/-/settings/billing"
-              class="text-primary-500 hover:underline">Start a Growth plan</a
+              class="text-primary-500 hover:underline">Start a Team plan</a
             > to customize your slot allocation.
           {/if}
         {:else if isRillManaged}
