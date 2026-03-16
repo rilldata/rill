@@ -14,7 +14,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { Readable } from "svelte/motion";
+import type { Readable } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
