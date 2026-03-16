@@ -115,8 +115,8 @@
       <div class="detail-row">
         <span class="detail-label">vCPU</span>
         <span class="detail-value">
-          {#if displayMaxMemory != null}
-            {displayMaxMemory / 4}
+          {#if displayMinMemory != null && displayMaxMemory != null}
+            {displayMinMemory / 4} – {displayMaxMemory / 4}
           {:else}
             —
           {/if}
