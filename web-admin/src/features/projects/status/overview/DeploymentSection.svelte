@@ -16,7 +16,7 @@
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
-  import OverviewCard from "./OverviewCard.svelte";
+  import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
 
   export let organization: string;
   export let project: string;

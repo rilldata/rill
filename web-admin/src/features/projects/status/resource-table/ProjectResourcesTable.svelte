@@ -17,8 +17,8 @@
   import ActionsCell from "./ActionsCell.svelte";
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
-  import RefreshErroredPartitionsDialog from "../tables/RefreshErroredPartitionsDialog.svelte";
-  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
+  import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
+  import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
 

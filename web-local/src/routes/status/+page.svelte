@@ -19,6 +19,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createLocalServiceGetVersion } from "@rilldata/web-common/runtime-client/local-service";
   import { goto } from "$app/navigation";
+  import TablesSection from "../../features/tables/TablesSection.svelte";
 
   const runtimeClient = useRuntimeClient();
 
@@ -122,6 +123,8 @@
   onViewAll={() => goToResources()}
   onChipClick={(kind) => goToResources([], [kind])}
 />
+
+<TablesSection />
 
 <ErrorsOverviewSection
   parseErrorCount={parseErrors.length}

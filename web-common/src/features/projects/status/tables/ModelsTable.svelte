@@ -6,11 +6,11 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import { compareSizes } from "@rilldata/web-common/features/projects/status/tables/utils";
-  import ModelSizeCell from "@rilldata/web-common/features/projects/status/tables/ModelSizeCell.svelte";
+  import { compareSizes } from "./utils";
+  import ModelSizeCell from "./ModelSizeCell.svelte";
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
-  import MaterializationCell from "@rilldata/web-common/features/projects/status/tables/MaterializationCell.svelte";
-  import ModelActionsCell from "@rilldata/web-common/features/projects/status/tables/ModelActionsCell.svelte";
+  import MaterializationCell from "./MaterializationCell.svelte";
+  import ModelActionsCell from "./ModelActionsCell.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
 
   export let tables: V1OlapTableInfo[] = [];
@@ -23,7 +23,8 @@
     resource: V1Resource,
   ) => void = () => {};
   export let onFullRefreshClick: (resource: V1Resource) => void = () => {};
-  export let onViewLogsClick: (name: string) => void = () => {};
+  export let onViewLogsClick: ((name: string) => void) | undefined =
+    undefined;
 
   let openDropdownTableName = "";
 

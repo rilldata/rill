@@ -22,6 +22,7 @@
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
+  import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
   import {
     V1ReconcileStatus,
     type V1Resource,
@@ -55,6 +56,19 @@
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
   let openDropdownResourceKey = "";
+
+  // Describe dialog state
+  let specDialogOpen = false;
+  let specResourceName = "";
+  let specResourceKind = "";
+  let specResource: V1Resource | undefined = undefined;
+
+  function handleDescribe(name: string, kind: string, resource: V1Resource) {
+    specResourceName = name;
+    specResourceKind = kind;
+    specResource = resource;
+    specDialogOpen = true;
+  }
 
   const setDropdownOpen = (resourceKey: string, isOpen: boolean) => {
     openDropdownResourceKey = isOpen ? resourceKey : "";
@@ -160,21 +174,21 @@
         const isRowReconciling =
           status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
-        if (!isRowReconciling) {
-          const resourceKey = `${row.original.meta?.name?.kind}:${row.original.meta?.name?.name}`;
-          return flexRender(ActionsCell, {
-            resourceKind: row.original.meta?.name?.kind,
-            resourceName: row.original.meta?.name?.name,
-            canRefresh:
-              row.original.meta?.name?.kind === ResourceKind.Model ||
-              row.original.meta?.name?.kind === ResourceKind.Source,
-            resource: row.original,
-            onRefresh: onRefetch,
-            isDropdownOpen: isDropdownOpen(resourceKey),
-            onDropdownOpenChange: (isOpen: boolean) =>
-              setDropdownOpen(resourceKey, isOpen),
-          });
-        }
+        const resourceKey = `${row.original.meta?.name?.kind}:${row.original.meta?.name?.name}`;
+        return flexRender(ActionsCell, {
+          resourceKind: row.original.meta?.name?.kind,
+          resourceName: row.original.meta?.name?.name,
+          canRefresh:
+            !isRowReconciling &&
+            (row.original.meta?.name?.kind === ResourceKind.Model ||
+              row.original.meta?.name?.kind === ResourceKind.Source),
+          resource: row.original,
+          onRefresh: onRefetch,
+          onDescribe: handleDescribe,
+          isDropdownOpen: isDropdownOpen(resourceKey),
+          onDropdownOpenChange: (isOpen: boolean) =>
+            setDropdownOpen(resourceKey, isOpen),
+        });
       },
       enableSorting: false,
       meta: {
@@ -312,4 +326,11 @@
 <RefreshAllSourcesAndModelsConfirmDialog
   bind:open={isConfirmDialogOpen}
   onRefresh={onRefreshAll}
+/>
+
+<ResourceSpecDialog
+  bind:open={specDialogOpen}
+  resourceName={specResourceName}
+  resourceKind={specResourceKind}
+  resource={specResource}
 />

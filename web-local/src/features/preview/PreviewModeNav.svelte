@@ -72,7 +72,7 @@
 
 <style lang="postcss">
   .nav-bar {
-    @apply bg-surface-base pt-1;
+    @apply bg-surface-base border-b pt-1;
     @apply gap-y-[3px] flex flex-col;
   }
 

@@ -10,7 +10,7 @@
     ScrollTextIcon,
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { getAvailableModelActions } from "@rilldata/web-common/features/projects/status/tables/model-actions";
+  import { getAvailableModelActions } from "./model-actions";
 
   export let resource: V1Resource | undefined;
   export let isDropdownOpen: boolean;
@@ -20,7 +20,8 @@
   export let onRefreshErroredClick: (resource: V1Resource) => void;
   export let onIncrementalRefreshClick: (resource: V1Resource) => void;
   export let onFullRefreshClick: (resource: V1Resource) => void;
-  export let onViewLogsClick: (name: string) => void;
+  export let onViewLogsClick: ((name: string) => void) | undefined =
+    undefined;
 
   $: actions = getAvailableModelActions(resource);
   $: isPartitioned = actions.includes("viewPartitions");
@@ -46,15 +47,17 @@
         </div>
       </DropdownMenu.Item>
 
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        on:click={() => onViewLogsClick(resource.meta?.name?.name ?? "")}
-      >
-        <div class="flex items-center">
-          <ScrollTextIcon size="12px" />
-          <span class="ml-2">View Logs</span>
-        </div>
-      </DropdownMenu.Item>
+      {#if onViewLogsClick}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={() => onViewLogsClick?.(resource.meta?.name?.name ?? "")}
+        >
+          <div class="flex items-center">
+            <ScrollTextIcon size="12px" />
+            <span class="ml-2">View Logs</span>
+          </div>
+        </DropdownMenu.Item>
+      {/if}
 
       {#if isPartitioned}
         <DropdownMenu.Item

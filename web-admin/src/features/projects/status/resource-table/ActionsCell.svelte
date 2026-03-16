@@ -10,7 +10,7 @@
     ScrollTextIcon,
     AlertCircleIcon,
   } from "lucide-svelte";
-  import { getAvailableModelActions } from "../tables/model-actions";
+  import { getAvailableModelActions } from "@rilldata/web-common/features/projects/status/tables/model-actions";
 
   export let resourceKind: string;
   export let resourceName: string;

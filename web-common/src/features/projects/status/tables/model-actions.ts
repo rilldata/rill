@@ -3,7 +3,7 @@ import {
   isModelPartitioned,
   isModelIncremental,
   hasModelErroredPartitions,
-} from "@rilldata/web-common/features/projects/status/tables/utils";
+} from "./utils";
 
 export type ModelAction =
   | "describe"

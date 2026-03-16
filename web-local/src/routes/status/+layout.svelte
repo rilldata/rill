@@ -5,6 +5,7 @@
   const navItems = [
     { label: "Overview", route: "/status" },
     { label: "Resources", route: "/status/resources" },
+    { label: "Tables", route: "/status/tables" },
   ];
 </script>
 

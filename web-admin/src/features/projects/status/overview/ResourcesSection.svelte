@@ -7,7 +7,7 @@
     countByKind,
     pluralizeKind,
   } from "@rilldata/web-common/features/resources/overview-utils";
-  import OverviewCard from "./OverviewCard.svelte";
+  import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
 
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;

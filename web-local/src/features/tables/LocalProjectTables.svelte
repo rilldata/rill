@@ -5,7 +5,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
@@ -18,7 +17,7 @@
   import { writable } from "svelte/store";
   import ModelsTable from "@rilldata/web-common/features/projects/status/tables/ModelsTable.svelte";
   import ExternalTablesTable from "@rilldata/web-common/features/projects/status/tables/ExternalTablesTable.svelte";
-  import { useInfiniteTablesList, useModelResources } from "../selectors";
+  import { useInfiniteTablesList, useModelResources } from "./selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     filterTemporaryTables,
@@ -64,8 +63,6 @@
 
   $: searchPattern = debouncedSearch ? `%${debouncedSearch}%` : undefined;
 
-  // Use a writable store so createInfiniteQuery is called once during init;
-  // parameter changes flow reactively through the store.
   const tablesParams = writable({
     client: runtimeClient,
     connector: "",
@@ -78,12 +75,9 @@
   });
   const tablesList = useInfiniteTablesList(tablesParams);
 
-  // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
-  // TODO: populate from OLAPGetTable responses when per-table metadata is available
   let isViewMap = new Map<string, boolean>();
-  // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
   $: modelResourcesQuery = useModelResources(runtimeClient);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
   let typeFilter: (typeof typeValues)[number] = parseEnumParam(
@@ -176,11 +170,6 @@
   function handleFullRefreshClick(resource: V1Resource) {
     selectedModelName = resource.meta?.name?.name ?? "";
     fullRefreshDialogOpen = true;
-  }
-
-  function handleViewLogsClick(name: string) {
-    const basePath = $page.url.pathname.replace(/\/tables\/?$/, "");
-    void goto(`${basePath}/logs?q=${encodeURIComponent(name)}`);
   }
 
   async function refreshModel(opts: {
@@ -302,7 +291,6 @@
           onRefreshErroredClick={handleRefreshErroredClick}
           onIncrementalRefreshClick={handleIncrementalRefreshClick}
           onFullRefreshClick={handleFullRefreshClick}
-          onViewLogsClick={handleViewLogsClick}
         />
       {:else}
         <div

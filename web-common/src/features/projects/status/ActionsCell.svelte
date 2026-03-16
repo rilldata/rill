@@ -8,7 +8,7 @@
     createRuntimeServiceCreateTriggerMutation,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { RefreshCcwIcon } from "lucide-svelte";
+  import { RefreshCcwIcon, CodeIcon } from "lucide-svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -17,6 +17,10 @@
   export let isDropdownOpen: boolean;
   export let onDropdownOpenChange: (isOpen: boolean) => void;
   export let resource: V1Resource | undefined = undefined;
+  /** Callback to show the resource spec/describe dialog */
+  export let onDescribe:
+    | ((name: string, kind: string, resource: V1Resource) => void)
+    | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
   const triggerMutation =
@@ -61,14 +65,25 @@
   }
 </script>
 
-{#if canRefresh}
-  <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
-    <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isDropdownOpen} size={20}>
-        <ThreeDot size="16px" />
-      </IconButton>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
+<DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
+  <DropdownMenu.Trigger class="flex-none">
+    <IconButton rounded active={isDropdownOpen} size={20}>
+      <ThreeDot size="16px" />
+    </IconButton>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start">
+    {#if onDescribe && resource}
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => onDescribe?.(resourceName, resourceKind, resource)}
+      >
+        <div class="flex items-center">
+          <CodeIcon size="12px" />
+          <span class="ml-2">Describe</span>
+        </div>
+      </DropdownMenu.Item>
+    {/if}
+    {#if canRefresh}
       <DropdownMenu.Item
         class="font-normal flex items-center"
         disabled={isLoading}
@@ -97,6 +112,6 @@
           </div>
         </DropdownMenu.Item>
       {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{/if}
+    {/if}
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
