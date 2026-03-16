@@ -64,6 +64,11 @@
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
+
+  // CHC auto-scaling: detect when slots were auto-reduced due to CHC hibernation
+  $: isChcAutoScaled =
+    projectData?.annotations?.["rill.dev/chc-auto-scaled-slots"] === "true" &&
+    projectData?.prodSlots === "1";
 </script>
 
 <OverviewCard title="Deployment">
@@ -160,6 +165,16 @@
         {/if}
       </span>
     </div>
+
+    {#if isChcAutoScaled}
+      <div class="info-row">
+        <span class="info-label">Slots</span>
+        <span class="info-value text-fg-secondary text-xs">
+          Slots reduced to 1 while ClickHouse Cloud is hibernated. They'll be
+          restored when the cluster wakes up.
+        </span>
+      </div>
+    {/if}
   </div>
 </OverviewCard>
 

@@ -4,6 +4,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
+export type ResourceStatus = "error" | "warn" | "ok";
+
 export type StatusFilter = { label: string; value: string };
 
 export const statusFilters: StatusFilter[] = [
@@ -25,7 +27,7 @@ export const filterableTypes = [
   ResourceKind.Connector,
 ];
 
-export function getResourceStatus(r: V1Resource): string {
+export function getResourceStatus(r: V1Resource): ResourceStatus {
   if (r.meta?.reconcileError) return "error";
   const status = r.meta?.reconcileStatus;
   if (

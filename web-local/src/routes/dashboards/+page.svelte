@@ -5,7 +5,7 @@
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
-  import DashboardList from "./DashboardList.svelte";
+  import DashboardList from "../../features/dashboards/DashboardList.svelte";
 
   export let data: LayoutData;
 </script>
