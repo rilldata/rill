@@ -31,7 +31,7 @@ import (
 
 const devDeplTTL = 6 * time.Hour
 
-const devSlots = 8
+const devSlots = 4
 
 const prodDeplTTL = 14 * 24 * time.Hour
 

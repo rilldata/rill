@@ -129,12 +129,24 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		// Delete the deployment and all its resources.
 		err := w.admin.StopDeploymentInner(ctx, depl)
 		if err != nil {
+			if job.Attempt >= job.MaxAttempts {
+				if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
+					w.admin.Logger.Error("reconcile deployment: failed to set errored status during deletion", observability.ZapCtx(ctx), zap.Error(dbErr))
+				}
+				return river.JobCancel(err)
+			}
 			return err
 		}
 
 		// Delete the deployment
 		err = w.admin.DB.DeleteDeployment(ctx, depl.ID)
 		if err != nil {
+			if job.Attempt >= job.MaxAttempts {
+				if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
+					w.admin.Logger.Error("reconcile deployment: failed to set errored status during deletion", observability.ZapCtx(ctx), zap.Error(dbErr))
+				}
+				return river.JobCancel(err)
+			}
 			return err
 		}
 

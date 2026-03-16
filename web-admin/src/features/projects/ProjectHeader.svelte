@@ -229,7 +229,7 @@
       {#if $viewAsUserStore}
         <ViewAsUserChip />
       {/if}
-      {#if (onProjectPage || onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
+      {#if onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
       {#if onProjectPage && effectiveManageProjectMembers}
@@ -252,6 +252,9 @@
             let:ready
           >
             <LastRefreshedDate {dashboard} />
+            {#if (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
+              <EditButton {organization} {project} {activeBranch} />
+            {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
@@ -277,12 +280,17 @@
       {/if}
     {/if}
 
-    {#if onCanvasDashboardPage && hasUserAccess}
-      {#if $dashboardChat && !onPublicURLPage}
-        <ChatToggle />
+    {#if onCanvasDashboardPage}
+      {#if projectPermissions.manageDev}
+        <EditButton {organization} {project} {activeBranch} />
       {/if}
-      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-      <ShareDashboardPopover createMagicAuthTokens={false} />
+      {#if hasUserAccess}
+        {#if $dashboardChat && !onPublicURLPage}
+          <ChatToggle />
+        {/if}
+        <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+        <ShareDashboardPopover createMagicAuthTokens={false} />
+      {/if}
     {/if}
 
     {#if $user.isSuccess}

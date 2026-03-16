@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
+    createAdminServiceTriggerRedeploy,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
@@ -17,12 +18,14 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "./OverviewCard.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;
   export let project: string;
   export let branch: string | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
+  const redeployMutation = createAdminServiceTriggerRedeploy();
 
   // Deployment
   $: projectDeployment = useProjectDeployment(organization, project, branch);
@@ -69,6 +72,23 @@
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
+
+  async function handleSync() {
+    try {
+      await $redeployMutation.mutateAsync({
+        data: { org: organization, project, deploymentId: deployment?.id },
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: "Sync triggered",
+      });
+    } catch {
+      eventBus.emit("notification", {
+        type: "error",
+        message: "Failed to trigger sync",
+      });
+    }
+  }
 </script>
 
 <OverviewCard title="Deployment">
@@ -122,7 +142,7 @@
     {#if lastUpdated}
       <div class="info-row">
         <span class="info-label">Last synced</span>
-        <span class="info-value">
+        <span class="info-value flex items-center gap-2">
           {lastUpdated.toLocaleString(undefined, {
             year: "numeric",
             month: "short",
@@ -130,6 +150,13 @@
             hour: "numeric",
             minute: "numeric",
           })}
+          <button
+            class="sync-button"
+            on:click={handleSync}
+            disabled={$redeployMutation.isPending}
+          >
+            {$redeployMutation.isPending ? "Syncing..." : "Sync now"}
+          </button>
         </span>
       </div>
     {/if}
@@ -192,5 +219,8 @@
   }
   .repo-link:hover {
     @apply underline;
+  }
+  .sync-button {
+    @apply text-xs text-primary-500 hover:text-primary-700 disabled:text-fg-muted cursor-pointer disabled:cursor-default;
   }
 </style>

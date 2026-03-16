@@ -18,6 +18,7 @@
   export let status: V1DeploymentStatus;
   export let canManage: boolean;
   export let branch: string | undefined;
+  export let onStarted: (() => void) | undefined = undefined;
 
   $: isStopping = status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING;
 
@@ -28,6 +29,7 @@
       { deploymentId, data: {} },
       {
         onSuccess: () => {
+          onStarted?.();
           void Promise.all([
             queryClient.invalidateQueries({
               queryKey: getAdminServiceGetProjectQueryKey(

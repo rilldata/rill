@@ -5,6 +5,7 @@
     createAdminServiceDeleteDeployment,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
+    createAdminServiceListDeployments,
     type V1Deployment,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
@@ -14,7 +15,6 @@
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
-    useAllDeployments,
     isActiveDeployment,
     invalidateDeployments,
   } from "@rilldata/web-admin/features/edit-session/use-edit-session";
@@ -43,8 +43,31 @@
   export let organization: string;
   export let project: string;
 
+  const TRANSIENT_STATUSES = new Set([
+    V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
+    V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
+    V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+    V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING,
+  ]);
+
   const user = createAdminServiceGetCurrentUser();
-  const allDeployments = useAllDeployments(organization, project);
+  // Uses empty params `{}` so the cache key matches BranchSelector's query.
+  const allDeployments = createAdminServiceListDeployments(
+    organization,
+    project,
+    {},
+    {
+      query: {
+        refetchInterval: (query) => {
+          const deployments = query.state.data?.deployments;
+          if (deployments?.some((d) => TRANSIENT_STATUSES.has(d.status!))) {
+            return 2000;
+          }
+          return false;
+        },
+      },
+    },
+  );
   const deleteMutation = createAdminServiceDeleteDeployment();
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
@@ -64,7 +87,6 @@
     for (const d of rawDeployments) {
       if (
         d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED ||
-        d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING ||
         deletedIds.has(d.id ?? "")
       )
         continue;
@@ -246,7 +268,9 @@
       {#each visibleDeployments as deployment (deployment.id)}
         {@const prod = isProd(deployment)}
         {@const own = isOwnDeployment(deployment.ownerUserId)}
-        {@const deleting = deletingIds.has(deployment.id ?? "")}
+        {@const deleting =
+          deletingIds.has(deployment.id ?? "") ||
+          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING}
         {@const id = deployment.id ?? ""}
         <div class="data-row">
           <div class="pl-4 flex items-center gap-2 truncate">

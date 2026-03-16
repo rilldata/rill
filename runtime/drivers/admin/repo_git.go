@@ -249,10 +249,7 @@ func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message stri
 		return fmt.Errorf("failed to open repository: %w", err)
 	}
 	_, err = r.commitAll(repo, message)
-	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
-			return nil // No changes to commit
-		}
+	if err != nil && !errors.Is(err, git.ErrEmptyCommit) {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 

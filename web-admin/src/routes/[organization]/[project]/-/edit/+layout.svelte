@@ -26,6 +26,7 @@
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
+  import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
 
   // Read params synchronously at initialization; they're stable for the
@@ -62,7 +63,9 @@
           const status = query.state.data?.deployment?.status;
           if (
             status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-            status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
+            status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
+            status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+            status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
           ) {
             return 2000;
           }
@@ -88,14 +91,24 @@
   $: isOtherOwner =
     !!deployment && !!currentUserId && deployment.ownerUserId !== currentUserId;
 
+  // Flipped when the user clicks "Start deployment" on a stopped deployment;
+  // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
+  let starting = false;
+
   $: isLoading =
     $projectQuery.isLoading ||
     $user.isLoading ||
+    starting ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
   $: isErrored =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
+
+  $: isStopped =
+    !starting &&
+    (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+      deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING);
 
   $: isReady =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
@@ -185,6 +198,25 @@
       header="Edit session failed"
       body={deployment?.statusMessage ||
         "The editing environment encountered an error. Please try again."}
+    />
+  {:else if isStopped && deployment?.id}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      readDev={!!projectPermissions?.readDev}
+      {primaryBranch}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
+    <BranchDeploymentStopped
+      {organization}
+      {project}
+      deploymentId={deployment.id}
+      status={deploymentStatus}
+      canManage={!!projectPermissions?.manageDev}
+      {branch}
+      onStarted={() => (starting = true)}
     />
   {:else if isLoading}
     <EditSessionLoading status={deploymentStatus} cancelHref={projectUrl} />
