@@ -1,5 +1,8 @@
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
-import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
+  isMeasurePercentFormat,
+  type MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   mergeDimensionAndMeasureFilters,
   splitWhereFilter,
@@ -487,6 +490,7 @@ function processExpression({
         pinned: false,
         measures: new Map([[metricsViewName, measure]]),
         metricsViewNames: [metricsViewName],
+        isPercent: isMeasurePercentFormat(measure),
       });
     }
   });
@@ -516,6 +520,7 @@ export function getCanvasMeasureFiltersMap(
       name: measureName,
       label: measure.displayName || measure.expression || filter.measure,
       filter: filter,
+      isPercent: isMeasurePercentFormat(measure),
     };
 
     map.set(measureName, entry);

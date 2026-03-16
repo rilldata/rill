@@ -10,6 +10,7 @@ import {
   isBetweenExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
+  type MetricsViewSpecMeasure,
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -168,4 +169,19 @@ export function measureHasSuffix(measureName: string) {
 }
 export function stripMeasureSuffix(measureName: string) {
   return measureName.replace(MeasureModifierSuffixRegex, "");
+}
+
+/**
+ * Determines if a measure uses a percentage format, meaning the underlying
+ * data is stored as a decimal (e.g. 0.8 for 80%). This is true when:
+ * - formatPreset is "percentage", OR
+ * - formatD3 contains "%" (d3-format's % specifier multiplies by 100)
+ */
+export function isMeasurePercentFormat(
+  measure: MetricsViewSpecMeasure | undefined,
+): boolean {
+  if (!measure) return false;
+  if (measure.formatPreset === "percentage") return true;
+  if (measure.formatD3 && measure.formatD3.includes("%")) return true;
+  return false;
 }
