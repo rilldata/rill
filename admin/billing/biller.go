@@ -78,6 +78,7 @@ type PlanType int
 
 const (
 	TrailPlanType PlanType = iota
+	GrowthPlanType
 	TeamPlanType
 	ManagedPlanType
 	EnterprisePlanType
