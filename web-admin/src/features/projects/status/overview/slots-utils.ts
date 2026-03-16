@@ -29,7 +29,7 @@ export const LIVE_CONNECT_TIERS: SlotTier[] = ALL_SLOTS.map(tier);
 
 /**
  * Given detected cluster memory (GB per replica), return the matching tier's slot count.
- * Picks the tier whose memory (slots * 2 GB) is closest to the detected value.
+ * Picks the tier whose memory (slots * 4 GB) is closest to the detected value.
  */
 export function detectTierSlots(
   detectedMemoryGb: number | undefined,
