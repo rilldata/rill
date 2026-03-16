@@ -153,15 +153,30 @@ testInstalledBinary() {
 
 # Print 'rill start' help intrcutions
 printStartHelp() {
-    boldon=$(tput smso)
-    boldoff=$(tput rmso)
-
-    if [ "$INSTALL_DIR" = "/usr/local/bin" ]; then
-        printf "\nTo start a new project in Rill, execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff"
-    elif [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
-        printf "\nTo start a new project in Rill, open a %snew terminal%s and execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff" "$boldon" "$boldoff"
+    # Resolve how to reference the binary in help text.
+    if [ "$INSTALL_DIR" = "/usr/local/bin" ] || [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
+        binary="rill"
     elif [ "$INSTALL_DIR" = "$(pwd)" ]; then
-        printf "\nTo start a new project in Rill, execute the command:\n\n %s./rill start my-rill-project%s\n\n" "$boldon" "$boldoff"
+        binary="./rill"
+    else
+        binary="$INSTALL_DIR/rill"
+    fi
+    
+    # Print instructions for non-interactive callers.
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        printf "\nTo initialize a new project, run '%s init'. Run '%s -h' for an overview of available commands.\n" "$binary" "$binary"
+        return
+    fi
+
+    # Safely get bold formatting codes.
+    boldon=$(tput smso 2>/dev/null) || boldon=""
+    boldoff=$(tput rmso 2>/dev/null) || boldoff=""
+
+    # Print instructions for interactive callers.
+    if [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
+        printf "\nTo start a new project in Rill, open a %snew terminal%s and execute the command:\n\n %s%s start my-rill-project%s\n\n" "$boldon" "$boldoff" "$boldon" "$binary" "$boldoff"
+    else
+        printf "\nTo start a new project in Rill, execute the command:\n\n %s%s start my-rill-project%s\n\n" "$boldon" "$binary" "$boldoff"
     fi
 }
 
@@ -264,7 +279,9 @@ resolveInstallDir() {
 
 # Install Rill on the system
 installRill() {
-    publishSyftEvent install
+    if [ "$NON_INTERACTIVE" != "true" ]; then
+        publishSyftEvent install
+    fi
     checkDependency curl
     checkDependency unzip
     checkGitDependency
@@ -277,9 +294,9 @@ installRill() {
     testInstalledBinary
     if [ "$NON_INTERACTIVE" != "true" ]; then
         addPathConfigEntries
+        publishSyftEvent installed
     fi
     printStartHelp
-    publishSyftEvent installed
 }
 
 # Uninstall Rill from the system, this function is aware of both the privileged and unprivileged install methods
