@@ -117,7 +117,7 @@ export function createPivotClickToFilter(
 
   // --- Yield active state when another component becomes active ---
   const activeUnsub = activeComponent.subscribe(($activeId) => {
-    if ($activeId !== null && $activeId !== componentId) {
+    if ($activeId !== componentId) {
       selfFilteredDimensions.set(new Set());
     }
   });

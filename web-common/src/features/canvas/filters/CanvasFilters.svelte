@@ -130,7 +130,6 @@
   }
 </script>
 
-<!-- FIX CLEAR ACTIVE COMPONENT  -->
 <div
   role="presentation"
   class="flex flex-col gap-y-2 size-full pointer-events-none"
