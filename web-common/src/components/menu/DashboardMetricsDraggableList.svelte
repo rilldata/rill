@@ -232,7 +232,7 @@
 
       <!-- Hidden Items Section -->
       {#if selectedItems.length < allItems.length}
-        <span class="flex-none h-px bg-border w-full" />
+        <span class="flex-none h-px bg-border w-full"></span>
         <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <DraggableList
             items={hiddenDraggableItems}

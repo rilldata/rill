@@ -23,7 +23,7 @@
   title="Orb Billing Portal"
   class="w-full h-[1000px]"
   onload={() => (iframeLoading = false)}
-/>
+></iframe>
 
 <style lang="postcss">
 </style>

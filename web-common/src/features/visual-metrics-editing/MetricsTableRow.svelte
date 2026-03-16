@@ -135,34 +135,40 @@
   </td>
 
   {#if hovered && !ghost}
-    <div
-      class="editing-controls"
-      style:right="{Math.max(0, tableWidth - scrollLeft)}px"
-      class:editing
-      class:selected={finalSelected}
-    >
-      <EditControls
-        itemType={type}
-        name={item.display_name || item.name}
-        selected={finalSelected}
-        first={i === 0}
-        last={i === length - 1}
-        onEdit={() => {
-          onEdit(i, type);
-        }}
-        {onMoveTo}
-        onDuplicate={() => {
-          onDuplicate(i, type);
-        }}
-        onDelete={() => {
-          onDelete(i, type);
-        }}
-      />
-    </div>
+    <td class="editing-controls-cell">
+      <div
+        class="editing-controls"
+        style:right="{Math.max(0, tableWidth - scrollLeft)}px"
+        class:editing
+        class:selected={finalSelected}
+      >
+        <EditControls
+          itemType={type}
+          name={item.display_name || item.name}
+          selected={finalSelected}
+          first={i === 0}
+          last={i === length - 1}
+          onEdit={() => {
+            onEdit(i, type);
+          }}
+          {onMoveTo}
+          onDuplicate={() => {
+            onDuplicate(i, type);
+          }}
+          onDelete={() => {
+            onDelete(i, type);
+          }}
+        />
+      </div>
+    </td>
   {/if}
 </tr>
 
 <style lang="postcss">
+  .editing-controls-cell {
+    @apply p-0 border-0 w-0;
+  }
+
   .editing-controls {
     height: 39px;
     width: 192px;

@@ -310,7 +310,7 @@
         <span
           class="ghost"
           class:rounded={dragChip?.type !== PivotChipType.Measure}
-        />
+        ></span>
       {/if}
 
       <div
@@ -391,10 +391,8 @@
   {/each}
 
   {#if ghostIndex === items.length}
-    <span
-      class="ghost"
-      class:rounded={dragChip?.type !== PivotChipType.Measure}
-    />
+    <span class="ghost" class:rounded={dragChip?.type !== PivotChipType.Measure}
+    ></span>
   {/if}
 
   {#if zone === "columns" || zone === "rows"}

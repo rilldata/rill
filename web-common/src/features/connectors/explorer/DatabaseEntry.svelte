@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Database } from "lucide-svelte";
-  import { slide } from "svelte/transition";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";

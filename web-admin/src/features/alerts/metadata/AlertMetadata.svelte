@@ -141,7 +141,7 @@
         <h1 class="text-fg-primary text-lg font-bold" aria-label="Alert name">
           {alertSpec.displayName}
         </h1>
-        <div class="grow" />
+        <div class="grow"></div>
         {#if !$isAlertCreatedByCode.data}
           <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>

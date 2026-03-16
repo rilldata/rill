@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";

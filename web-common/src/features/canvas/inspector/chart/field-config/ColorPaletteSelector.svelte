@@ -13,7 +13,6 @@
   } from "@rilldata/web-common/features/components/charts/util";
   import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
-  import { slide } from "svelte/transition";
 
   export let colorMapping: ColorMapping | undefined;
   export let onChange: (property: keyof FieldConfig, value: any) => void;

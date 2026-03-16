@@ -20,6 +20,7 @@
 
   export let singular: string;
   export let plural: string;
+  // svelte-ignore export_let_unused
   export let preventFocus = false;
 
   export let values: string[];

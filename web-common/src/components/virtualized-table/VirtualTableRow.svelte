@@ -54,7 +54,7 @@
     </td>
   {/each}
 
-  <td title="left-pad" />
+  <td title="left-pad"></td>
 
   {#each { length: renderedColumns } as _, i (i)}
     {@const columnIndex = startColumn + i}
@@ -76,7 +76,7 @@
     {/if}
   {/each}
 
-  <td title="right-pad" />
+  <td title="right-pad"></td>
 </tr>
 
 <style lang="postcss">

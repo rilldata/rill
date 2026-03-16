@@ -230,7 +230,7 @@
         class:status-connecting={isConnecting}
         class:status-error={hasConnectionError}
       >
-        <span class="status-dot" />
+        <span class="status-dot"></span>
         {#if isConnected}
           Live
         {:else if isConnecting}

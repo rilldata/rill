@@ -356,7 +356,7 @@
       </Popover>
 
       {#if !hideStartPivotButton}
-        <div class="grow" />
+        <div class="grow"></div>
         <Button
           type="toolbar"
           onClick={() => {
@@ -379,7 +379,7 @@
         <div
           class="sticky top-0 z-10 bg-surface-background col-span-2 grid grid-cols-subgrid"
         >
-          <div />
+          <div></div>
           <div class="relative">
             <MeasureChartXAxis
               interval={chartInterval}

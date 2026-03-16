@@ -21,7 +21,6 @@
   import type { Location } from "@rilldata/web-common/lib/place-element";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
-  import { slide } from "svelte/transition";
   import TopKListItem from "./TopKListItem.svelte";
 
   export let colorClass = "bg-primary-200";

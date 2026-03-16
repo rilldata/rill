@@ -372,7 +372,7 @@
         <span class="text-xs text-fg-secondary">Loading more…</span>
       </div>
     {/if}
-    <div class="h-px" bind:this={loadMoreTrigger} />
+    <div class="h-px" bind:this={loadMoreTrigger}></div>
   </div>
   <div class="mt-2 general-access-container bg-popover pt-2">
     <div class="text-xs text-fg-secondary font-semibold uppercase">

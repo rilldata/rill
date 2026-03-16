@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
 

@@ -23,7 +23,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
-  import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import InspectorHeaderGrid from "../../../layout/inspector/InspectorHeaderGrid.svelte";
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";

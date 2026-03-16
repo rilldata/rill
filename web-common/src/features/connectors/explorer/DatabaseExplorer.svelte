@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";

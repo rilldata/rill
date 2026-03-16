@@ -10,7 +10,6 @@
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { slide } from "svelte/transition";
 
   export let connector: string;
   export let database: string;

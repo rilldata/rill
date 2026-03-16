@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { fly } from "svelte/transition";
   import { formatInteger } from "../lib/formatters";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";

@@ -5,7 +5,6 @@
   import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-  import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import {
     COMPARISON_COLUMN_WIDTH,

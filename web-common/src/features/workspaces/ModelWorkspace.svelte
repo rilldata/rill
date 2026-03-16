@@ -21,7 +21,6 @@
 
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { fade, slide } from "svelte/transition";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import { getUserFriendlyError } from "../models/error-utils";
 

@@ -51,7 +51,7 @@
     <span
       style:left={selectedMark === "bar" ? "2px" : "24px"}
       class="toggle size-[24px] pointer-events-none absolute rounded-[4px] z-0 transition-[left]"
-    />
+    ></span>
   </div>
 </div>
 

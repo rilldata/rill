@@ -4,6 +4,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { Snippet } from "svelte";
 
+  // svelte-ignore custom_element_props_identifier
   let {
     asChild = false,
     children,

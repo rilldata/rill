@@ -87,18 +87,17 @@
 
 {#if open}
   <Overlay bg="rgba(15,23,42,0.8)">
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       class="graph-overlay__backdrop bg-neutral-800/60 dark:bg-neutral-100/60"
       onclick={handleBackdropClick}
       role="presentation"
     >
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <div
         class="graph-overlay"
         role="dialog"
         aria-modal="true"
+        tabindex="-1"
         aria-label={anchorName
           ? `Resource graph for ${anchorName}`
           : "Resource graph"}

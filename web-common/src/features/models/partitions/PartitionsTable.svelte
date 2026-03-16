@@ -253,7 +253,7 @@
             </td>
           </tr>
         {:else}
-          <tr style:height="{paddingTop}px" />
+          <tr style:height="{paddingTop}px"></tr>
           {#each virtualRows as virtualRow (virtualRow.index)}
             <tr>
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
@@ -268,7 +268,7 @@
               {/each}
             </tr>
           {/each}
-          <tr style:height="{paddingBottom}px" />
+          <tr style:height="{paddingBottom}px"></tr>
         {/if}
       </tbody>
     </table>

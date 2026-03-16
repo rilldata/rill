@@ -39,7 +39,7 @@
   <span
     style:left={selectedView === "code" ? "2px" : "24px"}
     class="toggle size-[22px] pointer-events-none absolute rounded-[4px] z-0 transition-[left]"
-  />
+  ></span>
 </div>
 
 <style lang="postcss">

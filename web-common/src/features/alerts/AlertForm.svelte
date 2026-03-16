@@ -327,7 +327,7 @@
     </div>
   </DialogTabs.Root>
   <div class="px-6 py-3 flex items-center gap-x-2">
-    <div class="grow" />
+    <div class="grow"></div>
     {#if currentTabIndex === 0}
       <Button onClick={handleCancel} type="secondary">Cancel</Button>
     {:else}

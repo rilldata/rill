@@ -46,7 +46,7 @@
       />
     {/each}
 
-    <th title="left-pad" />
+    <th title="left-pad"></th>
 
     {#each { length: renderedColumns } as _, i (i)}
       {@const index = startColumn + i}
@@ -68,7 +68,7 @@
       {/if}
     {/each}
 
-    <th title="right-pad" />
+    <th title="right-pad"></th>
   </tr>
 </thead>
 

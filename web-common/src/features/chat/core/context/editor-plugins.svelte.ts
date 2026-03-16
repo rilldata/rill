@@ -230,7 +230,7 @@ export function configureInlineContextTipTapExtension(
   sharedEditorStore: SharedEditorStore,
 ) {
   let comp: Record<string, unknown> | null = null;
-  let pickerProps: Record<string, unknown> = $state({});
+  const pickerProps: Record<string, unknown> = $state({});
   let selected = false;
 
   return InlineContextExtension.configure({

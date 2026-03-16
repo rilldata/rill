@@ -326,7 +326,7 @@
     {/each}
   </thead>
   <tbody>
-    <tr style:height="{before}px" />
+    <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       <tr class:show-more-row={isShowMoreRow(rows[row.index])}>
@@ -366,7 +366,7 @@
         {/each}
       </tr>
     {/each}
-    <tr style:height="{after}px" />
+    <tr style:height="{after}px"></tr>
   </tbody>
 </table>
 

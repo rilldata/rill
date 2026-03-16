@@ -5,7 +5,6 @@
     LIST_SLIDE_DURATION,
   } from "@rilldata/web-common/layout/config";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { slide } from "svelte/transition";
 
   export let active = false;
   export let emphasize = false;

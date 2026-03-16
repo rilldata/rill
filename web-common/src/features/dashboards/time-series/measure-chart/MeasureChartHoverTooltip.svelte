@@ -65,7 +65,8 @@
       </div>
       {#each dimTooltipEntries as entry (entry.label)}
         <div class="dimension-entry">
-          <span class="dimension-dot" style:background-color={entry.color} />
+          <span class="dimension-dot" style:background-color={entry.color}
+          ></span>
           <span class="dimension-label">{entry.label}</span>
           <span class="dimension-value">{formatter(entry.value)}</span>
         </div>
@@ -83,7 +84,7 @@
       </div>
 
       <div class="divider">
-        <div class="divider-line" />
+        <div class="divider-line"></div>
         <span class="vs-badge">vs</span>
       </div>
 

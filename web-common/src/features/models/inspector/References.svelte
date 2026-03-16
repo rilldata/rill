@@ -11,7 +11,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
-  import { slide } from "svelte/transition";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 

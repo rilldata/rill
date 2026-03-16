@@ -347,7 +347,7 @@
 
         {#if allowCustomTimeRange}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-border my-1" />
+            <div class="h-px w-full bg-border my-1"></div>
             <button
               type="button"
               role="menuitem"
@@ -370,7 +370,7 @@
 
         {#if !lockTimeZone}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-border my-1" />
+            <div class="h-px w-full bg-border my-1"></div>
 
             <Popover.Root portal="#rill-portal" bind:open={timeZonePickerOpen}>
               <Popover.Trigger
@@ -418,7 +418,7 @@
 
         {#if timeDimensions.length && onTimeDimensionSelect}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-gray-200 my-1" />
+            <div class="h-px w-full bg-gray-200 my-1"></div>
 
             <Popover.Root portal="#rill-portal" bind:open={timeAxisPickerOpen}>
               <Popover.Trigger

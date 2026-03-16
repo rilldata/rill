@@ -81,7 +81,7 @@
         </ol>
       </nav>
     {:else}
-      <div class="flex-1" />
+      <div class="flex-1"></div>
     {/if}
 
     {#if showDashboardChat}
@@ -92,5 +92,5 @@
     {/if}
   </div>
 {:else}
-  <div />
+  <div></div>
 {/if}

@@ -3,7 +3,6 @@
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { onMount } from "svelte";
-  import { slide } from "svelte/transition";
   import type { PivotState } from "web-common/src/features/dashboards/pivot/types.ts";
   import PivotDrag from "./PivotDrag.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";

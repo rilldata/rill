@@ -233,7 +233,7 @@
       style:top="{insertIndex * ROW_HEIGHT + ROW_HEIGHT - (last ? 1 : 0)}px"
       class:last
       class="row-insert-marker"
-    />
+    ></span>
   {/if}
 </div>
 

@@ -8,7 +8,6 @@ display:contents. This is useful when nesting a floating element within a toolti
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fade } from "svelte/transition";
   import {
     mouseLocationToBoundingRect,
     placeElement,

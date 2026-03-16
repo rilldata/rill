@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { fly } from "svelte/transition";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";

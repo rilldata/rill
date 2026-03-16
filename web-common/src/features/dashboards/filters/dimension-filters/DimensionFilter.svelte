@@ -22,7 +22,6 @@
   import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { fly } from "svelte/transition";
   import {
     useAllSearchResultsCount,
     useDimensionSearch,
@@ -507,7 +506,7 @@
               {searchResultCountText}
             </DropdownMenu.Label>
           {:else}
-            <div class="grow" />
+            <div class="grow"></div>
           {/if}
         </div>
       {/if}

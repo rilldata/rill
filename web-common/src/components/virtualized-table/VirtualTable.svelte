@@ -358,7 +358,7 @@
       />
 
       <tbody>
-        <tr style:height="{paddingTop}px" />
+        <tr style:height="{paddingTop}px"></tr>
 
         {#each { length: renderedRows } as _, index (index)}
           {@const rowIndex = index + startRow}
@@ -383,7 +383,7 @@
           />
         {/each}
 
-        <tr class="h-full" />
+        <tr class="h-full"></tr>
       </tbody>
     </table>
   </div>

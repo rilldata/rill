@@ -226,7 +226,7 @@
               <span
                 class="size-[6.5px] rounded-full"
                 style:background-color={getColor(i)}
-              />
+              ></span>
               <span>{formatterFunction(point.value)}</span>
               {#if hasComparison}
                 <span class="text-fg-muted">

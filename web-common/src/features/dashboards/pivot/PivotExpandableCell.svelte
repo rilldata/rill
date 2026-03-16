@@ -24,7 +24,7 @@
   class:cursor-pointer={assembledAndCanExpand}
 >
   {#if value === LOADING_CELL}
-    <span class="loading-cell" />
+    <span class="loading-cell"></span>
   {:else if assembledAndCanExpand}
     <div class="caret opacity-100 shrink-0" class:expanded>
       <ChevronRight size="16px" color="#9CA3AF" />

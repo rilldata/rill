@@ -28,7 +28,6 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
-  import { slide } from "svelte/transition";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";

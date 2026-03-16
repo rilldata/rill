@@ -48,8 +48,9 @@
       class="absolute top-0 -right-1 w-2 z-10 cursor-col-resize"
       style:height="{HEADER_HEIGHT}px"
       data-index={index}
+      aria-label="Resize column"
       {onmousedown}
-    />
+    ></button>
   {/if}
 </th>
 

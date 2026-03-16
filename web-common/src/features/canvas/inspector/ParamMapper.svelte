@@ -151,7 +151,7 @@
                 component.updateProperty(key, localParamValues[key]);
               }}
               placeholder={config.label ?? key}
-            />
+            ></textarea>
           </div>
 
           <!-- SELECT DROPDOWN -->

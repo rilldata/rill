@@ -109,7 +109,7 @@
       <div
         class="ghost h-[26px] bg-gray-100 border rounded-sm pointer-events-none"
         class:!rounded-full={dragData?.type !== PivotChipType.Measure}
-      />
+      ></div>
     {/if}
     <div
       class="drag-item"
@@ -136,7 +136,7 @@
     <div
       class="ghost h-[26px] bg-gray-100 border rounded-sm pointer-events-none"
       class:!rounded-full={dragData?.type !== PivotChipType.Measure}
-    />
+    ></div>
   {/if}
 </div>
 

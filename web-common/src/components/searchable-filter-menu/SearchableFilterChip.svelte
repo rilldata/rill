@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
-  import { fly } from "svelte/transition";
   import { Chip } from "@rilldata/web-common/components/chip";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";

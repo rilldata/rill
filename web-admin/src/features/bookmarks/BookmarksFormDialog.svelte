@@ -383,7 +383,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     </form>
 
     <div class="flex flex-row mt-4 gap-2">
-      <div class="grow" />
+      <div class="grow"></div>
       <Button onClick={onClose} type="secondary">Cancel</Button>
       <Button onClick={submit} type="primary">Save</Button>
     </div>

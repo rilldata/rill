@@ -31,7 +31,7 @@
       />
     </svg>
   {:else if typeof checked === "number" && checked > 0}
-    <div class="bg-primary-400 size-2" />
+    <div class="bg-primary-400 size-2"></div>
   {/if}
 </button>
 

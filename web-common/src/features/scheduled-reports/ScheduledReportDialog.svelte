@@ -321,7 +321,7 @@
       <div class="text-red-500">{generalErrors}</div>
     {/if}
     <div class="flex items-center gap-x-2 mt-5">
-      <div class="grow" />
+      <div class="grow"></div>
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
         disabled={$submitting}

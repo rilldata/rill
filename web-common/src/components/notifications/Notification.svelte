@@ -2,7 +2,6 @@
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/events";
   import { onMount } from "svelte";
-  import { scale } from "svelte/transition";
   import Button from "../button/Button.svelte";
   import Check from "../icons/Check.svelte";
   import Close from "../icons/Close.svelte";

@@ -421,7 +421,7 @@
       {/if}
     {/each}
 
-    <span />
+    <span></span>
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">

@@ -27,7 +27,7 @@
         onDrop(row, effectiveColumn);
       }
     }}
-  />
+  ></div>
 {/each}
 
 <style lang="postcss">

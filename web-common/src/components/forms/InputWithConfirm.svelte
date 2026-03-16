@@ -4,7 +4,6 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Pencil from "svelte-radix/Pencil1.svelte";
   import { cubicOut } from "svelte/easing";
-  import { scale } from "svelte/transition";
 
   export let value: string | undefined = "";
   export let onConfirm: (newValue: string) => void | Promise<void> = () => {};

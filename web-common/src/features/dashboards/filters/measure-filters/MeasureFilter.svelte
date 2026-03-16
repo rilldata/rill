@@ -7,7 +7,6 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
-  import { fly } from "svelte/transition";
   import MeasureFilterForm from "./MeasureFilterForm.svelte";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import type { MeasureFilterItem } from "../../state-managers/selectors/measure-filters";

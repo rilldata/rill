@@ -36,7 +36,6 @@
   let open = false;
   let now = DateTime.now().setZone(zone);
   let interval: ReturnType<typeof setInterval> | undefined = undefined;
-  let disableTooltip = false;
 
   onMount(() => {
     interval = setInterval(() => {
@@ -149,12 +148,6 @@
         class="flex gap-x-1 items-center flex-none truncate"
         aria-label="Select reference time and grain"
         data-state={open ? "open" : "closed"}
-        onmouseenter={() => {
-          if (!open) disableTooltip = false;
-        }}
-        onmouseleave={() => {
-          disableTooltip = true;
-        }}
       >
         <p>
           as of

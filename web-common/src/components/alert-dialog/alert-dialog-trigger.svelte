@@ -2,6 +2,7 @@
   import { AlertDialog as AlertDialogPrimitive } from "bits-ui";
   import type { Snippet } from "svelte";
 
+  // svelte-ignore custom_element_props_identifier
   let {
     asChild = false,
     children,

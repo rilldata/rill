@@ -145,7 +145,7 @@
         <h1 class="text-fg-primary text-lg font-bold" aria-label="Report name">
           {reportSpec.displayName}
         </h1>
-        <div class="grow" />
+        <div class="grow"></div>
         <RunNowButton {organization} {project} {report} />
         {#if !$isReportCreatedByCode.data}
           <DropdownMenu.Root>

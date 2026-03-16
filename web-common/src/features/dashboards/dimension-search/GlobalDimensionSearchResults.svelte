@@ -57,7 +57,8 @@
   onOpenChange={(o) => (open = o)}
 >
   <DropdownMenuTrigger asChild>
-    <button class="absolute left-32"></button>
+    <button class="absolute left-32" aria-label="Dimension search results"
+    ></button>
   </DropdownMenuTrigger>
   <DropdownMenuContent
     class="w-64 max-h-96 overflow-scroll right-2"
