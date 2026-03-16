@@ -1,19 +1,10 @@
-import { browser } from "$app/environment";
 import {
   getLastConversationId,
   setLastConversationId,
 } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
 import { redirect } from "@sveltejs/kit";
 
-// Disable SSR for AI chat routes - required for sessionStorage access
-export const ssr = false;
-
 export const load = async ({ params, route, url }) => {
-  // Extra guard for browser environment
-  if (!browser) {
-    return;
-  }
-
   const { conversationId } = params;
   // Use a fixed key for local development since there's no org/project
   const org = "local";

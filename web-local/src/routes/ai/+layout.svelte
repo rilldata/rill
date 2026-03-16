@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LocalFullPageChat from "./LocalFullPageChat.svelte";
+  import LocalFullPageChat from "../../features/chat/LocalFullPageChat.svelte";
 </script>
 
 <div class="chat-page-wrapper">
