@@ -8,8 +8,14 @@ export function formatSchedule(schedule: V1Schedule | undefined): string {
   if (schedule.cron) return schedule.cron;
   if (schedule.tickerSeconds) {
     const seconds = schedule.tickerSeconds;
-    if (seconds >= 3600) return `Every ${seconds / 3600}h`;
-    if (seconds >= 60) return `Every ${seconds / 60}m`;
+    if (seconds >= 3600) {
+      const hours = seconds / 3600;
+      return `Every ${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`;
+    }
+    if (seconds >= 60) {
+      const minutes = seconds / 60;
+      return `Every ${Number.isInteger(minutes) ? minutes : minutes.toFixed(1)}m`;
+    }
     return `Every ${seconds}s`;
   }
   if (schedule.refUpdate) return "On dependency update";
@@ -90,4 +96,14 @@ const monthLabels: Record<number, string> = {
 export function formatMonthOfYear(month: number | undefined): string {
   if (month === undefined || month === null || month === 0) return "January";
   return monthLabels[month] ?? String(month);
+}
+
+/**
+ * Safely formats a property value for display, handling objects that would
+ * otherwise render as `[object Object]`.
+ */
+export function formatPropertyValue(val: unknown): string {
+  if (val === undefined || val === null) return "";
+  if (typeof val === "object") return JSON.stringify(val);
+  return String(val);
 }

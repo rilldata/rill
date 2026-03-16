@@ -71,20 +71,17 @@
     resource: V1Resource,
   ) => {
     // Navigate to detail page for alerts and reports
-    if (resourceKind === ResourceKind.Alert) {
+    if (
+      resourceKind === ResourceKind.Alert ||
+      resourceKind === ResourceKind.Report
+    ) {
       const basePath = $page.url.pathname.replace(
         /\/status\/resources\/?$/,
         "",
       );
-      void goto(`${basePath}/alerts/${resourceName}`);
-      return;
-    }
-    if (resourceKind === ResourceKind.Report) {
-      const basePath = $page.url.pathname.replace(
-        /\/status\/resources\/?$/,
-        "",
-      );
-      void goto(`${basePath}/reports/${resourceName}`);
+      const segment =
+        resourceKind === ResourceKind.Alert ? "alerts" : "reports";
+      void goto(`${basePath}/${segment}/${resourceName}`);
       return;
     }
 

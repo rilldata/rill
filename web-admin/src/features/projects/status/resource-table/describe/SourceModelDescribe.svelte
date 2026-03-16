@@ -2,7 +2,12 @@
   import type { V1Source, V1Model } from "@rilldata/web-common/runtime-client";
   import DescribeSection from "./DescribeSection.svelte";
   import DescribeRow from "./DescribeRow.svelte";
-  import { formatSchedule, formatBytes, formatChangeMode } from "./utils";
+  import {
+    formatSchedule,
+    formatBytes,
+    formatChangeMode,
+    formatPropertyValue,
+  } from "./utils";
 
   export let source: V1Source | undefined = undefined;
   export let model: V1Model | undefined = undefined;
@@ -103,8 +108,11 @@
   <!-- Source properties -->
   {#if isSource && sourcePropertyKeys.length > 0}
     <DescribeSection title="Properties">
-      {#each sourcePropertyKeys as key}
-        <DescribeRow label={key} value={String(sourceProperties[key])} />
+      {#each sourcePropertyKeys as key (key)}
+        <DescribeRow
+          label={key}
+          value={formatPropertyValue(sourceProperties[key])}
+        />
       {/each}
     </DescribeSection>
   {/if}
@@ -113,8 +121,8 @@
   {#if !isSource}
     {#if modelSpec?.inputProperties && Object.keys(modelSpec.inputProperties).filter((k) => k !== "sql").length > 0}
       <DescribeSection title="Input Properties">
-        {#each Object.entries(modelSpec.inputProperties).filter(([k]) => k !== "sql") as [key, val]}
-          <DescribeRow label={key} value={String(val)} />
+        {#each Object.entries(modelSpec.inputProperties).filter(([k]) => k !== "sql") as [key, val] (key)}
+          <DescribeRow label={key} value={formatPropertyValue(val)} />
         {/each}
       </DescribeSection>
     {/if}
@@ -123,8 +131,8 @@
       <DescribeSection title="Stage">
         <DescribeRow label="Connector" value={modelSpec.stageConnector} />
         {#if modelSpec?.stageProperties && Object.keys(modelSpec.stageProperties).length > 0}
-          {#each Object.entries(modelSpec.stageProperties) as [key, val]}
-            <DescribeRow label={key} value={String(val)} />
+          {#each Object.entries(modelSpec.stageProperties) as [key, val] (key)}
+            <DescribeRow label={key} value={formatPropertyValue(val)} />
           {/each}
         {/if}
       </DescribeSection>
@@ -195,7 +203,7 @@
       {#if modelSpec.retryIfErrorMatches?.length}
         <div class="flex flex-col gap-y-0.5">
           <span class="text-xs text-fg-secondary">Error match patterns</span>
-          {#each modelSpec.retryIfErrorMatches as pattern}
+          {#each modelSpec.retryIfErrorMatches as pattern (pattern)}
             <span class="text-xs font-mono text-fg-primary text-right"
               >{pattern}</span
             >
@@ -208,7 +216,7 @@
   <!-- Tests (model only) -->
   {#if !isSource && modelSpec?.tests?.length}
     <DescribeSection title="Tests ({modelSpec.tests.length})">
-      {#each modelSpec.tests as test}
+      {#each modelSpec.tests as test (test.name)}
         <DescribeRow label={test.name ?? "test"} value={test.resolver} />
       {/each}
     </DescribeSection>

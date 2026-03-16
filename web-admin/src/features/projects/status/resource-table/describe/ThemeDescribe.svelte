@@ -18,6 +18,12 @@
 
   $: primaryHex = spec?.primaryColorRaw || colorToHex(spec?.primaryColor);
   $: secondaryHex = spec?.secondaryColorRaw || colorToHex(spec?.secondaryColor);
+
+  // Build mode sections data-driven to avoid duplication
+  $: modeSections = [
+    { label: "Light Mode", mode: spec?.light },
+    { label: "Dark Mode", mode: spec?.dark },
+  ].filter((s) => s.mode);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -52,39 +58,38 @@
     {/if}
   </DescribeSection>
 
-  <!-- Light Mode -->
-  {#if spec?.light}
-    <DescribeSection title="Light Mode">
-      {#if spec.light.primary}
+  <!-- Light / Dark Mode sections -->
+  {#each modeSections as { label, mode } (label)}
+    <DescribeSection title={label}>
+      {#if mode.primary}
         <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
           <span class="text-xs text-fg-secondary">Primary</span>
           <div class="flex items-center gap-x-2">
             <span
               class="inline-block w-3 h-3 rounded-sm border border-border"
-              style="background-color: {spec.light.primary}"
+              style="background-color: {mode.primary}"
             />
-            <span class="text-xs font-mono text-fg-primary"
-              >{spec.light.primary}</span
+            <span class="text-xs font-mono text-fg-primary">{mode.primary}</span
             >
           </div>
         </div>
       {/if}
-      {#if spec.light.secondary}
+      {#if mode.secondary}
         <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
           <span class="text-xs text-fg-secondary">Secondary</span>
           <div class="flex items-center gap-x-2">
             <span
               class="inline-block w-3 h-3 rounded-sm border border-border"
-              style="background-color: {spec.light.secondary}"
+              style="background-color: {mode.secondary}"
             />
             <span class="text-xs font-mono text-fg-primary"
-              >{spec.light.secondary}</span
+              >{mode.secondary}</span
             >
           </div>
         </div>
       {/if}
-      {#if spec.light.variables}
-        {#each Object.entries(spec.light.variables) as [key, val]}
+      {#if mode.variables}
+        {#each Object.entries(mode.variables) as [key, val] (key)}
           <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
             <span class="text-xs text-fg-secondary">{key}</span>
             <div class="flex items-center gap-x-2">
@@ -98,53 +103,5 @@
         {/each}
       {/if}
     </DescribeSection>
-  {/if}
-
-  <!-- Dark Mode -->
-  {#if spec?.dark}
-    <DescribeSection title="Dark Mode">
-      {#if spec.dark.primary}
-        <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-          <span class="text-xs text-fg-secondary">Primary</span>
-          <div class="flex items-center gap-x-2">
-            <span
-              class="inline-block w-3 h-3 rounded-sm border border-border"
-              style="background-color: {spec.dark.primary}"
-            />
-            <span class="text-xs font-mono text-fg-primary"
-              >{spec.dark.primary}</span
-            >
-          </div>
-        </div>
-      {/if}
-      {#if spec.dark.secondary}
-        <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-          <span class="text-xs text-fg-secondary">Secondary</span>
-          <div class="flex items-center gap-x-2">
-            <span
-              class="inline-block w-3 h-3 rounded-sm border border-border"
-              style="background-color: {spec.dark.secondary}"
-            />
-            <span class="text-xs font-mono text-fg-primary"
-              >{spec.dark.secondary}</span
-            >
-          </div>
-        </div>
-      {/if}
-      {#if spec.dark.variables}
-        {#each Object.entries(spec.dark.variables) as [key, val]}
-          <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-            <span class="text-xs text-fg-secondary">{key}</span>
-            <div class="flex items-center gap-x-2">
-              <span
-                class="inline-block w-3 h-3 rounded-sm border border-border"
-                style="background-color: {val}"
-              />
-              <span class="text-xs font-mono text-fg-primary">{val}</span>
-            </div>
-          </div>
-        {/each}
-      {/if}
-    </DescribeSection>
-  {/if}
+  {/each}
 </div>

@@ -24,8 +24,7 @@
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { meta, ...rest } = res;
+    const { meta: _meta, ...rest } = res;
     return JSON.stringify(rest, null, 2);
   }
 

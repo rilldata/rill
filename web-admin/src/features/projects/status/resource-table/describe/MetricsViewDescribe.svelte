@@ -2,6 +2,7 @@
   import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
   import DescribeSection from "./DescribeSection.svelte";
   import DescribeRow from "./DescribeRow.svelte";
+  import SecurityRulesSection from "./SecurityRulesSection.svelte";
   import { formatTimeGrain, formatDayOfWeek, formatMonthOfYear } from "./utils";
 
   export let metricsView: V1MetricsView;
@@ -68,7 +69,7 @@
 
   <!-- Dimensions -->
   <DescribeSection title="Dimensions ({dimensions.length})">
-    {#each dimensions as dim}
+    {#each dimensions as dim (dim.name)}
       <div class="flex flex-col gap-y-0.5">
         <div class="flex items-baseline justify-between gap-x-4 min-h-[20px]">
           <span class="text-xs font-mono text-fg-primary">{dim.name}</span>
@@ -102,7 +103,7 @@
 
   <!-- Measures -->
   <DescribeSection title="Measures ({measures.length})">
-    {#each measures as m}
+    {#each measures as m (m.name)}
       <div class="flex flex-col gap-y-0.5">
         <div class="flex items-baseline justify-between gap-x-4 min-h-[20px]">
           <span class="text-xs font-mono text-fg-primary">{m.name}</span>
@@ -162,80 +163,12 @@
   </DescribeSection>
 
   <!-- Security -->
-  <DescribeSection title="Security Policy">
-    {#if spec?.securityRules?.length}
-      {#each spec.securityRules as rule, i}
-        <div
-          class="flex flex-col gap-y-1 {i > 0
-            ? 'mt-1 pt-1 border-t border-border'
-            : ''}"
-        >
-          {#if rule.access}
-            <div class="flex flex-col gap-y-0.5">
-              <span class="text-[11px] text-fg-secondary font-medium"
-                >Access</span
-              >
-              <DescribeRow
-                label={rule.access.allow ? "Allow" : "Deny"}
-                value={rule.access.conditionExpression || "all"}
-              />
-              {#if rule.access.exclusive}
-                <span class="text-[11px] text-fg-muted pl-2">exclusive</span>
-              {/if}
-            </div>
-          {/if}
-          {#if rule.rowFilter}
-            <div class="flex flex-col gap-y-0.5">
-              <span class="text-[11px] text-fg-secondary font-medium"
-                >Row filter</span
-              >
-              {#if rule.rowFilter.sql}
-                <span class="text-[11px] text-fg-muted font-mono pl-2"
-                  >{rule.rowFilter.sql}</span
-                >
-              {/if}
-              {#if rule.rowFilter.conditionExpression}
-                <DescribeRow
-                  label="Condition"
-                  value={rule.rowFilter.conditionExpression}
-                />
-              {/if}
-            </div>
-          {/if}
-          {#if rule.fieldAccess}
-            <div class="flex flex-col gap-y-0.5">
-              <span class="text-[11px] text-fg-secondary font-medium">
-                Field {rule.fieldAccess.allow ? "include" : "exclude"}
-              </span>
-              {#if rule.fieldAccess.allFields}
-                <span class="text-[11px] text-fg-muted pl-2">all fields</span>
-              {:else if rule.fieldAccess.fields?.length}
-                <span class="text-[11px] text-fg-muted font-mono pl-2">
-                  {rule.fieldAccess.fields.join(", ")}
-                </span>
-              {/if}
-              {#if rule.fieldAccess.conditionExpression}
-                <DescribeRow
-                  label="Condition"
-                  value={rule.fieldAccess.conditionExpression}
-                />
-              {/if}
-              {#if rule.fieldAccess.exclusive}
-                <span class="text-[11px] text-fg-muted pl-2">exclusive</span>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/each}
-    {:else}
-      <span class="text-xs text-fg-muted">None defined</span>
-    {/if}
-  </DescribeSection>
+  <SecurityRulesSection rules={spec?.securityRules} />
 
   <!-- Annotations -->
   <DescribeSection title="Annotations">
     {#if spec?.annotations?.length}
-      {#each spec.annotations as annotation, i}
+      {#each spec.annotations as annotation, i (annotation.name ?? i)}
         <DescribeRow label="Annotation {i + 1}" value={annotation.name} />
         <DescribeRow label="  Table" value={annotation.table} />
         <DescribeRow label="  Model" value={annotation.model} />
