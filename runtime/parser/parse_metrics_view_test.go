@@ -26,7 +26,7 @@ model: m1
 dimensions:
 - name: foo
   expression: id
-  lookup_table: m2 # Expect ref since it is a model in the same project
+  lookup_table: default.m2 # Expect ref to m2 after stripping the schema prefix
   lookup_key_column: id
   lookup_value_column: value
 - name: bar
@@ -80,7 +80,7 @@ measures:
 						Name:              "foo",
 						DisplayName:       "Foo",
 						Expression:        "id",
-						LookupTable:       "m2",
+						LookupTable:       "default.m2",
 						LookupKeyColumn:   "id",
 						LookupValueColumn: "value",
 					},
