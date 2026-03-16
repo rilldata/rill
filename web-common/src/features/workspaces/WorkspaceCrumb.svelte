@@ -111,7 +111,9 @@
       {#if dropdown}
         <DropdownMenu.Root bind:open>
           <DropdownMenu.Trigger
-            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 {open ? 'open' : ''} {current ? 'selected' : ''}"
+            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 {open
+              ? 'open'
+              : ''} {current ? 'selected' : ''}"
           >
             <CrumbTrigger
               {filePath}
@@ -147,11 +149,7 @@
             ? `/files${exampleResource?.meta?.filePaths?.[0]}`
             : "#"}
         >
-          <CrumbTrigger
-            {filePath}
-            kind={resourceKind}
-            label={resourceName}
-          />
+          <CrumbTrigger {filePath} kind={resourceKind} label={resourceName} />
         </a>
       {/if}
     </div>

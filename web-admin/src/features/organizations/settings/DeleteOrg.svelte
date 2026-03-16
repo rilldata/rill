@@ -59,9 +59,7 @@
     onConfirm={deleteOrg}
   >
     <svelte:fragment>
-      <Button type="destructive"
-        >Delete Organization</Button
-      >
+      <Button type="destructive">Delete Organization</Button>
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
 </SettingsContainer>

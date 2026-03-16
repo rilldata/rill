@@ -53,7 +53,6 @@
         <Button
           disabled={!selectedMetricsView}
           large
-         
           type="primary"
           onClick={() =>
             void createResourceAndNavigate(

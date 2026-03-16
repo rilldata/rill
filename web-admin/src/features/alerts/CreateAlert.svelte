@@ -46,7 +46,6 @@
           compact
           disabled={$isCustomTimeRange}
           type="secondary"
-         
           label="Create alert"
         >
           <BellPlusIcon class="inline-flex" size="16px" />

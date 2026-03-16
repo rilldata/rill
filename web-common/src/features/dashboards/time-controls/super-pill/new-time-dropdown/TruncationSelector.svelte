@@ -142,9 +142,7 @@
 
 <DropdownMenu.Root bind:open>
   <Tooltip.Root delayDuration={800}>
-    <Tooltip.Trigger asChild
-      id="truncation-selector-trigger"
-    >
+    <Tooltip.Trigger asChild id="truncation-selector-trigger">
       <DropdownMenu.Trigger
         id="truncation-selector-trigger"
         type="button"
@@ -175,10 +173,7 @@
           {/if}
         </p>
 
-        <span
-          class="flex-none transition-transform"
-          class:-rotate-180={open}
-        >
+        <span class="flex-none transition-transform" class:-rotate-180={open}>
           <CaretDownIcon />
         </span>
       </DropdownMenu.Trigger>
@@ -188,9 +183,7 @@
       <TooltipContent>
         <TooltipTitle>
           <svelte:fragment slot="name">
-            {derivedAnchor.toLocaleString(
-              DateTime.DATETIME_MED_WITH_SECONDS,
-            )}
+            {derivedAnchor.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
           </svelte:fragment>
         </TooltipTitle>
         <TooltipDescription>
@@ -216,11 +209,8 @@
             }}
           >
             <Tooltip.Root delayDuration={800}>
-              <Tooltip.Trigger
-                class="w-full"
-                id="{label}-tooltip-trigger"
-              >
-                  {label}
+              <Tooltip.Trigger class="w-full" id="{label}-tooltip-trigger">
+                {label}
               </Tooltip.Trigger>
 
               {#if timestamp}

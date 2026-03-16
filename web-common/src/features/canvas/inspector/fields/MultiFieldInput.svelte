@@ -42,8 +42,6 @@
           <InputLabel small {label} {id} />
           <button
             aria-label={`Add ${types.join(", ")} fields`}
-
-
             class="text-sm px-2 h-6"
           >
             <PlusIcon size="14px" />

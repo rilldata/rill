@@ -250,9 +250,7 @@
 
     <AlertDialog.Footer>
       <AlertDialog.Cancel asChild>
-        <Button large type="secondary" disabled={saving}
-          >Cancel</Button
-        >
+        <Button large type="secondary" disabled={saving}>Cancel</Button>
       </AlertDialog.Cancel>
 
       <!-- Use a plain button instead of AlertDialog.Action to prevent

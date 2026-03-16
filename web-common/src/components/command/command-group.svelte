@@ -7,10 +7,7 @@
 </script>
 
 <CommandPrimitive.Group
-  class={cn(
-    "text-fg-primary overflow-hidden py-1",
-    className,
-  )}
+  class={cn("text-fg-primary overflow-hidden py-1", className)}
   {...$$restProps}
 >
   <slot />

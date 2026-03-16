@@ -18,15 +18,11 @@
 
     <AlertDialog.Footer>
       <AlertDialog.Cancel asChild>
-        <Button large type="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
+        <Button large type="secondary" onClick={onCancel}>Cancel</Button>
       </AlertDialog.Cancel>
 
       <AlertDialog.Action asChild>
-        <Button large type="primary" onClick={onReplace}>
-          Replace
-        </Button>
+        <Button large type="primary" onClick={onReplace}>Replace</Button>
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

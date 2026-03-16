@@ -67,8 +67,6 @@
       <button
         class:addBorder
         class:active={open}
-
-
         aria-label="Add filter button"
       >
         <Add size="17px" />

@@ -99,12 +99,7 @@
       </Button>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <Button
-            type="tertiary"
-           
-            large
-            forcedStyle="height: 3rem;"
-          >
+          <Button type="tertiary" large forcedStyle="height: 3rem;">
             <PresentationIcon size="16px" />
             Try demo projects
           </Button>

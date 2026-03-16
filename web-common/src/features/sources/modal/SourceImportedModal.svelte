@@ -101,7 +101,6 @@
         </AlertDialog.Cancel>
 
         <Button
-         
           disabled={createDashboardFromTable === null}
           onClick={generateMetrics}
           type="primary"

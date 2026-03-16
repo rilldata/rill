@@ -40,13 +40,7 @@
   }}
 >
   <DropdownMenu.Trigger asChild>
-    <button
-
-
-      class="flex gap-x-1"
-      aria-label="Select time range"
-      type="button"
-    >
+    <button class="flex gap-x-1" aria-label="Select time range" type="button">
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
 
       {#if interval.isValid && showFullRange}

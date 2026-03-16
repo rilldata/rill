@@ -48,7 +48,6 @@
       <AlertDialog.Action asChild>
         <Button
           large
-         
           type={confirmation.action === "delete" ? "destructive" : "primary"}
           onClick={onConfirm}
         >

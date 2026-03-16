@@ -70,7 +70,6 @@
         <Button
           disabled={!selectedMetricsView}
           large
-         
           type="primary"
           onClick={createResource}
         >

@@ -98,12 +98,7 @@
 
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger asChild>
-    <button
-      class:active={open}
-
-
-      aria-label="Add filter button"
-    >
+    <button class:active={open} aria-label="Add filter button">
       <Add size="17px" />
     </button>
   </DropdownMenu.Trigger>

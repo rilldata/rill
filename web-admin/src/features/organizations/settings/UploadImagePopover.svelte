@@ -74,25 +74,27 @@
   }}
 >
   <PopoverTrigger
-      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit {dark ? 'dark' : ''} {!imageUrl ? 'w-24' : 'w-20'}"
-    >
-      <div class="m-auto px-4 w-fit h-10">
-        {#if imageUrl}
-          <img src={imageUrl} alt={label} class="h-10" />
-        {:else}
-          <slot />
-        {/if}
-      </div>
-      {#if !open}
-        <div
-          class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-subtle group-hover:bg-surface-hover w-6 h-6 px-1.5 py-[5px]"
-        >
-          <EditIcon
-            size="16px"
-            className="text-fg-secondary group-hover:text-fg-secondary"
-          />
-        </div>
+    class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit {dark
+      ? 'dark'
+      : ''} {!imageUrl ? 'w-24' : 'w-20'}"
+  >
+    <div class="m-auto px-4 w-fit h-10">
+      {#if imageUrl}
+        <img src={imageUrl} alt={label} class="h-10" />
+      {:else}
+        <slot />
       {/if}
+    </div>
+    {#if !open}
+      <div
+        class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-subtle group-hover:bg-surface-hover w-6 h-6 px-1.5 py-[5px]"
+      >
+        <EditIcon
+          size="16px"
+          className="text-fg-secondary group-hover:text-fg-secondary"
+        />
+      </div>
+    {/if}
   </PopoverTrigger>
   <PopoverContent
     align="start"

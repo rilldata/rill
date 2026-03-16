@@ -37,9 +37,7 @@
 <Popover bind:open={isOpen}>
   <PopoverTrigger asChild>
     <Tooltip distance={8} suppress={isOpen}>
-      <Button type="secondary" selected={isOpen}
-        >Share</Button
-      >
+      <Button type="secondary" selected={isOpen}>Share</Button>
       <TooltipContent slot="tooltip-content">Share dashboard</TooltipContent>
     </Tooltip>
   </PopoverTrigger>

@@ -68,11 +68,7 @@
   <svelte:fragment slot="action">
     <AlertDialog bind:open={dialogOpen}>
       <AlertDialogTrigger asChild>
-        <Button
-         
-          type="secondary-destructive"
-          disabled={isHibernated}
-        >
+        <Button type="secondary-destructive" disabled={isHibernated}>
           Hibernate project
         </Button>
       </AlertDialogTrigger>

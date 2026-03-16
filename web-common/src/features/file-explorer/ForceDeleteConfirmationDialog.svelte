@@ -31,7 +31,6 @@
       <AlertDialog.Action asChild>
         <Button
           large
-         
           onClick={() => {
             handleClose();
             onDelete();
@@ -43,14 +42,7 @@
       </AlertDialog.Action>
 
       <AlertDialog.Cancel asChild>
-        <Button
-          large
-         
-          onClick={handleClose}
-          type="tertiary"
-        >
-          Cancel
-        </Button>
+        <Button large onClick={handleClose} type="tertiary">Cancel</Button>
       </AlertDialog.Cancel>
     </AlertDialog.Footer>
   </AlertDialog.Content>

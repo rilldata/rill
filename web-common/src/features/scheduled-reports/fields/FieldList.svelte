@@ -131,7 +131,6 @@
         <Button
           label={`Add ${label} fields`}
           active={open}
-         
           class="w-[34px] ml-2 border border-dashed border-gray-300"
           compact
           rounded

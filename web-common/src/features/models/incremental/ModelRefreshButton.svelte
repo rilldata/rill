@@ -35,7 +35,6 @@
         <Button
           square
           type="secondary"
-         
           disabled={!isModelIdle || hasUnsavedChanges}
           label="Refresh Incremental Model"
         >

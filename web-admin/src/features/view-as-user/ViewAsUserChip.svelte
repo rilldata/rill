@@ -14,7 +14,6 @@
     <Chip
       removable
       {active}
-     
       removeTooltipText="Clear view"
       onRemove={() => {
         viewAsUserStore.set(null);
