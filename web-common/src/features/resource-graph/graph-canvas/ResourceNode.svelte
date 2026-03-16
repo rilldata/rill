@@ -101,7 +101,6 @@
   ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
   $: rawFilePath = data?.resource?.meta?.filePaths?.[0] ?? null;
-  $: filePath = rawFilePath?.replace(/^\//, "") ?? null;
   $: checkTooltip =
     testCount === 0
       ? "No checks"
