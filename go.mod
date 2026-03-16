@@ -455,3 +455,5 @@ exclude modernc.org/sqlite v1.18.1
 // v5 module but can have backward compatibility issues but keeping it since it is used in test containers and likely unused code path
 // TODO : once we upgrade to v5 module we can replace to v4 which is compatible with v3
 replace github.com/golang-jwt/jwt v3.2.2+incompatible => github.com/golang-jwt/jwt/v5 v5.2.2
+// till fix for startFrom https://github.com/Azure/azure-sdk-for-go/pull/26243 is not merged 
+replace github.com/Azure/azure-sdk-for-go/sdk/storage/azblob => github.com/NamanMahor/azure-sdk-for-go/sdk/storage/azblob v0.0.0-20260313191855-ecc1443e1e8a
