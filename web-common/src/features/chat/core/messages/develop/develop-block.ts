@@ -57,7 +57,7 @@ export function createDevelopBlock(
       const restoredMessage = getLastMessage(messages, [
         MessageSelectors.ById(restoredCall.revert_till_write_call_id),
       ]);
-      return restoredMessage
+      return restoredMessage?.createdOn && nonNullDiffs[0].message.createdOn
         ? restoredMessage.createdOn <= nonNullDiffs[0].message.createdOn
         : false;
     });

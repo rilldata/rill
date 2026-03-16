@@ -8,6 +8,20 @@
   import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
   import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
   import { ToolName } from "@rilldata/web-common/features/chat/core/types.ts";
+  import {
+    createLocalServiceGitPull,
+    createLocalServiceGitStatus,
+    getLocalServiceGitStatusQueryKey,
+  } from "@rilldata/web-common/runtime-client/local-service.ts";
+  import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import {
+    createRuntimeServiceListGitCommits,
+    getRuntimeServiceListGitCommitsQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import HasNewerCommitsDialog from "@rilldata/web-common/features/chat/core/messages/develop/HasNewerCommitsDialog.svelte";
 
   export let block: DevelopBlock;
   export let conversation: Conversation;
@@ -17,8 +31,77 @@
   let restoring = false;
   $: canRestore = block.checkpointCommitHash && block.firstWriteCall;
 
+  const gitStatusQuery = createLocalServiceGitStatus();
+  $: hasRemoteChanges = $gitStatusQuery.data
+    ? $gitStatusQuery.data?.remoteCommits > 0
+    : false;
+
+  const client = useRuntimeClient();
+  $: listCommitsQuery = createRuntimeServiceListGitCommits(
+    client,
+    {},
+    {
+      query: {
+        enabled: Boolean(!block.restored && canRestore),
+      },
+    },
+  );
+  $: hasMoreCommits =
+    $listCommitsQuery.data?.commits?.[0] &&
+    $listCommitsQuery.data.commits[0].commitSha !== block.checkpointCommitHash;
+
+  let remoteChangeDialog = false;
+  const gitPullMutation = createLocalServiceGitPull();
+  $: ({ isPending: githubPullPending, error: githubPullError } =
+    $gitPullMutation);
+  let errorFromGitCommand: Error | null = null;
+  $: error = githubPullError ?? errorFromGitCommand;
+
+  let showNewerCommitsDialog = false;
+
+  async function handleForceFetchRemoteCommits() {
+    errorFromGitCommand = null;
+    const resp = await $gitPullMutation.mutateAsync({
+      discardLocal: true,
+    });
+
+    void queryClient.invalidateQueries({
+      queryKey: getLocalServiceGitStatusQueryKey(),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListGitCommitsQueryKey(client.instanceId, {}),
+    });
+
+    if (!resp.output) {
+      remoteChangeDialog = false;
+      eventBus.emit("notification", {
+        message:
+          "Remote project changes fetched and merged. Your changes have been stashed.",
+      });
+      return;
+    }
+
+    errorFromGitCommand = new Error(resp.output);
+  }
+
   async function restoreChanges() {
-    if (!block.firstWriteCall) return;
+    // We need to pull remote changes before adding a restore commit.
+    if (hasRemoteChanges) {
+      remoteChangeDialog = true;
+      return;
+    }
+
+    if (hasMoreCommits) {
+      showNewerCommitsDialog = true;
+      return;
+    }
+
+    return makeRestoreChangesToolCall();
+  }
+
+  async function makeRestoreChangesToolCall() {
+    if (!block.firstWriteCall) return; // Type safety
+
     restoring = true;
     try {
       await conversation.adhocToolCall(ToolName.RESTORE_CHANGES, {
@@ -76,6 +159,19 @@
     </div>
   </Collapsible.Content>
 </Collapsible.Root>
+
+<ProjectContainsRemoteChangesDialog
+  bind:open={remoteChangeDialog}
+  loading={githubPullPending}
+  {error}
+  onFetchAndMerge={handleForceFetchRemoteCommits}
+/>
+
+<HasNewerCommitsDialog
+  bind:open={showNewerCommitsDialog}
+  referenceCommitSha={block.checkpointCommitHash}
+  onSubmit={() => void makeRestoreChangesToolCall()}
+/>
 
 <style lang="postcss">
   .develop-header {

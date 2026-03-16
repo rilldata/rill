@@ -221,6 +221,12 @@ func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session, path 
 	}
 	defer release()
 
+	// Ensure the project is initialized with a git repo.
+	err = repo.GitInit(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	// Get the status of the repo
 	gitStatus, err := repo.Status(ctx)
 	if err != nil {

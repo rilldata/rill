@@ -297,7 +297,7 @@ export class Conversation {
   }
 
   public async adhocToolCall(
-    tool: ToolName,
+    tool: string,
     context: RuntimeServiceCompleteBody,
   ) {
     // Prevent concurrent operations
@@ -363,7 +363,7 @@ export class Conversation {
   private async startStreaming(request: {
     prompt?: string;
     context?: RuntimeServiceCompleteBody;
-    tool?: ToolName;
+    tool?: string;
   }): Promise<void> {
     this.ensureSSEClient();
     this.sseClient!.stop();
@@ -474,6 +474,7 @@ export class Conversation {
       } else if (response.message.type === MessageType.RESULT) {
         const config = getToolConfig(response.message.tool);
         config?.onResult?.(
+          this.client,
           this.messageById.get(response.message.parentId ?? ""),
           response.message,
         );

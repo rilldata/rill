@@ -334,6 +334,11 @@ func (c *connection) SwitchBranch(ctx context.Context, branchName string, create
 	return nil
 }
 
+// GitInit implements drivers.RepoStore.
+func (c *connection) GitInit(ctx context.Context) error {
+	return gitutil.MaybeInitGit(c.root)
+}
+
 // ListCommits implements drivers.RepoStore.
 func (c *connection) ListCommits(ctx context.Context, pageToken string, limit int) ([]drivers.Commit, string, error) {
 	if !c.isGitRepo() {

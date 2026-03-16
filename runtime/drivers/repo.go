@@ -42,6 +42,9 @@ type RepoStore interface {
 	// The function does not return until the context is cancelled or an error occurs.
 	Watch(ctx context.Context, cb WatchCallback) error
 
+	// GitInit initializes a git repository in the repo root if not already a git repository.
+	// Does not throw if the repo root is already a git repository.
+	GitInit(ctx context.Context) error
 	// ListCommits returns a list of commits in reverse chronological order.
 	// fromCommit is the commit SHA to start from (empty for HEAD). Returns commits and next page token.
 	ListCommits(ctx context.Context, fromCommit string, limit int) (commits []Commit, nextPageToken string, err error)

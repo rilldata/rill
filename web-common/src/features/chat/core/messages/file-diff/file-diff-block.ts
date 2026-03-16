@@ -14,7 +14,7 @@ export interface WriteFileCallData {
 }
 
 /** Result from the write_file tool */
-interface WriteFileResultData {
+export interface WriteFileResultData {
   diff?: string;
   is_new_file?: boolean;
   resources?: Array<{

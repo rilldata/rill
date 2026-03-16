@@ -7,13 +7,17 @@
  * (the main conversation), not tool call UI.
  */
 
-import type { V1Message } from "@rilldata/web-common/runtime-client";
+import {
+  getRuntimeServiceListGitCommitsQueryKey,
+  type V1Message,
+} from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "../../types";
 import { createChartBlock, type ChartBlock } from "../chart/chart-block";
 import {
   createFileDiffBlock,
   type FileDiffBlock,
   type WriteFileCallData,
+  type WriteFileResultData,
 } from "../file-diff/file-diff-block";
 import { goto } from "$app/navigation";
 import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
@@ -26,6 +30,9 @@ import {
   createRestoreChangesBlock,
   type RestoreChangesBlock,
 } from "@rilldata/web-common/features/chat/core/messages/restore/restore-block.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { getLocalServiceGitStatusQueryKey } from "@rilldata/web-common/runtime-client/local-service.ts";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 // =============================================================================
 // RENDER MODES
@@ -75,6 +82,7 @@ export interface ToolConfig {
   /** Used to process any UI action or side effects from tool calls. */
   onCall?: (callMessage: V1Message) => void;
   onResult?: (
+    client: RuntimeClient,
     callMessage: V1Message | undefined,
     resultMessage: V1Message,
   ) => void;
@@ -171,24 +179,43 @@ function handleNavigateToolCall(callMessage: V1Message) {
 
 /**
  * If a file is successfully removed and the removed file was the active page, navigate to the home page.
+ * @param client
  * @param callMessage
  * @param resultMessage
  */
 function handleWriteFilesToolResult(
+  client: RuntimeClient,
   callMessage: V1Message,
   resultMessage: V1Message,
 ) {
   if (
     !callMessage.contentData ||
+    !resultMessage.contentData ||
     resultMessage.contentType === MessageContentType.ERROR
   )
     return;
   try {
     const content = JSON.parse(callMessage.contentData) as WriteFileCallData;
-    if (!content.remove) return;
-    const filePath = addLeadingSlash(content.path);
-    if (isCurrentActivePage(filePath, false)) {
-      void goto("/");
+    if (content.remove) {
+      const filePath = addLeadingSlash(content.path);
+      if (isCurrentActivePage(filePath, false)) {
+        void goto("/");
+      }
+    }
+
+    const responseContent = JSON.parse(
+      resultMessage.contentData,
+    ) as WriteFileResultData;
+    if (responseContent.checkpoint_commit_hash) {
+      void queryClient.invalidateQueries({
+        queryKey: getLocalServiceGitStatusQueryKey(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListGitCommitsQueryKey(
+          client.instanceId,
+          {},
+        ),
+      });
     }
   } catch (err) {
     console.error(err);
