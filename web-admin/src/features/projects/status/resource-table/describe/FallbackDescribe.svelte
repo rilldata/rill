@@ -24,7 +24,9 @@
       }
     }
 
-    const { meta: _meta, ...rest } = res;
+    const rest = Object.fromEntries(
+      Object.entries(res).filter(([key]) => key !== "meta"),
+    );
     return JSON.stringify(rest, null, 2);
   }
 
