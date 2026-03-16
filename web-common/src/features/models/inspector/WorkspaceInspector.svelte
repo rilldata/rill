@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
@@ -276,7 +277,7 @@
         </div>
 
         {#if showColumns}
-          <div transitionslide={{ duration: LIST_SLIDE_DURATION }}>
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ColumnProfile
               {connector}
               {database}

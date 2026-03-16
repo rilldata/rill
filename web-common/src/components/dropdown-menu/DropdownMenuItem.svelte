@@ -16,6 +16,8 @@
     inset?: boolean;
     type?: ItemType;
     href?: string;
+    target?: string;
+    rel?: string;
     children?: Snippet;
   } = $props();
 </script>

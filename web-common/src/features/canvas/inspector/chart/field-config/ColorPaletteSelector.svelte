@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -102,7 +103,7 @@
     {#if isExpanded}
       <div
         class="px-1 py-2 overflow-y-auto space-y-1"
-        transitionslide={{ duration: 200 }}
+        transition:slide={{ duration: 200 }}
       >
         {#each displayedColorMappings as { value, color } (value)}
           <ColorInput

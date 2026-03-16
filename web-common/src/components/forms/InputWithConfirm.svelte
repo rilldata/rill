@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scale } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
@@ -76,7 +77,7 @@
     {#if showIndicator}
       <span
         class="w-1.5 h-1.5 bg-gray-300 rounded flex-none mr-1"
-        transitionscale={{ duration: 200, easing: cubicOut }}
+        transition:scale={{ duration: 200, easing: cubicOut }}
       ></span>
     {/if}
 

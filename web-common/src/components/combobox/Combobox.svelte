@@ -99,6 +99,7 @@
   type="multiple"
   value={selectedValues}
   onValueChange={handleSelectedChange}
+  inputValue={searchValue}
   {disabled}
 >
   <Combobox.Input
@@ -109,7 +110,9 @@
     aria-describedby={error ? "combobox-error" : undefined}
     {disabled}
     {required}
-    bind:value={searchValue}
+    oninput={(e) => {
+      searchValue = e.currentTarget.value;
+    }}
   />
 
   {#if error}

@@ -92,7 +92,7 @@
       class:size-full={!$dynamicHeight}
       role="presentation"
       onmousedown={(e) => {
-        if (e.target === e.currentTarget) removeActiveCell(e);
+        if (e.target === e.currentTarget) removeActiveCell();
       }}
     >
       <PivotToolbar

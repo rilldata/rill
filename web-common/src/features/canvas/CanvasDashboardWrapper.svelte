@@ -39,7 +39,7 @@
         role="presentation"
         class="bg-surface-subtle border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
         onclick={(e) => {
-          if (e.target === e.currentTarget) onClick(e);
+          if (e.target === e.currentTarget) onClick();
         }}
       >
         <CanvasFilters {canvasName} {maxWidth} {builder} />
@@ -55,7 +55,7 @@
       class:size-full={!$dynamicHeight}
       class:pb-48={!embedded}
       onclick={(e) => {
-        if (e.target === e.currentTarget) onClick(e);
+        if (e.target === e.currentTarget) onClick();
       }}
     >
       <div

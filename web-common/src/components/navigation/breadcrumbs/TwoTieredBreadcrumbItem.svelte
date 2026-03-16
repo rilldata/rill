@@ -59,7 +59,7 @@
                     <DropdownMenu.Item
                       class="cursor-pointer"
                       href={subItem.href}
-                      preloadData={false}
+                      data-sveltekit-preload-data="false"
                     >
                       <span class="text-xs text-fg-primary flex-grow">
                         {subItem.label}
@@ -73,7 +73,7 @@
               <DropdownMenu.Item
                 class="cursor-pointer"
                 href={subItems.href}
-                preloadData={false}
+                data-sveltekit-preload-data="false"
               >
                 <span class="text-xs text-fg-primary flex-grow">
                   {subItems.label}

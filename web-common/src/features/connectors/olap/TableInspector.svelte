@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
@@ -73,7 +74,7 @@
         </CollapsibleSectionTitle>
       </div>
 
-      <div transitionslide={{ duration: LIST_SLIDE_DURATION }}>
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
         <ColumnProfile
           {connector}
           {database}

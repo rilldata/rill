@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import DOMPurify from "dompurify";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
@@ -77,7 +78,7 @@
 </script>
 
 {#if topKCopy && totalRows}
-  <div transitionslide={{ duration: LIST_SLIDE_DURATION }}>
+  <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
     {#each topKCopy.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage

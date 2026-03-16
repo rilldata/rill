@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -207,7 +208,7 @@
         {/if}
       </DropdownMenu.Content>
 
-      <div slot="tooltip-content" transitionfly={{ duration: 300, y: 4 }}>
+      <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
         <TooltipContent maxWidth="400px">
           Choose measures to display
         </TooltipContent>

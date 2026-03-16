@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as Popover from "@rilldata/web-common/components/popover/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -35,7 +36,6 @@
 
 <Popover.Root
   bind:open
-  preventScroll
   onOpenChange={() => {
     if (open && pinned !== curPinned) {
       toggleFilterPin?.(name, metricsViewNames);
@@ -69,7 +69,7 @@
           slot="body"
         />
       </Chip>
-      <div slot="tooltip-content" transitionfly={{ duration: 100, y: 4 }}>
+      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
         <TooltipContent maxWidth="400px">
           <TooltipTitle>
             <svelte:fragment slot="name">{name}</svelte:fragment>

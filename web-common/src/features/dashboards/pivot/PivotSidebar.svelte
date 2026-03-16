@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { Search } from "@rilldata/web-common/components/search";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -68,7 +69,7 @@
 <div
   class="sidebar"
   bind:clientHeight={sidebarHeight}
-  transitionslide={{ axis: "x" }}
+  transition:slide={{ axis: "x" }}
 >
   <div class="input-wrapper sticky top-0 z-10 bg-surface-background">
     <Search theme background bind:value={searchText} />

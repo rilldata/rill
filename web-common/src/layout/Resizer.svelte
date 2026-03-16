@@ -92,7 +92,7 @@
   }}
   ondblclick={(e) => {
     e.stopPropagation();
-    handleDoubleClick(e);
+    handleDoubleClick();
   }}
   onmouseenter={() => {
     if (timeout) clearTimeout(timeout);

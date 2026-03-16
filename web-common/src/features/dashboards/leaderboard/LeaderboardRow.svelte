@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
@@ -212,7 +213,7 @@
     {#if previousValueString && hovered}
       <span
         class="opacity-50 whitespace-nowrap font-normal"
-        transitionslide={{ axis: "x", duration: 200 }}
+        transition:slide={{ axis: "x", duration: 200 }}
       >
         {previousValueString} →
       </span>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
@@ -46,7 +47,7 @@
     {#if data.connectors.length === 0}
       <span class="message"> No data found. Add data to get started! </span>
     {:else}
-      <ol transitionslide={{ duration }}>
+      <ol transition:slide={{ duration }}>
         {#each data.connectors as connector (connector.name)}
           <ConnectorEntry {connector} {store} />
         {/each}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { Database } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { extractErrorMessage } from "../../../lib/errors";
@@ -48,7 +49,7 @@
     </button>
   {/if}
 
-  <ol transitionslide={{ duration }}>
+  <ol transition:slide={{ duration }}>
     {#if expanded}
       {#if error}
         <span class="message">Error: {extractErrorMessage(error)}</span>

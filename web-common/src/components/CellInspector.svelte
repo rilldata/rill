@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { onMount, onDestroy } from "svelte";
   import { formatInteger } from "../lib/formatters";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
@@ -143,7 +144,7 @@
     aria-labelledby="cell-inspector-title"
     aria-describedby="cell-inspector-content"
     aria-modal="true"
-    transitionfly={{ duration: 200, x: 200, easing: cubicOut }}
+    transition:fly={{ duration: 200, x: 200, easing: cubicOut }}
   >
     <div
       class="w-full min-w-[576px] max-w-2xl max-h-[80vh] flex flex-col rounded-lg"

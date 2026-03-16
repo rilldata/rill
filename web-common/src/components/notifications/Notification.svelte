@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scale } from "svelte/transition";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/events";
   import { onMount } from "svelte";
@@ -26,7 +27,7 @@
 
 <aside
   use:portal
-  transitionscale={{ duration: 200, start: 0.98, opacity: 0 }}
+  transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
   class="{location} {justify}"
   aria-label="Notification"
 >

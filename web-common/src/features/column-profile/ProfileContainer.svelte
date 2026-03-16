@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import {
     COLUMN_PROFILE_CONFIG,
@@ -91,7 +92,7 @@
     </div>
   </button>
   {#if active && $$slots["details"]}
-    <div class="w-full" transitionslide={{ duration: LIST_SLIDE_DURATION }}>
+    <div class="w-full" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
       <slot name="details" />
     </div>
   {/if}

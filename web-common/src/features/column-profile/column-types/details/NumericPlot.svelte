@@ -301,7 +301,7 @@ Otherwise, the page will jump around as the data is fetched.
 
         <!-- topK focus indicator -->
         {#if focusPoint?.count !== undefined && focusPoint?.value && topK && summaryMode === "topk"}
-          <g transitionfade={{ duration: 200 }}>
+          <g transition:fade={{ duration: 200 }}>
             <line
               x1={$tweenedFocusX}
               x2={$tweenedFocusX}

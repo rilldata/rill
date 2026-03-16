@@ -13,7 +13,7 @@
     class="pan-button"
     onclick={(e) => {
       e.stopPropagation();
-      onClick(e);
+      onClick();
     }}
   />
 </g>

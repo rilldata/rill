@@ -28,7 +28,7 @@
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
   import { onMount } from "svelte";
-  import type { Readable } from "svelte/motion";
+  import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
   import type {

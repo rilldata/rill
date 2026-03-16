@@ -44,10 +44,7 @@
 >
   {#if editable}
     <!-- Editable mode: Show dropdown with explore option -->
-    <DropdownMenu.Root
-      bind:open={dropdownOpen}
-      portal=".dashboard-theme-boundary"
-    >
+    <DropdownMenu.Root bind:open={dropdownOpen}>
       <DropdownMenu.Trigger
         class="size-7 grid place-content-center bg-surface-card hover:brightness-[85%] active:brightness-75"
       >

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -48,7 +49,7 @@
         </div>
       </Button>
 
-      <div slot="tooltip-content" transitionfly={{ duration: 300, y: 4 }}>
+      <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
         <TooltipContent maxWidth="400px">
           {tooltipText}
         </TooltipContent>

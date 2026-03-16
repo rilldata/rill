@@ -177,7 +177,7 @@
     bind:this={button}
     onclick={(e) => {
       e.stopPropagation();
-      handleClick(e);
+      handleClick();
     }}
     aria-label={priorRange ? "Undo zoom" : "Zoom"}
   >

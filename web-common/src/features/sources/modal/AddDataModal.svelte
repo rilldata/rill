@@ -210,8 +210,6 @@
         await onCancelDialog();
       }
     }}
-    closeOnEscape={!isSubmittingForm}
-    closeOnOutsideClick={!isSubmittingForm}
   >
     <Dialog.Content
       class={cn(
@@ -220,6 +218,8 @@
         step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}
+      escapeKeydownBehavior={isSubmittingForm ? "ignore" : "close"}
+      interactOutsideBehavior={isSubmittingForm ? "ignore" : "close"}
     >
       {#if step === 1}
         {#if isModelingSupported}

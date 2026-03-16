@@ -4,6 +4,7 @@
   Defaults to tealblues scheme but allows switching to custom gradient mode.
 -->
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
@@ -160,7 +161,7 @@
 
 {#if colorRangeConfig?.enable}
   <div>
-    <div class="space-y-2" transitionslide={{ duration: 200 }}>
+    <div class="space-y-2" transition:slide={{ duration: 200 }}>
       <!-- Mode Switcher -->
       <FieldSwitcher
         small

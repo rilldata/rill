@@ -8,7 +8,7 @@
     createQueryServiceMetricsViewTimeSeries,
   } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import type { Readable } from "svelte/motion";
+  import type { Readable } from "svelte/store";
   import type { KPISpec } from ".";
   import { KPI } from ".";
   import { getCanvasStore } from "../../state-managers/state-managers";

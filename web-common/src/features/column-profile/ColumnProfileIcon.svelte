@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade } from "svelte/transition";
   import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -13,7 +14,7 @@
     {#key isFetching}
       <div
         class="absolute m-auto grid place-items-center"
-        transitionfade={{ duration: LIST_SLIDE_DURATION }}
+        transition:fade={{ duration: LIST_SLIDE_DURATION }}
         style:width="16px"
         style:height="16px"
       >

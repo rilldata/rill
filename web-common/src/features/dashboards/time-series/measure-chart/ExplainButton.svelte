@@ -13,7 +13,7 @@
   style:top="{plotBounds.top + plotBounds.height + 2}px"
   onclick={(e) => {
     e.stopPropagation();
-    onClick(e);
+    onClick();
   }}
 >
   <Bot size={14} class="stroke-primary -mt-0.5" />

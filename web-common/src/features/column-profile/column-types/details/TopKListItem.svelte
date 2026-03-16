@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import BarAndLabel from "@rilldata/web-common/components/BarAndLabel.svelte";
 
   export let value: number; // should be between 0 and 1.
@@ -22,7 +23,7 @@
   onfocus={onHover}
   onmouseleave={onLeave}
   onmouseover={onHover}
-  transitionslide={{ duration: 200 }}
+  transition:slide={{ duration: 200 }}
 >
   <BarAndLabel
     {color}

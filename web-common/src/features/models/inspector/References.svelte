@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
@@ -63,7 +64,7 @@
     </div>
 
     {#if showReferences}
-      <div transitionslide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
         {#each refs as reference, index (reference.name)}
           {@const resource = referencedResources[index]}
           {@const cardinality = referencedResourcesCardinalities[index]}

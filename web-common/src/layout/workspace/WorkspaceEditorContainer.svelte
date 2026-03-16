@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
 
@@ -19,7 +20,7 @@
   {#if error && showError}
     <div
       role="status"
-      transitionslide={{ duration: LIST_SLIDE_DURATION }}
+      transition:slide={{ duration: LIST_SLIDE_DURATION }}
       class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto"
     >
       <div class="flex gap-x-2 items-center">

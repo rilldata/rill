@@ -60,7 +60,7 @@
   id={formId}
   onsubmit={(e) => {
     e.preventDefault();
-    submit(e);
+    submit();
   }}
   use:enhance
 >

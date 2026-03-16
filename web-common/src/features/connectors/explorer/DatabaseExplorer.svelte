@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
@@ -41,7 +42,7 @@
     {#if data.length === 0}
       <span class="message pl-6">No tables found</span>
     {:else}
-      <ol transitionslide={{ duration }}>
+      <ol transition:slide={{ duration }}>
         {#each data as database (database)}
           <DatabaseEntry {connector} {database} {store} />
         {/each}

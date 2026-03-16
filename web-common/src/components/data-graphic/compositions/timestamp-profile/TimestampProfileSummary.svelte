@@ -27,7 +27,7 @@
     TIME_GRAIN_YEAR: "yearly",
   };
 
-  let displayEstimatedSmallestTimegrain: V1TimeGrain;
+  let displayEstimatedSmallestTimegrain: string;
   $: displayEstimatedSmallestTimegrain =
     NicerTimeGrain?.[estimatedSmallestTimeGrain] || estimatedSmallestTimeGrain;
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
@@ -794,7 +795,7 @@
     {#if parseError}
       <div
         role="status"
-        transitionslide={{ duration: LIST_SLIDE_DURATION }}
+        transition:slide={{ duration: LIST_SLIDE_DURATION }}
         class="flex items-center gap-x-2 border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-40 overflow-auto"
       >
         <CancelCircle className="text-destructive" />

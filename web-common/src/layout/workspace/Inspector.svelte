@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
 
@@ -20,7 +21,7 @@
   <aside
     class="inspector-wrapper"
     style:width="{width + 8}px"
-    transitionslide={{ axis: "x", duration: 500 }}
+    transition:slide={{ axis: "x", duration: 500 }}
     aria-label="Inspector Panel"
   >
     <Resizer

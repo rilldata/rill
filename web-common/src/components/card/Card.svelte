@@ -6,7 +6,8 @@
   export let redirect = false;
   export let href = "/";
   export let imageUrl = "";
-  export let onclick = undefined;
+  export let onclick: ((e: MouseEvent) => void | Promise<void>) | undefined =
+    undefined;
 </script>
 
 <a

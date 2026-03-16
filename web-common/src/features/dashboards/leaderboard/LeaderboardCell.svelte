@@ -76,8 +76,8 @@
 >
   <Tooltip.Root
     bind:open={tooltipActive}
-    openDelay={1000}
-    closeOnPointerDown={false}
+    delayDuration={1000}
+    disableCloseOnTriggerClick
   >
     <Tooltip.Trigger {disabled} class="w-full h-full text-inherit">
       <slot />

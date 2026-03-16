@@ -122,7 +122,7 @@
   class:no-margin={noMargin}
   onsubmit={(e) => {
     e.preventDefault();
-    sendMessage(e);
+    sendMessage();
   }}
 >
   <div class="chat-input-container" bind:this={element}></div>

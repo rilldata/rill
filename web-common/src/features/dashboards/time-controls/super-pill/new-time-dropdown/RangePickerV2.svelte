@@ -372,7 +372,7 @@
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-border my-1"></div>
 
-            <Popover.Root portal="#rill-portal" bind:open={timeZonePickerOpen}>
+            <Popover.Root bind:open={timeZonePickerOpen}>
               <Popover.Trigger
                 onclick={() => {
                   showCalendarPicker = false;
@@ -420,7 +420,7 @@
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1"></div>
 
-            <Popover.Root portal="#rill-portal" bind:open={timeAxisPickerOpen}>
+            <Popover.Root bind:open={timeAxisPickerOpen}>
               <Popover.Trigger
                 id="time-axis-trigger-{context}"
                 onclick={() => {

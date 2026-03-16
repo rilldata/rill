@@ -302,8 +302,8 @@
   }
 </script>
 
-<Dialog.Root bind:open closeOnEscape={false}>
-  <Dialog.Content class="min-w-[900px]">
+<Dialog.Root bind:open>
+  <Dialog.Content class="min-w-[900px]" escapeKeydownBehavior="ignore">
     <Dialog.Title>Schedule report</Dialog.Title>
 
     <BaseScheduledReportForm

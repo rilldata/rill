@@ -52,6 +52,7 @@
       currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
+  export let oninput: ((e: Event) => void) | undefined = undefined;
   export let onChange: (newValue: string) => void = voidFunction;
   export let onBlur: (
     e: FocusEvent & {
@@ -174,6 +175,7 @@
           oninput={(e) => {
             value = e.currentTarget.value;
             onInput(value, e);
+            oninput?.(e);
           }}
           onkeydown={onKeydown}
           onblur={onElementBlur}
@@ -198,10 +200,12 @@
               } else {
                 value = e.currentTarget.valueAsNumber;
               }
+              oninput?.(e);
               return;
             }
             value = e.currentTarget.value;
             onInput(value, e);
+            oninput?.(e);
           }}
           onkeydown={onKeydown}
           onblur={onElementBlur}

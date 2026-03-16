@@ -70,7 +70,7 @@
           onblur={blurOnRemove}
           onclick={(e) => {
             e.stopPropagation();
-            onRemove(e);
+            onRemove();
           }}
           type="button"
         >
