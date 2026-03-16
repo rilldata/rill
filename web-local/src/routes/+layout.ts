@@ -32,7 +32,7 @@ export async function load({ url, depends, untrack }) {
     cachedMetadata = await localServiceGetMetadata();
   }
   const metadata = cachedMetadata;
-  const previewMode = true; // TEMP: force preview mode for testing
+  const previewMode = metadata.previewMode ?? false;
 
   // Enforce mode-based route locking
   if (previewMode) {
