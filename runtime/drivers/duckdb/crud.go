@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -129,11 +128,9 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}()
 			}
 
-			// Create a temporary table with the new data.
-			// ROW_NUMBER() OVER () adds a stable, sequential row number without sorting,
-			// enabling deterministic batch pagination for the DELETE phase below.
-			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT ROW_NUMBER() OVER () AS __rill_row_num, * FROM (%s\n))", safeSQLName(tmp), sql))
+			// Create a temporary table with the new data
+			tmp := fmt.Sprintf("__rill_temp_%s", name)
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
@@ -205,8 +202,8 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 
 			// Create a temporary table with the new data
-			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			tmp := fmt.Sprintf("__rill_temp_%s", name)
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
