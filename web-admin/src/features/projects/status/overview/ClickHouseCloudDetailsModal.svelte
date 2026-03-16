@@ -17,7 +17,6 @@
   export let status: string | undefined = undefined;
   export let provider: string | undefined = undefined;
   export let region: string | undefined = undefined;
-  export let tier: string | undefined = undefined;
   export let minMemoryGb: number | undefined = undefined;
   export let maxMemoryGb: number | undefined = undefined;
   export let replicas: number | undefined = undefined;
@@ -33,7 +32,6 @@
   $: displayStatus = (syncedData?.cloud_status as string) ?? status;
   $: displayProvider = (syncedData?.cloud_provider as string) ?? provider;
   $: displayRegion = (syncedData?.cloud_region as string) ?? region;
-  $: displayTier = (syncedData?.cloud_tier as string) ?? tier;
   $: displayMinMemory = (syncedData?.cloud_min_memory_gb as number) ?? minMemoryGb;
   $: displayMaxMemory = (syncedData?.cloud_max_memory_gb as number) ?? maxMemoryGb;
   $: displayReplicas = (syncedData?.cloud_num_replicas as number) ?? replicas;
@@ -105,14 +103,20 @@
         <span class="detail-value">{displayRegion ?? "—"}</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">Tier</span>
-        <span class="detail-value capitalize">{displayTier ?? "—"}</span>
-      </div>
-      <div class="detail-row">
         <span class="detail-label">Memory</span>
         <span class="detail-value">
           {#if displayMinMemory != null && displayMaxMemory != null}
             {displayMinMemory} GB – {displayMaxMemory} GB
+          {:else}
+            —
+          {/if}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">vCPU</span>
+        <span class="detail-value">
+          {#if displayMaxMemory != null}
+            {displayMaxMemory / 4}
           {:else}
             —
           {/if}

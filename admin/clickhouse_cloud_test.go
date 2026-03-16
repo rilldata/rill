@@ -7,27 +7,27 @@ func TestCHCMinSlotsForMemory(t *testing.T) {
 		memoryGB float64
 		want     int
 	}{
-		// Exact tier boundaries
-		{8, 4},
-		{12, 6},
-		{16, 8},
-		{32, 16},
-		{64, 32},
-		{120, 60},
+		// Exact tier boundaries (1 slot = 4 GB)
+		{8, 2},
+		{12, 3},
+		{16, 4},
+		{32, 8},
+		{64, 16},
+		{120, 30},
 		// Below smallest tier
-		{4, 4},
-		{1, 4},
+		{4, 2},
+		{1, 2},
 		// Between tiers: rounds up to next tier
-		{10, 6},
-		{14, 8},
-		{24, 16},
-		{48, 32},
-		{96, 60},
+		{10, 3},
+		{14, 4},
+		{24, 8},
+		{48, 16},
+		{96, 30},
 		// Above largest tier: clamps to biggest
-		{128, 60},
-		{256, 60},
+		{128, 30},
+		{256, 30},
 		// Edge: zero
-		{0, 4},
+		{0, 2},
 	}
 
 	for _, tt := range tests {

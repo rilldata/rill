@@ -1,17 +1,17 @@
 package admin
 
 // CHCTiers maps ClickHouse Cloud cluster memory (GB per replica) to minimum Rill slots.
-// Each tier's memory = slots * 2 GB.
+// Each slot provides 1 CPU / 4 GB memory, so slots = ceil(memoryGB / 4).
 var CHCTiers = []struct {
 	MemoryGB int
 	Slots    int
 }{
-	{8, 4},
-	{12, 6},
-	{16, 8},
-	{32, 16},
-	{64, 32},
-	{120, 60},
+	{8, 2},
+	{12, 3},
+	{16, 4},
+	{32, 8},
+	{64, 16},
+	{120, 30},
 }
 
 // CHCMinSlotsForMemory returns the minimum Rill slots for a given CHC cluster memory (GB per replica).

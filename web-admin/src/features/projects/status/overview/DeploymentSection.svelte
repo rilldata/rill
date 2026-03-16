@@ -463,7 +463,6 @@
     status={cloudStatus}
     provider={cloudProvider}
     region={cloudRegion}
-    tier={cloudTier}
     minMemoryGb={cloudMinMemory}
     maxMemoryGb={cloudMaxMemory}
     replicas={cloudReplicas}
