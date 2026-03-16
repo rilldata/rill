@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 	"go.uber.org/zap"
 )
@@ -134,7 +135,9 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return err
 			}
 			defer func() {
-				_, err := conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
+				bgctx, cancel := graceful.WithMinimumDuration(ctx, time.Second*10)
+				defer cancel()
+				_, err := conn.ExecContext(bgctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
 				if err != nil {
 					c.logger.Warn("failed to drop temporary table", zap.Error(err))
 				}
@@ -201,7 +204,9 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return err
 			}
 			defer func() {
-				_, err := conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
+				bgctx, cancel := graceful.WithMinimumDuration(ctx, time.Second*10)
+				defer cancel()
+				_, err := conn.ExecContext(bgctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
 				if err != nil {
 					c.logger.Warn("failed to drop temporary table", zap.Error(err))
 				}
