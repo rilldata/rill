@@ -12,7 +12,7 @@
   import UserRoleCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserRoleCell.svelte";
   import UserGroupsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserGroupsCell.svelte";
   import UserProjectsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserProjectsCell.svelte";
-  import { flexRender, type ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import type {
     InfiniteData,
     InfiniteQueryObserverResult,
@@ -52,7 +52,7 @@
     header: "User",
     enableSorting: false,
     cell: ({ row }) =>
-      flexRender(UserCompositeCell, {
+      renderComponent(UserCompositeCell, {
         name: row.original.userName ?? row.original.email,
         email: row.original.userEmail,
         isCurrentUser: row.original.userEmail === currentUserEmail,
@@ -68,7 +68,7 @@
     accessorKey: "roleName",
     header: "Organization Role",
     cell: ({ row }) =>
-      flexRender(UserRoleCell, {
+      renderComponent(UserRoleCell, {
         email: row.original.userEmail,
         role: row.original.roleName,
         isCurrentUser: row.original.userEmail === currentUserEmail,
@@ -85,7 +85,7 @@
     accessorKey: "usergroupsCount",
     header: "Groups",
     cell: ({ row }) =>
-      flexRender(UserGroupsCell, {
+      renderComponent(UserGroupsCell, {
         userId: row.original.userId,
         organization,
         groupCount: row.original.usergroupsCount ?? 0,
@@ -100,7 +100,7 @@
     accessorKey: "projectsCount",
     header: "Projects",
     cell: ({ row }) =>
-      flexRender(UserProjectsCell, {
+      renderComponent(UserProjectsCell, {
         organization,
         userId: row.original.userId,
         projectCount: row.original.projectsCount ?? 0,
@@ -115,7 +115,7 @@
     header: "",
     enableSorting: false,
     cell: ({ row }) =>
-      flexRender(UserActionsCell, {
+      renderComponent(UserActionsCell, {
         email: row.original.userEmail,
         role: row.original.roleName,
         isCurrentUser: row.original.userEmail === currentUserEmail,

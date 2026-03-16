@@ -3,7 +3,7 @@
   import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
-  import { flexRender } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import { useReport } from "../selectors";
   import NoRunsYet from "./NoRunsYet.svelte";
   import ReportHistoryTableCompositeCell from "./ReportHistoryTableCompositeCell.svelte";
@@ -23,7 +23,7 @@
     {
       id: "composite",
       cell: (info) =>
-        flexRender(ReportHistoryTableCompositeCell, {
+        renderComponent(ReportHistoryTableCompositeCell, {
           reportTime: info.row.original.reportTime,
           timeZone:
             $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
