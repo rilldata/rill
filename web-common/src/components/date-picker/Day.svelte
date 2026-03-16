@@ -47,6 +47,16 @@
   ): OverlapType | undefined {
     const evaluatedInterval = potentialInterval ?? interval;
 
+    const isZeroInterval = evaluatedInterval.start.equals(
+      evaluatedInterval.end,
+    );
+    // Safeguard for zero intervals. Show as a full circle for the relevant day only.
+    if (isZeroInterval) {
+      return areSameDay(evaluatedInterval.start, date)
+        ? OverlapType.FULL_INTERVAL
+        : undefined;
+    }
+
     if (areSameDay(evaluatedInterval.start, date)) {
       if (areSameDay(evaluatedInterval.end.minus({ millisecond: 1 }), date))
         return OverlapType.FULL_INTERVAL;

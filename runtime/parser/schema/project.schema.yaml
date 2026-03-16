@@ -307,6 +307,8 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
+        # See /developers/build/connectors/data-source/delta for configuration details.
         - type: object
           title: Druid
           properties:
@@ -2028,7 +2030,19 @@ definitions:
                   type:
                     - string
                     - boolean
-                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
+                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)
+                lookup_table:
+                  type: string
+                  description: the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details
+                lookup_key_column:
+                  type: string
+                  description: the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table
+                lookup_value_column:
+                  type: string
+                  description: the attribute column in the lookup dictionary whose values will be displayed for this dimension
+                lookup_default_expression:
+                  type: string
+                  description: an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
               anyOf:
                 - required:
                     - column
@@ -3369,11 +3383,32 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
-        examples: 
+        examples:
           - type: api
             resource_status:
               where_error: true
- 
+
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - type: api
+            union:
+              - connector: duckdb
+                sql: SELECT 1
+              - connector: clickhouse
+                sql: SELECT 2
+
   data_properties:
     oneOf:
       - title: SQL Query
@@ -3445,6 +3480,26 @@ definitions:
           -
             resource_status:
               where_error: true
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - union:
+              - glob:
+                  path: s3://bucket/year=*/month=*
+              - glob:
+                  path: s3://bucket/year=*/month=*/day=*
+                  last: 30
       - title: AI Resolver
         type: object
         description: Uses AI to generate insights and analysis from metrics data. Only available for reports.

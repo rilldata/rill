@@ -5,6 +5,7 @@ import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 import ApacheIcebergIcon from "../../components/icons/connectors/ApacheIcebergIcon.svelte";
+import DeltaLakeIcon from "../../components/icons/connectors/DeltaLakeIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
@@ -27,6 +28,7 @@ export const connectorIconMapping = {
   bigquery: GoogleBigQueryIcon,
   claude: ClaudeIcon,
   clickhouse: ClickHouseIcon,
+  delta: DeltaLakeIcon,
   clickhousecloud: ClickHouseCloudIcon,
   gemini: GeminiIcon,
   motherduck: MotherDuckIcon,

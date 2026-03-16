@@ -477,8 +477,8 @@
             minTimeGrain={V1TimeGrainToDateTimeUnit[
               smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
             ]}
-            {maxDate}
             {minDate}
+            {maxDate}
             onApply={() => {
               if (searchValue) handleRangeSelect(searchValue);
             }}

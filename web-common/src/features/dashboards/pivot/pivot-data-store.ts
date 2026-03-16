@@ -729,7 +729,7 @@ export const usePivotForExplore = memoizeMetricsStore<PivotDataStore>(
       runtimeClient: ctx.runtimeClient,
       metricsViewName: ctx.metricsViewName,
       queryClient: ctx.queryClient,
-      enabled: !!ctx.dashboardStore,
+      enabled: readable(!!ctx.dashboardStore),
     };
     return createPivotDataStore(pivotDashboardContext, pivotConfig);
   },
