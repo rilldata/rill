@@ -1,11 +1,44 @@
-// Live Connect tiers shared between the modal and tests
+const SLOT_RATE_PER_HR = 0.03;
+const HOURS_PER_MONTH = 730;
+
+function tier(slots: number) {
+  return {
+    slots,
+    instance: `${slots * 2}GiB / ${Math.max(1, slots / 2)}vCPU`,
+    rillBill: Math.round(slots * SLOT_RATE_PER_HR * HOURS_PER_MONTH),
+  };
+}
+
+// Popular tiers shown by default
+export const POPULAR_LIVE_CONNECT_TIERS = [
+  tier(4),
+  tier(6),
+  tier(8),
+  tier(16),
+  tier(32),
+  tier(60),
+];
+
+// All available tiers including intermediate sizes
 export const LIVE_CONNECT_TIERS = [
-  { slots: 4, instance: "8GiB / 2vCPU", rillBill: 99 },
-  { slots: 6, instance: "12GiB / 3vCPU", rillBill: 130 },
-  { slots: 8, instance: "16GiB / 4vCPU", rillBill: 175 },
-  { slots: 16, instance: "32GiB / 8vCPU", rillBill: 350 },
-  { slots: 32, instance: "64GiB / 16vCPU", rillBill: 700 },
-  { slots: 60, instance: "120GiB / 30vCPU", rillBill: 1300 },
+  tier(4),
+  tier(6),
+  tier(8),
+  tier(10),
+  tier(12),
+  tier(14),
+  tier(16),
+  tier(20),
+  tier(24),
+  tier(28),
+  tier(32),
+  tier(36),
+  tier(40),
+  tier(44),
+  tier(48),
+  tier(52),
+  tier(56),
+  tier(60),
 ];
 
 /**

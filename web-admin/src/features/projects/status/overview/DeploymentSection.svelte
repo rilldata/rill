@@ -21,6 +21,8 @@
     getStatusLabel,
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ProjectClone from "./ProjectClone.svelte";
   import ManageSlotsModal from "./ManageSlotsModal.svelte";
   import ClickHouseCloudKeyModal from "./ClickHouseCloudKeyModal.svelte";
@@ -128,7 +130,19 @@
     | number
     | undefined;
   $: hasCloudDetails = !!cloudServiceName;
-  $: isChcHibernated = cloudStatus === "idle" || cloudStatus === "stopped";
+  $: chcAutoScaleAnnotation =
+    projectData?.annotations?.["rill.dev/chc-auto-scaled-slots"] === "true";
+  $: isChcHibernated =
+    cloudStatus === "idle" ||
+    cloudStatus === "stopped" ||
+    cloudStatus === "stopping" ||
+    // If annotation is set and status is unknown, treat as hibernated
+    (chcAutoScaleAnnotation && !cloudStatus);
+  // CHC is running again but slots haven't been restored yet
+  $: isChcRestoring =
+    !isChcHibernated &&
+    cloudStatus === "running" &&
+    chcAutoScaleAnnotation;
   $: isChcWakingUp = cloudStatus === "idle";
 
   let chcDetailsModalOpen = false;
@@ -218,6 +232,13 @@
   }
   // Reset required mode when slots modal closes
   $: if (!slotsModalOpen) slotsRequiredMode = false;
+
+  // CHC auto-scaling: detect when slots were auto-reduced due to CHC hibernation
+  $: isChcAutoScaled =
+    projectData?.annotations?.["rill.dev/chc-auto-scaled-slots"] === "true" &&
+    currentSlots === 1;
+
+
 </script>
 
 <OverviewCard title="Deployment">
@@ -233,8 +254,34 @@
     <div class="info-row">
       <span class="info-label">Status</span>
       <span class="info-value flex items-center gap-2">
-        <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
-        {getStatusLabel(deploymentStatus)}
+        {#if isChcHibernated}
+          <Tooltip distance={8} location="top">
+            <span class="flex items-center gap-2">
+              <span class="status-dot bg-yellow-500"></span>
+              Unhealthy
+            </span>
+            <TooltipContent slot="tooltip-content">
+              ClickHouse Cloud is {cloudStatus === "idle"
+                ? "waking up"
+                : cloudStatus === "stopping"
+                  ? "stopping"
+                  : "hibernated"}
+            </TooltipContent>
+          </Tooltip>
+        {:else if isChcRestoring}
+          <Tooltip distance={8} location="top">
+            <span class="flex items-center gap-2">
+              <span class="status-dot bg-yellow-500"></span>
+              Preparing project
+            </span>
+            <TooltipContent slot="tooltip-content">
+              ClickHouse Cloud is back online. Restoring slots.
+            </TooltipContent>
+          </Tooltip>
+        {:else}
+          <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+          {getStatusLabel(deploymentStatus)}
+        {/if}
       </span>
     </div>
 
@@ -303,12 +350,7 @@
                 : "Self-managed"})
           </span>
         {/if}
-        {#if isChcHibernated}
-          <span class="chc-hibernated-badge">
-            {isChcWakingUp ? "Waking up…" : "Hibernated"}
-          </span>
-        {/if}
-        {#if hasCloudDetails}
+        {#if isClickHouseCloud && hasCloudApiKey}
           <button
             class="manage-slots-btn"
             on:click={() => (chcDetailsModalOpen = true)}
@@ -365,20 +407,27 @@
             >
               Upgrade to Growth Plan
             </a>
-          {:else if canManage}
+          {:else if canManage && !isChcAutoScaled && !isChcHibernated}
             <button
               class="manage-slots-btn"
-              disabled={isChcHibernated}
               on:click={() => (slotsModalOpen = true)}
             >
-              {isChcHibernated
-                ? "Manage Slots (unavailable while CHC is waking)"
-                : "Manage Slots"}
+              Manage Slots
             </button>
           {/if}
         </span>
       </div>
+      {#if isChcAutoScaled}
+        <div class="info-row pt-0">
+          <span class="info-label"></span>
+          <span class="text-fg-secondary text-xs">
+            Slots reduced to 1 while ClickHouse Cloud is hibernated. They'll be
+            restored when the cluster wakes up.
+          </span>
+        </div>
+      {/if}
     {/if}
+
   </div>
 </OverviewCard>
 
@@ -405,9 +454,11 @@
   />
 {/if}
 
-{#if hasCloudDetails}
+{#if isClickHouseCloud && hasCloudApiKey}
   <ClickHouseCloudDetailsModal
     bind:open={chcDetailsModalOpen}
+    {organization}
+    {project}
     serviceName={cloudServiceName}
     status={cloudStatus}
     provider={cloudProvider}
@@ -416,6 +467,14 @@
     minMemoryGb={cloudMinMemory}
     maxMemoryGb={cloudMaxMemory}
     replicas={cloudReplicas}
+    on:synced={(e) => {
+      if (e.detail?.maxMemoryGb) {
+        chcDetectedMemoryGb = e.detail.maxMemoryGb;
+        sessionStorage.setItem(chcMemoryKey, String(e.detail.maxMemoryGb));
+      }
+      $proj.refetch();
+      $instanceQuery.refetch();
+    }}
   />
 {/if}
 
@@ -456,14 +515,8 @@
   .slots-count {
     @apply text-sm text-fg-primary font-medium tabular-nums;
   }
-  .chc-hibernated-badge {
-    @apply text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
-  }
   .manage-slots-btn {
     @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 no-underline;
-  }
-  .manage-slots-btn:disabled {
-    @apply text-fg-tertiary cursor-not-allowed;
   }
   .manage-slots-btn:hover {
     @apply text-primary-600;

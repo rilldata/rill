@@ -3,12 +3,15 @@ package river
 import (
 	"context"
 	"fmt"
+	"maps"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	chdriver "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -23,8 +26,12 @@ type BillingReporterWorker struct {
 	logger *zap.Logger
 }
 
+
 // NewBillingReporterWorker creates a new worker that reports billing information.
 func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[BillingReporterArgs]) error {
+	// Always sync CHC info regardless of billing outcome
+	defer w.syncCHCCloudInfo(ctx)
+
 	// Get reporting granularity
 	var granularity time.Duration
 	var sqlGrainIdentifier string
@@ -178,8 +185,7 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 		}
 	}
 
-	// Sync ClickHouse Cloud cluster info from runtime to postgres
-	w.syncCHCCloudInfo(ctx)
+
 
 	return nil
 }
@@ -189,7 +195,7 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 	projects, err := w.admin.DB.FindProjectsWithCHC(ctx)
 	if err != nil {
-		w.logger.Warn("CHC sync: failed to find projects with CHC", zap.Error(err))
+		w.logger.Warn("CHC sync: failed to find projects", zap.Error(err))
 		return
 	}
 
@@ -199,7 +205,6 @@ func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 		}
 		depl, err := w.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 		if err != nil {
-			w.logger.Debug("CHC sync: failed to find deployment", zap.String("project_id", proj.ID), zap.Error(err))
 			continue
 		}
 		if depl.Status != database.DeploymentStatusRunning {
@@ -208,7 +213,6 @@ func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 
 		rt, err := w.admin.OpenRuntimeClient(depl)
 		if err != nil {
-			w.logger.Debug("CHC sync: failed to open runtime client", zap.String("project_id", proj.ID), zap.Error(err))
 			continue
 		}
 
@@ -218,24 +222,43 @@ func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 		})
 		rt.Close()
 		if err != nil {
-			w.logger.Debug("CHC sync: failed to get instance", zap.String("project_id", proj.ID), zap.Error(err))
 			continue
 		}
 
-		// Find the OLAP connector config with cloud_max_memory_gb
-		var maxMemoryGB float64
-		found := false
+		// Extract host from the connector config (may be templated but resolved_host is injected)
+		var connHost string
 		for _, conn := range resp.Instance.ProjectConnectors {
 			if conn.Name != resp.Instance.OlapConnector || conn.Config == nil {
 				continue
 			}
-			if v, ok := conn.Config.Fields["cloud_max_memory_gb"]; ok {
-				maxMemoryGB = v.GetNumberValue()
-				found = true
+			if v, ok := conn.Config.Fields["resolved_host"]; ok {
+				connHost = v.GetStringValue()
+			}
+			if connHost == "" {
+				if v, ok := conn.Config.Fields["host"]; ok {
+					connHost = v.GetStringValue()
+				}
+			}
+			if connHost == "" {
+				if v, ok := conn.Config.Fields["dsn"]; ok {
+					connHost = v.GetStringValue()
+				}
 			}
 			break
 		}
-		if !found || maxMemoryGB == 0 {
+
+		// Always call the CHC Cloud API directly for the authoritative status
+		if connHost == "" || !strings.Contains(strings.ToLower(connHost), ".clickhouse.cloud") {
+			continue
+		}
+		info := w.fetchCHCInfoDirectly(ctx, proj, connHost)
+		if info == nil {
+			continue
+		}
+		maxMemoryGB := info.MaxMemoryGB
+		cloudStatus := info.Status
+
+		if maxMemoryGB == 0 {
 			continue
 		}
 
@@ -243,44 +266,162 @@ func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 		minSlots := admin.CHCMinSlotsForMemory(maxMemoryGB)
 		minSlotsInt64 := int64(minSlots)
 
-		// Skip update if nothing changed
-		if proj.ChcClusterSize != nil && *proj.ChcClusterSize == maxMemoryGB &&
-			proj.RillMinSlots != nil && *proj.RillMinSlots == minSlotsInt64 {
-			continue
+		// Update cluster size and min slots if changed (DB-only; no deployment reconciliation needed)
+		if proj.ChcClusterSize == nil || *proj.ChcClusterSize != maxMemoryGB ||
+			proj.RillMinSlots == nil || *proj.RillMinSlots != minSlotsInt64 {
+			proj, err = w.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+				Name:                 proj.Name,
+				Description:          proj.Description,
+				Public:               proj.Public,
+				DirectoryName:        proj.DirectoryName,
+				ArchiveAssetID:       proj.ArchiveAssetID,
+				GitRemote:            proj.GitRemote,
+				GithubInstallationID: proj.GithubInstallationID,
+				GithubRepoID:         proj.GithubRepoID,
+				ManagedGitRepoID:     proj.ManagedGitRepoID,
+				Subpath:              proj.Subpath,
+				ProdVersion:          proj.ProdVersion,
+				PrimaryBranch:        proj.PrimaryBranch,
+				PrimaryDeploymentID:  proj.PrimaryDeploymentID,
+				ProdSlots:            proj.ProdSlots,
+				ProdTTLSeconds:       proj.ProdTTLSeconds,
+				DevSlots:             proj.DevSlots,
+				DevTTLSeconds:        proj.DevTTLSeconds,
+				Provisioner:          proj.Provisioner,
+				Annotations:          proj.Annotations,
+				ChcClusterSize:       &maxMemoryGB,
+				RillMinSlots:         &minSlotsInt64,
+			})
+			if err != nil {
+				w.logger.Warn("CHC sync: failed to update project cluster info", zap.String("project_id", proj.ID), zap.Error(err))
+				continue
+			}
+			w.logger.Info("CHC sync: updated project cluster info",
+				zap.String("project_id", proj.ID),
+				zap.Float64("max_memory_gb", maxMemoryGB),
+				zap.Int("rill_min_slots", minSlots),
+			)
 		}
 
-		_, err = w.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-			Name:                 proj.Name,
-			Description:          proj.Description,
-			Public:               proj.Public,
-			DirectoryName:        proj.DirectoryName,
-			ArchiveAssetID:       proj.ArchiveAssetID,
-			GitRemote:            proj.GitRemote,
-			GithubInstallationID: proj.GithubInstallationID,
-			GithubRepoID:         proj.GithubRepoID,
-			ManagedGitRepoID:     proj.ManagedGitRepoID,
-			Subpath:              proj.Subpath,
-			ProdVersion:          proj.ProdVersion,
-			PrimaryBranch:        proj.PrimaryBranch,
-			PrimaryDeploymentID:  proj.PrimaryDeploymentID,
-			ProdSlots:            proj.ProdSlots,
-			ProdTTLSeconds:       proj.ProdTTLSeconds,
-			DevSlots:             proj.DevSlots,
-			DevTTLSeconds:        proj.DevTTLSeconds,
-			Provisioner:          proj.Provisioner,
-			Annotations:          proj.Annotations,
-			ChcClusterSize:       &maxMemoryGB,
-			RillMinSlots:         &minSlotsInt64,
-		})
-		if err != nil {
-			w.logger.Warn("CHC sync: failed to update project", zap.String("project_id", proj.ID), zap.Error(err))
-			continue
-		}
+		// Auto-scale slots based on CHC cloud status
+		const autoScaleAnnotation = "rill.dev/chc-auto-scaled-slots"
+		if cloudStatus == "idle" || cloudStatus == "stopped" {
+			// CHC is hibernated: scale down to 1 slot to minimize cost
+			if proj.ProdSlots > 1 {
+				annotations := maps.Clone(proj.Annotations)
+				if annotations == nil {
+					annotations = make(map[string]string)
+				}
+				annotations[autoScaleAnnotation] = "true"
 
-		w.logger.Info("CHC sync: updated project cluster info",
-			zap.String("project_id", proj.ID),
-			zap.Float64("max_memory_gb", maxMemoryGB),
-			zap.Int("rill_min_slots", minSlots),
-		)
+				_, err = w.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
+					Name:                 proj.Name,
+					Description:          proj.Description,
+					Public:               proj.Public,
+					DirectoryName:        proj.DirectoryName,
+					ArchiveAssetID:       proj.ArchiveAssetID,
+					GitRemote:            proj.GitRemote,
+					GithubInstallationID: proj.GithubInstallationID,
+					GithubRepoID:         proj.GithubRepoID,
+					ManagedGitRepoID:     proj.ManagedGitRepoID,
+					Subpath:              proj.Subpath,
+					ProdVersion:          proj.ProdVersion,
+					PrimaryBranch:        proj.PrimaryBranch,
+					PrimaryDeploymentID:  proj.PrimaryDeploymentID,
+					ProdSlots:            1,
+					ProdTTLSeconds:       proj.ProdTTLSeconds,
+					DevSlots:             proj.DevSlots,
+					DevTTLSeconds:        proj.DevTTLSeconds,
+					Provisioner:          proj.Provisioner,
+					Annotations:          annotations,
+					ChcClusterSize:       proj.ChcClusterSize,
+					RillMinSlots:         proj.RillMinSlots,
+				})
+				if err != nil {
+					w.logger.Warn("CHC sync: failed to auto-scale slots down", zap.String("project_id", proj.ID), zap.Error(err))
+					continue
+				}
+				w.logger.Info("CHC sync: auto-scaled slots to 1 (CHC hibernated)",
+					zap.String("project_id", proj.ID),
+					zap.Int("previous_slots", proj.ProdSlots),
+				)
+			}
+		} else if cloudStatus == "running" {
+			// CHC is running: restore slots to rill_min_slots if needed
+			if proj.RillMinSlots != nil && proj.ProdSlots < int(*proj.RillMinSlots) {
+				annotations := maps.Clone(proj.Annotations)
+				if annotations != nil {
+					delete(annotations, autoScaleAnnotation)
+				}
+
+				_, err = w.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
+					Name:                 proj.Name,
+					Description:          proj.Description,
+					Public:               proj.Public,
+					DirectoryName:        proj.DirectoryName,
+					ArchiveAssetID:       proj.ArchiveAssetID,
+					GitRemote:            proj.GitRemote,
+					GithubInstallationID: proj.GithubInstallationID,
+					GithubRepoID:         proj.GithubRepoID,
+					ManagedGitRepoID:     proj.ManagedGitRepoID,
+					Subpath:              proj.Subpath,
+					ProdVersion:          proj.ProdVersion,
+					PrimaryBranch:        proj.PrimaryBranch,
+					PrimaryDeploymentID:  proj.PrimaryDeploymentID,
+					ProdSlots:            int(*proj.RillMinSlots),
+					ProdTTLSeconds:       proj.ProdTTLSeconds,
+					DevSlots:             proj.DevSlots,
+					DevTTLSeconds:        proj.DevTTLSeconds,
+					Provisioner:          proj.Provisioner,
+					Annotations:          annotations,
+					ChcClusterSize:       proj.ChcClusterSize,
+					RillMinSlots:         proj.RillMinSlots,
+				})
+				if err != nil {
+					w.logger.Warn("CHC sync: failed to restore slots on wake-up", zap.String("project_id", proj.ID), zap.Error(err))
+					continue
+				}
+				w.logger.Info("CHC sync: restored slots on CHC wake-up",
+					zap.String("project_id", proj.ID),
+					zap.Int64("restored_slots", *proj.RillMinSlots),
+				)
+			}
+		}
 	}
+}
+
+// fetchCHCInfoDirectly calls the ClickHouse Cloud API using the project's stored API keys.
+// Used as a fallback when the runtime connector can't open (e.g. CHC is stopped).
+func (w *BillingReporterWorker) fetchCHCInfoDirectly(ctx context.Context, proj *database.Project, host string) *chdriver.CloudServiceInfo {
+	env := "prod"
+	vars, err := w.admin.DB.FindProjectVariables(ctx, proj.ID, &env)
+	if err != nil {
+		w.logger.Debug("CHC sync: failed to find project variables", zap.String("project_id", proj.ID), zap.Error(err))
+		return nil
+	}
+
+	var keyID, keySecret string
+	for _, v := range vars {
+		switch v.Name {
+		case "CLICKHOUSE_CLOUD_API_KEY_ID":
+			keyID = v.Value
+		case "CLICKHOUSE_CLOUD_API_KEY_SECRET":
+			keySecret = v.Value
+		}
+	}
+	if keyID == "" || keySecret == "" {
+		return nil
+	}
+
+	client := chdriver.NewCloudAPIClient(keyID, keySecret)
+	if client == nil {
+		return nil
+	}
+
+	info, err := client.FindServiceByHost(ctx, host)
+	if err != nil {
+		w.logger.Debug("CHC sync: direct API lookup failed", zap.String("project_id", proj.ID), zap.Error(err))
+		return nil
+	}
+	return info
 }

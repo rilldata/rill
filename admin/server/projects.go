@@ -896,6 +896,12 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Errorf(codes.InvalidArgument, "prod_slots cannot be less than %d (minimum required for this ClickHouse Cloud cluster)", *proj.RillMinSlots)
 	}
 
+	// Clear auto-scale annotation if user manually adjusts slots
+	annotations := maps.Clone(proj.Annotations)
+	if annotations != nil && req.ProdSlots != nil {
+		delete(annotations, "rill.dev/chc-auto-scaled-slots")
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -915,7 +921,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
-		Annotations:          proj.Annotations,
+		Annotations:          annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
 		RillMinSlots:         proj.RillMinSlots,
 	}

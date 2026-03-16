@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	chdriver "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -314,6 +316,9 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 func (s *Server) enrichConnectorWithRuntimeMetadata(ctx context.Context, instanceID string, pb *runtimev1.Instance) {
 	handle, release, err := s.runtime.AcquireHandle(ctx, instanceID, pb.OlapConnector)
 	if err != nil {
+		// Handle not available (e.g. CHC is stopped and Open() failed).
+		// Fall back to deriving is_clickhouse_cloud from the resolved connector config.
+		s.enrichConnectorFromResolvedConfig(ctx, instanceID, pb)
 		return
 	}
 	defer release()
@@ -352,6 +357,83 @@ func (s *Server) enrichConnectorWithRuntimeMetadata(ctx context.Context, instanc
 			}
 		}
 		break
+	}
+}
+
+// enrichConnectorFromResolvedConfig derives is_clickhouse_cloud from the resolved connector config
+// (with variables substituted) when the OLAP handle is unavailable (e.g. CHC is stopped).
+// It also calls the CHC Cloud API to get live service status when possible.
+func (s *Server) enrichConnectorFromResolvedConfig(ctx context.Context, instanceID string, pb *runtimev1.Instance) {
+	// Resolve the connector config (substitutes template variables)
+	cfg, err := s.runtime.ConnectorConfig(ctx, instanceID, pb.OlapConnector)
+	if err != nil {
+		return
+	}
+	resolved := cfg.Resolve()
+
+	// Extract host from resolved config
+	host, _ := resolved["host"].(string)
+	dsn, _ := resolved["dsn"].(string)
+
+	isChc := strings.HasSuffix(strings.ToLower(host), ".clickhouse.cloud") ||
+		strings.Contains(strings.ToLower(dsn), ".clickhouse.cloud")
+
+	// If host is empty but DSN contains a clickhouse.cloud URL, try to extract the host
+	resolvedHost := host
+	if resolvedHost == "" && isChc {
+		h := dsn
+		if idx := strings.Index(h, "://"); idx >= 0 {
+			h = h[idx+3:]
+		}
+		if idx := strings.IndexAny(h, "/?"); idx >= 0 {
+			h = h[:idx]
+		}
+		if idx := strings.Index(h, ":"); idx >= 0 {
+			h = h[:idx]
+		}
+		resolvedHost = h
+	}
+
+	// Find the OLAP connector proto to inject fields into
+	var conn *runtimev1.Connector
+	for _, c := range pb.ProjectConnectors {
+		if c.Name == pb.OlapConnector {
+			conn = c
+			break
+		}
+	}
+	if conn == nil {
+		return
+	}
+	if conn.Config == nil {
+		conn.Config = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+	}
+
+	conn.Config.Fields["is_clickhouse_cloud"] = structpb.NewBoolValue(isChc)
+	if resolvedHost != "" {
+		conn.Config.Fields["resolved_host"] = structpb.NewStringValue(resolvedHost)
+	}
+
+	// Call the CHC Cloud API to get live service info (status, memory, etc.)
+	if isChc && resolvedHost != "" {
+		keyID, _ := resolved["clickhouse_cloud_api_key_id"].(string)
+		keySecret, _ := resolved["clickhouse_cloud_api_key_secret"].(string)
+		client := chdriver.NewCloudAPIClient(keyID, keySecret)
+		if client != nil {
+			info, err := client.FindServiceByHost(ctx, resolvedHost)
+			if err == nil {
+				conn.Config.Fields["cloud_service_id"] = structpb.NewStringValue(info.ID)
+				conn.Config.Fields["cloud_service_name"] = structpb.NewStringValue(info.Name)
+				conn.Config.Fields["cloud_status"] = structpb.NewStringValue(info.Status)
+				conn.Config.Fields["cloud_provider"] = structpb.NewStringValue(info.CloudProvider)
+				conn.Config.Fields["cloud_region"] = structpb.NewStringValue(info.Region)
+				conn.Config.Fields["cloud_tier"] = structpb.NewStringValue(info.Tier)
+				conn.Config.Fields["cloud_idle_scaling"] = structpb.NewBoolValue(info.IdleScaling)
+				conn.Config.Fields["cloud_min_memory_gb"] = structpb.NewNumberValue(info.MinMemoryGB)
+				conn.Config.Fields["cloud_max_memory_gb"] = structpb.NewNumberValue(info.MaxMemoryGB)
+				conn.Config.Fields["cloud_num_replicas"] = structpb.NewNumberValue(float64(info.NumReplicas))
+			}
+		}
 	}
 }
 

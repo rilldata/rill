@@ -704,13 +704,32 @@ func (c *Connection) periodicallyEmitStats() {
 	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
 
-	// Hourly ticker for ClickHouse Cloud API polling (aligned with billing reporter cadence)
+	// Hourly ticker for ClickHouse Cloud API polling
 	chcTicker := time.NewTicker(time.Hour)
 	defer chcTicker.Stop()
 
 	// Cache invalidation ticker to reset billing table existence cache
 	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
+
+	// Immediately fetch CHC info on startup (tickers don't fire on first tick)
+	if c.cloudClient != nil {
+		info, err := c.cloudClient.FindServiceByHost(c.ctx, c.resolvedHost())
+		if err != nil {
+			c.logger.Warn("failed to fetch ClickHouse Cloud service info on startup", zap.Error(err))
+		} else {
+			c.cloudInfo = info
+			c.logger.Info("ClickHouse Cloud service info (startup)",
+				zap.String("service_name", info.Name),
+				zap.String("status", info.Status),
+				zap.Float64("max_memory_gb", info.MaxMemoryGB),
+			)
+			c.config.CanScaleToZero = info.IdleScaling
+			c.activity.RecordMetric(c.ctx, "clickhouse_cloud_max_memory_gb", info.MaxMemoryGB)
+			c.activity.RecordMetric(c.ctx, "clickhouse_cloud_min_memory_gb", info.MinMemoryGB)
+			c.activity.RecordMetric(c.ctx, "clickhouse_cloud_num_replicas", float64(info.NumReplicas))
+		}
+	}
 
 	skipEstimatedSizeEmission := false
 	for {

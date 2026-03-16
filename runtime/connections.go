@@ -290,6 +290,12 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		}
 	}
 
+	// ClickHouse Cloud API keys: map root-level variables regardless of connector name
+	if res.Driver == "clickhouse" {
+		res.setPreset("clickhouse_cloud_api_key_id", vars["clickhouse_cloud_api_key_id"], false)
+		res.setPreset("clickhouse_cloud_api_key_secret", vars["clickhouse_cloud_api_key_secret"], false)
+	}
+
 	// Apply built-in system-wide config
 	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess), true)
 

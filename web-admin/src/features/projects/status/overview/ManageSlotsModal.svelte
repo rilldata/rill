@@ -10,7 +10,11 @@
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
-  import { LIVE_CONNECT_TIERS, detectTierSlots } from "./slots-utils";
+  import {
+    LIVE_CONNECT_TIERS,
+    POPULAR_LIVE_CONNECT_TIERS,
+    detectTierSlots,
+  } from "./slots-utils";
 
   export let open = false;
   export let organization: string;
@@ -72,6 +76,29 @@
     : undefined;
   $: projectUsageBytes =
     $usageMetrics?.data?.find((m) => m.project_name === project)?.size ?? 0;
+
+  let showAllSizes = false;
+
+  // Ensure the detected and current tiers always appear in the popular list
+  $: popularWithExtras = (() => {
+    let tiers = [...POPULAR_LIVE_CONNECT_TIERS];
+    const extras = [detectedTierSlots, currentSlots].filter(
+      (s): s is number => s != null && s > 0,
+    );
+    for (const slots of extras) {
+      if (!tiers.some((t) => t.slots === slots)) {
+        const tier = LIVE_CONNECT_TIERS.find((t) => t.slots === slots);
+        if (tier) tiers.push(tier);
+      }
+    }
+    return tiers.sort((a, b) => a.slots - b.slots);
+  })();
+
+  $: visibleTiers = isRillManaged
+    ? RILL_MANAGED_TIERS
+    : showAllSizes
+      ? LIVE_CONNECT_TIERS
+      : popularWithExtras;
 
   $: hasChanged = selectedSlots !== currentSlots;
 
@@ -195,7 +222,8 @@
           <span class="tier-cell">Rill Slots</span>
           <span class="tier-cell">Estimated Rill $/mo</span>
         </div>
-        {#each LIVE_CONNECT_TIERS as tier}
+        <div class="tier-list">
+        {#each visibleTiers as tier}
           <button
             class="tier-row"
             class:tier-active={tier.slots === currentSlots ||
@@ -226,7 +254,16 @@
             <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
           </button>
         {/each}
+        </div>
       </div>
+      {#if !isRillManaged && !viewOnly}
+        <button
+          class="show-all-btn"
+          on:click={() => (showAllSizes = !showAllSizes)}
+        >
+          {showAllSizes ? "Show popular sizes" : "Show all sizes"}
+        </button>
+      {/if}
       <p class="chc-note">
         Estimated costs are calculated at a full month. Billing is charged at
         compute/hr, therefore variable based on your needs.
@@ -282,6 +319,9 @@
   .tier-table {
     @apply border border-border rounded-md overflow-hidden;
   }
+  .tier-list {
+    @apply max-h-[280px] overflow-y-auto;
+  }
   .tier-header {
     @apply flex bg-surface-subtle text-xs font-semibold text-fg-secondary uppercase tracking-wide;
   }
@@ -317,6 +357,12 @@
   }
   .detected-badge {
     @apply text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
+  }
+  .show-all-btn {
+    @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 mt-2;
+  }
+  .show-all-btn:hover {
+    @apply text-primary-600;
   }
   .chc-note {
     @apply text-xs text-fg-tertiary mt-2 italic;

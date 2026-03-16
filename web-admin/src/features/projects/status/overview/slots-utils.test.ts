@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { detectTierSlots, LIVE_CONNECT_TIERS } from "./slots-utils";
+import {
+  detectTierSlots,
+  LIVE_CONNECT_TIERS,
+  POPULAR_LIVE_CONNECT_TIERS,
+} from "./slots-utils";
 
 describe("detectTierSlots", () => {
   it("returns undefined for undefined input", () => {
@@ -12,26 +16,27 @@ describe("detectTierSlots", () => {
 
   it("matches exact tier memories", () => {
     // Each tier's memory = slots * 2
-    expect(detectTierSlots(8)).toBe(4); // 4 slots * 2 = 8 GB
-    expect(detectTierSlots(12)).toBe(6); // 6 slots * 2 = 12 GB
+    expect(detectTierSlots(8)).toBe(4);
+    expect(detectTierSlots(12)).toBe(6);
     expect(detectTierSlots(16)).toBe(8);
+    expect(detectTierSlots(20)).toBe(10);
+    expect(detectTierSlots(24)).toBe(12);
+    expect(detectTierSlots(28)).toBe(14);
     expect(detectTierSlots(32)).toBe(16);
     expect(detectTierSlots(64)).toBe(32);
     expect(detectTierSlots(120)).toBe(60);
   });
 
   it("rounds to the closest tier", () => {
-    // Tier memory = slots * 2: 8, 12, 16, 32, 64, 120
-    // 10 GB: |10-8|=2, |10-12|=2 → tie, reduce keeps first (4 slots)
-    expect(detectTierSlots(10)).toBe(4);
-    // 11 GB: |11-8|=3, |11-12|=1 → closer to 12 (6 slots)
+    // Tier memories: 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64, ...
+    // 11 GB: |11-8|=3, |11-12|=1 → 6 slots
     expect(detectTierSlots(11)).toBe(6);
-    // 14 GB: |14-12|=2, |14-16|=2 → tie, keeps 6 slots
-    expect(detectTierSlots(14)).toBe(6);
-    // 15 GB: |15-12|=3, |15-16|=1 → closer to 16 (8 slots)
+    // 15 GB: |15-12|=3, |15-16|=1 → 8 slots
     expect(detectTierSlots(15)).toBe(8);
-    // 24 GB: |24-16|=8, |24-32|=8 → tie, keeps 8 slots
-    expect(detectTierSlots(24)).toBe(8);
+    // 18 GB: |18-16|=2, |18-20|=2 → tie, keeps first (8 slots)
+    expect(detectTierSlots(18)).toBe(8);
+    // 19 GB: |19-16|=3, |19-20|=1 → 10 slots
+    expect(detectTierSlots(19)).toBe(10);
   });
 
   it("handles memory below smallest tier", () => {
@@ -44,7 +49,11 @@ describe("detectTierSlots", () => {
     expect(detectTierSlots(500)).toBe(60);
   });
 
-  it("tier list has expected number of entries", () => {
-    expect(LIVE_CONNECT_TIERS).toHaveLength(6);
+  it("all tiers list has expected entries", () => {
+    expect(LIVE_CONNECT_TIERS).toHaveLength(18);
+  });
+
+  it("popular tiers list has expected entries", () => {
+    expect(POPULAR_LIVE_CONNECT_TIERS).toHaveLength(6);
   });
 });
