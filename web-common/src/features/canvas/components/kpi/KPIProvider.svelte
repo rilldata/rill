@@ -11,6 +11,7 @@
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
   import { KPI } from ".";
+  import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import { getCanvasStore } from "../../state-managers/state-managers";
   import { validateKPISchema } from "./selector";
 
@@ -22,9 +23,10 @@
   const client = useRuntimeClient();
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
+  $: ({ canvasEntity } = ctx);
   $: ({
     metricsView: { getMeasureForMetricView },
-  } = ctx.canvasEntity);
+  } = canvasEntity);
 
   $: ({
     metrics_view: metricsViewName,
@@ -43,6 +45,8 @@
     comparisonTimeRangeState,
     hasTimeSeries,
   } = $timeAndFilterStore);
+
+  $: isAccessDenied = canvasEntity.isMetricsViewAccessDenied(metricsViewName);
 
   $: schema = validateKPISchema(ctx, spec);
   $: ({ isValid } = $schema);
@@ -152,19 +156,23 @@
   );
 </script>
 
-<KPI
-  {measure}
-  {timeGrain}
-  {timeZone}
-  {showTimeComparison}
-  {hasTimeSeries}
-  {comparisonLabel}
-  {interval}
-  sparkline={spec.sparkline}
-  {hideTimeRange}
-  comparisonOptions={spec.comparison}
-  primaryTotalResult={$totalQuery}
-  comparisonTotalResult={$comparisonTotalQuery}
-  primarySparklineResult={$primarySparklineQuery}
-  comparisonSparklineResult={$comparisonSparklineQuery}
-/>
+{#if $isAccessDenied}
+  <ComponentAccessDenied />
+{:else}
+  <KPI
+    {measure}
+    {timeGrain}
+    {timeZone}
+    {showTimeComparison}
+    {hasTimeSeries}
+    {comparisonLabel}
+    {interval}
+    sparkline={spec.sparkline}
+    {hideTimeRange}
+    comparisonOptions={spec.comparison}
+    primaryTotalResult={$totalQuery}
+    comparisonTotalResult={$comparisonTotalQuery}
+    primarySparklineResult={$primarySparklineQuery}
+    comparisonSparklineResult={$comparisonSparklineQuery}
+  />
+{/if}

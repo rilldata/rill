@@ -10,6 +10,7 @@
   $: ({
     parent: {
       metricsView: { getMetricsViewFromName },
+      isMetricsViewAccessDenied,
     },
     specStore,
     config,
@@ -33,6 +34,8 @@
     time_filters,
     dimension_filters,
   };
+
+  $: isAccessDenied = isMetricsViewAccessDenied(tableSpec.metrics_view);
 
   $: _metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
   $: metricsViewSpec = $_metricViewSpec.metricsView;
@@ -78,4 +81,5 @@
   {pivotDataStore}
   pivotConfig={config}
   {pivotState}
+  isAccessDenied={$isAccessDenied}
 />

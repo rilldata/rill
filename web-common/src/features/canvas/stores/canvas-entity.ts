@@ -13,6 +13,7 @@ import {
   type V1ComponentSpecRendererProperties,
   type V1MetricsView,
   type V1MetricsViewSpec,
+  type V1ResolveCanvasResponseResolvedComponents,
   type V1Resource,
   type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -96,6 +97,7 @@ export class CanvasEntity {
   filtersEnabledStore = writable<boolean>(true);
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
+  _accessDeniedMetricsViews = writable<Set<string>>(new Set());
   bannerStore = writable<string | undefined>(undefined);
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
   titleStore = writable<string>("");
@@ -294,6 +296,8 @@ export class CanvasEntity {
     if (!validSpec) return;
 
     if (metricsViews) this._metricsViews.set(metricsViews);
+
+    this.computeAccessDeniedMetricsViews(components, metricsViews);
 
     this.checkAndSetFilterEnabled(validSpec);
     this.checkAndSetFileArtifact(filePath);
@@ -730,6 +734,30 @@ export class CanvasEntity {
 
   removeComponent = (componentName: string) => {
     this.componentsStore.delete(componentName);
+  };
+
+  isMetricsViewAccessDenied = (metricsViewName: string): Readable<boolean> => {
+    return derived(
+      this._accessDeniedMetricsViews,
+      ($denied) => $denied.has(metricsViewName),
+    );
+  };
+
+  private computeAccessDeniedMetricsViews = (
+    components: V1ResolveCanvasResponseResolvedComponents | undefined,
+    metricsViews: Record<string, V1MetricsView | undefined> | undefined,
+  ) => {
+    const accessDenied = new Set<string>();
+    if (components) {
+      for (const resource of Object.values(components)) {
+        const mvName = resource?.component?.state?.validSpec?.rendererProperties
+          ?.metrics_view as string | undefined;
+        if (mvName && metricsViews && !(mvName in metricsViews)) {
+          accessDenied.add(mvName);
+        }
+      }
+    }
+    this._accessDeniedMetricsViews.set(accessDenied);
   };
 }
 
