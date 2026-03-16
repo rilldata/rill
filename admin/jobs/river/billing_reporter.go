@@ -26,7 +26,6 @@ type BillingReporterWorker struct {
 	logger *zap.Logger
 }
 
-
 // NewBillingReporterWorker creates a new worker that reports billing information.
 func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[BillingReporterArgs]) error {
 	// Always sync CHC info regardless of billing outcome
@@ -184,8 +183,6 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 			}
 		}
 	}
-
-
 
 	return nil
 }

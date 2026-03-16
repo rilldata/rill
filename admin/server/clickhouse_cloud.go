@@ -304,16 +304,16 @@ func (s *Server) clickhouseCloudSync(w http.ResponseWriter, r *http.Request) err
 	}
 
 	result := map[string]interface{}{
-		"cloud_status":       info.Status,
-		"cloud_service_name": info.Name,
-		"cloud_provider":     info.CloudProvider,
-		"cloud_region":       info.Region,
-		"cloud_tier":         info.Tier,
+		"cloud_status":        info.Status,
+		"cloud_service_name":  info.Name,
+		"cloud_provider":      info.CloudProvider,
+		"cloud_region":        info.Region,
+		"cloud_tier":          info.Tier,
 		"cloud_min_memory_gb": info.MinMemoryGB,
 		"cloud_max_memory_gb": info.MaxMemoryGB,
-		"cloud_num_replicas": info.NumReplicas,
-		"prod_slots":         proj.ProdSlots,
-		"action":             action,
+		"cloud_num_replicas":  info.NumReplicas,
+		"prod_slots":          proj.ProdSlots,
+		"action":              action,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(result)
