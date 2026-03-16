@@ -26,100 +26,6 @@ const HOUR_ANNOTATION_TIMES = [
   "2022-03-30T14:00:00Z", // Hour F
 ];
 
-const ANNOTATION_FILES: { path: string; blob: string }[] = [
-  {
-    path: "models/AdBids_point_annotations.sql",
-    blob: [
-      "select TIMESTAMP '2022-03-24' as time, 'Point annotation A' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-26' as time, 'Point annotation B' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-27' as time, 'Point annotation C' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-28' as time, 'Point annotation D' as description",
-    ].join("\n"),
-  },
-  {
-    path: "models/AdBids_range_annotations.sql",
-    blob: [
-      "select TIMESTAMP '2022-03-25' as time,",
-      "       TIMESTAMP '2022-03-27' as time_end,",
-      "       'Range annotation C' as description",
-    ].join("\n"),
-  },
-  {
-    path: "models/AdBids_hour_annotations.sql",
-    blob: [
-      "select TIMESTAMP '2022-03-30 06:00:00' as time, 'Hour annotation E' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-30 14:00:00' as time, 'Hour annotation F' as description",
-    ].join("\n"),
-  },
-];
-
-const METRICS_YAML_WITH_ANNOTATIONS = `# Metrics view YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
-
-version: 1
-type: metrics_view
-
-display_name: Adbids
-table: AdBids_model
-timeseries: timestamp
-
-dimensions:
-  - name: publisher
-    display_name: Publisher
-    column: publisher
-  - name: domain
-    display_name: Domain
-    column: domain
-  - name: timestamp
-    display_name: Timestamp
-    column: timestamp
-    type: time
-  - name: offset_timestamp
-    display_name: Offset Timestamp
-    column: offset_timestamp
-    type: time
-
-measures:
-  - name: total_records
-    display_name: Total records
-    expression: COUNT(*)
-    description: ""
-    format_preset: humanize
-  - name: bid_price_sum
-    display_name: Sum of Bid Price
-    expression: SUM(bid_price)
-    description: ""
-    format_preset: humanize
-
-annotations:
-  - model: AdBids_point_annotations
-    measures: ['total_records']
-  - model: AdBids_range_annotations
-    measures: ['total_records']
-  - model: AdBids_hour_annotations
-    measures: ['total_records']
-`;
-
-// Write annotation models + updated metrics YAML via the runtime API.
-async function installAnnotations(page: Page) {
-  const base = new URL(page.url()).origin;
-  const putFile = (path: string, blob: string) =>
-    axios.post(`${base}/v1/instances/default/files/entry`, {
-      path,
-      blob,
-      create: true,
-    });
-
-  for (const f of ANNOTATION_FILES) {
-    await putFile(f.path, f.blob);
-  }
-  await putFile("metrics/AdBids_metrics.yaml", METRICS_YAML_WITH_ANNOTATIONS);
-}
-
 // The app sets Settings.defaultLocale = "en" globally, so chart labels are
 // always English regardless of the browser's navigator.language.
 const CHART_LOCALE = "en";
@@ -139,25 +45,13 @@ function expectedDates(
 }
 
 async function setupDashboard(page: Page, dashboardTZ: string) {
-  await page.getByLabel("/dashboards").click();
-  await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
-
-  // Wait for the base project to finish reconciling
-  await expect(
-    page.getByRole("button", { name: /Total records/ }).first(),
-  ).toBeVisible({ timeout: 30_000 });
-
-  // Write annotation files while still in the editor view. This triggers
-  // re-reconciliation in the background.
-  await installAnnotations(page);
-
   // Wait for the runtime to finish reconciling the updated metrics view
   // with the new annotations before navigating to the explore.
   await waitForReconciliation(page);
 
   // Navigate directly to the explore with the timezone already set.
   const base = new URL(page.url()).origin;
-  const exploreUrl = `${base}/explore/AdBids_metrics_explore?tz=${encodeURIComponent(dashboardTZ)}`;
+  const exploreUrl = `${base}/explore/AdBids_annotations_metrics_explore?tz=${encodeURIComponent(dashboardTZ)}`;
   await page.goto(exploreUrl);
 
   await expect(
