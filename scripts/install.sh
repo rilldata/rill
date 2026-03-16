@@ -230,11 +230,12 @@ installDirIsWritable() {
     # Check if it is directly writable
     if [ -d "$INSTALL_DIR" ] && [ -w "$INSTALL_DIR" ]; then
         return 0
+    # If it doesn't exist yet, check if the parent directory is writable
     elif [ ! -d "$INSTALL_DIR" ] && [ -w "$(dirname "$INSTALL_DIR")" ]; then
         return 0
     fi
 
-    # Check if we have passwordless sudo
+    # Lastly, we also consider it writable if we have passwordless sudo (since then we don't need to prompt/error due to lack of permissions)
     sudo -n true 2>/dev/null
 }
 
@@ -268,7 +269,7 @@ resolveInstallDir() {
             # Fall back to the current directory otherwise (which we assume is writable).
             INSTALL_DIR=$(pwd)
         fi
-        
+
         return
     fi
 
