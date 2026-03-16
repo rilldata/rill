@@ -267,17 +267,17 @@
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent
-    class="translate-y-[-200px]"
-    interactOutsideBehavior="ignore"
-  >
+  <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>
       <DialogTitle>Create a group</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-4 w-full">

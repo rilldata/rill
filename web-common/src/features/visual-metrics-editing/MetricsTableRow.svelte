@@ -66,8 +66,8 @@
   class:dragging
   class:ghost
   class:selected={finalSelected}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
   bind:this={row}
 >
   <td class="!pl-0 sticky">
@@ -76,7 +76,7 @@
         class:opacity-0={!hovered}
         disabled={!hovered || disableDrag}
         class="disabled:cursor-not-allowed"
-        on:mousedown={handleDragStart}
+        onmousedown={handleDragStart}
       >
         <DragHandle size="16px" className="fill-fg-secondary" />
       </button>
@@ -85,7 +85,7 @@
     </div>
   </td>
 
-  <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
+  <td class="source-code truncate" onclick={onCellClick} aria-label="Name">
     {#if !name && item instanceof YAMLDimension && item.resourceName}
       <span
         class="text-fg-secondary"
@@ -97,7 +97,7 @@
       <span class="text-fg-secondary">{name || "-"}</span>
     {/if}
   </td>
-  <td on:click={onCellClick} aria-label="Display name">
+  <td onclick={onCellClick} aria-label="Display name">
     <div class="text-[12px] pr-4">
       <Chip
         slideDuration={0}
@@ -113,7 +113,7 @@
 
   <td
     class="source-code truncate"
-    on:click={onCellClick}
+    onclick={onCellClick}
     aria-label="SQL expression"
     style:max-width="{expressionWidth}px"
   >
@@ -121,14 +121,14 @@
   </td>
 
   {#if item instanceof YAMLMeasure}
-    <td on:click={onCellClick} aria-label="Format">
+    <td onclick={onCellClick} aria-label="Format">
       <span>{item?.format_preset || item?.format_d3 || "-"}</span>
     </td>
   {/if}
 
   <td
     style:max-width="{expressionWidth}px"
-    on:click={onCellClick}
+    onclick={onCellClick}
     aria-label="Description"
   >
     <span>{description || "-"}</span>

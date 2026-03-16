@@ -60,7 +60,7 @@
     {#if formatted}
       <button
         class="item"
-        on:click={() => {
+        onclick={() => {
           onSelectTimeZone(activeTimeZone);
         }}
       >
@@ -83,7 +83,7 @@
   {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
     <button
       class="item"
-      on:click={() => {
+      onclick={() => {
         onSelectTimeZone(iana);
       }}
     >
@@ -110,7 +110,7 @@
       {#if recentIANAs.length}
         <button
           class="text-[11px] text-fg-secondary hover:bg-surface-hover p-1 rounded-sm h-fit"
-          on:click={() => {
+          onclick={() => {
             recents.set([]);
           }}
         >
@@ -124,7 +124,7 @@
       {#if formatted && !availableTimeZones.includes(iana)}
         <button
           class="item"
-          on:click={() => {
+          onclick={() => {
             onSelectTimeZone(iana);
           }}
         >
@@ -156,7 +156,7 @@
     {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
       <button
         class="item"
-        on:click={() => {
+        onclick={() => {
           onSelectTimeZone(iana);
           recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
         }}

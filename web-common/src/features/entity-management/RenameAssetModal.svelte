@@ -141,7 +141,10 @@
       id="rename-asset-form"
       class="flex flex-col gap-y-4"
       autocomplete="off"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <Input

@@ -27,8 +27,6 @@
   <DropdownMenu.Trigger asChild>
     {#if $selectedMockUserStore === null}
       <button
-
-
         class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-surface-hover items-center"
       >
         <EyeIcon size={"16px"} />
@@ -38,7 +36,6 @@
       </button>
     {:else}
       <Chip
-       
         removable
         slideDuration={0}
         active={viewAsMenuOpen}
@@ -60,7 +57,7 @@
     {:else if $mockUsers.data?.length > 0}
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
-          on:click={() => {
+          onclick={() => {
             updateDevJWT(queryClient, client, user);
           }}
           class="flex gap-x-2 items-center"

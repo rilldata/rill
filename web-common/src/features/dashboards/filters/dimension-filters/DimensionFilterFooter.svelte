@@ -19,7 +19,7 @@
       checked={excludeMode}
       id="include-exclude"
       small
-      on:click={onToggleExcludeMode}
+      onclick={onToggleExcludeMode}
       label="Include exclude toggle"
     />
     <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>

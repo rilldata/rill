@@ -277,7 +277,7 @@
         </div>
 
         {#if showColumns}
-          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+          <div transitionslide={{ duration: LIST_SLIDE_DURATION }}>
             <ColumnProfile
               {connector}
               {database}

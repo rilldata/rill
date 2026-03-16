@@ -420,8 +420,8 @@
 </script>
 
 <svelte:window
-  on:mouseup={reset}
-  on:keydown={(e) => {
+  onmouseup={reset}
+  onkeydown={(e) => {
     const selected = $selectedComponent;
     if (!selected || e.key !== "Backspace") return;
 
@@ -584,7 +584,6 @@
         <AlertDialog.Cancel asChild>
           <Button
             large
-           
             type="secondary"
             onClick={() => {
               pendingComponentDelete = undefined;
@@ -597,7 +596,6 @@
         <AlertDialog.Action asChild>
           <Button
             large
-           
             type="destructive"
             onClick={() => {
               if (!pendingComponentDelete) return;

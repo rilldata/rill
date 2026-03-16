@@ -192,7 +192,7 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" strategy="fixed">
     <DropdownMenu.Item
-      on:click={setAccessInviteOnly}
+      onclick={setAccessInviteOnly}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'invite-only'
         ? 'bg-surface-background'
@@ -210,7 +210,7 @@
       </div>
     </DropdownMenu.Item>
     <DropdownMenu.Item
-      on:click={setAccessEveryone}
+      onclick={setAccessEveryone}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'everyone'
         ? 'bg-surface-background'

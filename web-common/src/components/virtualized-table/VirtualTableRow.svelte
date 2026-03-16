@@ -22,6 +22,7 @@
   export let startColumn: number;
   export let cells: V1MetricsViewRowsResponseDataItem;
   export let valueAccessor: (columnLabel: string) => string;
+  export let onmouseenter: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 <tr class:selected>
@@ -40,7 +41,7 @@
       data-index={columnIndex}
       data-column={columnLabel}
       style:left="{position}px"
-      on:mouseenter
+      {onmouseenter}
     >
       <svelte:component
         this={PinnedCell}
@@ -62,7 +63,7 @@
     {@const sorted = columns[columnIndex].name === sortedColumn}
     {@const pinned = pinnedColumns.has(columnIndex)}
     {#if !pinned}
-      <td data-index={rowIndex} data-column={columnLabel} on:mouseenter>
+      <td data-index={rowIndex} data-column={columnLabel} {onmouseenter}>
         <svelte:component
           this={Cell}
           {sorted}

@@ -9,6 +9,7 @@
   } from "../entity-management/resource-selectors";
 
   export let resources: V1Resource[];
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 
   $: firstResource = resources?.[0];
   $: firstResourceType = displayResourceKind(
@@ -29,7 +30,7 @@
     <button
       aria-label="Create resource menu"
       class="text-inherit h-full aspect-square grid place-content-center hover:bg-surface-hover hover:text-fg-accent"
-      on:click
+      {onclick}
     >
       <CaretDownIcon />
     </button>

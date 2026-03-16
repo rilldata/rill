@@ -50,7 +50,6 @@
   <DropdownMenu bind:open>
     <DropdownMenuTrigger asChild>
       <Button
-       
         compact
         square
         type="secondary"
@@ -74,7 +73,7 @@
             href={fullHomeBookmarkUrl}
             class="flex flex-row gap-x-2 w-full min-h-7"
             aria-label="Home Bookmark Entry"
-            on:click={goToDashboardHome}
+            onclick={goToDashboardHome}
           >
             <HomeBookmark size="16px" />
             <div class="flex flex-col gap-y-0.5">
@@ -88,7 +87,7 @@
         </DropdownMenuItem>
       {/if}
       <DropdownMenuSeparator />
-      <DropdownMenuItem on:click={onCreate}>
+      <DropdownMenuItem onclick={onCreate}>
         <div class="flex flex-row gap-x-2">
           <HomeBookmarkPlus size="16px" />
           <div>
@@ -113,7 +112,6 @@
         href={fullHomeBookmarkUrl}
         onClick={goToDashboardHome}
         class="border border-primary-300"
-       
         label="Go to home bookmark"
         active={isHomeBookmarkActive}
       >

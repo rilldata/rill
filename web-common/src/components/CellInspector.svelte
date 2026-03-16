@@ -144,7 +144,7 @@
     aria-labelledby="cell-inspector-title"
     aria-describedby="cell-inspector-content"
     aria-modal="true"
-    transition:fly={{ duration: 200, x: 200, easing: cubicOut }}
+    transitionfly={{ duration: 200, x: 200, easing: cubicOut }}
   >
     <div
       class="w-full min-w-[576px] max-w-2xl max-h-[80vh] flex flex-col rounded-lg"
@@ -159,7 +159,7 @@
         >
         <button
           class="p-1 hover:bg-surface-hover rounded transition-colors"
-          on:click={toggleLock}
+          onclick={toggleLock}
           title={isLocked ? "Unlock value (L)" : "Lock value (L)"}
         >
           {#if isLocked}

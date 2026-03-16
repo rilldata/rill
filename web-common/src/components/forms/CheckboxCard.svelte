@@ -20,7 +20,7 @@
       ? "border-primary-400 bg-primary-50"
       : "border hover:bg-surface-subtle",
   )}
-  on:click={toggle}
+  onclick={toggle}
 >
   <CheckboxPrimitive.Root
     {checked}

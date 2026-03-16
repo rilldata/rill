@@ -27,7 +27,7 @@
 
 <aside
   use:portal
-  transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
+  transitionscale={{ duration: 200, start: 0.98, opacity: 0 }}
   class="{location} {justify}"
   aria-label="Notification"
 >
@@ -46,7 +46,7 @@
 
     {#if link}
       <div class="link-container">
-        <a href={link.href} on:click={onClose} class="text-secondary-400">
+        <a href={link.href} onclick={onClose} class="text-secondary-400">
           {link.text}
         </a>
       </div>

@@ -269,10 +269,7 @@
   }
 </script>
 
-<Dialog
-  bind:open
-  onOpenChange={() => handleReset()}
->
+<Dialog bind:open onOpenChange={() => handleReset()}>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
@@ -292,7 +289,10 @@
     <form
       id={$formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-y-5">
@@ -332,14 +332,14 @@
                   ? "error-input-wrapper"
                   : ""}
                 placeholder="Key"
-                on:input={(e) => handleKeyChange(e)}
+                oninput={(e) => handleKeyChange(e)}
               />
               <Input
                 bind:value={$form.value}
                 label=""
                 id={`edit-${value}`}
                 placeholder="Value"
-                on:input={(e) => handleValueChange(e)}
+                oninput={(e) => handleValueChange(e)}
               />
             </div>
             {#if $errors.key}

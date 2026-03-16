@@ -67,12 +67,15 @@
       class:focused
       type="button"
       use:enhancePickerNode={item}
-      on:click={onClick}
+      onclick={onClick}
     >
       <input
         type="radio"
         checked={selected}
-        on:click|stopPropagation={() => onSelect(context)}
+        onclick={(e) => {
+          e.stopPropagation();
+          onSelect(context);
+        }}
         class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
       />
       <div class="min-w-3.5">

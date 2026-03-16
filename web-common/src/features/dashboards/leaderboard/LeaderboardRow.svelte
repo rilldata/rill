@@ -185,9 +185,9 @@
   class:border-b={borderBottom}
   class:border-t={borderTop}
   class="relative"
-  on:pointerover={() => (hovered = true)}
-  on:pointerout={() => (hovered = false)}
-  on:click={(e) => {
+  onpointerover={() => (hovered = true)}
+  onpointerout={() => (hovered = false)}
+  onclick={(e) => {
     if (e.shiftKey) return;
     onDimensionCellClick(e);
   }}
@@ -213,7 +213,7 @@
     {#if previousValueString && hovered}
       <span
         class="opacity-50 whitespace-nowrap font-normal"
-        transition:slide={{ axis: "x", duration: 200 }}
+        transitionslide={{ axis: "x", duration: 200 }}
       >
         {previousValueString} →
       </span>
@@ -226,7 +226,9 @@
           rel="noopener noreferrer"
           {href}
           title={href}
-          on:click|stopPropagation
+          onclick={(e) => {
+            e.stopPropagation();
+          }}
           class:hovered
         >
           <ExternalLink className="fill-primary-600" />

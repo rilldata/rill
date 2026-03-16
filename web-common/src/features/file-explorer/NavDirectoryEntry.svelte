@@ -84,8 +84,8 @@
     : 'text-fg-primary hover:text-fg-primary'}
   font-medium hover:bg-surface-hover"
   {id}
-  on:click={() => toggleDirectory(dir)}
-  on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
+  onclick={() => toggleDirectory(dir)}
+  onmousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
   style:padding-left="{padding}px"
   aria-controls={`nav-${dir.path}`}
   aria-expanded={expanded}
@@ -101,7 +101,6 @@
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild>
         <ContextButton
-         
           id="more-actions-{dir.path}"
           label="{dir.name} actions menu trigger"
           suppressTooltip={contextMenuOpen}
@@ -116,15 +115,15 @@
         side="right"
         sideOffset={16}
       >
-        <NavigationMenuItem on:click={handleAddFolder}>
+        <NavigationMenuItem onclick={handleAddFolder}>
           <Folder slot="icon" size="12px" />
           New folder
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
+        <NavigationMenuItem onclick={() => onRename(dir.path, true)}>
           <EditIcon slot="icon" />
           Rename
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDelete(dir.path, true)}>
+        <NavigationMenuItem onclick={() => onDelete(dir.path, true)}>
           <Cancel slot="icon" />
           Delete
         </NavigationMenuItem>

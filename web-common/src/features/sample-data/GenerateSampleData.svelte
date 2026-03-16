@@ -76,7 +76,10 @@
     <Dialog.Content>
       <form
         id={FORM_ID}
-        on:submit|preventDefault={submit}
+        onsubmit={(e) => {
+          e.preventDefault();
+          submit(e);
+        }}
         use:enhance
         class="relative"
       >
@@ -98,10 +101,10 @@
           class="prompt-input"
           bind:value={$form.prompt}
           class:empty={$form.prompt.length === 0}
-          on:keydown={handleKeydown}
+          onkeydown={handleKeydown}
         ></textarea>
         <div class="absolute right-3 bottom-8">
-          <IconButton ariaLabel="Send message" on:click={submit}>
+          <IconButton ariaLabel="Send message" onclick={submit}>
             <SendIcon size="1.3em" />
           </IconButton>
         </div>

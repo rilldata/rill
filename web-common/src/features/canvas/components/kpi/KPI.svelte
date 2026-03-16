@@ -173,10 +173,10 @@
         aria-label="{measure?.name ?? ''} KPI data"
         role="button"
         tabindex="0"
-        on:click={modified({
+        onclick={modified({
           shift: shiftClickHandler,
         })}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           if (e.shiftKey && e.key === "Enter") {
             shiftClickHandler();
           }
@@ -197,10 +197,10 @@
           class:hovered-value={hoveredPoints?.[0]?.value != null}
           role="button"
           tabindex="0"
-          on:mouseover={() => handleHoverOrFocus("primary")}
-          on:mouseleave={handleLeaveOrBlur}
-          on:focus={() => handleHoverOrFocus("primary")}
-          on:blur={handleLeaveOrBlur}
+          onmouseover={() => handleHoverOrFocus("primary")}
+          onmouseleave={handleLeaveOrBlur}
+          onfocus={() => handleHoverOrFocus("primary")}
+          onblur={handleLeaveOrBlur}
         >
           {#if primaryTotalResult.isError}
             <AlertTriangleIcon class=" text-red-300" size="34px" />
@@ -227,10 +227,10 @@
                   class="comparison-value"
                   role="button"
                   tabindex="0"
-                  on:mouseover={() => handleHoverOrFocus("comparison")}
-                  on:mouseleave={handleLeaveOrBlur}
-                  on:focus={() => handleHoverOrFocus("comparison")}
-                  on:blur={handleLeaveOrBlur}
+                  onmouseover={() => handleHoverOrFocus("comparison")}
+                  onmouseleave={handleLeaveOrBlur}
+                  onfocus={() => handleHoverOrFocus("comparison")}
+                  onblur={handleLeaveOrBlur}
                 >
                   {measureValueFormatter(computedValues.comparison)}
                 </span>
@@ -244,10 +244,10 @@
                   class:text-sm={computedValues.delta === null}
                   role="button"
                   tabindex="0"
-                  on:mouseover={() => handleHoverOrFocus("delta")}
-                  on:mouseleave={handleLeaveOrBlur}
-                  on:focus={() => handleHoverOrFocus("delta")}
-                  on:blur={handleLeaveOrBlur}
+                  onmouseover={() => handleHoverOrFocus("delta")}
+                  onmouseleave={handleLeaveOrBlur}
+                  onfocus={() => handleHoverOrFocus("delta")}
+                  onblur={handleLeaveOrBlur}
                 >
                   {#if computedValues.delta != null}
                     {getFormattedDiff(computedValues.delta)}
@@ -263,10 +263,10 @@
                   class:text-red-500={computedValues.percent < 0}
                   role="button"
                   tabindex="0"
-                  on:mouseover={() => handleHoverOrFocus("percent")}
-                  on:mouseleave={handleLeaveOrBlur}
-                  on:focus={() => handleHoverOrFocus("percent")}
-                  on:blur={handleLeaveOrBlur}
+                  onmouseover={() => handleHoverOrFocus("percent")}
+                  onmouseleave={handleLeaveOrBlur}
+                  onfocus={() => handleHoverOrFocus("percent")}
+                  onblur={handleLeaveOrBlur}
                 >
                   <PercentageChange
                     color="text-fg-secondary"

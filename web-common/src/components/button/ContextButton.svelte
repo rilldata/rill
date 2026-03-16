@@ -18,7 +18,10 @@
     class:!w-fit={suppressTooltip}
     {id}
     data-testid={testId}
-    on:click|preventDefault|stopPropagation
+    onclick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
   >
     <slot />
   </button>

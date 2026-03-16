@@ -47,7 +47,7 @@
     {#if data.connectors.length === 0}
       <span class="message"> No data found. Add data to get started! </span>
     {:else}
-      <ol transition:slide={{ duration }}>
+      <ol transitionslide={{ duration }}>
         {#each data.connectors as connector (connector.name)}
           <ConnectorEntry {connector} {store} />
         {/each}

@@ -266,9 +266,9 @@
   class:with-measures={hasMeasures}
   role="presentation"
   style:width="{totalLength + rowDimensionWidth}px"
-  on:click={modified({ shift: onCellCopy, click: onCellClick })}
-  on:mousemove={onMouseMove}
-  on:mouseleave={onTableLeave}
+  onclick={modified({ shift: onCellCopy, click: onCellClick })}
+  onmousemove={onMouseMove}
+  onmouseleave={onTableLeave}
 >
   <colgroup>
     {#if rowDimensionName && rowDimensionWidth}
@@ -300,7 +300,7 @@
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
               class:border-r={shouldShowHeaderRightBorder(header, i)}
-              on:click={header.column.getToggleSortingHandler()}
+              onclick={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
                 {#if icon}
@@ -346,8 +346,8 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
-            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
+            onmouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            onfocus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component

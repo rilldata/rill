@@ -46,7 +46,7 @@
     {#if locked}
       <Tooltip>
         <button
-          on:click={() => {
+          onclick={() => {
             locked = false;
           }}
           class="group grid bg-input place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"

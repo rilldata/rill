@@ -400,17 +400,14 @@
 </script>
 
 <svelte:window
-  on:keydown={async (e) => {
+  onkeydown={async (e) => {
     if (e.key === "Enter") {
       await onApply();
     }
   }}
 />
 
-<DropdownMenu.Root
-  bind:open
-  onOpenChange={handleOpenChange}
->
+<DropdownMenu.Root bind:open onOpenChange={handleOpenChange}>
   <DropdownMenu.Trigger asChild>
     <Tooltip
       activeDelay={500}
@@ -420,7 +417,6 @@
       suppress={open || readOnly}
     >
       <Chip
-       
         type="dimension"
         gray={selectedValues.length === 0 && !inputText}
         active={open}
@@ -450,7 +446,7 @@
             : undefined}
         />
       </Chip>
-      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
+      <div slot="tooltip-content" transitionfly={{ duration: 100, y: 4 }}>
         <TooltipContent maxWidth="400px">
           <TooltipTitle>
             <svelte:fragment slot="name">{name}</svelte:fragment>
@@ -549,7 +545,7 @@
                 role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
-                on:click={() => handleItemClick(name)}
+                onclick={() => handleItemClick(name)}
               >
                 <span>
                   {#if label.length > 240}
@@ -584,7 +580,7 @@
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}
-              on:click={() => handleItemClick(name)}
+              onclick={() => handleItemClick(name)}
             >
               <span>
                 {#if label.length > 240}

@@ -18,6 +18,8 @@
   export let availableGrains: V1TimeGrain[] = [];
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void = () => {};
   export let onRemove: () => void = () => {};
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 
   let dropdownOpen = false;
 
@@ -43,8 +45,8 @@
           {active}
           {slideDuration}
           {fullWidth}
-          on:mousedown
-          on:click
+          {onmousedown}
+          {onclick}
           {onRemove}
         >
           <div class="grain-dropdown" slot="body">
@@ -65,7 +67,7 @@
           role="menuitem"
           checked={option.key === item.id}
           class="text-xs cursor-pointer capitalize"
-          on:click={() => handleTimeGrainSelect(option.key)}
+          onclick={() => handleTimeGrainSelect(option.key)}
         >
           {option.main}
         </DropdownMenu.CheckboxItem>
@@ -80,8 +82,8 @@
     {active}
     {slideDuration}
     {fullWidth}
-    on:mousedown
-    on:click
+    {onmousedown}
+    {onclick}
     {onRemove}
   />
 {/if}

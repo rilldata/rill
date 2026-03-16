@@ -56,7 +56,7 @@
         {disabled}
         disableHover
         tooltipLocation="top"
-        on:click={() => handleChartTypeChange(id, disabled)}
+        onclick={() => handleChartTypeChange(id, disabled)}
       >
         <Icon
           primaryColor={disabled

@@ -33,7 +33,7 @@
           aria-label="Switch to {mark === 'bar' ? 'bar' : 'line'} editor"
           id="{mark}-toggle"
           class="size-[24px] z-10 hover:brightness-75"
-          on:click={() => {
+          onclick={() => {
             selectedMark = mark;
             onClick(mark);
           }}

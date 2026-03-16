@@ -26,7 +26,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Escape" || e.key === "Enter") {
       open = false;
     }
@@ -51,12 +51,12 @@
         class:text-red-500={!isColorValid}
         bind:value={stringColor}
         {disabled}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           if (e.key === "Enter") {
             e.currentTarget.blur();
           }
         }}
-        on:blur={() => {
+        onblur={() => {
           if (stringColor) {
             onChange(stringColor);
           }
@@ -68,9 +68,7 @@
           <button
             class="trigger"
             class:error-trigger={!isColorValid}
-
             class:open
-
             style:--hsl={hsl}
           >
             {#if !isColorValid}
@@ -134,9 +132,7 @@
         <button
           class="trigger"
           class:error-trigger={!isColorValid}
-
           class:open
-
           style:--hsl={hsl}
         >
           {#if !isColorValid}
@@ -199,12 +195,12 @@
       class:text-red-500={!isColorValid}
       bind:value={stringColor}
       {disabled}
-      on:keydown={(e) => {
+      onkeydown={(e) => {
         if (e.key === "Enter") {
           e.currentTarget.blur();
         }
       }}
-      on:blur={() => {
+      onblur={() => {
         if (stringColor) {
           onChange(stringColor);
         }

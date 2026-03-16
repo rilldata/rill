@@ -34,7 +34,7 @@
   {#if !isFlat}
     <div
       class="header-row"
-      transition:slide={{
+      transitionslide={{
         duration: 200,
         axis: "y",
       }}

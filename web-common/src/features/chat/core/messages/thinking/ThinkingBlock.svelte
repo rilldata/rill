@@ -51,10 +51,7 @@
 
 <Collapsible.Root bind:open={isExpanded} class="w-full max-w-full self-start">
   <Collapsible.Trigger asChild>
-    <button
-      class="thinking-header"
-      on:click={onUserInteraction}
-    >
+    <button class="thinking-header" onclick={onUserInteraction}>
       <div class="thinking-icon">
         {#if isExpanded}
           <CaretDownIcon size="14" />

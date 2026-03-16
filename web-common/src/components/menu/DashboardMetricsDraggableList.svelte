@@ -137,7 +137,7 @@
             {#if selectedItems.length > 1}
               <button
                 class="text-theme-500 pointer-events-auto hover:text-theme-600 font-medium text-xs"
-                on:click={hideAllItems}
+                onclick={hideAllItems}
               >
                 Hide all
               </button>
@@ -173,10 +173,11 @@
                   </span>
                   <button
                     class="{toggleButtonBaseClass} ml-auto"
-                    on:click|stopPropagation={() => removeSelectedItem(item.id)}
-                    on:mousedown|stopPropagation={() => {
-                      // NO-OP
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      removeSelectedItem(item.id);
                     }}
+                    onmousedown={(e) => e.stopPropagation()}
                     disabled={selectedItems.length === 1}
                     class:pointer-events-none={selectedItems.length === 1}
                     class:opacity-50={selectedItems.length === 1}
@@ -211,10 +212,11 @@
               </span>
               <button
                 class="{toggleButtonBaseClass} ml-auto"
-                on:click|stopPropagation={() => removeSelectedItem(item.id)}
-                on:mousedown|stopPropagation={() => {
-                  // NO-OP
+                onclick={(e) => {
+                  e.stopPropagation();
+                  removeSelectedItem(item.id);
                 }}
+                onmousedown={(e) => e.stopPropagation()}
                 disabled={selectedItems.length === 1}
                 class:pointer-events-none={selectedItems.length === 1}
                 class:opacity-50={selectedItems.length === 1}
@@ -250,7 +252,7 @@
               </h3>
               <button
                 class="pointer-events-auto text-theme-500 text-xs font-medium hover:text-theme-600"
-                on:click={showAllItems}
+                onclick={showAllItems}
               >
                 Show all
               </button>
@@ -282,8 +284,10 @@
                     </span>
                     <button
                       class={toggleButtonBaseClass}
-                      on:click|stopPropagation={() =>
-                        handleHiddenItemClick({ item, index })}
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        handleHiddenItemClick({ item, index });
+                      }}
                       aria-label={`Show ${displayName}`}
                       data-testid="toggle-visibility-button"
                       type="button"
@@ -309,8 +313,10 @@
                 </span>
                 <button
                   class="{toggleButtonBaseClass} "
-                  on:click|stopPropagation={() =>
-                    handleHiddenItemClick({ item, index })}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    handleHiddenItemClick({ item, index });
+                  }}
                   aria-label={`Show ${displayName}`}
                   data-testid="toggle-visibility-button"
                   type="button"

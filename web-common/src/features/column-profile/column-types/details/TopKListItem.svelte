@@ -19,11 +19,11 @@
 
 <button
   class="block flex flex-row w-full text-left transition-color"
-  on:blur={onLeave}
-  on:focus={onHover}
-  on:mouseleave={onLeave}
-  on:mouseover={onHover}
-  transition:slide={{ duration: 200 }}
+  onblur={onLeave}
+  onfocus={onHover}
+  onmouseleave={onLeave}
+  onmouseover={onHover}
+  transitionslide={{ duration: 200 }}
 >
   <BarAndLabel
     {color}

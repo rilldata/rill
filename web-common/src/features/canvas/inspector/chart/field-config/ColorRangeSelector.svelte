@@ -161,7 +161,7 @@
 
 {#if colorRangeConfig?.enable}
   <div>
-    <div class="space-y-2" transition:slide={{ duration: 200 }}>
+    <div class="space-y-2" transitionslide={{ duration: 200 }}>
       <!-- Mode Switcher -->
       <FieldSwitcher
         small

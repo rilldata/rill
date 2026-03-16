@@ -65,12 +65,12 @@
 <td
   role="button"
   tabindex="0"
-  on:click={modified({
+  onclick={modified({
     shift: () => shiftClickHandler(value),
   })}
-  on:pointerover={() => cellInspectorStore.updateValue(value)}
-  on:focus={() => cellInspectorStore.updateValue(value)}
-  on:mouseleave={() => (tooltipActive = false)}
+  onpointerover={() => cellInspectorStore.updateValue(value)}
+  onfocus={() => cellInspectorStore.updateValue(value)}
+  onmouseleave={() => (tooltipActive = false)}
   style:background
   class="{cellType}-cell {className}"
 >

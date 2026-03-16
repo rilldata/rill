@@ -141,13 +141,7 @@
 
 <DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger asChild>
-    <Button
-     
-      label="Add Asset"
-      class="w-full"
-      type="secondary"
-      selected={active}
-    >
+    <Button label="Add Asset" class="w-full" type="secondary" selected={active}>
       <PlusCircleIcon size="14px" />
       <div class="flex gap-x-1 items-center">
         Add
@@ -166,7 +160,7 @@
     <DropdownMenu.Item
       aria-label="Add Data"
       class="flex gap-x-2"
-      on:click={handleAddData}
+      onclick={handleAddData}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
@@ -175,7 +169,7 @@
       aria-label="Add Model"
       class="flex gap-x-2"
       disabled={!isModelingSupported}
-      on:click={() =>
+      onclick={() =>
         createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
     >
       <svelte:component
@@ -194,7 +188,7 @@
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
-      on:click={() =>
+      onclick={() =>
         createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
     >
       <svelte:component
@@ -208,7 +202,7 @@
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
       disabled={metricsViews.length === 0}
-      on:click={() => {
+      onclick={() => {
         if (metricsViews.length === 1) {
           void createResourceAndNavigate(
             runtimeClient,
@@ -238,7 +232,7 @@
 
     <DropdownMenu.Item
       class="flex items-center justify-between gap-x-2"
-      on:click={() =>
+      onclick={() =>
         createResourceAndNavigate(runtimeClient, ResourceKind.Canvas)}
       disabled={metricsViews.length === 0}
     >
@@ -270,7 +264,7 @@
         {#if $developerChat}
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={() => (generateDataDialog = true)}
+            onclick={() => (generateDataDialog = true)}
           >
             <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
             using AI
@@ -279,7 +273,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() =>
+          onclick={() =>
             createResourceAndNavigate(runtimeClient, ResourceKind.API)}
         >
           <svelte:component
@@ -291,7 +285,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => {
+          onclick={() => {
             showAiConnectorDialog = true;
           }}
         >
@@ -301,7 +295,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() =>
+          onclick={() =>
             createResourceAndNavigate(runtimeClient, ResourceKind.Theme)}
         >
           <svelte:component

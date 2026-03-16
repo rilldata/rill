@@ -97,7 +97,7 @@
             role="menuitem"
             disabled={requireSelection && singleSelection && selected}
             aria-disabled={requireSelection && singleSelection && selected}
-            on:click={() => {
+            onclick={() => {
               if (requireSelection && singleSelection && selected) return;
 
               onSelect(name);

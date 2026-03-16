@@ -22,7 +22,7 @@
   src={data.billingPortalUrl}
   title="Orb Billing Portal"
   class="w-full h-[1000px]"
-  on:load={() => (iframeLoading = false)}
+  onload={() => (iframeLoading = false)}
 />
 
 <style lang="postcss">

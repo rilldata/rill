@@ -54,7 +54,7 @@
           <button
             class="command-box"
             title={rillStartCommand}
-            on:click={() => onCopy(rillStartCommand)}
+            onclick={() => onCopy(rillStartCommand)}
           >
             <code class="text-xs truncate">{rillStartCommand}</code>
             <span class="text-fg-muted">
@@ -69,7 +69,7 @@
           <button
             class="command-box"
             title={cloneCommand}
-            on:click={() => onCopy(cloneCommand)}
+            onclick={() => onCopy(cloneCommand)}
           >
             <code class="text-xs truncate">{cloneCommand}</code>
             <span class="text-fg-muted">

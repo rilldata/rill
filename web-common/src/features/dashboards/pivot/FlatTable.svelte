@@ -135,9 +135,9 @@
   role="presentation"
   style:width="{totalLength}px"
   class:with-measure={measures.length > 0}
-  on:click={modified({ shift: onCellCopy, click: onCellClick })}
-  on:mousemove={onMouseMove}
-  on:mouseleave={onTableLeave}
+  onclick={modified({ shift: onCellCopy, click: onCellClick })}
+  onmousemove={onMouseMove}
+  onmouseleave={onTableLeave}
 >
   <colgroup>
     {#each headers as header (header.id)}
@@ -160,7 +160,7 @@
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={!!getMeasureColumn(header.column)}
               class:border-r={hasBorderRight(header.column.id)}
-              on:click={header.column.getToggleSortingHandler()}
+              onclick={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
                 {#if icon}
@@ -207,8 +207,8 @@
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
-            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
-            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
+            onmouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            onfocus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component

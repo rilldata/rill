@@ -165,11 +165,11 @@
     {#if !noPin && showMore}
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
-          transition:fly={{ duration: 200, y: 4 }}
+          transitionfly={{ duration: 200, y: 4 }}
           class:text-fg-primary={pinned}
           class:text-fg-secondary={!pinned}
           class="   duration-100 justify-self-end"
-          on:click={onPin}
+          onclick={onPin}
         >
           <Pin size="16px" />
         </button>

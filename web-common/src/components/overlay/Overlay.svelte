@@ -20,7 +20,7 @@
     "fixed top-0 left-0 right-0 w-screen h-screen grid place-content-center text-lg z-[120]";
 </script>
 
-<svelte:window on:keydown={captureKeydown} />
+<svelte:window onkeydown={captureKeydown} />
 
 <div use:portal>
   {#key bg}

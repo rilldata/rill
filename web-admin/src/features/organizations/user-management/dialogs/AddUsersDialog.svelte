@@ -191,7 +191,10 @@
     </DialogHeader>
     <form
       id={formId}
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       class="w-full"
       use:enhance
     >
@@ -222,7 +225,7 @@
             >
               {#each ORG_ROLES_OPTIONS as { value, label, description } (value)}
                 <DropdownMenuItem
-                  on:click={() => ($form.role = value)}
+                  onclick={() => ($form.role = value)}
                   class="text-xs hover:bg-surface-hover {$form.role === value
                     ? 'bg-surface-active'
                     : ''}"

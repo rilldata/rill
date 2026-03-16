@@ -307,7 +307,10 @@
     <form
       id={formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-y-5">
@@ -323,7 +326,7 @@
         <input
           type="file"
           bind:this={fileInput}
-          on:change={handleFileUpload}
+          onchange={handleFileUpload}
           class="hidden"
         />
         <div class="flex flex-col items-start gap-1">
@@ -370,7 +373,7 @@
                     ? "error-input-wrapper"
                     : ""}
                   placeholder="Key"
-                  on:input={(e) => handleKeyChange(index, e)}
+                  oninput={(e) => handleKeyChange(index, e)}
                   onBlur={() => {
                     checkForExistingKeys();
                   }}
@@ -380,10 +383,10 @@
                   id={`value-${index}`}
                   label=""
                   placeholder="Value"
-                  on:input={(e) => handleValueChange(index, e)}
+                  oninput={(e) => handleValueChange(index, e)}
                 />
                 <IconButton
-                  on:click={() => {
+                  onclick={() => {
                     // Reset if there is only one variable
                     if ($form.variables.length === 1) {
                       handleReset();

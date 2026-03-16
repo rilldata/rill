@@ -77,7 +77,7 @@
     {#if showIndicator}
       <span
         class="w-1.5 h-1.5 bg-gray-300 rounded flex-none mr-1"
-        transition:scale={{ duration: 200, easing: cubicOut }}
+        transitionscale={{ duration: 200, easing: cubicOut }}
       ></span>
     {/if}
 

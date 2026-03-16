@@ -56,7 +56,6 @@
         removable={isRemovable && !!selectedItem}
         {onRemove}
         type={isTimeSelected ? "time" : type}
-       
       >
         <span
           class="font-bold truncate"
@@ -82,7 +81,7 @@
         {#if type == "dimension" && includeTime && $timeDimension}
           <DropdownMenu.Item
             class="pl-8 mx-1"
-            on:click={() => {
+            onclick={() => {
               onSelect($timeDimension, "Time");
               open = false;
             }}
@@ -95,7 +94,7 @@
           {#if item !== selectedItem}
             <DropdownMenu.Item
               class="pl-8 mx-1"
-              on:click={() => {
+              onclick={() => {
                 onSelect(item, $fieldData.displayMap[item]?.label || item);
                 open = false;
               }}

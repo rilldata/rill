@@ -84,7 +84,7 @@
   <div
     role="presentation"
     class="size-full grow flex flex-col"
-    on:mousedown={onMouseDown}
+    onmousedown={onMouseDown}
   >
     {#if component}
       <svelte:component this={component.component} {component} />

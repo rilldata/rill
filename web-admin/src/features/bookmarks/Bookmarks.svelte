@@ -168,7 +168,6 @@
 <DropdownMenu bind:open>
   <DropdownMenuTrigger asChild>
     <Button
-     
       compact
       square
       type="secondary"
@@ -179,7 +178,7 @@
     </Button>
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[450px]">
-    <DropdownMenuItem on:click={() => (showDialog = true)}>
+    <DropdownMenuItem onclick={() => (showDialog = true)}>
       <div class="flex flex-row gap-x-2 items-center">
         <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
         <div class="text-xs">Bookmark current view</div>
@@ -206,7 +205,6 @@
                 {bookmark}
                 {onEdit}
                 onDelete={deleteBookmark}
-                on:select
               />
             {/key}
           {/each}

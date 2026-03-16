@@ -221,7 +221,10 @@
     </DialogDescription>
     <form
       id={formId}
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       class="w-full"
       use:enhance
     >
@@ -254,9 +257,7 @@
         {:else if projects.length === 0}
           <div class="text-xs text-fg-secondary">No projects</div>
         {:else}
-          <Dropdown.Root
-            bind:open={projectDropdownOpen}
-          >
+          <Dropdown.Root bind:open={projectDropdownOpen}>
             <Dropdown.Trigger
               class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
                 ? 'bg-gray-200'

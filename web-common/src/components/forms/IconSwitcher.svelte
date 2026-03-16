@@ -18,9 +18,7 @@
     <Tooltip.Root>
       <Tooltip.Trigger asChild>
         <button
-
-
-          on:click={() => onClick(id)}
+          onclick={() => onClick(id)}
           class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
           class:selected={selected === id}
         >

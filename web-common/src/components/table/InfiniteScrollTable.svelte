@@ -178,7 +178,7 @@
                 colSpan={header.colSpan}
                 style={`width: ${widthPercent}%;`}
                 class="px-4 py-2 text-left"
-                on:click={header.column.getToggleSortingHandler()}
+                onclick={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
                   <div

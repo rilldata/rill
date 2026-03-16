@@ -263,7 +263,7 @@
   }
 </script>
 
-<svelte:window on:click={maybeClearMeasureSelection} />
+<svelte:window onclick={maybeClearMeasureSelection} />
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
   <div
@@ -292,8 +292,6 @@
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
           <DropdownMenu.Trigger asChild>
             <button
-
-
               aria-label="Select aggregation grain"
               class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
             >
@@ -316,7 +314,7 @@
                 role="menuitem"
                 checked={option === activeTimeGrain}
                 class="text-xs cursor-pointer"
-                on:click={() => {
+                onclick={() => {
                   metricsExplorerStore.setTimeGrain(exploreName, option);
                 }}
               >

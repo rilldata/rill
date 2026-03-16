@@ -9,7 +9,7 @@
 </script>
 
 <button
-  on:click={() => onChange(!fullyChecked)}
+  onclick={() => onChange(!fullyChecked)}
   {disabled}
   class={className}
   class:checked={fullyChecked}

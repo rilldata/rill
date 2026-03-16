@@ -149,11 +149,11 @@
       aria-label={label}
       type="text"
       bind:value={dateString}
-      on:focus={() => {
+      onfocus={() => {
         onFocus();
         inputIsFocused = true;
       }}
-      on:blur={() => {
+      onblur={() => {
         processInput(dateString);
         inputIsFocused = false;
       }}
@@ -161,7 +161,7 @@
     {#if errorType === ErrorType.OUT_OF_RANGE || (errorType && !inputIsFocused)}
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <button on:click={resetDate}>
+          <button onclick={resetDate}>
             <AlertTriangle
               className="size-4 text-{errorType === ErrorType.INVALID
                 ? 'red'

@@ -116,7 +116,7 @@
       data-index={i}
       role="presentation"
       data-type={displayMap[item]?.type ?? "dimension"}
-      on:mousedown={(e) => handleMouseDown(e, item, i)}
+      onmousedown={(e) => handleMouseDown(e, item, i)}
     >
       <Chip
         removable

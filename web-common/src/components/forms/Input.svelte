@@ -171,13 +171,13 @@
           aria-label={label || title || placeholder}
           bind:this={inputElement}
           bind:value
-          on:input={(e) => {
+          oninput={(e) => {
             value = e.currentTarget.value;
             onInput(value, e);
           }}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
+          onkeydown={onKeydown}
+          onblur={onElementBlur}
+          onfocus={() => (focus = true)}
         ></textarea>
       {:else}
         <input
@@ -191,7 +191,7 @@
           value={value ?? (inputType === "number" ? null : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
-          on:input={(e) => {
+          oninput={(e) => {
             if (inputType === "number") {
               if (e.currentTarget.value === "") {
                 value = undefined;
@@ -203,9 +203,9 @@
             value = e.currentTarget.value;
             onInput(value, e);
           }}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
+          onkeydown={onKeydown}
+          onblur={onElementBlur}
+          onfocus={() => (focus = true)}
         />
       {/if}
       {#if secret}
@@ -213,7 +213,7 @@
           size={20}
           disableHover
           ariaLabel={showPassword ? "Hide password" : "Show password"}
-          on:click={() => {
+          onclick={() => {
             showPassword = !showPassword;
           }}
         >

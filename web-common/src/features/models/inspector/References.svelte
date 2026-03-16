@@ -64,7 +64,7 @@
     </div>
 
     {#if showReferences}
-      <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
+      <div transitionslide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
         {#each refs as reference, index (reference.name)}
           {@const resource = referencedResources[index]}
           {@const cardinality = referencedResourcesCardinalities[index]}

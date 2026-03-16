@@ -98,7 +98,7 @@
     <div style:max-height="200px" class="overflow-y-auto">
       {#each menuOptions as option (option.name)}
         <DropdownMenu.Item
-          on:click={() => {
+          onclick={() => {
             enableComparison("dimension", option.name);
           }}
         >

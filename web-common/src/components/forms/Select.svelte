@@ -136,11 +136,14 @@
           class="text-[{fontSize}px] {!selected
             ? 'text-fg-secondary'
             : 'text-fg-primary'} w-full text-left"
-        >{selected?.label ?? placeholder}</span>
+          >{selected?.label ?? placeholder}</span
+        >
         {#if clearable && value}
           <button
             class="flex items-center justify-center size-4 rounded-full text-fg-tertiary hover:text-fg-primary hover:bg-surface-hover transition-colors shrink-0"
-            on:click|stopPropagation|preventDefault={() => {
+            onclick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
               value = "";
               onChange("");
               selectKey++;

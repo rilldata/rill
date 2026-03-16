@@ -348,7 +348,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Escape") onCancel(unsavedChanges);
   }}
 />
@@ -427,7 +427,7 @@
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
     <p class="text-fg-muted">
       For more options,
-      <button on:click={switchView} class="text-primary-600 font-medium">
+      <button onclick={switchView} class="text-primary-600 font-medium">
         edit in YAML
       </button>
     </p>

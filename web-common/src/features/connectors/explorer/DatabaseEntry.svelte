@@ -34,7 +34,7 @@
     <button
       class="database-entry-header"
       class:open={expanded}
-      on:click={() => store.toggleItem(connectorName, database)}
+      onclick={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
         className="transform transition-transform text-fg-secondary {expanded
@@ -49,7 +49,7 @@
     </button>
   {/if}
 
-  <ol transition:slide={{ duration }}>
+  <ol transitionslide={{ duration }}>
     {#if expanded}
       {#if error}
         <span class="message">Error: {extractErrorMessage(error)}</span>

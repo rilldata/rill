@@ -124,7 +124,6 @@
       suppress={active}
     >
       <Button
-       
         type="text"
         theme
         dataAttributes={{
@@ -195,7 +194,7 @@
                 checked={multiSelect}
                 id="multi-measure-select"
                 small
-                on:click={toggleMultiSelect}
+                onclick={toggleMultiSelect}
                 data-testid="multi-measure-select-switch"
               />
               <InputLabel
@@ -209,7 +208,7 @@
         {/if}
       </DropdownMenu.Content>
 
-      <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
+      <div slot="tooltip-content" transitionfly={{ duration: 300, y: 4 }}>
         <TooltipContent maxWidth="400px">
           Choose measures to display
         </TooltipContent>

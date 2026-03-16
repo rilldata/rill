@@ -75,9 +75,7 @@
     class="tool-call {variant === 'block' ? 'block' : 'inline'}"
   >
     <Collapsible.Trigger asChild>
-      <button
-        class="tool-button"
-      >
+      <button class="tool-button">
         <div class="tool-icon">
           {#if !hasResult && !isExpanded}
             <LoadingSpinner size="14px" />
@@ -98,14 +96,14 @@
         <button
           class="tool-tab"
           class:active={activeTab === "request"}
-          on:click={() => (activeTab = "request")}
+          onclick={() => (activeTab = "request")}
         >
           Request
         </button>
         <button
           class="tool-tab"
           class:active={activeTab === "response"}
-          on:click={() => (activeTab = "response")}
+          onclick={() => (activeTab = "response")}
         >
           {isError ? "Error" : "Response"}
         </button>

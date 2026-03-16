@@ -56,7 +56,14 @@
   );
 </script>
 
-<form on:submit|preventDefault={submit} id="request-connector-form" use:enhance>
+<form
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
+  id="request-connector-form"
+  use:enhance
+>
   <span class="text-fg-secondary text-sm mt-2">
     Don't see the connector you're looking for? Let us know what we're missing!
   </span>

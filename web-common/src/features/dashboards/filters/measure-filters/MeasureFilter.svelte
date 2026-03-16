@@ -54,7 +54,6 @@
       <Chip
         type="measure"
         active={open}
-       
         {label}
         gray={!filter}
         theme
@@ -71,7 +70,7 @@
           slot="body"
         />
       </Chip>
-      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
+      <div slot="tooltip-content" transitionfly={{ duration: 100, y: 4 }}>
         <TooltipContent maxWidth="400px">
           <TooltipTitle>
             <svelte:fragment slot="name">{name}</svelte:fragment>

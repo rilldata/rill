@@ -70,7 +70,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:focus={handleRefocus} />
+<svelte:window onkeydown={handleKeydown} onfocus={handleRefocus} />
 
 <section>
   {#if $merging}
@@ -141,7 +141,7 @@
           bind:checked={autoSave}
           id="auto-save"
           small
-          on:click={() => {
+          onclick={() => {
             if (!autoSave) debounceSave();
           }}
         />
@@ -163,7 +163,6 @@
       <AlertDialog.Footer>
         <AlertDialog.Action asChild>
           <Button
-           
             type="primary"
             large
             onClick={() => {
@@ -173,12 +172,7 @@
             Compare
           </Button>
 
-          <Button
-           
-            type="secondary"
-            large
-            onClick={revertContent}
-          >
+          <Button type="secondary" large onClick={revertContent}>
             Overwrite
           </Button>
         </AlertDialog.Action>

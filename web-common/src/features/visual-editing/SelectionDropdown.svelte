@@ -40,13 +40,7 @@
   }}
 >
   <DropdownMenu.Trigger asChild {id}>
-    <button
-
-
-      class:open
-      class:small
-      class="dropdown-trigger"
-    >
+    <button class:open class:small class="dropdown-trigger">
       {#if type}
         {selectedItems.size} {type}
       {:else}
@@ -70,7 +64,7 @@
           <DropdownMenu.CheckboxItem
             showXForSelected={excludeMode}
             checked={selectedItems.has(item)}
-            on:click={() => {
+            onclick={() => {
               onSelect(item);
             }}
           >
@@ -89,7 +83,7 @@
         <DropdownMenu.CheckboxItem
           showXForSelected={excludeMode}
           checked={selectedItems.has(item)}
-          on:click={() => {
+          onclick={() => {
             onSelect(item);
           }}
         >

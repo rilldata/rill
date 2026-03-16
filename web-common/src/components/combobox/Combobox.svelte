@@ -126,7 +126,7 @@
     <div
       class="max-h-[208px] overflow-y-auto"
       bind:this={contentEl}
-      on:scroll={maybeLoadMoreOnScroll}
+      onscroll={maybeLoadMoreOnScroll}
     >
       {#if filteredItems.length === 0}
         <div class="px-4 py-2 text-xs text-fg-secondary">No results found</div>

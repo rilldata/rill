@@ -68,7 +68,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeyDown} />
+<svelte:window onkeydown={handleKeyDown} />
 
 <span
   bind:this={chatElement}
@@ -79,7 +79,7 @@
     this={isEditable ? "button" : "div"}
     class="inline-chat-context-value"
     class:cursor-default={!isEditable}
-    on:click={toggleDropdown}
+    onclick={toggleDropdown}
     type="button"
     role="button"
     tabindex="-1"

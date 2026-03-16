@@ -175,7 +175,10 @@
 {#if priorRange || (subInterval?.isValid && !subInterval.start.equals(subInterval.end))}
   <button
     bind:this={button}
-    on:click|stopPropagation={handleClick}
+    onclick={(e) => {
+      e.stopPropagation();
+      handleClick(e);
+    }}
     aria-label={priorRange ? "Undo zoom" : "Zoom"}
   >
     <div class="content-wrapper">
@@ -199,7 +202,7 @@
 {/if}
 
 <!-- Only to be used on singleton components to avoid multiple state dispatches -->
-<svelte:window on:keydown={onKeyDown} />
+<svelte:window onkeydown={onKeyDown} />
 
 <style lang="postcss">
   button {

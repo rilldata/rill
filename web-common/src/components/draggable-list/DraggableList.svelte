@@ -191,7 +191,7 @@
     <div
       role="presentation"
       class="flex flex-col p-1.5"
-      on:mousedown={handleMouseDown}
+      onmousedown={handleMouseDown}
     >
       {#if filteredItems.length === 0}
         <div class="px-2 py-2 text-xs text-fg-secondary">
@@ -228,7 +228,7 @@
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}
               class:cursor-default={!draggable && !onItemClick}
-              on:click={() => handleItemClick(item, i)}
+              onclick={() => handleItemClick(item, i)}
             >
               <slot name="item" {item} index={i} {isDragItem}>
                 <span class="truncate flex-1 text-left pointer-events-none">

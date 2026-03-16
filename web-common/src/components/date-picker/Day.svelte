@@ -77,11 +77,11 @@
   type="button"
   class="py-0.5 wrapper size-full"
   {disabled}
-  on:click={() => {
+  onclick={() => {
     onSelectDay(date);
     resetPotentialDates();
   }}
-  on:mouseenter={() => {
+  onmouseenter={() => {
     if (singleDaySelection) return;
 
     onHoverDay(date);

@@ -1,20 +1,22 @@
 <script lang="ts">
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import type { Snippet } from "svelte";
 
   type ItemType = "default" | "destructive";
 
-  type $$Props = DropdownMenuPrimitive.ItemProps & {
+  let {
+    class: className,
+    inset,
+    type = "default" as ItemType,
+    children,
+    ...restProps
+  }: DropdownMenuPrimitive.ItemProps & {
     inset?: boolean;
     type?: ItemType;
     href?: string;
-  };
-
-  let className: $$Props["class"] = undefined;
-  export { className as class };
-
-  export let inset: $$Props["inset"] = undefined;
-  export let type: $$Props["type"] = "default";
+    children?: Snippet;
+  } = $props();
 </script>
 
 <DropdownMenuPrimitive.Item
@@ -25,7 +27,7 @@
       "text-red-500 hover:text-red-600 data-[highlighted]:text-red-600",
     className,
   )}
-  {...$$restProps}
+  {...restProps}
 >
-  <slot />
+  {@render children?.()}
 </DropdownMenuPrimitive.Item>

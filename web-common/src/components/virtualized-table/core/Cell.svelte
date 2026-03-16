@@ -38,6 +38,7 @@
     index: number;
     meta: boolean;
   }) => void = () => {};
+  export let onkeydown: ((e: KeyboardEvent) => void) | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -133,12 +134,12 @@
       {isDimensionTable ? '' : 'border-r border-b'}
       {activityStatus}
       "
-    on:blur={onBlur}
-    on:click={onSelect}
-    on:focus={onFocus}
-    on:keydown
-    on:mouseout={onBlur}
-    on:mouseover={onFocus}
+    onblur={onBlur}
+    onclick={onSelect}
+    onfocus={onFocus}
+    {onkeydown}
+    onmouseout={onBlur}
+    onmouseover={onFocus}
     role="gridcell"
     style:height="{row.size}px"
     style:left="{column.start}px"
@@ -159,7 +160,7 @@
         aria-label={label}
         class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
         class:px-4={!isDimensionTable}
-        on:click={modified({
+        onclick={modified({
           shift: shiftClick,
         })}
         style:height="{row.size}px"

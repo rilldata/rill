@@ -78,7 +78,7 @@
 </script>
 
 {#if topKCopy && totalRows}
-  <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+  <div transitionslide={{ duration: LIST_SLIDE_DURATION }}>
     {#each topKCopy.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
@@ -95,7 +95,7 @@
             <button
               style:font-size="12px"
               class="text-ellipsis overflow-hidden whitespace-nowrap"
-              on:click={modified({
+              onclick={modified({
                 shift: () =>
                   copyToClipboard(
                     getCopyValue(type, item.value),
@@ -132,7 +132,7 @@
         <svelte:fragment slot="right">
           <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
             <button
-              on:click={modified({
+              onclick={modified({
                 shift: () =>
                   copyToClipboard(
                     item.count,

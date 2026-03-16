@@ -21,7 +21,7 @@
         aria-label="Switch to {view === 'viz' ? 'visual' : view} editor"
         id="{view}-toggle"
         class="size-[22px] z-10 hover:brightness-75 p-0"
-        on:click={() => {
+        onclick={() => {
           if (selectedView === "code") {
             selectedView = "viz";
           } else {

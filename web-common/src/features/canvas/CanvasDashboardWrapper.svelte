@@ -38,7 +38,9 @@
       <header
         role="presentation"
         class="bg-surface-subtle border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
-        on:click|self={onClick}
+        onclick={(e) => {
+          if (e.target === e.currentTarget) onClick(e);
+        }}
       >
         <CanvasFilters {canvasName} {maxWidth} {builder} />
       </header>
@@ -52,7 +54,9 @@
       class:w-full={$dynamicHeight}
       class:size-full={!$dynamicHeight}
       class:pb-48={!embedded}
-      on:click|self={onClick}
+      onclick={(e) => {
+        if (e.target === e.currentTarget) onClick(e);
+      }}
     >
       <div
         class="w-full h-fit flex flex-col items-center row-container relative"

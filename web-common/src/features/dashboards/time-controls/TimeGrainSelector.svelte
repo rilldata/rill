@@ -51,8 +51,6 @@
     <DropdownMenu.Trigger asChild>
       <button
         class:tdd
-
-
         aria-label="Select a time grain"
         class="flex items-center gap-x-1"
       >
@@ -83,7 +81,7 @@
           role="menuitem"
           checked={option.key === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
-          on:click={() => onTimeGrainSelect(option.key)}
+          onclick={() => onTimeGrainSelect(option.key)}
         >
           {option.main}
         </DropdownMenu.CheckboxItem>

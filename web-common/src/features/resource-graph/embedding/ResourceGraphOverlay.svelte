@@ -91,7 +91,7 @@
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
       class="graph-overlay__backdrop bg-neutral-800/60 dark:bg-neutral-100/60"
-      on:click={handleBackdropClick}
+      onclick={handleBackdropClick}
       role="presentation"
     >
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -102,7 +102,7 @@
         aria-label={anchorName
           ? `Resource graph for ${anchorName}`
           : "Resource graph"}
-        on:click={handleDialogClick}
+        onclick={handleDialogClick}
       >
         <header class="graph-overlay__header">
           <div class="graph-overlay__title">
@@ -118,7 +118,7 @@
             </a>
             <button
               class="graph-overlay__close"
-              on:click={closeOverlay}
+              onclick={closeOverlay}
               aria-label="Close resource graph overlay"
             >
               <X size="18px" aria-hidden="true" />

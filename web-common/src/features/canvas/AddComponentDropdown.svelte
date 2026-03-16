@@ -62,8 +62,6 @@
   <DropdownMenu.Trigger asChild>
     {#if componentForm}
       <button
-
-
         class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
       >
         <PlusCircle class="w-6 h-6 text-fg-secondary" />
@@ -71,8 +69,6 @@
       </button>
     {:else if floatingForm}
       <button
-
-
         class:pr-3.5={open}
         aria-label="Add widget"
         class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
@@ -89,13 +85,11 @@
     {:else}
       <button
         {disabled}
-
-
         aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
         class:bg-surface-background={open}
         class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
-        on:mouseenter={onMouseEnter}
+        onmouseenter={onMouseEnter}
       >
         <PlusCircle size="15px" />
       </button>
@@ -105,11 +99,11 @@
   <DropdownMenu.Content
     align={componentForm || floatingForm ? "center" : "start"}
   >
-    <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
+    <div class="flex flex-col" role="presentation" onmouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
         <DropdownMenu.Item
           class="flex flex-row gap-x-2 text-fg-primary"
-          on:click={() => {
+          onclick={() => {
             if (id === "bar_chart") {
               handleChartItemClick();
             } else {

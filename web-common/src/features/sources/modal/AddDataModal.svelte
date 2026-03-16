@@ -231,7 +231,7 @@
               {#each sourceConnectors as connector (connector.name)}
                 <button
                   id={connector.name}
-                  on:click={() => goToConnectorForm(connector)}
+                  onclick={() => goToConnectorForm(connector)}
                   class="connector-tile-button size-full"
                 >
                   <div class="connector-wrapper px-6 py-4">
@@ -255,7 +255,7 @@
               <button
                 id={connector.name}
                 class="connector-tile-button size-full"
-                on:click={() => goToConnectorForm(connector)}
+                onclick={() => goToConnectorForm(connector)}
               >
                 <div class="connector-wrapper px-6 py-4">
                   <svelte:component this={ICONS[connector.name]} />
@@ -269,7 +269,7 @@
           Don't see what you're looking for?
           <button
             class="text-primary-500 hover:text-primary-600 font-medium"
-            on:click={goToRequestConnector}
+            onclick={goToRequestConnector}
           >
             Request a new connector
           </button>

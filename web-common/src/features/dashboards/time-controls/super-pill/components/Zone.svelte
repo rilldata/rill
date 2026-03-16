@@ -55,8 +55,6 @@
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger asChild>
     <button
-
-
       class="flex items-center gap-x-1"
       aria-label="Timezone selector"
       title={!availableTimeZones.length ? "No timezones configured" : ""}
@@ -98,7 +96,7 @@
         <DropdownMenu.CheckboxItem
           checkRight
           checked={activeTimeZone === iana}
-          on:click={() => {
+          onclick={() => {
             onSelectTimeZone(iana);
           }}
         >
@@ -120,7 +118,7 @@
           <DropdownMenu.Label>Recent</DropdownMenu.Label>
           {#if recentIANAs.length}
             <button
-              on:click={() => {
+              onclick={() => {
                 recents.set([]);
               }}
               class="text-[10px] text-fg-secondary">Clear recents</button
@@ -134,7 +132,7 @@
             <DropdownMenu.CheckboxItem
               checkRight
               checked={activeTimeZone === iana}
-              on:click={() => {
+              onclick={() => {
                 onSelectTimeZone(iana);
               }}
             >
@@ -162,7 +160,7 @@
         {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
           <DropdownMenu.CheckboxItem
             checkRight
-            on:click={() => {
+            onclick={() => {
               onSelectTimeZone(iana);
               recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
             }}

@@ -389,10 +389,10 @@
         tabindex="0"
         class="flex flex-row items-center gap-x-2 justify-between rounded-sm cursor-auto"
         data-hovered={isHovered}
-        on:mouseover={() => (isHovered = true)}
-        on:mouseleave={() => (isHovered = false)}
-        on:focus={() => (isHovered = true)}
-        on:blur={() => (isHovered = false)}
+        onmouseover={() => (isHovered = true)}
+        onmouseleave={() => (isHovered = false)}
+        onfocus={() => (isHovered = true)}
+        onblur={() => (isHovered = false)}
       >
         <GeneralAccessSelectorDropdown {organization} {project} />
 

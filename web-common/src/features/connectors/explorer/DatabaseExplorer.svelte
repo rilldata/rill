@@ -42,7 +42,7 @@
     {#if data.length === 0}
       <span class="message pl-6">No tables found</span>
     {:else}
-      <ol transition:slide={{ duration }}>
+      <ol transitionslide={{ duration }}>
         {#each data as database (database)}
           <DatabaseEntry {connector} {database} {store} />
         {/each}

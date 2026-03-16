@@ -124,7 +124,7 @@
   class="wrapper"
   style:max-height="{Math.max(80, ((filteredIndices?.length ?? 0) + 1) * 40) +
     1}px"
-  on:scroll={(e) => {
+  onscroll={(e) => {
     scroll = e.currentTarget.scrollLeft;
   }}
   bind:contentRect={wrapperRect}

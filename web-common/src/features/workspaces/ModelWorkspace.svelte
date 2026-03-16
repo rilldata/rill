@@ -104,7 +104,7 @@
     <svelte:fragment slot="workspace-controls">
       <p
         class="text-fg-muted line-clamp-1 mr-2 text-[11px]"
-        transition:fade={{ duration: 200 }}
+        transitionfade={{ duration: 200 }}
       >
         {#if refreshedOn}
           Computed on {formatRefreshedOn(refreshedOn)}
@@ -148,7 +148,7 @@
         <svelte:fragment slot="error">
           {#if allErrors.length > 0}
             <div
-              transition:slide={{ duration: 200 }}
+              transitionslide={{ duration: 200 }}
               class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto flex flex-col gap-2"
               aria-label="Model errors"
             >

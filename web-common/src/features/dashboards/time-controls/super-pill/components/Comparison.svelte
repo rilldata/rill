@@ -102,8 +102,6 @@
     <button
       {disabled}
       aria-disabled={disabled}
-
-
       aria-label="Select time comparison option"
       type="button"
     >
@@ -135,7 +133,7 @@
           {@const selected = selectedLabel === option.name}
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={() => {
+            onclick={() => {
               onCompareRangeSelect(option.name);
               open = false;
             }}
@@ -155,7 +153,7 @@
 
           <DropdownMenu.Item
             data-range="custom"
-            on:click={() => {
+            onclick={() => {
               showSelector = !showSelector;
             }}
           >

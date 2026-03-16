@@ -32,11 +32,9 @@
 <Tooltip.Root disableHoverableContent={true}>
   <Tooltip.Trigger asChild id="{id}-timestamp-trigger">
     <button
-
-
       class:italic
       class="text-xs text-inherit"
-      on:click={() => {
+      onclick={() => {
         if (isoString) copyToClipboard(isoString);
       }}
     >

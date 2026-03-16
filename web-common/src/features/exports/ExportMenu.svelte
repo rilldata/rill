@@ -105,15 +105,14 @@
 
   <DropdownMenu.Content align="start">
     <DropdownMenu.Item
-      on:click={() =>
-        handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
+      onclick={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
       disabled={!exportQuery}
     >
       Export as CSV
     </DropdownMenu.Item>
     {#if !workspace && $exportHeader}
       <DropdownMenu.Item
-        on:click={() =>
+        onclick={() =>
           handleExport({
             format: V1ExportFormat.EXPORT_FORMAT_CSV,
             includeHeader: true,
@@ -124,7 +123,7 @@
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      on:click={() =>
+      onclick={() =>
         handleExport({ format: V1ExportFormat.EXPORT_FORMAT_PARQUET })}
       disabled={!exportQuery}
     >
@@ -132,7 +131,7 @@
     </DropdownMenu.Item>
 
     <DropdownMenu.Item
-      on:click={() =>
+      onclick={() =>
         handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX })}
       disabled={!exportQuery}
     >
@@ -140,7 +139,7 @@
     </DropdownMenu.Item>
     {#if !workspace && $exportHeader}
       <DropdownMenu.Item
-        on:click={() =>
+        onclick={() =>
           handleExport({
             format: V1ExportFormat.EXPORT_FORMAT_XLSX,
             includeHeader: true,
@@ -152,7 +151,7 @@
     {/if}
     {#if includeScheduledReport && $reports && exploreName}
       <DropdownMenu.Item
-        on:click={() => (showScheduledReportDialog = true)}
+        onclick={() => (showScheduledReportDialog = true)}
         disabled={!scheduledReportQuery}
       >
         Create scheduled report...

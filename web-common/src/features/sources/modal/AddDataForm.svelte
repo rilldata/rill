@@ -391,7 +391,7 @@
           Already connected? <button
             type="button"
             class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-            on:click={() => formManager.handleSkip()}
+            onclick={() => formManager.handleSkip()}
           >
             Import your data
           </button>

@@ -66,7 +66,7 @@
   >
     {#if selected}
       <a
-        on:click={() => {
+        onclick={() => {
           if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
         href={isCurrentPage
@@ -86,12 +86,7 @@
     {#if options.size > 1}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button
-
-
-            class="trigger"
-            aria-label="Breadcrumb dropdown"
-          >
+          <button class="trigger" aria-label="Breadcrumb dropdown">
             <CaretDownIcon size="14px" />
           </button>
         </DropdownMenu.Trigger>
@@ -116,7 +111,7 @@
                 $page.route.id ?? "",
               )}
               preloadData={option.preloadData}
-              on:click={() => {
+              onclick={() => {
                 if (onSelect) {
                   onSelect(id);
                 }

@@ -25,9 +25,7 @@
     numAvailable === numShown ? "All" : `${numShown} of ${numAvailable}`;
 </script>
 
-<DropdownMenu.Root
-  bind:open={active}
->
+<DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger asChild>
     <Tooltip
       activeDelay={60}
@@ -51,7 +49,7 @@
         </div>
       </Button>
 
-      <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
+      <div slot="tooltip-content" transitionfly={{ duration: 300, y: 4 }}>
         <TooltipContent maxWidth="400px">
           {tooltipText}
         </TooltipContent>

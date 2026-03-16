@@ -20,7 +20,7 @@
   role="menuitem"
   class:font-bold={selected}
   class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-popover-accent rounded-sm w-full select-none flex items-center"
-  on:click={() => {
+  onclick={() => {
     onClick(range);
   }}
 >

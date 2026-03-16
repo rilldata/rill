@@ -156,7 +156,7 @@
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
               <DropdownMenu.Item
-                on:click={handleEditReport}
+                onclick={handleEditReport}
                 disabled={!$exploreIsValid}
               >
                 Edit report

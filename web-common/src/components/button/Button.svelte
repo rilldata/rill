@@ -69,7 +69,7 @@
   {target}
   aria-disabled={disabled}
   rel={target === "_blank" ? "noopener noreferrer" : rel}
-  on:click={handleClick}
+  onclick={handleClick}
   style={forcedStyle}
   {...href ? { "data-sveltekit-preload-data": preload ? "hover" : "off" } : {}}
   {...dataAttributes}

@@ -88,7 +88,7 @@
   <div>
     <button
       class="w-full p-1 flex items-center justify-between hover:bg-surface-background"
-      on:click={toggleExpanded}
+      onclick={toggleExpanded}
     >
       <span class="text-xs font-medium">Color mapping</span>
       <div class="flex items-center gap-x-2">
@@ -103,7 +103,7 @@
     {#if isExpanded}
       <div
         class="px-1 py-2 overflow-y-auto space-y-1"
-        transition:slide={{ duration: 200 }}
+        transitionslide={{ duration: 200 }}
       >
         {#each displayedColorMappings as { value, color } (value)}
           <ColorInput

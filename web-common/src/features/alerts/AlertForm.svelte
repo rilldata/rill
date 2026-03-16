@@ -291,7 +291,10 @@
   autocomplete="off"
   class="flex flex-col gap-y-3"
   id={formId}
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
   use:enhance
 >
   <DialogTitle

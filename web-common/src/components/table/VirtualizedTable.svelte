@@ -124,7 +124,7 @@
           tabindex="0"
           class="pl-{header.column.columnDef.meta?.marginLeft ||
             '4'} py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm"
-          on:click={header.column.getToggleSortingHandler()}
+          onclick={header.column.getToggleSortingHandler()}
         >
           {#if !header.isPlaceholder}
             <span class="truncate">

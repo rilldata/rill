@@ -15,6 +15,9 @@
   export let resizableColumns: boolean;
   export let sortedColumn: string | null;
   export let startColumn: number;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onmouseenter: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 <thead>
@@ -37,9 +40,9 @@
         {position}
         lastPinned={i === pinnedColumns.size - 1}
         {HeaderCell}
-        on:click
-        on:mousedown
-        on:mouseenter
+        {onclick}
+        {onmousedown}
+        {onmouseenter}
       />
     {/each}
 
@@ -58,9 +61,9 @@
           {name}
           resizable={resizableColumns}
           {HeaderCell}
-          on:mouseenter
-          on:click
-          on:mousedown
+          {onmouseenter}
+          {onclick}
+          {onmousedown}
         />
       {/if}
     {/each}

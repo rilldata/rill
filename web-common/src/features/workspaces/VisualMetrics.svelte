@@ -554,7 +554,7 @@
             <svelte:fragment slot="mode-switch">
               {#if isModelingSupported}
                 <button
-                  on:click={switchTableMode}
+                  onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
                   Select model
@@ -565,8 +565,6 @@
           <DropdownMenu.Root bind:open={tableSelectionOpen}>
             <DropdownMenu.Trigger asChild>
               <button
-
-
                 class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
                 focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
                "
@@ -625,7 +623,7 @@
             <svelte:fragment slot="mode-switch">
               {#if hasNonDuckDBOLAPConnector}
                 <button
-                  on:click={switchTableMode}
+                  onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
                   Select table
@@ -693,7 +691,7 @@
             {totalSelected > 1 ? "items" : "item"} selected:
           </div>
           <button
-            on:click={() => {
+            onclick={() => {
               triggerDelete();
             }}
             class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
@@ -703,7 +701,7 @@
           </button>
 
           <button
-            on:click={() => {
+            onclick={() => {
               selected = {
                 measures: new Set(),
                 dimensions: new Set(),
@@ -797,7 +795,7 @@
     {#if parseError}
       <div
         role="status"
-        transition:slide={{ duration: LIST_SLIDE_DURATION }}
+        transitionslide={{ duration: LIST_SLIDE_DURATION }}
         class="flex items-center gap-x-2 border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-40 overflow-auto"
       >
         <CancelCircle className="text-destructive" />

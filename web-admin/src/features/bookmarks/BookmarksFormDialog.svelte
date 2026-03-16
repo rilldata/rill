@@ -261,7 +261,10 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       class="flex flex-col gap-4 z-50"
       id={formId}
       use:enhance
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
     >
       <Input
         bind:value={$form["displayName"]}

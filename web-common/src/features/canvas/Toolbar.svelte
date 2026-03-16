@@ -70,7 +70,7 @@
         {/if}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={onDelete}
+          onclick={onDelete}
           class="text-red-600 data-[highlighted]:text-red-600"
         >
           <Trash size="14px" />

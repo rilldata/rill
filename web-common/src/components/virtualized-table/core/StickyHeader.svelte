@@ -53,11 +53,11 @@
 </script>
 
 <button
-  on:mouseover={onFocus}
-  on:mouseleave={onBlur}
-  on:focus={onFocus}
-  on:blur={onBlur}
-  on:click={async (e) => {
+  onmouseover={onFocus}
+  onmouseleave={onBlur}
+  onfocus={onFocus}
+  onblur={onBlur}
+  onclick={async (e) => {
     if (isResizing) {
       e.stopPropagation();
       return;
@@ -91,12 +91,14 @@
         role="columnheader"
         tabindex="0"
         use:dragTableCell
-        on:resize={(e) => {
+        onresize={(e) => {
           onResize(e.detail);
         }}
-        on:resizeend={suppressClickAfterResize}
-        on:dblclick={onResetColumnWidth}
-        on:click|stopPropagation
+        onresizeend={suppressClickAfterResize}
+        ondblclick={onResetColumnWidth}
+        onclick={(e) => {
+          e.stopPropagation();
+        }}
         class="absolute top-0 right-0 cursor-col-resize grid place-items-end"
         style:padding-right="1.25px"
         style:width="12px"

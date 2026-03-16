@@ -20,9 +20,9 @@
     style:height="calc(100% - 20px)"
     class="absolute z-[100000] h-full min-h-10"
     role="presentation"
-    on:mouseenter={() => dropZone.set(dropId)}
-    on:mouseleave={dropZone.clear}
-    on:mouseup={() => {
+    onmouseenter={() => dropZone.set(dropId)}
+    onmouseleave={dropZone.clear}
+    onmouseup={() => {
       if (allowDrop) {
         onDrop(row, effectiveColumn);
       }

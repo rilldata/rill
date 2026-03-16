@@ -66,7 +66,7 @@
   >
     {#if allowShowSchema}
       <button
-        on:click={() => {
+        onclick={() => {
           store.toggleItem(connector, database, databaseSchema, table);
         }}
       >
@@ -84,7 +84,7 @@
       {...allowNavigateToTable && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
-      on:click={() => {
+      onclick={() => {
         store.toggleItem(connector, database, databaseSchema, table);
       }}
     >
@@ -102,7 +102,6 @@
             testId="more-actions-context-button"
             tooltipText="More actions"
             label="{tableId} actions menu trigger"
-           
             suppressTooltip={contextMenuOpen}
           >
             <MoreHorizontal />

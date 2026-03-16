@@ -4,6 +4,7 @@
   export let active = false;
   export let disabled = false;
   export let label: string | undefined = undefined;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 <button
@@ -17,7 +18,7 @@
   max-content
   {$$slots['context'] ? 'max-content' : ''}
   {disabled ? '' : 'max-content'}"
-  on:click
+  {onclick}
 >
   {#if $$slots["icon"]}
     <span class="text-fg-secondary"><slot name="icon" /></span>

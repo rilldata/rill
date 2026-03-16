@@ -205,7 +205,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.metaKey && e.key === "k") {
       open = !open;
     }
@@ -223,34 +223,34 @@
   <Tooltip.Root delayDuration={800}>
     <Tooltip.Trigger asChild id="super-pill-trigger-{context}">
       <Popover.Trigger
-          id="super-pill-trigger-{context}"
-          class="flex gap-x-1.5"
-          aria-label="Select time range"
-          type="button"
-        >
-          {#if timeString}
-            <b class="line-clamp-1 flex-none">
-              {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
-                Custom
-              {:else}
-                {selectedLabel}
-              {/if}
-            </b>
-          {/if}
+        id="super-pill-trigger-{context}"
+        class="flex gap-x-1.5"
+        aria-label="Select time range"
+        type="button"
+      >
+        {#if timeString}
+          <b class="line-clamp-1 flex-none">
+            {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
+              Custom
+            {:else}
+              {selectedLabel}
+            {/if}
+          </b>
+        {/if}
 
-          {#if showFullRange}
-            <RangeDisplay {interval} {timeGrain} />
+        {#if showFullRange}
+          <RangeDisplay {interval} {timeGrain} />
 
-            <div
-              class="font-bold bg-surface-muted rounded-[2px] p-1 py-0 text-fg-secondary text-[11px]"
-            >
-              {zoneAbbreviation}
-            </div>
-          {/if}
+          <div
+            class="font-bold bg-surface-muted rounded-[2px] p-1 py-0 text-fg-secondary text-[11px]"
+          >
+            {zoneAbbreviation}
+          </div>
+        {/if}
 
-          <span class="flex-none transition-transform" class:-rotate-180={open}>
-            <CaretDownIcon />
-          </span>
+        <span class="flex-none transition-transform" class:-rotate-180={open}>
+          <CaretDownIcon />
+        </span>
       </Popover.Trigger>
     </Tooltip.Trigger>
 
@@ -333,7 +333,7 @@
                 type="button"
                 role="menuitem"
                 class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-popover-accent rounded-sm w-full select-none flex items-center"
-                on:click={() => {
+                onclick={() => {
                   handleRangeSelect("inf");
                 }}
               >
@@ -352,7 +352,7 @@
               type="button"
               role="menuitem"
               class:font-bold={false}
-              on:click={() => {
+              onclick={() => {
                 showCalendarPicker = !showCalendarPicker;
               }}
               class="truncate text-fg-primary w-full text-left gap-x-1 pr-1 hover:bg-popover-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
@@ -374,22 +374,22 @@
 
             <Popover.Root portal="#rill-portal" bind:open={timeZonePickerOpen}>
               <Popover.Trigger
-                  onclick={() => {
-                    showCalendarPicker = false;
-                  }}
-                  class="group h-7 overflow-hidden hover:bg-popover-accent flex-none rounded-sm w-full select-none flex items-center truncate text-left gap-x-1 pr-1 pl-2"
-                >
-                    <div class="flex-none">
-                      <Globe size="14px" className="text-fg-primary" />
-                    </div>
-                    <div class="mr-auto text-fg-primary">Time zone</div>
-                    <div class="sr-only group-hover:not-sr-only">
-                      <SyntaxElement range={zoneAbbreviation} />
-                    </div>
-                    <CaretDownIcon
-                      className="-rotate-90 text-fg-secondary"
-                      size="14px"
-                    />
+                onclick={() => {
+                  showCalendarPicker = false;
+                }}
+                class="group h-7 overflow-hidden hover:bg-popover-accent flex-none rounded-sm w-full select-none flex items-center truncate text-left gap-x-1 pr-1 pl-2"
+              >
+                <div class="flex-none">
+                  <Globe size="14px" className="text-fg-primary" />
+                </div>
+                <div class="mr-auto text-fg-primary">Time zone</div>
+                <div class="sr-only group-hover:not-sr-only">
+                  <SyntaxElement range={zoneAbbreviation} />
+                </div>
+                <CaretDownIcon
+                  className="-rotate-90 text-fg-secondary"
+                  size="14px"
+                />
               </Popover.Trigger>
 
               <Popover.Content
@@ -429,16 +429,16 @@
                 aria-label="Select time axis"
                 class="group h-7 overflow-hidden hover:bg-surface-hover flex-none rounded-sm w-full select-none flex items-center truncate text-left gap-x-1 pr-1 pl-2"
               >
-                    <div class="flex-none">
-                      <Clock size="14px" />
-                    </div>
-                    <div class="mr-auto">Time axis</div>
-                    <div class="sr-only group-hover:not-sr-only">
-                      <SyntaxElement
-                        range={selectedTimeDimension || primaryTimeDimension}
-                      />
-                    </div>
-                    <CaretDownIcon className="-rotate-90" size="14px" />
+                <div class="flex-none">
+                  <Clock size="14px" />
+                </div>
+                <div class="mr-auto">Time axis</div>
+                <div class="sr-only group-hover:not-sr-only">
+                  <SyntaxElement
+                    range={selectedTimeDimension || primaryTimeDimension}
+                  />
+                </div>
+                <CaretDownIcon className="-rotate-90" size="14px" />
               </Popover.Trigger>
 
               <Popover.Content
@@ -451,7 +451,7 @@
                   <button
                     class="item"
                     aria-label="Select {label} time dimension"
-                    on:click={() => {
+                    onclick={() => {
                       onTimeDimensionSelect(value);
                       closeMenu();
                       timeAxisPickerOpen = false;

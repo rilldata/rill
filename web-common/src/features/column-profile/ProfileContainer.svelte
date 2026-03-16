@@ -44,7 +44,7 @@
         justify-between w-full"
     class:text-fg-muted={isFetching}
     class:bg-surface-background={active}
-    on:click={modified({
+    onclick={modified({
       shift: onShiftClick,
       click: onSelect,
     })}
@@ -92,7 +92,7 @@
     </div>
   </button>
   {#if active && $$slots["details"]}
-    <div class="w-full" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+    <div class="w-full" transitionslide={{ duration: LIST_SLIDE_DURATION }}>
       <slot name="details" />
     </div>
   {/if}

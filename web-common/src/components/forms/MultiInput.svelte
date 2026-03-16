@@ -144,7 +144,7 @@
             >
               {values[i]}
             </div>
-            <IconButton disableHover size={20} on:click={() => handleRemove(i)}>
+            <IconButton disableHover size={20} onclick={() => handleRemove(i)}>
               <XIcon
                 size="12px"
                 class="{hasError
@@ -156,13 +156,16 @@
         {/each}
         <input
           bind:value={values[lastIdx]}
-          on:keydown={handleKeyDown}
+          onkeydown={handleKeyDown}
           autocomplete="off"
           id="{id}.{lastIdx}"
           class="focus:outline-none group-hover:text-red-500 placeholder-fg-secondary text-sm grow px-1 bg-transparent"
-          on:focusin={() => (focused = true)}
-          on:focusout={() => (focused = false)}
-          on:click|preventDefault|stopPropagation={() => preventFocus}
+          onfocusin={() => (focused = true)}
+          onfocusout={() => (focused = false)}
+          onclick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           placeholder={!hasSomeValue ? placeholder : ""}
         />
       </div>

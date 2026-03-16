@@ -103,8 +103,8 @@
     href="/files{filePath}"
     {id}
     class:italic={$hasUnsavedChanges || $saving}
-    on:click={fireTelemetry}
-    on:mousedown={handleMouseDown}
+    onclick={fireTelemetry}
+    onmousedown={handleMouseDown}
     style:padding-left="{padding}px"
   >
     <div class="flex-none">
@@ -127,7 +127,6 @@
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild>
         <ContextButton
-         
           id="more-actions-{filePath}"
           label="{filePath} actions menu trigger"
           suppressTooltip={contextMenuOpen}
@@ -143,16 +142,16 @@
         sideOffset={16}
       >
         {#if $hasUnsavedChanges}
-          <NavigationMenuItem on:click={saveLocalContent}>
+          <NavigationMenuItem onclick={saveLocalContent}>
             <Save slot="icon" size="12px" />
             Save file
           </NavigationMenuItem>
         {/if}
-        <NavigationMenuItem on:click={() => onRename(filePath, false)}>
+        <NavigationMenuItem onclick={() => onRename(filePath, false)}>
           <EditIcon slot="icon" />
           Rename
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
+        <NavigationMenuItem onclick={() => onDuplicate(filePath, false)}>
           <CopyIcon slot="icon" />
           Duplicate
         </NavigationMenuItem>
@@ -170,7 +169,7 @@
           {/if}
         {/if}
         <NavigationMenuSeparator />
-        <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
+        <NavigationMenuItem onclick={() => onDelete(filePath, false)}>
           <Trash slot="icon" />
           Delete
         </NavigationMenuItem>

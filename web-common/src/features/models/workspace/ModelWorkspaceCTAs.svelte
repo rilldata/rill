@@ -77,7 +77,7 @@
       <DropdownMenu.Content align="end">
         {#each availableMetricsViews as resource (resource?.meta?.name?.name)}
           <DropdownMenu.Item
-            on:click={async () => {
+            onclick={async () => {
               if (resource?.meta?.filePaths?.[0]) {
                 await goto(
                   `/files/${removeLeadingSlash(resource.meta.filePaths[0])}`,
@@ -91,7 +91,7 @@
         {/each}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (!hasResultTable) return;
             await createMetricsViewFromTable();
           }}

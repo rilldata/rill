@@ -58,7 +58,10 @@
   autocomplete="off"
   class="flex flex-col gap-y-3 w-full"
   id={formId}
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
   use:enhance
 >
   <span>Email recurring exports to recipients.</span>

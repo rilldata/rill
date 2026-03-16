@@ -323,9 +323,9 @@
     style:--header-height="{headerHeight}px"
     bind:contentRect
     bind:this={container}
-    on:mousedown={handleMouseDown}
-    on:mouseleave={handleLeave}
-    on:scroll={handleScroll}
+    onmousedown={handleMouseDown}
+    onmouseleave={handleLeave}
+    onscroll={handleScroll}
   >
     <table
       class="relative"
@@ -352,9 +352,9 @@
         {rowHeaders}
         {RowHeader}
         {HeaderCell}
-        on:click={togglePin}
-        on:mousedown={handleStartResize}
-        on:mouseenter={handleHover}
+        onclick={togglePin}
+        onmousedown={handleStartResize}
+        onmouseenter={handleHover}
       />
 
       <tbody>
@@ -379,7 +379,7 @@
             {renderedColumns}
             {PinnedCell}
             {RowHeader}
-            on:mouseenter={handleHover}
+            onmouseenter={handleHover}
           />
         {/each}
 

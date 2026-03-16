@@ -27,6 +27,8 @@
   export let theme = false;
   export let showPinnedIcon = false;
   export let onRemove: () => void = () => {};
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
 
   const tooltipSuppression = getContext<Writable<boolean>>(
     "rill:app:childRequestedTooltipSuppression",
@@ -62,11 +64,14 @@
         <button
           class="text-inherit mr-0.5"
           aria-label="Remove"
-          on:mouseover={focusOnRemove}
-          on:focus={focusOnRemove}
-          on:mouseleave={blurOnRemove}
-          on:blur={blurOnRemove}
-          on:click|stopPropagation={onRemove}
+          onmouseover={focusOnRemove}
+          onfocus={focusOnRemove}
+          onmouseleave={blurOnRemove}
+          onblur={blurOnRemove}
+          onclick={(e) => {
+            e.stopPropagation();
+            onRemove(e);
+          }}
           type="button"
         >
           <CancelCircle size="16px" />
@@ -84,8 +89,8 @@
 
     {#if $$slots.body}
       <button
-        on:click
-        on:mousedown
+        {onclick}
+        {onmousedown}
         aria-label={`Open ${label}`}
         class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
         type="button"

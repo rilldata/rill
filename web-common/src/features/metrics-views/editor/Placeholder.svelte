@@ -65,12 +65,7 @@
     Auto-generate a
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button
-
-
-          class={buttonClasses}
-          disabled={!$models?.data?.length}
-        >
+        <button class={buttonClasses} disabled={!$models?.data?.length}>
           metrics configuration from an existing model
         </button>
       </DropdownMenu.Trigger>,
@@ -92,7 +87,7 @@
 
   <button
     class={buttonClasses}
-    on:click={async () => {
+    onclick={async () => {
       onCreateSkeletonMetricsConfig();
     }}
     >{#if isModelingSupported}s{:else}S{/if}tart with a skeleton</button

@@ -307,7 +307,7 @@
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
-  on:scroll={() => handleScroll(containerRefElement)}
+  onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
     <FlatTable

@@ -156,7 +156,6 @@
 >
   <Dialog.Trigger asChild>
     <Button
-     
       type="primary"
       class="w-fit mt-1"
       loading={$userStatus.isFetching}
@@ -199,7 +198,10 @@
 
       <form
         id={FORM_ID}
-        on:submit|preventDefault={submit}
+        onsubmit={(e) => {
+          e.preventDefault();
+          submit(e);
+        }}
         use:enhance
         class="flex flex-col gap-y-3 pt-4"
       >
