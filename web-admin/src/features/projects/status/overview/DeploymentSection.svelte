@@ -119,7 +119,6 @@
     | string
     | undefined;
   $: cloudRegion = olapConnector?.config?.cloud_region as string | undefined;
-  $: cloudTier = olapConnector?.config?.cloud_tier as string | undefined;
   $: cloudMinMemory = olapConnector?.config?.cloud_min_memory_gb as
     | number
     | undefined;
@@ -129,7 +128,6 @@
   $: cloudReplicas = olapConnector?.config?.cloud_num_replicas as
     | number
     | undefined;
-  $: hasCloudDetails = !!cloudServiceName;
   $: chcAutoScaleAnnotation =
     projectData?.annotations?.["rill.dev/chc-auto-scaled-slots"] === "true";
   $: isChcHibernated =
@@ -143,7 +141,7 @@
     !isChcHibernated &&
     cloudStatus === "running" &&
     chcAutoScaleAnnotation;
-  $: isChcWakingUp = cloudStatus === "idle";
+
 
   let chcDetailsModalOpen = false;
 
