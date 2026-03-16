@@ -12,7 +12,10 @@
   import type { AxiosError } from "axios";
   import {
     LIVE_CONNECT_TIERS,
-    POPULAR_LIVE_CONNECT_TIERS,
+    POPULAR_SLOTS,
+    ALL_SLOTS,
+    SLOT_RATE_PER_HR,
+    HOURS_PER_MONTH,
     detectTierSlots,
   } from "./slots-utils";
 
@@ -30,18 +33,8 @@
   // When true, the user can only view the detected tier and apply it (no selection).
   export let viewOnly = false;
 
-  // Rill-managed tiers: billed per slot/hr; data charged separately
-  const RILL_MANAGED_TIERS = [
-    { slots: 4 },
-    { slots: 6 },
-    { slots: 8 },
-    { slots: 16 },
-    { slots: 32 },
-    { slots: 60 },
-  ];
-
-  const SLOT_RATE_PER_HR = 0.03;
-  const HOURS_PER_MONTH = 730; // ~365.25 * 24 / 12
+  const POPULAR_RILL_MANAGED = POPULAR_SLOTS.map((s) => ({ slots: s }));
+  const ALL_RILL_MANAGED = ALL_SLOTS.map((s) => ({ slots: s }));
 
   // Auto-detect matching tier from cluster memory
   $: detectedTierSlots = isRillManaged
@@ -54,7 +47,7 @@
 
   // In required mode, pre-select detected tier or minimum; otherwise default to current
   $: minimumTierSlots = isRillManaged
-    ? RILL_MANAGED_TIERS[0].slots
+    ? POPULAR_RILL_MANAGED[0].slots
     : LIVE_CONNECT_TIERS[0].slots;
 
   let selectedSlots = currentSlots;
@@ -80,25 +73,26 @@
   let showAllSizes = false;
 
   // Ensure the detected and current tiers always appear in the popular list
-  $: popularWithExtras = (() => {
-    let tiers = [...POPULAR_LIVE_CONNECT_TIERS];
+  $: popularSlotsWithExtras = (() => {
+    let slots = [...POPULAR_SLOTS];
     const extras = [detectedTierSlots, currentSlots].filter(
       (s): s is number => s != null && s > 0,
     );
-    for (const slots of extras) {
-      if (!tiers.some((t) => t.slots === slots)) {
-        const tier = LIVE_CONNECT_TIERS.find((t) => t.slots === slots);
-        if (tier) tiers.push(tier);
+    for (const s of extras) {
+      if (!slots.includes(s) && ALL_SLOTS.includes(s)) {
+        slots.push(s);
       }
     }
-    return tiers.sort((a, b) => a.slots - b.slots);
+    return slots.sort((a, b) => a - b);
   })();
 
-  $: visibleTiers = isRillManaged
-    ? RILL_MANAGED_TIERS
-    : showAllSizes
-      ? LIVE_CONNECT_TIERS
-      : popularWithExtras;
+  $: visibleRillManaged = showAllSizes
+    ? ALL_RILL_MANAGED
+    : ALL_RILL_MANAGED.filter((t) => popularSlotsWithExtras.includes(t.slots));
+
+  $: visibleLiveConnect = showAllSizes
+    ? LIVE_CONNECT_TIERS
+    : LIVE_CONNECT_TIERS.filter((t) => popularSlotsWithExtras.includes(t.slots));
 
   $: hasChanged = selectedSlots !== currentSlots;
 
@@ -183,7 +177,8 @@
           <span class="tier-cell">$/slot/hr</span>
           <span class="tier-cell">Est. $/mo</span>
         </div>
-        {#each RILL_MANAGED_TIERS as tier}
+        <div class="tier-list">
+        {#each visibleRillManaged as tier}
           <button
             class="tier-row"
             class:tier-active={tier.slots === currentSlots ||
@@ -211,7 +206,16 @@
             </span>
           </button>
         {/each}
+        </div>
       </div>
+      {#if !viewOnly}
+        <button
+          class="show-all-btn"
+          on:click={() => (showAllSizes = !showAllSizes)}
+        >
+          {showAllSizes ? "Show popular sizes" : "Show all sizes"}
+        </button>
+      {/if}
     {:else}
       <!-- Live Connect tier table -->
       <div class="tier-table">
@@ -223,7 +227,7 @@
           <span class="tier-cell">Estimated Rill $/mo</span>
         </div>
         <div class="tier-list">
-        {#each visibleTiers as tier}
+        {#each visibleLiveConnect as tier}
           <button
             class="tier-row"
             class:tier-active={tier.slots === currentSlots ||
@@ -256,7 +260,7 @@
         {/each}
         </div>
       </div>
-      {#if !isRillManaged && !viewOnly}
+      {#if !viewOnly}
         <button
           class="show-all-btn"
           on:click={() => (showAllSizes = !showAllSizes)}

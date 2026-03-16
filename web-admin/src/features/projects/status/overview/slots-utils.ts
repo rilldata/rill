@@ -1,7 +1,13 @@
-const SLOT_RATE_PER_HR = 0.03;
-const HOURS_PER_MONTH = 730;
+export const SLOT_RATE_PER_HR = 0.03;
+export const HOURS_PER_MONTH = 730;
 
-function tier(slots: number) {
+export interface SlotTier {
+  slots: number;
+  instance: string;
+  rillBill: number;
+}
+
+function tier(slots: number): SlotTier {
   return {
     slots,
     instance: `${slots * 2}GiB / ${Math.max(1, slots / 2)}vCPU`,
@@ -9,37 +15,17 @@ function tier(slots: number) {
   };
 }
 
+// Popular slot values shown by default
+export const POPULAR_SLOTS = [4, 6, 8, 16, 32, 60];
+
+// All available slot values including intermediate sizes
+export const ALL_SLOTS = [4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60];
+
 // Popular tiers shown by default
-export const POPULAR_LIVE_CONNECT_TIERS = [
-  tier(4),
-  tier(6),
-  tier(8),
-  tier(16),
-  tier(32),
-  tier(60),
-];
+export const POPULAR_LIVE_CONNECT_TIERS: SlotTier[] = POPULAR_SLOTS.map(tier);
 
 // All available tiers including intermediate sizes
-export const LIVE_CONNECT_TIERS = [
-  tier(4),
-  tier(6),
-  tier(8),
-  tier(10),
-  tier(12),
-  tier(14),
-  tier(16),
-  tier(20),
-  tier(24),
-  tier(28),
-  tier(32),
-  tier(36),
-  tier(40),
-  tier(44),
-  tier(48),
-  tier(52),
-  tier(56),
-  tier(60),
-];
+export const LIVE_CONNECT_TIERS: SlotTier[] = ALL_SLOTS.map(tier);
 
 /**
  * Given detected cluster memory (GB per replica), return the matching tier's slot count.
