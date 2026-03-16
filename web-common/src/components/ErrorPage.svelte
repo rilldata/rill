@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import { previewModeStore } from "../layout/preview-mode-store";
   import { isEmbedPage } from "../layout/navigation/navigation-utils";
   import AlertCircleOutline from "./icons/AlertCircleOutline.svelte";
 
@@ -12,11 +14,15 @@
   export let body: string = "";
   export let detail: string | undefined = undefined;
   export let fatal = false;
-  export let href: string = "/";
 
   let showDetail = false;
 
   const onEmbedPage = isEmbedPage($page);
+
+  function handleBackHome() {
+    const href = $previewModeStore ? "/dashboards" : "/";
+    goto(href);
+  }
 </script>
 
 <CtaLayoutContainer>
@@ -29,9 +35,9 @@
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>
     {#if !fatal && !onEmbedPage}
-      <a {href} class="back-link">
-        <CtaButton variant="secondary">Back to home</CtaButton>
-      </a>
+      <CtaButton variant="secondary" onClick={handleBackHome}
+        >Back to home</CtaButton
+      >
     {/if}
     {#if detail}
       <section class="detail-section">
@@ -63,10 +69,6 @@
 
   .header {
     @apply text-lg font-semibold;
-  }
-
-  .back-link {
-    @apply no-underline;
   }
 
   .detail-section {

@@ -10,7 +10,6 @@ import {
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
 import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
-import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { getLocalRuntimeClient } from "../lib/runtime-client";
 import {
   DEVELOPER_ALLOWED_PREFIXES,
@@ -20,18 +19,11 @@ import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
 
-// Cache metadata: previewMode is static for the server lifetime, so fetch once
-let cachedMetadata: Awaited<ReturnType<typeof localServiceGetMetadata>> | null =
-  null;
-
 export async function load({ url, depends, untrack }) {
   depends("app:init");
 
-  // Fetch metadata to check preview mode (cached after first load)
-  if (!cachedMetadata) {
-    cachedMetadata = await localServiceGetMetadata();
-  }
-  const metadata = cachedMetadata;
+  // Fetch metadata to check preview mode
+  const metadata = await localServiceGetMetadata();
   const previewMode = metadata.previewMode ?? false;
 
   // Enforce mode-based route locking
@@ -41,9 +33,6 @@ export async function load({ url, depends, untrack }) {
       url.pathname.startsWith(prefix),
     );
     if (!isAllowed) {
-      eventBus.emit("notification", {
-        message: "This page is only available in Developer mode",
-      });
       throw redirect(303, "/dashboards");
     }
   } else {
@@ -54,9 +43,6 @@ export async function load({ url, depends, untrack }) {
         url.pathname.startsWith(prefix),
       );
     if (!isAllowed) {
-      eventBus.emit("notification", {
-        message: "This page is only available in Preview mode",
-      });
       throw redirect(303, "/");
     }
   }

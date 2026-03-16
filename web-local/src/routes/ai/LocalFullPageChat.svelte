@@ -3,9 +3,9 @@
   import { onMount, tick } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    getConversationManager,
-    cleanupConversationManager,
-  } from "@rilldata/web-common/features/chat/core/conversation-manager";
+    getLocalConversationManager,
+    cleanupLocalConversationManager,
+  } from "./local-conversation-manager";
   import ChatInput from "@rilldata/web-common/features/chat/core/input/ChatInput.svelte";
   import Messages from "@rilldata/web-common/features/chat/core/messages/Messages.svelte";
   import ConversationSidebar from "@rilldata/web-common/features/chat/layouts/fullpage/ConversationSidebar.svelte";
@@ -17,10 +17,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: conversationManager = getConversationManager(runtimeClient, {
-    conversationState: "url",
-    basePath: () => "/ai",
-  });
+  $: conversationManager = getLocalConversationManager(runtimeClient);
 
   let chatInputComponent: ChatInput;
 
@@ -36,9 +33,9 @@
 
   // Clean up conversation manager resources when leaving the chat context entirely
   beforeNavigate(({ to }) => {
-    const isChatRoute = to?.route?.id?.startsWith("/ai");
+    const isChatRoute = to?.route?.id?.includes("ai");
     if (!isChatRoute) {
-      cleanupConversationManager(runtimeClient.instanceId);
+      cleanupLocalConversationManager(runtimeClient.instanceId);
     }
   });
 </script>

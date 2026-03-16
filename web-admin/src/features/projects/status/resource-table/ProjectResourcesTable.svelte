@@ -5,9 +5,9 @@
   import {
     createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
+    V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { getStatusPriority } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
@@ -152,6 +152,21 @@
       accessorFn: (row) => row.meta.reconcileStatus,
       header: "Status",
       sortingFn: (rowA, rowB) => {
+        // Priority order: Running (highest) -> Pending -> Idle -> Unknown (lowest)
+        const getStatusPriority = (status: V1ReconcileStatus) => {
+          switch (status) {
+            case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
+              return 4;
+            case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
+              return 3;
+            case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
+              return 2;
+            case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
+            default:
+              return 1;
+          }
+        };
+
         return (
           getStatusPriority(rowB.original.meta.reconcileStatus) -
           getStatusPriority(rowA.original.meta.reconcileStatus)

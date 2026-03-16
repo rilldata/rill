@@ -28,7 +28,7 @@
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
-  import PreviewModeNav from "../features/preview/PreviewModeNav.svelte";
+  import PreviewModeNav from "./PreviewModeNav.svelte";
   import {
     isPreviewRoute,
     isDeveloperRoute,
@@ -44,11 +44,10 @@
     errorEventHandler?.requestErrorEventHandler(error, query);
   initPylonWidget();
 
-  // Preview mode store sync:
-  // 1. Backend lock: if --preview flag is set, always true
-  // 2. URL-derived: preview routes (/dashboards, /ai, /status) → true,
-  //    developer routes (/, /files) → false
-  // 3. Preserved: shared routes (/explore, /canvas, /deploy) keep previous value
+  // Sync preview mode:
+  // - If --preview flag is set, always lock to preview mode
+  // - Otherwise, infer from the current URL so refresh on preview pages stays in preview mode
+  //   and shared routes (/explore, /canvas) preserve the current mode
   $: {
     if (data.previewMode) {
       previewModeStore.set(true);
@@ -57,6 +56,7 @@
     } else if (isDeveloperRoute($page.url.pathname)) {
       previewModeStore.set(false);
     }
+    // For shared routes (/explore, /canvas, /deploy), keep current store value
   }
 
   let removeJavascriptListeners: () => void;

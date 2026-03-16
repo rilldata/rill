@@ -29,8 +29,6 @@ export function getRelativeTime(dateString: string): string {
 export function timeAgo(date: Date): string {
   const now = Date.now();
   const diffMs = now - date.getTime();
-  if (diffMs < 0) return "Just now";
-
   const diffMinutes = Math.floor(diffMs / 60000);
 
   if (diffMinutes < 1) return "Just now";

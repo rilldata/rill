@@ -4,7 +4,6 @@
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { useDashboards } from "@rilldata/web-common/features/dashboards/listing/selectors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
 
   export let limit: number | undefined = undefined;
   export let showSearch = false;
@@ -33,25 +32,16 @@
   toolbar={showSearch}
 >
   <svelte:fragment slot="empty">
-    {#if $previewModeStore}
-      <ResourceListEmptyState icon={ExploreIcon} message="No dashboards found">
-        <span slot="action">
-          Create dashboards using your code editor, then return here to preview
-          them.
-        </span>
-      </ResourceListEmptyState>
-    {:else}
-      <ResourceListEmptyState
-        icon={ExploreIcon}
-        message="You don't have any dashboards yet"
-      >
-        <span slot="action">
-          <a href="/deploy" class="text-primary-600 hover:text-primary-700">
-            Deploy your project
-          </a>
-          to share dashboards with your team
-        </span>
-      </ResourceListEmptyState>
-    {/if}
+    <ResourceListEmptyState
+      icon={ExploreIcon}
+      message="You don't have any dashboards yet"
+    >
+      <span slot="action">
+        <a href="/deploy" class="text-primary-600 hover:text-primary-700">
+          Deploy your project
+        </a>
+        to share dashboards with your team
+      </span>
+    </ResourceListEmptyState>
   </svelte:fragment>
 </DashboardsTable>
