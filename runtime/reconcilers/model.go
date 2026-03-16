@@ -280,8 +280,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Reschedule if we're not triggering a refresh
 	if !trigger.any() {
 		// Re-run tests if the test config has changed
+		var testWarnings []string
 		if model.State.TestHash != testHash {
-			testErrs, err := r.runModelTests(ctx, self)
+			var testErrs []string
+			var err error
+			testErrs, testWarnings, err = r.runModelTests(ctx, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
 			}
@@ -295,6 +298,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 		// Surface partition and test failures as warnings or errors based on instance config
 		var warnings []string
+		warnings = append(warnings, testWarnings...)
 		if model.State.PartitionsHaveErrors {
 			if cfg.ModelPartitionsWarnOnFailure {
 				warnings = append(warnings, warningPartitionsHaveErrors)
@@ -339,8 +343,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
 	var newIncrementalStateSchema *runtimev1.StructType
+	var incrementalStateWarnings []string
 	if execErr == nil {
-		newIncrementalState, newIncrementalStateSchema, execErr = r.resolveIncrementalState(ctx, model)
+		newIncrementalState, newIncrementalStateSchema, incrementalStateWarnings, execErr = r.resolveIncrementalState(ctx, model)
 	}
 
 	// If the model is partitioned, track if any of the partitions have errors
@@ -430,8 +435,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the build succeeded, re-run the model tests.
 	// We do this after updating other state to ensure we preserve the successful execution state.
+	var testWarnings []string
 	if execErr == nil && len(model.Spec.Tests) != 0 {
-		testErrs, err := r.runModelTests(ctx, self)
+		var testErrs []string
+		var err error
+		testErrs, testWarnings, err = r.runModelTests(ctx, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
 		}
@@ -456,8 +464,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Surface partition and test failures as warnings or errors based on instance config;
-	// append execution warnings regardless.
+	// append execution warnings and resolver warnings regardless.
 	var warnings []string
+	warnings = append(warnings, incrementalStateWarnings...)
+	warnings = append(warnings, testWarnings...)
 	if model.State.PartitionsHaveErrors {
 		if cfg.ModelPartitionsWarnOnFailure {
 			warnings = append(warnings, warningPartitionsHaveErrors)
@@ -849,13 +859,13 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 // Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
 // but models also have a resolver for "incremental state" that enables incremental/stateful computation by persisting data from the previous execution.
 // It returns nil results if an incremental state resolver is not configured or does not return any data.
-func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.Model) (*structpb.Struct, *runtimev1.StructType, error) {
+func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.Model) (*structpb.Struct, *runtimev1.StructType, []string, error) {
 	if !mdl.Spec.Incremental {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	if mdl.Spec.IncrementalStateResolver == "" {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
@@ -865,33 +875,34 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer res.Close()
 
-	if info != nil && len(info.Warnings) > 0 {
-		r.C.Logger.Warn("incremental state resolver produced warnings", zap.String("resolver", mdl.Spec.IncrementalStateResolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	var warnings []string
+	if info != nil {
+		warnings = info.Warnings
 	}
 
 	row, err := res.Next()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			// Not returning any rows will clear the state
-			return nil, nil, nil
+			return nil, nil, warnings, nil
 		}
-		return nil, nil, fmt.Errorf("failed to read state resolver output: %w", err)
+		return nil, nil, warnings, fmt.Errorf("failed to read state resolver output: %w", err)
 	}
 
 	state, err := structpb.NewStruct(row)
 	if err != nil {
-		return nil, nil, fmt.Errorf("state resolver produced invalid output: %w", err)
+		return nil, nil, warnings, fmt.Errorf("state resolver produced invalid output: %w", err)
 	}
 
-	return state, res.Schema(), nil
+	return state, res.Schema(), warnings, nil
 }
 
 // resolveAndSyncPartitions resolves the model's partitions using its configured partitions resolver and inserts or updates them in the catalog.
-func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalState map[string]any) error {
+func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalState map[string]any) ([]string, error) {
 	// Log
 	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), observability.ZapCtx(ctx))
 
@@ -900,7 +911,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		mdl.State.PartitionsModelId = uuid.NewString()
 		err := r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -913,12 +924,13 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Close()
 
-	if info != nil && len(info.Warnings) > 0 {
-		r.C.Logger.Warn("partitions resolver produced warnings", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	var warnings []string
+	if info != nil {
+		warnings = info.Warnings
 	}
 
 	// Consume the rows and sync them in batches
@@ -931,7 +943,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return fmt.Errorf("failed to read partitions resolver output: %w", err)
+			return warnings, fmt.Errorf("failed to read partitions resolver output: %w", err)
 		}
 		batch = append(batch, row)
 
@@ -940,7 +952,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			// Sync the partitions
 			err = r.syncPartitions(ctx, mdl, batchStartIdx, batch)
 			if err != nil {
-				return err
+				return warnings, err
 			}
 
 			// Advance the row index of the first row in the batch
@@ -959,7 +971,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 	defer r.C.Logger.Info("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count), observability.ZapCtx(ctx))
 
 	// Flush the remaining rows not handled in the loop
-	return r.syncPartitions(ctx, mdl, batchStartIdx, batch)
+	return warnings, r.syncPartitions(ctx, mdl, batchStartIdx, batch)
 }
 
 // syncPartitions syncs a batch of partition rows to the catalog.
@@ -1189,8 +1201,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// First step is to resolve and sync the partitions.
 	// We don't do this when only trigger.partitions is set, since in that case we only want to run existing partitions marked pending, not sync new partitions.
+	var syncWarnings []string
 	if trigger.reset || trigger.normal {
-		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
+		syncWarnings, err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 		if err != nil {
 			return "", nil, false, 0, fmt.Errorf("failed to sync partitions: %w", err)
 		}
@@ -1352,6 +1365,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// We have continuously updated prevResult with new partition results, so we complete and return it here
 	prevResult.ExecDuration = time.Duration(totalExecDuration.Load())
+	prevResult.Warnings = append(prevResult.Warnings, syncWarnings...)
 	return executor.finalConnector, prevResult, firstRunIsIncremental, int(totalPartitionsProcessed.Load()), nil
 }
 
@@ -1962,27 +1976,29 @@ func (r *ModelReconciler) resolveTrigger(ctx context.Context, self *runtimev1.Re
 }
 
 // runModelTests executes the user defined model-level tests for the model (global, not partition-level).
-// It returns an array of test error messages.
-func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) ([]string, error) {
+// It returns an array of test error messages and an array of resolver warnings.
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) ([]string, []string, error) {
 	tests := self.GetModel().Spec.Tests
 	if len(tests) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	var msgs []string
+	var warnings []string
 	for _, test := range tests {
-		msg, err := r.execModelTest(ctx, test)
+		msg, testWarnings, err := r.execModelTest(ctx, test)
 		if err != nil {
-			return nil, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
+			return nil, warnings, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
 		}
+		warnings = append(warnings, testWarnings...)
 		if msg != "" {
 			msgs = append(msgs, msg)
 		}
 	}
-	return msgs, nil
+	return msgs, warnings, nil
 }
 
 // execModelTest runs a single model test and returns an error if it fails.
-func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, error) {
+func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, []string, error) {
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           test.Resolver,
@@ -1992,32 +2008,33 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	})
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return "", err
+			return "", nil, err
 		}
-		return fmt.Sprintf("%s: %v", test.Name, err), nil
+		return fmt.Sprintf("%s: %v", test.Name, err), nil, nil
 	}
 	defer result.Close()
 
-	if info != nil && len(info.Warnings) > 0 {
-		r.C.Logger.Warn("Model test resolver returned warnings", zap.String("test", test.Name), zap.String("resolver", test.Resolver), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	var warnings []string
+	if info != nil {
+		warnings = info.Warnings
 	}
 
 	row, err := result.Next()
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return "", err
+			return "", warnings, err
 		}
 		if errors.Is(err, io.EOF) {
-			return "", nil // Test passed
+			return "", warnings, nil // Test passed
 		}
-		return fmt.Sprintf("%s: %v", test.Name, err), nil
+		return fmt.Sprintf("%s: %v", test.Name, err), warnings, nil
 	}
 
 	if res, ok := row["result"]; ok && res != nil {
-		return fmt.Sprintf("%s: %v", test.Name, res), nil
+		return fmt.Sprintf("%s: %v", test.Name, res), warnings, nil
 	}
 
-	return fmt.Sprintf("%s: test did not pass", test.Name), nil
+	return fmt.Sprintf("%s: test did not pass", test.Name), warnings, nil
 }
 
 // newTestsWarning creates a warning message that summarizes the messages returned from runModelTests.

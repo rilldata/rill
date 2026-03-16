@@ -1387,8 +1387,16 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 			errorLevel = false
 		}
 	}
+	if len(inv.result.Warnings) > 0 {
+		errorLevel = true // still logged as warn
+		logArgs = append(logArgs, zap.Any("warnings", inv.result.Warnings))
+	}
 	if errorLevel {
-		c.Logger.Warn("Reconcile failed", logArgs...)
+		if inv.result.Err != nil {
+			c.Logger.Warn("Reconcile failed", logArgs...)
+		} else {
+			c.Logger.Warn("Reconciled resource with warnings", logArgs...)
+		}
 	} else {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
