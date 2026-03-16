@@ -177,6 +177,10 @@ describe("display-utils", () => {
       expect(formatConnectorName("duckdb")).toBe("DuckDB");
     });
 
+    it("formats 'motherduck' correctly", () => {
+      expect(formatConnectorName("motherduck")).toBe("MotherDuck");
+    });
+
     it("formats 'clickhouse' correctly", () => {
       expect(formatConnectorName("clickhouse")).toBe("ClickHouse");
     });
