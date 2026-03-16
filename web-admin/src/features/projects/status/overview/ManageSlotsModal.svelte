@@ -92,7 +92,9 @@
 
   $: visibleLiveConnect = showAllSizes
     ? LIVE_CONNECT_TIERS
-    : LIVE_CONNECT_TIERS.filter((t) => popularSlotsWithExtras.includes(t.slots));
+    : LIVE_CONNECT_TIERS.filter((t) =>
+        popularSlotsWithExtras.includes(t.slots),
+      );
 
   $: hasChanged = selectedSlots !== currentSlots;
 
@@ -178,34 +180,34 @@
           <span class="tier-cell">Est. $/mo</span>
         </div>
         <div class="tier-list">
-        {#each visibleRillManaged as tier}
-          <button
-            class="tier-row"
-            class:tier-active={tier.slots === currentSlots ||
-              (viewOnly && tier.slots === selectedSlots)}
-            class:tier-selected={!viewOnly &&
-              tier.slots === selectedSlots &&
-              tier.slots !== currentSlots}
-            class:tier-disabled={viewOnly && tier.slots !== selectedSlots}
-            disabled={viewOnly && tier.slots !== selectedSlots}
-            on:click={() => {
-              if (!viewOnly) selectedSlots = tier.slots;
-            }}
-          >
-            <span class="tier-cell">
-              {tier.slots}
-              {#if tier.slots === currentSlots}
-                <span class="current-badge">current</span>
-              {/if}
-            </span>
-            <span class="tier-cell">${SLOT_RATE_PER_HR.toFixed(2)}</span>
-            <span class="tier-cell">
-              ~${Math.round(
-                tier.slots * SLOT_RATE_PER_HR * HOURS_PER_MONTH,
-              ).toLocaleString()}
-            </span>
-          </button>
-        {/each}
+          {#each visibleRillManaged as tier}
+            <button
+              class="tier-row"
+              class:tier-active={tier.slots === currentSlots ||
+                (viewOnly && tier.slots === selectedSlots)}
+              class:tier-selected={!viewOnly &&
+                tier.slots === selectedSlots &&
+                tier.slots !== currentSlots}
+              class:tier-disabled={viewOnly && tier.slots !== selectedSlots}
+              disabled={viewOnly && tier.slots !== selectedSlots}
+              on:click={() => {
+                if (!viewOnly) selectedSlots = tier.slots;
+              }}
+            >
+              <span class="tier-cell">
+                {tier.slots}
+                {#if tier.slots === currentSlots}
+                  <span class="current-badge">current</span>
+                {/if}
+              </span>
+              <span class="tier-cell">${SLOT_RATE_PER_HR.toFixed(2)}</span>
+              <span class="tier-cell">
+                ~${Math.round(
+                  tier.slots * SLOT_RATE_PER_HR * HOURS_PER_MONTH,
+                ).toLocaleString()}
+              </span>
+            </button>
+          {/each}
         </div>
       </div>
       {#if !viewOnly}
@@ -227,37 +229,37 @@
           <span class="tier-cell">Estimated Rill $/mo</span>
         </div>
         <div class="tier-list">
-        {#each visibleLiveConnect as tier}
-          <button
-            class="tier-row"
-            class:tier-active={tier.slots === currentSlots ||
-              (viewOnly && tier.slots === selectedSlots)}
-            class:tier-selected={!viewOnly &&
-              tier.slots === selectedSlots &&
-              tier.slots !== currentSlots}
-            class:tier-disabled={tier.slots < minimumSlots ||
-              (viewOnly && tier.slots !== selectedSlots)}
-            disabled={tier.slots < minimumSlots ||
-              (viewOnly && tier.slots !== selectedSlots)}
-            on:click={() => {
-              if (!viewOnly) selectedSlots = tier.slots;
-            }}
-          >
-            <span class="tier-cell tier-cell-wide">
-              {tier.instance}
-              {#if detectedTierSlots === tier.slots}
-                <span class="detected-badge">detected</span>
-              {/if}
-            </span>
-            <span class="tier-cell">
-              {tier.slots}
-              {#if tier.slots === currentSlots}
-                <span class="current-badge">current</span>
-              {/if}
-            </span>
-            <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
-          </button>
-        {/each}
+          {#each visibleLiveConnect as tier}
+            <button
+              class="tier-row"
+              class:tier-active={tier.slots === currentSlots ||
+                (viewOnly && tier.slots === selectedSlots)}
+              class:tier-selected={!viewOnly &&
+                tier.slots === selectedSlots &&
+                tier.slots !== currentSlots}
+              class:tier-disabled={tier.slots < minimumSlots ||
+                (viewOnly && tier.slots !== selectedSlots)}
+              disabled={tier.slots < minimumSlots ||
+                (viewOnly && tier.slots !== selectedSlots)}
+              on:click={() => {
+                if (!viewOnly) selectedSlots = tier.slots;
+              }}
+            >
+              <span class="tier-cell tier-cell-wide">
+                {tier.instance}
+                {#if detectedTierSlots === tier.slots}
+                  <span class="detected-badge">detected</span>
+                {/if}
+              </span>
+              <span class="tier-cell">
+                {tier.slots}
+                {#if tier.slots === currentSlots}
+                  <span class="current-badge">current</span>
+                {/if}
+              </span>
+              <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
+            </button>
+          {/each}
         </div>
       </div>
       {#if !viewOnly}

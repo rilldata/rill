@@ -112,7 +112,8 @@
 
   // MotherDuck detection
   $: isMotherDuck =
-    (olapConnector?.type === "duckdb" || olapConnector?.type === "motherduck") &&
+    (olapConnector?.type === "duckdb" ||
+      olapConnector?.type === "motherduck") &&
     (olapConnector?.config?.is_motherduck === true ||
       (olapConnector?.config?.path as string)?.startsWith("md:"));
 
@@ -144,10 +145,7 @@
     (chcAutoScaleAnnotation && !cloudStatus);
   // CHC is running again but slots haven't been restored yet
   $: isChcRestoring =
-    !isChcHibernated &&
-    cloudStatus === "running" &&
-    chcAutoScaleAnnotation;
-
+    !isChcHibernated && cloudStatus === "running" && chcAutoScaleAnnotation;
 
   let chcDetailsModalOpen = false;
 
@@ -241,8 +239,6 @@
   $: isChcAutoScaled =
     projectData?.annotations?.["rill.dev/chc-auto-scaled-slots"] === "true" &&
     currentSlots === 1;
-
-
 </script>
 
 <OverviewCard title="Deployment">
@@ -437,7 +433,6 @@
         </div>
       {/if}
     {/if}
-
   </div>
 </OverviewCard>
 

@@ -28,12 +28,15 @@
 
   // Local overrides from sync response (takes precedence over props)
   let syncedData: Record<string, unknown> | null = null;
-  $: displayServiceName = (syncedData?.cloud_service_name as string) ?? serviceName;
+  $: displayServiceName =
+    (syncedData?.cloud_service_name as string) ?? serviceName;
   $: displayStatus = (syncedData?.cloud_status as string) ?? status;
   $: displayProvider = (syncedData?.cloud_provider as string) ?? provider;
   $: displayRegion = (syncedData?.cloud_region as string) ?? region;
-  $: displayMinMemory = (syncedData?.cloud_min_memory_gb as number) ?? minMemoryGb;
-  $: displayMaxMemory = (syncedData?.cloud_max_memory_gb as number) ?? maxMemoryGb;
+  $: displayMinMemory =
+    (syncedData?.cloud_min_memory_gb as number) ?? minMemoryGb;
+  $: displayMaxMemory =
+    (syncedData?.cloud_max_memory_gb as number) ?? maxMemoryGb;
   $: displayReplicas = (syncedData?.cloud_num_replicas as number) ?? replicas;
 
   function statusColor(s: string | undefined): string {
@@ -90,7 +93,11 @@
       </div>
       <div class="detail-row">
         <span class="detail-label">Status</span>
-        <span class="detail-value {statusColor(displayStatus)} font-medium capitalize">
+        <span
+          class="detail-value {statusColor(
+            displayStatus,
+          )} font-medium capitalize"
+        >
           {displayStatus ?? "—"}
         </span>
       </div>
