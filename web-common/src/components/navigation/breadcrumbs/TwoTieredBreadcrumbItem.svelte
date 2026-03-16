@@ -102,7 +102,7 @@
     @apply bg-gray-100;
   }
 
-  :global(.trigger[data-state="open"]) {
+  .trigger:global([data-state="open"]) {
     @apply bg-gray-100;
   }
 </style>
