@@ -102,17 +102,12 @@ jobs:
           RILL_UI_PUBLIC_VERSION: ${{ env.RILL_VERSION }}
 
       - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }} - version ${{ env.RILL_VERSION }}
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: ./web-admin/build
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Cloud-admin ${{ github.ref_name }} deployed to ui.${{ env.DOMAIN }}"
-          production-deploy: true
-          enable-pull-request-comment: false
-          enable-commit-comment: true
-          overwrites-pull-request-comment: true
-          netlify-config-path: ./netlify.toml
-        timeout-minutes: 1
+        run: |
+          npx netlify-cli deploy \
+            --prod \
+            --dir ./web-admin/build \
+            --message "Cloud-admin ${{ github.ref_name }} deployed to ui.${{ env.DOMAIN }}"
+        timeout-minutes: 10
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2

@@ -10,7 +10,10 @@ import type { Context } from "@netlify/edge-functions";
 // work without needing their child scripts individually allowlisted.
 // Domain allowlists are kept for backwards compatibility with older browsers
 // that do not support 'strict-dynamic'.
-export default async (request: Request, context: Context): Promise<Response> => {
+export default async (
+  request: Request,
+  context: Context,
+): Promise<Response> => {
   const response = await context.next();
 
   // Only process HTML documents; pass other assets through unchanged.
