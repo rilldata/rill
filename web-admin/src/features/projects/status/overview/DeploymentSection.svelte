@@ -11,6 +11,7 @@
   import {
     formatEnvironmentName,
     formatConnectorName,
+    getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
@@ -61,14 +62,7 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
-  // Detect MotherDuck: a DuckDB connector whose path starts with "md:" or has a token set
-  $: isMotherDuck =
-    olapConnector?.type === "duckdb" &&
-    (String(olapConnector.config?.path ?? "").startsWith("md:") ||
-      !!olapConnector.config?.token);
-  $: olapConnectorDisplayName = isMotherDuck
-    ? "motherduck"
-    : (olapConnector?.type ?? "duckdb");
+  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
@@ -146,16 +140,7 @@
 
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
-      <span class="info-value">
-        {olapConnector
-          ? formatConnectorName(olapConnectorDisplayName)
-          : "DuckDB"}
-        {#if olapConnector && (olapConnector.provision || olapConnectorDisplayName !== "duckdb")}
-          <span class="text-fg-tertiary text-xs ml-1">
-            ({olapConnector.provision ? "Rill-managed" : "Self-managed"})
-          </span>
-        {/if}
-      </span>
+      <span class="info-value">{olapEngineLabel}</span>
     </div>
 
     <div class="info-row">

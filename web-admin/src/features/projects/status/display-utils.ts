@@ -1,4 +1,5 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+import type { V1Connector } from "@rilldata/web-common/runtime-client";
 
 /**
  * Formats an environment string for display with proper capitalization.
@@ -86,6 +87,37 @@ export function formatConnectorName(connector: string | undefined): string {
   if (lower === "claude") return "Claude";
   if (lower === "gemini") return "Gemini";
   return connector.charAt(0).toUpperCase() + connector.slice(1);
+}
+
+/**
+ * Returns the display label for the OLAP engine, including MotherDuck detection
+ * and a management suffix (Rill-managed / Self-managed) where applicable.
+ *
+ * MotherDuck is detected by checking whether the connector's path starts with "md:"
+ * or a token is configured — the connector name itself may be anything.
+ *
+ * @param connector - The OLAP connector from projectConnectors, or undefined
+ * @returns Display label, e.g. "DuckDB", "MotherDuck (Self-managed)", "ClickHouse (Rill-managed)"
+ */
+export function getOlapEngineLabel(
+  connector: V1Connector | undefined,
+): string {
+  if (!connector) return "DuckDB";
+
+  const isDuckDB = connector.type === "duckdb";
+  const isMotherDuck =
+    isDuckDB &&
+    (String(connector.config?.path ?? "").startsWith("md:") ||
+      !!connector.config?.token);
+
+  const name = formatConnectorName(isMotherDuck ? "motherduck" : connector.type);
+
+  // Show management suffix for non-default-DuckDB connectors
+  const showSuffix = connector.provision || isMotherDuck || !isDuckDB;
+  if (!showSuffix) return name;
+
+  const suffix = connector.provision ? "Rill-managed" : "Self-managed";
+  return `${name} (${suffix})`;
 }
 
 /**
