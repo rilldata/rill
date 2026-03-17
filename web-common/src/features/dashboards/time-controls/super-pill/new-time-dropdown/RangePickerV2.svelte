@@ -221,38 +221,45 @@
   }}
 >
   <Tooltip.Root delayDuration={800}>
-    <Tooltip.Trigger id="super-pill-trigger-{context}">
-      {#snippet child({ props })}
-        <Popover.Trigger
-          {...props}
-          id="super-pill-trigger-{context}"
-          class="flex gap-x-1.5"
-          aria-label="Select time range"
-          type="button"
-        >
-          {#if timeString}
-            <b class="line-clamp-1 flex-none">
-              {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
-                Custom
-              {:else}
-                {selectedLabel}
-              {/if}
-            </b>
-          {/if}
-
-          {#if showFullRange}
-            <RangeDisplay {interval} {timeGrain} />
-
-            <div
-              class="font-bold bg-surface-muted rounded-[2px] p-1 py-0 text-fg-secondary text-[11px]"
+    <Tooltip.Trigger>
+      {#snippet child({ props: tooltipProps })}
+        <Popover.Trigger>
+          {#snippet child({ props: popoverProps })}
+            <button
+              {...tooltipProps}
+              {...popoverProps}
+              class="flex gap-x-1.5"
+              aria-label="Select time range"
+              type="button"
             >
-              {zoneAbbreviation}
-            </div>
-          {/if}
+              {#if timeString}
+                <b class="line-clamp-1 flex-none">
+                  {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
+                    Custom
+                  {:else}
+                    {selectedLabel}
+                  {/if}
+                </b>
+              {/if}
 
-          <span class="flex-none transition-transform" class:-rotate-180={open}>
-            <CaretDownIcon />
-          </span>
+              {#if showFullRange}
+                <RangeDisplay {interval} {timeGrain} />
+
+                <div
+                  class="font-bold bg-surface-muted rounded-[2px] p-1 py-0 text-fg-secondary text-[11px]"
+                >
+                  {zoneAbbreviation}
+                </div>
+              {/if}
+
+              <span
+                class="flex-none transition-transform"
+                class:-rotate-180={open}
+              >
+                <CaretDownIcon />
+              </span>
+            </button>
+          {/snippet}
         </Popover.Trigger>
       {/snippet}
     </Tooltip.Trigger>
