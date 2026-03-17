@@ -374,7 +374,7 @@
       </span>
     </div>
 
-    {#if !isEnterprise}
+    {#if !$subscriptionQuery?.isLoading && !isEnterprise}
       <div class="info-row">
         <span class="info-label">Slots</span>
         <span class="info-value flex items-center gap-3">
