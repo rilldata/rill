@@ -24,6 +24,7 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { createQuery, type QueryClient } from "@tanstack/svelte-query";
 import { Settings } from "luxon";
 import { derived, get } from "svelte/store";
+import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 
 /**
  * Loads data from explore and metrics view specs, along with all time range query.
@@ -357,6 +358,7 @@ export class DashboardStateDataLoader {
     const finalExploreState = cascadingExploreStateMerge(
       nonEmptyExploreStateOrder,
     ) as ExploreState;
+    correctExploreState(metricsViewSpec, finalExploreState);
 
     return finalExploreState;
   }

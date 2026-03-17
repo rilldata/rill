@@ -36,7 +36,7 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 		return nil, ErrForbidden
 	}
 
-	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         req.InstanceId,
 		Resolver:           req.Resolver,
 		ResolverProperties: req.ResolverProperties.AsMap(),

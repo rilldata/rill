@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -48,7 +48,7 @@ type sqlArgs struct {
 // It supports the use of templating in the SQL string to inject user attributes and args into the SQL query.
 func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &sqlProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +61,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	props.SQL = strings.TrimSuffix(strings.TrimSpace(props.SQL), ";")
 
 	args := &sqlArgs{}
-	if err := mapstructure.Decode(opts.Args, args); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
 	}
 
@@ -155,11 +155,7 @@ func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *sqlResolver) Validate(ctx context.Context) error {
-	_, err := r.olap.Query(ctx, &drivers.Statement{
-		Query:  r.sql,
-		DryRun: true,
-	})
-	return err
+	return nil
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
