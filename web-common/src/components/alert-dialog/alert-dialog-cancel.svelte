@@ -3,6 +3,7 @@
   import { buttonVariants } from "./button-variants";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
+  // svelte-ignore custom_element_props_identifier
   let { class: className, ...restProps }: AlertDialogPrimitive.CancelProps =
     $props();
 </script>

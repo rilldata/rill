@@ -3,6 +3,7 @@
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
   import type { ButtonType } from "./types";
 
+  // svelte-ignore custom_element_props_identifier
   let {
     type = "tertiary" as ButtonType,
     onClick,

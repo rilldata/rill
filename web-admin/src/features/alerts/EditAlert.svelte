@@ -29,7 +29,7 @@
   <DialogContent
     class="p-0 m-0 w-[802px] max-w-fit"
     noClose
-    onEscapeKeyDown={preventClose}
+    onEscapeKeydown={preventClose}
     onInteractOutside={preventClose}
   >
     <AlertForm props={{ mode: "edit", alertSpec }} {onCancel} {onClose} />

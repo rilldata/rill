@@ -48,12 +48,12 @@
   } = $props();
 
   let initialMousePosition = 0;
-  let contentRect = new DOMRectReadOnly();
+  let contentRect = $state(new DOMRectReadOnly());
   let dragContainer: HTMLDivElement;
-  let dropIndex: number | null = null;
+  let dropIndex: number | null = $state(null);
   let clone: HTMLElement | null = null;
-  let dragId: string | null = null;
-  let dragIndex = -1;
+  let dragId: string | null = $state(null);
+  let dragIndex = $state(-1);
   let dragItemInitialTop = 0;
   let lastUpdateTime = 0;
 

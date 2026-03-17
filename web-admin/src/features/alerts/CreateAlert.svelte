@@ -62,7 +62,7 @@
     <DialogContent
       class="p-0 m-0 w-[802px] max-w-fit rounded-md"
       noClose
-      onEscapeKeyDown={preventClose}
+      onEscapeKeydown={preventClose}
       onInteractOutside={preventClose}
     >
       <AlertForm

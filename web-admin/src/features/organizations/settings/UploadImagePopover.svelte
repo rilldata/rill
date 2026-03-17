@@ -74,9 +74,10 @@
   }}
 >
   <PopoverTrigger
-    class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit {dark
-      ? 'dark'
-      : ''} {!imageUrl ? 'w-24' : 'w-20'}"
+    class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit {!imageUrl
+      ? 'w-24'
+      : 'w-20'}"
+    style={dark ? "background-color: var(--color-rill-gray-dark-50)" : ""}
   >
     <div class="m-auto px-4 w-fit h-10">
       {#if imageUrl}
@@ -131,9 +132,3 @@
     </div>
   </PopoverContent>
 </Popover>
-
-<style lang="postcss">
-  .dark {
-    background-color: var(--color-rill-gray-dark-50);
-  }
-</style>

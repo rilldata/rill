@@ -3,6 +3,7 @@
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
   import type { Snippet } from "svelte";
 
+  // svelte-ignore custom_element_props_identifier
   let {
     class: className,
     sideOffset = 4,
