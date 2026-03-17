@@ -165,6 +165,7 @@
             {#if filteredMeasures.length}
               {#each filteredMeasures as measure (measure.name)}
                 <DropdownMenu.CheckboxItem
+                  closeOnSelect={!multiSelect}
                   class="text-[12px]"
                   checked={Boolean(
                     measure.name &&

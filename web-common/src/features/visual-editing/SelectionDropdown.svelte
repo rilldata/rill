@@ -64,6 +64,7 @@
       {#if !searchValue}
         {#each selectedProxy as item (item)}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             showXForSelected={excludeMode}
             checked={selectedItems.has(item)}
             onclick={() => {
@@ -83,6 +84,7 @@
 
       {#each filteredItems as item (item)}
         <DropdownMenu.CheckboxItem
+          closeOnSelect={false}
           showXForSelected={excludeMode}
           checked={selectedItems.has(item)}
           onclick={() => {

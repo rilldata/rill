@@ -91,7 +91,11 @@
               ? DropdownMenu.CheckboxItem
               : DropdownMenu.Item}
             {...allowMultiSelect || showSelection
-              ? { checked: selected, showXForSelected }
+              ? {
+                  checked: selected,
+                  showXForSelected,
+                  closeOnSelect: !allowMultiSelect,
+                }
               : {}}
             class="text-xs cursor-pointer"
             role="menuitem"

@@ -2,25 +2,28 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
   import { Check, X } from "lucide-svelte";
+  import type { Snippet } from "svelte";
 
-  type $$Props = DropdownMenuPrimitive.CheckboxItemProps & {
+  let {
+    class: className,
+    checked = $bindable(false),
+    checkSize = "h-4 w-4",
+    href,
+    preloadData = true,
+    showXForSelected = false,
+    checkRight = false,
+    closeOnSelect = true,
+    children,
+    ...restProps
+  }: DropdownMenuPrimitive.CheckboxItemProps & {
     checkSize?: string;
     checkRight?: boolean;
     href?: string;
     preloadData?: boolean;
     showXForSelected?: boolean;
     closeOnSelect?: boolean;
-  };
-
-  let className: $$Props["class"] = undefined;
-  export let checked: $$Props["checked"] = undefined;
-  export let checkSize: $$Props["checkSize"] = "h-4 w-4";
-  export let href: $$Props["href"] = undefined;
-  export let preloadData: $$Props["preloadData"] = true;
-  export let showXForSelected: $$Props["showXForSelected"] = false;
-  export let checkRight: $$Props["checkRight"] = false;
-  export let closeOnSelect: $$Props["closeOnSelect"] = false;
-  export { className as class };
+    children?: Snippet;
+  } = $props();
 </script>
 
 <svelte:element
@@ -30,7 +33,7 @@
   data-sveltekit-preload-data={preloadData ? "hover" : "false"}
 >
   <DropdownMenuPrimitive.CheckboxItem
-    {checked}
+    bind:checked
     {closeOnSelect}
     role="menuitem"
     class={cn(
@@ -38,16 +41,17 @@
       className,
       checkRight && "flex-row-reverse justify-between",
     )}
-    {...$$restProps}
+    {...restProps}
   >
     <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
       {#if checked}
-        <svelte:component
-          this={showXForSelected ? X : Check}
-          class="{checkSize} text-fg-primary"
-        />
+        {#if showXForSelected}
+          <X class="{checkSize} text-fg-primary" />
+        {:else}
+          <Check class="{checkSize} text-fg-primary" />
+        {/if}
       {/if}
     </span>
-    <slot />
+    {@render children?.()}
   </DropdownMenuPrimitive.CheckboxItem>
 </svelte:element>

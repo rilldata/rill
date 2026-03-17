@@ -277,6 +277,7 @@
             <Dropdown.Content align="start" class="w-[260px]">
               {#each projects as p (p.id)}
                 <Dropdown.CheckboxItem
+                  closeOnSelect={false}
                   class="font-normal flex items-center overflow-hidden"
                   checked={selectedProjects.includes(p.name)}
                   onCheckedChange={() => toggleProjectSelection(p.name)}

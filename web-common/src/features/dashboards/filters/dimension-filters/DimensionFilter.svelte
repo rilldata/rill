@@ -544,6 +544,7 @@
 
               <svelte:component
                 this={DropdownMenu.CheckboxItem}
+                closeOnSelect={false}
                 class="text-xs cursor-pointer"
                 role="menuitem"
                 checked={selected}
@@ -575,6 +576,7 @@
               this={curMode === DimensionFilterMode.Select
                 ? DropdownMenu.CheckboxItem
                 : DropdownMenu.Item}
+              closeOnSelect={false}
               class="text-xs cursor-pointer {curMode !==
               DimensionFilterMode.Select
                 ? 'pl-3'

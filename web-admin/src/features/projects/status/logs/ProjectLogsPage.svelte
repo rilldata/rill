@@ -274,6 +274,7 @@
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableLevels as level}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedLevels.includes(level.value)}
             onCheckedChange={() => toggleLevel(level.value)}
           >

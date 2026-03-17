@@ -1,15 +1,18 @@
 <script lang="ts">
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import type { Snippet } from "svelte";
 
-  type $$Props = DropdownMenuPrimitive.ContentProps & {
+  let {
+    class: className,
+    sideOffset = 4,
+    sameWidth = false,
+    children,
+    ...restProps
+  }: DropdownMenuPrimitive.ContentProps & {
     sameWidth?: boolean;
-  };
-
-  let className: $$Props["class"] = undefined;
-  export let sideOffset: $$Props["sideOffset"] = 4;
-  export let sameWidth: boolean = false;
-  export { className as class };
+    children?: Snippet;
+  } = $props();
 </script>
 
 <DropdownMenuPrimitive.Portal>
@@ -20,8 +23,8 @@
       sameWidth && "w-[var(--bits-floating-anchor-width)]",
       className,
     )}
-    {...$$restProps}
+    {...restProps}
   >
-    <slot />
+    {@render children?.()}
   </DropdownMenuPrimitive.Content>
 </DropdownMenuPrimitive.Portal>
