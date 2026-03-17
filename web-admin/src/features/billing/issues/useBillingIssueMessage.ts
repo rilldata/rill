@@ -1,4 +1,5 @@
 import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
+import { getMessageForCreditIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCreditIssues";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
@@ -55,6 +56,38 @@ export function useBillingIssueMessage(organization: string) {
             orgResp.error ??
             categorisedIssuesResp.error ??
             allProjectsHibernatingResp.error,
+        };
+      }
+
+      // Credit issues take priority (free-tier orgs)
+      if (categorisedIssuesResp.data?.creditExhausted) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCreditIssue(
+            categorisedIssuesResp.data.creditExhausted,
+          ),
+        };
+      }
+      if (categorisedIssuesResp.data?.creditCritical) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCreditIssue(
+            categorisedIssuesResp.data.creditCritical,
+          ),
+        };
+      }
+      if (categorisedIssuesResp.data?.creditLow) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCreditIssue(
+            categorisedIssuesResp.data.creditLow,
+          ),
         };
       }
 

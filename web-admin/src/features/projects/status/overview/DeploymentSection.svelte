@@ -7,6 +7,8 @@
   } from "@rilldata/web-admin/client";
   import {
     isTrialPlan,
+    isFreePlan,
+    isGrowthPlan,
     isEnterprisePlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
@@ -92,7 +94,16 @@
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
   $: isTrial = isTrialPlan(planName);
+  $: isFree = isFreePlan(planName);
+  $: isGrowth = isGrowthPlan(planName);
   $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
+  // New pricing applies to Free and Growth plans
+  $: useNewPricing = isFree || isGrowth;
+
+  // Cluster Slots: derived at runtime from RillMinSlots (set by CHC sync from OLAP connector)
+  $: clusterSlots = Number(projectData?.rillMinSlots) || 0;
+  // For new pricing Live Connect, Rill Slots = prodSlots (user-controlled, starts at 0)
+  $: rillSlots = useNewPricing && !isRillManaged ? currentSlots : 0;
 
   // Slot usage breakdown (dev edit modes coming soon; each consumes 1 slot)
   $: prodSlots = currentSlots; // today all slots go to prod
@@ -375,41 +386,74 @@
     </div>
 
     {#if !$subscriptionQuery?.isLoading && !isEnterprise}
-      <div class="info-row">
-        <span class="info-label">Slots</span>
-        <span class="info-value flex items-center gap-3">
-          {#if currentSlots > 0}
-            <div class="slots-pill">
-              <div
-                class="slots-fill-prod"
-                style="width: {(prodSlots / currentSlots) * 100}%"
-              ></div>
-              <div
-                class="slots-fill-dev"
-                style="width: {(devSlots / currentSlots) * 100}%"
-              ></div>
-            </div>
-            <span class="slots-count">{usedSlots}/{currentSlots}</span>
-          {:else}
-            <span>0</span>
-          {/if}
-          {#if canManage && isTrial}
-            <a
-              class="manage-slots-btn"
-              href="/{organization}/-/settings/billing"
-            >
-              Upgrade to Team Plan
-            </a>
-          {:else if canManage && !isChcAutoScaled && !isChcHibernated}
-            <button
-              class="manage-slots-btn"
-              on:click={() => (slotsModalOpen = true)}
-            >
-              Manage Slots
-            </button>
-          {/if}
-        </span>
-      </div>
+      {#if useNewPricing && !isRillManaged}
+        <!-- New pricing Live Connect: show Cluster Slots + Rill Slots separately -->
+        <div class="info-row">
+          <span class="info-label">Cluster Slots</span>
+          <span class="info-value flex items-center gap-3">
+            <span class="slots-count">{clusterSlots}</span>
+            <span class="text-fg-tertiary text-xs">(auto-calculated)</span>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Rill Slots</span>
+          <span class="info-value flex items-center gap-3">
+            <span class="slots-count">{rillSlots}</span>
+            {#if canManage && !isFree && !isChcAutoScaled && !isChcHibernated}
+              <button
+                class="manage-slots-btn"
+                on:click={() => (slotsModalOpen = true)}
+              >
+                Manage Rill Slots
+              </button>
+            {:else if canManage && isFree}
+              <a
+                class="manage-slots-btn"
+                href="/{organization}/-/settings/billing"
+              >
+                Upgrade to Growth
+              </a>
+            {/if}
+          </span>
+        </div>
+      {:else}
+        <!-- Legacy or Managed: single Slots row -->
+        <div class="info-row">
+          <span class="info-label">Slots</span>
+          <span class="info-value flex items-center gap-3">
+            {#if currentSlots > 0}
+              <div class="slots-pill">
+                <div
+                  class="slots-fill-prod"
+                  style="width: {(prodSlots / currentSlots) * 100}%"
+                ></div>
+                <div
+                  class="slots-fill-dev"
+                  style="width: {(devSlots / currentSlots) * 100}%"
+                ></div>
+              </div>
+              <span class="slots-count">{usedSlots}/{currentSlots}</span>
+            {:else}
+              <span>0</span>
+            {/if}
+            {#if canManage && (isTrial || isFree)}
+              <a
+                class="manage-slots-btn"
+                href="/{organization}/-/settings/billing"
+              >
+                {isFree ? "Upgrade to Growth" : "Upgrade to Team Plan"}
+              </a>
+            {:else if canManage && !isChcAutoScaled && !isChcHibernated}
+              <button
+                class="manage-slots-btn"
+                on:click={() => (slotsModalOpen = true)}
+              >
+                Manage Slots
+              </button>
+            {/if}
+          </span>
+        </div>
+      {/if}
       {#if isChcAutoScaled}
         <div class="info-row pt-0">
           <span class="info-label"></span>
@@ -433,6 +477,9 @@
   required={slotsRequiredMode}
   viewOnly={isTrial}
   detectedMemoryGb={chcDetectedMemoryGb ?? cloudMaxMemory}
+  {useNewPricing}
+  {clusterSlots}
+  currentRillSlots={rillSlots}
 />
 
 {#if isClickHouseCloud && canManage}
