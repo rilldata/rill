@@ -99,9 +99,7 @@ export function formatConnectorName(connector: string | undefined): string {
  * @param connector - The OLAP connector from projectConnectors, or undefined
  * @returns Display label, e.g. "DuckDB", "MotherDuck (Self-managed)", "ClickHouse (Rill-managed)"
  */
-export function getOlapEngineLabel(
-  connector: V1Connector | undefined,
-): string {
+export function getOlapEngineLabel(connector: V1Connector | undefined): string {
   if (!connector) return "DuckDB";
 
   const isDuckDB = connector.type === "duckdb";
@@ -110,7 +108,9 @@ export function getOlapEngineLabel(
     (String(connector.config?.path ?? "").startsWith("md:") ||
       !!connector.config?.token);
 
-  const name = formatConnectorName(isMotherDuck ? "motherduck" : connector.type);
+  const name = formatConnectorName(
+    isMotherDuck ? "motherduck" : connector.type,
+  );
 
   // Show management suffix for non-default-DuckDB connectors
   const showSuffix = connector.provision || isMotherDuck || !isDuckDB;

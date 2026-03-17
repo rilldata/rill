@@ -5,6 +5,7 @@ import {
   getStatusDotClass,
   getStatusLabel,
   formatConnectorName,
+  getOlapEngineLabel,
   getResourceKindTagColor,
 } from "./display-utils";
 
@@ -211,6 +212,54 @@ describe("display-utils", () => {
 
     it("capitalizes first letter for unknown connectors", () => {
       expect(formatConnectorName("postgres")).toBe("Postgres");
+    });
+  });
+
+  describe("getOlapEngineLabel", () => {
+    it("returns 'DuckDB' when connector is undefined", () => {
+      expect(getOlapEngineLabel(undefined)).toBe("DuckDB");
+    });
+
+    it("returns 'DuckDB' for plain duckdb connector", () => {
+      expect(getOlapEngineLabel({ type: "duckdb", name: "duckdb" })).toBe(
+        "DuckDB",
+      );
+    });
+
+    it("detects MotherDuck via md: path", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "my_olap",
+          config: { path: "md:my_database" },
+        }),
+      ).toBe("MotherDuck (Self-managed)");
+    });
+
+    it("detects MotherDuck via token", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "custom_name",
+          config: { token: "abc123" },
+        }),
+      ).toBe("MotherDuck (Self-managed)");
+    });
+
+    it("shows Rill-managed for provisioned ClickHouse", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "clickhouse",
+          name: "clickhouse",
+          provision: true,
+        }),
+      ).toBe("ClickHouse (Rill-managed)");
+    });
+
+    it("shows Self-managed for non-provisioned ClickHouse", () => {
+      expect(
+        getOlapEngineLabel({ type: "clickhouse", name: "clickhouse" }),
+      ).toBe("ClickHouse (Self-managed)");
     });
   });
 
