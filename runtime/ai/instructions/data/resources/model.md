@@ -301,14 +301,6 @@ output:
   order_by: event_time
 ```
 
-## JSON Schema
-
-Here is a full JSON schema for the model syntax:
-
-```
-{% json_schema_for_resource "model" %}
-```
-
 ## Examples
 
 ### Simple model with mock data as a SQL file
@@ -752,4 +744,12 @@ sql: |
     country,
     costs_usd + profit_usd + tax_usd AS value_usd
   FROM read_parquet('{{ .partition.uri }}/*.parquet')
+```
+
+## Reference documentation
+
+Here is a full JSON schema for the model syntax:
+
+```
+{% json_schema_for_resource "model" %}
 ```

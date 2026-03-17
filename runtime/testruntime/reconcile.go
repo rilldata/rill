@@ -229,6 +229,7 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state.TestHash = ""
 		state.LatestExecutionDurationMs = 0
 		state.TotalExecutionDurationMs = 0
+		state.BytesTotal = 0
 	case runtime.ResourceKindMetricsView:
 		state := b.GetMetricsView().State
 		state.DataRefreshedOn = nil
@@ -316,7 +317,7 @@ type RequireResolveOptions struct {
 func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireResolveOptions) {
 	// Run the resolver.
 	ctx := t.Context()
-	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         id,
 		Resolver:           opts.Resolver,
 		ResolverProperties: opts.Properties,

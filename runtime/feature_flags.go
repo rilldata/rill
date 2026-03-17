@@ -56,8 +56,6 @@ var defaultFeatureFlags = map[string]string{
 	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
-	// Controls visibility of the "Create Canvas" dashboard buttons
-	"generate_canvas": "false",
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
 	// Controls if the dashboard state is persisted when navigating to a different dashboard.

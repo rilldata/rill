@@ -9,6 +9,8 @@ import {
 test.describe.serial("Reports", () => {
   test("Should create report", async ({ adminPage }) => {
     await adminPage.goto("/e2e/openrtb/explore/auction_explore");
+    // We are seeing some race condition where clicking `App Site Domain` too quickly can get reset with an internal redirect.
+    await adminPage.waitForURL(/tr=P7D/);
 
     // Enter dimension table "App Site Domain"
     await adminPage.getByText("App Site Domain").click();

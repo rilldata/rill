@@ -14,7 +14,9 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -34,7 +36,8 @@ type aiProps struct {
 	Measures   []string       `mapstructure:"measures"`
 	Where      map[string]any `mapstructure:"where"`
 	// IsReport indicates if the AI resolver is used for an automated report.
-	IsReport bool `mapstructure:"is_report"`
+	IsReport     bool           `mapstructure:"is_report"`
+	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
 // aiArgs contains the dynamic arguments for the AI resolver.
@@ -49,13 +52,13 @@ type aiArgs struct {
 func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	// Parse props
 	props := &aiProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
 
 	// Parse args
 	args := &aiArgs{}
-	if err := mapstructure.Decode(opts.Args, args); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
 	}
 
@@ -149,6 +152,12 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 	}
 	if !r.props.IsReport && r.props.Prompt == "" {
 		return errors.New("prompt is required for non-report AI sessions")
+	}
+	if len(r.props.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
+			Name:   "ai",
+			Fields: maps.Keys(r.props.UnusedFields),
+		}
 	}
 	return nil
 }

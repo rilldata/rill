@@ -111,6 +111,7 @@ type projectStatusTableRow struct {
 	RunningCount         int    `header:"running"`
 	ReconcileErrorsCount int    `header:"reconcile errors"`
 	ParseErrorsCount     int    `header:"parse errors"`
+	ParseWarningsCount   int    `header:"parse warnings"`
 }
 
 func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, project string) (*projectStatusTableRow, error) {
@@ -176,7 +177,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	}
 
 	var parser *runtimev1.Resource
-	var parseErrorsCount int
+	var parseErrorsCount, parseWarningsCount int
 	var idleCount int
 	var reconcileErrorsCount int
 	var pendingCount int
@@ -212,7 +213,13 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		}, nil
 	}
 	if parser.GetProjectParser().State != nil {
-		parseErrorsCount = len(parser.GetProjectParser().State.ParseErrors)
+		for _, e := range parser.GetProjectParser().State.ParseErrors {
+			if e.Warning {
+				parseWarningsCount++
+			} else {
+				parseErrorsCount++
+			}
+		}
 	}
 	if parser.Meta.ReconcileError != "" {
 		parseErrorsCount++
@@ -227,6 +234,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		RunningCount:         runningCount,
 		ReconcileErrorsCount: reconcileErrorsCount,
 		ParseErrorsCount:     parseErrorsCount,
+		ParseWarningsCount:   parseWarningsCount,
 	}, nil
 }
 

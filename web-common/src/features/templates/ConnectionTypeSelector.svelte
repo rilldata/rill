@@ -1,8 +1,13 @@
 <script lang="ts">
   import { Select as SelectPrimitive } from "bits-ui";
   import * as Select from "@rilldata/web-common/components/select";
-  import { Cloud, Play, Server, Sparkles } from "lucide-svelte";
+  import { Cloud, HardDrive, Play, Server, Sparkles } from "lucide-svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
+  import AmazonS3Icon from "@rilldata/web-common/components/icons/connectors/AmazonS3Icon.svelte";
+  import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
+  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ComponentType, SvelteComponent } from "svelte";
 
   type ConnectionOption = {
@@ -16,6 +21,13 @@
   export let label: string = "";
   export let onChange: (value: string) => void = () => {};
 
+  /**
+   * Maps option values to required connector driver names.
+   * The component queries analyzed connectors and disables options
+   * whose required driver is not found among existing connectors.
+   */
+  export let requiredDrivers: Record<string, string> = {};
+
   // Icon and color maps for rich select display.
   // Defaults support ClickHouse and DuckDB deployment types; override via props for other connectors.
   export let iconMap: Record<string, ComponentType<SvelteComponent>> = {
@@ -24,6 +36,10 @@
     "self-managed": Server,
     "self-hosted": Server,
     "rill-managed": Sparkles,
+    gcs: GoogleCloudStorageIcon,
+    s3: AmazonS3Icon,
+    azure: MicrosoftAzureBlobStorageIcon,
+    local: HardDrive,
   };
 
   export let colorMap: Record<string, { bg: string; text: string }> = {
@@ -32,6 +48,10 @@
     "self-managed": { bg: "bg-purple-100", text: "text-purple-600" },
     "self-hosted": { bg: "bg-purple-100", text: "text-purple-600" },
     "rill-managed": { bg: "bg-blue-100", text: "text-blue-600" },
+    gcs: { bg: "", text: "" },
+    s3: { bg: "", text: "" },
+    azure: { bg: "", text: "" },
+    local: { bg: "", text: "text-gray-600" },
   };
 
   function getIcon(optionValue: string): ComponentType<SvelteComponent> {
@@ -52,6 +72,39 @@
   $: selectedColors = selectedOption
     ? getColors(selectedOption.value)
     : { bg: "bg-surface-secondary", text: "text-fg-muted" };
+
+  // Query existing connectors and derive disabled options via a selector
+  const client = useRuntimeClient();
+  $: hasRequiredDrivers = Object.keys(requiredDrivers).length > 0;
+  $: disabledOptionsQuery = createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        enabled: hasRequiredDrivers,
+        select: (data) => {
+          const existingDrivers = new Set(
+            (data.connectors ?? [])
+              .map((c) => c.driver?.name ?? "")
+              .filter(Boolean),
+          );
+          const disabled: Record<string, string> = {};
+          for (const [optionValue, driverName] of Object.entries(
+            requiredDrivers,
+          )) {
+            if (!existingDrivers.has(driverName)) {
+              const optLabel =
+                options.find((o) => o.value === optionValue)?.label ??
+                optionValue;
+              disabled[optionValue] = `Create a ${optLabel} connector first`;
+            }
+          }
+          return disabled;
+        },
+      },
+    },
+  );
+  $: disabledOptions = $disabledOptionsQuery?.data ?? {};
 
   function handleChange(newValue: string | undefined) {
     if (newValue) {
@@ -104,7 +157,12 @@
       {#each options as option (option.value)}
         {@const Icon = getIcon(option.value)}
         {@const colors = getColors(option.value)}
-        <Select.Item value={option.value} class="py-2">
+        {@const disabledReason = disabledOptions[option.value]}
+        <Select.Item
+          value={option.value}
+          class="py-2 {disabledReason ? 'cursor-not-allowed' : ''}"
+          disabled={!!disabledReason}
+        >
           <div class="flex items-center gap-3">
             <div
               class="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center {colors.bg} {colors.text}"
@@ -113,7 +171,9 @@
             </div>
             <div class="flex flex-col">
               <span class="text-sm font-medium">{option.label}</span>
-              {#if option.description}
+              {#if disabledReason}
+                <span class="text-xs text-fg-muted">{disabledReason}</span>
+              {:else if option.description}
                 <span class="text-xs text-fg-muted">{option.description}</span>
               {/if}
             </div>

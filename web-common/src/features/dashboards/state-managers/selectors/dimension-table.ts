@@ -1,9 +1,9 @@
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 import type {
   MetricsViewSpecDimension,
-  RpcStatus,
   V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
 import {
@@ -74,7 +74,7 @@ export const prepareDimTableRows =
   ): ((
     sortedQuery: QueryObserverResult<
       V1MetricsViewAggregationResponse,
-      RpcStatus
+      ConnectError
     >,
     unfilteredTotal: number | { [key: string]: number },
   ) => DimensionTableRow[]) =>

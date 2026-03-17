@@ -43,6 +43,8 @@ type Github interface {
 	InstallationTokenForOrg(ctx context.Context, org string) (token string, expiresAt time.Time, err error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
+	// DeleteManagedRepo deletes the given repo from the managed org. For test cleanup only.
+	DeleteManagedRepo(ctx context.Context, repo string) error
 	ManagedOrgInstallationID() (int64, error)
 }
 
@@ -187,6 +189,21 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 	}
 
 	return repo, nil
+}
+
+func (g *githubClient) DeleteManagedRepo(ctx context.Context, repo string) error {
+	// get managed org client
+	id, err := g.ManagedOrgInstallationID()
+	if err != nil {
+		return fmt.Errorf("failed to get managed org installation ID: %w", err)
+	}
+	client := g.InstallationClient(id, nil)
+
+	_, err = client.Repositories.Delete(ctx, g.managedAcct, repo)
+	if err != nil {
+		return fmt.Errorf("failed to delete repo: %w", err)
+	}
+	return nil
 }
 
 func (g *githubClient) ManagedOrgInstallationID() (int64, error) {

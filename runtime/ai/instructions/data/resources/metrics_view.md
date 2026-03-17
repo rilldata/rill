@@ -396,7 +396,9 @@ expression: arrayJoin(tags)  # Unnest arrays
 expression: APPROX_COUNT_DISTINCT_DS_HLL(user_id)
 ```
 
-## JSON Schema
+## Reference documentation
+
+Here is a full JSON schema for the metrics view syntax:
 
 ```
 {% json_schema_for_resource "metrics_view" %}

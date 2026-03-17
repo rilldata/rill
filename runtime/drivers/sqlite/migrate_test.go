@@ -22,7 +22,7 @@ func TestDeleteExpiredAISessions(t *testing.T) {
 	cfg := map[string]any{"dsn": dbPath}
 
 	// Open the database, run migrations, and seed test data.
-	h, err := driver{}.Open("", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
+	h, err := driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, h.Migrate(t.Context()))
 
@@ -45,7 +45,7 @@ func TestDeleteExpiredAISessions(t *testing.T) {
 
 	// Close the handle, then re-open and migrate to trigger the TTL cleanup.
 	require.NoError(t, h.Close())
-	h, err = driver{}.Open("", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
+	h, err = driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer h.Close()
 	require.NoError(t, h.Migrate(t.Context()))
