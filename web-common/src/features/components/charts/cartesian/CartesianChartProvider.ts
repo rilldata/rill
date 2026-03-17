@@ -17,19 +17,20 @@ import {
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type MetricsViewSpecMeasure,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
-  type V1TimeRange,
+import type {
+  MetricsViewSpecMeasure,
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -150,9 +151,11 @@ export class CartesianChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
     const isMultiMeasure = isMultiFieldConfig(config.y);
@@ -199,8 +202,8 @@ export class CartesianChartProvider {
 
     // Create topN query for x dimension
     const topNXQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const {
           timeRange,
           where,
@@ -208,8 +211,8 @@ export class CartesianChartProvider {
           comparisonTimeRange,
           showTimeComparison,
         } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
@@ -254,9 +257,9 @@ export class CartesianChartProvider {
         }
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures: topNMeasures,
             dimensions: [{ name: dimensionName }],
             sort: xAxisSort ? [xAxisSort] : undefined,
@@ -278,10 +281,11 @@ export class CartesianChartProvider {
 
     // Create topN query for color dimension
     const topNColorQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           hasColorDimension &&
           !!colorDimensionName &&
@@ -293,9 +297,9 @@ export class CartesianChartProvider {
         );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: colorDimensionName }],
             sort: config?.y?.field
@@ -317,8 +321,8 @@ export class CartesianChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, topNXQuery, topNColorQuery],
-      ([$runtime, $timeAndFilterStore, $topNXQuery, $topNColorQuery]) => {
+      [timeAndFilterStore, topNXQuery, topNColorQuery, visibleStore],
+      ([$timeAndFilterStore, $topNXQuery, $topNColorQuery, $visible]) => {
         const {
           timeRange,
           where,
@@ -331,6 +335,7 @@ export class CartesianChartProvider {
 
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           !!dimensions?.length &&
@@ -409,9 +414,9 @@ export class CartesianChartProvider {
             .flat();
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures: measuresWithComparison,
             dimensions,
             where: combinedWhere,

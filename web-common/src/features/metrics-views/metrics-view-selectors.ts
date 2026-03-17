@@ -7,6 +7,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, get, type Readable } from "svelte/store";
 import {
   ResourceKind,
@@ -62,9 +63,9 @@ export class MetricsViewSelectors {
     typeof useFilteredResources<Array<V1Resource | undefined>>
   >;
 
-  constructor(instanceId: string, metricsViewsData?: MetricsViewsData) {
+  constructor(client: RuntimeClient, metricsViewsData?: MetricsViewsData) {
     this.allMetricsViews = useFilteredResources(
-      instanceId,
+      client,
       ResourceKind.MetricsView,
     );
 

@@ -127,8 +127,13 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
   createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.runtimeClient,
+      timeAndFilterStore,
+      visible,
+    );
   }
 
   static newComponentSpec(

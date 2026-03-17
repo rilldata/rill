@@ -188,6 +188,10 @@
     @apply bg-surface-hover;
   }
 
+  .ghost.selected {
+    @apply bg-primary-100;
+  }
+
   .ghost:disabled {
     @apply opacity-50;
   }

@@ -1,5 +1,6 @@
 import type { V1Resource } from "../../runtime-client";
 import { createRuntimeServiceListResources } from "../../runtime-client";
+import type { RuntimeClient } from "../../runtime-client/v2";
 import { resourceNameToId } from "./resource-utils";
 
 /**
@@ -11,13 +12,13 @@ import { resourceNameToId } from "./resource-utils";
  * Cloud viewers, who have no access to the project's resource graph.
  */
 export function createRootCauseErrorQuery(
-  instanceId: string,
+  client: RuntimeClient,
   resource: V1Resource | undefined,
   errorMessage: string | undefined,
 ) {
   return createRuntimeServiceListResources<string | undefined>(
-    instanceId,
-    undefined,
+    client,
+    {},
     {
       query: {
         enabled: !!errorMessage && !!resource,

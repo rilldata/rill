@@ -82,9 +82,7 @@ export function getDirectoryHasErrors(
 ) {
   return derived(
     flattenDirectory(dir).map((filePath) =>
-      fileArtifacts
-        .getFileArtifact(filePath)
-        .getAllErrors(queryClient, instanceId),
+      fileArtifacts.getFileArtifact(filePath).getAllErrors(queryClient),
     ),
     (filesErrors) => filesErrors.some((fileErrors) => fileErrors.length > 0),
   );

@@ -7,7 +7,10 @@
   export let onClick: (range: string) => void;
 
   $: label = rillTime.getLabel();
-  $: range = rillTime.interval.toString();
+  // If there is as of baked into the range then use it.
+  $: range = rillTime.asOfLabel
+    ? rillTime.toString()
+    : rillTime.interval.toString();
 
   $: selected = !!timeString?.startsWith(range);
 </script>

@@ -12,7 +12,7 @@
     createQueryServiceMetricsViewTimeSeries,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -30,7 +30,6 @@
   const VISIBILITY_ROOT_MARGIN = "120px";
 
   export let measure: MetricsViewSpecMeasure;
-  export let instanceId: string;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
@@ -61,7 +60,9 @@
   export let onPanRight: (() => void) | undefined = undefined;
   export let scrubController: ScrubController;
   export let connectNulls: boolean = true;
+  export let forceLineChart: boolean = false;
 
+  const client = useRuntimeClient();
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
 
   let container: HTMLDivElement;
@@ -79,17 +80,18 @@
   $: measureName = measure.name ?? "";
   $: height = showTimeDimensionDetail ? 245 : 145;
 
-  // Extract ISO strings for API calls
-  $: timeStart = interval?.start?.toISO() ?? undefined;
-  $: timeEnd = interval?.end?.toISO() ?? undefined;
-  $: comparisonTimeStart = comparisonInterval?.start?.toISO() ?? undefined;
-  $: comparisonTimeEnd = comparisonInterval?.end?.toISO() ?? undefined;
+  // Extract ISO strings for API calls (must be UTC for protobuf Timestamp parsing)
+  $: timeStart = interval?.start?.toUTC().toISO() ?? undefined;
+  $: timeEnd = interval?.end?.toUTC().toISO() ?? undefined;
+  $: comparisonTimeStart =
+    comparisonInterval?.start?.toUTC().toISO() ?? undefined;
+  $: comparisonTimeEnd = comparisonInterval?.end?.toUTC().toISO() ?? undefined;
 
   // Time series queries
   $: timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsViewName,
       measureNames: [measureName],
       where,
       timeDimension,
@@ -108,9 +110,9 @@
   );
 
   $: comparisonTimeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsViewName,
       measureNames: [measureName],
       where,
       timeDimension,
@@ -145,8 +147,7 @@
         );
 
   $: isError = $timeSeriesQuery.isError;
-  $: error = ($timeSeriesQuery.error as HTTPError | undefined)?.response?.data
-    ?.message;
+  $: error = $timeSeriesQuery.error?.message;
 
   // Dimension comparison data
   $: hasDimensionComparison =
@@ -154,7 +155,7 @@
 
   $: dimAggQuery = hasDimensionComparison
     ? createDimensionAggregationQuery(
-        instanceId,
+        client,
         metricsViewName,
         measureName,
         comparisonDimension!,
@@ -172,7 +173,7 @@
   $: dimCompAggQuery =
     hasDimensionComparison && showComparison && !!comparisonTimeStart
       ? createDimensionAggregationQuery(
-          instanceId,
+          client,
           metricsViewName,
           measureName,
           comparisonDimension!,
@@ -216,7 +217,7 @@
 
   // Annotations query
   $: annotationsQuery = createAnnotationsQuery(
-    instanceId,
+    client,
     metricsViewName,
     measureName,
     timeDimension,
@@ -315,6 +316,7 @@
       {scrubController}
       {metricsViewName}
       {connectNulls}
+      {forceLineChart}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">

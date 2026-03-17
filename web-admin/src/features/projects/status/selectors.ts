@@ -9,7 +9,8 @@ import {
   type V1OlapTableInfo,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client/gen/connector-service/connector-service";
+import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { derived, type Readable } from "svelte/store";
@@ -49,9 +50,9 @@ export function filterResourcesForDisplay(
   );
 }
 
-export function useResources(instanceId: string) {
+export function useResources(client: RuntimeClient) {
   return createRuntimeServiceListResources(
-    instanceId,
+    client,
     {},
     {
       query: {
@@ -81,7 +82,7 @@ export function useResources(instanceId: string) {
  */
 export function useInfiniteTablesList(
   params: Readable<{
-    instanceId: string;
+    client: RuntimeClient;
     connector: string;
     searchPattern?: string;
   }>,
@@ -90,18 +91,17 @@ export function useInfiniteTablesList(
     queryKey: [
       "/v1/olap/tables-infinite",
       {
-        instanceId: $p.instanceId,
+        instanceId: $p.client.instanceId,
         connector: $p.connector,
         searchPattern: $p.searchPattern,
       },
     ],
-    enabled: !!$p.instanceId && !!$p.connector,
+    enabled: !!$p.client.instanceId && !!$p.connector,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: { nextPageToken?: string }) =>
       lastPage?.nextPageToken || undefined,
     queryFn: ({ pageParam }: { pageParam?: string }) =>
-      connectorServiceOLAPListTables({
-        instanceId: $p.instanceId,
+      connectorServiceOLAPListTables($p.client, {
         connector: $p.connector,
         searchPattern: $p.searchPattern,
         pageToken: pageParam,
@@ -142,24 +142,28 @@ export function buildModelResourcesMap(
 /**
  * Fetches model resources and maps them by their result table name.
  */
-export function useModelResources(instanceId: string) {
+export function useModelResources(client: RuntimeClient) {
   return createRuntimeServiceListResources(
-    instanceId,
+    client,
     { kind: ResourceKind.Model },
     {
       query: {
         select: (data: V1ListResourcesResponse) =>
           buildModelResourcesMap(data.resources),
-        enabled: !!instanceId,
+        enabled: !!client.instanceId,
       },
     },
   );
 }
 
-export function useRuntimeVersion() {
-  return createRuntimeServicePing({
-    query: {
-      staleTime: 60000, // Cache for 1 minute
+export function useRuntimeVersion(client: RuntimeClient) {
+  return createRuntimeServicePing(
+    client,
+    {},
+    {
+      query: {
+        staleTime: 60000, // Cache for 1 minute
+      },
     },
-  });
+  );
 }
