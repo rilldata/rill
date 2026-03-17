@@ -25,12 +25,13 @@
   $: onTrial = !!$categorisedIssues.data?.trial;
   $: onManagedPlan = plan && isManagedPlan(plan.name);
   $: onEnterprisePlan = plan && isEnterprisePlan(plan.name);
-  // For enterprise, managed, and neverSubscribed orgs, hide the section when
-  // payment details haven't been entered yet (setup done via CLI). Once set up
-  // (no payment issues), show the Manage button so they can update their details.
+  // For enterprise and managed orgs, hide when payment details haven't been
+  // entered yet (setup done via CLI). Once set up, show the Manage button.
+  // neverSubscribed orgs are always hidden since the billing page is not shown.
   $: pendingSetup =
-    (neverSubscribed || onManagedPlan || onEnterprisePlan) &&
-    needsPaymentSetup(paymentIssues ?? []);
+    neverSubscribed ||
+    ((onManagedPlan || onEnterprisePlan) &&
+      needsPaymentSetup(paymentIssues ?? []));
 
   async function handleManagePayment() {
     const setup = paymentIssues?.length
