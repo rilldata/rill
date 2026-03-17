@@ -433,6 +433,11 @@ func (r *repo) SwitchBranch(ctx context.Context, branchName string, createIfNotE
 	return drivers.ErrNotImplemented
 }
 
+// GitInit implements drivers.RepoStore.
+func (r *repo) GitInit(ctx context.Context) error {
+	return nil
+}
+
 // ListCommits implements drivers.RepoStore.
 func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([]drivers.Commit, string, error) {
 	return nil, "", drivers.ErrNotImplemented
@@ -521,7 +526,7 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 }
 
 // RestoreCommit implements drivers.RepoStore.
-func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
+func (r *repo) RestoreCommit(ctx context.Context, commitSHA string, revertAll bool) (string, error) {
 	return "", drivers.ErrNotImplemented
 }
 
@@ -539,6 +544,7 @@ func (r *repo) CommitHash(ctx context.Context) (string, error) {
 	defer r.mu.RUnlock()
 
 	if r.archive != nil {
+		fmt.Println("Commit from archive", r.archive.archiveID)
 		return r.archive.archiveID, nil
 	}
 	return r.git.commitHash()

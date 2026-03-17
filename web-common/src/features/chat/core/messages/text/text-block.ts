@@ -28,7 +28,9 @@ export interface FeedbackData {
 export function createTextBlock(
   message: V1Message,
   feedback?: FeedbackData,
-): TextBlock {
+): TextBlock | null {
+  if (!message.content?.[0]?.text) return null;
+
   return {
     type: "text",
     id: message.id!,

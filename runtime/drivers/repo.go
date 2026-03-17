@@ -42,6 +42,9 @@ type RepoStore interface {
 	// The function does not return until the context is cancelled or an error occurs.
 	Watch(ctx context.Context, cb WatchCallback) error
 
+	// GitInit initializes a git repository in the repo root if not already a git repository.
+	// Does not throw if the repo root is already a git repository.
+	GitInit(ctx context.Context) error
 	// ListCommits returns a list of commits in reverse chronological order.
 	// fromCommit is the commit SHA to start from (empty for HEAD). Returns commits and next page token.
 	ListCommits(ctx context.Context, fromCommit string, limit int) (commits []Commit, nextPageToken string, err error)
@@ -56,7 +59,7 @@ type RepoStore interface {
 	// CommitAndPush commits local changes to the remote repository and pushes them.
 	CommitAndPush(ctx context.Context, message string, force bool) error
 	// RestoreCommit creates a new commit that restores the state of the repo to the specified commit SHA.
-	RestoreCommit(ctx context.Context, commitSHA string) (string, error)
+	RestoreCommit(ctx context.Context, commitSHA string, revertAll bool) (string, error)
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
 	CommitHash(ctx context.Context) (string, error)
 	// CommitTimestamp returns the update timestamp for the current remote files (does not change on uncommitted local changes).

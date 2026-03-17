@@ -1,5 +1,6 @@
-import type { V1Message } from "@rilldata/web-common/runtime-client";
+import { type V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
+import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 
 // =============================================================================
 // BACKEND TYPES (mirror runtime/ai tool definitions)
@@ -13,7 +14,7 @@ export interface WriteFileCallData {
 }
 
 /** Result from the write_file tool */
-interface WriteFileResultData {
+export interface WriteFileResultData {
   diff?: string;
   is_new_file?: boolean;
   resources?: Array<{
@@ -23,6 +24,7 @@ interface WriteFileResultData {
     reconcile_error: string;
   }>;
   parse_error?: string;
+  checkpoint_commit_hash?: string;
 }
 
 // =============================================================================
@@ -41,6 +43,7 @@ export type FileDiffBlock = {
   filePath: string;
   diff: string;
   isNewFile: boolean;
+  checkpointCommitHash: string | null;
 };
 
 /**
@@ -68,9 +71,10 @@ export function createFileDiffBlock(
       id: `file-diff-${message.id}`,
       message,
       resultMessage,
-      filePath,
+      filePath: addLeadingSlash(filePath),
       diff: resultData.diff || "",
       isNewFile: resultData.is_new_file || false,
+      checkpointCommitHash: resultData.checkpoint_commit_hash || null,
     };
   } catch {
     return null;

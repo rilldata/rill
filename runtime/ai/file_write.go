@@ -2,13 +2,17 @@ package ai
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pmezard/go-difflib/difflib"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 const WriteFileName = "write_file"
@@ -26,11 +30,12 @@ type WriteFileArgs struct {
 }
 
 type WriteFileResult struct {
-	Diff          string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
-	IsNewFile     bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
-	Resources     []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
-	ParseError    string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
-	ParseWarnings []string         `json:"parse_warnings,omitempty" jsonschema:"Parse warnings encountered when parsing the file, if any. The file may still be successfully reconciled if there are warnings."`
+	Diff                 string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
+	IsNewFile            bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
+	Resources            []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
+	ParseError           string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	ParseWarnings        []string         `json:"parse_warnings,omitempty" jsonschema:"Parse warnings encountered when parsing the file, if any. The file may still be successfully reconciled if there are warnings."`
+	CheckpointCommitHash string           `json:"checkpoint_commit_hash,omitempty" jsonschema:"The commit hash of the checkpoint just before writing any file in the current message chain."`
 }
 
 func (t *WriteFile) Spec() *mcp.Tool {
@@ -55,6 +60,8 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 	if !strings.HasPrefix(args.Path, "/") {
 		args.Path = "/" + args.Path
 	}
+
+	commitHash, err := t.maybeCreateCheckpoint(ctx, s, args.Path)
 
 	// Read existing content before writing (for diff computation)
 	var isNewFile bool
@@ -99,11 +106,12 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 
 	// Done
 	return &WriteFileResult{
-		Diff:          diff,
-		IsNewFile:     isNewFile,
-		Resources:     resources,
-		ParseError:    parseErr,
-		ParseWarnings: parseWarnings,
+		Diff:                 diff,
+		IsNewFile:            isNewFile,
+		Resources:            resources,
+		ParseError:           parseErr,
+		ParseWarnings:        parseWarnings,
+		CheckpointCommitHash: commitHash,
 	}, nil
 }
 
@@ -163,4 +171,78 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 		})
 	}
 	return resources, "", parseWarnings, nil
+}
+
+// maybeCreateCheckpoint creates a checkpoint if this is the 1st write file message in the current message chain.
+func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session, path string) (string, error) {
+	// Find the nearest developer agent call and make sure checkpointing is enabled.
+	nearestDevAgentCall, ok := s.LatestMessage(FilterByTool(DeveloperAgentName), FilterByType(MessageTypeCall))
+	if ok {
+		rawReq, err := s.UnmarshalMessageContent(nearestDevAgentCall)
+		if err != nil {
+			return "", err
+		}
+		var req DeveloperAgentArgs
+		err = mapstructureutil.WeakDecode(rawReq, &req)
+		if err != nil {
+			return "", err
+		}
+		if !req.EnableCheckpointCommits {
+			return "", nil
+		}
+	}
+
+	// Find a write file message in the current message chain.
+	previousWriteResult, ok := s.LatestMessage(FilterByTool(WriteFileName), FilterByType(MessageTypeResult))
+	// If there is already a write file message then make sure it has a checkpoint commit.
+	if ok {
+		nearestRoot, ok := s.LatestMessage(FilterByRoot())
+		// If the nearest root message is before the previous write file message, then there hasn't been a commit yet for this loop.
+		if !ok || nearestRoot.Time.Before(previousWriteResult.Time) {
+			rawRes, err := s.UnmarshalMessageContent(previousWriteResult)
+			if err != nil {
+				return "", err
+			}
+			var res WriteFileResult
+			err = mapstructureutil.WeakDecode(rawRes, &res)
+			if err != nil {
+				return "", err
+			}
+			if res.CheckpointCommitHash != "" {
+				return res.CheckpointCommitHash, nil
+			}
+		}
+	}
+	// Else, create a checkpoint commit.
+
+	repo, release, err := t.Runtime.Repo(ctx, s.InstanceID())
+	if err != nil {
+		return "", err
+	}
+	defer release()
+
+	// Ensure the project is initialized with a git repo.
+	err = repo.GitInit(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// Get the status of the repo
+	gitStatus, err := repo.Status(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// If there are local changes, commit them. Otherwise, just return the current commit hash.
+	var hash string
+	if gitStatus.LocalChanges {
+		hash, err = repo.Commit(ctx, fmt.Sprintf("Checkpoint before updating %q", path))
+	} else {
+		hash, err = repo.CommitHash(ctx)
+	}
+	// Ignore ErrNotAGitRepository. Shouldn't happen, but we shouldn't fail the conversation just because of it.
+	if err != nil && !errors.Is(err, gitutil.ErrNotAGitRepository) {
+		return "", err
+	}
+	return hash, nil
 }

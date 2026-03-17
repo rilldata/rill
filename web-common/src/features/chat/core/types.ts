@@ -52,6 +52,7 @@ export const ToolName = {
   SEARCH_FILES: "search_files",
   READ_FILE: "read_file",
   WRITE_FILE: "write_file",
+  RESTORE_CHANGES: "restore_changes",
 
   // Feedback agent
   FEEDBACK_AGENT: "feedback_agent",
