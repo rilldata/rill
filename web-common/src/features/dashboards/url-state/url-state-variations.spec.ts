@@ -725,7 +725,6 @@ export function applyURLToExploreState(
   metricsExplorerStore.mergePartialExplorerEntity(
     AD_BIDS_EXPLORE_NAME,
     partialExploreStateDefaultUrl,
-    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   );
   return errors;
 }
