@@ -4,6 +4,7 @@
   import type { Snippet } from "svelte";
   import type { HTMLButtonAttributes } from "svelte/elements";
 
+  // svelte-ignore custom_element_props_identifier
   let {
     suppressTooltip = false,
     tooltipText,

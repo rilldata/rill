@@ -7,15 +7,12 @@
     displayResourceKind,
     ResourceKind,
   } from "../entity-management/resource-selectors";
-  import type { Snippet } from "svelte";
-
+  // svelte-ignore custom_element_props_identifier
   let {
     resources,
-    children,
     ...triggerProps
   }: {
     resources: V1Resource[];
-    children?: Snippet;
     [key: string]: unknown;
   } = $props();
 
