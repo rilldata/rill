@@ -13613,7 +13613,10 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
     | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+    | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+    | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+    | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${org}/billing/issues/${type}`,
@@ -13638,7 +13641,10 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+          | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+          | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
       },
       TContext
     >;
@@ -13655,7 +13661,10 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+        | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+        | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+        | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
     },
     TContext
   > => {
@@ -13682,7 +13691,10 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+          | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+          | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
       }
     > = (props) => {
       const { org, type } = props ?? {};
@@ -13724,7 +13736,10 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+          | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+          | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
       },
       TContext
     >;
@@ -13743,7 +13758,10 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
       | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
       | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+      | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+      | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+      | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
   },
   TContext
 > => {

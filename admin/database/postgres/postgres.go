@@ -3725,6 +3725,12 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
 	case database.BillingIssueTypeNeverSubscribed:
 		metadata = &database.BillingIssueMetadataNeverSubscribed{}
+	case database.BillingIssueTypeCreditLow:
+		metadata = &database.BillingIssueMetadataCreditLow{}
+	case database.BillingIssueTypeCreditCritical:
+		metadata = &database.BillingIssueMetadataCreditCritical{}
+	case database.BillingIssueTypeCreditExhausted:
+		metadata = &database.BillingIssueMetadataCreditExhausted{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {
@@ -3745,7 +3751,7 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 	if b.Type == database.BillingIssueTypeUnspecified {
 		return database.BillingIssueLevelUnspecified
 	}
-	if b.Type == database.BillingIssueTypeOnTrial {
+	if b.Type == database.BillingIssueTypeOnTrial || b.Type == database.BillingIssueTypeCreditLow {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError

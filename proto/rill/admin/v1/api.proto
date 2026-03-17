@@ -3010,6 +3010,16 @@ message GetBillingSubscriptionResponse {
   Organization organization = 1;
   Subscription subscription = 2;
   string billing_portal_url = 3;
+  BillingCreditInfo credit_info = 4;
+}
+
+// BillingCreditInfo contains credit balance information for free-tier organizations.
+message BillingCreditInfo {
+  double total_credit = 1;
+  double used_credit = 2;
+  double remaining_credit = 3;
+  google.protobuf.Timestamp credit_expiry = 4;
+  double burn_rate_per_day = 5;
 }
 
 message UpdateBillingSubscriptionRequest {
@@ -3505,6 +3515,8 @@ enum BillingPlanType {
   BILLING_PLAN_TYPE_TEAM = 2;
   BILLING_PLAN_TYPE_MANAGED = 3;
   BILLING_PLAN_TYPE_ENTERPRISE = 4;
+  BILLING_PLAN_TYPE_FREE = 5;
+  BILLING_PLAN_TYPE_GROWTH = 6;
 }
 
 message BillingPlan {
@@ -3559,6 +3571,9 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
+  BILLING_ISSUE_TYPE_CREDIT_LOW = 8;
+  BILLING_ISSUE_TYPE_CREDIT_CRITICAL = 9;
+  BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED = 10;
 }
 
 enum BillingIssueLevel {
@@ -3585,6 +3600,9 @@ message BillingIssueMetadata {
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
     BillingIssueMetadataNeverSubscribed never_subscribed = 7;
+    BillingIssueMetadataCreditLow credit_low = 8;
+    BillingIssueMetadataCreditCritical credit_critical = 9;
+    BillingIssueMetadataCreditExhausted credit_exhausted = 10;
   }
 }
 
@@ -3622,3 +3640,21 @@ message BillingIssueMetadataSubscriptionCancelled {
 }
 
 message BillingIssueMetadataNeverSubscribed {}
+
+message BillingIssueMetadataCreditLow {
+  double credit_remaining = 1;
+  double credit_total = 2;
+  google.protobuf.Timestamp credit_expiry = 3;
+}
+
+message BillingIssueMetadataCreditCritical {
+  double credit_remaining = 1;
+  double credit_total = 2;
+  google.protobuf.Timestamp credit_expiry = 3;
+}
+
+message BillingIssueMetadataCreditExhausted {
+  double credit_total = 1;
+  google.protobuf.Timestamp credit_expiry = 2;
+  google.protobuf.Timestamp exhausted_on = 3;
+}

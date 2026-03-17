@@ -3861,6 +3861,9 @@ paths:
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+            - BILLING_ISSUE_TYPE_CREDIT_LOW
+            - BILLING_ISSUE_TYPE_CREDIT_CRITICAL
+            - BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -4557,6 +4560,25 @@ definitions:
         description: Annotation for the base64-encoded UI state to open for the report.
   v1ApproveProjectAccessResponse:
     type: object
+  v1BillingCreditInfo:
+    type: object
+    properties:
+      totalCredit:
+        type: number
+        format: double
+      usedCredit:
+        type: number
+        format: double
+      remainingCredit:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
+      burnRatePerDay:
+        type: number
+        format: double
+    description: BillingCreditInfo contains credit balance information for free-tier organizations.
   v1BillingIssue:
     type: object
     properties:
@@ -4598,6 +4620,48 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
       neverSubscribed:
         $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+      creditLow:
+        $ref: '#/definitions/v1BillingIssueMetadataCreditLow'
+      creditCritical:
+        $ref: '#/definitions/v1BillingIssueMetadataCreditCritical'
+      creditExhausted:
+        $ref: '#/definitions/v1BillingIssueMetadataCreditExhausted'
+  v1BillingIssueMetadataCreditCritical:
+    type: object
+    properties:
+      creditRemaining:
+        type: number
+        format: double
+      creditTotal:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataCreditExhausted:
+    type: object
+    properties:
+      creditTotal:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
+      exhaustedOn:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataCreditLow:
+    type: object
+    properties:
+      creditRemaining:
+        type: number
+        format: double
+      creditTotal:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
   v1BillingIssueMetadataNeverSubscribed:
     type: object
   v1BillingIssueMetadataNoBillableAddress:
@@ -4669,6 +4733,9 @@ definitions:
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+      - BILLING_ISSUE_TYPE_CREDIT_LOW
+      - BILLING_ISSUE_TYPE_CREDIT_CRITICAL
+      - BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -4701,6 +4768,8 @@ definitions:
       - BILLING_PLAN_TYPE_TEAM
       - BILLING_PLAN_TYPE_MANAGED
       - BILLING_PLAN_TYPE_ENTERPRISE
+      - BILLING_PLAN_TYPE_FREE
+      - BILLING_PLAN_TYPE_GROWTH
     default: BILLING_PLAN_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object
@@ -5044,6 +5113,8 @@ definitions:
         $ref: '#/definitions/v1Subscription'
       billingPortalUrl:
         type: string
+      creditInfo:
+        $ref: '#/definitions/v1BillingCreditInfo'
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -5928,6 +5999,14 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      chcClusterSize:
+        type: number
+        format: double
+        description: ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
+      rillMinSlots:
+        type: string
+        format: int64
+        description: RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
   v1ProjectInvite:
     type: object
     properties:

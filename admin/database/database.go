@@ -1312,6 +1312,9 @@ const (
 	BillingIssueTypePaymentFailed                          = 5
 	BillingIssueTypeSubscriptionCancelled                  = 6
 	BillingIssueTypeNeverSubscribed                        = 7
+	BillingIssueTypeCreditLow                              = 8
+	BillingIssueTypeCreditCritical                         = 9
+	BillingIssueTypeCreditExhausted                        = 10
 )
 
 type BillingIssueLevel int
@@ -1372,6 +1375,24 @@ type BillingIssueMetadataSubscriptionCancelled struct {
 }
 
 type BillingIssueMetadataNeverSubscribed struct{}
+
+type BillingIssueMetadataCreditLow struct {
+	CreditRemaining float64   `json:"credit_remaining"`
+	CreditTotal     float64   `json:"credit_total"`
+	CreditExpiry    time.Time `json:"credit_expiry"`
+}
+
+type BillingIssueMetadataCreditCritical struct {
+	CreditRemaining float64   `json:"credit_remaining"`
+	CreditTotal     float64   `json:"credit_total"`
+	CreditExpiry    time.Time `json:"credit_expiry"`
+}
+
+type BillingIssueMetadataCreditExhausted struct {
+	CreditTotal  float64   `json:"credit_total"`
+	CreditExpiry time.Time `json:"credit_expiry"`
+	ExhaustedOn  time.Time `json:"exhausted_on"`
+}
 
 type UpsertBillingIssueOptions struct {
 	OrgID     string           `validate:"required"`

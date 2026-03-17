@@ -130,6 +130,17 @@ export interface V1ApproveProjectAccessResponse {
   [key: string]: unknown;
 }
 
+/**
+ * BillingCreditInfo contains credit balance information for free-tier organizations.
+ */
+export interface V1BillingCreditInfo {
+  totalCredit?: number;
+  usedCredit?: number;
+  remainingCredit?: number;
+  creditExpiry?: string;
+  burnRatePerDay?: number;
+}
+
 export interface V1BillingIssue {
   org?: string;
   type?: V1BillingIssueType;
@@ -157,6 +168,27 @@ export interface V1BillingIssueMetadata {
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+  creditLow?: V1BillingIssueMetadataCreditLow;
+  creditCritical?: V1BillingIssueMetadataCreditCritical;
+  creditExhausted?: V1BillingIssueMetadataCreditExhausted;
+}
+
+export interface V1BillingIssueMetadataCreditCritical {
+  creditRemaining?: number;
+  creditTotal?: number;
+  creditExpiry?: string;
+}
+
+export interface V1BillingIssueMetadataCreditExhausted {
+  creditTotal?: number;
+  creditExpiry?: string;
+  exhaustedOn?: string;
+}
+
+export interface V1BillingIssueMetadataCreditLow {
+  creditRemaining?: number;
+  creditTotal?: number;
+  creditExpiry?: string;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -215,6 +247,9 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+  BILLING_ISSUE_TYPE_CREDIT_LOW: "BILLING_ISSUE_TYPE_CREDIT_LOW",
+  BILLING_ISSUE_TYPE_CREDIT_CRITICAL: "BILLING_ISSUE_TYPE_CREDIT_CRITICAL",
+  BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED: "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED",
 } as const;
 
 export interface V1BillingPlan {
@@ -239,6 +274,8 @@ export const V1BillingPlanType = {
   BILLING_PLAN_TYPE_TEAM: "BILLING_PLAN_TYPE_TEAM",
   BILLING_PLAN_TYPE_MANAGED: "BILLING_PLAN_TYPE_MANAGED",
   BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
+  BILLING_PLAN_TYPE_FREE: "BILLING_PLAN_TYPE_FREE",
+  BILLING_PLAN_TYPE_GROWTH: "BILLING_PLAN_TYPE_GROWTH",
 } as const;
 
 export interface V1Bookmark {
@@ -507,6 +544,7 @@ export interface V1GetBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
   billingPortalUrl?: string;
+  creditInfo?: V1BillingCreditInfo;
 }
 
 export interface V1GetBookmarkResponse {
@@ -1039,6 +1077,10 @@ export interface V1Project {
   prodVersion?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica). */
+  chcClusterSize?: number;
+  /** RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size. */
+  rillMinSlots?: string;
 }
 
 export interface V1ProjectInvite {

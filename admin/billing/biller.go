@@ -62,6 +62,10 @@ type Biller interface {
 
 	ReportUsage(ctx context.Context, usage []*Usage) error
 
+	// GetCreditBalance returns the credit balance for the given customer.
+	// Returns nil if the customer has no credit grants (e.g. not on a free plan).
+	GetCreditBalance(ctx context.Context, customerID string) (*CreditBalance, error)
+
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string
 
@@ -81,6 +85,8 @@ const (
 	TeamPlanType
 	ManagedPlanType
 	EnterprisePlanType
+	FreePlanType
+	GrowthPlanType
 )
 
 type Plan struct {
@@ -134,6 +140,14 @@ type Customer struct {
 	Name              string
 	PaymentProviderID string
 	PortalURL         string
+}
+
+type CreditBalance struct {
+	TotalCredit     float64
+	UsedCredit      float64
+	RemainingCredit float64
+	ExpiryDate      time.Time
+	BurnRatePerDay  float64 // Estimated daily burn rate based on recent usage
 }
 
 type Usage struct {

@@ -50,11 +50,31 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 		return &adminv1.GetBillingSubscriptionResponse{Organization: s.organizationToDTO(org, true)}, nil
 	}
 
-	return &adminv1.GetBillingSubscriptionResponse{
+	resp := &adminv1.GetBillingSubscriptionResponse{
 		Organization:     s.organizationToDTO(org, true),
 		Subscription:     subscriptionToDTO(sub),
 		BillingPortalUrl: sub.Customer.PortalURL,
-	}, nil
+	}
+
+	// Fetch credit balance for free-tier orgs
+	if sub.Plan != nil && sub.Plan.PlanType == billing.FreePlanType {
+		creditBalance, err := s.admin.Biller.GetCreditBalance(ctx, org.BillingCustomerID)
+		if err != nil {
+			s.logger.Warn("failed to fetch credit balance", zap.String("org_id", org.ID), zap.Error(err))
+		} else if creditBalance != nil {
+			resp.CreditInfo = &adminv1.BillingCreditInfo{
+				TotalCredit:     creditBalance.TotalCredit,
+				UsedCredit:      creditBalance.UsedCredit,
+				RemainingCredit: creditBalance.RemainingCredit,
+				BurnRatePerDay:  creditBalance.BurnRatePerDay,
+			}
+			if !creditBalance.ExpiryDate.IsZero() {
+				resp.CreditInfo.CreditExpiry = timestamppb.New(creditBalance.ExpiryDate)
+			}
+		}
+	}
+
+	return resp, nil
 }
 
 func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
@@ -1075,6 +1095,12 @@ func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
 	case database.BillingIssueTypeNeverSubscribed:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+	case database.BillingIssueTypeCreditLow:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_CREDIT_LOW
+	case database.BillingIssueTypeCreditCritical:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_CREDIT_CRITICAL
+	case database.BillingIssueTypeCreditExhausted:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED
 	default:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_UNSPECIFIED
 	}
@@ -1107,6 +1133,12 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypeSubscriptionCancelled, nil
 	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED:
 		return database.BillingIssueTypeNeverSubscribed, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_CREDIT_LOW:
+		return database.BillingIssueTypeCreditLow, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_CREDIT_CRITICAL:
+		return database.BillingIssueTypeCreditCritical, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED:
+		return database.BillingIssueTypeCreditExhausted, nil
 	default:
 		return database.BillingIssueTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
 	}
@@ -1122,6 +1154,10 @@ func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_MANAGED
 	case billing.EnterprisePlanType:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_ENTERPRISE
+	case billing.FreePlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_FREE
+	case billing.GrowthPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_GROWTH
 	default:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
 	}
@@ -1192,6 +1228,39 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_NeverSubscribed{
 				NeverSubscribed: &adminv1.BillingIssueMetadataNeverSubscribed{},
+			},
+		}
+	case database.BillingIssueTypeCreditLow:
+		cl := m.(*database.BillingIssueMetadataCreditLow)
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_CreditLow{
+				CreditLow: &adminv1.BillingIssueMetadataCreditLow{
+					CreditRemaining: cl.CreditRemaining,
+					CreditTotal:     cl.CreditTotal,
+					CreditExpiry:    valOrNullTime(cl.CreditExpiry),
+				},
+			},
+		}
+	case database.BillingIssueTypeCreditCritical:
+		cc := m.(*database.BillingIssueMetadataCreditCritical)
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_CreditCritical{
+				CreditCritical: &adminv1.BillingIssueMetadataCreditCritical{
+					CreditRemaining: cc.CreditRemaining,
+					CreditTotal:     cc.CreditTotal,
+					CreditExpiry:    valOrNullTime(cc.CreditExpiry),
+				},
+			},
+		}
+	case database.BillingIssueTypeCreditExhausted:
+		ce := m.(*database.BillingIssueMetadataCreditExhausted)
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_CreditExhausted{
+				CreditExhausted: &adminv1.BillingIssueMetadataCreditExhausted{
+					CreditTotal:  ce.CreditTotal,
+					CreditExpiry: valOrNullTime(ce.CreditExpiry),
+					ExhaustedOn:  valOrNullTime(ce.ExhaustedOn),
+				},
 			},
 		}
 	default:

@@ -386,6 +386,57 @@ func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) er
 	return nil
 }
 
+func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditBalance, error) {
+	if customerID == "" {
+		return nil, ErrCustomerIDRequired
+	}
+
+	credits, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{
+		IncludeAllBlocks: orb.F(false), // only active blocks
+	})
+	if err != nil {
+		var orbErr *orb.Error
+		if errors.As(err, &orbErr) && orbErr.Status == orb.ErrorStatus404 {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	if len(credits.Data) == 0 {
+		return nil, nil
+	}
+
+	// Aggregate across all active credit grants
+	var totalCredit, remainingCredit float64
+	var latestExpiry time.Time
+	for _, c := range credits.Data {
+		totalCredit += c.MaximumInitialBalance
+		remainingCredit += c.Balance
+		if c.ExpiryDate.After(latestExpiry) {
+			latestExpiry = c.ExpiryDate
+		}
+	}
+
+	usedCredit := totalCredit - remainingCredit
+
+	// Estimate burn rate from credit usage; if credit has been active, calculate daily rate
+	var burnRatePerDay float64
+	if usedCredit > 0 && !credits.Data[0].EffectiveDate.IsZero() {
+		daysSinceStart := time.Since(credits.Data[0].EffectiveDate).Hours() / 24
+		if daysSinceStart > 0 {
+			burnRatePerDay = usedCredit / daysSinceStart
+		}
+	}
+
+	return &CreditBalance{
+		TotalCredit:     totalCredit,
+		UsedCredit:      usedCredit,
+		RemainingCredit: remainingCredit,
+		ExpiryDate:      latestExpiry,
+		BurnRatePerDay:  burnRatePerDay,
+	}, nil
+}
+
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	var orbUsage []orb.EventIngestParamsEvent
 	// sync max 500 events at a time
@@ -651,6 +702,10 @@ func getPlanType(externalID string) PlanType {
 		return TeamPlanType
 	case "managed":
 		return ManagedPlanType
+	case "free", "free_managed", "free_live_connect":
+		return FreePlanType
+	case "growth", "growth_managed", "growth_live_connect":
+		return GrowthPlanType
 	default:
 		return EnterprisePlanType
 	}
@@ -664,6 +719,10 @@ func getPlanDisplayName(externalID string) string {
 		return "Team"
 	case "managed":
 		return "Managed"
+	case "free", "free_managed", "free_live_connect":
+		return "Free"
+	case "growth", "growth_managed", "growth_live_connect":
+		return "Growth"
 	default:
 		return "Enterprise"
 	}
