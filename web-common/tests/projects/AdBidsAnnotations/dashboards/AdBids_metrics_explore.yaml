@@ -3,8 +3,8 @@
 
 type: explore
 
-display_name: "Adbids dashboard"
-metrics_view: AdBids_annotations_metrics
+title: "Adbids dashboard"
+metrics_view: AdBids_metrics
 
 dimensions: '*'
 measures: '*'

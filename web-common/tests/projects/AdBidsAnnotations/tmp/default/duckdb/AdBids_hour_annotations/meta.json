@@ -1,0 +1,1 @@
+{"name":"AdBids_hour_annotations","version":"1773660065989","created_version":"1773660065989","type":"VIEW","sql":"select TIMESTAMP '2022-03-30 06:00:00' as time, 'Hour annotation E' as description\nunion all\nselect TIMESTAMP '2022-03-30 14:00:00' as time, 'Hour annotation F' as description"}

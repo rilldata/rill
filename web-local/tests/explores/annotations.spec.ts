@@ -1,12 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
-import { gotoNavEntry } from "../utils/waitHelpers";
 import { waitForReconciliation } from "../utils/wait-for-reconciliation";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
 import { DateTime } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import axios from "axios";
 
 // Annotation timestamps as they'll be serialized from DuckDB (UTC).
 // All annotations that may be visible at day grain in "Last 7 days":
@@ -51,7 +49,7 @@ async function setupDashboard(page: Page, dashboardTZ: string) {
 
   // Navigate directly to the explore with the timezone already set.
   const base = new URL(page.url()).origin;
-  const exploreUrl = `${base}/explore/AdBids_annotations_metrics_explore?tz=${encodeURIComponent(dashboardTZ)}`;
+  const exploreUrl = `${base}/explore/AdBids_metrics_explore?tz=${encodeURIComponent(dashboardTZ)}`;
   await page.goto(exploreUrl);
 
   await expect(
@@ -140,7 +138,11 @@ async function verifyDiamondDates(
 const DASHBOARD_TIMEZONES = ["UTC", "Asia/Kolkata", "America/Los_Angeles"];
 
 test.describe("annotations (rendering)", () => {
-  test.use({ project: "AdBids", timezoneId: "UTC", locale: "en-US" });
+  test.use({
+    project: "AdBidsAnnotations",
+    timezoneId: "UTC",
+    locale: "en-US",
+  });
   // Extra time for installAnnotations (file writes + reconciliation).
   test.setTimeout(60_000);
 
@@ -289,7 +291,7 @@ const INDEPENDENCE_CONFIGS = [
 for (const sys of INDEPENDENCE_CONFIGS) {
   test.describe(`annotations system TZ independence (system: ${sys.systemTZ})`, () => {
     test.use({
-      project: "AdBids",
+      project: "AdBidsAnnotations",
       timezoneId: sys.systemTZ,
       locale: sys.locale,
     });
