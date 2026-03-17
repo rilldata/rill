@@ -262,6 +262,12 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"azure_storage_account":              azurite.AccountName,
 		}
 	},
+	"azure_cloud": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_AZURE_TEST_CONNECTION_STRING")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"azure_storage_connection_string": apiKey}
+	},
 	"pinot": func(t TestingT) map[string]string {
 		ctx := context.Background()
 		pinot, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
