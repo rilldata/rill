@@ -34,19 +34,11 @@ export function isManagedPlan(planName: string) {
 }
 
 export function isFreePlan(planName: string) {
-  return (
-    planName === "free" ||
-    planName === "free_managed" ||
-    planName === "free_live_connect"
-  );
+  return planName === "free-plan";
 }
 
 export function isGrowthPlan(planName: string) {
-  return (
-    planName === "growth" ||
-    planName === "growth_managed" ||
-    planName === "growth_live_connect"
-  );
+  return planName === "growth-plan";
 }
 
 export function isEnterprisePlan(planName: string) {

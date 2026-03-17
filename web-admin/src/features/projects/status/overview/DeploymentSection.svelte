@@ -31,6 +31,7 @@
   import ClickHouseCloudDetailsModal from "./ClickHouseCloudDetailsModal.svelte";
   import OverviewCard from "./OverviewCard.svelte";
   import { onMount } from "svelte";
+  import { page } from "$app/stores";
 
   export let organization: string;
   export let project: string;
@@ -97,13 +98,21 @@
   $: isFree = isFreePlan(planName);
   $: isGrowth = isGrowthPlan(planName);
   $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
-  // New pricing applies to Free and Growth plans
-  $: useNewPricing = isFree || isGrowth;
+  // New pricing applies to Free and Growth plans; ?newPricing=true forces it for testing
+  $: devForceNewPricing = $page.url.searchParams.get("newPricing") === "true";
+  $: useNewPricing = isFree || isGrowth || devForceNewPricing;
 
-  // Cluster Slots: derived at runtime from RillMinSlots (set by CHC sync from OLAP connector)
-  $: clusterSlots = Number(projectData?.rillMinSlots) || 0;
-  // For new pricing Live Connect, Rill Slots = prodSlots (user-controlled, starts at 0)
-  $: rillSlots = useNewPricing && !isRillManaged ? currentSlots : 0;
+  // Cluster Slots: derived at runtime from RillMinSlots (set by CHC sync from OLAP connector).
+  // Only applies to Live Connect (not Rill-managed).
+  $: clusterSlots = !isRillManaged
+    ? Number(projectData?.rillMinSlots) || (devForceNewPricing ? 8 : 0)
+    : 0;
+  // For new pricing Live Connect, Rill Slots = prodSlots - clusterSlots (rill_min_slots).
+  // Cluster slots already include the hidden 4-slot infra minimum.
+  $: rillSlots =
+    useNewPricing && !isRillManaged
+      ? Math.max(0, currentSlots - clusterSlots)
+      : 0;
 
   // Slot usage breakdown (dev edit modes coming soon; each consumes 1 slot)
   $: prodSlots = currentSlots; // today all slots go to prod

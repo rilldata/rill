@@ -1,6 +1,9 @@
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
-import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
+import type {
+  GrowthPlanDialogTypes,
+  TeamPlanDialogTypes,
+} from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import {
   BillingBannerID,
@@ -14,6 +17,8 @@ export class BillingCTAHandler {
   public showStartTeamPlanDialog = writable(false);
   public startTeamPlanType = writable<TeamPlanDialogTypes>("base");
   public teamPlanEndDate = writable("");
+  public showStartGrowthPlanDialog = writable(false);
+  public startGrowthPlanType = writable<GrowthPlanDialogTypes>("base");
   public wakingProjects = writable(false);
 
   private static instances = new Map<string, BillingCTAHandler>();
@@ -37,11 +42,17 @@ export class BillingCTAHandler {
     if (!issueMessage.cta) return;
     switch (issueMessage.cta.type) {
       case "upgrade":
-        this.showStartTeamPlanDialog.set(true);
-        this.startTeamPlanType.set(
-          issueMessage.cta.teamPlanDialogType ?? "base",
-        );
-        this.teamPlanEndDate.set(issueMessage.cta.teamPlanEndDate ?? "");
+        // Route to Growth dialog if a Growth plan dialog type is specified; otherwise Team
+        if (issueMessage.cta.growthPlanDialogType) {
+          this.showStartGrowthPlanDialog.set(true);
+          this.startGrowthPlanType.set(issueMessage.cta.growthPlanDialogType);
+        } else {
+          this.showStartTeamPlanDialog.set(true);
+          this.startTeamPlanType.set(
+            issueMessage.cta.teamPlanDialogType ?? "base",
+          );
+          this.teamPlanEndDate.set(issueMessage.cta.teamPlanEndDate ?? "");
+        }
         break;
 
       case "payment":

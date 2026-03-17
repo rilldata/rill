@@ -37,6 +37,7 @@ export function getMessageForCreditIssue(
         cta: {
           type: "upgrade",
           text: "Upgrade to Growth",
+          growthPlanDialogType: "credit-low",
         },
       };
     }
@@ -51,6 +52,7 @@ export function getMessageForCreditIssue(
         cta: {
           type: "upgrade",
           text: "Upgrade to Growth",
+          growthPlanDialogType: "credit-low",
         },
       };
     }
@@ -65,6 +67,7 @@ export function getMessageForCreditIssue(
         cta: {
           type: "upgrade",
           text: "Upgrade to Growth",
+          growthPlanDialogType: "credit-exhausted",
         },
       };
 

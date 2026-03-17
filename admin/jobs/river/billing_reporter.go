@@ -79,6 +79,20 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 		return nil
 	}
 
+	// Build a lookup of project_id → rill_min_slots for Orb metadata.
+	// Orb uses this to split cluster slots vs rill slots in pricing SQL.
+	rillMinSlotsMap := make(map[string]int64)
+	chcProjects, err := w.admin.DB.FindProjectsWithCHC(ctx)
+	if err != nil {
+		w.logger.Warn("failed to load CHC projects for rill_min_slots lookup", zap.Error(err))
+	} else {
+		for _, p := range chcProjects {
+			if p.RillMinSlots != nil {
+				rillMinSlotsMap[p.ID] = *p.RillMinSlots
+			}
+		}
+	}
+
 	reportedOrgs := make(map[string]struct{})
 	stop := false
 	limit := 10000
@@ -122,6 +136,17 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 				customerID = *m.BillingCustomerID
 			}
 
+			meta := map[string]interface{}{
+				"org_id":          m.OrgID,
+				"project_id":     m.ProjectID,
+				"project_name":   m.ProjectName,
+				"billing_service": m.BillingService,
+			}
+			// Include rill_min_slots so Orb can split cluster vs rill slot pricing
+			if minSlots, ok := rillMinSlotsMap[m.ProjectID]; ok {
+				meta["rill_min_slots"] = minSlots
+			}
+
 			usage = append(usage, &billing.Usage{
 				CustomerID:     customerID,
 				MetricName:     m.EventName,
@@ -129,7 +154,7 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 				ReportingGrain: w.admin.Biller.GetReportingGranularity(),
 				StartTime:      m.StartTime,
 				EndTime:        m.EndTime,
-				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName, "billing_service": m.BillingService},
+				Metadata:       meta,
 			})
 		}
 

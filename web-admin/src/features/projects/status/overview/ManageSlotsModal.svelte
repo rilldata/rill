@@ -126,8 +126,12 @@
 
   async function applySlotChange() {
     try {
+      // For new pricing Live Connect: Rill Slots are additional slots on top of
+      // cluster slots (rill_min_slots). prodSlots stored = rillSlots + clusterSlots.
       const newSlots =
-        useNewPricing && !isRillManaged ? selectedRillSlots : selectedSlots;
+        useNewPricing && !isRillManaged
+          ? selectedRillSlots + clusterSlots
+          : selectedSlots;
       await $updateProject.mutateAsync({
         org: organization,
         project,
@@ -137,7 +141,10 @@
         queryKey: getAdminServiceGetProjectQueryKey(organization, project),
       });
       eventBus.emit("notification", {
-        message: `Slots updated to ${newSlots}`,
+        message:
+          useNewPricing && !isRillManaged
+            ? `Rill Slots updated to ${selectedRillSlots}`
+            : `Slots updated to ${newSlots}`,
       });
       open = false;
     } catch (err) {

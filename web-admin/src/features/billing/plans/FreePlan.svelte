@@ -6,6 +6,9 @@
   } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
+  import StartGrowthPlanDialog from "@rilldata/web-admin/features/billing/plans/StartGrowthPlanDialog.svelte";
+  import type { GrowthPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
 
@@ -22,6 +25,14 @@
   $: burnRate = creditInfo?.burnRatePerDay ?? 0;
   $: daysRemaining =
     burnRate > 0 ? Math.ceil(remaining / burnRate) : undefined;
+
+  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
+  $: creditExhausted = !!$categorisedIssues.data?.creditExhausted;
+
+  let dialogOpen = showUpgradeDialog;
+  $: dialogType = (
+    creditExhausted ? "credit-exhausted" : pctUsed >= 80 ? "credit-low" : "base"
+  ) as GrowthPlanDialogTypes;
 </script>
 
 <SettingsContainer title={plan?.displayName || "Free plan"}>
@@ -64,7 +75,11 @@
     <ContactUs />
   </svelte:fragment>
 
-  <Button type="primary" slot="action" onClick={() => (showUpgradeDialog = true)}>
+  <Button type="primary" slot="action" onClick={() => (dialogOpen = true)}>
     Upgrade to Growth
   </Button>
 </SettingsContainer>
+
+{#if !$categorisedIssues.isLoading}
+  <StartGrowthPlanDialog bind:open={dialogOpen} {organization} type={dialogType} />
+{/if}

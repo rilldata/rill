@@ -3,7 +3,10 @@ import { getMessageForCreditIssue } from "@rilldata/web-admin/features/billing/i
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
-import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
+import type {
+  GrowthPlanDialogTypes,
+  TeamPlanDialogTypes,
+} from "@rilldata/web-admin/features/billing/plans/types";
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
@@ -23,6 +26,7 @@ export type BillingIssueMessageCTA = {
 
   teamPlanDialogType?: TeamPlanDialogTypes;
   teamPlanEndDate?: string;
+  growthPlanDialogType?: GrowthPlanDialogTypes;
 };
 
 export function useBillingIssueMessage(organization: string) {
