@@ -138,29 +138,14 @@ function expectedDates(
   return new Set(dates);
 }
 
-async function waitForTotalRecordsButton(page: Page, timeoutMs = 20_000) {
-  await expect(
-    page.getByRole("button", { name: /Total records/ }).first(),
-  ).toBeVisible({ timeout: timeoutMs });
-}
-
-async function waitForTotalRecordsButtonWithSingleReload(page: Page) {
-  // This setup is occasionally flaky in CI due transient runtime connection
-  // issues. Reload once before failing to avoid a false-negative.
-  try {
-    await waitForTotalRecordsButton(page);
-  } catch {
-    await page.reload();
-    await waitForTotalRecordsButton(page);
-  }
-}
-
 async function setupDashboard(page: Page, dashboardTZ: string) {
   await page.getByLabel("/dashboards").click();
   await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
   // Wait for the base project to finish reconciling
-  await waitForTotalRecordsButtonWithSingleReload(page);
+  await expect(
+    page.getByRole("button", { name: /Total records/ }).first(),
+  ).toBeVisible({ timeout: 30_000 });
 
   // Write annotation files while still in the editor view. This triggers
   // re-reconciliation in the background.
@@ -174,7 +159,10 @@ async function setupDashboard(page: Page, dashboardTZ: string) {
   const base = new URL(page.url()).origin;
   const exploreUrl = `${base}/explore/AdBids_metrics_explore?tz=${encodeURIComponent(dashboardTZ)}`;
   await page.goto(exploreUrl);
-  await waitForTotalRecordsButtonWithSingleReload(page);
+
+  await expect(
+    page.getByRole("button", { name: /Total records/ }).first(),
+  ).toBeVisible({ timeout: 30_000 });
 
   // Wait for annotation query responses to arrive and the chart to
   // finish re-rendering. Without this, menu interactions race against
