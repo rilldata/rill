@@ -90,6 +90,7 @@
     "json-schema": "^0.4.0",
     "lucide-svelte": "^0.298.0",
     "luxon": "^3.5.0",
+    "mapbox-gl": "^3.0.0",
     "marked": "^16.4.0",
     "match-sorter": "^6.3.1",
     "memoizee": "^0.4.17",
