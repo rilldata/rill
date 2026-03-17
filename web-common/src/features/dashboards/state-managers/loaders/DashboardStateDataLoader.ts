@@ -23,6 +23,8 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { createQuery, type QueryClient } from "@tanstack/svelte-query";
 import { Settings } from "luxon";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { derived, get } from "svelte/store";
 import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 
@@ -254,14 +256,18 @@ export class DashboardStateDataLoader {
           fullTimeRange.data?.timeRangeSummary?.min == null &&
           fullTimeRange.data?.timeRangeSummary?.max == null
         ) {
-          // The timeRangeSummary is null when there are 0 rows of data.
-          // Notably, this happens when a security policy fully restricts a user from reading any data.
-          // Show a different error in this case.
+          // The timeRangeSummary is null when there are 0 rows of data or all timestamp values are NULL.
+          // In Cloud (or Developer with a mock user), access policies may be restricting data.
+          // In Developer without a mock user, the issue is more likely data configuration.
+          const isCloudOrMockUser =
+            get(featureFlags.adminServer) ||
+            get(selectedMockUserStore) !== null;
+          const message = isCloudOrMockUser
+            ? "This dashboard currently has no data to display. This may be due to the data source configuration or access permissions."
+            : "This dashboard currently has no data to display. Check that your data source has rows and the time dimension column contains non-NULL values.";
           return {
             data: undefined,
-            error: new Error(
-              "This dashboard currently has no data to display. This may be due to access permissions.",
-            ),
+            error: new Error(message),
             isFetching: false,
             isLoading: false,
           };
