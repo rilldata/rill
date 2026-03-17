@@ -44,6 +44,7 @@
 
 <div in:slideRight={{ duration: slideDuration }}>
   <div
+    {...$$restProps}
     class="chip {type}"
     class:theme
     class:active
@@ -68,6 +69,7 @@
           onfocus={focusOnRemove}
           onmouseleave={blurOnRemove}
           onblur={blurOnRemove}
+          onpointerdown={(e) => e.stopPropagation()}
           onclick={(e) => {
             e.stopPropagation();
             onRemove();
