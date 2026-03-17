@@ -179,6 +179,15 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
       AD_BIDS_METRICS_INIT,
     );
   };
+export const AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
+  () => {
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_EXPLORE_NAME,
+      { name: "7D offset -7D" } as any,
+      AD_BIDS_METRICS_INIT,
+    );
+  };
 export const AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
   () => metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
 

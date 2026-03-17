@@ -52,7 +52,10 @@ import { createQuery, type QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
 import { derived } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
-import { parseRillTime } from "../url-state/time-ranges/parser";
+import {
+  isNewRillTimeFormat,
+  parseRillTime,
+} from "../url-state/time-ranges/parser";
 import type { RillTime } from "../url-state/time-ranges/RillTime";
 import { DateTime, Interval } from "luxon";
 import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
@@ -575,7 +578,7 @@ export function getComparisonTimeRange(
       DateTime.fromJSDate(timeRange.end, { zone: timezone }),
     );
 
-    if (interval.isValid) {
+    if (interval.isValid && !isNewRillTimeFormat(comparisonOption)) {
       const range = getComparisonInterval(
         interval,
         comparisonOption,

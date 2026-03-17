@@ -11,6 +11,15 @@ export function parseRillTime(rillTimeRange: string): RillTime {
   return rt;
 }
 
+export function isNewRillTimeFormat(rillTime: string): boolean {
+  try {
+    const parser = parseRillTime(rillTime);
+    return parser.isOldFormat;
+  } catch (err) {
+    return true;
+  }
+}
+
 export function validateRillTime(rillTime: string): Error | undefined {
   try {
     const parser = parseRillTime(rillTime);

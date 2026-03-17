@@ -44,6 +44,7 @@ import {
   AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED,
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SET_TIME_DIMENSION_OFFSET,
   AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
@@ -157,6 +158,13 @@ const TestCases: {
     preset: AD_BIDS_PRESET,
     expectedSearch:
       "tr=inf&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+  },
+  {
+    title: "Time range with preset and ALL_TIME selected",
+    mutations: [AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER],
+    preset: AD_BIDS_PRESET,
+    expectedSearch:
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=7D+offset+-7D&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
 
   {
