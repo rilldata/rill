@@ -38,7 +38,7 @@ const (
 	_modelPendingPartitionsBatchSize = 1000
 )
 
-const warningPartitionsHaveErrors = "some partitions have errors"
+var errPartitionsHaveErrors = errors.New("some partitions have errors")
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -301,9 +301,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		warnings = append(warnings, testWarnings...)
 		if model.State.PartitionsHaveErrors {
 			if cfg.ModelPartitionsWarnOnFailure {
-				warnings = append(warnings, warningPartitionsHaveErrors)
+				warnings = append(warnings, errPartitionsHaveErrors.Error())
 			} else {
-				return runtime.ReconcileResult{Err: errors.New(warningPartitionsHaveErrors), Retrigger: refreshOn}
+				return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
 			}
 		}
 		if len(model.State.TestErrors) > 0 {
@@ -468,12 +468,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	var warnings []string
 	warnings = append(warnings, incrementalStateWarnings...)
 	warnings = append(warnings, testWarnings...)
+	warnings = append(warnings, execRes.Warnings...)
 	if model.State.PartitionsHaveErrors {
 		if cfg.ModelPartitionsWarnOnFailure {
-			warnings = append(warnings, warningPartitionsHaveErrors)
+			warnings = append(warnings, errPartitionsHaveErrors.Error())
 		} else {
-			warnings = append(warnings, execRes.Warnings...)
-			return runtime.ReconcileResult{Err: errors.New(warningPartitionsHaveErrors), Warnings: warnings, Retrigger: refreshOn}
+			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: warnings, Retrigger: refreshOn}
 		}
 	}
 	if len(model.State.TestErrors) > 0 {
@@ -481,11 +481,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		if cfg.ModelTestsWarnOnFailure && msg != "" {
 			warnings = append(warnings, msg)
 		} else {
-			warnings = append(warnings, execRes.Warnings...)
 			return runtime.ReconcileResult{Err: errors.New(msg), Warnings: warnings, Retrigger: refreshOn}
 		}
 	}
-	warnings = append(warnings, execRes.Warnings...)
 	return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
 }
 

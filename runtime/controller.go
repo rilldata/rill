@@ -662,9 +662,9 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 	return nil
 }
 
-// UpdateError updates a resource's error. It also clears warnings, if any.
+// UpdateErrorAndWarning updates a resource's error and warnings.
 // Unlike UpdateMeta and UpdateSpec, it does not cancel or enqueue reconciliation for the resource.
-func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error) error {
+func (c *Controller) UpdateErrorAndWarning(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error, warnings []string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -674,7 +674,7 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
-	err := c.catalog.updateErrorAndWarning(name, reconcileErr, nil)
+	err := c.catalog.updateErrorAndWarning(name, reconcileErr, warnings)
 	if err != nil {
 		return err
 	}

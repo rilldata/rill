@@ -355,7 +355,7 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 	return nil
 }
 
-// updateErrorAndWarning updates both reconcile_error and reconcile_warnings in a single state version bump.
+// updateErrorAndWarning updates both reconcile_error and reconcile_warnings of a resource.
 func (c *catalogCache) updateErrorAndWarning(name *runtimev1.ResourceName, reconcileErr error, warnings []string) error {
 	r, err := c.get(name, true, true)
 	if err != nil {
