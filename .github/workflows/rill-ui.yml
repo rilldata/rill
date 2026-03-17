@@ -96,6 +96,7 @@ jobs:
 
       - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }} - version ${{ env.RILL_VERSION }}
         run: |
+          npm install
           netlify deploy \
             --prod \
             --filter web-admin \
