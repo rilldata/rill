@@ -25,8 +25,9 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
-    await modelRow.locator("[data-menu-trigger]").click();
+    await modelRow
+      .getByRole("button", { name: "Open resource actions" })
+      .click();
 
     // Verify "Full Refresh" is visible
     await expect(
@@ -45,8 +46,9 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const sourceRow = adminPage.locator(".row").filter({
       hasText: "bids_data_raw",
     });
-    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
-    await sourceRow.locator("[data-menu-trigger]").click();
+    await sourceRow
+      .getByRole("button", { name: "Open resource actions" })
+      .click();
 
     // Verify "Full Refresh" is visible
     await expect(
@@ -66,8 +68,9 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
-    await modelRow.locator("[data-menu-trigger]").click();
+    await modelRow
+      .getByRole("button", { name: "Open resource actions" })
+      .click();
 
     // Verify "Full Refresh" is visible
     await expect(
@@ -87,8 +90,9 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
-    await modelRow.locator("[data-menu-trigger]").click();
+    await modelRow
+      .getByRole("button", { name: "Open resource actions" })
+      .click();
 
     // "Refresh Errored Partitions" should not be visible for models without errored partitions
     await expect(
@@ -101,8 +105,9 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
-    await modelRow.locator("[data-menu-trigger]").click();
+    await modelRow
+      .getByRole("button", { name: "Open resource actions" })
+      .click();
 
     // Click "Full Refresh"
     await adminPage.getByRole("menuitem", { name: "Full Refresh" }).click();
