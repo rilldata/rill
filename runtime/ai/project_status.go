@@ -131,10 +131,12 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
 			status = "Reconciling"
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-			if r.Meta.ReconcileError == "" {
-				status = "OK"
-			} else {
+			if r.Meta.ReconcileError != "" {
 				status = fmt.Sprintf("Error: %s", r.Meta.ReconcileError)
+			} else if len(r.Meta.ReconcileWarnings) > 0 {
+				status = fmt.Sprintf("Warning: %s", strings.Join(r.Meta.ReconcileWarnings, "; "))
+			} else {
+				status = "OK"
 			}
 		default:
 			status = "Unknown"

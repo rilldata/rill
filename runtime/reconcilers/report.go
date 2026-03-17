@@ -151,7 +151,7 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		reportTime = timestamppb.Now()
 	}
 
-	retry, executeErr := r.executeAll(ctx, self, rep, reportTime.AsTime(), adhocTrigger)
+	retry, warnings, executeErr := r.executeAll(ctx, self, rep, reportTime.AsTime(), adhocTrigger)
 
 	// If we want to retry, exit without advancing NextRunOn or clearing spec.Trigger.
 	// NOTE: We don't set Retrigger here because we'll leave re-scheduling to whatever cancelled the reconciler.
@@ -175,9 +175,9 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Done
 	if rep.State.NextRunOn != nil {
-		return runtime.ReconcileResult{Err: executeErr, Retrigger: rep.State.NextRunOn.AsTime()}
+		return runtime.ReconcileResult{Err: executeErr, Warnings: warnings, Retrigger: rep.State.NextRunOn.AsTime()}
 	}
-	return runtime.ReconcileResult{Err: executeErr}
+	return runtime.ReconcileResult{Err: executeErr, Warnings: warnings}
 }
 
 func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -357,7 +357,7 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 
 // executeAll runs queries and sends reports. It also adds entries to rep.State.ExecutionHistory.
 // By default, a report is checked once for the current watermark, but if rep.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
-func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, error) {
+func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, []string, error) {
 	// Enforce timeout
 	timeout := reportCheckDefaultTimeout
 	if rep.Spec.TimeoutSeconds > 0 {
@@ -367,9 +367,9 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 	defer cancel()
 
 	// Run report queries and send notifications
-	retry, executeErr := r.executeAllWrapped(ctx, self, rep, triggerTime, adhocTrigger)
+	retry, warnings, executeErr := r.executeAllWrapped(ctx, self, rep, triggerTime, adhocTrigger)
 	if executeErr == nil {
-		return false, nil
+		return false, warnings, nil
 	}
 
 	// If it's a cancellation, don't add the error to the execution history.
@@ -380,10 +380,10 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 			rep.State.CurrentExecution = nil
 			err := r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
-				return false, err
+				return false, nil, err
 			}
 		}
-		return retry, executeErr
+		return retry, warnings, executeErr
 	}
 
 	// There was an execution error. Add it to the execution history.
@@ -399,18 +399,17 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	err := r.popCurrentExecution(ctx, self, rep)
 	if err != nil {
-		return false, err
+		return false, warnings, err
 	}
-
-	return retry, executeErr
+	return retry, warnings, executeErr
 }
 
 // executeAllWrapped is called by executeAll, which wraps it with timeout and writing of errors to the execution history.
-func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, error) {
+func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, []string, error) {
 	// Check refs
 	err := checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	// Evaluate watermark unless refs check failed.
@@ -418,7 +417,7 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 	if rep.Spec.WatermarkInherit {
 		t, ok, err := r.computeInheritedWatermark(ctx, self.Meta.Refs)
 		if err != nil {
-			return false, err
+			return false, nil, err
 		}
 		if ok {
 			watermark = t
@@ -441,30 +440,32 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 		skipErr := &skipError{}
 		if errors.As(err, skipErr) {
 			r.C.Logger.Info("Skipped report", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration), observability.ZapCtx(ctx))
-			return false, nil
+			return false, nil, nil
 		}
 		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-		return false, err
+		return false, nil, err
 	}
 	if len(ts) == 0 {
 		// This should never happen
 		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-		return false, nil
+		return false, nil, nil
 	}
 
 	// Evaluate report for each execution time
+	var allWarnings []string
 	for _, t := range ts {
-		retry, err := r.executeSingle(ctx, self, rep, t, adhocTrigger)
+		retry, warnings, err := r.executeSingle(ctx, self, rep, t, adhocTrigger)
 		if err != nil {
-			return retry, err
+			return retry, nil, err
 		}
+		allWarnings = append(allWarnings, warnings...)
 	}
 
-	return false, nil
+	return false, allWarnings, nil
 }
 
 // executeSingle runs the report query and sends notifications for a single execution time.
-func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, error) {
+func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, []string, error) {
 	// Create new execution and save in State.CurrentExecution
 	rep.State.CurrentExecution = &runtimev1.ReportExecution{
 		Adhoc:      adhocTrigger,
@@ -473,11 +474,11 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 	}
 	err := r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	// Execute report
-	dirtyErr, reportErr := r.sendReport(ctx, self, rep, executionTime)
+	dirtyErr, warnings, reportErr := r.sendReport(ctx, self, rep, executionTime)
 
 	// Set execution error and determine whether to retry.
 	// We're only going to retry on non-dirty cancellations.
@@ -505,24 +506,24 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	err = r.popCurrentExecution(ctx, self, rep)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
-	return retry, reportErr
+	return retry, warnings, reportErr
 }
 
 // sendReport composes and sends the actual report to the configured recipients.
 // It returns true if an error occurred after some or all notifications were sent.
-func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
+func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, []string, error) {
 	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t), observability.ZapCtx(ctx))
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
 			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
-			return false, nil
+			return false, nil, nil
 		}
-		return false, fmt.Errorf("failed to get admin client: %w", err)
+		return false, nil, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	defer release()
 
@@ -549,11 +550,13 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
-		return false, fmt.Errorf("failed to get report metadata: %w", err)
+		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
 	// recipient -> notification data
 	notificationsContent := make(map[string]*notificationData)
+
+	var allWarnings []string
 
 	// generate report contents first depending on the resolver type and then send notifications
 	switch rep.Spec.Resolver {
@@ -569,17 +572,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the ownerID which is same for all recipients so report will be triggered once.
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
-				var err error
-				report, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+				var triggerWarnings []string
+				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
 				if err != nil {
-					return false, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+					return false, nil, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
 				}
+				allWarnings = append(allWarnings, triggerWarnings...)
 				aiReports[delivery.UserID] = report
 			}
 
 			openLink, err := buildAISessionURL(delivery.OpenURL, report.sessionID)
 			if err != nil {
-				return false, fmt.Errorf("failed to build open link for %q: %w", recipient, err)
+				return false, nil, fmt.Errorf("failed to build open link for %q: %w", recipient, err)
 			}
 			notificationsContent[recipient] = &notificationData{
 				openLink:        openLink,
@@ -592,7 +596,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		for recipient, delivery := range meta.ReportDelivery {
 			downloadURL, err := createExportURL(delivery.ExportURL, t)
 			if err != nil {
-				return false, err
+				return false, nil, err
 			}
 			notificationsContent[recipient] = &notificationData{
 				openLink:        delivery.OpenURL,
@@ -611,18 +615,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			sent, err = r.sendEmailNotification(ctx, self, rep, t, recipients, notificationsContent)
 			if err != nil {
-				return sent, err
+				return sent, nil, err
 			}
 		default:
 			var err error
 			sent, err = r.sendNonEmailNotification(ctx, rep, t, notifier, notificationsContent)
 			if err != nil {
-				return sent, err
+				return sent, nil, err
 			}
 		}
 	}
 
-	return false, nil
+	return false, allWarnings, nil
 }
 
 func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, recipients []string, notificationsContent map[string]*notificationData) (bool, error) {
@@ -719,13 +723,13 @@ type aiReport struct {
 
 // triggerAIReport executes an AI-powered report and returns session id with summary.
 // If userID is provided, the session will be created with that user's claims for row-level security.
-func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, error) {
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, []string, error) {
 	if rep.Spec.Resolver != "ai" {
-		return nil, fmt.Errorf("triggerAIReport called for non-AI report")
+		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
 	}
 
 	if userID == "" || len(userAttrs) == 0 {
-		return nil, fmt.Errorf("userID and userAttrs are required for AI report")
+		return nil, nil, fmt.Errorf("userID and userAttrs are required for AI report")
 	}
 
 	// Create claims for executing the AI resolver
@@ -756,23 +760,24 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		Claims: claims,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute AI resolver: %w", err)
+		return nil, nil, fmt.Errorf("failed to execute AI resolver: %w", err)
 	}
 	defer result.Close()
 
-	if info != nil && len(info.Warnings) > 0 {
-		r.C.Logger.Warn("AI resolver returned warnings", zap.String("report", self.Meta.Name.Name), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	var warnings []string
+	if info != nil {
+		warnings = info.Warnings
 	}
 
 	// Get the result row
 	row, err := result.Next()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AI resolver result: %w", err)
+		return nil, nil, fmt.Errorf("failed to get AI resolver result: %w", err)
 	}
 
 	sessionID, ok := row["ai_session_id"].(string)
 	if !ok || sessionID == "" {
-		return nil, fmt.Errorf("AI resolver did not return a valid session ID")
+		return nil, nil, fmt.Errorf("AI resolver did not return a valid session ID")
 	}
 	summary, _ := row["summary"].(string)
 
@@ -781,7 +786,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	return &aiReport{
 		sessionID: sessionID,
 		summary:   summary,
-	}, nil
+	}, warnings, nil
 }
 
 func buildAISessionURL(baseOpenURL, sessionID string) (string, error) {

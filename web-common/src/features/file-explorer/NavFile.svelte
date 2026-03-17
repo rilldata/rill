@@ -69,6 +69,7 @@
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
+  $: hasWarnings = fileArtifact.getHasWarnings(queryClient);
 
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
@@ -112,6 +113,8 @@
         <LoadingSpinner size="14px" />
       {:else if $error}
         <Alert size="14px" color="red" />
+      {:else if $hasWarnings && !$hasErrors}
+        <Alert size="14px" color="var(--color-warning-icon, #d97706)" />
       {:else}
         <svelte:component
           this={getIconComponent(resourceKind, filePath)}
@@ -119,7 +122,11 @@
         />
       {/if}
     </div>
-    <span class="truncate w-full" class:text-red-600={$hasErrors}>
+    <span
+      class="truncate w-full"
+      class:text-red-600={$hasErrors}
+      class:text-yellow-600={$hasWarnings && !$hasErrors}
+    >
       {fileName}
     </span>
   </a>
