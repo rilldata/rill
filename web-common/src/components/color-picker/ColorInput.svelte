@@ -64,17 +64,20 @@
       />
 
       <Popover.Root bind:open>
-        <Popover.Trigger asChild>
-          <button
-            class="trigger"
-            class:error-trigger={!isColorValid}
-            class:open
-            style:--hsl={hsl}
-          >
-            {#if !isColorValid}
-              <WarningIcon size="0.875rem" color="#f59e0b" />
-            {/if}
-          </button>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <button
+              {...props}
+              class="trigger"
+              class:error-trigger={!isColorValid}
+              class:open
+              style:--hsl={hsl}
+            >
+              {#if !isColorValid}
+                <WarningIcon size="0.875rem" color="#f59e0b" />
+              {/if}
+            </button>
+          {/snippet}
         </Popover.Trigger>
 
         <Popover.Content
@@ -128,17 +131,20 @@
     </div>
   {:else}
     <Popover.Root bind:open>
-      <Popover.Trigger asChild>
-        <button
-          class="trigger"
-          class:error-trigger={!isColorValid}
-          class:open
-          style:--hsl={hsl}
-        >
-          {#if !isColorValid}
-            <WarningIcon size="0.875rem" color="#f59e0b" />
-          {/if}
-        </button>
+      <Popover.Trigger>
+        {#snippet child({ props })}
+          <button
+            {...props}
+            class="trigger"
+            class:error-trigger={!isColorValid}
+            class:open
+            style:--hsl={hsl}
+          >
+            {#if !isColorValid}
+              <WarningIcon size="0.875rem" color="#f59e0b" />
+            {/if}
+          </button>
+        {/snippet}
       </Popover.Trigger>
 
       <Popover.Content

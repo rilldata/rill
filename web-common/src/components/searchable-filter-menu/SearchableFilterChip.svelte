@@ -25,25 +25,27 @@
     }
   }}
 >
-  <DropdownMenu.Trigger asChild>
-    <Tooltip
-      activeDelay={60}
-      alignment="start"
-      distance={8}
-      location="bottom"
-      suppress={open}
-    >
-      <Chip theme type="measure" active={open} {label}>
-        <div slot="body" class="font-bold truncate">
-          {label}
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip
+        activeDelay={60}
+        alignment="start"
+        distance={8}
+        location="bottom"
+        suppress={open}
+      >
+        <Chip {...props} theme type="measure" active={open} {label}>
+          <div slot="body" class="font-bold truncate">
+            {label}
+          </div>
+        </Chip>
+        <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
+          <TooltipContent maxWidth="400px">
+            {tooltipText}
+          </TooltipContent>
         </div>
-      </Chip>
-      <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
-        <TooltipContent maxWidth="400px">
-          {tooltipText}
-        </TooltipContent>
-      </div>
-    </Tooltip>
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent

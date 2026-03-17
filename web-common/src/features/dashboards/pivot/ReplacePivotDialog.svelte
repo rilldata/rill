@@ -17,12 +17,20 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild>
-        <Button large type="secondary" onClick={onCancel}>Cancel</Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <span style="display:contents" {...props}>
+            <Button large type="secondary" onClick={onCancel}>Cancel</Button>
+          </span>
+        {/snippet}
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild>
-        <Button large type="primary" onClick={onReplace}>Replace</Button>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <span style="display:contents" {...props}>
+            <Button large type="primary" onClick={onReplace}>Replace</Button>
+          </span>
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

@@ -35,11 +35,13 @@
 </script>
 
 <Popover bind:open={isOpen}>
-  <PopoverTrigger asChild>
-    <Tooltip distance={8} suppress={isOpen}>
-      <Button type="secondary" selected={isOpen}>Share</Button>
-      <TooltipContent slot="tooltip-content">Share dashboard</TooltipContent>
-    </Tooltip>
+  <PopoverTrigger>
+    {#snippet child({ props })}
+      <Tooltip {...props} distance={8} suppress={isOpen}>
+        <Button type="secondary" selected={isOpen}>Share</Button>
+        <TooltipContent slot="tooltip-content">Share dashboard</TooltipContent>
+      </Tooltip>
+    {/snippet}
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[402px] p-0">
     <Tabs>

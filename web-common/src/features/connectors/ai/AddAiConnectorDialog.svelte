@@ -249,8 +249,12 @@
     </div>
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild>
-        <Button large type="secondary" disabled={saving}>Cancel</Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <Button {...props} large type="secondary" disabled={saving}
+            >Cancel</Button
+          >
+        {/snippet}
       </AlertDialog.Cancel>
 
       <!-- Use a plain button instead of AlertDialog.Action to prevent

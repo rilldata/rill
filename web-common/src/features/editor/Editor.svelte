@@ -161,20 +161,23 @@
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
-        <AlertDialog.Action asChild>
-          <Button
-            type="primary"
-            large
-            onClick={() => {
-              merging.set(true);
-            }}
-          >
-            Compare
-          </Button>
+        <AlertDialog.Action>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              type="primary"
+              large
+              onClick={() => {
+                merging.set(true);
+              }}
+            >
+              Compare
+            </Button>
 
-          <Button type="secondary" large onClick={revertContent}>
-            Overwrite
-          </Button>
+            <Button type="secondary" large onClick={revertContent}>
+              Overwrite
+            </Button>
+          {/snippet}
         </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>

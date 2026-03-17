@@ -408,54 +408,57 @@
 />
 
 <DropdownMenu.Root bind:open onOpenChange={handleOpenChange}>
-  <DropdownMenu.Trigger asChild>
-    <Tooltip
-      activeDelay={500}
-      alignment="start"
-      distance={8}
-      location="bottom"
-      suppress={open || readOnly}
-    >
-      <Chip
-        type="dimension"
-        gray={selectedValues.length === 0 && !inputText}
-        active={open}
-        exclude={curExcludeMode}
-        label={`${name} filter`}
-        theme
-        onRemove={() => removeDimensionFilter(name, metricsViewNames)}
-        removable={!readOnly && !curPinned}
-        {readOnly}
-        removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
-        1
-          ? 's'
-          : ''}"
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip
+        activeDelay={500}
+        alignment="start"
+        distance={8}
+        location="bottom"
+        suppress={open || readOnly}
       >
-        <DimensionFilterChipBody
-          slot="body"
-          label={curExcludeMode ? `Exclude ${label}` : label}
-          show={1}
-          {smallChip}
-          values={curMode === DimensionFilterMode.InList
-            ? searchedBulkValues
-            : effectiveSelectedValues}
-          matchedCount={allSearchResultsCount}
-          loading={isFetchingFromAllSearchResultsCount}
-          search={curMode === DimensionFilterMode.Contains
-            ? curSearchText
-            : undefined}
-        />
-      </Chip>
-      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
-        <TooltipContent maxWidth="400px">
-          <TooltipTitle>
-            <svelte:fragment slot="name">{name}</svelte:fragment>
-            <svelte:fragment slot="description">dimension</svelte:fragment>
-          </TooltipTitle>
-          Click to edit the the filters in this dimension
-        </TooltipContent>
-      </div>
-    </Tooltip>
+        <Chip
+          {...props}
+          type="dimension"
+          gray={selectedValues.length === 0 && !inputText}
+          active={open}
+          exclude={curExcludeMode}
+          label={`${name} filter`}
+          theme
+          onRemove={() => removeDimensionFilter(name, metricsViewNames)}
+          removable={!readOnly && !curPinned}
+          {readOnly}
+          removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
+          1
+            ? 's'
+            : ''}"
+        >
+          <DimensionFilterChipBody
+            slot="body"
+            label={curExcludeMode ? `Exclude ${label}` : label}
+            show={1}
+            {smallChip}
+            values={curMode === DimensionFilterMode.InList
+              ? searchedBulkValues
+              : effectiveSelectedValues}
+            matchedCount={allSearchResultsCount}
+            loading={isFetchingFromAllSearchResultsCount}
+            search={curMode === DimensionFilterMode.Contains
+              ? curSearchText
+              : undefined}
+          />
+        </Chip>
+        <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
+          <TooltipContent maxWidth="400px">
+            <TooltipTitle>
+              <svelte:fragment slot="name">{name}</svelte:fragment>
+              <svelte:fragment slot="description">dimension</svelte:fragment>
+            </TooltipTitle>
+            Click to edit the the filters in this dimension
+          </TooltipContent>
+        </div>
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <!-- This has significant differences with SearchableMenuContent with how search text is handled.

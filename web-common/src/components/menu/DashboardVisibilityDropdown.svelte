@@ -26,35 +26,37 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild>
-    <Tooltip
-      activeDelay={60}
-      alignment="start"
-      distance={8}
-      location="bottom"
-      suppress={active}
-    >
-      <Button type="text" label={tooltipText}>
-        <div
-          class="flex items-center gap-x-0.5 px-1 text-fg-primary hover:text-inherit"
-        >
-          <strong>{`${numShownString} ${category}`}</strong>
-          <span
-            class="transition-transform"
-            class:hidden={disabled}
-            class:-rotate-180={active}
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip
+        activeDelay={60}
+        alignment="start"
+        distance={8}
+        location="bottom"
+        suppress={active}
+      >
+        <Button {...props} type="text" label={tooltipText}>
+          <div
+            class="flex items-center gap-x-0.5 px-1 text-fg-primary hover:text-inherit"
           >
-            <CaretDownIcon />
-          </span>
-        </div>
-      </Button>
+            <strong>{`${numShownString} ${category}`}</strong>
+            <span
+              class="transition-transform"
+              class:hidden={disabled}
+              class:-rotate-180={active}
+            >
+              <CaretDownIcon />
+            </span>
+          </div>
+        </Button>
 
-      <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
-        <TooltipContent maxWidth="400px">
-          {tooltipText}
-        </TooltipContent>
-      </div>
-    </Tooltip>
+        <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
+          <TooltipContent maxWidth="400px">
+            {tooltipText}
+          </TooltipContent>
+        </div>
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent

@@ -40,20 +40,27 @@
     let:onCancel
     let:onClose
   >
-    <DialogTrigger asChild>
-      <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
-        <Button
-          compact
-          disabled={$isCustomTimeRange}
-          type="secondary"
-          label="Create alert"
+    <DialogTrigger>
+      {#snippet child({ props })}
+        <Tooltip
+          {...props}
+          distance={8}
+          location="top"
+          suppress={!$isCustomTimeRange}
         >
-          <BellPlusIcon class="inline-flex" size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          To create an alert, set a non-custom time range.
-        </TooltipContent>
-      </Tooltip>
+          <Button
+            compact
+            disabled={$isCustomTimeRange}
+            type="secondary"
+            label="Create alert"
+          >
+            <BellPlusIcon class="inline-flex" size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            To create an alert, set a non-custom time range.
+          </TooltipContent>
+        </Tooltip>
+      {/snippet}
     </DialogTrigger>
     <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
       <AlertForm

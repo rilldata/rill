@@ -37,12 +37,14 @@
 </script>
 
 <Popover.Root bind:open>
-  <Popover.Trigger asChild>
-    <Button type="primary">
-      <Rocket size="16px" />
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <Button {...props} type="primary">
+        <Rocket size="16px" />
 
-      Deploy
-    </Button>
+        Deploy
+      </Button>
+    {/snippet}
   </Popover.Trigger>
   <Popover.Content align="start" class="w-[420px] flex flex-col gap-y-2">
     <div class="text-base font-medium">Update</div>

@@ -50,23 +50,25 @@
 </script>
 
 <Collapsible.Root bind:open={isExpanded} class="w-full max-w-full self-start">
-  <Collapsible.Trigger asChild>
-    <button class="thinking-header" onclick={onUserInteraction}>
-      <div class="thinking-icon">
-        {#if isExpanded}
-          <CaretDownIcon size="14" />
-        {:else}
-          <Brain />
-        {/if}
-      </div>
-      <div class="thinking-title">
-        {#if block.isComplete}
-          Thought for {formatDuration(block.duration)}
-        {:else}
-          <AnimatedDots>Thinking</AnimatedDots>
-        {/if}
-      </div>
-    </button>
+  <Collapsible.Trigger>
+    {#snippet child({ props })}
+      <button {...props} class="thinking-header" onclick={onUserInteraction}>
+        <div class="thinking-icon">
+          {#if isExpanded}
+            <CaretDownIcon size="14" />
+          {:else}
+            <Brain />
+          {/if}
+        </div>
+        <div class="thinking-title">
+          {#if block.isComplete}
+            Thought for {formatDuration(block.duration)}
+          {:else}
+            <AnimatedDots>Thinking</AnimatedDots>
+          {/if}
+        </div>
+      </button>
+    {/snippet}
   </Collapsible.Trigger>
 
   <Collapsible.Content class="pl-5 flex flex-col gap-0">

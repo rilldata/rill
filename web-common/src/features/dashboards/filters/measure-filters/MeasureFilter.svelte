@@ -42,44 +42,48 @@
     }
   }}
 >
-  <Popover.Trigger asChild>
-    <Tooltip
-      activeDelay={60}
-      alignment="start"
-      distance={8}
-      location="bottom"
-      suppress={open}
-    >
-      <Chip
-        type="measure"
-        active={open}
-        {label}
-        gray={!filter}
-        theme
-        {onRemove}
-        removable={!curPinned}
-        removeTooltipText="Remove {label}"
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <Tooltip
+        {...props}
+        activeDelay={60}
+        alignment="start"
+        distance={8}
+        location="bottom"
+        suppress={open}
       >
-        <MeasureFilterBody
-          dimensionName={allDimensions.find((d) => {
-            return d.name === dimensionName;
-          })?.displayName ?? ""}
-          {filter}
+        <Chip
+          type="measure"
+          active={open}
           {label}
-          slot="body"
-        />
-      </Chip>
-      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
-        <TooltipContent maxWidth="400px">
-          <TooltipTitle>
-            <svelte:fragment slot="name">{name}</svelte:fragment>
-            <svelte:fragment slot="description">{label || ""}</svelte:fragment>
-          </TooltipTitle>
+          gray={!filter}
+          theme
+          {onRemove}
+          removable={!curPinned}
+          removeTooltipText="Remove {label}"
+        >
+          <MeasureFilterBody
+            dimensionName={allDimensions.find((d) => {
+              return d.name === dimensionName;
+            })?.displayName ?? ""}
+            {filter}
+            {label}
+            slot="body"
+          />
+        </Chip>
+        <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
+          <TooltipContent maxWidth="400px">
+            <TooltipTitle>
+              <svelte:fragment slot="name">{name}</svelte:fragment>
+              <svelte:fragment slot="description">{label || ""}</svelte:fragment
+              >
+            </TooltipTitle>
 
-          <slot name="body-tooltip-content">Click to edit the values</slot>
-        </TooltipContent>
-      </div>
-    </Tooltip>
+            <slot name="body-tooltip-content">Click to edit the values</slot>
+          </TooltipContent>
+        </div>
+      </Tooltip>
+    {/snippet}
   </Popover.Trigger>
 
   {#if open}

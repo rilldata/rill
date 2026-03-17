@@ -97,10 +97,12 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild>
-    <button class:active={open} aria-label="Add filter button">
-      <Add size="17px" />
-    </button>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <button {...props} class:active={open} aria-label="Add filter button">
+        <Add size="17px" />
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent

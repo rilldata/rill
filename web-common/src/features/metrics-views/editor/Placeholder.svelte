@@ -64,10 +64,16 @@
   {#if isModelingSupported}
     Auto-generate a
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button class={buttonClasses} disabled={!$models?.data?.length}>
-          metrics configuration from an existing model
-        </button>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <button
+            {...props}
+            class={buttonClasses}
+            disabled={!$models?.data?.length}
+          >
+            metrics configuration from an existing model
+          </button>
+        {/snippet}
       </DropdownMenu.Trigger>,
       <DropdownMenu.Content align="start" sameWidth>
         {#each $models?.data ?? [] as model, i (i)}

@@ -20,8 +20,10 @@
   let:onCancel
   let:onClose
 >
-  <DialogTrigger asChild>
-    <Button type="secondary" {disabled}>Edit</Button>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <Button {...props} type="secondary" {disabled}>Edit</Button>
+    {/snippet}
   </DialogTrigger>
   <DialogContent class="p-0 m-0 w-[802px] max-w-fit" noClose>
     <AlertForm props={{ mode: "edit", alertSpec }} {onCancel} {onClose} />

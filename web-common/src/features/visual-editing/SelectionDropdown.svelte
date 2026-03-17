@@ -39,19 +39,21 @@
     }
   }}
 >
-  <DropdownMenu.Trigger asChild {id}>
-    <button class:open class:small class="dropdown-trigger">
-      {#if type}
-        {selectedItems.size} {type}
-      {:else}
-        {selectedItems.size} of {allItems.size}
-      {/if}
+  <DropdownMenu.Trigger {id}>
+    {#snippet child({ props })}
+      <button {...props} class:open class:small class="dropdown-trigger">
+        {#if type}
+          {selectedItems.size} {type}
+        {:else}
+          {selectedItems.size} of {allItems.size}
+        {/if}
 
-      <CaretDownIcon
-        size="12px"
-        className="text-fg-secondary ml-auto flex-none"
-      />
-    </button>
+        <CaretDownIcon
+          size="12px"
+          className="text-fg-secondary ml-auto flex-none"
+        />
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content sameWidth class="p-0">

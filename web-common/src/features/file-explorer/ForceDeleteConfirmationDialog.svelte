@@ -28,21 +28,29 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Action asChild>
-        <Button
-          large
-          onClick={() => {
-            handleClose();
-            onDelete();
-          }}
-          type="destructive"
-        >
-          Delete
-        </Button>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <span style="display:contents" {...props}>
+            <Button
+              large
+              onClick={() => {
+                handleClose();
+                onDelete();
+              }}
+              type="destructive"
+            >
+              Delete
+            </Button>
+          </span>
+        {/snippet}
       </AlertDialog.Action>
 
-      <AlertDialog.Cancel asChild>
-        <Button large onClick={handleClose} type="tertiary">Cancel</Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <span style="display:contents" {...props}>
+            <Button large onClick={handleClose} type="tertiary">Cancel</Button>
+          </span>
+        {/snippet}
       </AlertDialog.Cancel>
     </AlertDialog.Footer>
   </AlertDialog.Content>

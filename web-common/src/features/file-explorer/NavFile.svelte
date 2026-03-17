@@ -125,15 +125,18 @@
   </a>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild>
-        <ContextButton
-          id="more-actions-{filePath}"
-          label="{filePath} actions menu trigger"
-          suppressTooltip={contextMenuOpen}
-          tooltipText="More actions"
-        >
-          <MoreHorizontal />
-        </ContextButton>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <ContextButton
+            {...props}
+            id="more-actions-{filePath}"
+            label="{filePath} actions menu trigger"
+            suppressTooltip={contextMenuOpen}
+            tooltipText="More actions"
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"

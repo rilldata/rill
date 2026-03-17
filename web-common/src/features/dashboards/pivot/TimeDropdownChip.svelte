@@ -36,29 +36,31 @@
 
 {#if timeGrainOptions.length > 0}
   <DropdownMenu.Root bind:open={dropdownOpen}>
-    <DropdownMenu.Trigger asChild>
-      <div>
-        <PivotChip
-          {item}
-          {removable}
-          {grab}
-          {active}
-          {slideDuration}
-          {fullWidth}
-          {onmousedown}
-          {onclick}
-          {onRemove}
-        >
-          <div class="grain-dropdown" slot="body">
-            <span
-              class="flex-none transition-transform"
-              class:-rotate-180={dropdownOpen}
-            >
-              <CaretDownIcon size="12px" />
-            </span>
-          </div>
-        </PivotChip>
-      </div>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <div {...props}>
+          <PivotChip
+            {item}
+            {removable}
+            {grab}
+            {active}
+            {slideDuration}
+            {fullWidth}
+            {onmousedown}
+            {onclick}
+            {onRemove}
+          >
+            <div class="grain-dropdown" slot="body">
+              <span
+                class="flex-none transition-transform"
+                class:-rotate-180={dropdownOpen}
+              >
+                <CaretDownIcon size="12px" />
+              </span>
+            </div>
+          </PivotChip>
+        </div>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-52" align="start">
       {#each timeGrainOptions as option (option.key)}

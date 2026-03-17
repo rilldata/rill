@@ -40,10 +40,12 @@
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button class="trigger">
-            <CaretDownIcon size="14px" />
-          </button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <button {...props} class="trigger">
+              <CaretDownIcon size="14px" />
+            </button>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="start" class="min-w-44">
           {#each Array.from(groupedData.entries()) as [group, subItems]}

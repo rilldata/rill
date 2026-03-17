@@ -98,11 +98,15 @@
         Create a metrics view
       </Button>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <Button type="tertiary" large forcedStyle="height: 3rem;">
-            <PresentationIcon size="16px" />
-            Try demo projects
-          </Button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <span style="display:contents" {...props}>
+              <Button type="tertiary" large forcedStyle="height: 3rem;">
+                <PresentationIcon size="16px" />
+                Try demo projects
+              </Button>
+            </span>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}

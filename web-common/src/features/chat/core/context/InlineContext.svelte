@@ -86,10 +86,12 @@
   >
     {#if tooltip}
       <Tooltip.Root bind:open={tooltipOpen}>
-        <Tooltip.Trigger asChild>
-          <span class="cursor-pointer">
-            {label}
-          </span>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <span {...props} class="cursor-pointer">
+              {label}
+            </span>
+          {/snippet}
         </Tooltip.Trigger>
         <!-- TODO: we do not have the correct styles for tooltip. Update app wise in a future PR. -->
         <Tooltip.Content class="bg-black text-white">

@@ -62,17 +62,20 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild>
-    <Tooltip distance={8} suppress={open}>
-      <button
-        class:addBorder
-        class:active={open}
-        aria-label="Add filter button"
-      >
-        <Add size="17px" />
-      </button>
-      <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
-    </Tooltip>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip distance={8} suppress={open}>
+        <button
+          {...props}
+          class:addBorder
+          class:active={open}
+          aria-label="Add filter button"
+        >
+          <Add size="17px" />
+        </button>
+        <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent

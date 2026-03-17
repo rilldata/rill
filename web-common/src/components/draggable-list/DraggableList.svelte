@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
 
   const ITEM_HEIGHT = 28;
@@ -10,22 +11,41 @@
     [key: string]: any;
   };
 
-  export let items: DraggableItem[] = [];
-  export let searchValue: string = "";
-  export let showSearch: boolean = false;
-  export let minHeight: string = "100px";
-  export let maxHeight: string = "400px";
-  export let onReorder:
-    | ((data: {
-        items: DraggableItem[];
-        fromIndex: number;
-        toIndex: number;
-      }) => void)
-    | undefined = undefined;
-  export let onItemClick:
-    | ((data: { item: DraggableItem; index: number }) => void)
-    | undefined = undefined;
-  export let draggable = true;
+  let {
+    items = [] as DraggableItem[],
+    searchValue = $bindable(""),
+    showSearch = false,
+    minHeight = "100px",
+    maxHeight = "400px",
+    onReorder,
+    onItemClick,
+    draggable = true,
+    header,
+    footer,
+    empty,
+    item: itemSnippet,
+    search: searchSnippet,
+  }: {
+    items?: DraggableItem[];
+    searchValue?: string;
+    showSearch?: boolean;
+    minHeight?: string;
+    maxHeight?: string;
+    onReorder?: (data: {
+      items: DraggableItem[];
+      fromIndex: number;
+      toIndex: number;
+    }) => void;
+    onItemClick?: (data: { item: DraggableItem; index: number }) => void;
+    draggable?: boolean;
+    header?: Snippet<[{ items: DraggableItem[] }]>;
+    footer?: Snippet<[{ items: DraggableItem[] }]>;
+    empty?: Snippet<[{ searchValue: string }]>;
+    item?: Snippet<
+      [{ item: DraggableItem; index: number; isDragItem: boolean }]
+    >;
+    search?: Snippet<[{ searchValue: string }]>;
+  } = $props();
 
   let initialMousePosition = 0;
   let contentRect = new DOMRectReadOnly();
@@ -37,25 +57,29 @@
   let dragItemInitialTop = 0;
   let lastUpdateTime = 0;
 
-  $: ({ height } = contentRect);
-  $: lowerBound = Math.max(
-    height - ITEM_HEIGHT - 6,
-    UPPER_BOUND + (items.length - 1) * ITEM_HEIGHT,
+  let height = $derived(contentRect.height);
+  let lowerBound = $derived(
+    Math.max(
+      height - ITEM_HEIGHT - 6,
+      UPPER_BOUND + (items.length - 1) * ITEM_HEIGHT,
+    ),
   );
 
-  $: filteredItems = searchValue
-    ? items.filter((item) => {
-        const normalizedSearch = searchValue.trim().toLowerCase();
-        if (normalizedSearch === "") return true;
-        const itemId = item.id.toLowerCase();
-        const itemDisplayName =
-          (item.displayName as string | undefined)?.toLowerCase() ?? "";
-        return (
-          itemId.includes(normalizedSearch) ||
-          itemDisplayName.includes(normalizedSearch)
-        );
-      })
-    : items;
+  let filteredItems = $derived(
+    searchValue
+      ? items.filter((filterItem) => {
+          const normalizedSearch = searchValue.trim().toLowerCase();
+          if (normalizedSearch === "") return true;
+          const itemId = filterItem.id.toLowerCase();
+          const itemDisplayName =
+            (filterItem.displayName as string | undefined)?.toLowerCase() ?? "";
+          return (
+            itemId.includes(normalizedSearch) ||
+            itemDisplayName.includes(normalizedSearch)
+          );
+        })
+      : items,
+  );
 
   function handleMouseDown(e: MouseEvent) {
     if (!draggable) return;
@@ -158,8 +182,8 @@
     return result;
   }
 
-  function handleItemClick(item: DraggableItem, index: number) {
-    onItemClick?.({ item, index });
+  function handleItemClick(clickedItem: DraggableItem, index: number) {
+    onItemClick?.({ item: clickedItem, index });
   }
 </script>
 
@@ -173,20 +197,22 @@
 >
   {#if showSearch}
     <div class="px-3 pt-3 pb-1">
-      <slot name="search" {searchValue}>
+      {#if searchSnippet}
+        {@render searchSnippet({ searchValue })}
+      {:else}
         <input
           bind:value={searchValue}
           placeholder="Search..."
           class="w-full px-2 py-1 border rounded text-sm"
         />
-      </slot>
+      {/if}
     </div>
   {/if}
 
   <div class="flex-1 overflow-y-auto">
-    <slot name="header" items={filteredItems}>
-      <!-- Optional header slot -->
-    </slot>
+    {#if header}
+      {@render header({ items: filteredItems })}
+    {/if}
 
     <div
       role="presentation"
@@ -195,13 +221,15 @@
     >
       {#if filteredItems.length === 0}
         <div class="px-2 py-2 text-xs text-fg-secondary">
-          <slot name="empty" {searchValue}>
+          {#if empty}
+            {@render empty({ searchValue })}
+          {:else}
             {searchValue ? "No matching items" : "No items"}
-          </slot>
+          {/if}
         </div>
       {:else}
-        {#each filteredItems as item, i (item.id)}
-          {@const isDragItem = dragId === item.id}
+        {#each filteredItems as currentItem, i (currentItem.id)}
+          {@const isDragItem = dragId === currentItem.id}
           {@const isDropTarget =
             dropIndex !== null &&
             !isDragItem &&
@@ -214,7 +242,7 @@
               type="button"
               data-drag-item
               data-index={i}
-              data-item-id={item.id}
+              data-item-id={currentItem.id}
               class:sr-only={isDragItem}
               class:transition-margin={dragIndex !== -1 &&
                 dropIndex !== dragIndex}
@@ -228,19 +256,25 @@
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}
               class:cursor-default={!draggable && !onItemClick}
-              onclick={() => handleItemClick(item, i)}
+              onclick={() => handleItemClick(currentItem, i)}
             >
-              <slot name="item" {item} index={i} {isDragItem}>
+              {#if itemSnippet}
+                {@render itemSnippet({
+                  item: currentItem,
+                  index: i,
+                  isDragItem,
+                })}
+              {:else}
                 <span class="truncate flex-1 text-left pointer-events-none">
-                  {item.id}
+                  {currentItem.id}
                 </span>
-              </slot>
+              {/if}
             </button>
           {:else}
             <div
               data-drag-item
               data-index={i}
-              data-item-id={item.id}
+              data-item-id={currentItem.id}
               class:sr-only={isDragItem}
               class:transition-margin={dragIndex !== -1 &&
                 dropIndex !== dragIndex}
@@ -255,20 +289,26 @@
               class:cursor-pointer={!draggable && !!onItemClick}
               class:cursor-default={!draggable && !onItemClick}
             >
-              <slot name="item" {item} index={i} {isDragItem}>
+              {#if itemSnippet}
+                {@render itemSnippet({
+                  item: currentItem,
+                  index: i,
+                  isDragItem,
+                })}
+              {:else}
                 <span class="truncate flex-1 text-left pointer-events-none">
-                  {item.id}
+                  {currentItem.id}
                 </span>
-              </slot>
+              {/if}
             </div>
           {/if}
         {/each}
       {/if}
     </div>
 
-    <slot name="footer" items={filteredItems}>
-      <!-- Optional footer slot -->
-    </slot>
+    {#if footer}
+      {@render footer({ items: filteredItems })}
+    {/if}
   </div>
 </div>
 

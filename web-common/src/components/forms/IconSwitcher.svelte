@@ -16,14 +16,17 @@
 <div class:small class:expand class="option-wrapper">
   {#each fields as { id, Icon, tooltip } (id)}
     <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <button
-          onclick={() => onClick(id)}
-          class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
-          class:selected={selected === id}
-        >
-          <Icon size={small ? "14px" : "16px"} />
-        </button>
+      <Tooltip.Trigger>
+        {#snippet child({ props })}
+          <button
+            {...props}
+            onclick={() => onClick(id)}
+            class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
+            class:selected={selected === id}
+          >
+            <Icon size={small ? "14px" : "16px"} />
+          </button>
+        {/snippet}
       </Tooltip.Trigger>
 
       <Tooltip.Content class="z-[1000]" sideOffset={8}>

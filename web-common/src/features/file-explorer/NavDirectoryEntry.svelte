@@ -99,15 +99,18 @@
   </span>
   {#if !isProtectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild>
-        <ContextButton
-          id="more-actions-{dir.path}"
-          label="{dir.name} actions menu trigger"
-          suppressTooltip={contextMenuOpen}
-          tooltipText="More actions"
-        >
-          <MoreHorizontal />
-        </ContextButton>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <ContextButton
+            {...props}
+            id="more-actions-{dir.path}"
+            label="{dir.name} actions menu trigger"
+            suppressTooltip={contextMenuOpen}
+            tooltipText="More actions"
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"

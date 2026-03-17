@@ -72,8 +72,10 @@
   </div>
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      <NavigateOrDropdown resources={dashboards} />
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <NavigateOrDropdown {...props} resources={dashboards} />
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Group>

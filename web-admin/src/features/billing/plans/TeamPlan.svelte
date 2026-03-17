@@ -68,8 +68,10 @@
   </svelte:fragment>
 
   <AlertDialog bind:open slot="action">
-    <AlertDialogTrigger asChild>
-      <Button type="tertiary">Cancel plan</Button>
+    <AlertDialogTrigger>
+      {#snippet child({ props })}
+        <Button {...props} type="tertiary">Cancel plan</Button>
+      {/snippet}
     </AlertDialogTrigger>
     <AlertDialogContent>
       <AlertDialogHeader>

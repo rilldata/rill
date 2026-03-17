@@ -31,8 +31,10 @@
 </script>
 
 <Popover.Root bind:open>
-  <Popover.Trigger asChild>
-    <Button type="secondary">Download Project</Button>
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <Button {...props} type="secondary">Download Project</Button>
+    {/snippet}
   </Popover.Trigger>
 
   <Popover.Content class="w-[380px]" align="end" sideOffset={8}>

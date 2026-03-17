@@ -85,10 +85,12 @@
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button class="trigger" aria-label="Breadcrumb dropdown">
-            <CaretDownIcon size="14px" />
-          </button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <button {...props} class="trigger" aria-label="Breadcrumb dropdown">
+              <CaretDownIcon size="14px" />
+            </button>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
           align="start"

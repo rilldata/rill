@@ -154,16 +154,19 @@
     }
   }}
 >
-  <Dialog.Trigger asChild>
-    <Button
-      type="primary"
-      class="w-fit mt-1"
-      loading={$userStatus.isFetching}
-      onClick={() => void githubAccessManager.ensureGithubAccess()}
-    >
-      <Github className="w-5 h-5 flex-shrink-0" />
-      Connect to GitHub
-    </Button>
+  <Dialog.Trigger>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        type="primary"
+        class="w-fit mt-1"
+        loading={$userStatus.isFetching}
+        onClick={() => void githubAccessManager.ensureGithubAccess()}
+      >
+        <Github className="w-5 h-5 flex-shrink-0" />
+        Connect to GitHub
+      </Button>
+    {/snippet}
   </Dialog.Trigger>
   <Dialog.Content>
     <Dialog.Header>

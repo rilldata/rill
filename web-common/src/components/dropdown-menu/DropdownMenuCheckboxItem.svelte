@@ -9,6 +9,7 @@
     href?: string;
     preloadData?: boolean;
     showXForSelected?: boolean;
+    closeOnSelect?: boolean;
   };
 
   let className: $$Props["class"] = undefined;
@@ -18,6 +19,7 @@
   export let preloadData: $$Props["preloadData"] = true;
   export let showXForSelected: $$Props["showXForSelected"] = false;
   export let checkRight: $$Props["checkRight"] = false;
+  export let closeOnSelect: $$Props["closeOnSelect"] = false;
   export { className as class };
 </script>
 
@@ -29,7 +31,7 @@
 >
   <DropdownMenuPrimitive.CheckboxItem
     {checked}
-    closeOnSelect={false}
+    {closeOnSelect}
     role="menuitem"
     class={cn(
       "relative flex cursor-pointer text-fg-primary select-none items-center rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none data-[highlighted]:bg-popover-accent data-[highlighted]:text-fg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-popover-accent hover:rounded-sm focus:bg-popover-accent focus:rounded-sm",

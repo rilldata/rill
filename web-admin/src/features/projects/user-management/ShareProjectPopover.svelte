@@ -34,11 +34,13 @@
 </script>
 
 <Popover bind:open>
-  <PopoverTrigger asChild>
-    <Tooltip distance={8} suppress={open}>
-      <Button type="secondary" selected={open}>Share</Button>
-      <TooltipContent slot="tooltip-content">Share project</TooltipContent>
-    </Tooltip>
+  <PopoverTrigger>
+    {#snippet child({ props })}
+      <Tooltip {...props} distance={8} suppress={open}>
+        <Button type="secondary" selected={open}>Share</Button>
+        <TooltipContent slot="tooltip-content">Share project</TooltipContent>
+      </Tooltip>
+    {/snippet}
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[520px]" padding="0">
     <ShareProjectForm

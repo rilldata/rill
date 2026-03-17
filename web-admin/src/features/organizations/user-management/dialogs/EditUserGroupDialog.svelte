@@ -280,8 +280,10 @@
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>

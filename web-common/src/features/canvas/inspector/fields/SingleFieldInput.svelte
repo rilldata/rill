@@ -49,28 +49,31 @@
   </div>
 
   <DropdownMenu.Root bind:open>
-    <DropdownMenu.Trigger asChild>
-      <Chip
-        fullWidth
-        caret
-        removable={isRemovable && !!selectedItem}
-        {onRemove}
-        type={isTimeSelected ? "time" : type}
-      >
-        <span
-          class="font-bold truncate"
-          class:text-fg-tertiary={!selectedItem}
-          slot="body"
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Chip
+          {...props}
+          fullWidth
+          caret
+          removable={isRemovable && !!selectedItem}
+          {onRemove}
+          type={isTimeSelected ? "time" : type}
         >
-          {#if isTimeSelected}
-            Time
-          {:else if selectedItem}
-            {$fieldData.displayMap[selectedItem]?.label || selectedItem}
-          {:else}
-            Choose a field...
-          {/if}
-        </span>
-      </Chip>
+          <span
+            class="font-bold truncate"
+            class:text-fg-tertiary={!selectedItem}
+            slot="body"
+          >
+            {#if isTimeSelected}
+              Time
+            {:else if selectedItem}
+              {$fieldData.displayMap[selectedItem]?.label || selectedItem}
+            {:else}
+              Choose a field...
+            {/if}
+          </span>
+        </Chip>
+      {/snippet}
     </DropdownMenu.Trigger>
 
     <DropdownMenu.Content class="p-0" sameWidth>

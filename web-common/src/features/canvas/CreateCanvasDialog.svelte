@@ -62,19 +62,27 @@
     />
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild>
-        <Button large type="secondary">Cancel</Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <span style="display:contents" {...props}>
+            <Button large type="secondary">Cancel</Button>
+          </span>
+        {/snippet}
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild>
-        <Button
-          disabled={!selectedMetricsView}
-          large
-          type="primary"
-          onClick={createResource}
-        >
-          Continue
-        </Button>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <span style="display:contents" {...props}>
+            <Button
+              disabled={!selectedMetricsView}
+              large
+              type="primary"
+              onClick={createResource}
+            >
+              Continue
+            </Button>
+          </span>
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

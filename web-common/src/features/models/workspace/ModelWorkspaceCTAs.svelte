@@ -69,8 +69,10 @@
   <CreateDashboardButton {collapse} {hasResultTable} {modelName} />
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      <NavigateOrDropdown resources={availableMetricsViews} />
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <NavigateOrDropdown {...props} resources={availableMetricsViews} />
+      {/snippet}
     </DropdownMenu.Trigger>
 
     {#if availableMetricsViews.length}

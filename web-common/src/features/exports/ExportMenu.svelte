@@ -83,24 +83,26 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild>
-    {#if workspace}
-      <Tooltip distance={8} suppress={open}>
-        <Button {label} {disabled} type="secondary" square>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      {#if workspace}
+        <Tooltip distance={8} suppress={open}>
+          <Button {...props} {label} {disabled} type="secondary" square>
+            <Export size="15px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">Export model</TooltipContent>
+        </Tooltip>
+      {:else}
+        <Button {...props} {label} {disabled} type="toolbar">
           <Export size="15px" />
+          Export
+          <CaretDownIcon
+            className="transition-transform {open && '-rotate-180'}"
+            size="10px"
+          />
         </Button>
-        <TooltipContent slot="tooltip-content">Export model</TooltipContent>
-      </Tooltip>
-    {:else}
-      <Button {label} {disabled} type="toolbar">
-        <Export size="15px" />
-        Export
-        <CaretDownIcon
-          className="transition-transform {open && '-rotate-180'}"
-          size="10px"
-        />
-      </Button>
-    {/if}
+      {/if}
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start">

@@ -98,31 +98,34 @@
     );
   }}
 >
-  <DropdownMenu.Trigger asChild {disabled}>
-    <button
-      {disabled}
-      aria-disabled={disabled}
-      aria-label="Select time comparison option"
-      type="button"
-    >
-      <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
-        {#if !timeComparisonOptionsState.length && !showComparison}
-          <p>no comparison period</p>
-        {:else}
-          <b class="line-clamp-1">{label}</b>
-          {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} {timeGrain} />
-          {/if}
-        {/if}
-      </div>
-      <span
-        class="flex-none transition-transform"
-        class:-rotate-180={open}
-        class:opacity-50={!showComparison}
+  <DropdownMenu.Trigger {disabled}>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        {disabled}
+        aria-disabled={disabled}
+        aria-label="Select time comparison option"
+        type="button"
       >
-        <CaretDownIcon />
-      </span>
-    </button>
+        <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
+          {#if !timeComparisonOptionsState.length && !showComparison}
+            <p>no comparison period</p>
+          {:else}
+            <b class="line-clamp-1">{label}</b>
+            {#if interval?.isValid && showFullRange}
+              <RangeDisplay {interval} {timeGrain} />
+            {/if}
+          {/if}
+        </div>
+        <span
+          class="flex-none transition-transform"
+          class:-rotate-180={open}
+          class:opacity-50={!showComparison}
+        >
+          <CaretDownIcon />
+        </span>
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">

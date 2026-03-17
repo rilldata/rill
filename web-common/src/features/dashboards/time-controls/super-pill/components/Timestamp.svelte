@@ -30,20 +30,23 @@
 </script>
 
 <Tooltip.Root disableHoverableContent={true}>
-  <Tooltip.Trigger asChild id="{id}-timestamp-trigger">
-    <button
-      class:italic
-      class="text-xs text-inherit"
-      onclick={() => {
-        if (isoString) copyToClipboard(isoString);
-      }}
-    >
-      {#if showDate}
-        {formattedString}
-      {:else}
-        {humanReadableTimeOffset} ago
-      {/if}
-    </button>
+  <Tooltip.Trigger id="{id}-timestamp-trigger">
+    {#snippet child({ props })}
+      <button
+        {...props}
+        class:italic
+        class="text-xs text-inherit"
+        onclick={() => {
+          if (isoString) copyToClipboard(isoString);
+        }}
+      >
+        {#if showDate}
+          {formattedString}
+        {:else}
+          {humanReadableTimeOffset} ago
+        {/if}
+      </button>
+    {/snippet}
   </Tooltip.Trigger>
   <Tooltip.Content
     hidden={suppress}

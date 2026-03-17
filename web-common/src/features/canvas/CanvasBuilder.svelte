@@ -581,34 +581,40 @@
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel asChild>
-          <Button
-            large
-            type="secondary"
-            onClick={() => {
-              pendingComponentDelete = undefined;
-            }}
-          >
-            Cancel
-          </Button>
+        <AlertDialog.Cancel>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              large
+              type="secondary"
+              onClick={() => {
+                pendingComponentDelete = undefined;
+              }}
+            >
+              Cancel
+            </Button>
+          {/snippet}
         </AlertDialog.Cancel>
 
-        <AlertDialog.Action asChild>
-          <Button
-            large
-            type="destructive"
-            onClick={() => {
-              if (!pendingComponentDelete) return;
-              const component = componentsStore.getNonReactive(
-                pendingComponentDelete,
-              );
-              if (!component) return;
-              deleteComponent(component);
-              pendingComponentDelete = undefined;
-            }}
-          >
-            Delete
-          </Button>
+        <AlertDialog.Action>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              large
+              type="destructive"
+              onClick={() => {
+                if (!pendingComponentDelete) return;
+                const component = componentsStore.getNonReactive(
+                  pendingComponentDelete,
+                );
+                if (!component) return;
+                deleteComponent(component);
+                pendingComponentDelete = undefined;
+              }}
+            >
+              Delete
+            </Button>
+          {/snippet}
         </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>

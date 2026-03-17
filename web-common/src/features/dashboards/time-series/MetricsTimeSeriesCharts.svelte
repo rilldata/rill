@@ -290,21 +290,24 @@
 
       {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
-          <DropdownMenu.Trigger asChild>
-            <button
-              aria-label="Select aggregation grain"
-              class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
-            >
-              by <b>
-                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
-              </b>
-              <span
-                class:-rotate-90={grainDropdownOpen}
-                class="transition-transform"
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                aria-label="Select aggregation grain"
+                class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
               >
-                <CaretDownIcon />
-              </span>
-            </button>
+                by <b>
+                  {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+                </b>
+                <span
+                  class:-rotate-90={grainDropdownOpen}
+                  class="transition-transform"
+                >
+                  <CaretDownIcon />
+                </span>
+              </button>
+            {/snippet}
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Content align="start" class="w-48">

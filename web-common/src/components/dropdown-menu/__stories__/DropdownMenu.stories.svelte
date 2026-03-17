@@ -15,8 +15,10 @@
 
 <Story name="Simple">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      <Button type="secondary">Open menu</Button>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} type="secondary">Open menu</Button>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item>Option 1</DropdownMenu.Item>
@@ -27,8 +29,10 @@
 
 <Story name="With icons">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      <Button type="secondary">Open menu</Button>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} type="secondary">Open menu</Button>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item>
@@ -45,8 +49,10 @@
 
 <Story name="With submenu">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      <Button type="secondary">Open menu</Button>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} type="secondary">Open menu</Button>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Sub bind:open={subMenuOpen}>

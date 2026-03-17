@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/lib/time/new-grains";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { Tooltip as TooltipPrimitive } from "bits-ui";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
@@ -34,7 +35,24 @@
   ) => void;
 
   let open = false;
+  let hoveredOption: string | null = null;
+  let hoverTimer: ReturnType<typeof setTimeout> | undefined;
   let now = DateTime.now().setZone(zone);
+
+  function startHoverTimer(id: string) {
+    clearHoverTimer();
+    hoverTimer = setTimeout(() => {
+      hoveredOption = id;
+    }, 800);
+  }
+
+  function clearHoverTimer() {
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+    }
+    hoveredOption = null;
+  }
   let interval: ReturnType<typeof setInterval> | undefined = undefined;
 
   onMount(() => {
@@ -46,6 +64,9 @@
   onDestroy(() => {
     if (interval) {
       clearInterval(interval);
+    }
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
     }
   });
 
@@ -141,36 +162,39 @@
 
 <DropdownMenu.Root bind:open>
   <Tooltip.Root delayDuration={800}>
-    <Tooltip.Trigger asChild id="truncation-selector-trigger">
-      <DropdownMenu.Trigger
-        id="truncation-selector-trigger"
-        type="button"
-        class="flex gap-x-1 items-center flex-none truncate"
-        aria-label="Select reference time and grain"
-        data-state={open ? "open" : "closed"}
-      >
-        <p>
-          as of
-          <b>
-            {humanizedRef}
-            {#if dateTimeUnit}
-              {dateTimeUnit}
+    <TooltipPrimitive.Trigger>
+      {#snippet child({ props: tooltipProps })}
+        <DropdownMenu.Trigger
+          {...tooltipProps}
+          id="truncation-selector-trigger"
+          type="button"
+          class="flex gap-x-1 items-center flex-none truncate"
+          aria-label="Select reference time and grain"
+          data-state={open ? "open" : "closed"}
+        >
+          <p>
+            as of
+            <b>
+              {humanizedRef}
+              {#if dateTimeUnit}
+                {dateTimeUnit}
+              {/if}
+            </b>
+            {#if grain}
+              {#if snapToEnd || ref === RillTimeLabel.Watermark}
+                end
+              {:else}
+                start
+              {/if}
             {/if}
-          </b>
-          {#if grain}
-            {#if snapToEnd || ref === RillTimeLabel.Watermark}
-              end
-            {:else}
-              start
-            {/if}
-          {/if}
-        </p>
+          </p>
 
-        <span class="flex-none transition-transform" class:-rotate-180={open}>
-          <CaretDownIcon />
-        </span>
-      </DropdownMenu.Trigger>
-    </Tooltip.Trigger>
+          <span class="flex-none transition-transform" class:-rotate-180={open}>
+            <CaretDownIcon />
+          </span>
+        </DropdownMenu.Trigger>
+      {/snippet}
+    </TooltipPrimitive.Trigger>
 
     <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
       <TooltipContent>
@@ -193,49 +217,55 @@
       </h3>
       {#each options as { id, label, description, timestamp } (id)}
         {#if id !== RillTimeLabel.Watermark || (id === RillTimeLabel.Watermark && !!timestamp)}
-          <DropdownMenu.CheckboxItem
-            checkRight
-            checked={ref === id}
-            preloadData={false}
-            onclick={() => {
-              onSelectAsOfOption(id);
-            }}
-          >
-            <Tooltip.Root delayDuration={800}>
-              <Tooltip.Trigger class="w-full" id="{label}-tooltip-trigger">
-                {label}
-              </Tooltip.Trigger>
-
-              {#if timestamp}
-                <Tooltip.Content
-                  side="right"
-                  sideOffset={40}
-                  class="w-65 z-50"
-                  id="{label}-tooltip-content"
+          <Tooltip.Root open={hoveredOption === id}>
+            <TooltipPrimitive.Trigger>
+              {#snippet child({ props: tooltipProps })}
+                <DropdownMenu.CheckboxItem
+                  {...tooltipProps}
+                  checkRight
+                  closeOnSelect
+                  checked={ref === id}
+                  preloadData={false}
+                  onSelect={() => {
+                    onSelectAsOfOption(id);
+                  }}
+                  onpointerenter={() => startHoverTimer(id)}
+                  onpointerleave={clearHoverTimer}
                 >
-                  <TooltipContent class="w-60">
-                    <div class="flex items-center justify-between">
-                      <span class="font-bold truncate text-fg-inverse">
-                        {timestamp.toLocaleString(
-                          DateTime.DATETIME_MED_WITH_SECONDS,
-                        )}
-                      </span>
-                      <SyntaxElement dark range={id} />
-                    </div>
+                  {label}
+                </DropdownMenu.CheckboxItem>
+              {/snippet}
+            </TooltipPrimitive.Trigger>
 
-                    {#if id !== RillTimeLabel.Now}
-                      <div>
-                        {getColloquialOffset(timestamp)}
-                      </div>
-                    {/if}
-                    <TooltipDescription>
-                      {description}
-                    </TooltipDescription>
-                  </TooltipContent>
-                </Tooltip.Content>
-              {/if}
-            </Tooltip.Root>
-          </DropdownMenu.CheckboxItem>
+            {#if timestamp}
+              <Tooltip.Content
+                side="right"
+                sideOffset={40}
+                class="w-65 z-50"
+                id="{label}-tooltip-content"
+              >
+                <TooltipContent class="w-60">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold truncate text-fg-inverse">
+                      {timestamp.toLocaleString(
+                        DateTime.DATETIME_MED_WITH_SECONDS,
+                      )}
+                    </span>
+                    <SyntaxElement dark range={id} />
+                  </div>
+
+                  {#if id !== RillTimeLabel.Now}
+                    <div>
+                      {getColloquialOffset(timestamp)}
+                    </div>
+                  {/if}
+                  <TooltipDescription>
+                    {description}
+                  </TooltipDescription>
+                </TooltipContent>
+              </Tooltip.Content>
+            {/if}
+          </Tooltip.Root>
         {/if}
       {/each}
     </DropdownMenu.Group>
@@ -247,8 +277,9 @@
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
           checkRight
+          closeOnSelect
           checked={option === grain}
-          onclick={() => {
+          onSelect={() => {
             onSelectEnding(option);
           }}
         >

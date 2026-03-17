@@ -140,16 +140,24 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild>
-    <Button label="Add Asset" class="w-full" type="secondary" selected={active}>
-      <PlusCircleIcon size="14px" />
-      <div class="flex gap-x-1 items-center">
-        Add
-        <span class="transition-transform" class:-rotate-180={active}>
-          <CaretDownIcon size="10px" />
-        </span>
-      </div>
-    </Button>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        label="Add Asset"
+        class="w-full"
+        type="secondary"
+        selected={active}
+      >
+        <PlusCircleIcon size="14px" />
+        <div class="flex gap-x-1 items-center">
+          Add
+          <span class="transition-transform" class:-rotate-180={active}>
+            <CaretDownIcon size="10px" />
+          </span>
+        </div>
+      </Button>
+    {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"

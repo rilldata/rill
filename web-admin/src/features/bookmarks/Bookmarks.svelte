@@ -166,16 +166,19 @@
 />
 
 <DropdownMenu bind:open>
-  <DropdownMenuTrigger asChild>
-    <Button
-      compact
-      square
-      type="secondary"
-      label="Other bookmark dropdown"
-      active={open}
-    >
-      <BookmarkIcon class="flex-none" size="16px" />
-    </Button>
+  <DropdownMenuTrigger>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        compact
+        square
+        type="secondary"
+        label="Other bookmark dropdown"
+        active={open}
+      >
+        <BookmarkIcon class="flex-none" size="16px" />
+      </Button>
+    {/snippet}
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[450px]">
     <DropdownMenuItem onclick={() => (showDialog = true)}>

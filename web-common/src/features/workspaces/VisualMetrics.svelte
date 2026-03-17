@@ -563,24 +563,27 @@
             </svelte:fragment>
           </InputLabel>
           <DropdownMenu.Root bind:open={tableSelectionOpen}>
-            <DropdownMenu.Trigger asChild>
-              <button
-                class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
-                focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
-               "
-              >
-                {#if !hasValidOLAPTableSelected}
-                  <span class="text-fg-muted truncate">Select table</span>
-                {:else}
-                  <span class="text-fg-secondary truncate">
-                    {modelOrSourceOrTableName}
-                  </span>
-                {/if}
-                <CaretDownIcon
-                  size="12px"
-                  className="!fill-gray-600 ml-auto flex-none"
-                />
-              </button>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <button
+                  {...props}
+                  class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
+                  focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
+                 "
+                >
+                  {#if !hasValidOLAPTableSelected}
+                    <span class="text-fg-muted truncate">Select table</span>
+                  {:else}
+                    <span class="text-fg-secondary truncate">
+                      {modelOrSourceOrTableName}
+                    </span>
+                  {/if}
+                  <CaretDownIcon
+                    size="12px"
+                    className="!fill-gray-600 ml-auto flex-none"
+                  />
+                </button>
+              {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
               sameWidth

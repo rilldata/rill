@@ -96,16 +96,19 @@
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
-        <DropdownMenu.Trigger asChild>
-          <ContextButton
-            id="more-actions-{tableId}"
-            testId="more-actions-context-button"
-            tooltipText="More actions"
-            label="{tableId} actions menu trigger"
-            suppressTooltip={contextMenuOpen}
-          >
-            <MoreHorizontal />
-          </ContextButton>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <ContextButton
+              {...props}
+              id="more-actions-{tableId}"
+              testId="more-actions-context-button"
+              tooltipText="More actions"
+              label="{tableId} actions menu trigger"
+              suppressTooltip={contextMenuOpen}
+            >
+              <MoreHorizontal />
+            </ContextButton>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
           class="min-w-60"

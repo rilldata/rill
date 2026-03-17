@@ -103,16 +103,19 @@
             </Button>
           {/if}
           <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <Button
-                square
-                type="tertiary"
-                onClick={deleteBookmark}
-                disabled={disableDelete}
-                label="Delete bookmark"
-              >
-                <Trash size="16px" />
-              </Button>
+            <Tooltip.Trigger>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  square
+                  type="tertiary"
+                  onClick={deleteBookmark}
+                  disabled={disableDelete}
+                  label="Delete bookmark"
+                >
+                  <Trash size="16px" />
+                </Button>
+              {/snippet}
             </Tooltip.Trigger>
             {#if showDeleteTooltip}
               <Tooltip.Content side="bottom">

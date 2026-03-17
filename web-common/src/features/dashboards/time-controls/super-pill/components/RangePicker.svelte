@@ -39,17 +39,24 @@
     showSelector = selected === "CUSTOM";
   }}
 >
-  <DropdownMenu.Trigger asChild>
-    <button class="flex gap-x-1" aria-label="Select time range" type="button">
-      <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        class="flex gap-x-1"
+        aria-label="Select time range"
+        type="button"
+      >
+        <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
 
-      {#if interval.isValid && showFullRange}
-        <RangeDisplay {interval} />
-      {/if}
-      <span class="flex-none transition-transform" class:-rotate-180={open}>
-        <CaretDownIcon />
-      </span>
-    </button>
+        {#if interval.isValid && showFullRange}
+          <RangeDisplay {interval} />
+        {/if}
+        <span class="flex-none transition-transform" class:-rotate-180={open}>
+          <CaretDownIcon />
+        </span>
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
     <div class="flex">

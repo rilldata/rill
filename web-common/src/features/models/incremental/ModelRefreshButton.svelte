@@ -30,24 +30,27 @@
 
 {#if isIncrementalModel}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      <Tooltip distance={8}>
-        <Button
-          square
-          type="secondary"
-          disabled={!isModelIdle || hasUnsavedChanges}
-          label="Refresh Incremental Model"
-        >
-          <RefreshIcon size="14px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          {#if hasUnsavedChanges}
-            Save your changes to refresh
-          {:else}
-            Refresh model
-          {/if}
-        </TooltipContent>
-      </Tooltip>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Tooltip distance={8}>
+          <Button
+            {...props}
+            square
+            type="secondary"
+            disabled={!isModelIdle || hasUnsavedChanges}
+            label="Refresh Incremental Model"
+          >
+            <RefreshIcon size="14px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            {#if hasUnsavedChanges}
+              Save your changes to refresh
+            {:else}
+              Refresh model
+            {/if}
+          </TooltipContent>
+        </Tooltip>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Item onclick={() => refreshModel(false)}>

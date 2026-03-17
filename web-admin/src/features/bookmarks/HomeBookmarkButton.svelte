@@ -48,16 +48,19 @@
 
 {#if manageProject}
   <DropdownMenu bind:open>
-    <DropdownMenuTrigger asChild>
-      <Button
-        compact
-        square
-        type="secondary"
-        label="Home bookmark dropdown"
-        active={open || isHomeBookmarkActive}
-      >
-        <HomeBookmark size="16px" className="flex-none" />
-      </Button>
+    <DropdownMenuTrigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          compact
+          square
+          type="secondary"
+          label="Home bookmark dropdown"
+          active={open || isHomeBookmarkActive}
+        >
+          <HomeBookmark size="16px" className="flex-none" />
+        </Button>
+      {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">
       {#if homeBookmark}
@@ -104,24 +107,27 @@
   </DropdownMenu>
 {:else}
   <Tooltip.Root>
-    <Tooltip.Trigger asChild>
-      <Button
-        type="secondary"
-        compact
-        preload={false}
-        href={fullHomeBookmarkUrl}
-        onClick={goToDashboardHome}
-        class="border border-primary-300"
-        label="Go to home bookmark"
-        active={isHomeBookmarkActive}
-      >
-        <HomeBookmark
-          size="16px"
-          className={isHomeBookmarkActive
-            ? "text-primary-600"
-            : "text-primary-800"}
-        />
-      </Button>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          type="secondary"
+          compact
+          preload={false}
+          href={fullHomeBookmarkUrl}
+          onClick={goToDashboardHome}
+          class="border border-primary-300"
+          label="Go to home bookmark"
+          active={isHomeBookmarkActive}
+        >
+          <HomeBookmark
+            size="16px"
+            className={isHomeBookmarkActive
+              ? "text-primary-600"
+              : "text-primary-800"}
+          />
+        </Button>
+      {/snippet}
     </Tooltip.Trigger>
     <Tooltip.Content side="bottom">Return to dashboard home</Tooltip.Content>
   </Tooltip.Root>

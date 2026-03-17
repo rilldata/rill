@@ -56,9 +56,14 @@
   open={open && !!$results && !!searchText}
   onOpenChange={(o) => (open = o)}
 >
-  <DropdownMenuTrigger asChild>
-    <button class="absolute left-32" aria-label="Dimension search results"
-    ></button>
+  <DropdownMenuTrigger>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        class="absolute left-32"
+        aria-label="Dimension search results"
+      ></button>
+    {/snippet}
   </DropdownMenuTrigger>
   <DropdownMenuContent
     class="w-64 max-h-96 overflow-scroll right-2"

@@ -53,25 +53,31 @@
 
 {#if $developerChat}
   <Dialog.Root bind:open>
-    <Dialog.Trigger asChild>
-      {#if type === "init"}
-        <Button type="secondary" large>
-          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-          <span>Generate sample data</span>
-        </Button>
-      {:else if type === "home"}
-        <Button
-          class="button-home"
-          type="tertiary"
-          large
-          forcedStyle="height: 3rem;"
-        >
-          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-          <span>Generate sample data</span>
-        </Button>
-      {:else}
-        <div class="hidden"></div>
-      {/if}
+    <Dialog.Trigger>
+      {#snippet child({ props })}
+        {#if type === "init"}
+          <span style="display:contents" {...props}>
+            <Button type="secondary" large>
+              <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
+              <span>Generate sample data</span>
+            </Button>
+          </span>
+        {:else if type === "home"}
+          <span style="display:contents" {...props}>
+            <Button
+              class="button-home"
+              type="tertiary"
+              large
+              forcedStyle="height: 3rem;"
+            >
+              <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
+              <span>Generate sample data</span>
+            </Button>
+          </span>
+        {:else}
+          <div {...props} class="hidden"></div>
+        {/if}
+      {/snippet}
     </Dialog.Trigger>
     <Dialog.Content>
       <form

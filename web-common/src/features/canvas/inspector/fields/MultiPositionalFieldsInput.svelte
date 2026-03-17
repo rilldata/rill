@@ -43,15 +43,17 @@
     bind:searchValue
   >
     <svelte:fragment slot="trigger">
-      <DropdownMenu.Trigger asChild>
-        <div class="flex justify-between gap-x-2">
-          <button
-            aria-label={`Add ${types.join(", ")} fields`}
-            class="flex flex-row items-center gap-x-1 text-xs"
-          >
-            <PlusIcon size="14px" /> add measure
-          </button>
-        </div>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <div {...props} class="flex justify-between gap-x-2">
+            <button
+              aria-label={`Add ${types.join(", ")} fields`}
+              class="flex flex-row items-center gap-x-1 text-xs"
+            >
+              <PlusIcon size="14px" /> add measure
+            </button>
+          </div>
+        {/snippet}
       </DropdownMenu.Trigger>
     </svelte:fragment>
   </FieldSelectorDropdown>

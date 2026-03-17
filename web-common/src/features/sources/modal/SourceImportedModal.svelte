@@ -93,25 +93,33 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Action asChild>
-        <AlertDialog.Cancel asChild>
-          <Button onClick={goToSource} type="secondary">
-            View this source
-          </Button>
-        </AlertDialog.Cancel>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <AlertDialog.Cancel>
+            {#snippet child({ props: cancelProps })}
+              <span style="display:contents" {...cancelProps}>
+                <Button onClick={goToSource} type="secondary">
+                  View this source
+                </Button>
+              </span>
+            {/snippet}
+          </AlertDialog.Cancel>
 
-        <Button
-          disabled={createDashboardFromTable === null}
-          onClick={generateMetrics}
-          type="primary"
-        >
-          Generate dashboard
+          <span style="display:contents" {...props}>
+            <Button
+              disabled={createDashboardFromTable === null}
+              onClick={generateMetrics}
+              type="primary"
+            >
+              Generate dashboard
 
-          {#if $ai}
-            with AI
-            <WandIcon class="w-3 h-3" />
-          {/if}
-        </Button>
+              {#if $ai}
+                with AI
+                <WandIcon class="w-3 h-3" />
+              {/if}
+            </Button>
+          </span>
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

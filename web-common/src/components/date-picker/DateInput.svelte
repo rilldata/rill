@@ -160,14 +160,16 @@
     />
     {#if errorType === ErrorType.OUT_OF_RANGE || (errorType && !inputIsFocused)}
       <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          <button onclick={resetDate}>
-            <AlertTriangle
-              className="size-4 text-{errorType === ErrorType.INVALID
-                ? 'red'
-                : 'yellow'}-500"
-            />
-          </button>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <button {...props} onclick={resetDate}>
+              <AlertTriangle
+                className="size-4 text-{errorType === ErrorType.INVALID
+                  ? 'red'
+                  : 'yellow'}-500"
+              />
+            </button>
+          {/snippet}
         </Tooltip.Trigger>
         <Tooltip.Content side="top" sideOffset={10} class="shadow-md">
           {#if errorType === ErrorType.OUT_OF_RANGE}
