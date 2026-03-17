@@ -91,16 +91,6 @@ jobs:
           echo "DOMAIN=rilldata.in" >> $GITHUB_ENV
           echo "RILL_VERSION=${GITHUB_SHA}" >> $GITHUB_ENV
 
-      - name: Build Cloud UI
-        run: |-
-          npm install
-          npm run build -w web-admin
-        env:
-          RILL_UI_PUBLIC_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
-          RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
-          RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
-          RILL_UI_PUBLIC_VERSION: ${{ env.RILL_VERSION }}
-
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
@@ -112,6 +102,11 @@ jobs:
             --dir ./web-admin/build \
             --message "Cloud-admin ${{ github.ref_name }} deployed to ui.${{ env.DOMAIN }}"
         timeout-minutes: 10
+        env:
+          RILL_UI_PUBLIC_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
+          RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
+          RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
+          RILL_UI_PUBLIC_VERSION: ${{ env.RILL_VERSION }}
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2
