@@ -48,7 +48,11 @@ import {
   RandomPublishers,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  type DashboardTimeControls,
+  type TimeRange,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -136,7 +140,7 @@ export const AD_BIDS_CLEAR_FILTERS: TestDashboardMutation = (mut) =>
 export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
-    { name: TimeRangePreset.LAST_7_DAYS } as any,
+    { name: TimeRangePreset.LAST_7_DAYS } as TimeRange,
     V1TimeGrain.TIME_GRAIN_DAY,
     undefined,
     AD_BIDS_METRICS_INIT,
@@ -144,7 +148,7 @@ export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
 export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
-    { name: TimeRangePreset.LAST_4_WEEKS } as any,
+    { name: TimeRangePreset.LAST_4_WEEKS } as TimeRange,
     V1TimeGrain.TIME_GRAIN_WEEK,
     undefined,
     AD_BIDS_METRICS_INIT,
@@ -152,7 +156,7 @@ export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
 export const AD_BIDS_SET_ALL_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
-    { name: TimeRangePreset.ALL_TIME } as any,
+    { name: TimeRangePreset.ALL_TIME } as TimeRange,
     V1TimeGrain.TIME_GRAIN_DAY,
     undefined,
     AD_BIDS_METRICS_INIT,
@@ -166,7 +170,7 @@ export const AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER: TestDashboar
     metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
-      { name: "rill-PP" } as any,
+      { name: "rill-PP" } as DashboardTimeControls,
       AD_BIDS_METRICS_INIT,
     );
   };
@@ -175,7 +179,16 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
     metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
-      { name: "rill-PW" } as any,
+      { name: "rill-PW" } as DashboardTimeControls,
+      AD_BIDS_METRICS_INIT,
+    );
+  };
+export const AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
+  () => {
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_EXPLORE_NAME,
+      { name: "7D offset -7D" } as DashboardTimeControls,
       AD_BIDS_METRICS_INIT,
     );
   };
