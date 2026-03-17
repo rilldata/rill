@@ -108,6 +108,7 @@ jobs:
         run: |
           netlify deploy \
             --prod \
+            --filter web-admin \
             --dir ./web-admin/build \
             --message "Cloud-admin ${{ github.ref_name }} deployed to ui.${{ env.DOMAIN }}"
         timeout-minutes: 10
