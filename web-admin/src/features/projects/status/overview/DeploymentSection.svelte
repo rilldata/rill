@@ -62,7 +62,7 @@
 
   // Plan-based storage cap (from root layout data)
   const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
-  const TRIAL_STORAGE_CAP = 5 * 1024 * 1024 * 1024; // 5GB
+  const TRIAL_STORAGE_CAP = 1 * 1024 * 1024 * 1024; // 1GB
   $: planName = $page.data?.organization?.billingPlanName ?? "";
   $: storageCap = isTeamPlan(planName)
     ? TEAM_STORAGE_CAP
