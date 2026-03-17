@@ -66,7 +66,6 @@
       {#each timeGrainOptions as option (option.key)}
         <DropdownMenu.CheckboxItem
           checkRight
-          role="menuitem"
           checked={option.key === item.id}
           class="text-xs cursor-pointer capitalize"
           onclick={() => handleTimeGrainSelect(option.key)}

@@ -98,7 +98,6 @@
                 }
               : {}}
             class="text-xs cursor-pointer"
-            role="menuitem"
             disabled={requireSelection && singleSelection && selected}
             aria-disabled={requireSelection && singleSelection && selected}
             onclick={() => {

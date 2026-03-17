@@ -100,12 +100,15 @@
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <span style="display:contents" {...props}>
-              <Button type="tertiary" large forcedStyle="height: 3rem;">
-                <PresentationIcon size="16px" />
-                Try demo projects
-              </Button>
-            </span>
+            <Button
+              {...props}
+              type="tertiary"
+              large
+              forcedStyle="height: 3rem;"
+            >
+              <PresentationIcon size="16px" />
+              Try demo projects
+            </Button>
           {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">

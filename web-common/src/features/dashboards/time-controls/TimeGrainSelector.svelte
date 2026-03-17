@@ -85,7 +85,6 @@
         <DropdownMenu.CheckboxItem
           checkRight
           closeOnSelect
-          role="menuitem"
           checked={option.key === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
           onSelect={() => {

@@ -19,17 +19,17 @@
     <AlertDialog.Footer>
       <AlertDialog.Cancel>
         {#snippet child({ props })}
-          <span style="display:contents" {...props}>
-            <Button large type="secondary" onClick={onCancel}>Cancel</Button>
-          </span>
+          <Button {...props} large type="secondary" onClick={onCancel}
+            >Cancel</Button
+          >
         {/snippet}
       </AlertDialog.Cancel>
 
       <AlertDialog.Action>
         {#snippet child({ props })}
-          <span style="display:contents" {...props}>
-            <Button large type="primary" onClick={onReplace}>Replace</Button>
-          </span>
+          <Button {...props} large type="primary" onClick={onReplace}
+            >Replace</Button
+          >
         {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>

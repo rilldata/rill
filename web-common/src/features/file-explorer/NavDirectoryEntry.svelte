@@ -103,7 +103,6 @@
         {#snippet child({ props })}
           <ContextButton
             {...props}
-            id="more-actions-{dir.path}"
             label="{dir.name} actions menu trigger"
             suppressTooltip={contextMenuOpen}
             tooltipText="More actions"

@@ -13,15 +13,13 @@
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger>
     {#snippet child({ props })}
-      <span style="display:contents" {...props}>
-        <Button type="secondary">
-          <Plus class="flex items-center justify-center" size="16px" />
-          <div class="flex gap-x-1 items-center">
-            Add component
-            <ChevronDown size="14px" />
-          </div>
-        </Button>
-      </span>
+      <Button {...props} type="secondary">
+        <Plus class="flex items-center justify-center" size="16px" />
+        <div class="flex gap-x-1 items-center">
+          Add component
+          <ChevronDown size="14px" />
+        </div>
+      </Button>
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">

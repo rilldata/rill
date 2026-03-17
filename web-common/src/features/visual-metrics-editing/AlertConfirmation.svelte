@@ -41,35 +41,30 @@
     <AlertDialog.Footer class="gap-y-2">
       <AlertDialog.Cancel>
         {#snippet child({ props })}
-          <span style="display:contents" {...props}>
-            <Button type="tertiary" large onClick={onCancel}>
-              {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
-            </Button>
-          </span>
+          <Button {...props} type="tertiary" large onClick={onCancel}>
+            {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
+          </Button>
         {/snippet}
       </AlertDialog.Cancel>
 
       <AlertDialog.Action>
         {#snippet child({ props })}
-          <span style="display:contents" {...props}>
-            <Button
-              large
-              type={confirmation.action === "delete"
-                ? "destructive"
-                : "primary"}
-              onClick={onConfirm}
-            >
-              {#if confirmation.action === "delete"}
-                Yes, delete
-              {:else if confirmation.action === "switch"}
-                Switch model
-              {:else if confirmation.action === "cancel" && confirmation.field}
-                Switch items
-              {:else}
-                Close
-              {/if}
-            </Button>
-          </span>
+          <Button
+            {...props}
+            large
+            type={confirmation.action === "delete" ? "destructive" : "primary"}
+            onClick={onConfirm}
+          >
+            {#if confirmation.action === "delete"}
+              Yes, delete
+            {:else if confirmation.action === "switch"}
+              Switch model
+            {:else if confirmation.action === "cancel" && confirmation.field}
+              Switch items
+            {:else}
+              Close
+            {/if}
+          </Button>
         {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>

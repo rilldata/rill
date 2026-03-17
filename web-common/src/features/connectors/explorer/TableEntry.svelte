@@ -100,8 +100,7 @@
           {#snippet child({ props })}
             <ContextButton
               {...props}
-              id="more-actions-{tableId}"
-              testId="more-actions-context-button"
+              data-testid="more-actions-context-button"
               tooltipText="More actions"
               label="{tableId} actions menu trigger"
               suppressTooltip={contextMenuOpen}

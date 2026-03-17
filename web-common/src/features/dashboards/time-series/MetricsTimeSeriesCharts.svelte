@@ -314,7 +314,6 @@
             {#each aggregationOptions ?? [] as option (option)}
               <DropdownMenu.CheckboxItem
                 checkRight
-                role="menuitem"
                 checked={option === activeTimeGrain}
                 class="text-xs cursor-pointer"
                 onclick={() => {

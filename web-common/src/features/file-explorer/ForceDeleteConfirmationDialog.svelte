@@ -30,26 +30,25 @@
     <AlertDialog.Footer>
       <AlertDialog.Action>
         {#snippet child({ props })}
-          <span style="display:contents" {...props}>
-            <Button
-              large
-              onClick={() => {
-                handleClose();
-                onDelete();
-              }}
-              type="destructive"
-            >
-              Delete
-            </Button>
-          </span>
+          <Button
+            {...props}
+            large
+            onClick={() => {
+              handleClose();
+              onDelete();
+            }}
+            type="destructive"
+          >
+            Delete
+          </Button>
         {/snippet}
       </AlertDialog.Action>
 
       <AlertDialog.Cancel>
         {#snippet child({ props })}
-          <span style="display:contents" {...props}>
-            <Button large onClick={handleClose} type="tertiary">Cancel</Button>
-          </span>
+          <Button {...props} large onClick={handleClose} type="tertiary"
+            >Cancel</Button
+          >
         {/snippet}
       </AlertDialog.Cancel>
     </AlertDialog.Footer>

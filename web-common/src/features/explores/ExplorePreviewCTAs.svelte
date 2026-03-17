@@ -55,12 +55,10 @@
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}
-          <span style="display:contents" {...props}>
-            <Button type="secondary">
-              Edit
-              <CaretDownIcon />
-            </Button>
-          </span>
+          <Button {...props} type="secondary">
+            Edit
+            <CaretDownIcon />
+          </Button>
         {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">

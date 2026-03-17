@@ -546,7 +546,6 @@
                 this={DropdownMenu.CheckboxItem}
                 closeOnSelect={false}
                 class="text-xs cursor-pointer"
-                role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
                 onclick={() => handleItemClick(name)}
@@ -581,7 +580,6 @@
               DimensionFilterMode.Select
                 ? 'pl-3'
                 : ''}"
-              role="menuitem"
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}

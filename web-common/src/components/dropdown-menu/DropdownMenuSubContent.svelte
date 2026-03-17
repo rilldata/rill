@@ -1,19 +1,26 @@
 <script lang="ts">
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import type { Snippet } from "svelte";
 
-  type $$Props = DropdownMenuPrimitive.SubContentProps;
-
-  let className: $$Props["class"] = undefined;
-  export { className as class };
+  // svelte-ignore custom_element_props_identifier
+  let {
+    class: className,
+    sideOffset = 2,
+    children,
+    ...restProps
+  }: DropdownMenuPrimitive.SubContentProps & {
+    children?: Snippet;
+  } = $props();
 </script>
 
 <DropdownMenuPrimitive.SubContent
+  {sideOffset}
   class={cn(
     "z-50 min-w-[8rem] rounded-md border bg-popover p-1.5 text-popover-foreground shadow-md focus:outline-none",
     className,
   )}
-  {...$$restProps}
+  {...restProps}
 >
-  <slot />
+  {@render children?.()}
 </DropdownMenuPrimitive.SubContent>

@@ -119,7 +119,7 @@ time_ranges:
       name: "Select reference time and grain",
     });
     await timeGrainSelector.click();
-    await page.getByRole("menuitem", { name: "day" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "day" }).click();
 
     // Change the time range
     await interactWithTimeRangeMenu(page, async () => {
@@ -445,7 +445,7 @@ dimensions:
 
     // Wait for and click the Avg Bid Price menu item
     const avgBidPriceMenuItem = page
-      .getByRole("menuitem", { name: "Avg Bid Price" })
+      .getByRole("menuitemcheckbox", { name: "Avg Bid Price" })
       .filter({ has: page.getByText("Avg Bid Price") });
     await avgBidPriceMenuItem.waitFor({ state: "visible" });
     await avgBidPriceMenuItem.click();
@@ -522,7 +522,7 @@ dimensions:
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
     await page.getByLabel("Open Total rows").click();
-    await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Avg Bid Price" }).click();
 
     await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();
 

@@ -1,29 +1,36 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  // utilize the ID for easier UI testing.
-  export let id: string;
-  export let testId: string = "";
-  export let suppressTooltip = false;
-  export let tooltipText: string;
-  export let label: string | undefined = undefined;
+  import type { Snippet } from "svelte";
+  import type { HTMLButtonAttributes } from "svelte/elements";
+
+  let {
+    suppressTooltip = false,
+    tooltipText,
+    label = undefined,
+    children,
+    ref = $bindable(null),
+    ...restProps
+  }: HTMLButtonAttributes & {
+    suppressTooltip?: boolean;
+    tooltipText: string;
+    label?: string;
+    children?: Snippet;
+    ref?: HTMLButtonElement | null;
+  } = $props();
 </script>
 
-<!-- Opening the ContextMenu causes this tooltip to flash in another location, likely due 
+<!-- Opening the ContextMenu causes this tooltip to flash in another location, likely due
   to a race condition. Disabling the tooltip for now.   -->
 <Tooltip distance={16} location="right" suppress={true}>
   <button
+    {...restProps}
+    bind:this={ref}
     aria-label={label}
     class="group-hover:w-fit"
     class:!w-fit={suppressTooltip}
-    {id}
-    data-testid={testId}
-    onclick={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    }}
   >
-    <slot />
+    {@render children?.()}
   </button>
   <TooltipContent slot="tooltip-content">
     {tooltipText}

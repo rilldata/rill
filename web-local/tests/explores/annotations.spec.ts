@@ -173,7 +173,9 @@ async function setupDashboard(page: Page, dashboardTZ: string) {
 async function selectGrain(page: Page, grain: string) {
   const grainSelector = page.getByLabel("Select aggregation grain");
   await grainSelector.click();
-  await page.getByRole("menuitem", { name: grain, exact: true }).click();
+  await page
+    .getByRole("menuitemcheckbox", { name: grain, exact: true })
+    .click();
   await expect(grainSelector).toContainText(grain, { timeout: 5000 });
 }
 
@@ -399,6 +401,8 @@ for (const sys of INDEPENDENCE_CONFIGS) {
       timezoneId: sys.systemTZ,
       locale: sys.locale,
     });
+    // Extra time for installAnnotations (file writes + reconciliation).
+    test.setTimeout(60_000);
 
     test("day-level annotations match UTC baseline (dashboard: America/Los_Angeles)", async ({
       page,

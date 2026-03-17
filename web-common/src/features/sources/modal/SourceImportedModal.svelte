@@ -97,28 +97,25 @@
         {#snippet child({ props })}
           <AlertDialog.Cancel>
             {#snippet child({ props: cancelProps })}
-              <span style="display:contents" {...cancelProps}>
-                <Button onClick={goToSource} type="secondary">
-                  View this source
-                </Button>
-              </span>
+              <Button {...cancelProps} onClick={goToSource} type="secondary">
+                View this source
+              </Button>
             {/snippet}
           </AlertDialog.Cancel>
 
-          <span style="display:contents" {...props}>
-            <Button
-              disabled={createDashboardFromTable === null}
-              onClick={generateMetrics}
-              type="primary"
-            >
-              Generate dashboard
+          <Button
+            {...props}
+            disabled={createDashboardFromTable === null}
+            onClick={generateMetrics}
+            type="primary"
+          >
+            Generate dashboard
 
-              {#if $ai}
-                with AI
-                <WandIcon class="w-3 h-3" />
-              {/if}
-            </Button>
-          </span>
+            {#if $ai}
+              with AI
+              <WandIcon class="w-3 h-3" />
+            {/if}
+          </Button>
         {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
