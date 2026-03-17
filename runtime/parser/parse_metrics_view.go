@@ -690,6 +690,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	// Attempt to link the lookup tables in the DAG in case they are models.
 	// If they are not models, the upstream logic for refs will filter them out.
 	for lookupTable := range lookupTableNames {
+		// see if the lookup table name is qualified with a dot, and if so we take the part after the last dot as the name for DAG linking
+		if idx := strings.LastIndex(lookupTable, "."); idx >= 0 && idx < len(lookupTable)-1 {
+			lookupTable = lookupTable[idx+1:]
+		}
 		// Not setting Kind so that inference kicks in.
 		node.Refs = append(node.Refs, ResourceName{Name: lookupTable})
 	}
@@ -734,6 +738,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 	node.Refs = append(node.Refs, securityRefs...)
+
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: node.Connector})
 
 	var cacheTTLDuration time.Duration
 	if tmp.Cache.KeyTTL != "" {

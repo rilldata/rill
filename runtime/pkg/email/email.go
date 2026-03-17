@@ -43,6 +43,7 @@ type ScheduledReport struct {
 	DownloadLink    string
 	EditLink        string
 	UnsubscribeLink string
+	Summary         string // For AI reports
 }
 
 type scheduledReportData struct {
@@ -53,6 +54,7 @@ type scheduledReportData struct {
 	DownloadLink     template.URL
 	EditLink         template.URL
 	UnsubscribeLink  template.URL
+	Summary          string // For AI reports
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
@@ -65,6 +67,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
 		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
+		Summary:          opts.Summary,
 	}
 
 	// Build subject

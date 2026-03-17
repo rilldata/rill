@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "StarRocks",
 	Description: "Connect to StarRocks.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/starrocks",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/starrocks",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -165,7 +165,7 @@ const (
 	defaultPort    = 9030
 )
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("starrocks driver: instance ID is required")
 	}

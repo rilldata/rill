@@ -274,8 +274,8 @@ type EvalOptions struct {
 	FirstDay   int
 	FirstMonth int
 
-	ref          time.Time
-	truncatedRef bool
+	ref                 time.Time
+	largestSnappedGrain timeutil.TimeGrain
 }
 
 func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
@@ -405,9 +405,7 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	i := len(e.AnchorOverrides) - 1
 	for i >= 0 {
 		evalOpts.ref, _ = e.AnchorOverrides[i].eval(evalOpts, evalOpts.ref, e.tz)
-		if e.AnchorOverrides[i].truncates() {
-			evalOpts.truncatedRef = true
-		}
+		evalOpts.largestSnappedGrain = max(evalOpts.largestSnappedGrain, e.AnchorOverrides[i].largestSnappedGrain())
 		i--
 	}
 
@@ -538,9 +536,10 @@ func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.L
 		return start, end, tg
 	}
 
-	if !evalOpts.truncatedRef {
-		tg = grainMap[o.Ordinals[len(o.Ordinals)-1].Grain]
-		start = truncateWithCorrection(start, higherOrderMap[tg], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	lastTg := grainMap[o.Ordinals[len(o.Ordinals)-1].Grain]
+	if lastTg > evalOpts.largestSnappedGrain {
+		tg = lastTg
+		start = truncateWithCorrection(start, higherOrderMap[lastTg], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
 	i := len(o.Ordinals) - 1
@@ -738,8 +737,19 @@ func (p *PointInTime) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location
 	return tm, tg
 }
 
-func (p *PointInTime) truncates() bool {
-	return len(p.Points) > 0 && p.Points[len(p.Points)-1].Snap != nil
+func (p *PointInTime) largestSnappedGrain() timeutil.TimeGrain {
+	largest := timeutil.TimeGrainUnspecified
+	for _, point := range p.Points {
+		if point.Snap == nil {
+			continue
+		}
+
+		tg := grainMap[*point.Snap]
+		if tg > largest {
+			largest = tg
+		}
+	}
+	return largest
 }
 
 func (p *PointInTimeWithSnap) parse() error {

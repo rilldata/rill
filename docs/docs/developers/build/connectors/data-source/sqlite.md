@@ -13,22 +13,23 @@ sidebar_position: 80
 
 ## Connect to SQLite
 
+SQLite databases are read through DuckDB's [SQLite extension](https://duckdb.org/docs/extensions/sqlite.html) using the `sqlite_scan()` function. No separate connector is needed.
 
-In many cases, since SQLite is used as an in-process database, credentials are not required. Instead, Rill will need to know the path to the SQLite database file so that it can be read accordingly.
+Create a model file (e.g., `models/my_sqlite_data.yaml`):
 
 ```yaml
-type: connector
-driver: sqlite 
+type: model
+connector: duckdb
+materialize: true
 
-dsn: "file:mydatabase.db" 
+sql: |
+  SELECT *
+  FROM sqlite_scan('data/mydatabase.db', 'my_table')
 ```
-
-Alternatively, you can create the connector directly using the [connector YAML reference documentation](/reference/project-files/connectors#sqlite). 
-
 
 :::tip
 
-If you plan to deploy the project to Rill Cloud, it is recommended that you move the SQLite database file to a `data` folder in your Rill project home directory. You can then use the relative path of the db file in your source definition (e.g., `data/test_sqlite.db`).
+If you plan to deploy the project to Rill Cloud, place the SQLite database file in a `data` folder in your Rill project directory and use the relative path (e.g., `data/mydatabase.db`).
 
 :::
 

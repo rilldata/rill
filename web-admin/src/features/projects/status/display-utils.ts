@@ -1,103 +1,97 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
-import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
-import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
-import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
-export type StatusDisplay = {
-  icon: any; // SvelteComponent
-  iconProps?: {
-    [key: string]: unknown;
-  };
-  text?: string;
-  textClass?: string;
-  wrapperClass?: string;
-};
+/**
+ * Formats an environment string for display with proper capitalization.
+ * Handles common environment names (prod, dev, stage) and their variations.
+ * @param env - The environment name to format (e.g., "prod", "production")
+ * @returns Formatted environment name (e.g., "Production")
+ */
+export function formatEnvironmentName(env: string | undefined): string {
+  if (!env) return "Production";
+  const lower = env.toLowerCase();
+  if (lower === "prod" || lower === "production") return "Production";
+  if (lower === "dev" || lower === "development") return "Development";
+  if (lower === "stage" || lower === "staging") return "Staging";
+  // Capitalize first letter for other environments
+  return env.charAt(0).toUpperCase() + env.slice(1);
+}
 
-export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
-  {
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Not deployed",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Not deployed",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Pending",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Updating",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Stopping",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Deleting",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Deleted",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED]: {
-      icon: CancelCircle,
-      iconProps: { className: "text-red-600 hover:text-red-500" },
-      text: "Error",
-      textClass: "text-red-600",
-      wrapperClass: "bg-red-50 border-red-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING]: {
-      icon: CheckCircle,
-      iconProps: { className: "text-primary-600 hover:text-primary-500" },
-      text: "Ready",
-      textClass: "text-primary-600",
-      wrapperClass: "bg-primary-50 border-primary-300",
-    },
-  };
+/**
+ * Returns the Tailwind CSS class for a deployment status indicator dot.
+ * Green for running, yellow for in-progress states, red for errors, gray for not deployed.
+ * @param status - The deployment status
+ * @returns Tailwind CSS class for the status dot background color
+ */
+export function getStatusDotClass(status: V1DeploymentStatus): string {
+  switch (status) {
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
+      return "bg-green-500"; // Green - Ready
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
+      return "bg-yellow-500"; // Yellow - In progress
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
+      return "bg-red-500"; // Red - Error
+    default:
+      return "bg-gray-400"; // Gray - Not deployed
+  }
+}
 
+/**
+ * Returns a human-readable label for a deployment status.
+ * @param status - The deployment status
+ * @returns Human-readable status label (e.g., "Ready", "Pending", "Error")
+ */
+export function getStatusLabel(status: V1DeploymentStatus): string {
+  switch (status) {
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
+      return "Ready";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+      return "Pending";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
+      return "Updating";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
+      return "Stopping";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
+      return "Deleting";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
+      return "Error";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED:
+      return "Stopped";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED:
+      return "Deleted";
+    default:
+      return "Not deployed";
+  }
+}
+
+/**
+ * Formats a connector name for display with proper capitalization.
+ * Handles known connectors (duckdb, clickhouse, etc.) with correct casing.
+ * @param connector - The connector name to format
+ * @returns Formatted connector name (e.g., "DuckDB", "ClickHouse") or em dash if undefined
+ */
+export function formatConnectorName(connector: string | undefined): string {
+  if (!connector) return "—";
+  const lower = connector.toLowerCase();
+  if (lower === "duckdb") return "DuckDB";
+  if (lower === "clickhouse") return "ClickHouse";
+  if (lower === "mysql") return "MySQL";
+  if (lower === "bigquery") return "BigQuery";
+  if (lower === "openai") return "OpenAI";
+  if (lower === "druid") return "Druid";
+  if (lower === "pinot") return "Pinot";
+  if (lower === "claude") return "Claude";
+  if (lower === "gemini") return "Gemini";
+  return connector.charAt(0).toUpperCase() + connector.slice(1);
+}
+
+/**
+ * Returns a color name for a resource kind tag.
+ * @param kind - The fully qualified resource kind (e.g., "rill.runtime.v1.Model")
+ * @returns Color name for the tag (e.g., "blue", "green", "gray")
+ */
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {
     case "rill.runtime.v1.MetricsView":

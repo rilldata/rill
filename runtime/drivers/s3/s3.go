@@ -23,7 +23,7 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Amazon S3",
 	Description: "Connect to AWS S3 Storage.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "aws_access_key_id",
@@ -129,7 +129,7 @@ type ConfigProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("s3 driver can't be shared")
 	}
@@ -261,6 +261,11 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	if opts.OutputHandle == c {
+		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
+			return &olapToSelfExecutor{c, olap}, nil
+		}
+	}
 	return nil, drivers.ErrNotImplemented
 }
 
@@ -403,6 +408,14 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, 
 	}
 	if confProp.Region != "" {
 		opts = append(opts, config.WithRegion(confProp.Region))
+	}
+
+	// For GCS, we need to set the checksum validation and request calculation to required
+	if confProp.Endpoint != "" && strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
+		opts = append(opts,
+			config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+			config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
+		)
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)

@@ -19,7 +19,7 @@ import (
 func Test_connection_CreateTableAsSelect(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	viewConnection := handle.(*connection)
 	require.NoError(t, viewConnection.Migrate(context.Background()))
@@ -75,7 +75,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -103,7 +103,7 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 func Test_connection_DropTable(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -127,7 +127,7 @@ func Test_connection_DropTable(t *testing.T) {
 func Test_connection_InsertTableAsSelect_WithAppendStrategy(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -162,7 +162,7 @@ func Test_connection_InsertTableAsSelect_WithAppendStrategy(t *testing.T) {
 func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -212,7 +212,7 @@ func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
 func Test_connection_RenameTable(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -235,7 +235,7 @@ func Test_connection_RenameTable(t *testing.T) {
 
 func Test_connection_RenameToExistingTable(t *testing.T) {
 	temp := t.TempDir()
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -260,7 +260,7 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 }
 
 func Test_connection_RenameToExistingTableOld(t *testing.T) {
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -287,7 +287,7 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")

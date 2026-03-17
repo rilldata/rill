@@ -307,6 +307,10 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	if err := e.enforceQueryLimits(qry); err != nil {
+		return nil, err
+	}
+
 	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return nil, err
 	}
@@ -435,6 +439,10 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
+	if err := e.enforceQueryLimits(qry); err != nil {
+		return "", err
+	}
+
 	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return "", err
 	}
@@ -521,6 +529,11 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 			TimeZone:            "",
 			UseDisplayNames:     false,
 			Rows:                false,
+			QueryLimits: &metricsview.QueryLimits{
+				RequireTimeRange: false,
+				MaxTimeRangeDays: 0, // not enforced
+			},
+			UnusedFields: nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -593,7 +606,7 @@ func (e *Executor) BindAnnotationsQuery(ctx context.Context, qry *metricsview.An
 		return err
 	}
 
-	err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+	err = e.ResolveTimeRange(ctx, qry.TimeRange, tz, nil)
 	if err != nil {
 		return err
 	}
@@ -662,6 +675,11 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 		TimeZone:            "",
 		UseDisplayNames:     false,
 		Rows:                false,
+		QueryLimits: &metricsview.QueryLimits{
+			RequireTimeRange: false,
+			MaxTimeRangeDays: 0, // not enforced
+		},
+		UnusedFields: nil,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
@@ -811,7 +829,7 @@ func (e *Executor) executeAnnotationsQuery(ctx context.Context, qry *metricsview
 			return nil, err
 		}
 
-		err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+		err = e.ResolveTimeRange(ctx, qry.TimeRange, tz, nil)
 		if err != nil {
 			return nil, err
 		}

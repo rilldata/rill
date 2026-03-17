@@ -2,6 +2,7 @@ package instructions
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -12,7 +13,7 @@ import (
 // InitClaudeCode generates Claude Code instruction files from Rill instruction files.
 // The main instructions are written to .claude/CLAUDE.md.
 // Resource-specific instructions are written as skills to .claude/skills/<name>/SKILL.md.
-// Skills are loaded on-demand when invoked, keeping the context lean.
+// MCP server config is written to /.mcp.json.
 // If force is false, it skips files that already exist.
 // If force is true, it overwrites any existing files.
 func InitClaudeCode(ctx context.Context, repo drivers.RepoStore, force bool) error {
@@ -38,6 +39,15 @@ func InitClaudeCode(ctx context.Context, repo drivers.RepoStore, force bool) err
 		if err != nil {
 			return fmt.Errorf("failed to write %q: %w", outputPath, err)
 		}
+	}
+
+	// Write MCP server config (Claude uses .mcp.json file at root, not under .claude)
+	err = writeMCPConfig(ctx, repo, force, "/.mcp.json", map[string]any{
+		"type": "http",
+		"url":  "http://localhost:9009/mcp",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to write MCP config: %w", err)
 	}
 
 	return nil
@@ -76,4 +86,41 @@ func convertToClaudeFile(path string, inst *Instruction) (outputPath, content st
 	sb.WriteString(inst.Body)
 
 	return outputPath, sb.String()
+}
+
+// mcpServerName is the name used for the Rill MCP server in editor configs.
+const mcpServerName = "rill-developer"
+
+// writeMCPConfig reads an existing MCP config file (if any), adds or updates
+// the "rill" server entry, and writes the result back. If force is false and
+// the "rill" entry already exists, it is left unchanged.
+func writeMCPConfig(ctx context.Context, repo drivers.RepoStore, force bool, path string, serverConfig map[string]any) error {
+	// Try to read and parse the existing config
+	var cfg struct {
+		MCPServers map[string]any `json:"mcpServers"`
+	}
+	existing, err := repo.Get(ctx, path)
+	if err == nil && existing != "" {
+		_ = json.Unmarshal([]byte(existing), &cfg)
+	}
+
+	// If not forcing and the entry already exists, skip
+	if !force {
+		if _, ok := cfg.MCPServers[mcpServerName]; ok {
+			return nil
+		}
+	}
+
+	// Update the config with the new server entry
+	if cfg.MCPServers == nil {
+		cfg.MCPServers = make(map[string]any)
+	}
+	cfg.MCPServers[mcpServerName] = serverConfig
+
+	// Marshal and write back the updated config
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal MCP config: %w", err)
+	}
+	return repo.Put(ctx, path, strings.NewReader(string(data)+"\n"))
 }

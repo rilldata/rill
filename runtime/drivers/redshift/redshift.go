@@ -29,7 +29,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Amazon Redshift",
 	Description: "Connect to Amazon Redshift database.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/redshift",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/redshift",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "aws_access_key_id",
@@ -91,7 +91,7 @@ type configProperties struct {
 	LogQueries        bool   `mapstructure:"log_queries"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("redshift driver can't be shared")
 	}

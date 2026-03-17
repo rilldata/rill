@@ -4,6 +4,7 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
@@ -17,23 +18,32 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import { onMount } from "svelte";
   import { get } from "svelte/store";
-  import { getConnectorSchema } from "./connector-schemas";
+  import {
+    getConnectorSchema,
+    shouldShowSkipLink as checkShouldShowSkipLink,
+  } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
+  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
   export let formType: AddDataFormType;
   export let isSubmitting: boolean;
+  export let connectorInstanceName: string | null = null;
   export let onBack: () => void;
   export let onClose: () => void;
+  export let onCloseAfterNavigation: () => void = onClose;
 
-  let saveAnyway = false;
-  let showSaveAnyway = false;
+  const runtimeClient = useRuntimeClient();
+
+  let saving = false;
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: (event: {
@@ -77,31 +87,73 @@
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
   let activeAuthMethod: string | null = null;
-  let prevAuthMethod: string | null = null;
-  let stepState = $connectorStepStore;
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
-  let shouldShowSkipLink = false;
+  $: stepState = $connectorStepStore;
+
+  // Show skip link on connector step for non-OLAP connectors
+  $: shouldShowSkipLink = checkShouldShowSkipLink(
+    stepState.step,
+    connector?.name,
+    connectorInstanceName,
+    connector?.implementsOlap,
+  );
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
-
-  $: stepState = $connectorStepStore;
 
   // Form IDs
   const baseFormId = formManager.formId;
   let multiStepFormId = baseFormId;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
+  let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
 
-  // Hide Save Anyway once we advance to the model step in step flow connectors.
-  $: if (
-    isStepFlowConnector &&
-    (stepState.step === "source" || stepState.step === "explorer")
-  ) {
-    showSaveAnyway = false;
+  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
+  // This prevents the preview from updating when Test and Connect writes to .env.
+  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
+  let existingEnvBlob: string | null = null;
+  onMount(async () => {
+    try {
+      const envFile = await runtimeServiceGetFile(runtimeClient, {
+        path: ".env",
+      });
+      existingEnvBlob = envFile.blob ?? "";
+    } catch {
+      // .env doesn't exist yet
+      existingEnvBlob = "";
+    }
+  });
+
+  // Clear errors when connection type changes
+  $: {
+    const currentDeploymentType = $form.deployment_type as string | undefined;
+    if (
+      prevDeploymentType !== undefined &&
+      currentDeploymentType !== prevDeploymentType
+    ) {
+      paramsError = null;
+    }
+    prevDeploymentType = currentDeploymentType;
+  }
+
+  /**
+   * Clears error state when user modifies form input.
+   * Called from onStringInputChange for text inputs.
+   *
+   * Note: Select/dropdown changes do NOT trigger this - errors only clear on:
+   * - Text input changes (via onStringInputChange)
+   * - Deployment type changes (via reactive statement above)
+   * This is intentional: changing a dropdown option (other than deployment_type)
+   * typically doesn't fix connection errors, so we keep the error visible.
+   */
+  function clearErrorOnInput() {
+    if (paramsError) {
+      paramsError = null;
+      paramsErrorDetails = undefined;
+    }
   }
 
   $: isSubmitDisabled = (() => {
@@ -153,48 +205,52 @@
       : "Testing connection...";
   })();
 
-  // Clear Save Anyway state whenever auth method changes (any direction).
-  $: if (activeAuthMethod !== prevAuthMethod) {
-    prevAuthMethod = activeAuthMethod;
-    showSaveAnyway = false;
-    saveAnyway = false;
-  }
-
   $: isSubmitting = submitting;
 
-  // Reset errors when form is modified
-  $: if ($paramsTainted) paramsError = null;
-
-  async function handleSaveAnyway() {
-    // Save Anyway should only work for connector forms
+  async function handleSave() {
+    // Save should only work for connector forms
     if (!isConnectorForm) {
       return;
     }
 
-    saveAnyway = true;
-    const result = await formManager.saveConnectorAnyway({
+    saving = true;
+    const result = await formManager.saveConnector({
+      client: runtimeClient,
       queryClient,
       values: $form,
+      existingEnvBlob: existingEnvBlob ?? undefined,
     });
     if (result.ok) {
-      onClose();
+      // Use quiet close — saveConnector already navigated via goto().
+      // The normal resetModal() fires a synthetic popstate that races with
+      // SvelteKit's router and can revert the navigation.
+      onCloseAfterNavigation();
     } else {
       paramsError = result.message;
       paramsErrorDetails = result.details;
     }
-    saveAnyway = false;
+    saving = false;
   }
 
+  // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
   $: yamlPreview = formManager.computeYamlPreview({
     stepState,
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     formValues: $form,
+    existingEnvBlob: existingEnvBlob ?? "",
   });
-  $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
-  $: saveAnywayLoading = submitting && saveAnyway;
+  // Show Save button for connector forms on the connector step (not for public auth which skips connection test).
+  // Intentionally not disabled when fields are empty: Save persists whatever the user has entered so far,
+  // even partial credentials, so they can finish configuring later in the YAML editor.
+  $: shouldShowSaveButton =
+    isConnectorForm &&
+    stepState.step === "connector" &&
+    activeAuthMethod !== "public";
+  $: saveLoading = saving;
 
   handleOnUpdate = formManager.makeOnUpdate({
+    client: runtimeClient,
     onClose,
     queryClient,
     getSelectedAuthMethod: () => activeAuthMethod || undefined,
@@ -202,16 +258,17 @@
       paramsError = message;
       paramsErrorDetails = details;
     },
-    setShowSaveAnyway: (value: boolean) => {
-      showSaveAnyway = value;
-    },
   });
 
-  async function handleFileUpload(file: File): Promise<string> {
-    return formManager.handleFileUpload(file);
+  async function handleFileUpload(
+    file: File,
+    fieldKey: string,
+  ): Promise<string> {
+    return formManager.handleFileUpload(file, fieldKey);
   }
 
   function onStringInputChange(event: Event) {
+    clearErrorOnInput();
     formManager.onStringInputChange(
       event,
       $paramsTainted as Record<string, boolean> | null | undefined,
@@ -244,7 +301,6 @@
           bind:primaryButtonLabel={multiStepButtonLabel}
           bind:primaryLoadingCopy={multiStepLoadingCopy}
           bind:formId={multiStepFormId}
-          bind:shouldShowSkipLink
         />
       {:else if connectorSchema}
         <AddDataFormSection
@@ -259,6 +315,7 @@
             errors={$paramsErrors}
             {onStringInputChange}
             {handleFileUpload}
+            iconMap={ICONS}
           />
         </AddDataFormSection>
       {:else}
@@ -281,20 +338,19 @@
       >
 
       <div class="flex gap-2">
-        {#if shouldShowSaveAnywayButton}
+        {#if shouldShowSaveButton}
           <Button
-            disabled={false}
-            loading={saveAnywayLoading}
+            loading={saveLoading}
             loadingCopy="Saving..."
-            onClick={handleSaveAnyway}
+            onClick={handleSave}
             type="secondary"
           >
-            Save Anyway
+            Save
           </Button>
         {/if}
 
         <Button
-          disabled={submitting || isSubmitDisabled}
+          disabled={submitting || isSubmitDisabled || saving}
           loading={submitting}
           loadingCopy={primaryLoadingCopy}
           form={formId}

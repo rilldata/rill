@@ -26,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Pinot",
 	Description: "Connect to Apache Pinot.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/pinot",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/pinot",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -134,7 +134,7 @@ func (c *configProperties) validate() error {
 }
 
 // Open a connection to Apache Pinot using HTTP API.
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, fmt.Errorf("pinot driver can't be shared")
 	}
@@ -220,14 +220,15 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &connection{
-		db:         dbx,
-		config:     config,
-		queryURL:   broker,
-		schemaURL:  controller,
-		headers:    headers,
-		logQueries: conf.LogQueries,
-		timeoutMS:  conf.TimeoutMS,
-		logger:     logger,
+		db:            dbx,
+		config:        config,
+		connectorName: connectorName,
+		queryURL:      broker,
+		schemaURL:     controller,
+		headers:       headers,
+		logQueries:    conf.LogQueries,
+		timeoutMS:     conf.TimeoutMS,
+		logger:        logger,
 	}
 	return conn, nil
 }
@@ -245,14 +246,15 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db         *sqlx.DB
-	config     map[string]any
-	queryURL   string
-	schemaURL  string
-	headers    map[string]string
-	logQueries bool
-	timeoutMS  int64 // timeout in milliseconds for queries, 0 means use cluster default
-	logger     *zap.Logger
+	db            *sqlx.DB
+	config        map[string]any
+	connectorName string
+	queryURL      string
+	schemaURL     string
+	headers       map[string]string
+	logQueries    bool
+	timeoutMS     int64 // timeout in milliseconds for queries, 0 means use cluster default
+	logger        *zap.Logger
 }
 
 // Ping implements drivers.Handle.

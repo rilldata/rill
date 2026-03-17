@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
@@ -23,7 +24,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "https",
 	Description: "Connect to a remote file.",
-	DocsURL:     "https://docs.rilldata.com/build/connect/#adding-a-remote-source",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -74,23 +75,29 @@ type ModelInputProperties struct {
 }
 
 func (p *ModelInputProperties) Decode(props map[string]any) error {
-	err := mapstructure.WeakDecode(props, p)
+	_, err := p.DecodeWithWarnings(props)
+	return err
+}
+
+// DecodeWithWarnings is like Decode but also returns any unused keys from the input.
+func (p *ModelInputProperties) DecodeWithWarnings(props map[string]any) ([]string, error) {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(props, p)
 	if err != nil {
-		return fmt.Errorf("failed to parse input properties: %w", err)
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if p.Path == "" && p.URI == "" {
-		return fmt.Errorf("missing property `path`")
+		return nil, fmt.Errorf("missing property `path`")
 	}
 	if p.Path != "" && p.URI != "" {
-		return fmt.Errorf("cannot specify both `path` and `uri`")
+		return nil, fmt.Errorf("cannot specify both `path` and `uri`")
 	}
 	if p.URI != "" { // Backwards compatibility
 		p.Path = p.URI
 	}
-	return nil
+	return unused, nil
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("https driver can't be shared")
 	}

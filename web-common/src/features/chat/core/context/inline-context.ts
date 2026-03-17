@@ -24,6 +24,8 @@ export type InlineContext = {
   measure?: string;
   dimension?: string;
   timeRange?: string;
+  timeZone?: string;
+  granularity?: string;
   values?: string[];
   model?: string;
   column?: string;

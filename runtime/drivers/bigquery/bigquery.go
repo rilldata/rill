@@ -26,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/bigquery",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "project_id",
@@ -59,7 +59,7 @@ type configProperties struct {
 	LogQueries bool `mapstructure:"log_queries"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("bigquery driver can't be shared")
 	}

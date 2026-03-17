@@ -98,6 +98,10 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createFileDiffBlock,
     onResult: handleWriteFilesToolResult,
   },
+  // Feedback agent: hidden - the AI text response handles acknowledgment
+  [ToolName.FEEDBACK_AGENT]: {
+    renderMode: "hidden",
+  },
 
   [ToolName.NAVIGATE]: {
     renderMode: "block",

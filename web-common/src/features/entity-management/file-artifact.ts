@@ -18,7 +18,7 @@ import {
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
@@ -28,9 +28,8 @@ import {
   type Writable,
 } from "svelte/store";
 import {
-  DIRECTORIES_WITHOUT_AUTOSAVE,
   FILE_SAVE_DEBOUNCE_TIME,
-  FILES_WITHOUT_AUTOSAVE,
+  isFileWithoutAutosave,
 } from "../editor/config";
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -92,22 +91,22 @@ export class FileArtifact {
   }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
+  private readonly client: RuntimeClient;
 
   // Last time the state of the resource `kind/name` was updated.
   // This is updated in watch-resources and is used there to avoid
   // unnecessary calls to GetResource API.
   lastStateUpdatedOn: string | undefined;
 
-  constructor(filePath: string) {
+  constructor(client: RuntimeClient, filePath: string) {
     const [folderName, fileName] = splitFolderAndFileName(filePath);
 
+    this.client = client;
     this.path = filePath;
     this.folderName = folderName;
     this.fileName = fileName;
 
-    this.disableAutoSave =
-      FILES_WITHOUT_AUTOSAVE.includes(filePath) ||
-      DIRECTORIES_WITHOUT_AUTOSAVE.includes(folderName);
+    this.disableAutoSave = isFileWithoutAutosave(filePath);
 
     if (this.disableAutoSave) {
       this.autoSave = writable(false);
@@ -122,7 +121,7 @@ export class FileArtifact {
   }
 
   fetchContent = async (invalidate = false) => {
-    const instanceId = get(runtime).instanceId;
+    const instanceId = this.client.instanceId;
     const queryParams = {
       path: this.path,
     };
@@ -132,7 +131,8 @@ export class FileArtifact {
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
-    > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
+    > = ({ signal }) =>
+      runtimeServiceGetFile(this.client, queryParams, { signal });
 
     let fetchedContent: string | undefined = undefined;
 
@@ -225,7 +225,7 @@ export class FileArtifact {
   };
 
   private saveContent = async (blob: string) => {
-    const instanceId = get(runtime).instanceId;
+    const instanceId = this.client.instanceId;
 
     // Optimistically update the query
     queryClient.setQueryData(
@@ -240,7 +240,7 @@ export class FileArtifact {
     try {
       const fileSavePromise = this.saveState.initiateSave();
 
-      await runtimeServicePutFile(instanceId, {
+      await runtimeServicePutFile(this.client, {
         path: this.path,
         blob,
       });
@@ -304,10 +304,10 @@ export class FileArtifact {
     this.lastStateUpdatedOn = undefined;
   }
 
-  getResource = (queryClient: QueryClient, instanceId: string) => {
+  getResource = (queryClient: QueryClient) => {
     return derived(this.resourceName, (name, set) =>
       useResource(
-        instanceId,
+        this.client,
         name?.name as string,
         name?.kind as ResourceKind,
         undefined,
@@ -316,25 +316,29 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
 
-  getParseError = (queryClient: QueryClient, instanceId: string) => {
-    return derived(
-      useProjectParser(queryClient, instanceId),
+  getParseError = (
+    queryClient: QueryClient,
+  ): Readable<V1ParseError | undefined> => {
+    const store = derived(
+      useProjectParser(queryClient, this.client),
       (projectParser) => {
-        return projectParser.data?.projectParser?.state?.parseErrors?.find(
-          (e) => e.filePath === this.path,
-        );
+        if (projectParser.isFetching) {
+          return get(store);
+        }
+        return (
+          projectParser.data?.projectParser?.state?.parseErrors ?? []
+        ).find((e) => e.filePath === this.path && !e.warning);
       },
+      undefined as V1ParseError | undefined,
     );
+    return store;
   };
 
-  getAllErrors = (
-    queryClient: QueryClient,
-    instanceId: string,
-  ): Readable<V1ParseError[]> => {
+  getAllErrors = (queryClient: QueryClient): Readable<V1ParseError[]> => {
     const store = derived(
       [
-        useProjectParser(queryClient, instanceId),
-        this.getResource(queryClient, instanceId),
+        useProjectParser(queryClient, this.client),
+        this.getResource(queryClient),
       ],
       ([projectParser, resource]) => {
         if (projectParser.isFetching || resource.isFetching) {
@@ -345,7 +349,7 @@ export class FileArtifact {
         return [
           ...(
             projectParser.data?.projectParser?.state?.parseErrors ?? []
-          ).filter((e) => e.filePath === this.path),
+          ).filter((e) => e.filePath === this.path && !e.warning),
           ...(resource.data?.meta?.reconcileError
             ? [
                 {
@@ -361,9 +365,9 @@ export class FileArtifact {
     return store;
   };
 
-  getHasErrors(queryClient: QueryClient, instanceId: string) {
+  getHasErrors(queryClient: QueryClient) {
     return derived(
-      this.getAllErrors(queryClient, instanceId),
+      this.getAllErrors(queryClient),
       (errors) => errors.length > 0,
     );
   }

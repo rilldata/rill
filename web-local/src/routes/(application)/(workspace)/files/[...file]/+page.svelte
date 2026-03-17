@@ -2,13 +2,14 @@
   import { afterNavigate } from "$app/navigation";
   import type { EditorView } from "@codemirror/view";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
+  import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
+  import { generatingCanvas } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
-  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
@@ -16,7 +17,6 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
@@ -34,8 +34,6 @@
 
   let editor: EditorView;
 
-  $: ({ instanceId } = $runtime);
-
   $: ({ fileArtifact } = data);
   $: ({
     autoSave,
@@ -44,7 +42,6 @@
     resourceName,
     inferredResourceKind,
     path,
-    remoteContent,
     getResource,
     getAllErrors,
   } = fileArtifact);
@@ -53,7 +50,7 @@
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
+  $: resourceQuery = getResource(queryClient);
 
   $: resource = $resourceQuery.data;
 
@@ -62,12 +59,9 @@
       ? [customYAMLwithJSONandSQL]
       : getExtensionsForFile(path);
 
-  $: allErrorsQuery = getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
-
-  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
-
-  $: mainError = errors?.at(0);
+  // Errors for the editor banner (parse + reconcile)
+  $: allErrorsStore = getAllErrors(queryClient);
+  $: allErrors = $allErrorsStore;
 
   onMount(() => {
     expandDirectory(path);
@@ -93,7 +87,9 @@
 
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
-    {#if workspace}
+    {#if $generatingCanvas}
+      <GeneratingMessage title="Generating your Canvas dashboard..." />
+    {:else if workspace}
       <svelte:component this={workspace} {fileArtifact} />
     {:else}
       <WorkspaceContainer inspector={false}>
@@ -104,7 +100,7 @@
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer slot="body" error={mainError}>
+        <WorkspaceEditorContainer slot="body" error={allErrors[0]?.message}>
           <Editor
             {fileArtifact}
             {extensions}

@@ -35,6 +35,7 @@ export const pinotSchema: MultiStepFormSchema = {
       "x-placeholder":
         "https://username:password@localhost:8000?controller=localhost:9000",
       "x-secret": true,
+      "x-env-var-name": "PINOT_DSN",
     },
     broker_host: {
       type: "string",
@@ -76,6 +77,7 @@ export const pinotSchema: MultiStepFormSchema = {
       description: "Pinot password",
       "x-placeholder": "password",
       "x-secret": true,
+      "x-env-var-name": "PINOT_PASSWORD",
     },
     ssl: {
       type: "boolean",

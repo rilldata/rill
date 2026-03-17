@@ -1188,6 +1188,20 @@ export class ModelState extends Message<ModelState> {
    */
   latestExecutionDurationMs = protoInt64.zero;
 
+  /**
+   * rows_total is the total number of rows in the model's output table.
+   *
+   * @generated from field: int64 rows_total = 14;
+   */
+  rowsTotal = protoInt64.zero;
+
+  /**
+   * bytes_total is the total size in bytes of the model's output table.
+   *
+   * @generated from field: int64 bytes_total = 15;
+   */
+  bytesTotal = protoInt64.zero;
+
   constructor(data?: PartialMessage<ModelState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1211,6 +1225,8 @@ export class ModelState extends Message<ModelState> {
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 14, name: "rows_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 15, name: "bytes_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {
@@ -3404,6 +3420,20 @@ export class ReportSpec extends Message<ReportSpec> {
   timeoutSeconds = 0;
 
   /**
+   * Generic resolver configuration (preferred for new reports)
+   *
+   * @generated from field: string resolver = 17;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 18;
+   */
+  resolverProperties?: Struct;
+
+  /**
+   * Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
+   *
    * @generated from field: string query_name = 5;
    */
   queryName = "";
@@ -3472,6 +3502,8 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 17, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "resolver_properties", kind: "message", T: Struct },
     { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
@@ -5382,6 +5414,11 @@ export class ParseError extends Message<ParseError> {
    */
   external = false;
 
+  /**
+   * @generated from field: bool warning = 5;
+   */
+  warning = false;
+
   constructor(data?: PartialMessage<ParseError>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5394,6 +5431,7 @@ export class ParseError extends Message<ParseError> {
     { no: 2, name: "file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "start_location", kind: "message", T: CharLocation },
     { no: 4, name: "external", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "warning", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ParseError {

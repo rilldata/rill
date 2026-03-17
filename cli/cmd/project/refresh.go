@@ -27,13 +27,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				project = args[0]
 			}
 			if !local && project == "" {
-				if !ch.Interactive {
-					return fmt.Errorf("project not specified and could not be inferred from context")
-				}
 				var err error
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name or --local to target a local Rill process")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 

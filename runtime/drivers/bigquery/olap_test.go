@@ -151,6 +151,18 @@ func TestExec(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestLoadDDL(t *testing.T) {
+	testmode.Expensive(t)
+	_, olap := acquireTestBigQuery(t)
+
+	table, err := olap.InformationSchema().Lookup(t.Context(), "rilldata", "integration_test", "all_datatypes")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(t.Context(), table)
+	require.NoError(t, err)
+	require.NotEmpty(t, table.DDL)
+	require.Contains(t, table.DDL, "all_datatypes")
+}
+
 func TestScan(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
@@ -291,7 +303,7 @@ func TestScan(t *testing.T) {
 
 func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "bigquery")
-	conn, err := drivers.Open("bigquery", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("bigquery", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

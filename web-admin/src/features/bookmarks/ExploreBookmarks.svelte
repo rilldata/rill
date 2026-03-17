@@ -10,8 +10,11 @@
   import { createUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
   import { createRillDefaultExploreUrlParamsV2 } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQuery } from "@tanstack/svelte-query";
   import { writable } from "svelte/store";
+
+  const runtimeClient = useRuntimeClient();
 
   export let organization: string;
   export let project: string;
@@ -26,17 +29,21 @@
 
   // Get url params for the explore based on yaml defaults.
   // This is used for home bookmarks button when there is no explicit home bookmark created.
-  const urlForExploreYAMLDefaultState =
-    createUrlForExploreYAMLDefaultState(exploreNameStore);
+  const urlForExploreYAMLDefaultState = createUrlForExploreYAMLDefaultState(
+    runtimeClient,
+    exploreNameStore,
+  );
 
   // Rill opinionated url params that are removed from url to keep the url short.
   // To keep bookmarks exhaustive, these are added on top of current url params while creating bookmarks.
-  const rillDefaultExploreURLParams =
-    createRillDefaultExploreUrlParamsV2(exploreNameStore);
+  const rillDefaultExploreURLParams = createRillDefaultExploreUrlParamsV2(
+    runtimeClient,
+    exploreNameStore,
+  );
 
   // Transformer for legacy bookmark data that was stored in proto format.
   const exploreBookmarkLegacyDataTransformer =
-    createExploreBookmarkLegacyDataTransformer(exploreNameStore);
+    createExploreBookmarkLegacyDataTransformer(runtimeClient, exploreNameStore);
 
   // Stable query object for bookmarks for this explore
   const bookmarksQuery = createQuery(

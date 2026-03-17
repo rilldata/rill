@@ -32,7 +32,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Druid",
 	Description: "Connect to Apache Druid.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/druid",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/druid",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -113,7 +113,7 @@ type configProperties struct {
 
 // Opens a connection to Apache Druid using HTTP API.
 // Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("druid driver can't be shared")
 	}
@@ -159,9 +159,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &connection{
-		db:     dbx,
-		config: conf,
-		logger: logger,
+		db:            dbx,
+		config:        conf,
+		connectorName: connectorName,
+		logger:        logger,
 	}
 	return conn, nil
 }
@@ -226,9 +227,10 @@ func (d driver) checkVersion(dsn string) error {
 }
 
 type connection struct {
-	db     *sqlx.DB
-	config *configProperties
-	logger *zap.Logger
+	db            *sqlx.DB
+	config        *configProperties
+	connectorName string
+	logger        *zap.Logger
 }
 
 // Ping implements drivers.Handle.

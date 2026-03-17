@@ -1,6 +1,7 @@
 import type { SuperValidated } from "sveltekit-superforms";
 import type { Writable } from "svelte/store";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector } from "./FormValidation";
 import { inferModelNameFromSQL, inferSourceName } from "../sourceUtils";
@@ -35,6 +36,7 @@ import {
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
 import type { ButtonLabels } from "../../templates/schemas/types";
+import { processFileContent } from "../../templates/file-encoding";
 
 type FormData = Record<string, unknown>;
 // Use unknown to be compatible with superforms' complex ValidationErrors type
@@ -72,6 +74,10 @@ export class AddDataFormManager {
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
   private schemaName: string;
+
+  // Cached schema-derived flags (immutable after construction)
+  private readonly _isMultiStepConnector: boolean;
+  private readonly _hasExplorerStep: boolean;
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -123,6 +129,10 @@ export class AddDataFormManager {
 
     // Layout height (derived from schema metadata)
     this.formHeight = getFormHeight(schema);
+
+    // Cache schema-derived flags once (schema name is immutable)
+    this._isMultiStepConnector = isMultiStepConnectorSchema(schema);
+    this._hasExplorerStep = hasExplorerStepSchema(schema);
   }
 
   get isSourceForm(): boolean {
@@ -134,53 +144,30 @@ export class AddDataFormManager {
   }
 
   get isMultiStepConnector(): boolean {
-    const schema = getConnectorSchema(this.schemaName);
-    return isMultiStepConnectorSchema(schema);
+    return this._isMultiStepConnector;
   }
 
   get hasExplorerStep(): boolean {
-    const schema = getConnectorSchema(this.schemaName);
-    return hasExplorerStepSchema(schema);
-  }
-
-  /**
-   * Determines whether the "Save Anyway" button should be shown for the current submission.
-   */
-  private shouldShowSaveAnywayButton(args: {
-    isConnectorForm: boolean;
-    event?:
-      | {
-          result?: Extract<ActionResult, { type: "success" | "failure" }>;
-        }
-      | undefined;
-    stepState: ConnectorStepState | undefined;
-    selectedAuthMethod?: string;
-  }): boolean {
-    const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
-
-    // Only show for connector forms (not sources)
-    if (!isConnectorForm) return false;
-
-    // Need a submission result to show the button
-    if (!event?.result) return false;
-
-    // Multi-step connectors: don't show on source/explorer step (final step)
-    if (stepState?.step === "source" || stepState?.step === "explorer")
-      return false;
-
-    // Public auth bypasses connection test, so no "Save Anyway" needed
-    if (stepState?.step === "connector" && selectedAuthMethod === "public")
-      return false;
-
-    return true;
+    return this._hasExplorerStep;
   }
 
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
-    if (!this.isMultiStepConnector || stepState.step !== "connector") return;
+    // Only allow skipping when on connector step
+    if (stepState.step !== "connector") return;
+    if (!this.isMultiStepConnector && !this.hasExplorerStep) return;
+
     setConnectorConfig({});
     setConnectorInstanceName(null);
-    setStep("source");
+
+    // For multi-step connectors, skip to source step
+    if (this.isMultiStepConnector) {
+      setStep("source");
+    }
+    // For connectors with explorer step (warehouses/databases), skip to explorer step
+    else {
+      setStep("explorer");
+    }
   }
 
   handleBack(onBack: () => void): void {
@@ -245,24 +232,23 @@ export class AddDataFormManager {
 
   makeOnUpdate(args: {
     onClose: () => void;
+    client: RuntimeClient;
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
-    setShowSaveAnyway?: (value: boolean) => void;
   }) {
     const {
       onClose,
+      client,
       queryClient,
       getSelectedAuthMethod,
       setParamsError,
-      setShowSaveAnyway,
     } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
     const isExplorer = hasExplorerStepSchema(schema);
     const isStepFlowConnector = isMultiStep || isExplorer;
-    const isConnectorForm = this.formType === "connector";
 
     return async (event: {
       form: SuperValidated<FormData, string, FormData>;
@@ -330,24 +316,12 @@ export class AddDataFormManager {
         return;
       }
 
-      // Show "Save Anyway" when a connector test fails
-      if (
-        typeof setShowSaveAnyway === "function" &&
-        this.shouldShowSaveAnywayButton({
-          isConnectorForm,
-          event,
-          stepState,
-          selectedAuthMethod,
-        })
-      ) {
-        setShowSaveAnyway(true);
-      }
-
       // --- Submission ---
       try {
         if (isStepFlowConnector && isOnSourceOrExplorerStep) {
           // Step 2: submit the source/model and close
           await submitAddSourceForm(
+            client,
             queryClient,
             connector,
             submitValues,
@@ -357,6 +331,7 @@ export class AddDataFormManager {
         } else if (isStepFlowConnector && isOnConnectorStep) {
           // Step 1: test connector, persist config, then advance to step 2
           await this.submitConnectorStepAndAdvance({
+            client,
             queryClient,
             values,
             submitValues,
@@ -365,11 +340,17 @@ export class AddDataFormManager {
           });
         } else if (this.formType === "source") {
           // Single-step source form
-          await submitAddSourceForm(queryClient, connector, submitValues);
+          await submitAddSourceForm(
+            client,
+            queryClient,
+            connector,
+            submitValues,
+          );
           onClose();
         } else {
           // Single-step connector form
           await submitAddConnectorForm(
+            client,
             queryClient,
             connector,
             submitValues,
@@ -389,14 +370,21 @@ export class AddDataFormManager {
    * persist connector config, then advance to the source/explorer step.
    */
   private async submitConnectorStepAndAdvance(args: {
+    client: RuntimeClient;
     queryClient: QueryClient;
     values: FormData;
     submitValues: FormData;
     isPublicAuth: boolean;
     isMultiStep: boolean;
   }) {
-    const { queryClient, values, submitValues, isPublicAuth, isMultiStep } =
-      args;
+    const {
+      client,
+      queryClient,
+      values,
+      submitValues,
+      isPublicAuth,
+      isMultiStep,
+    } = args;
     const nextStep = isMultiStep ? "source" : "explorer";
 
     if (isPublicAuth) {
@@ -410,6 +398,7 @@ export class AddDataFormManager {
 
     // Test the connection, then persist config and advance
     const connectorInstanceName = await submitAddConnectorForm(
+      client,
       queryClient,
       this.connector,
       submitValues,
@@ -465,32 +454,34 @@ export class AddDataFormManager {
     }
   };
 
-  async handleFileUpload(file: File): Promise<string> {
+  async handleFileUpload(file: File, fieldKey?: string): Promise<string> {
     const content = await file.text();
-    try {
-      const parsed = JSON.parse(content);
-      const sanitized = JSON.stringify(parsed);
-      if (this.connector.name === "bigquery" && parsed.project_id) {
-        const formStore = this.formStore;
-        formStore.update(
-          ($form) => {
-            $form.project_id = parsed.project_id;
-            return $form;
-          },
-          { taint: false },
-        );
+
+    if (fieldKey) {
+      const schema = getConnectorSchema(this.schemaName);
+      const field = schema?.properties?.[fieldKey];
+      if (field?.["x-file-encoding"]) {
+        const result = processFileContent(content, field);
+
+        if (Object.keys(result.extractedValues).length > 0) {
+          this.formStore.update(
+            ($form) => {
+              for (const [key, value] of Object.entries(
+                result.extractedValues,
+              )) {
+                $form[key] = value;
+              }
+              return $form;
+            },
+            { taint: false },
+          );
+        }
+
+        return result.encodedContent;
       }
-      return sanitized;
-    } catch (error: unknown) {
-      if (error instanceof SyntaxError) {
-        throw new Error(`Invalid JSON file: ${error.message}`);
-      }
-      const message =
-        error && typeof error === "object" && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Unknown error";
-      throw new Error(`Failed to read file: ${message}`);
     }
+
+    return content;
   }
 
   /**
@@ -502,10 +493,16 @@ export class AddDataFormManager {
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     formValues: Record<string, unknown>;
+    existingEnvBlob?: string;
   }): string {
     const connector = this.connector;
-    const { stepState, isMultiStepConnector, isConnectorForm, formValues } =
-      ctx;
+    const {
+      stepState,
+      isMultiStepConnector,
+      isConnectorForm,
+      formValues,
+      existingEnvBlob,
+    } = ctx;
 
     const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
@@ -532,6 +529,8 @@ export class AddDataFormManager {
         orderedProperties: connectorPropertiesForPreview,
         secretKeys: schemaConnectorSecretKeys,
         stringKeys: schemaConnectorStringKeys,
+        schema: schema ?? undefined,
+        existingEnvBlob,
       });
     };
 
@@ -574,10 +573,16 @@ export class AddDataFormManager {
         ? getSchemaStringKeys(rewrittenSchema, { step: sourceStep })
         : undefined;
       if (isRewrittenToDuckDb || isExplorerStep) {
+        // When rewritten to DuckDB, don't use the original connectorInstanceName.
+        // The original connector is referenced via create_secrets_from_connectors.
+        const yamlConnectorInstanceName = isRewrittenToDuckDb
+          ? undefined
+          : stepState?.connectorInstanceName || undefined;
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,
           originalDriverName: connector.name || undefined,
+          connectorInstanceName: yamlConnectorInstanceName,
         });
       }
       return getConnectorYamlPreview(rewrittenFormValues);
@@ -601,24 +606,28 @@ export class AddDataFormManager {
   }
 
   /**
-   * Save connector anyway, returning a result object for the caller to handle.
+   * Save connector without testing the connection, returning a result object for the caller to handle.
    * Schema conditionals handle connector-specific requirements (e.g., SSL).
    */
-  async saveConnectorAnyway(args: {
+  async saveConnector(args: {
+    client: RuntimeClient;
     queryClient: QueryClient;
     values: FormData;
+    existingEnvBlob?: string;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values } = args;
+    const { client, queryClient, values, existingEnvBlob } = args;
     const schema = getConnectorSchema(this.schemaName);
     const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;
     try {
       await submitAddConnectorForm(
+        client,
         queryClient,
         this.connector,
         processedValues,
         true,
+        existingEnvBlob,
       );
       return { ok: true } as const;
     } catch (e) {
