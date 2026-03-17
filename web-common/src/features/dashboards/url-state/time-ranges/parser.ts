@@ -14,9 +14,9 @@ export function parseRillTime(rillTimeRange: string): RillTime {
 export function isNewRillTimeFormat(rillTime: string): boolean {
   try {
     const parser = parseRillTime(rillTime);
-    return parser.isOldFormat;
-  } catch (err) {
-    return true;
+    return !parser.isOldFormat;
+  } catch {
+    return false;
   }
 }
 
