@@ -26,7 +26,7 @@ Available on Growth and Enterprise plans. The Free plan uses Managed mode only.
     name="Free"
     price="$0/month"
     features={[
-      { label: "Data", value: "Up to 5 GB" },
+      { label: "Data", value: "Up to 1 GB" },
       { label: "Slots", value: "1 slot (2 GB RAM / 1 vCPU)" },
       { label: "AI", value: "Included" },
       { label: "Branding", value: "\"Made with Rill\" badge" },
@@ -34,11 +34,11 @@ Available on Growth and Enterprise plans. The Free plan uses Managed mode only.
   />
   <PlanCard
     name="Growth"
-    price="$99/month + usage"
+    price="Usage-based"
     features={[
-      { label: "Base fee", value: "$99/month" },
-      { label: "Slots", value: "$0.03/slot/hr" },
-      { label: "Storage", value: "$0.025/GB/month" },
+      { label: "Base fee", value: "None" },
+      { label: "Slots", value: "$0.06/slot/hr" },
+      { label: "Storage", value: "$10/GB/month above 1 GB" },
       { label: "AI", value: "Included" },
       { label: "Branding", value: "Fully customizable" },
     ]}
@@ -66,7 +66,7 @@ Available on Growth and Enterprise plans. The Free plan uses Managed mode only.
     price="Usage-based"
     features={[
       { label: "Base fee", value: "None" },
-      { label: "Slots", value: "$0.03/slot/hr" },
+      { label: "Slots", value: "$0.06/slot/hr" },
       { label: "AI", value: "Included" },
       { label: "Branding", value: "Fully customizable" },
       { label: "Hibernation", value: "Metering pauses automatically" },
@@ -93,9 +93,9 @@ Available on Growth and Enterprise plans. The Free plan uses Managed mode only.
 <FeatureTable
   columns={["", "Managed", "Live Connect"]}
   rows={[
-    ["Base fee", "$99/month (Growth)", "None"],
-    ["Slot rate", "$0.03/slot/hr", "$0.03/slot/hr"],
-    ["Storage", "$0.025/GB/month", "N/A (your warehouse)"],
+    ["Base fee", "None", "None"],
+    ["Slot rate", "$0.06/slot/hr", "$0.06/slot/hr"],
+    ["Storage", "$10/GB/month above 1 GB", "N/A (your warehouse)"],
     ["Data ceiling", "~250 GB", "Unlimited"],
     ["Best for", "Fully managed experience", "Existing OLAP infrastructure"],
   ]}
@@ -134,7 +134,7 @@ Available on Growth and Enterprise plans. The Free plan uses Managed mode only.
 You can upgrade to the Growth plan from the project status page or the organization settings page.
 
 ### Free to Growth
-- **Managed:** Triggered when data exceeds the 5 GB limit. You'll receive a notification with a 7-day window to upgrade before the project hibernates.
+- **Managed:** Triggered when data exceeds the 1 GB limit. You'll receive a notification with a 7-day window to upgrade before the project hibernates.
 - **Live Connect:** When enabled, exceeding the free slot limit will automatically trigger a 7-day upgrade window before the project hibernates.
 
 ### Growth to Enterprise
