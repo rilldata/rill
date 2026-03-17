@@ -45,7 +45,6 @@
   <Popover.Trigger>
     {#snippet child({ props })}
       <Tooltip
-        {...props}
         activeDelay={60}
         alignment="start"
         distance={8}
@@ -53,6 +52,7 @@
         suppress={open}
       >
         <Chip
+          {...props}
           type="measure"
           active={open}
           {label}

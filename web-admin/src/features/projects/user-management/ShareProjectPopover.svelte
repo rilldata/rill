@@ -36,8 +36,8 @@
 <Popover bind:open>
   <PopoverTrigger>
     {#snippet child({ props })}
-      <Tooltip {...props} distance={8} suppress={open}>
-        <Button type="secondary" selected={open}>Share</Button>
+      <Tooltip distance={8} suppress={open}>
+        <Button {...props} type="secondary" selected={open}>Share</Button>
         <TooltipContent slot="tooltip-content">Share project</TooltipContent>
       </Tooltip>
     {/snippet}

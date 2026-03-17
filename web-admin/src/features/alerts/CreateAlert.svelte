@@ -39,16 +39,13 @@
     bind:open
     let:onCancel
     let:onClose
+    let:preventClose
   >
     <DialogTrigger>
       {#snippet child({ props })}
-        <Tooltip
-          {...props}
-          distance={8}
-          location="top"
-          suppress={!$isCustomTimeRange}
-        >
+        <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
           <Button
+            {...props}
             compact
             disabled={$isCustomTimeRange}
             type="secondary"
@@ -62,7 +59,12 @@
         </Tooltip>
       {/snippet}
     </DialogTrigger>
-    <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
+    <DialogContent
+      class="p-0 m-0 w-[802px] max-w-fit rounded-md"
+      noClose
+      onEscapeKeyDown={preventClose}
+      onInteractOutside={preventClose}
+    >
       <AlertForm
         props={{ mode: "create", exploreName: $exploreName }}
         {onCancel}

@@ -19,13 +19,19 @@
   cancelLabel="Keep editing"
   let:onCancel
   let:onClose
+  let:preventClose
 >
   <DialogTrigger>
     {#snippet child({ props })}
       <Button {...props} type="secondary" {disabled}>Edit</Button>
     {/snippet}
   </DialogTrigger>
-  <DialogContent class="p-0 m-0 w-[802px] max-w-fit" noClose>
+  <DialogContent
+    class="p-0 m-0 w-[802px] max-w-fit"
+    noClose
+    onEscapeKeyDown={preventClose}
+    onInteractOutside={preventClose}
+  >
     <AlertForm props={{ mode: "edit", alertSpec }} {onCancel} {onClose} />
   </DialogContent>
 </GuardedDialog>

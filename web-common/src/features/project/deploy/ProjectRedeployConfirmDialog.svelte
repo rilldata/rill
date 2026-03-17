@@ -26,8 +26,8 @@
 <AlertDialog bind:open>
   <AlertDialogTrigger>
     {#snippet child({ props })}
-      <Tooltip {...props} distance={8}>
-        <Button loading={isLoading} type="secondary">
+      <Tooltip distance={8}>
+        <Button {...props} loading={isLoading} type="secondary">
           <CloudIcon size="16px" />
           Update
         </Button>

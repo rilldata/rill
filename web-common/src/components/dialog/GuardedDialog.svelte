@@ -6,7 +6,6 @@
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
@@ -27,6 +26,11 @@
     open = false;
   }
 
+  function preventClose(e: Event) {
+    e.preventDefault();
+    onCancel();
+  }
+
   function onConfirmCancel() {
     open = false;
     showCancelDialog = false;
@@ -34,22 +38,13 @@
 </script>
 
 <!-- Dialog with confirm on cancel need a strong intent. We intercept all close
-     attempts via onOpenChange and show a cancel confirmation dialog instead. -->
-<Dialog
-  bind:open
-  onOpenChange={(o) => {
-    // Intercept cancel from clicking X, pressing escape, or clicking outside
-    if (!o && open) onCancel();
-    setTimeout(() => (open = true));
-  }}
->
-  <slot {onCancel} {onClose} />
+     attempts via onEscapeKeyDown/onInteractOutside and show a cancel confirmation
+     dialog instead. Consumers must pass preventClose to their DialogContent. -->
+<Dialog bind:open>
+  <slot {onCancel} {onClose} {preventClose} />
 </Dialog>
 
 <AlertDialog bind:open={showCancelDialog}>
-  <AlertDialogTrigger>
-    <div class="hidden"></div>
-  </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
       <div class="flex flex-row items-center gap-x-2">
