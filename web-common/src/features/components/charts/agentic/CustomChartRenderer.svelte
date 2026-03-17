@@ -49,7 +49,7 @@
       {
         query: {
           enabled: !!sql,
-          queryKey: [`metrics_sql_${index}_${filterKey}`],
+          queryKey: [`metrics_sql`, name, index, sql, filterKey],
         },
       },
     ),

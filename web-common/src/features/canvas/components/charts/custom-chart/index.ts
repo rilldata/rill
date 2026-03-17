@@ -48,7 +48,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
   inputParams(): InputParams<CustomChart> {
     return {
       options: {
-        prompt: { type: "ai_prompt", label: "AI Prompt" },
+        prompt: { type: "ai_generate", label: "Edit with AI" },
         metrics_sql: { type: "metrics_sql", label: "Metrics SQL" },
         vega_spec: { type: "vega_spec", label: "Vega Lite Spec" },
         ...commonOptions,

@@ -8,7 +8,7 @@
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
-  import AIPromptInput from "./AIPromptInput.svelte";
+  import AIGenerateButton from "./AIGenerateButton.svelte";
   import AlignmentInput from "./AlignmentInput.svelte";
   import CanvasFieldSwitcher from "./CanvasFieldSwitcher.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
@@ -21,9 +21,20 @@
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
+  import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import type { AllKeys, ComponentInputParam } from "./types";
 
   export let component: BaseCanvasComponent;
+
+  // Track collapsed state for collapsible sections (metrics_sql, vega_spec)
+  let collapsedSections: Record<string, boolean> = {
+    metrics_sql: true,
+    vega_spec: true,
+  };
+
+  function toggleSection(key: string) {
+    collapsedSections[key] = !collapsedSections[key];
+  }
 
   $: ({
     specStore,
@@ -64,9 +75,9 @@
         class="component-param"
         class:grouped={config.meta?.layout === "grouped"}
       >
-        <!-- AI PROMPT -->
-        {#if config.type === "ai_prompt"}
-          <AIPromptInput {component} />
+        <!-- AI GENERATE (opens dev agent sidebar) -->
+        {#if config.type === "ai_generate"}
+          <AIGenerateButton {component} />
 
           <!-- TEXT, NUMBER, RILL_TIME -->
         {:else if config.type === "text" || config.type === "number" || config.type === "rill_time"}
@@ -163,29 +174,56 @@
 
           <!-- METRICS SQL -->
         {:else if config.type === "metrics_sql"}
-          <MetricsSQLInput
-            {key}
-            label={config.label ?? key}
-            description={config?.description}
-            value={localParamValues[key]}
-            onChange={(updatedSQL) => {
-              localParamValues[key] = updatedSQL;
-              component.updateProperty(key, updatedSQL);
-            }}
-          />
+          <button
+            class="collapsible-header"
+            on:click={() => toggleSection(key)}
+          >
+            <span class="chevron" class:expanded={!collapsedSections[key]}>
+              <ChevronRight size="12px" />
+            </span>
+            <span class="collapsible-label">{config.label ?? key}</span>
+            {#if Array.isArray(localParamValues[key])}
+              <span class="collapsible-badge"
+                >{localParamValues[key].length}</span
+              >
+            {/if}
+          </button>
+          {#if !collapsedSections[key]}
+            <MetricsSQLInput
+              {key}
+              label={undefined}
+              description={config?.description}
+              value={localParamValues[key]}
+              onChange={(updatedSQL) => {
+                localParamValues[key] = updatedSQL;
+                component.updateProperty(key, updatedSQL);
+              }}
+            />
+          {/if}
 
           <!-- VEGA SPEC -->
         {:else if config.type === "vega_spec"}
-          <VegaSpecInput
-            {key}
-            label={config.label ?? key}
-            description={config?.description}
-            value={localParamValues[key]}
-            onChange={(updatedSpec) => {
-              localParamValues[key] = updatedSpec;
-              component.updateProperty(key, updatedSpec);
-            }}
-          />
+          <button
+            class="collapsible-header"
+            on:click={() => toggleSection(key)}
+          >
+            <span class="chevron" class:expanded={!collapsedSections[key]}>
+              <ChevronRight size="12px" />
+            </span>
+            <span class="collapsible-label">{config.label ?? key}</span>
+          </button>
+          {#if !collapsedSections[key]}
+            <VegaSpecInput
+              {key}
+              label={undefined}
+              description={config?.description}
+              value={localParamValues[key]}
+              onChange={(updatedSpec) => {
+                localParamValues[key] = updatedSpec;
+                component.updateProperty(key, updatedSpec);
+              }}
+            />
+          {/if}
           <!-- SELECT DROPDOWN -->
         {:else if config.type === "select"}
           <Select
@@ -290,5 +328,32 @@
   .component-param.grouped {
     @apply py-0;
     @apply border-none;
+  }
+
+  .collapsible-header {
+    @apply flex items-center gap-1.5 w-full py-1 cursor-pointer;
+    @apply text-xs font-semibold text-gray-600;
+    @apply bg-transparent border-none text-left;
+  }
+
+  .collapsible-header:hover {
+    @apply text-gray-800;
+  }
+
+  .chevron {
+    @apply transition-transform duration-150;
+    @apply flex items-center;
+  }
+
+  .chevron.expanded {
+    transform: rotate(90deg);
+  }
+
+  .collapsible-label {
+    @apply flex-1;
+  }
+
+  .collapsible-badge {
+    @apply text-[10px] text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5;
   }
 </style>

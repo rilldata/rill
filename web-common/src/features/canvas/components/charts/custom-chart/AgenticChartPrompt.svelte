@@ -1,8 +1,7 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import AnimatedDots from "@rilldata/web-common/features/chat/core/messages/AnimatedDots.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { generateChart } from "./generateChart";
+  import { sendToDevAgent, getAgentStreamingStore } from "./chart-ai-agent";
   import type { CustomChartComponent } from "./index";
 
   export let component: CustomChartComponent;
@@ -10,29 +9,14 @@
   const client = useRuntimeClient();
 
   let prompt = "";
-  let generating = false;
-  let error: string | null = null;
   let manualMode = false;
 
-  async function handleGenerate() {
-    if (!prompt.trim()) return;
+  $: streamingStore = getAgentStreamingStore(client, component.id);
+  $: isStreaming = $streamingStore;
 
-    generating = true;
-    error = null;
-
-    try {
-      const result = await generateChart(client, {
-        prompt: prompt.trim(),
-      });
-
-      component.updateProperty("prompt", prompt.trim());
-      component.updateProperty("metrics_sql", result.metricsSql);
-      component.updateProperty("vega_spec", result.vegaSpec);
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Chart generation failed";
-    } finally {
-      generating = false;
-    }
+  function handleGenerate() {
+    if (!prompt.trim() || isStreaming) return;
+    sendToDevAgent(client, component, prompt.trim());
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -53,10 +37,11 @@
   >
     Use the inspector panel to write Metrics SQL and Vega-Lite spec manually.
   </div>
-{:else if generating}
+{:else if isStreaming}
   <div class="flex flex-col items-center justify-center h-full gap-3 p-4">
-    <Spinner />
-    <span class="text-sm text-gray-500">Generating chart...</span>
+    <div class="text-sm text-gray-500">
+      <AnimatedDots>AI is generating chart</AnimatedDots>
+    </div>
   </div>
 {:else}
   <div class="flex flex-col items-center justify-center h-full gap-3 p-4">
@@ -69,10 +54,6 @@
         on:keydown={handleKeydown}
       />
 
-      {#if error}
-        <div class="text-xs text-red-500">{error}</div>
-      {/if}
-
       <div class="flex items-center justify-between">
         <button
           class="text-xs text-gray-400 hover:text-gray-600 underline"
@@ -81,14 +62,13 @@
           Write SQL & Vega-Lite manually
         </button>
 
-        <Button
-          type="primary"
-          small
-          onClick={handleGenerate}
+        <button
+          class="px-3 py-1.5 text-xs font-medium text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          on:click={handleGenerate}
           disabled={!prompt.trim()}
         >
           Generate
-        </Button>
+        </button>
       </div>
     </div>
   </div>

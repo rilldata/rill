@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { IconButton } from "@rilldata/web-common/components/button";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import MinusIcon from "@rilldata/web-common/components/icons/MinusIcon.svelte";
 
   export let key: string;
   export let label: string | undefined;
@@ -24,50 +21,124 @@
   }
 
   function removeQuery(idx: number) {
-    if (value.length === 1) return; // Don't remove last
+    if (value.length === 1) return;
     const updated = value.slice();
     updated.splice(idx, 1);
     onChange(updated);
   }
 </script>
 
-<div class="flex flex-col gap-y-2">
-  {#each value as sql, idx (idx)}
-    <div class="flex flex-col gap-y-2 relative group">
-      <div class="flex items-center justify-between">
-        <InputLabel
-          hint={description}
-          small
-          label={(label ?? key) +
-            (value.length > 1 ? ` (Query ${idx + 1})` : "")}
-          id={key + "-" + idx}
-        />
+<div class="sql-input-container">
+  {#if label}
+    <InputLabel hint={description} small {label} id={key} />
+  {/if}
+
+  <div class="queries">
+    {#each value as sql, idx (idx)}
+      <div class="query-block">
         {#if value.length > 1}
-          <IconButton
-            rounded
-            on:click={() => removeQuery(idx)}
-            ariaLabel="Remove this query"
-          >
-            <MinusIcon />
-          </IconButton>
+          <div class="query-header">
+            <span class="query-number">Query {idx + 1}</span>
+            <button
+              class="remove-btn"
+              on:click={() => removeQuery(idx)}
+              aria-label="Remove query {idx + 1}"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M4 8h8"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+          </div>
         {/if}
+        <textarea
+          class="sql-textarea"
+          bind:value={value[idx]}
+          on:blur={() => updateSQL(idx, value[idx])}
+          placeholder="SELECT * FROM metrics"
+        />
       </div>
-      <textarea
-        class="w-full p-2 border border-gray-300 rounded-sm source-code"
-        rows="2"
-        bind:value={value[idx]}
-        on:blur={(e) => updateSQL(idx, value[idx])}
-        placeholder="SELECT * FROM metrics"
+    {/each}
+  </div>
+
+  <button class="add-query-btn" on:click={addQuery}>
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M8 3v10M3 8h10"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
       />
-    </div>
-  {/each}
-  <Button type="dashed" small on:click={addQuery} class="mt-2">
-    + Add another query
-  </Button>
+    </svg>
+    Add query
+  </button>
 </div>
 
-<style>
-  .source-code {
+<style lang="postcss">
+  .sql-input-container {
+    @apply flex flex-col gap-2;
+  }
+
+  .queries {
+    @apply flex flex-col gap-2;
+  }
+
+  .query-block {
+    @apply flex flex-col gap-1;
+  }
+
+  .query-header {
+    @apply flex items-center justify-between;
+  }
+
+  .query-number {
+    @apply text-[10px] font-medium text-gray-400 uppercase tracking-wide;
+  }
+
+  .remove-btn {
+    @apply p-0.5 rounded text-gray-300 bg-transparent border-none cursor-pointer;
+    @apply opacity-0 transition-all duration-150;
+  }
+
+  .query-block:hover .remove-btn {
+    @apply opacity-100;
+  }
+
+  .remove-btn:hover {
+    @apply text-red-400 bg-red-50;
+  }
+
+  .sql-textarea {
+    @apply w-full px-2.5 py-2 text-xs;
+    @apply border border-gray-200 rounded-md;
+    @apply resize-none outline-none;
+    @apply transition-colors duration-150;
     font-family: "Source Code Variable", monospace;
+    min-height: 48px;
+    max-height: 120px;
+    field-sizing: content;
+  }
+
+  .sql-textarea:focus {
+    @apply border-primary-400 ring-1 ring-primary-200;
+  }
+
+  .sql-textarea::placeholder {
+    @apply text-gray-300;
+  }
+
+  .add-query-btn {
+    @apply flex items-center gap-1.5 self-start;
+    @apply px-0 py-0.5 text-[11px] text-gray-400;
+    @apply bg-transparent border-none cursor-pointer;
+    @apply transition-colors duration-150;
+  }
+
+  .add-query-btn:hover {
+    @apply text-primary-500;
   }
 </style>
