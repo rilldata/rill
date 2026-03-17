@@ -1,5 +1,11 @@
 <script lang="ts">
+  import { sql } from "@codemirror/lang-sql";
+  import { EditorState } from "@codemirror/state";
+  import { EditorView, placeholder } from "@codemirror/view";
+  import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
+  import { DuckDBSQL } from "@rilldata/web-common/components/editor/presets/duckDBDialect";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { onDestroy, tick } from "svelte";
 
   export let key: string;
   export let label: string | undefined;
@@ -10,22 +16,68 @@
   // Ensure at least one editor is always shown
   if (!value || value.length === 0) value = [""];
 
+  let editorContainers: HTMLElement[] = [];
+  let editors: EditorView[] = [];
+
+  function createEditor(container: HTMLElement, idx: number) {
+    const editor = new EditorView({
+      state: EditorState.create({
+        doc: value[idx] || "",
+        extensions: [
+          baseExtensions(),
+          sql({ dialect: DuckDBSQL }),
+          placeholder("SELECT * FROM metrics"),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              updateSQL(idx, update.state.doc.toString());
+            }
+          }),
+          EditorView.theme({
+            "&": { maxHeight: "150px" },
+            ".cm-scroller": { overflow: "auto" },
+          }),
+        ],
+      }),
+      parent: container,
+    });
+    editors[idx] = editor;
+  }
+
+  function initEditor(node: HTMLElement, idx: number) {
+    editorContainers[idx] = node;
+    createEditor(node, idx);
+
+    return {
+      destroy() {
+        editors[idx]?.destroy();
+      },
+    };
+  }
+
   function updateSQL(idx: number, newSQL: string) {
     const updated = value.slice();
     updated[idx] = newSQL;
     onChange(updated);
   }
 
-  function addQuery() {
+  async function addQuery() {
     onChange([...value, ""]);
+    await tick();
   }
 
   function removeQuery(idx: number) {
     if (value.length === 1) return;
+    // Destroy all editors; they'll be re-created by the action directive
+    editors.forEach((e) => e?.destroy());
+    editors = [];
     const updated = value.slice();
     updated.splice(idx, 1);
     onChange(updated);
   }
+
+  onDestroy(() => {
+    editors.forEach((e) => e?.destroy());
+  });
 </script>
 
 <div class="sql-input-container">
@@ -34,7 +86,7 @@
   {/if}
 
   <div class="queries">
-    {#each value as sql, idx (idx)}
+    {#each value as _sql, idx (idx)}
       <div class="query-block">
         {#if value.length > 1}
           <div class="query-header">
@@ -55,12 +107,7 @@
             </button>
           </div>
         {/if}
-        <textarea
-          class="sql-textarea"
-          bind:value={value[idx]}
-          on:blur={() => updateSQL(idx, value[idx])}
-          placeholder="SELECT * FROM metrics"
-        />
+        <div class="editor-wrapper" use:initEditor={idx} />
       </div>
     {/each}
   </div>
@@ -112,23 +159,26 @@
     @apply text-red-400 bg-red-50;
   }
 
-  .sql-textarea {
-    @apply w-full px-2.5 py-2 text-xs;
-    @apply border border-gray-200 rounded-md;
-    @apply resize-none outline-none;
+  .editor-wrapper {
+    @apply border border-gray-200 rounded-md overflow-hidden;
     @apply transition-colors duration-150;
-    font-family: "Source Code Variable", monospace;
-    min-height: 48px;
-    max-height: 120px;
-    field-sizing: content;
   }
 
-  .sql-textarea:focus {
+  .editor-wrapper:focus-within {
     @apply border-primary-400 ring-1 ring-primary-200;
   }
 
-  .sql-textarea::placeholder {
-    @apply text-gray-300;
+  :global(.editor-wrapper .cm-editor) {
+    min-height: 48px;
+    max-height: 150px;
+  }
+
+  :global(.editor-wrapper .cm-editor .cm-scroller) {
+    overflow: auto;
+  }
+
+  :global(.editor-wrapper .cm-gutter.cm-line-status-gutter) {
+    display: none !important;
   }
 
   .add-query-btn {
