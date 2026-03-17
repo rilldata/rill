@@ -101,9 +101,12 @@ jobs:
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
           RILL_UI_PUBLIC_VERSION: ${{ env.RILL_VERSION }}
 
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
       - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }} - version ${{ env.RILL_VERSION }}
         run: |
-          npx netlify-cli deploy \
+          netlify deploy \
             --prod \
             --dir ./web-admin/build \
             --message "Cloud-admin ${{ github.ref_name }} deployed to ui.${{ env.DOMAIN }}"
