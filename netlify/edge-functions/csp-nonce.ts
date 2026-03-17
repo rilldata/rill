@@ -51,7 +51,8 @@ export default async (
     // 'strict-dynamic' propagates trust to scripts dynamically created by
     // those nonced scripts (e.g. Pylon/Pusher loaders injecting child scripts).
     // Domain allowlists below are fallbacks for browsers without strict-dynamic.
-    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'${activeCampaign} https://*.usepylon.com https://*.pusher.com`,
+    // adding 'unsafe-inline' (ignored by browsers supporting nonces/hashes) to be backward compatible with older browsers.
+    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'unsafe-eval'${activeCampaign} https://*.usepylon.com https://*.pusher.com`,
     // style-src keeps 'unsafe-inline' for now: runtime style injection from
     // CodeMirror and other libraries cannot be nonce-attributed. Revisit when
     // those libraries are audited.
@@ -62,6 +63,7 @@ export default async (
     "form-action 'self'",
     "object-src 'none'",
     "base-uri 'self'",
+    "require-trusted-types-for 'script'",
     "connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com",
     "font-src 'self' https://fonts.gstatic.com https://*.usepylon.com",
   ].join("; ");
