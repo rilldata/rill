@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetBillingSubscription,
+    createAdminServiceGetOrganization,
+  } from "@rilldata/web-admin/client";
   import {
     getPaymentIssueErrorText,
     needsPaymentSetup,
@@ -9,13 +12,25 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
 
   export let organization: string;
 
   $: org = createAdminServiceGetOrganization(organization);
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: plan = $subscriptionQuery?.data?.subscription?.plan;
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
+  $: neverSubscribed = !!$categorisedIssues.data?.neverSubscribed;
   $: onTrial = !!$categorisedIssues.data?.trial;
+  $: onManagedPlan = plan && isManagedPlan(plan.name);
+  $: onEnterprisePlan = plan && isEnterprisePlan(plan.name);
+  // For enterprise, managed, and neverSubscribed orgs, hide the section when
+  // payment details haven't been entered yet (setup done via CLI). Once set up
+  // (no payment issues), show the Manage button so they can update their details.
+  $: pendingSetup =
+    (neverSubscribed || onManagedPlan || onEnterprisePlan) &&
+    needsPaymentSetup(paymentIssues ?? []);
 
   async function handleManagePayment() {
     const setup = paymentIssues?.length
@@ -29,7 +44,7 @@
 </script>
 
 <!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
-{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !onTrial}
+{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !onTrial && !pendingSetup}
   <SettingsContainer title="Payment Method">
     <div slot="body" class="flex flex-row items-center gap-x-1">
       {#if paymentIssues?.length}
