@@ -61,6 +61,7 @@ export default async (
     `frame-ancestors ${frameAncestors}`,
     "form-action 'self'",
     "object-src 'none'",
+    "base-uri 'self'",
     "connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com",
     "font-src 'self' https://fonts.gstatic.com https://*.usepylon.com",
   ].join("; ");
