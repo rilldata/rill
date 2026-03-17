@@ -84,7 +84,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     referenceLink="pinot"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-StarRocks.png" alt="StarRocks" className="starrocks-icon" />}
+    icon={<img src="/img/build/connectors/icons/Logo-StarRocks.svg" alt="StarRocks" className="starrocks-icon" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/developers/build/connectors/olap/starrocks"
     linkLabel="Learn more"

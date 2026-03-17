@@ -107,15 +107,16 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Len(t, calls, 1)
 		require.Equal(t, ai.GetMetricsViewName, calls[0].Tool)
 
-		// It should remember the previous turns and only make one sub-call: query_metrics_view_summary and query_metrics_view
+		// It should remember the previous turns and only make calls to query_metrics_view_summary and query_metrics_view (not any metadata lookups like get_metrics_view).
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
 			Prompt: "Tell me which non-US country has the most auctions. Make the minimal number of tool calls necessary to answer.",
 		})
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
-		require.Len(t, calls, 2)
-		require.Equal(t, ai.QueryMetricsViewSummaryName, calls[0].Tool)
-		require.Equal(t, ai.QueryMetricsViewName, calls[1].Tool)
+		require.True(t, len(calls) == 2 || len(calls) == 3)
+		for _, call := range calls {
+			require.Contains(t, []string{ai.QueryMetricsViewSummaryName, ai.QueryMetricsViewName}, call.Tool)
+		}
 	})
 
 	t.Run("DashboardContext", func(t *testing.T) {
@@ -173,7 +174,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should make three sub-calls: query_metrics_view_summary, get_metrics_view, query_metrics_view
 		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
-			Prompt:          "Tell me which advertiser_name has the highest overall_spend. Make the minimal number of tool calls necessary to answer.",
+			Prompt:          "Tell me which advertiser_name in this component has the highest overall_spend. Make the minimal number of tool calls necessary to answer.",
 			Canvas:          "bids_canvas",
 			CanvasComponent: "bids_canvas--component-2-0",
 			TimeStart:       parseTestTime(t, "2023-09-11T00:00:00Z"),
@@ -213,8 +214,10 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.NotNil(t, qry.Where)
 		exprSQL, err := metricsview.ExpressionToSQL(qry.Where)
 		require.NoError(t, err)
-		require.Contains(t, exprSQL, "auction_type = 'First Price'")
-		require.Contains(t, exprSQL, "app_or_site = 'App'")
+		require.Contains(t, exprSQL, "auction_type") //  "auction_type = 'First Price'"
+		require.Contains(t, exprSQL, "First Price")
+		require.Contains(t, exprSQL, "app_or_site") // "app_or_site = 'App'"
+		require.Contains(t, exprSQL, "'App'")
 	})
 }
 

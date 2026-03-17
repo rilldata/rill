@@ -34,7 +34,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get repo for project path: %w", err)
 			}
-			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
+			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb", true)
 			if err != nil {
 				return fmt.Errorf("failed to parse project: %w", err)
 			}
@@ -44,9 +44,9 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Find the cloud project name
 			if projectName == "" {
-				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				projectName, err = ch.InferProjectName(cmd.Context(), projectPath, "use --project to specify the name")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 
@@ -89,20 +89,17 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			// Always prompt for confirmation when there are changes
-			message := fmt.Sprintf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
-			ch.Print(message)
-
-			for k, v := range changedVars {
-				ch.Printf("  %s=%s\n", k, v)
+			// Preview the change
+			ch.Printf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
+			for k := range changedVars {
+				ch.Printf("-  %s\n", k)
 			}
 
-			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-			if err != nil {
-				return fmt.Errorf("failed to prompt for confirmation: %w", err)
-			}
-			if !ok {
-				return nil
+			// Prompt for confirmation in interactive mode
+			if ch.Interactive {
+				if err := cmdutil.ConfirmPrompt("Do you want to continue?", true); err != nil {
+					return err
+				}
 			}
 
 			// Write the merged variables back to the cloud project

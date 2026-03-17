@@ -26,7 +26,7 @@ model: m1
 dimensions:
 - name: foo
   expression: id
-  lookup_table: m2 # Expect ref since it is a model in the same project
+  lookup_table: default.m2 # Expect ref to m2 after stripping the schema prefix since it is a model in the same project
   lookup_key_column: id
   lookup_value_column: value
 - name: bar
@@ -80,7 +80,7 @@ measures:
 						Name:              "foo",
 						DisplayName:       "Foo",
 						Expression:        "id",
-						LookupTable:       "m2",
+						LookupTable:       "default.m2",
 						LookupKeyColumn:   "id",
 						LookupValueColumn: "value",
 					},
@@ -107,7 +107,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -192,7 +192,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -304,7 +304,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 
