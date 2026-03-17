@@ -234,15 +234,18 @@ driver: ${driverName}`;
       )
         return false;
       // For advanced fields, skip values that match the field's effective default.
-      // For booleans without an explicit default, false is the effective default.
       const schemaProp = options?.schema?.properties?.[property.key as string];
       if (schemaProp?.["x-advanced"]) {
+        const typeDefault =
+          schemaProp.type === "boolean"
+            ? false
+            : schemaProp.type === "number" || schemaProp.type === "integer"
+              ? 0
+              : schemaProp.type === "string"
+                ? ""
+                : undefined;
         const effectiveDefault =
-          schemaProp.default !== undefined
-            ? schemaProp.default
-            : schemaProp.type === "boolean"
-              ? false
-              : undefined;
+          schemaProp.default !== undefined ? schemaProp.default : typeDefault;
         if (effectiveDefault !== undefined && value === effectiveDefault)
           return false;
       }
