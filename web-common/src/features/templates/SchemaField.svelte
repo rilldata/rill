@@ -8,6 +8,7 @@
   import { normalizeErrors } from "./error-utils";
   import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
+  import ShadcnInput from "@rilldata/web-common/components/forms/ShadcnInput.svelte";
 
   export let id: string;
   export let prop: JSONSchemaField;
@@ -34,15 +35,19 @@
     href={prop["x-docs-url"]}
   />
 {:else if prop["x-display"] === "file" || prop.format === "file"}
-  <CredentialsInput
-    {id}
-    label={prop.title ?? id}
-    hint={prop.description ?? prop["x-hint"]}
-    {optional}
-    bind:value
-    uploadFile={(file) => handleFileUpload(file, id)}
-    accept={getFileAccept(prop)}
-  />
+  {#if prop["x-secret"]}
+    <CredentialsInput
+      {id}
+      label={prop.title ?? id}
+      hint={prop.description ?? prop["x-hint"]}
+      {optional}
+      bind:value
+      uploadFile={(file) => handleFileUpload(file, id)}
+      accept={getFileAccept(prop)}
+    />
+  {:else}
+    <ShadcnInput type="file" bind:files={value} accept={getFileAccept(prop)} />
+  {/if}
 {:else if prop.type === "boolean"}
   <Checkbox
     {id}

@@ -1,0 +1,19 @@
+import { setError, type SuperValidated } from "sveltekit-superforms";
+
+const SubmitErrorKey = "submitError";
+
+export function setSubmitError(
+  form: SuperValidated<Record<string, unknown>>,
+  error: Error,
+) {
+  setError(form, SubmitErrorKey + ".message", error.message);
+  setError(form, SubmitErrorKey + ".details", (error as any).details);
+}
+
+export function getSubmitError(errors: Record<string, any>) {
+  if (!errors[SubmitErrorKey]) return { message: "", details: "" };
+  return {
+    message: errors[SubmitErrorKey]?.message?.[0],
+    details: errors[SubmitErrorKey]?.details?.[0],
+  };
+}

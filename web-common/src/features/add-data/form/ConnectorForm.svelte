@@ -16,6 +16,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { createConnector } from "@rilldata/web-common/features/add-data/steps/connector.ts";
   import { getLabelsForConnector } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
+  import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
 
   export let connectorDriver: V1ConnectorDriver;
   export let onSubmit: (name: string) => void;
@@ -48,15 +49,19 @@
     formType: "connector",
     onUpdate: async ({ form }) => {
       if (!form.valid) return;
-      await createConnector({
-        runtimeClient,
-        queryClient,
-        connectorName,
-        connectorDriver,
-        formValues: form.data,
-        saveAnyway: false,
-      });
-      onSubmit(connectorName);
+      try {
+        await createConnector({
+          runtimeClient,
+          queryClient,
+          connectorName,
+          connectorDriver,
+          formValues: form.data,
+          saveAnyway: false,
+        });
+        onSubmit(connectorName);
+      } catch (e) {
+        setSubmitError(form, e);
+      }
     },
   });
 

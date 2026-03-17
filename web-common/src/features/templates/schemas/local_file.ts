@@ -1,4 +1,8 @@
 import type { MultiStepFormSchema } from "./types";
+import {
+  PossibleFileExtensions,
+  PossibleZipExtensions,
+} from "@rilldata/web-common/features/sources/modal/possible-file-extensions.ts";
 
 export const localFileSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
@@ -6,18 +10,15 @@ export const localFileSchema: MultiStepFormSchema = {
   title: "Local File",
   "x-category": "fileStore",
   properties: {
-    path: {
-      type: "string",
+    file: {
+      type: "object",
       title: "Path",
       description: "Local file path or glob (relative to project root)",
-      "x-placeholder": "data/*.parquet",
-      "x-step": "source",
-    },
-    name: {
-      type: "string",
-      title: "Source name",
-      description: "Name for the source",
-      "x-placeholder": "my_new_source",
+      "x-display": "file",
+      "x-file-accept": [
+        ...PossibleFileExtensions,
+        ...PossibleZipExtensions,
+      ].join(","),
       "x-step": "source",
     },
   },

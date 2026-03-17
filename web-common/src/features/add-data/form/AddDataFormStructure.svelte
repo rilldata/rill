@@ -22,9 +22,15 @@
   export let step: "connector" | "source";
   export let onBack: () => void;
 
-  $: ({ form, formId, tainted, submit, submitting, errors, message, enhance } =
+  $: ({ form, formId, tainted, submit, submitting, errors, enhance } =
     superFormsParams);
   $: taintedFields = $tainted;
+
+  $: submitError = $errors.submitError as any;
+  $: message = submitError?.message?.[0];
+  $: details = submitError?.details?.[0];
+
+  $: hideRightPannel = connectorDriver.name === "local_file";
 
   let shouldShowSaveAnywayButton = false;
   let shouldShowSkipLink = false;
@@ -34,8 +40,12 @@
     const target = e.target as HTMLInputElement;
     const { name, value } = target;
 
-    if (name !== "path" && name !== "sql") return;
+    clearSubmitErrors();
 
+    if (name === "path" || name === "sql") inferModelName(name, value);
+  }
+
+  function inferModelName(name: string, value: string) {
     const nameFieldTainted =
       taintedFields && typeof taintedFields === "object"
         ? Boolean(taintedFields?.name)
@@ -55,6 +65,15 @@
       },
       { taint: false },
     );
+  }
+
+  function clearSubmitErrors() {
+    errors.update(($errors) => {
+      if (!$errors?.submitError) return $errors;
+      const next = { ...$errors };
+      delete next.submitError;
+      return next;
+    });
   }
 
   async function handleFileUpload(
@@ -137,27 +156,29 @@
     </div>
   </div>
 
-  <!-- RIGHT SIDE PANEL -->
-  <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
-  >
-    <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-      {#if $message}
-        <SubmissionError message="Failed to create" details={$message} />
-      {/if}
+  {#if !hideRightPannel}
+    <!-- RIGHT SIDE PANEL -->
+    <div
+      class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
+    >
+      <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
+        {#if message}
+          <SubmissionError {message} {details} />
+        {/if}
 
-      <YamlPreview title={labels.yamlPreviewTitle} yaml={yamlPreview} />
+        <YamlPreview title={labels.yamlPreviewTitle} yaml={yamlPreview} />
 
-      {#if shouldShowSkipLink}
-        <div class="text-sm leading-normal font-medium text-muted-foreground">
-          Already connected? <button
-            type="button"
-            class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-          >
-            Import your data (TODO)
-          </button>
-        </div>
-      {/if}
+        {#if shouldShowSkipLink}
+          <div class="text-sm leading-normal font-medium text-muted-foreground">
+            Already connected? <button
+              type="button"
+              class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
+            >
+              Import your data (TODO)
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
-  </div>
+  {/if}
 </div>

@@ -60,6 +60,8 @@ export function compileSourceYAML(
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out file types. These should be uploaded and converted to paths.
+      if (value instanceof File || value instanceof FileList) return false;
       return true;
     })
     .map((key) => {

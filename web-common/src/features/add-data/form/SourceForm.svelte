@@ -21,6 +21,11 @@
   import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
   import LocalSourceUpload from "@rilldata/web-common/features/sources/modal/LocalSourceUpload.svelte";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
+  import { uploadFile } from "@rilldata/web-common/features/sources/modal/file-upload.ts";
+  import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+  import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
   export let config: AddDataConfig;
   export let connectorDriver: V1ConnectorDriver;
@@ -93,13 +98,33 @@
       },
     );
 
+    if (formValues.file) {
+      // TODO: support multiple files upload
+      const firstFile = formValues.file[0];
+      const filePath = await uploadFile(runtimeClient, firstFile);
+      if (filePath) {
+        formValues.path = filePath;
+        const [, fileName] = splitFolderFileNameAndExtension(filePath);
+        formValues.name = getName(
+          fileName,
+          fileArtifacts.getNamesForKind(ResourceKind.Model),
+        );
+      }
+    }
+    const yaml = getSourceYamlPreview({
+      connector: connectorDriver,
+      formValues,
+      schema,
+      existingEnvBlob,
+    });
+
     const importConfig = {
       importSteps,
       source: formValues.name,
       sourceSchema: "",
       sourceDatabase: "",
       connector: rewrittenConnector.name!,
-      yaml: yamlPreview,
+      yaml,
       envBlob: newBlob,
     } satisfies ImportAddDataStepConfig;
 
@@ -109,16 +134,12 @@
 
 <ConnectorHeader {connectorDriver} />
 
-{#if connectorName === "local_file"}
-  <LocalSourceUpload {onClose} {onBack} />
-{:else}
-  <AddDataFormStructure
-    {connectorDriver}
-    {schema}
-    {superFormsParams}
-    labels={sourceFormLabels}
-    {yamlPreview}
-    step="source"
-    {onBack}
-  />
-{/if}
+<AddDataFormStructure
+  {connectorDriver}
+  {schema}
+  {superFormsParams}
+  labels={sourceFormLabels}
+  {yamlPreview}
+  step="source"
+  {onBack}
+/>
