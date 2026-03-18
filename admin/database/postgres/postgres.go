@@ -65,6 +65,15 @@ func (c *connection) FindOrganizations(ctx context.Context, afterName string, li
 	return res, nil
 }
 
+func (c *connection) FindOrganizationsByBillingPlanName(ctx context.Context, planName, afterName string, limit int) ([]*database.Organization, error) {
+	var res []*database.Organization
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE billing_plan_name = $1 AND lower(name) > lower($2) ORDER BY lower(name) LIMIT $3", planName, afterName, limit)
+	if err != nil {
+		return nil, parseErr("orgs", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindOrganizationsForUser(ctx context.Context, userID, afterName string, limit int) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `

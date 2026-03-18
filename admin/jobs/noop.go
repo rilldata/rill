@@ -92,6 +92,10 @@ func (n *noop) BillingReporter(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
 
+func (n *noop) CreditCheck(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
 func (n *noop) DeleteExpiredAuthCodes(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }

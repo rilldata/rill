@@ -56,6 +56,7 @@ type DB interface {
 	FindMigrationVersion(ctx context.Context) (int, error)
 
 	FindOrganizations(ctx context.Context, afterName string, limit int) ([]*Organization, error)
+	FindOrganizationsByBillingPlanName(ctx context.Context, planName string, afterName string, limit int) ([]*Organization, error)
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)

@@ -418,6 +418,21 @@ func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) e
 	return nil
 }
 
+// CleanupCreditBillingIssues removes free-plan credit billing issues (called on upgrade to Growth)
+func (s *Service) CleanupCreditBillingIssues(ctx context.Context, orgID string) error {
+	for _, t := range []database.BillingIssueType{
+		database.BillingIssueTypeCreditLow,
+		database.BillingIssueTypeCreditCritical,
+		database.BillingIssueTypeCreditExhausted,
+	} {
+		err := s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, t)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to delete credit billing issue: %w", err)
+		}
+	}
+	return nil
+}
+
 // CleanupSubscriptionBillingIssues removes subscription related billing issues
 func (s *Service) CleanupSubscriptionBillingIssues(ctx context.Context, orgID string) error {
 	err := s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeNeverSubscribed)

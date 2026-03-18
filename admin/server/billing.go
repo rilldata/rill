@@ -1018,6 +1018,12 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		return nil, fmt.Errorf("failed to cleanup subscription cancellation errors: %w", err)
 	}
 
+	// delete any credit billing issues (free-plan → Growth upgrade)
+	err = s.admin.CleanupCreditBillingIssues(ctx, org.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cleanup credit billing issues: %w", err)
+	}
+
 	return org, nil
 }
 
