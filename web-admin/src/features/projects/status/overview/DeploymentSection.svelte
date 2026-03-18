@@ -25,7 +25,7 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import ManageSlotsModal from "./ManageSlotsModal.svelte";
-  import { detectTierSlots } from "./slots-utils";
+  import { detectTierSlots, MIN_INFRA_SLOTS } from "./slots-utils";
   import { useOlapInfo, isMotherDuck } from "./olapInfo";
   import OverviewCard from "./OverviewCard.svelte";
   import { page } from "$app/stores";
@@ -128,7 +128,7 @@
   $: clusterSlots = !isRillManaged
     ? detectedClusterSlots ||
       Number(projectData?.clusterSlots) ||
-      (devForceNewPricing ? 8 : 0)
+      MIN_INFRA_SLOTS
     : 0;
   // Rill Slots = additional slots on top of cluster_slots (user-controlled).
   $: rillSlots =

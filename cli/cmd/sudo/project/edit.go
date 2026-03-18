@@ -95,7 +95,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 					} else if proj.Project.ClusterSlots != nil {
 						clusterSlotsForCalc = *proj.Project.ClusterSlots
 					} else {
-						clusterSlotsForCalc = 4 // default for Live Connect
+						return fmt.Errorf("cluster_slots is not set for this project -- set it first with --cluster-slots")
 					}
 					newProdSlots := clusterSlotsForCalc + int64(rillSlots)
 					req.ProdSlots = &newProdSlots
