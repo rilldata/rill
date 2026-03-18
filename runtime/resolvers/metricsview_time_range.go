@@ -157,7 +157,7 @@ func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() ([]*runtimev
 }
 
 func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
-	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_time_range",
 		ResolverProperties: map[string]any{

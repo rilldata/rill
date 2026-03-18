@@ -1,5 +1,7 @@
+import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
+import { fetchOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import type {
   GrowthPlanDialogTypes,
   TeamPlanDialogTypes,
@@ -55,12 +57,19 @@ export class BillingCTAHandler {
         }
         break;
 
-      case "payment":
+      case "payment": {
+        const issues = await fetchOrganizationBillingIssues(this.organization);
+        const setup = needsPaymentSetup(issues);
         window.open(
-          await fetchPaymentsPortalURL(this.organization, window.location.href),
+          await fetchPaymentsPortalURL(
+            this.organization,
+            window.location.href,
+            setup,
+          ),
           "_self",
         );
         break;
+      }
 
       case "contact":
         window.Pylon("show");

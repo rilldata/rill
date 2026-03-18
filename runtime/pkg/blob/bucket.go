@@ -48,10 +48,10 @@ func (b *Bucket) Underlying() *blob.Bucket {
 // E.g. to list gs://my-bucket/path/to/files/*, the glob pattern should be "path/to/files/*".
 func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSizeForObjects)
-	var startAfter string
+	var driverStartAfter string
 	driverPageToken := blob.FirstPageToken
 	if pageToken != "" {
-		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken, &startAfter); err != nil {
+		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken, &driverStartAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
@@ -89,23 +89,23 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 				if as(&q) {
 					// Only fetch the fields we need.
 					_ = q.SetAttrSelection([]string{"Name", "Size", "Created", "Updated"})
-					if startAfter != "" {
-						q.StartOffset = startAfter
+					if driverStartAfter != "" {
+						q.StartOffset = driverStartAfter
 					}
 				}
 				// Handle S3
 				var s3Input *s3.ListObjectsV2Input
 				if as(&s3Input) {
-					if startAfter != "" {
-						s3Input.StartAfter = aws.String(startAfter)
+					if driverStartAfter != "" {
+						s3Input.StartAfter = aws.String(driverStartAfter)
 					}
 				}
 
 				// Handle Azure Blob Storage
 				var azOpts *container.ListBlobsHierarchyOptions
 				if as(&azOpts) {
-					if startAfter != "" {
-						azOpts.StartFrom = &startAfter
+					if driverStartAfter != "" {
+						azOpts.StartFrom = &driverStartAfter
 					}
 				}
 				return nil
@@ -119,12 +119,12 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		lastProcessedIdx := -1
 		for i, obj := range retval {
 			// Skip entries until we're past startAfter
-			if startAfter != "" {
+			if driverStartAfter != "" {
 				// error out here because we already have StartOffset/StartAfter/StartFrom pass in api
-				if obj.Key < startAfter {
-					return nil, "", fmt.Errorf("blob: entry with key < startAfter (%q)", startAfter)
+				if obj.Key < driverStartAfter {
+					return nil, "", fmt.Errorf("blob: entry with key < startAfter (%q)", driverStartAfter)
 				}
-				if obj.Key == startAfter {
+				if obj.Key == driverStartAfter {
 					continue
 				}
 			}
@@ -159,20 +159,23 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		if len(entries) == validPageSize {
 			if lastProcessedIdx == len(retval)-1 {
 				driverPageToken = nextDriverPageToken
-				startAfter = ""
+				driverStartAfter = ""
 			} else if lastProcessedIdx != -1 {
-				startAfter = retval[lastProcessedIdx].Key
+				driverStartAfter = retval[lastProcessedIdx].Key
+				// reset to first page token because s3 and azure blob storage only supports startAfter for first page
+				// if we use nextDriverPageToken it will ignore the startAfter and use the next page token
+				driverPageToken = blob.FirstPageToken
 			}
 			break
 		}
 
 		driverPageToken = nextDriverPageToken
-		startAfter = ""
+		driverStartAfter = ""
 	}
 
 	nextToken := ""
 	if driverPageToken != nil {
-		nextToken = pagination.MarshalPageToken(driverPageToken, startAfter)
+		nextToken = pagination.MarshalPageToken(driverPageToken, driverStartAfter)
 	}
 
 	return entries, nextToken, nil

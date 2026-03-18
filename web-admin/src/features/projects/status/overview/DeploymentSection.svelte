@@ -19,6 +19,7 @@
   import {
     formatEnvironmentName,
     formatConnectorName,
+    getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
@@ -77,6 +78,7 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
+  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );

@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/admin/billing"
@@ -11,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/billingportal/session"
+	checkout "github.com/stripe/stripe-go/v79/checkout/session"
 	"github.com/stripe/stripe-go/v79/customer"
 	"go.uber.org/zap"
 )
@@ -94,14 +96,32 @@ func (s *Stripe) DeleteCustomer(ctx context.Context, customerID string) error {
 	return err
 }
 
-func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error) {
+func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL string, setup bool) (string, error) {
+	if setup {
+		params := &stripe.CheckoutSessionParams{
+			Customer:                 stripe.String(customerID),
+			Mode:                     stripe.String(string(stripe.CheckoutSessionModeSetup)), // setup page asking for payment method and billing address
+			BillingAddressCollection: stripe.String(string(stripe.CheckoutSessionBillingAddressCollectionRequired)),
+			CustomerUpdate: &stripe.CheckoutSessionCustomerUpdateParams{
+				Address: stripe.String("auto"), // will update the customer address with the address collected in the checkout session
+			},
+			Currency:   stripe.String(string(stripe.CurrencyUSD)),
+			SuccessURL: stripe.String(returnURL),
+			CancelURL:  stripe.String(returnURL),
+		}
+		sess, err := checkout.New(params)
+		if err != nil {
+			return "", fmt.Errorf("failed to create checkout session: %w", err)
+		}
+		return sess.URL, nil
+	}
 	params := &stripe.BillingPortalSessionParams{
 		Customer:  stripe.String(customerID),
 		ReturnURL: stripe.String(returnURL),
 	}
 	sess, err := session.New(params)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create billing portal session: %w", err)
 	}
 
 	return sess.URL, nil

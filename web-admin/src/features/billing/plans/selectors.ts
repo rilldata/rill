@@ -41,14 +41,17 @@ export async function fetchGrowthPlan() {
 export async function fetchPaymentsPortalURL(
   organization: string,
   returnUrl: string,
+  setup?: boolean,
 ) {
   const portalUrlResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceGetPaymentsPortalURLQueryKey(organization, {
       returnUrl,
+      setup,
     }),
     queryFn: () =>
       adminServiceGetPaymentsPortalURL(organization, {
         returnUrl,
+        setup,
       }),
     // always refetch since the signed url will expire
     // TODO: figure out expiry time and use that instead

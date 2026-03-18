@@ -53,17 +53,6 @@ func TestManagedDeploy(t *testing.T) {
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
 
-	// cleanup repo
-	t.Cleanup(func() {
-		// delete github repo
-		// currently github repos are deleted by a background job
-		// but for test cleanup we will delete it here directly
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
-	})
-
 	// redeploy the same project with changes
 	changes := map[string]string{
 		"models/model.sql": `SELECT 1 AS one`,
@@ -111,14 +100,6 @@ func TestManagedDeployWithPrimaryBranch(t *testing.T) {
 	installationID, err := adm.Admin.Github.ManagedOrgInstallationID()
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
-
-	// cleanup repo
-	t.Cleanup(func() {
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
-	})
 
 	// verify the model file is present on the "staging" branch
 	verifyGithubRepoBranchContents(t, ghClient, resp.Project.GitRemote, "staging", map[string]string{
@@ -178,7 +159,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
 
 	author := &object.Signature{
@@ -248,7 +229,7 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
 
 	author := &object.Signature{
