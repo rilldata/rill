@@ -11,7 +11,7 @@
   // type $$Events = SwitchPrimitive.Events;
 
   let className: $$Props["class"] = undefined;
-  export let checked: $$Props["checked"] = undefined;
+  export let checked: $$Props["checked"] = false;
   export { className as class };
   export let small = false;
   export let medium = false;

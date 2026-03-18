@@ -1,9 +1,9 @@
 <script lang="ts" context="module">
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
-  import { onMount } from "svelte";
 </script>
 
 <script lang="ts">

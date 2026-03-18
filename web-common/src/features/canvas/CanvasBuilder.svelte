@@ -42,10 +42,13 @@
 
   const runtimeClient = useRuntimeClient();
 
+  const MIN_DRAG_DISTANCE = 8;
+
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
   let offset = { x: 0, y: 0 };
   let dragComponent: BaseCanvasComponent | null = null;
+  let pendingDragComponent: BaseCanvasComponent | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
@@ -116,6 +119,11 @@
 
   $: dropZone.setMouseDelta(mouseDelta);
 
+  $: if (pendingDragComponent && mouseDelta >= MIN_DRAG_DISTANCE) {
+    handleDragStart(pendingDragComponent);
+    pendingDragComponent = null;
+  }
+
   $: defaultMetrics = $metricsViewQuery?.data;
 
   $: activelyDragging = !!dragComponent;
@@ -172,12 +180,19 @@
 
   function onDragEnd() {
     dragComponent = null;
+    // Safety net: remove portal ghost if Svelte 5's {#if} cleanup didn't
+    document
+      .querySelectorAll("#rill-portal .drag-container")
+      .forEach((el) => el.remove());
   }
 
   function reset() {
     if (dragTimeout) {
       clearTimeout(dragTimeout);
     }
+
+    pendingDragComponent = null;
+    initialMousePosition = null;
 
     if (dragComponent) {
       onDragEnd();
@@ -498,9 +513,12 @@
 
         openSidebarAfterSelection = true;
 
+        // Ensure cleanup on mouseup even if svelte:window handler fails
+        window.addEventListener("mouseup", reset, { once: true });
+
         dragTimeout = setTimeout(() => {
           openSidebarAfterSelection = false;
-          handleDragStart(component);
+          pendingDragComponent = component;
         }, 150);
       }}
     />
