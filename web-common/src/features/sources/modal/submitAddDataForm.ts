@@ -17,6 +17,7 @@ import type { RuntimeClient } from "../../../runtime-client/v2";
 import {
   compileConnectorYAML,
   updateDotEnvWithSecrets,
+  updateRillYAMLWithAiConnector,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import {
@@ -32,8 +33,8 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import { AI_CONNECTORS, OLAP_ENGINES } from "./constants";
 import { sourceIngestionTracker } from "../sources-store";
-import { OLAP_ENGINES } from "./constants";
 import { getConnectorSchema, isMultiStepConnector } from "./connector-schemas";
 import {
   findRadioEnumKey,
@@ -60,7 +61,7 @@ const connectorSubmissions = new Map<
   }
 >();
 
-async function beforeSubmitForm(
+export async function beforeSubmitForm(
   client: RuntimeClient,
   connector?: V1ConnectorDriver,
 ) {
@@ -140,6 +141,23 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
+async function setAiConnectorInRillYAML(
+  queryClient: QueryClient,
+  client: RuntimeClient,
+  newConnectorName: string,
+): Promise<void> {
+  await runtimeServicePutFile(client, {
+    path: "rill.yaml",
+    blob: await updateRillYAMLWithAiConnector(
+      client,
+      queryClient,
+      newConnectorName,
+    ),
+    create: true,
+    createOnly: false,
+  });
+}
+
 async function saveConnectorWithoutTest(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -205,6 +223,10 @@ async function saveConnectorWithoutTest(
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
+  }
+
+  if (AI_CONNECTORS.includes(connector.name as string)) {
+    await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
   }
 
   // Go to the new connector file
@@ -380,6 +402,10 @@ export async function submitAddConnectorForm(
 
       if (OLAP_ENGINES.includes(connector.name as string)) {
         await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
+      }
+
+      if (AI_CONNECTORS.includes(connector.name as string)) {
+        await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
       }
 
       // Go to the new connector file

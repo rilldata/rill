@@ -331,21 +331,36 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+	// Extract trace data if present (will be attached after error mapping)
+	var te *traceError
+	errors.As(err, &te)
+
 	if errors.Is(err, context.DeadlineExceeded) {
-		return status.Error(codes.DeadlineExceeded, err.Error())
+		err = status.Error(codes.DeadlineExceeded, err.Error())
+	} else if errors.Is(err, context.Canceled) {
+		err = status.Error(codes.Canceled, err.Error())
+	} else if errors.Is(err, queries.ErrForbidden) {
+		err = ErrForbidden
+	} else if errors.Is(err, runtime.ErrForbidden) {
+		err = ErrForbidden
+	} else if errors.Is(err, metricsview.ErrForbidden) {
+		err = ErrForbidden
 	}
-	if errors.Is(err, context.Canceled) {
-		return status.Error(codes.Canceled, err.Error())
+
+	// Attach trace details to the gRPC status after error mapping
+	if te != nil {
+		t := te.collector.ToProto()
+		if t != nil {
+			st, ok := status.FromError(err)
+			if !ok {
+				st = status.New(codes.Unknown, err.Error())
+			}
+			if detailed, detailErr := st.WithDetails(t); detailErr == nil {
+				return detailed.Err()
+			}
+		}
 	}
-	if errors.Is(err, queries.ErrForbidden) {
-		return ErrForbidden
-	}
-	if errors.Is(err, runtime.ErrForbidden) {
-		return ErrForbidden
-	}
-	if errors.Is(err, metricsview.ErrForbidden) {
-		return ErrForbidden
-	}
+
 	return err
 }
 
@@ -401,4 +416,28 @@ func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequ
 	return &runtimev1.IssueDevJWTResponse{
 		Jwt: jwt,
 	}, nil
+}
+
+// traceError wraps an error with trace data collected during request execution.
+// It is handled by mapGRPCError, which attaches the trace as gRPC error details after normal error mapping is applied.
+type traceError struct {
+	err       error
+	collector *observability.RequestScopedCollector
+}
+
+// Error and Unwrap implement the error interface and allow errors.Is and errors.As to work with traceError.
+func (e *traceError) Error() string { return e.err.Error() }
+func (e *traceError) Unwrap() error { return e.err }
+
+// withTrace wraps an error with trace data if a collector is present.
+func withTrace(err error, collector *observability.RequestScopedCollector) error {
+	if collector == nil {
+		return err
+	}
+	return &traceError{err: err, collector: collector}
+}
+
+// canTrace returns true for Rill Developer (SkipChecks=true) and project admins (ReadInstance).
+func canTrace(claims *runtime.SecurityClaims) bool {
+	return claims.Can(runtime.ReadInstance)
 }

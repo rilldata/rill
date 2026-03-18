@@ -94,6 +94,14 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
 
+  - **`lookup_table`** - _[string]_ - the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details 
+
+  - **`lookup_key_column`** - _[string]_ - the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table 
+
+  - **`lookup_value_column`** - _[string]_ - the attribute column in the lookup dictionary whose values will be displayed for this dimension 
+
+  - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`) 
+
 ### `measures`
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model 

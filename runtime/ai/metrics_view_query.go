@@ -250,7 +250,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	defer cancel()
 
 	// Run the metrics query
-	res, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         session.InstanceID(),
 		Resolver:           "metrics",
 		ResolverProperties: map[string]any(args),

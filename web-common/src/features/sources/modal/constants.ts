@@ -84,7 +84,9 @@ export const SOURCES = [
   "athena",
   "azure",
   "bigquery",
+  "delta",
   "gcs",
+  "iceberg",
   "mysql",
   "postgres",
   "redshift",
@@ -105,4 +107,6 @@ export const OLAP_ENGINES = [
   "starrocks",
 ];
 
-export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
+export const AI_CONNECTORS = ["claude", "openai", "gemini"];
+
+export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES, ...AI_CONNECTORS];

@@ -11734,6 +11734,8 @@ func (m *ParseError) validate(all bool) error {
 
 	// no validation rules for External
 
+	// no validation rules for Warning
+
 	if len(errors) > 0 {
 		return ParseErrorMultiError(errors)
 	}

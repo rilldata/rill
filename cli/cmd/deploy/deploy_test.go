@@ -3,6 +3,7 @@ package deploy_test
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,17 +53,6 @@ func TestManagedDeploy(t *testing.T) {
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
 
-	// cleanup repo
-	t.Cleanup(func() {
-		// delete github repo
-		// currently github repos are deleted by a background job
-		// but for test cleanup we will delete it here directly
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
-	})
-
 	// redeploy the same project with changes
 	changes := map[string]string{
 		"models/model.sql": `SELECT 1 AS one`,
@@ -111,14 +101,6 @@ func TestManagedDeployWithPrimaryBranch(t *testing.T) {
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
 
-	// cleanup repo
-	t.Cleanup(func() {
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
-	})
-
 	// verify the model file is present on the "staging" branch
 	verifyGithubRepoBranchContents(t, ghClient, resp.Project.GitRemote, "staging", map[string]string{
 		"models/model.sql": `SELECT 'staging' AS env`,
@@ -127,8 +109,7 @@ func TestManagedDeployWithPrimaryBranch(t *testing.T) {
 
 // This test require gh cli to be installed on the system.
 // Alternatively a personal access token can be set via RILL_TEST_GH_TOKEN environment variable.
-// TODO: Set personal acccess token for CI/CD tests.
-func NoCICDTestGithubDeploy(t *testing.T) {
+func TestGithubDeploy(t *testing.T) {
 	testmode.Expensive(t)
 	personalAccessToken := getGithubAuthToken(t)
 	// github client
@@ -150,15 +131,15 @@ func NoCICDTestGithubDeploy(t *testing.T) {
 	u1 := testcli.New(t, adm, c.Token)
 
 	t.Run("self-hosted git deploy", func(t *testing.T) {
-		testSelfHostedDeploy(t, c, ghClient, u1)
+		testSelfHostedDeploy(t, c, ghClient, u1, personalAccessToken)
 	})
 
 	t.Run("self-hosted git deploy with monorepo", func(t *testing.T) {
-		testSelfHostedMonorepoDeploy(t, c, ghClient, u1)
+		testSelfHostedMonorepoDeploy(t, c, ghClient, u1, personalAccessToken)
 	})
 }
 
-func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture) {
+func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture, token string) {
 	testmode.Expensive(t)
 	result := adm.Run(t, "org", "create", "github-test")
 	require.Equal(t, 0, result.ExitCode)
@@ -178,15 +159,17 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
 
 	author := &object.Signature{
 		Name:  "Rill test user",
 		Email: "test.user@rilldata.com",
+		When:  time.Now(),
 	}
+	authCloneURL := authGitURL(t, *repo.CloneURL, token)
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
-		Remote:        *repo.CloneURL,
+		Remote:        authCloneURL,
 		DefaultBranch: "main",
 	}, "", author)
 	require.NoError(t, err, "failed to push to github repo")
@@ -204,10 +187,12 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	require.Equal(t, "self-hosted-deploy", resp.Project.Name)
 	require.Empty(t, resp.Project.ManagedGitId)
 
-	// check remote configured in directory
+	// check remote configured in directory (normalize to strip any embedded credentials)
 	remote, err := gitutil.ExtractGitRemote(tempDir, "origin", false)
 	require.NoError(t, err)
-	require.Equal(t, *repo.CloneURL, remote.URL)
+	normalizedRemoteURL, err := gitutil.NormalizeGithubRemote(remote.URL)
+	require.NoError(t, err)
+	require.Equal(t, *repo.CloneURL, normalizedRemoteURL)
 
 	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=self-hosted-deploy", "--skip-deploy=true", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
@@ -224,7 +209,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
 }
 
-func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture) {
+func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture, token string) {
 	testmode.Expensive(t)
 	result := adm.Run(t, "org", "create", "github-monorepo-test")
 	require.Equal(t, 0, result.ExitCode)
@@ -244,30 +229,40 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
 
 	author := &object.Signature{
 		Name:  "Rill test user",
 		Email: "test.user@rilldata.com",
+		When:  time.Now(),
 	}
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
-		Remote:        *repo.CloneURL,
+		Remote:        authGitURL(t, *repo.CloneURL, token),
 		DefaultBranch: "main",
 	}, "", author)
 	require.NoError(t, err, "failed to push to github repo")
 
 	// Clone two separate copies of the same repo to simulate independent working directories
 	// This demonstrates that different subpaths can be worked on independently
+	cloneRepo := func(ctx context.Context, repoURL, path, token string) error {
+		cmd := exec.CommandContext(ctx, "git", "clone", authGitURL(t, repoURL, token), path)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("git clone failed: %s(%s)", out, err)
+		}
+		return nil
+	}
+
 	clone1Dir := t.TempDir()
 	clone2Dir := t.TempDir()
 
 	// Clone repo to first directory
-	err = cloneRepo(t.Context(), *repo.CloneURL, clone1Dir)
+	err = cloneRepo(t.Context(), *repo.CloneURL, clone1Dir, token)
 	require.NoError(t, err, "failed to clone repo to first directory")
 
 	// Clone repo to second directory
-	err = cloneRepo(t.Context(), *repo.CloneURL, clone2Dir)
+	err = cloneRepo(t.Context(), *repo.CloneURL, clone2Dir, token)
 	require.NoError(t, err, "failed to clone repo to second directory")
 
 	// deploy project1 from first clone
@@ -475,11 +470,9 @@ func initGitWithTwoBranches(t *testing.T, dir string) {
 	runGitCmd("commit", "-m", "staging changes")
 }
 
-func cloneRepo(ctx context.Context, repoURL, path string) error {
-	cmd := exec.CommandContext(ctx, "git", "clone", repoURL, path)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("clone repo failed with error: %s(%s)", out, err)
-	}
-	return nil
+func authGitURL(t *testing.T, repoURL, token string) string {
+	u, err := url.Parse(repoURL)
+	require.NoError(t, err)
+	u.User = url.UserPassword("x-access-token", token)
+	return u.String()
 }

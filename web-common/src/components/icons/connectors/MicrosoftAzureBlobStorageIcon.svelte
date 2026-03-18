@@ -11,22 +11,22 @@
 >
   <path
     d="M21.0002 2H2.99978C1.89533 2 1 2.89651 1 4.00241V18.9976C1 20.1035 1.89533 21 2.99978 21H21.0002C22.1047 21 23 20.1035 23 18.9976V4.00241C23 2.89651 22.1047 2 21.0002 2Z"
-    fill="url(#pattern0_6049_18488)"
+    fill="url(#pattern0_412_5162)"
   />
   <defs>
     <pattern
-      id="pattern0_6049_18488"
+      id="pattern0_412_5162"
       patternContentUnits="objectBoundingBox"
       width="1"
       height="1"
     >
       <use
-        xlink:href="#image0_6049_18488"
+        xlink:href="#image0_412_5162"
         transform="matrix(0.00526 0 0 0.00613 -0.316 0)"
       />
     </pattern>
     <image
-      id="image0_6049_18488"
+      id="image0_412_5162"
       width="310"
       height="163"
       preserveAspectRatio="none"
