@@ -16,6 +16,7 @@
     getSubscriptionResumedText,
     showWelcomeToRillDialog,
   } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import {
     AlertDialog,
@@ -102,6 +103,7 @@
           await fetchPaymentsPortalURL(
             organization,
             getBillingUpgradeUrl($page, organization),
+            needsPaymentSetup(paymentIssues),
           ),
           "_self",
         );
