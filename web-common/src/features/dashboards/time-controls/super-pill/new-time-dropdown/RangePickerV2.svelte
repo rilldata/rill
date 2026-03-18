@@ -220,7 +220,7 @@
     }
   }}
 >
-  <Tooltip.Root delayDuration={800}>
+  <Tooltip.Root delayDuration={800} ignoreNonKeyboardFocus>
     <Tooltip.Trigger>
       {#snippet child({ props: tooltipProps })}
         <Popover.Trigger>
