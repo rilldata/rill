@@ -24,6 +24,7 @@
     name={component.id}
     spec={vega_spec}
     whereFilter={$timeAndFilterStore?.where}
+    timeRange={$timeAndFilterStore?.timeRange}
     metricsSQL={metrics_sql}
     showDataTable={editable}
   />

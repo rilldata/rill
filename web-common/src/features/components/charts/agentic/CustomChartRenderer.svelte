@@ -9,6 +9,7 @@
   import {
     createRuntimeServiceQueryResolver,
     type V1Expression,
+    type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
@@ -18,6 +19,7 @@
   export let metricsSQL: string[] = [];
   export let renderer: "canvas" | "svg" = "svg";
   export let whereFilter: V1Expression | undefined = undefined;
+  export let timeRange: V1TimeRange | undefined = undefined;
   export let showDataTable = false;
   export let name: string = "Custom Chart";
 
@@ -32,8 +34,11 @@
 
   const runtimeClient = useRuntimeClient();
 
-  // Create a unique key that includes whereFilter to ensure queries are invalidated when it changes
-  $: filterKey = JSON.stringify(whereFilter);
+  // Create a unique key that includes whereFilter and timeRange to ensure queries are invalidated when they change
+  $: filterKey = JSON.stringify({ whereFilter, timeRange });
+
+  // Only enable queries when the time range has resolved
+  $: hasValidTimeRange = !!timeRange?.start && !!timeRange?.end;
 
   // Create queries that are reactive to whereFilter changes
   $: dataQueries = metricsSQL.map((sql, index) =>
@@ -43,12 +48,15 @@
         resolver: "metrics_sql",
         resolverProperties: {
           sql,
-          ...(whereFilter ? { addition_where: whereFilter } : {}),
+          ...(whereFilter?.cond?.exprs?.length
+            ? { additional_where: whereFilter }
+            : {}),
+          ...(timeRange ? { additional_time_range: timeRange } : {}),
         } as unknown as PartialMessage<Struct>,
       },
       {
         query: {
-          enabled: !!sql,
+          enabled: !!sql && hasValidTimeRange,
           queryKey: [`metrics_sql`, name, index, sql, filterKey],
         },
       },
@@ -80,6 +88,9 @@
   } catch (e: unknown) {
     error = JSON.stringify(e);
   }
+
+  // Check for any query errors
+  $: queryError = $combinedResults.find((r) => r.error)?.error;
 
   // Table data for the selected query
   $: rows = $combinedResults[selectedTable]?.data;
@@ -115,6 +126,10 @@
         {:else if error}
           <div class="text-red-500 items-center justify-center">
             {error}
+          </div>
+        {:else if queryError}
+          <div class="text-red-500 items-center justify-center">
+            {queryError.message || "Error loading data"}
           </div>
         {:else if rows && parsedSpec}
           <VegaLiteRenderer
