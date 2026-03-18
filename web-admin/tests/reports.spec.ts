@@ -15,6 +15,9 @@ test.describe.serial("Reports", () => {
     // Enter dimension table "App Site Domain"
     await adminPage.getByText("App Site Domain").click();
 
+    // Wait for the dimension table to fully render before interacting.
+    await adminPage.getByLabel("Dimension Display").waitFor();
+
     // Clicking "App Site Domain" can trigger a tooltip that overlays the export
     // button. Move the mouse away to dismiss it (Tooltip uses hoverIntent which
     // only dismisses on mouse leave).
