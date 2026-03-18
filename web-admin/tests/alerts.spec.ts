@@ -11,6 +11,8 @@ test.describe.serial("Alerts", () => {
   test.describe.serial("Alerts with filters", () => {
     test("Should create alert with filters", async ({ adminPage }) => {
       await adminPage.goto("/e2e/openrtb/explore/auction_explore");
+      // We are seeing some race condition where clicking `App Site Domain` too quickly can get reset with an internal redirect.
+      await adminPage.waitForURL(/tr=P7D/);
 
       await adminPage.getByRole("button", { name: "Create alert" }).click();
 

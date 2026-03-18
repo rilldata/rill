@@ -5414,6 +5414,11 @@ export class ParseError extends Message<ParseError> {
    */
   external = false;
 
+  /**
+   * @generated from field: bool warning = 5;
+   */
+  warning = false;
+
   constructor(data?: PartialMessage<ParseError>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5426,6 +5431,7 @@ export class ParseError extends Message<ParseError> {
     { no: 2, name: "file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "start_location", kind: "message", T: CharLocation },
     { no: 4, name: "external", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "warning", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ParseError {
