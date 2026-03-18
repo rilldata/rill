@@ -76,7 +76,7 @@ export default async (
 export const config: Config = {
   path: "/*",
   rateLimit: {
-    windowLimit: 300,
+    windowLimit: 3000,
     windowSize: 60,
     aggregateBy: ["ip", "domain"],
   },
