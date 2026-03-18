@@ -1,197 +1,67 @@
 ---
-title: Plans & Pricing
-sidebar_label: Plans & Pricing
+title: "Billing Plans Explained"
+description: How Billing works for non-enterprise accounts
+sidebar_label: Billing Plans Explained
 sidebar_position: 00
 ---
 
-import { PlanCard, PlanCards } from '@site/src/components/PlanCard';
-import FeatureTable from '@site/src/components/FeatureTable';
+Billing cycles begin on the first of the every month (12:00am UTC). If you start your plan mid-month, your first month will be pro-rated accordingly. You can subcribe to a Team Plan at any point via your Rill Cloud billing page. 
 
-# Plans & Pricing
 
-Rill offers two deployment modes, each with three pricing tiers. AI is included at all tiers — no token math, no surprises.
+### How does it work? 
+Rill Data does not use a user-based license system. Instead, we calculate your data usage, after ingestion, and calculate the pricing based on this. For more information on pricing, see our [pricing page](https://www.rilldata.com/pricing). 
 
-## Deployment Modes
 
-- **Managed** — Rill ingests, transforms, and hosts your data on managed infrastructure (DuckDB). Ideal for teams that want a fully managed experience. Practical ceiling ~250 GB.
-- **Live Connect** — Rill connects directly to your existing OLAP warehouse (ClickHouse, MotherDuck, etc.) without storing your data. Ideal for teams with existing infrastructure.
+## Trial Plan
 
-Both modes share the same three-tier structure: **Free**, **Growth**, and **Enterprise**.
+Get started with Rill Cloud with our 30 day free trial! Upon deployment of your first project, your trial will automatically start.  On a free trial, you will be allowed 1 project up to 10GB of data storage.  Like all plans in Rill Data, this also comes with unlimited seats. As an admin, you'll notice banners at the top of the UI indicating the remaining time left on your trial. Once your time has run out, your projects in Rill Cloud will hibernate. While your project wont be accessible on Rill Cloud, the files will still be available if your choose to upgrade to a Team plan.
 
----
+![Deploy Project](/img/manage/billing/deploy-project.png)
 
-## Managed Plans
 
-<PlanCards>
-  <PlanCard
-    name="Free"
-    price="$250 credit"
-    features={[
-      { label: "Credit", value: "$250 on signup" },
-      { label: "Data limit", value: "Up to 1 GB" },
-      { label: "Slots", value: "1 slot (4 GB RAM / 1 vCPU)" },
-      { label: "AI", value: "Included" },
-      { label: "Branding", value: "\"Made with Rill\" badge" },
-    ]}
-  />
-  <PlanCard
-    name="Growth"
-    price="Usage-based"
-    features={[
-      { label: "Base fee", value: "None" },
-      { label: "Slots", value: "$0.15/slot/hr" },
-      { label: "Storage", value: "$1/GB/month above 1 GB" },
-      { label: "AI", value: "Included" },
-      { label: "Branding", value: "Fully customizable" },
-    ]}
-  />
-  <PlanCard
-    name="Enterprise"
-    price="Custom"
-    features={[
-      { label: "Data", value: "Custom" },
-      { label: "Slots", value: "Custom allocation" },
-      { label: "AI", value: "Included" },
-      { label: "Branding", value: "Fully customizable" },
-      { label: "Extras", value: "CSM, SLAs, SSO" },
-    ]}
-    cta={{ text: "Contact sales →", link: "https://www.rilldata.com/contact" }}
-  />
-</PlanCards>
+### Upgrading to Team Plan
+Once you are ready to upgrade to a Team Plan, you can do so via the organization billing page, or select `Upgrade` in the top banner. Only organization administrators can upgrade the plan.
 
-### Managed Growth — reference bills
+![Team Plan](/img/manage/billing/team-plan.png)
 
-| Data Size | Slots | Compute/mo | Storage/mo | Total/mo |
-|---|---|---|---|---|
-| 1 GB | 1 | $0 | $0 | **$0** |
-| 5 GB | 2 | ~$219 | ~$4 | **~$223** |
-| 10 GB | 2 | ~$219 | ~$9 | **~$228** |
-| 25 GB | 2 | ~$219 | ~$24 | **~$243** |
-| 50 GB | 3 | ~$328 | ~$49 | **~$377** |
-| 100 GB | 4 | ~$438 | ~$99 | **~$537** |
-| 250 GB | 6 | ~$657 | ~$249 | **~$906** |
 
-*Slots at $0.15/slot/hr × 730 hrs/month always-on. Storage at $1/GB/month above 1 GB.*
+### Managing Payment Information
 
----
+Please add a payment method and billing information that is accepted by Stripe. For more information please visit Stripe's website, [here.](https://docs.stripe.com/payments/payment-methods/overview)
 
-## Live Connect Plans
+![Stripe](/img/manage/billing/stripe.png)
 
-Live Connect pricing has two components:
 
-- **Base price** — derived from your OLAP cluster size (~20% of your cluster cost, at $0.06/slot/hr)
-- **Rill Slots** — user-controlled slots for extra performance and dev environments ($0.15/slot/hr, starts at 0)
+## Team Plan
 
-<PlanCards>
-  <PlanCard
-    name="Free"
-    price="$250 credit"
-    features={[
-      { label: "Credit", value: "$250 on deploy" },
-      { label: "Base price", value: "~20% of your cluster cost" },
-      { label: "Rill Slots", value: "0" },
-      { label: "AI", value: "Included" },
-      { label: "Branding", value: "\"Made with Rill\" badge" },
-    ]}
-  />
-  <PlanCard
-    name="Growth"
-    price="Usage-based"
-    features={[
-      { label: "Base fee", value: "None" },
-      { label: "Base price", value: "~20% of your cluster cost" },
-      { label: "Rill Slots", value: "$0.15/slot/hr (user-controlled)" },
-      { label: "Hibernation", value: "Metering pauses automatically" },
-      { label: "AI", value: "Included" },
-      { label: "Branding", value: "Fully customizable" },
-    ]}
-  />
-  <PlanCard
-    name="Enterprise"
-    price="Custom"
-    features={[
-      { label: "Base price", value: "Custom rate" },
-      { label: "Rill Slots", value: "Custom allocation" },
-      { label: "AI", value: "Included" },
-      { label: "Branding", value: "Fully customizable" },
-      { label: "Extras", value: "CSM, SLAs, SSO" },
-    ]}
-    cta={{ text: "Contact sales →", link: "https://www.rilldata.com/contact" }}
-  />
-</PlanCards>
+Team Plan unlocks unlimited projects with a 50GB data storage limit per project. Like all plans in Rill Data, this also comes with unlimited seats. As an admin, you will have access to your billing and usage page to monitor your project. If you decide to unsubcribe from your subcription, you will have access to Rill Cloud until the end of the month. Afterwards, your project will hibernate.
+Your project will not be accessible while hibernating. You will need to renew your subscription in order to access your project on Rill Cloud. 
 
-### Live Connect Growth — reference bills
+To calculate your current usage and pricing, see our [pricing page](https://www.rilldata.com/pricing). 
 
-| CHC Cluster | CHC Cost/mo | Rill Base/mo |
-|---|---|---|
-| Basic (8 GB / 2 vCPU) × 2 | $443 | ~$88 |
-| Basic (12 GB / 3 vCPU) × 2 | $662 | ~$131 |
-| Scale (16 GB / 4 vCPU) × 2 | $880 | ~$175 |
-| Scale (32 GB / 8 vCPU) × 2 | $1,754 | ~$350 |
-| Scale (64 GB / 16 vCPU) × 2 | $3,502 | ~$701 |
-| Scale (120 GB / 30 vCPU) × 2 | $6,700 | ~$1,314 |
+![Team Plan2](/img/manage/billing/team-plan2.png)
 
-*CHC costs based on ClickHouse Cloud pricing, 2 replicas, always-on. Hibernated clusters are not billed.*
 
----
 
-## Feature Comparison
+## Enterprise Plan
 
-### Managed vs Live Connect
+Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](/contact).
 
-<FeatureTable
-  columns={["", "Managed", "Live Connect"]}
-  rows={[
-    ["Pricing", "Rill Slots at $0.15/slot/hr + $1/GB/month above 1 GB", "~20% of cluster cost + Rill Slots at $0.15/slot/hr"],
-    ["Storage", "$1/GB/month above 1 GB", "N/A (your warehouse)"],
-    ["Data ceiling", "~250 GB", "Unlimited"],
-    ["Free tier", "$250 credit, 1 GB limit", "$250 credit on deploy"],
-    ["Best for", "Fully managed experience", "Existing OLAP infrastructure"],
-  ]}
-/>
+### Enterprise usage-based billing
 
-### By Tier
+**Storage:**
 
-<FeatureTable
-  columns={["", "Free", "Growth", "Enterprise"]}
-  rows={[
-    ["AI", true, true, true],
-    ["Custom APIs", true, true, true],
-    ["Embedded dashboards", "\"Made with Rill\" badge", true, true],
-    ["Live Connect", false, true, true],
-    ["GitHub sync", false, true, true],
-    ["Custom branding", false, true, true],
-    ["SAML SSO", false, false, true],
-    ["SOC 2 Type II", false, false, true],
-    ["SLAs", false, false, true],
-    ["Dedicated CSM", false, false, true],
-  ]}
-/>
+Storage is the total compressed data in the cluster. It's available in [two performance tiers](/developers/other/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/developers/other/FAQ#what-are-the-compute-requirements-for-data-processing).
 
----
+Data can be also offloaded to an archival tier where it does not consume any compute
 
-## Slots
+`$0.0005 / GB per hour`
 
-**1 slot = 4 GB RAM / 1 vCPU** across both deployment modes.
 
-- Slot allocation can be adjusted at any time from the project status page.
-- Dev/branch environments default to 1 Rill Slot. Slots can be reallocated between production and development environments.
+**Compute:**
 
----
+[Rill Compute Units (RCU)](/developers/other/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
 
-## Upgrading
+RCU scale up elastically for data ingestion & processing with enterprise discounts on RCUs provisioned for querying.
 
-### Free → Growth
-
-Both modes start with a **$250 credit**. When the credit is exhausted, your project hibernates. You'll receive an in-product warning at 80% usage (~$200 burned) with a prompt to upgrade.
-
-### Growth → Enterprise
-
-Contact sales when you need SLAs, SSO, governance controls, or custom terms.
-
-- **Managed:** Enterprise is a natural conversation at 50 GB+ of data.
-- **Live Connect:** Enterprise applies for 200+ users, procurement requirements, or custom pricing.
-
-:::note
-Each project has its own slot allocation. If you have multiple projects, check the status page for each project to review and manage slots independently.
-:::
+`$0.09 RCU per hour`
