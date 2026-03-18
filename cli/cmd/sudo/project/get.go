@@ -51,15 +51,8 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			if isRillManaged {
 				fmt.Printf("Rill slots:    %d\n", project.ProdSlots)
 				fmt.Printf("Cluster slots: 0\n")
-				fmt.Printf("Infra slots:   0\n")
 				fmt.Printf("Prod slots:    %d\n", project.ProdSlots)
 			} else {
-				infraSlots := int64(4)
-				infraLabel := " (default)"
-				if project.InfraSlots != nil {
-					infraSlots = *project.InfraSlots
-					infraLabel = ""
-				}
 				clusterSlots := int64(4)
 				clusterLabel := " (default)"
 				if project.ClusterSlots != nil {
@@ -72,7 +65,6 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				fmt.Printf("Rill slots:    %d\n", rillSlots)
 				fmt.Printf("Cluster slots: %d%s\n", clusterSlots, clusterLabel)
-				fmt.Printf("Infra slots:   %d%s\n", infraSlots, infraLabel)
 				fmt.Printf("Prod slots:    %d (cluster + rill)\n", project.ProdSlots)
 			}
 			fmt.Printf("Primary deployment ID: %s\n", project.PrimaryDeploymentId)

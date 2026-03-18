@@ -16,7 +16,6 @@
     RILL_SLOT_TIERS,
     POPULAR_SLOTS,
     ALL_SLOTS,
-    SLOT_RATE_PER_HR,
     MANAGED_SLOT_RATE_PER_HR,
     CLUSTER_SLOT_RATE_PER_HR,
     RILL_SLOT_RATE_PER_HR,
@@ -47,8 +46,8 @@
   const POPULAR_RILL_MANAGED = POPULAR_SLOTS.map((s) => ({ slots: s }));
   const ALL_RILL_MANAGED = ALL_SLOTS.map((s) => ({ slots: s }));
 
-  // Active rate depends on pricing mode
-  $: managedRate = useNewPricing ? MANAGED_SLOT_RATE_PER_HR : SLOT_RATE_PER_HR;
+  // All plans use the $0.15/slot/hr rate
+  $: managedRate = MANAGED_SLOT_RATE_PER_HR;
 
   // For new pricing Live Connect: Rill Slots selection
   let selectedRillSlots = currentRillSlots;

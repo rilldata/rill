@@ -109,8 +109,8 @@
   $: devForceNewPricing = $page.url.searchParams.get("newPricing") === "true";
   $: useNewPricing = isFree || isGrowth || devForceNewPricing;
 
-  // SQL-based cluster info: only runs for Free/Growth plans (new pricing).
-  $: olapInfoQuery = useOlapInfo(runtimeClient, useNewPricing ? olapConnector : undefined);
+  // SQL-based cluster info: runs for any non-Rill-managed project to detect cluster slots.
+  $: olapInfoQuery = useOlapInfo(runtimeClient, !isRillManaged ? olapConnector : undefined);
   $: olapInfo = $olapInfoQuery?.data;
   $: console.log("[olapInfo] useNewPricing:", useNewPricing, "| olapConnector:", olapConnector, "| query:", { isLoading: $olapInfoQuery?.isLoading, isError: $olapInfoQuery?.isError, error: $olapInfoQuery?.error, data: olapInfo });
   // Detected cluster slots from SQL (vcpus when available, else memory-tier fallback).
@@ -135,10 +135,11 @@
       ? Math.max(0, currentSlots - clusterSlots)
       : 0;
 
-  // Slot usage breakdown (dev edit modes coming soon; each consumes 1 slot)
-  $: prodSlots = currentSlots; // today all slots go to prod
-  $: devSlots = 0; // will increase when dev edit modes are active
-  $: usedSlots = prodSlots + devSlots;
+  // Effective provisioned slots: for Live Connect, use detected cluster + rill;
+  // for Rill Managed, use DB prod_slots directly.
+  $: provisionedSlots = !isRillManaged
+    ? clusterSlots + rillSlots
+    : currentSlots;
 
   /**
    * Parses a human-readable memory string from the OLAP SQL queries into GB.
@@ -264,7 +265,7 @@
       <div class="info-row">
         <span class="info-label">Provisioned Slots</span>
         <span class="info-value flex items-center gap-3">
-          <span class="slots-count">{currentSlots}</span>
+          <span class="slots-count">{provisionedSlots}</span>
           {#if canManage && !isTrial}
             <button
               class="manage-slots-btn"
