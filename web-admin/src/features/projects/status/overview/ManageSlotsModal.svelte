@@ -12,12 +12,10 @@
   import type { AxiosError } from "axios";
   import {
     LIVE_CONNECT_TIERS,
-    MANAGED_SLOT_TIERS,
     RILL_SLOT_TIERS,
     POPULAR_SLOTS,
     ALL_SLOTS,
     MANAGED_SLOT_RATE_PER_HR,
-    CLUSTER_SLOT_RATE_PER_HR,
     RILL_SLOT_RATE_PER_HR,
     HOURS_PER_MONTH,
     STORAGE_RATE_PER_GB_PER_MONTH,
@@ -31,9 +29,6 @@
   export let isRillManaged: boolean;
   // Auto-detected slot count from the OLAP cluster (SQL-based detection).
   export let detectedSlots: number | undefined = undefined;
-  // When true, the user can only view the detected tier and apply it (no selection).
-  // required mode is no longer triggered (kept for template compatibility)
-  export let required = false;
   export let viewOnly = false;
   // When true, uses new PRD v10 pricing (Free/Growth plans). False for legacy Team plans.
   export let useNewPricing = false;
@@ -41,13 +36,10 @@
   export let clusterSlots = 0;
   // Current Rill Slots (user-controlled). Only for Live Connect + new pricing.
   export let currentRillSlots = 0;
-  // (infraSlots prop removed — no longer shown in the status UI)
-
   const POPULAR_RILL_MANAGED = POPULAR_SLOTS.map((s) => ({ slots: s }));
   const ALL_RILL_MANAGED = ALL_SLOTS.map((s) => ({ slots: s }));
 
-  // All plans use the $0.15/slot/hr rate
-  $: managedRate = MANAGED_SLOT_RATE_PER_HR;
+  const managedRate = MANAGED_SLOT_RATE_PER_HR;
 
   // For new pricing Live Connect: Rill Slots selection
   let selectedRillSlots = currentRillSlots;
@@ -71,8 +63,6 @@
   let selectedSlots = currentSlots;
   $: if (open) {
     if (viewOnly) {
-      selectedSlots = detectedTierSlots ?? minimumTierSlots;
-    } else if (required && currentSlots === 0) {
       selectedSlots = detectedTierSlots ?? minimumTierSlots;
     } else {
       selectedSlots = currentSlots;
@@ -154,13 +144,10 @@
 <Dialog.Root
   bind:open
   onOpenChange={(isOpen) => {
-    if (required && !isOpen) return; // prevent closing when required
     open = isOpen;
   }}
-  closeOnEscape={!required}
-  closeOnOutsideClick={!required}
 >
-  <Dialog.Content class="max-w-2xl" noClose={required}>
+  <Dialog.Content class="max-w-2xl">
     <Dialog.Header>
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
@@ -168,15 +155,15 @@
           Based on your OLAP cluster, we recommend the following slot
           configuration. <a
             href="/{organization}/-/settings/billing"
-            class="text-primary-500 hover:underline">Start a Team plan</a
+            class="text-primary-500 hover:underline">Upgrade to Growth</a
           > to customize your slot allocation.
         {:else if isRillManaged}
           Rill-managed projects are billed at ${managedRate}/slot/hr.{#if useNewPricing} Storage is ${STORAGE_RATE_PER_GB_PER_MONTH}/GB/month above {INCLUDED_STORAGE_GB}GB included.{:else} Data
           storage is charged separately based on usage.{/if} Monthly estimates assume
           ~{HOURS_PER_MONTH} hours/month.
         {:else if useNewPricing}
-          Cluster Slots are auto-calculated from your OLAP cluster at ${CLUSTER_SLOT_RATE_PER_HR}/slot/hr.
           Add Rill Slots at ${RILL_SLOT_RATE_PER_HR}/slot/hr for extra performance or dev environments.
+          Cluster Slots are auto-detected from your OLAP cluster and shown on the Deployments page.
         {:else}
           Choose the slot tier that matches your OLAP cluster's resources. We
           auto-detect the minimum tier from your cluster configuration. You can
@@ -240,86 +227,55 @@
         </button>
       {/if}
     {:else if useNewPricing}
-      <!-- New pricing: Cluster Slots (read-only) + Rill Slots (user-controlled) -->
-      <div class="dual-slot-section">
-        <div class="slot-group">
-          <div class="slot-group-header">
-            <span class="slot-group-title">Cluster Slots</span>
-            <span class="slot-group-subtitle">Auto-calculated from your OLAP cluster · read-only</span>
-          </div>
-          <div class="cluster-slot-display">
-            <span class="cluster-slot-count">{clusterSlots}</span>
-            <span class="cluster-slot-rate">
-              @ ${CLUSTER_SLOT_RATE_PER_HR}/slot/hr
-              (~${Math.round(clusterSlots * CLUSTER_SLOT_RATE_PER_HR * HOURS_PER_MONTH).toLocaleString()}/mo)
-            </span>
-          </div>
+      <!-- New pricing: Rill Slots (user-controlled) -->
+      <div class="tier-table">
+        <div class="tier-header">
+          <span class="tier-cell">Rill Slots</span>
+          <span class="tier-cell">$/slot/hr</span>
+          <span class="tier-cell">Est. $/mo</span>
         </div>
-
-        <div class="slot-group">
-          <div class="slot-group-header">
-            <span class="slot-group-title">Rill Slots</span>
-            <span class="slot-group-subtitle">Additional slots for performance and dev environments</span>
-          </div>
-          <div class="tier-table">
-            <div class="tier-header">
-              <span class="tier-cell">Rill Slots</span>
-              <span class="tier-cell">$/slot/hr</span>
-              <span class="tier-cell">Est. $/mo</span>
-            </div>
-            <div class="tier-list">
-              <!-- Option for 0 Rill Slots -->
-              <button
-                class="tier-row"
-                class:tier-active={0 === currentRillSlots}
-                class:tier-selected={0 === selectedRillSlots && 0 !== currentRillSlots}
-                on:click={() => (selectedRillSlots = 0)}
-              >
-                <span class="tier-cell">
-                  0
-                  {#if 0 === currentRillSlots}
-                    <span class="current-badge">current</span>
-                  {/if}
-                </span>
-                <span class="tier-cell">-</span>
-                <span class="tier-cell">$0</span>
-              </button>
-              {#each RILL_SLOT_TIERS.filter((t) => showAllSizes || POPULAR_SLOTS.includes(t.slots)) as tier}
-                <button
-                  class="tier-row"
-                  class:tier-active={tier.slots === currentRillSlots}
-                  class:tier-selected={tier.slots === selectedRillSlots && tier.slots !== currentRillSlots}
-                  on:click={() => (selectedRillSlots = tier.slots)}
-                >
-                  <span class="tier-cell">
-                    {tier.slots}
-                    {#if tier.slots === currentRillSlots}
-                      <span class="current-badge">current</span>
-                    {/if}
-                  </span>
-                  <span class="tier-cell">${RILL_SLOT_RATE_PER_HR.toFixed(2)}</span>
-                  <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
+        <div class="tier-list">
+          <!-- Option for 0 Rill Slots -->
           <button
-            class="show-all-btn"
-            on:click={() => (showAllSizes = !showAllSizes)}
+            class="tier-row"
+            class:tier-active={0 === currentRillSlots}
+            class:tier-selected={0 === selectedRillSlots && 0 !== currentRillSlots}
+            on:click={() => (selectedRillSlots = 0)}
           >
-            {showAllSizes ? "Show popular sizes" : "Show all sizes"}
+            <span class="tier-cell">
+              0
+              {#if 0 === currentRillSlots}
+                <span class="current-badge">current</span>
+              {/if}
+            </span>
+            <span class="tier-cell">-</span>
+            <span class="tier-cell">$0</span>
           </button>
+          {#each RILL_SLOT_TIERS.filter((t) => showAllSizes || POPULAR_SLOTS.includes(t.slots)) as tier}
+            <button
+              class="tier-row"
+              class:tier-active={tier.slots === currentRillSlots}
+              class:tier-selected={tier.slots === selectedRillSlots && tier.slots !== currentRillSlots}
+              on:click={() => (selectedRillSlots = tier.slots)}
+            >
+              <span class="tier-cell">
+                {tier.slots}
+                {#if tier.slots === currentRillSlots}
+                  <span class="current-badge">current</span>
+                {/if}
+              </span>
+              <span class="tier-cell">${RILL_SLOT_RATE_PER_HR.toFixed(2)}</span>
+              <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
+            </button>
+          {/each}
         </div>
       </div>
-
-      <div class="total-row">
-        <span class="total-label">Estimated total</span>
-        <span class="total-value">
-          ~${Math.round(
-            (clusterSlots * CLUSTER_SLOT_RATE_PER_HR + selectedRillSlots * RILL_SLOT_RATE_PER_HR) * HOURS_PER_MONTH,
-          ).toLocaleString()}/mo
-        </span>
-      </div>
+      <button
+        class="show-all-btn"
+        on:click={() => (showAllSizes = !showAllSizes)}
+      >
+        {showAllSizes ? "Show popular sizes" : "Show all sizes"}
+      </button>
     {:else}
       <!-- Legacy Live Connect tier table -->
       <div class="tier-table">
@@ -378,18 +334,12 @@
     {/if}
 
     <div class="footer">
-      {#if !required}
-        <button class="cancel-btn" on:click={() => (open = false)}>
-          Cancel
-        </button>
-      {/if}
+      <button class="cancel-btn" on:click={() => (open = false)}>
+        Cancel
+      </button>
       <button
         class="apply-btn"
-        disabled={(viewOnly
-          ? false
-          : required
-            ? selectedSlots === 0
-            : !hasChanged) || $updateProject.isPending}
+        disabled={(viewOnly ? false : !hasChanged) || $updateProject.isPending}
         on:click={applySlotChange}
       >
         {#if $updateProject.isPending}
@@ -480,38 +430,5 @@
   }
   .apply-btn:disabled {
     @apply opacity-50 cursor-not-allowed;
-  }
-  .dual-slot-section {
-    @apply flex flex-col gap-5;
-  }
-  .slot-group {
-    @apply flex flex-col gap-2;
-  }
-  .slot-group-header {
-    @apply flex flex-col gap-0.5;
-  }
-  .slot-group-title {
-    @apply text-sm font-semibold text-fg-primary;
-  }
-  .slot-group-subtitle {
-    @apply text-xs text-fg-tertiary;
-  }
-  .cluster-slot-display {
-    @apply flex items-center gap-3 px-3 py-2.5 bg-surface-subtle rounded-md border border-border;
-  }
-  .cluster-slot-count {
-    @apply text-lg font-semibold text-fg-primary;
-  }
-  .cluster-slot-rate {
-    @apply text-sm text-fg-secondary;
-  }
-  .total-row {
-    @apply flex items-center justify-between px-3 py-2.5 mt-3 bg-surface-subtle rounded-md border border-border;
-  }
-  .total-label {
-    @apply text-sm font-semibold text-fg-primary;
-  }
-  .total-value {
-    @apply text-sm font-semibold text-fg-primary;
   }
 </style>

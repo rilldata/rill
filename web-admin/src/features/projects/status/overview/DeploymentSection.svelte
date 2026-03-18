@@ -5,7 +5,6 @@
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import {
-    isTrialPlan,
     isFreePlan,
     isGrowthPlan,
     isEnterprisePlan,
@@ -24,7 +23,6 @@
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
-  import ManageSlotsModal from "./ManageSlotsModal.svelte";
   import { detectTierSlots, MIN_INFRA_SLOTS } from "./slots-utils";
   import { useOlapInfo, isMotherDuck } from "./olapInfo";
   import OverviewCard from "./OverviewCard.svelte";
@@ -96,12 +94,10 @@
       ? cachedOlapType !== "clickhouse"
       : true;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
-  let slotsModalOpen = false;
 
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: isTrial = isTrialPlan(planName);
   $: isFree = isFreePlan(planName);
   $: isGrowth = isGrowthPlan(planName);
   $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
@@ -112,17 +108,13 @@
   // SQL-based cluster info: runs for any non-Rill-managed project to detect cluster slots.
   $: olapInfoQuery = useOlapInfo(runtimeClient, !isRillManaged ? olapConnector : undefined);
   $: olapInfo = $olapInfoQuery?.data;
-  $: console.log("[olapInfo] useNewPricing:", useNewPricing, "| olapConnector:", olapConnector, "| query:", { isLoading: $olapInfoQuery?.isLoading, isError: $olapInfoQuery?.isError, error: $olapInfoQuery?.error, data: olapInfo });
   // Detected cluster slots from SQL (vcpus when available, else memory-tier fallback).
   $: detectedClusterSlots =
     olapInfo?.vcpus && olapInfo.vcpus > 0
       ? olapInfo.vcpus
       : detectTierSlots(parseMemoryToGb(olapInfo?.memory));
 
-  // Backend quota overrides (set via `rill sudo project edit`)
-  $: backendClusterSlots = Number(projectData?.clusterSlots) || undefined;
-
-  // Cluster Slots: prefer SQL-detected value, fall back to RillMinSlots from backend.
+  // Cluster Slots: prefer SQL-detected value, fall back to cluster_slots from backend.
   // Only applies to Live Connect (not Rill-managed).
   $: clusterSlots = !isRillManaged
     ? detectedClusterSlots ||
@@ -265,33 +257,19 @@
       <div class="info-row">
         <span class="info-label">Provisioned Slots</span>
         <span class="info-value flex items-center gap-3">
-          <span class="slots-count">{provisionedSlots}</span>
-          {#if canManage && !isTrial}
-            <button
-              class="manage-slots-btn"
-              on:click={() => (slotsModalOpen = true)}
-            >
-              Manage
-            </button>
-          {/if}
+          <a
+            href="/{organization}/{project}/-/status/deployments"
+            class="slots-link"
+          >
+            <span class="slots-count">{provisionedSlots}</span>
+            <span class="slots-detail">View details</span>
+          </a>
         </span>
       </div>
     {/if}
   </div>
 </OverviewCard>
 
-<ManageSlotsModal
-  bind:open={slotsModalOpen}
-  {organization}
-  {project}
-  {currentSlots}
-  {isRillManaged}
-  viewOnly={isTrial}
-  detectedSlots={detectedClusterSlots}
-  {useNewPricing}
-  clusterSlots={clusterSlots}
-  currentRillSlots={rillSlots}
-/>
 
 <style lang="postcss">
   .info-grid {
@@ -318,19 +296,22 @@
   .repo-link:hover {
     @apply underline;
   }
+  .slots-link {
+    @apply flex items-center gap-2 no-underline;
+  }
+  .slots-link:hover .slots-detail {
+    @apply text-primary-600;
+  }
   .slots-count {
     @apply text-sm text-fg-primary font-medium tabular-nums;
+  }
+  .slots-detail {
+    @apply text-xs text-primary-500;
   }
   .upgrade-link {
     @apply text-xs text-primary-500 no-underline;
   }
   .upgrade-link:hover {
-    @apply text-primary-600;
-  }
-  .manage-slots-btn {
-    @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 no-underline;
-  }
-  .manage-slots-btn:hover {
     @apply text-primary-600;
   }
 </style>

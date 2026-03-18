@@ -37,19 +37,9 @@ export const POPULAR_LIVE_CONNECT_TIERS: SlotTier[] = POPULAR_SLOTS.map((s) =>
 );
 export const LIVE_CONNECT_TIERS: SlotTier[] = ALL_SLOTS.map((s) => tier(s));
 
-// New pricing tiers: Cluster Slots at $0.06/hr (auto-calculated, read-only for Live Connect)
-export const CLUSTER_SLOT_TIERS: SlotTier[] = ALL_SLOTS.map((s) =>
-  tier(s, CLUSTER_SLOT_RATE_PER_HR),
-);
-
-// New pricing tiers: Rill Slots at $0.15/hr (user-controlled for Live Connect)
+// Rill Slots at $0.15/hr (user-controlled for Live Connect)
 export const RILL_SLOT_TIERS: SlotTier[] = ALL_SLOTS.map((s) =>
   tier(s, RILL_SLOT_RATE_PER_HR),
-);
-
-// Managed mode tiers at $0.15/slot/hr
-export const MANAGED_SLOT_TIERS: SlotTier[] = ALL_SLOTS.map((s) =>
-  tier(s, MANAGED_SLOT_RATE_PER_HR),
 );
 
 /**
