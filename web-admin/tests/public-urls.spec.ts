@@ -18,7 +18,7 @@ test.describe.serial("Public URLs", () => {
       .getByRole("menuitemcheckbox", { name: "Disney" })
       .first()
       .click();
-    await page.getByLabel("pub_name filter", { exact: true }).click(); // Hides the popover
+    await page.keyboard.press("Escape"); // Close the dimension filter popover
 
     // Change the time grain to hour
     // (Tests that non-default state propagates to the public URL)
