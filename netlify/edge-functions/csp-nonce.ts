@@ -21,43 +21,47 @@ export default async (
     return response;
   }
 
-  const nonceBytes = new Uint8Array(16);
-  crypto.getRandomValues(nonceBytes);
-  const nonce = btoa(String.fromCharCode(...nonceBytes));
-
-  let body = await response.text();
-  // Inject nonce onto every <script and <style opening tag.
-  body = body.replace(/<script(?=[ >])/g, `<script nonce="${nonce}"`);
-  body = body.replace(/<style(?=[ >])/g, `<style nonce="${nonce}"`);
-  // Inject nonce into entity-encoded <script> tags inside data: URI iframe srcs.
-  // e.g. src="data:text/html,&lt;script&gt;..." becomes
-  //      src="data:text/html,&lt;script nonce=&quot;NONCE&quot;&gt;..."
-  // &quot; is required so the nonce value doesn't break the enclosing attribute.
-  body = body.replace(/&lt;script(?=[ &])/g, `&lt;script nonce=&quot;${nonce}&quot;`);
-
   const url = new URL(request.url);
   const isEmbed = url.pathname.startsWith("/-/embed");
   const isShare = url.pathname.includes("/-/share");
   const isEmbeddable = isEmbed || isShare;
 
+  let body = await response.text();
+  let scriptSrc: string;
+
+  if (isEmbeddable) {
+    // Embeddable routes use 'unsafe-inline' directly; no nonce injection needed.
+    scriptSrc = "'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com";
+  } else {
+    const nonceBytes = new Uint8Array(16);
+    crypto.getRandomValues(nonceBytes);
+    const nonce = btoa(String.fromCharCode(...nonceBytes));
+
+    // Inject nonce onto every <script and <style opening tag.
+    body = body.replace(/<script(?=[ >])/g, `<script nonce="${nonce}"`);
+    body = body.replace(/<style(?=[ >])/g, `<style nonce="${nonce}"`);
+    // Inject nonce into entity-encoded <script> tags inside data: URI iframe srcs.
+    // e.g. src="data:text/html,&lt;script&gt;..." becomes
+    //      src="data:text/html,&lt;script nonce=&quot;NONCE&quot;&gt;..."
+    // &quot; is required so the nonce value doesn't break the enclosing attribute.
+    body = body.replace(/&lt;script(?=[ &])/g, `&lt;script nonce=&quot;${nonce}&quot;`);
+
+    // 'unsafe-inline' is ignored by browsers that support nonces, kept for older browser fallback.
+    // 'strict-dynamic' propagates trust to scripts dynamically created by nonced scripts.
+    // Domain allowlists below are fallbacks for browsers without strict-dynamic support.
+    scriptSrc = `'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'unsafe-eval' https://*.app-us1.com/ https://*.usepylon.com https://*.pusher.com`;
+  }
+
   // Embeddable routes allow framing from any HTTPS origin; the main app
   // restricts framing to same-origin only.
   const frameAncestors = isEmbeddable ? "https:" : "'self'";
-
-  // ActiveCampaign (app-us1.com) is only loaded on the main app routes.
-  const activeCampaign = isEmbeddable ? "" : " https://*.app-us1.com/";
 
   // Pylon CDN is used for styling on the main app; embeds keep styles tighter.
   const pylonStyles = isEmbeddable ? "" : " https://*.usepylon.com";
 
   const csp = [
     "default-src 'self'",
-    // 'nonce-...' authorizes this document's own inline and external scripts.
-    // 'strict-dynamic' propagates trust to scripts dynamically created by
-    // those nonced scripts (e.g. Pylon/Pusher loaders injecting child scripts).
-    // Domain allowlists below are fallbacks for browsers without strict-dynamic.
-    // adding 'unsafe-inline' (ignored by browsers supporting nonces/hashes) to be backward compatible with older browsers.
-    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'unsafe-eval'${activeCampaign} https://*.usepylon.com https://*.pusher.com`,
+    `script-src ${scriptSrc}`,
     // style-src keeps 'unsafe-inline' for now: runtime style injection from
     // CodeMirror and other libraries cannot be nonce-attributed. Revisit when
     // those libraries are audited.
