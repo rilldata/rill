@@ -6,10 +6,7 @@
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
-  import {
-    isTeamPlan,
-    isTrialPlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
@@ -62,13 +59,8 @@
 
   // Plan-based storage cap (from root layout data)
   const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
-  const TRIAL_STORAGE_CAP = 1 * 1024 * 1024 * 1024; // 1GB
   $: planName = $page.data?.organization?.billingPlanName ?? "";
-  $: storageCap = isTeamPlan(planName)
-    ? TEAM_STORAGE_CAP
-    : isTrialPlan(planName)
-      ? TRIAL_STORAGE_CAP
-      : 0;
+  $: storageCap = isTeamPlan(planName) ? TEAM_STORAGE_CAP : 0;
 
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
