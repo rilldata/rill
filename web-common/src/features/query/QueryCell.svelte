@@ -332,7 +332,7 @@
   }
 
   .cell-error {
-    @apply flex items-start gap-x-2 px-3 py-2 text-sm text-fg-primary;
+    @apply flex items-center gap-x-2 px-3 py-2 text-sm text-fg-primary;
     @apply border-l-4 border-destructive bg-destructive/15;
     @apply max-h-40 overflow-auto;
   }
@@ -355,7 +355,7 @@
   }
 
   .delete-button {
-    @apply text-fg-secondary text-lg leading-none px-1 rounded;
+    @apply flex items-center justify-center text-fg-secondary text-lg px-1 rounded;
   }
 
   .delete-button:hover {
