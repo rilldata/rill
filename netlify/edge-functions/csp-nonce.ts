@@ -31,8 +31,8 @@ export default async (
   body = body.replace(/<style(?=[ >])/g, `<style nonce="${nonce}"`);
 
   const url = new URL(request.url);
-  const isEmbed = url.pathname.startsWith("/-/embed/");
-  const isShare = url.pathname.includes("/-/share/");
+  const isEmbed = url.pathname.startsWith("/-/embed");
+  const isShare = url.pathname.includes("/-/share");
   const isEmbeddable = isEmbed || isShare;
 
   // Embeddable routes allow framing from any HTTPS origin; the main app
