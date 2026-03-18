@@ -12,7 +12,7 @@
   function = "csp-nonce"
   path = "/*"
   [edge_functions.rate_limit]
-    window_limit = 150
+    window_limit = 300
     window_size = 60
     aggregate_by = ["ip", "domain"]
 
