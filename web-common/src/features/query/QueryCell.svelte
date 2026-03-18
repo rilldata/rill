@@ -230,7 +230,9 @@
         </div>
 
         {#if cell.error}
-          <div class="cell-error">
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <div class="cell-error" on:click|stopPropagation>
             <CancelCircle className="text-destructive flex-none" />
             <span>{cell.error}</span>
           </div>
@@ -334,7 +336,7 @@
   .cell-error {
     @apply flex items-center gap-x-2 px-3 py-2 text-sm text-fg-primary;
     @apply border-l-4 border-destructive bg-destructive/15;
-    @apply max-h-40 overflow-auto;
+    @apply max-h-40 overflow-auto select-text;
   }
 
   .cell-results {

@@ -1,4 +1,8 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import PlusIcon from "@rilldata/web-common/components/icons/PlusIcon.svelte";
   import ConnectorExplorer from "@rilldata/web-common/features/connectors/explorer/ConnectorExplorer.svelte";
   import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store";
@@ -90,6 +94,7 @@
   );
 
   let sidebarWidth = 260;
+  let showSchemaPanel = true;
 
   // Fallback stores for when notebook is null (Svelte can't auto-subscribe nullable stores)
   const EMPTY_NOTEBOOK = readable<NotebookState>({
@@ -133,73 +138,97 @@
 
 {#if notebook}
   <div class="query-workspace">
-    <!-- Left Sidebar: Data Explorer -->
-    <aside class="data-explorer" style:width="{sidebarWidth}px">
-      <div class="sidebar-header">
-        <h3
-          class="text-xs font-semibold text-fg-secondary uppercase tracking-wide"
+    <!-- Full-width header -->
+    <div class="workspace-header">
+      <h3
+        class="text-xs font-semibold text-fg-secondary uppercase tracking-wide"
+      >
+        Data Explorer
+      </h3>
+      <Tooltip distance={8}>
+        <Button
+          type="secondary"
+          compact
+          onClick={() => (showSchemaPanel = !showSchemaPanel)}
         >
-          Data Explorer
-        </h3>
-      </div>
-      <div class="sidebar-content">
-        <ConnectorExplorer store={explorerStore} />
-      </div>
-    </aside>
-
-    <Resizer
-      absolute={false}
-      direction="EW"
-      side="right"
-      min={200}
-      max={440}
-      bind:dimension={sidebarWidth}
-    />
-
-    <!-- Center: Notebook cells -->
-    <div class="notebook-area">
-      <div class="cells-container">
-        {#each cells as cell (cell.id)}
-          <QueryCell
-            bind:this={cellRefs[cell.id]}
-            cellId={cell.id}
-            {notebook}
-            cellCount={cells.length}
-            on:focus={handleCellFocus}
-            on:run={handleCellRun}
-          />
-        {/each}
-
-        <button class="add-cell-button" on:click={handleAddCell}>
-          <PlusIcon size="14px" />
-          Add Cell
-        </button>
-      </div>
+          <HideSidebar size="16px" open={showSchemaPanel} />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          {showSchemaPanel ? "Hide" : "Show"} inspector
+        </TooltipContent>
+      </Tooltip>
     </div>
 
-    <!-- Right Sidebar: Schema Inspector -->
-    <QuerySchemaPanel
-      filePath={WORKSPACE_KEY}
-      schema={$focusedSchemaStore}
-      rowCount={$focusedRowCountStore}
-      executionTimeMs={$focusedTimeMsStore}
-      {selectedTable}
-    />
+    <!-- Main content area -->
+    <div class="workspace-body">
+      <!-- Left Sidebar: Data Explorer -->
+      <aside class="data-explorer" style:width="{sidebarWidth}px">
+        <div class="sidebar-content">
+          <ConnectorExplorer store={explorerStore} />
+        </div>
+      </aside>
+
+      <Resizer
+        absolute={false}
+        direction="EW"
+        side="right"
+        min={200}
+        max={440}
+        bind:dimension={sidebarWidth}
+      />
+
+      <!-- Center: Notebook cells -->
+      <div class="notebook-area">
+        <div class="cells-container">
+          {#each cells as cell (cell.id)}
+            <QueryCell
+              bind:this={cellRefs[cell.id]}
+              cellId={cell.id}
+              {notebook}
+              cellCount={cells.length}
+              on:focus={handleCellFocus}
+              on:run={handleCellRun}
+            />
+          {/each}
+
+          <button class="add-cell-button" on:click={handleAddCell}>
+            <PlusIcon size="14px" />
+            Add Cell
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Sidebar: Schema Inspector -->
+      {#if showSchemaPanel}
+        <QuerySchemaPanel
+          filePath={WORKSPACE_KEY}
+          schema={$focusedSchemaStore}
+          rowCount={$focusedRowCountStore}
+          executionTimeMs={$focusedTimeMsStore}
+          {selectedTable}
+        />
+      {/if}
+    </div>
   </div>
 {/if}
 
 <style lang="postcss">
   .query-workspace {
-    @apply flex size-full overflow-hidden bg-gray-100/80;
+    @apply flex flex-col size-full overflow-hidden bg-gray-100/80;
+  }
+
+  .workspace-header {
+    @apply flex items-center justify-between px-3 py-1.5 border-b flex-none;
+    @apply bg-surface-background;
+  }
+
+  .workspace-body {
+    @apply flex flex-1 overflow-hidden;
   }
 
   .data-explorer {
     @apply flex-none flex flex-col overflow-hidden;
     @apply border-r bg-surface-background;
-  }
-
-  .sidebar-header {
-    @apply px-3 py-2 border-b;
   }
 
   .sidebar-content {

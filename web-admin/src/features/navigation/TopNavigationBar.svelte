@@ -40,6 +40,7 @@
     isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
+    isQueryPage,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -77,6 +78,7 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
+  $: onQueryPage = isQueryPage($page);
 
   // When "View As" is active, fetch deployment credentials for the mocked user.
   // TanStack Query deduplicates by query key, so if the project layout already
@@ -351,6 +353,10 @@
             {/if}
             <CanvasBookmarks {organization} {project} canvasName={dashboard} />
             <ShareDashboardPopover createMagicAuthTokens={false} />
+          {/if}
+
+          {#if onQueryPage && $dashboardChat}
+            <ChatToggle />
           {/if}
         </RuntimeContextBridge>
       {/key}
