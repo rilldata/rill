@@ -72,3 +72,12 @@ export default async (
 
   return new Response(body, { status: response.status, headers });
 };
+
+export const config: Config = {
+  path: "/*",
+  rateLimit: {
+    windowLimit: 300,
+    windowSize: 60,
+    aggregateBy: ["ip", "domain"],
+  }
+};
