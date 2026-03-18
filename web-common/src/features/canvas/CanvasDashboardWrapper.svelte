@@ -1,10 +1,12 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
+
+  const client = useRuntimeClient();
 
   export let maxWidth: number;
   export let clientWidth = 0;
@@ -17,7 +19,7 @@
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = client);
 
   $: ({
     canvasEntity: { theme },

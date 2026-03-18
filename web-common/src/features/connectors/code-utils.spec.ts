@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
+  replaceAiConnectorInYAML,
   replaceOlapConnectorInYAML,
   replaceOrAddEnvVariable,
   getGenericEnvVarName,
@@ -11,19 +13,6 @@ import {
   formatHeadersAsYamlMap,
   updateDotEnvWithSecrets,
 } from "./code-utils";
-
-// Mock runtime store and API
-vi.mock("../../runtime-client/runtime-store", () => ({
-  runtime: { subscribe: vi.fn() },
-}));
-
-vi.mock("svelte/store", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("svelte/store")>();
-  return {
-    ...actual,
-    get: () => ({ instanceId: "test-instance" }),
-  };
-});
 
 // Import the template for testing
 const YAML_MODEL_TEMPLATE = `type: model
@@ -131,6 +120,43 @@ describe("replaceOlapConnectorInYAML", () => {
     const updatedBlob = replaceOlapConnectorInYAML(existingBlob, "clickhouse");
     expect(updatedBlob).toBe(
       `# here's a comment\ntitle: test project\n\nolap_connector: clickhouse\n`,
+    );
+  });
+});
+
+describe("replaceAiConnectorInYAML", () => {
+  it("should add a new `ai_connector` key to a blank file", () => {
+    const updatedBlob = replaceAiConnectorInYAML("", "claude");
+    expect(updatedBlob).toBe("ai_connector: claude\n");
+  });
+
+  it("should add a new `ai_connector` key to a file with other keys", () => {
+    const existingBlob = `# here's a comment\ntitle: test project\n`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "claude");
+    expect(updatedBlob).toBe(
+      `# here's a comment\ntitle: test project\n\nai_connector: claude\n`,
+    );
+  });
+
+  it("should update the `ai_connector` key in a file with an existing `ai_connector` key", () => {
+    const existingBlob = `# here's a comment\ntitle: test project\n\nai_connector: openai\n`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "claude");
+    expect(updatedBlob).toBe(
+      `# here's a comment\ntitle: test project\n\nai_connector: claude\n`,
+    );
+  });
+
+  it("should handle a blob without a trailing newline", () => {
+    const existingBlob = `title: test project`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "claude");
+    expect(updatedBlob).toBe(`title: test project\nai_connector: claude\n`);
+  });
+
+  it("should replace ai_connector in the middle of the file", () => {
+    const existingBlob = `title: test project\nai_connector: openai\nolap_connector: clickhouse\n`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "gemini");
+    expect(updatedBlob).toBe(
+      `title: test project\nai_connector: gemini\nolap_connector: clickhouse\n`,
     );
   });
 });
@@ -818,6 +844,10 @@ describe("compileConnectorYAML", () => {
 });
 
 describe("updateDotEnvWithSecrets", () => {
+  const mockClient = {
+    instanceId: "test-instance-id",
+  } as unknown as RuntimeClient;
+
   // Track fetchQuery calls so tests can inspect them
   let mockEnvBlob = "";
   const mockQueryClient = {
@@ -842,6 +872,7 @@ describe("updateDotEnvWithSecrets", () => {
       sql: "SELECT 1",
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -865,6 +896,7 @@ describe("updateDotEnvWithSecrets", () => {
       },
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -881,6 +913,7 @@ describe("updateDotEnvWithSecrets", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const formValues: Record<string, unknown> = { password: "new_pw" };
     const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -898,6 +931,7 @@ describe("updateDotEnvWithSecrets", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const formValues: Record<string, unknown> = { password: "new_value" };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -915,6 +949,7 @@ describe("updateDotEnvWithSecrets", () => {
       dsn: undefined,
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -932,6 +967,7 @@ describe("updateDotEnvWithSecrets", () => {
       ],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -949,6 +985,7 @@ describe("updateDotEnvWithSecrets", () => {
       headers: [{ key: "Authorization", value: "Bearer abc123" }],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -965,6 +1002,7 @@ describe("updateDotEnvWithSecrets", () => {
       headers: [{ key: "X-API-Key", value: "raw_api_key_value" }],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -980,6 +1018,7 @@ describe("updateDotEnvWithSecrets", () => {
       headers: [{ key: "Authorization", value: "Token secret_tok" }],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -999,6 +1038,7 @@ describe("updateDotEnvWithSecrets", () => {
       ],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,
@@ -1010,6 +1050,7 @@ describe("updateDotEnvWithSecrets", () => {
   it("should invalidate cache before reading .env", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       { password: "pw" },
@@ -1030,6 +1071,7 @@ describe("updateDotEnvWithSecrets", () => {
 
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       { password: "pw" },
@@ -1047,6 +1089,7 @@ describe("updateDotEnvWithSecrets", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     await expect(
       updateDotEnvWithSecrets(
+        mockClient,
         mockQueryClient as any,
         connector,
         { password: "pw" },
@@ -1069,6 +1112,7 @@ describe("updateDotEnvWithSecrets", () => {
       dsn: "clickhouse://...",
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      mockClient,
       mockQueryClient as any,
       connector,
       formValues,

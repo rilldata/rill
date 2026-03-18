@@ -13,10 +13,9 @@
   import {
     type V1ModelPartition,
     type V1Resource,
-    createRuntimeServiceGetModelPartitionsInfinite,
   } from "../../../runtime-client";
-
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { createRuntimeServiceGetModelPartitionsInfinite } from "../../../runtime-client";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
   import TriggerPartition from "./TriggerPartition.svelte";
@@ -25,8 +24,9 @@
   export let whereErrored: boolean;
   export let wherePending: boolean;
 
+  const runtimeClient = useRuntimeClient();
+
   $: modelName = resource?.meta?.name?.name as string;
-  $: ({ instanceId } = $runtime);
 
   // ==========================
   // Infinite Query
@@ -36,19 +36,10 @@
     ...(wherePending ? { pending: true } : {}),
   };
   $: query = createRuntimeServiceGetModelPartitionsInfinite(
-    instanceId,
-    modelName,
-    {
-      ...baseParams,
-    },
+    runtimeClient,
+    { model: modelName, ...baseParams },
     {
       query: {
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
-        },
         enabled: !!modelName,
         refetchOnMount: true,
       },
@@ -135,6 +126,7 @@
               flexRender(TriggerPartition, {
                 partitionKey: (row as Row<V1ModelPartition>).original
                   .key as string,
+                resource,
               }),
           },
         ]
@@ -194,7 +186,7 @@
     setOptions({
       count: $query.hasNextPage ? allRows.length + 1 : allRows.length,
     });
-    const [lastItem] = [...virtualRows].reverse();
+    const lastItem = virtualRows[virtualRows.length - 1];
     if (
       lastItem &&
       lastItem.index > allRows.length - 1 &&
@@ -248,7 +240,7 @@
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
               <span class="text-red-500 font-semibold"
-                >Error: {error.response.data.message}</span
+                >Error: {error.message}</span
               >
             </td>
           </tr>
@@ -260,7 +252,7 @@
           </tr>
         {:else}
           <tr style:height="{paddingTop}px" />
-          {#each getVirtualItems() as virtualRow (virtualRow.index)}
+          {#each virtualRows as virtualRow (virtualRow.index)}
             <tr>
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
                 <td data-label={cell.column.columnDef.header}>

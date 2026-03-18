@@ -21,6 +21,7 @@
   import { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
   import ExpandableOption from "@rilldata/web-common/features/chat/core/context/picker/ExpandableOption.svelte";
   import SimpleOption from "@rilldata/web-common/features/chat/core/context/picker/SimpleOption.svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let selectedChatContext: InlineContext | null = null;
   export let searchText: string = "";
@@ -32,12 +33,18 @@
     ? getIdForContext(selectedChatContext)
     : null;
 
+  const runtimeClient = useRuntimeClient();
+
   const searchTextStore = writable("");
   $: searchTextStore.set(searchText.replace(/^@/, ""));
 
   const uiState = new ContextPickerUIState();
   const expandedParentsStore = uiState.expandedParentsStore;
-  const filteredOptions = getFilteredPickerItems(uiState, searchTextStore);
+  const filteredOptions = getFilteredPickerItems(
+    runtimeClient,
+    uiState,
+    searchTextStore,
+  );
   $: pickerTree = buildPickerTree($filteredOptions);
 
   const keyboardNavigationManager = new KeyboardNavigationManager(uiState);

@@ -3,18 +3,22 @@
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import ActionsCell from "./ActionsCell.svelte";
   import NameCell from "./NameCell.svelte";
   import RefreshCell from "./RefreshCell.svelte";
+  import RefreshErroredPartitionsDialog from "../tables/RefreshErroredPartitionsDialog.svelte";
+  import ModelPartitionsDialog from "../tables/ModelPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
   import ResourceSpecDialog from "./ResourceSpecDialog.svelte";
@@ -31,9 +35,17 @@
   let specResourceKind = "";
   let specResource: V1Resource | undefined = undefined;
 
+  let isErroredPartitionsDialogOpen = false;
+  let erroredPartitionsModelName = "";
+
+  let isPartitionsDialogOpen = false;
+  let partitionsResource: V1Resource | null = null;
+
   let openDropdownResourceKey = "";
 
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const runtimeClient = useRuntimeClient();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
   const openRefreshDialog = (
@@ -70,31 +82,55 @@
     return openDropdownResourceKey === resourceKey;
   };
 
+  const openPartitionsDialog = (resource: V1Resource) => {
+    partitionsResource = resource;
+    isPartitionsDialogOpen = true;
+  };
+
+  const openRefreshErroredPartitionsDialog = (resourceName: string) => {
+    erroredPartitionsModelName = resourceName;
+    isErroredPartitionsDialogOpen = true;
+  };
+
+  const handleRefreshErroredPartitions = async () => {
+    await $createTrigger.mutateAsync({
+      models: [
+        { model: erroredPartitionsModelName, allErroredPartitions: true },
+      ],
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        runtimeClient.instanceId,
+        undefined,
+      ),
+    });
+  };
+
+  const handleViewLogsClick = (name: string) => {
+    const basePath = $page.url.pathname.replace(/\/resources\/?$/, "");
+    void goto(`${basePath}/logs?q=${encodeURIComponent(name)}`);
+  };
+
   const handleRefresh = async () => {
     if (dialogResourceKind === ResourceKind.Model) {
       await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
-        data: {
-          models: [
-            {
-              model: dialogResourceName,
-              full: dialogRefreshType === "full",
-            },
-          ],
-        },
+        models: [
+          {
+            model: dialogResourceName,
+            full: dialogRefreshType === "full",
+          },
+        ],
       });
     } else {
       await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
-        data: {
-          resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
-        },
+        resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
       });
     }
 
     await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
+        runtimeClient.instanceId,
         undefined,
       ),
     });
@@ -184,12 +220,12 @@
           resourceKind: row.original.meta.name.kind,
           resourceName: row.original.meta.name.name,
           resource: row.original,
-          canRefresh:
-            !isRowReconciling &&
-            (row.original.meta.name.kind === ResourceKind.Model ||
-              row.original.meta.name.kind === ResourceKind.Source),
+          isReconciling: isRowReconciling,
           onClickRefreshDialog: openRefreshDialog,
+          onClickRefreshErroredPartitions: openRefreshErroredPartitionsDialog,
           onClickViewSpec: openSpecDialog,
+          onViewLogsClick: handleViewLogsClick,
+          onViewPartitionsClick: openPartitionsDialog,
           isDropdownOpen: isDropdownOpen(resourceKey),
           onDropdownOpenChange: (isOpen: boolean) =>
             setDropdownOpen(resourceKey, isOpen),
@@ -218,6 +254,20 @@
   name={dialogResourceName}
   refreshType={dialogRefreshType}
   onRefresh={handleRefresh}
+/>
+
+<RefreshErroredPartitionsDialog
+  bind:open={isErroredPartitionsDialogOpen}
+  modelName={erroredPartitionsModelName}
+  onRefresh={handleRefreshErroredPartitions}
+/>
+
+<ModelPartitionsDialog
+  bind:open={isPartitionsDialogOpen}
+  resource={partitionsResource}
+  onClose={() => {
+    isPartitionsDialogOpen = false;
+  }}
 />
 
 <ResourceSpecDialog

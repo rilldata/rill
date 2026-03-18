@@ -9,7 +9,7 @@
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { slide } from "svelte/transition";
 
   export let connector: string;
@@ -21,15 +21,17 @@
   let isReconciling = false;
   let hasUnsavedChanges = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
-  $: cardinalityQuery = createQueryServiceTableCardinality(instanceId, table, {
+  $: cardinalityQuery = createQueryServiceTableCardinality(client, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
   });
 
-  $: profileColumnsQuery = createQueryServiceTableColumns(instanceId, table, {
+  $: profileColumnsQuery = createQueryServiceTableColumns(client, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
@@ -87,7 +89,7 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply transition duration-200 py-2 flex flex-col gap-y-2;
+    @apply py-2 flex flex-col gap-y-2;
   }
 
   .spinner-wrapper {

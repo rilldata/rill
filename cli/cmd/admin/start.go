@@ -270,7 +270,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			default:
 				logger.Fatal("unknown AI driver", zap.String("driver", aiDriver))
 			}
-			aiHandle, err := drivers.Open(aiDriver, "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+			aiHandle, err := drivers.Open(aiDriver, "", "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 			if err != nil {
 				logger.Fatal("error creating AI client", zap.Error(err))
 			}

@@ -16,6 +16,7 @@
     getSubscriptionResumedText,
     showWelcomeToRillDialog,
   } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import {
     AlertDialog,
@@ -81,6 +82,7 @@
   $: redirect = $page.url.searchParams.get("redirect");
 
   let loading = false;
+  let fetchError: string | null = null;
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
@@ -91,16 +93,26 @@
   ]);
   async function handleUpgradePlan() {
     loading = true;
-    // only fetch when needed to avoid hitting orb for list of plans too often
-    const teamPlan = await fetchTeamPlan();
-    if (paymentIssues?.length) {
-      window.open(
-        await fetchPaymentsPortalURL(
-          organization,
-          getBillingUpgradeUrl($page, organization),
-        ),
-        "_self",
-      );
+    fetchError = null;
+    let teamPlan;
+    try {
+      // only fetch when needed to avoid hitting orb for list of plans too often
+      teamPlan = await fetchTeamPlan();
+      if (paymentIssues?.length) {
+        window.open(
+          await fetchPaymentsPortalURL(
+            organization,
+            getBillingUpgradeUrl($page, organization),
+            needsPaymentSetup(paymentIssues),
+          ),
+          "_self",
+        );
+        return;
+      }
+    } catch (e) {
+      loading = false;
+      fetchError =
+        e instanceof Error ? e.message : "An unexpected error occurred";
       return;
     }
     loading = false;
@@ -147,8 +159,11 @@
         <PricingDetails extraText={description} />
       </AlertDialogDescription>
 
-      {#if $allStatus.isError}
+      {#if $allStatus.isError || fetchError}
         <div class="text-red-500 text-sm py-px">
+          {#if fetchError}
+            <div>{fetchError}</div>
+          {/if}
           {#each $allStatus.errors as e}
             <div>{e}</div>
           {/each}

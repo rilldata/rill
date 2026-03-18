@@ -8,20 +8,37 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
+func TestObjectStoreCloud(t *testing.T) {
+	testmode.Expensive(t)
+	// using azure cloud for these test because azurite does not support startFrom
+	cfg := testruntime.AcquireConnector(t, "azure_cloud")
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	objectStore, ok := conn.AsObjectStore()
+	require.True(t, ok)
+	bucket := "test-container"
+	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListObjectsForGlobPagination_pageSize5", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 5) })
+}
+
 func TestObjectStore(t *testing.T) {
 	cfg := testruntime.AcquireConnector(t, "azure")
-	conn, err := drivers.Open("azure", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test"
-
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
@@ -32,7 +49,7 @@ func TestObjectStore(t *testing.T) {
 func TestObjectStorePathPrefixes(t *testing.T) {
 	cfg := testruntime.AcquireConnector(t, "azure")
 	cfg["path_prefixes"] = "azure://integration-test/glob_test/"
-	conn, err := drivers.Open("azure", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("azure", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -44,6 +61,66 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 	t.Run("testPathWithInAllowedPrefix", func(t *testing.T) { testPathWithInAllowedPrefix(t, objectStore, bucket) })
 	t.Run("testPathOutsideAllowedPrefix", func(t *testing.T) { testPathOutsideAllowedPrefix(t, objectStore, bucket) })
 	t.Run("testPathRootLevelOfAllowedPrefix", func(t *testing.T) { testPathRootLevelOfAllowedPrefix(t, objectStore, bucket) })
+}
+
+func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string, pageSize uint32) {
+	ctx := t.Context()
+	path := "listing_glob_test/**/*.csv"
+
+	expected := []string{
+		"listing_glob_test/year=2024/month=11/day=30/file1.csv",
+		"listing_glob_test/year=2024/month=11/day=30/file2.csv",
+		"listing_glob_test/year=2024/month=11/day=31/file1.csv",
+
+		"listing_glob_test/year=2025/month=01/day=01/file1.csv",
+		"listing_glob_test/year=2025/month=01/day=01/file2.csv",
+		"listing_glob_test/year=2025/month=01/day=01/file3.csv",
+
+		"listing_glob_test/year=2025/month=01/day=02/file1.csv",
+		"listing_glob_test/year=2025/month=01/day=02/file2.csv",
+
+		"listing_glob_test/year=2025/month=02/day=01/file1.csv",
+
+		"listing_glob_test/year=2025/month=12/day=01/file1.csv",
+		"listing_glob_test/year=2025/month=12/day=01/file2.csv",
+
+		"listing_glob_test/year=2026/month=01/day=01/file1.csv",
+		"listing_glob_test/year=2026/month=01/day=01/hour=01/file1.csv",
+		"listing_glob_test/year=2026/month=01/day=01/hour=02/file1.csv",
+	}
+
+	var pageToken string
+	var collected []string
+	var pageCount int
+
+	for {
+		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken)
+		require.NoError(t, err)
+
+		if nextToken != "" {
+			require.Len(t, objects, int(pageSize))
+		} else {
+			require.NotEmpty(t, objects)
+			require.LessOrEqual(t, len(objects), int(pageSize))
+		}
+
+		for _, obj := range objects {
+			require.False(t, obj.IsDir)
+			collected = append(collected, obj.Path)
+		}
+
+		if nextToken == "" {
+			break
+		}
+
+		pageToken = nextToken
+		pageCount++
+	}
+
+	require.Equal(t, expected, collected)
+
+	expectedPages := (len(expected) + int(pageSize) - 1) / int(pageSize)
+	require.Equal(t, expectedPages, pageCount+1)
 }
 
 func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
@@ -127,10 +204,11 @@ func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket s
 func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 4, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 2, "")
 	require.NoError(t, err)
 	require.NotNil(t, objects)
-	require.Empty(t, nextToken)
+	require.Len(t, objects, 2)
+	require.NotEmpty(t, nextToken)
 }
 
 func testListObjectsNoMatch(t *testing.T, objectStore drivers.ObjectStore, bucket string) {

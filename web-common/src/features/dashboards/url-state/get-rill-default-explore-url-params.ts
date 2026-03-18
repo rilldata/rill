@@ -10,6 +10,7 @@ import {
   getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   type V1ExploreSpec,
   type V1MetricsViewSpec,
@@ -80,13 +81,14 @@ export function createRillDefaultExploreUrlParams(
  * TODO: replace {@link createRillDefaultExploreUrlParams} with this
  */
 export function createRillDefaultExploreUrlParamsV2(
+  client: RuntimeClient,
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(client, exploreNameStore),
   );
   const timeRangeQuery = createQuery(
-    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(client, exploreNameStore),
   );
 
   return derived(

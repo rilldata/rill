@@ -39,12 +39,12 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if ch.Interactive && orgRole == "" {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to assign an organization role to the service?", "", false)
+				ok, err := cmdutil.YesNoPrompt("Do you want to assign an organization role to the service?", false)
 				if err != nil {
 					return err
 				}
 				if ok {
-					err = cmdutil.SelectPromptIfEmpty(&orgRole, "Select role", orgRoles, "")
+					orgRole, err = cmdutil.SelectPrompt("Select role", orgRoles, "")
 					if err != nil {
 						return err
 					}
@@ -52,7 +52,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if ch.Interactive && projectRole == "" && !cmd.Flags().Changed("org-role") {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to assign a project role to the service?", "", false)
+				ok, err := cmdutil.YesNoPrompt("Do you want to assign a project role to the service?", false)
 				if err != nil {
 					return err
 				}
@@ -61,11 +61,11 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 					if err != nil {
 						return fmt.Errorf("failed to fetch project names: %w", err)
 					}
-					err = cmdutil.SelectPromptIfEmpty(&projectName, "Select project", projectNames, "")
+					projectName, err = cmdutil.SelectPrompt("Select project", projectNames, "")
 					if err != nil {
 						return err
 					}
-					err = cmdutil.SelectPromptIfEmpty(&projectRole, "Select role", projectRoles, "")
+					projectRole, err = cmdutil.SelectPrompt("Select role", projectRoles, "")
 					if err != nil {
 						return err
 					}
