@@ -29,6 +29,11 @@ export default async (
   // Inject nonce onto every <script and <style opening tag.
   body = body.replace(/<script(?=[ >])/g, `<script nonce="${nonce}"`);
   body = body.replace(/<style(?=[ >])/g, `<style nonce="${nonce}"`);
+  // Inject nonce into entity-encoded <script> tags inside data: URI iframe srcs.
+  // e.g. src="data:text/html,&lt;script&gt;..." becomes
+  //      src="data:text/html,&lt;script nonce=&quot;NONCE&quot;&gt;..."
+  // &quot; is required so the nonce value doesn't break the enclosing attribute.
+  body = body.replace(/&lt;script(?=[ &])/g, `&lt;script nonce=&quot;${nonce}&quot;`);
 
   const url = new URL(request.url);
   const isEmbed = url.pathname.startsWith("/-/embed");
