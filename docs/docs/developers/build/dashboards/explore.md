@@ -63,7 +63,7 @@ In various locations throughout the platform, you have the opportunity to fast-t
 
 ## Preview a Dashboard in Rill Developer
 
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/developers/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer.
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/developers/deploy/deploy-to-cloud), you can preview the dashboard in Rill Developer.
 
 ![Preview](/img/build/dashboard/preview.png)
 
