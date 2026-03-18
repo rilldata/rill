@@ -3,11 +3,9 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_DIMENSION_TABLE_PRESET,
-  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE,
   AD_BIDS_EXPLORE_NAME,
-  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-  AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_VIEW,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -529,42 +527,49 @@ describe("Human readable URL state variations", () => {
   });
 
   describe("Should update url state and restore default state on empty params", () => {
-    for (const { title, mutations, preset, expectedSearch } of TestCases) {
+    for (const {
+      title,
+      mutations,
+      preset,
+      expectedSearch,
+      extraExploreState,
+    } of TestCases) {
       it(title, async () => {
         const explore: V1ExploreSpec = {
-          ...AD_BIDS_EXPLORE_INIT,
+          ...AD_BIDS_EXPLORE,
           ...(preset ? { defaultPreset: preset } : {}),
           timeZones: ["UTC", "Asia/Kathmandu"],
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           explore,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
         await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        const stateAfterMutations = getCleanMetricsExploreForAssertion();
 
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
           explore,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           getTimeControlState(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
@@ -584,6 +589,22 @@ describe("Human readable URL state variations", () => {
         const currentState = getCleanMetricsExploreForAssertion();
         // current state should match the initial state
         expect(currentState).toEqual(initState);
+
+        const url = new URL("http://localhost");
+        // load url with the expected search
+        url.search = expectedSearch;
+        // get back the state from url params
+        const { partialExploreState: exploreStateFromUrl } =
+          convertURLSearchParamsToExploreState(
+            url.searchParams,
+            AD_BIDS_METRICS_VIEW,
+            explore,
+            defaultExplorePreset,
+          );
+        expect(exploreStateFromUrl).toEqual({
+          ...stateAfterMutations,
+          ...(extraExploreState ?? {}),
+        });
       });
     }
   });
@@ -599,20 +620,20 @@ describe("Human readable URL state variations", () => {
       if (legacyNotSupported) continue;
       it(title, async () => {
         const explore: V1ExploreSpec = {
-          ...AD_BIDS_EXPLORE_INIT,
+          ...AD_BIDS_EXPLORE,
           ...(preset ? { defaultPreset: preset } : {}),
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          AD_BIDS_METRICS_INIT,
+          AD_BIDS_METRICS_VIEW,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
@@ -630,7 +651,7 @@ describe("Human readable URL state variations", () => {
         const { partialExploreState: entityFromUrl } =
           convertURLSearchParamsToExploreState(
             url.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             defaultExplorePreset,
           );
@@ -644,7 +665,7 @@ describe("Human readable URL state variations", () => {
         const { partialExploreState: entityFromDefaultUrl } =
           convertURLSearchParamsToExploreState(
             defaultUrl.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             defaultExplorePreset,
           );
@@ -659,19 +680,19 @@ describe("Human readable URL state variations", () => {
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_VIEW,
+        AD_BIDS_EXPLORE,
         AD_BIDS_TIME_RANGE_SUMMARY,
       ),
     );
     const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_METRICS_VIEW,
+      AD_BIDS_EXPLORE,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     const defaultExplorePreset = getDefaultExplorePreset(
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_METRICS_INIT,
+      AD_BIDS_EXPLORE,
+      AD_BIDS_METRICS_VIEW,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
 
@@ -685,12 +706,12 @@ describe("Human readable URL state variations", () => {
     // load url params with updated metrics state
     const url = new URL("http://localhost");
     url.search = getCleanedUrlParamsForGoto(
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_EXPLORE,
+      AD_BIDS_METRICS_VIEW,
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       getTimeControlState(
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_VIEW,
+        AD_BIDS_EXPLORE,
         AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       ),
@@ -701,11 +722,11 @@ describe("Human readable URL state variations", () => {
     // reset the explore state
     applyURLToExploreState(
       new URL("http://localhost"),
-      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_EXPLORE,
       defaultExplorePreset,
     );
     // reapply the compressed url
-    applyURLToExploreState(url, AD_BIDS_EXPLORE_INIT, defaultExplorePreset);
+    applyURLToExploreState(url, AD_BIDS_EXPLORE, defaultExplorePreset);
 
     const currentState = getCleanMetricsExploreForAssertion();
     expect(currentState.selectedTimeRange?.name).toEqual(
@@ -726,7 +747,7 @@ export function applyURLToExploreState(
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLSearchParamsToExploreState(
       url.searchParams,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_METRICS_VIEW,
       exploreSpec,
       defaultExplorePreset,
     );

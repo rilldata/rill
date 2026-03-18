@@ -185,6 +185,7 @@ export class DashboardStateSync {
       );
     }
 
+    console.log(redirectUrl.search, pageState.url.search);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
