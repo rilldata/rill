@@ -42,8 +42,7 @@
   export let clusterSlots = 0;
   // Current Rill Slots (user-controlled). Only for Live Connect + new pricing.
   export let currentRillSlots = 0;
-  // Infra slots override from backend (read-only, set by Rill staff).
-  export let infraSlots: number | undefined = undefined;
+  // (infraSlots prop removed — no longer shown in the status UI)
 
   const POPULAR_RILL_MANAGED = POPULAR_SLOTS.map((s) => ({ slots: s }));
   const ALL_RILL_MANAGED = ALL_SLOTS.map((s) => ({ slots: s }));
@@ -256,11 +255,6 @@
               (~${Math.round(clusterSlots * CLUSTER_SLOT_RATE_PER_HR * HOURS_PER_MONTH).toLocaleString()}/mo)
             </span>
           </div>
-          {#if infraSlots !== undefined}
-            <div class="infra-slot-display">
-              <span class="text-xs text-fg-tertiary">Infra slots: {infraSlots} · read-only</span>
-            </div>
-          {/if}
         </div>
 
         <div class="slot-group">
@@ -511,9 +505,6 @@
   }
   .cluster-slot-rate {
     @apply text-sm text-fg-secondary;
-  }
-  .infra-slot-display {
-    @apply mt-1;
   }
   .total-row {
     @apply flex items-center justify-between px-3 py-2.5 mt-3 bg-surface-subtle rounded-md border border-border;

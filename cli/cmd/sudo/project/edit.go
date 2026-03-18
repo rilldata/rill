@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var prodSlots, infraSlots, clusterSlots, rillSlots int
+	var infraSlots, clusterSlots, rillSlots int
 	var prodVersion string
 
 	editCmd := &cobra.Command{
@@ -19,10 +19,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			if cmd.Flags().Changed("rill-slots") && cmd.Flags().Changed("prod-slots") {
-				return fmt.Errorf("--rill-slots and --prod-slots are mutually exclusive")
-			}
-
 			req := &adminv1.UpdateProjectRequest{
 				Org:                  args[0],
 				Project:              args[1],
@@ -31,14 +27,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			isEditRequested := false
 
-			if cmd.Flags().Changed("prod-slots") {
-				if prodSlots < 0 {
-					return fmt.Errorf("--prod-slots must be >= 0")
-				}
-				v := int64(prodSlots)
-				req.ProdSlots = &v
-				isEditRequested = true
-			}
 			if cmd.Flags().Changed("rill-slots") {
 				if rillSlots < 0 {
 					return fmt.Errorf("--rill-slots must be >= 0")
@@ -72,7 +60,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// --rill-slots: resolve prod_slots = cluster_slots + rill_slots.
 			// For Rill Managed (DuckDB): prod_slots = rill_slots directly (no cluster slots).
-			// For Live Connect: fetch cluster_slots from DB or use --cluster-slots flag.
+			// For Live Connect: prod_slots = cluster_slots + rill_slots.
 			if cmd.Flags().Changed("rill-slots") {
 				proj, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 					Org:                  args[0],
@@ -95,7 +83,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 					} else if proj.Project.ClusterSlots != nil {
 						clusterSlotsForCalc = *proj.Project.ClusterSlots
 					} else {
-						return fmt.Errorf("cluster_slots is not set for this project -- set it first with --cluster-slots")
+						return fmt.Errorf("cluster_slots is not set for this project; set it first with --cluster-slots")
 					}
 					newProdSlots := clusterSlotsForCalc + int64(rillSlots)
 					req.ProdSlots = &newProdSlots
@@ -113,15 +101,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if isManaged {
 				fmt.Printf("Rill slots:    %d\n", proj.ProdSlots)
 				fmt.Printf("Cluster slots: 0\n")
-				fmt.Printf("Infra slots:   0\n")
 				fmt.Printf("Prod slots:    %d\n", proj.ProdSlots)
 			} else {
-				infraLabel := "(default)"
-				infraVal := int64(4)
-				if proj.InfraSlots != nil {
-					infraLabel = ""
-					infraVal = *proj.InfraSlots
-				}
 				clusterSlotsVal := int64(4)
 				clusterLabel := "(default)"
 				if proj.ClusterSlots != nil {
@@ -134,7 +115,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				fmt.Printf("Rill slots:    %d\n", rillSlotsVal)
 				fmt.Printf("Cluster slots: %d %s\n", clusterSlotsVal, clusterLabel)
-				fmt.Printf("Infra slots:   %d %s\n", infraVal, infraLabel)
 				fmt.Printf("Prod slots:    %d (cluster + rill)\n", proj.ProdSlots)
 			}
 
@@ -142,10 +122,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Total prod slots (cluster + rill); use --rill-slots for Live Connect projects")
-	editCmd.Flags().IntVar(&rillSlots, "rill-slots", 0, "Rill (user) slots on top of cluster slots; sets prod_slots = cluster_slots + rill_slots")
+	editCmd.Flags().IntVar(&rillSlots, "rill-slots", 0, "Rill slots; for Managed: sets prod_slots directly; for Live Connect: sets prod_slots = cluster_slots + rill_slots")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
 	editCmd.Flags().IntVar(&infraSlots, "infra-slots", 0, "Rill infra overhead slot allocation (Live Connect only; 0 = use default of 4)")
-	editCmd.Flags().IntVar(&clusterSlots, "cluster-slots", 0, "Cluster slot allocation override (stored as rill_min_slots in DB)")
+	editCmd.Flags().IntVar(&clusterSlots, "cluster-slots", 0, "Cluster slot allocation override (stored in DB)")
 	return editCmd
 }

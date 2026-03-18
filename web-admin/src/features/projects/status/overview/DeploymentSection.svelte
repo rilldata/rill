@@ -121,7 +121,6 @@
 
   // Backend quota overrides (set via `rill sudo project edit`)
   $: backendClusterSlots = Number(projectData?.clusterSlots) || undefined;
-  $: backendInfraSlots = Number(projectData?.infraSlots) || undefined;
 
   // Cluster Slots: prefer SQL-detected value, fall back to RillMinSlots from backend.
   // Only applies to Live Connect (not Rill-managed).
@@ -262,67 +261,20 @@
     </div>
 
     {#if !$subscriptionQuery?.isLoading && !isEnterprise}
-      {#if useNewPricing && !isRillManaged}
-        <!-- Live Connect (new pricing): three separate rows -->
-        <div class="info-row">
-          <span class="info-label">Rill Slots</span>
-          <span class="info-value flex items-center gap-3">
-            <span class="slots-count">{rillSlots}</span>
-            {#if canManage && !isTrial}
-              <button
-                class="manage-slots-btn"
-                on:click={() => (slotsModalOpen = true)}
-              >
-                Manage
-              </button>
-            {/if}
-          </span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Cluster Slots</span>
-          <span class="info-value flex items-center gap-2">
-            <span class="slots-count">{clusterSlots}</span>
-            <span class="text-fg-tertiary text-xs">(read-only)</span>
-          </span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Infra Slots</span>
-          <span class="info-value flex items-center gap-2">
-            <span class="slots-count">{backendInfraSlots ?? 4}</span>
-            <span class="text-fg-tertiary text-xs">{backendInfraSlots === undefined ? "(default, read-only)" : "(read-only)"}</span>
-          </span>
-        </div>
-      {:else}
-        <!-- Managed or legacy: single Slots row -->
-        <div class="info-row">
-          <span class="info-label">Slots</span>
-          <span class="info-value flex items-center gap-3">
-            {#if currentSlots > 0}
-              <div class="slots-pill">
-                <div
-                  class="slots-fill-prod"
-                  style="width: {(prodSlots / currentSlots) * 100}%"
-                ></div>
-                <div
-                  class="slots-fill-dev"
-                  style="width: {(devSlots / currentSlots) * 100}%"
-                ></div>
-              </div>
-              <span class="slots-count">{usedSlots}/{currentSlots}</span>
-            {:else}
-              <span>0</span>
-            {/if}
-            {#if canManage && !isTrial}
-              <button
-                class="manage-slots-btn"
-                on:click={() => (slotsModalOpen = true)}
-              >
-                Manage Slots
-              </button>
-            {/if}
-          </span>
-        </div>
-      {/if}
+      <div class="info-row">
+        <span class="info-label">Provisioned Slots</span>
+        <span class="info-value flex items-center gap-3">
+          <span class="slots-count">{currentSlots}</span>
+          {#if canManage && !isTrial}
+            <button
+              class="manage-slots-btn"
+              on:click={() => (slotsModalOpen = true)}
+            >
+              Manage
+            </button>
+          {/if}
+        </span>
+      </div>
     {/if}
   </div>
 </OverviewCard>
@@ -338,7 +290,6 @@
   {useNewPricing}
   clusterSlots={clusterSlots}
   currentRillSlots={rillSlots}
-  infraSlots={backendInfraSlots}
 />
 
 <style lang="postcss">
@@ -365,15 +316,6 @@
   }
   .repo-link:hover {
     @apply underline;
-  }
-  .slots-pill {
-    @apply flex h-2.5 w-28 rounded-full bg-gray-200 overflow-hidden;
-  }
-  .slots-fill-prod {
-    @apply h-full bg-primary-500;
-  }
-  .slots-fill-dev {
-    @apply h-full bg-amber-400;
   }
   .slots-count {
     @apply text-sm text-fg-primary font-medium tabular-nums;
