@@ -82,7 +82,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("fetching project for --rill-slots: %w", err)
 				}
-				isRillManaged := proj.Project.OlapConnector == "" || proj.Project.OlapConnector == "duckdb"
+				isRillManaged := isRillManagedProject(proj.Project)
 				if isRillManaged {
 					// Managed: prod_slots = rill_slots (no cluster component)
 					newProdSlots := int64(rillSlots)
@@ -109,7 +109,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfSuccess("Updated project\n")
 			proj := updatedProj.Project
-			isManaged := proj.OlapConnector == "" || proj.OlapConnector == "duckdb"
+			isManaged := isRillManagedProject(proj)
 			if isManaged {
 				fmt.Printf("Rill slots:    %d\n", proj.ProdSlots)
 				fmt.Printf("Cluster slots: 0\n")

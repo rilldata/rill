@@ -47,8 +47,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Subpath: %s\n", project.Subpath)
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Primary branch: %s\n", project.PrimaryBranch)
-			// Rill Managed: DuckDB or any connector that isn't clickhouse/motherduck
-			isRillManaged := project.OlapConnector == "" || project.OlapConnector == "duckdb"
+			isRillManaged := isRillManagedProject(project)
 			if isRillManaged {
 				fmt.Printf("Rill slots:    %d\n", project.ProdSlots)
 				fmt.Printf("Cluster slots: 0\n")
@@ -85,4 +84,18 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	return getCmd
+}
+
+// isRillManagedProject returns true if the project uses Rill-managed OLAP (DuckDB).
+// When olap_connector is not yet populated, falls back to checking whether
+// cluster_slots or infra_slots are set (which indicates Live Connect).
+func isRillManagedProject(p *adminv1.Project) bool {
+	if p.OlapConnector != "" {
+		return p.OlapConnector == "duckdb"
+	}
+	// olap_connector not populated; use presence of cluster/infra slots as a Live Connect signal
+	if p.ClusterSlots != nil || p.InfraSlots != nil {
+		return false
+	}
+	return true
 }
