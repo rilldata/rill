@@ -1,5 +1,5 @@
 import type { ValidationAdapter } from "sveltekit-superforms/adapters";
-import { superForm, defaults } from "sveltekit-superforms";
+import { superForm, defaults, type SuperValidated } from "sveltekit-superforms";
 
 import { createSchemasafeValidator } from "./jsonSchemaValidator";
 import { getConnectorSchema } from "./connector-schemas";
@@ -32,7 +32,7 @@ export function createConnectorForm(args: {
   schemaName: string;
   formType: AddDataFormType;
   onUpdate: (event: {
-    form: { data: FormData; valid: boolean };
+    form: SuperValidated<FormData, string, FormData>;
   }) => void | Promise<void>;
 }) {
   const { schemaName, formType, onUpdate } = args;

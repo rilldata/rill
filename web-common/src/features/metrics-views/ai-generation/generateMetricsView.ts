@@ -6,7 +6,7 @@ import {
   ResourceKind,
   resourceIsLoading,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files";
+import { createResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { extractErrorMessage } from "@rilldata/web-common/lib/errors";

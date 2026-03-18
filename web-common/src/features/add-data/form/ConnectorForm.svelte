@@ -10,7 +10,6 @@
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -65,7 +64,8 @@
     },
   });
 
-  $: ({ form } = superFormsParams);
+  $: ({ form, errors } = superFormsParams);
+  $: console.log($errors);
 
   $: schema = getConnectorSchema(connectorDriver.name ?? "");
   $: yamlPreview = getConnectorYamlPreview({
@@ -77,8 +77,6 @@
 
   $: labelsForConnector = getLabelsForConnector(schema, $form);
 </script>
-
-<ConnectorHeader {connectorDriver} />
 
 <AddDataFormStructure
   {connectorDriver}

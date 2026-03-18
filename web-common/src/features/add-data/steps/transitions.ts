@@ -7,6 +7,7 @@ import {
 } from "@rilldata/web-common/features/add-data/steps/types.ts";
 import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
+  connectorInfoMap,
   connectors,
   getBackendConnectorName,
   getConnectorSchema,
@@ -165,7 +166,7 @@ function transitionFromConnector(
 function getConnectorDriverForSchema(
   schemaName: string,
 ): V1ConnectorDriver | null {
-  const connectorInfo = connectors.find((c) => c.name === schemaName);
+  const connectorInfo = connectorInfoMap.get(schemaName);
   if (!connectorInfo) return null;
   const schema = getConnectorSchema(connectorInfo.name);
   const category = schema?.["x-category"];
@@ -197,13 +198,16 @@ function isConnectorType(connectorDriver: V1ConnectorDriver) {
     connectorDriver?.implementsObjectStore ||
     connectorDriver?.implementsOlap ||
     connectorDriver?.implementsSqlStore ||
-    (connectorDriver?.implementsWarehouse &&
-      connectorDriver?.name !== "salesforce")
+    connectorDriver?.implementsWarehouse
   );
 }
 
 function isExplorerType(connectorDriver: V1ConnectorDriver) {
-  return connectorDriver?.implementsOlap || connectorDriver?.implementsSqlStore;
+  return (
+    connectorDriver?.implementsOlap ||
+    connectorDriver?.implementsSqlStore ||
+    connectorDriver?.implementsWarehouse
+  );
 }
 
 export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {

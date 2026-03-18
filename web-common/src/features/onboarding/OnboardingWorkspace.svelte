@@ -7,7 +7,7 @@
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { createResourceAndNavigate } from "@rilldata/web-common/features/file-explorer/new-files.ts";
+  import { createResourceAndNavigate } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
   import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import {

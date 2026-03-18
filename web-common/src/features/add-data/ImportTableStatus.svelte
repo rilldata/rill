@@ -16,6 +16,7 @@
 
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
+  export let onClose: () => void;
 
   const runtimeClient = useRuntimeClient();
 
@@ -36,9 +37,9 @@
     },
     {
       step: ImportDataStep.CreateCanvas,
-      pendingLabel: "Generating Explore dashboard...",
-      doneLabel: "Generated Explore dashboard",
-      failedLabel: "Generating Explore dashboard failed.",
+      pendingLabel: "Generating dashboard...",
+      doneLabel: "Generated dashboard",
+      failedLabel: "Generating dashboard failed.",
     },
   ];
   const steps = importAddDataStep.config.importSteps.map(
@@ -58,6 +59,7 @@
           (newRoute) => (currentFileRoute = newRoute),
         );
       }
+      onClose();
       return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;

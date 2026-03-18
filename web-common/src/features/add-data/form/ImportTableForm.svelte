@@ -23,7 +23,6 @@
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
-  import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
   import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
   import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
@@ -81,51 +80,66 @@
     }),
   );
 
-  const { form, enhance, submit } = superForm(defaults(initialValues, schema), {
-    SPA: true,
-    validators: schema,
-    resetForm: false,
-    async onUpdate({ form }) {
-      if (!form.valid) return;
-      const values = form.data;
-      const sql =
-        values.mode === "table"
-          ? `SELECT * FROM ${values.table ?? ""}`
-          : values.sql;
-      const name =
-        values.mode === "table"
-          ? values.table
-          : inferModelNameFromSQL(values.sql ?? "");
-      if (!name) return; // TODO: error
+  const { form, enhance, submit, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      resetForm: false,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+        const sql =
+          values.mode === "table"
+            ? `SELECT * FROM ${values.schema ? values.schema + "." : ""}${values.table ?? ""}`
+            : values.sql;
+        const name =
+          values.mode === "table"
+            ? values.table
+            : inferModelNameFromSQL(values.sql ?? "");
+        if (!name) return; // TODO: error
 
-      const modelName = getName(
-        name,
-        fileArtifacts.getNamesForKind(ResourceKind.Model),
-      );
-      const yaml = compileSourceYAML(
-        connectorDriver,
-        {
-          name: modelName,
-          sql,
-          database: values.database,
-        },
-        {
-          connectorInstanceName: connectorName,
-        },
-      );
+        let modelName = values.table;
+        let yaml = "";
+        if (importSteps[0] === ImportDataStep.CreateModel) {
+          modelName = getName(
+            name,
+            fileArtifacts.getNamesForKind(ResourceKind.Model),
+          );
+          yaml = compileSourceYAML(
+            connectorDriver,
+            {
+              name: modelName,
+              sql,
+              database: values.database,
+            },
+            {
+              connectorInstanceName: connectorName,
+            },
+          );
+        }
 
-      onSubmit({
-        importSteps,
-        source: modelName,
-        sourceSchema: values.schema ?? "",
-        sourceDatabase: values.database ?? "",
-        connector: connectorName,
-        yaml,
-        envBlob: null,
-      } satisfies ImportAddDataStepConfig);
+        onSubmit({
+          importSteps,
+          source: modelName,
+          sourceSchema: values.schema ?? "",
+          sourceDatabase: values.database ?? "",
+          connector: connectorName,
+          yaml,
+          envBlob: null,
+        } satisfies ImportAddDataStepConfig);
+      },
+      validationMethod: "onsubmit",
     },
-    validationMethod: "onsubmit",
-  });
+  );
+  $: isSubmitDisabled = (() => {
+    if ($form.mode === "table") {
+      return !$form.table;
+    } else if ($form.mode === "sql") {
+      return !$form.sql;
+    }
+    return false;
+  })();
 
   $: connectors = getAnalyzedConnectors(runtimeClient, false);
   $: analyzedConnector = $connectors.data?.connectors?.find(
@@ -139,7 +153,8 @@
     databaseSchema,
     table,
   }: ConnectorExplorerEntry) {
-    if (!database || !databaseSchema || !table) return;
+    if (!table) return;
+    console.log(database, databaseSchema, table);
     form.update((f) => {
       f.database = database;
       f.schema = databaseSchema;
@@ -148,8 +163,6 @@
     });
   }
 </script>
-
-<ConnectorHeader {connectorDriver} />
 
 <form
   use:enhance
@@ -193,7 +206,12 @@
   <div class="flex flex-row px-6 py-4 gap-2 border-t">
     <Button onClick={() => window.history.back()} type="secondary">Back</Button>
     <div class="grow" />
-    <Button onClick={submit} type="primary">
+    <Button
+      disabled={$submitting || isSubmitDisabled}
+      loading={$submitting}
+      onClick={submit}
+      type="primary"
+    >
       {sourceFormLabels.primaryButtonLabel}
     </Button>
   </div>

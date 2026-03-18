@@ -18,8 +18,10 @@
   import { pushState } from "$app/navigation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import ConnectorHeader from "@rilldata/web-common/features/add-data/form/ConnectorHeader.svelte";
 
   export let config: AddDataConfig = {};
+  export let onClose: () => void = () => {};
 
   const runtimeClient = useRuntimeClient();
 
@@ -42,6 +44,10 @@
   $: isImportStep = stepState.step === AddDataStep.Import;
   $: height = isImportStep ? "h-fit" : "h-[600px]";
   $: width = isImportStep ? "w-[500px]" : "w-[900px]";
+  $: shouldShowHeader =
+    stepState.step === AddDataStep.CreateConnector ||
+    stepState.step === AddDataStep.CreateModel ||
+    stepState.step === AddDataStep.ExploreConnector;
 
   async function transitionToSchema(schema: string) {
     const newState = await transitionToNextStep(runtimeClient, stepState, {
@@ -61,6 +67,7 @@
   }
 
   async function setAndStartImport(importConfig: ImportAddDataStepConfig) {
+    console.log(importConfig);
     const newState = await transitionToNextStep(runtimeClient, stepState, {
       importConfig,
     });
@@ -72,6 +79,10 @@
 <div
   class="flex flex-col {width} {height} bg-surface-background border rounded-lg shadow-sm;"
 >
+  {#if shouldShowHeader && schema}
+    <ConnectorHeader schemaName={schema} />
+  {/if}
+
   {#if stepState.step === AddDataStep.SelectConnector}
     <NewSourceSelector onSelect={transitionToSchema} />
   {:else if stepState.step === AddDataStep.CreateConnector}
@@ -92,8 +103,6 @@
         schemaName={schema}
         connectorName={connector}
         onSubmit={setAndStartImport}
-        onClose={() => {}}
-        onBack={() => window.history.back()}
       />
     {:else}
       <div>Missing connector driver, schema name, or connector name (TODO)</div>
@@ -113,6 +122,7 @@
     <ImportTableStatus
       importAddDataStep={stepState}
       onBack={() => window.history.back()}
+      {onClose}
     />
   {/if}
 </div>

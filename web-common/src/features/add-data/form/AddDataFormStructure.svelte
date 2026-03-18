@@ -13,6 +13,12 @@
     inferSourceName,
   } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { getSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
+  import {
+    getRequiredFieldsForValues,
+    isVisibleForValues,
+  } from "@rilldata/web-common/features/templates/schema-utils.ts";
+  import { isEmpty } from "@rilldata/web-common/features/sources/modal/utils.ts";
 
   export let connectorDriver: V1ConnectorDriver;
   export let schema: MultiStepFormSchema | null;
@@ -26,15 +32,27 @@
     superFormsParams);
   $: taintedFields = $tainted;
 
-  $: submitError = $errors.submitError as any;
-  $: message = submitError?.message?.[0];
-  $: details = submitError?.details?.[0];
+  $: ({ message, details } = getSubmitError($errors));
 
   $: hideRightPannel = connectorDriver.name === "local_file";
 
   let shouldShowSaveAnywayButton = false;
-  let shouldShowSkipLink = false;
-  let isSubmitDisabled = false; // TODO
+
+  $: isSubmitDisabled = (() => {
+    // No schema = disable submit (schema is required for all connectors)
+    if (!schema) {
+      return true;
+    }
+
+    const requiredFields = getRequiredFieldsForValues(schema, $form, step);
+    for (const field of requiredFields) {
+      if (!isVisibleForValues(schema, field, $form)) continue;
+      const value = $form[field];
+      const errorsForField = $errors[field] as any;
+      if (isEmpty(value) || errorsForField?.length) return true;
+    }
+    return false;
+  })();
 
   function onStringInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -167,17 +185,6 @@
         {/if}
 
         <YamlPreview title={labels.yamlPreviewTitle} yaml={yamlPreview} />
-
-        {#if shouldShowSkipLink}
-          <div class="text-sm leading-normal font-medium text-muted-foreground">
-            Already connected? <button
-              type="button"
-              class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-            >
-              Import your data (TODO)
-            </button>
-          </div>
-        {/if}
       </div>
     </div>
   {/if}

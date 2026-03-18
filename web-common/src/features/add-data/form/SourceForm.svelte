@@ -18,8 +18,6 @@
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForSource } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
-  import ConnectorHeader from "@rilldata/web-common/features/add-data/ConnectorHeader.svelte";
-  import LocalSourceUpload from "@rilldata/web-common/features/sources/modal/LocalSourceUpload.svelte";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import { uploadFile } from "@rilldata/web-common/features/sources/modal/file-upload.ts";
   import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
@@ -33,7 +31,6 @@
   export let connectorName: string;
   export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
   export let onBack: () => void;
-  export let onClose: () => void;
 
   const runtimeClient = useRuntimeClient();
 
@@ -131,8 +128,6 @@
     onSubmit(importConfig);
   }
 </script>
-
-<ConnectorHeader {connectorDriver} />
 
 <AddDataFormStructure
   {connectorDriver}

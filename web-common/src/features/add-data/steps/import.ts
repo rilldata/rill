@@ -17,7 +17,7 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { get } from "svelte/store";
-import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files.ts";
+import { createResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
