@@ -231,8 +231,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	if planChange {
 		// send plan changed email
 
-		if plan.PlanType == billing.TeamPlanType {
-			s.logger.Named("billing").Info("upgraded to team plan",
+		if plan.PlanType == billing.TeamPlanType || plan.PlanType == billing.GrowthPlanType {
+			s.logger.Named("billing").Info("upgraded to paid plan",
 				zap.String("org_id", org.ID),
 				zap.String("org_name", org.Name),
 				zap.String("user_email", org.BillingEmail),
@@ -240,7 +240,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				zap.String("plan_name", sub.Plan.Name),
 			)
 
-			// special handling for team plan to send custom email
+			// special handling for team/growth plan to send custom email
 			err = s.admin.Email.SendTeamPlanStarted(&email.TeamPlan{
 				ToEmail:          org.BillingEmail,
 				ToName:           org.Name,
@@ -449,8 +449,8 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
 
 	// send subscription renewed email
-	if sub.Plan.PlanType == billing.TeamPlanType {
-		// special handling for team plan to send custom email
+	if sub.Plan.PlanType == billing.TeamPlanType || sub.Plan.PlanType == billing.GrowthPlanType {
+		// special handling for team/growth plan to send custom email
 		err = s.admin.Email.SendTeamPlanRenewal(&email.TeamPlan{
 			ToEmail:          org.BillingEmail,
 			ToName:           org.Name,
@@ -460,7 +460,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 			BillingStartDate: sub.CurrentBillingCycleEndDate,
 		})
 
-		s.logger.Named("billing").Info("upgraded to team plan",
+		s.logger.Named("billing").Info("renewed paid plan",
 			zap.String("org_id", org.ID),
 			zap.String("org_name", org.Name),
 			zap.String("user_email", org.BillingEmail),

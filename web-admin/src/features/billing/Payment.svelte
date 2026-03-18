@@ -9,7 +9,7 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
+  import { isEnterprisePlan, isFreePlan, isManagedPlan } from "./plans/utils";
 
   export let organization: string;
   export let subscription: V1Subscription;
@@ -23,8 +23,10 @@
     subscription?.plan && isEnterprisePlan(subscription.plan.name);
   $: onManagedPlan =
     subscription?.plan && isManagedPlan(subscription.plan.name);
+  $: onFreePlan =
+    subscription?.plan && isFreePlan(subscription.plan.name);
   $: hidePaymentModule =
-    neverSubscribed || onTrial || onEnterprisePlan || onManagedPlan;
+    neverSubscribed || onTrial || onEnterprisePlan || onManagedPlan || onFreePlan;
 
   async function handleManagePayment() {
     window.open(
