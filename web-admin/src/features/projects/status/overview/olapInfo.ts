@@ -92,8 +92,7 @@ export function useOlapInfo(
       } as OlapInfo;
     },
     enabled: !!sql && !!client.instanceId,
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 }

@@ -581,6 +581,11 @@ func (c *connection) UpdateProjectOlapConnector(ctx context.Context, id string, 
 	return parseErr("project", err)
 }
 
+func (c *connection) UpdateProjectClusterSlots(ctx context.Context, id string, clusterSlots int64) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET cluster_slots = $1 WHERE id = $2", clusterSlots, id)
+	return parseErr("project", err)
+}
+
 func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
 	res := &database.ProjectsQuotaUsage{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `

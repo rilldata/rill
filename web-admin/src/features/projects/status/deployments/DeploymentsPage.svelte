@@ -1,9 +1,12 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
+    createAdminServiceUpdateProject,
+    getAdminServiceGetProjectQueryKey,
     createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     isTrialPlan,
     isFreePlan,
@@ -63,6 +66,7 @@
       ? cachedOlapType !== "clickhouse"
       : true;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
+  const updateProject = createAdminServiceUpdateProject();
   let slotsModalOpen = false;
 
   // Billing
@@ -83,15 +87,39 @@
   $: olapInfo = $olapInfoQuery?.data;
   $: isRefreshingCluster = $olapInfoQuery?.isFetching && !$olapInfoQuery?.isLoading;
 
-  function refreshClusterSlots() {
-    $olapInfoQuery?.refetch();
+  async function refreshClusterSlots() {
+    const result = await $olapInfoQuery?.refetch();
+    const info = result?.data;
+    if (!info) return;
+
+    const vcpus =
+      info.vcpus && info.vcpus > 0
+        ? info.vcpus
+        : detectTierSlots(parseMemoryToGb(info.memory));
+    if (!vcpus || vcpus <= 0) return;
+
+    // Persist detected cluster_slots to the DB so billing uses the fresh value
+    try {
+      await $updateProject.mutateAsync({
+        org: organization,
+        project,
+        data: { clusterSlots: String(vcpus) },
+      });
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+      });
+    } catch {
+      // Best-effort; the local UI already shows the detected value
+    }
   }
+  // Live-detected value from OLAP SQL (only populated after on-demand refresh)
   $: detectedClusterSlots =
     olapInfo?.vcpus && olapInfo.vcpus > 0
       ? olapInfo.vcpus
       : detectTierSlots(parseMemoryToGb(olapInfo?.memory));
 
-  // Computed slots
+  // Computed slots: prefer DB value (synced hourly by billing reporter),
+  // override with live-detected value when available from on-demand refresh.
   $: clusterSlots = !isRillManaged
     ? detectedClusterSlots ||
       Number(projectData?.clusterSlots) ||

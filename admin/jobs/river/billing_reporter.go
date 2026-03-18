@@ -3,12 +3,14 @@ package river
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/client"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -231,6 +233,7 @@ func (w *BillingReporterWorker) syncOlapConnectorForDeployment(ctx context.Conte
 
 	resp, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
+		Sensitive:  true,
 	})
 	if err != nil {
 		w.logger.Debug("olap sync: failed to get instance", zap.String("project_id", depl.ProjectID), zap.Error(err))
@@ -244,9 +247,11 @@ func (w *BillingReporterWorker) syncOlapConnectorForDeployment(ctx context.Conte
 
 	// Resolve the connector driver type from the connector name
 	var connectorType string
+	var connector *runtimev1.Connector
 	for _, c := range resp.Instance.ProjectConnectors {
 		if c.Name == olapConnectorName {
 			connectorType = c.Type
+			connector = c
 			break
 		}
 	}
@@ -254,12 +259,96 @@ func (w *BillingReporterWorker) syncOlapConnectorForDeployment(ctx context.Conte
 		return
 	}
 
-	// Only update if the value has changed
-	if proj.OlapConnector != nil && *proj.OlapConnector == connectorType {
+	// Update OLAP connector type if changed
+	if proj.OlapConnector == nil || *proj.OlapConnector != connectorType {
+		if err := w.admin.DB.UpdateProjectOlapConnector(ctx, proj.ID, connectorType); err != nil {
+			w.logger.Warn("olap sync: failed to update olap connector", zap.String("project_id", proj.ID), zap.Error(err))
+		}
+	}
+
+	// Detect and sync cluster slots for non-DuckDB connectors (Live Connect)
+	w.syncClusterSlots(ctx, proj, depl, rt, connector)
+}
+
+// clusterDetectionSQL returns the SQL query for detecting cluster vCPUs, or empty if unsupported.
+func clusterDetectionSQL(connector *runtimev1.Connector) string {
+	if connector == nil {
+		return ""
+	}
+	switch connector.Type {
+	case "clickhouse":
+		return `SELECT
+    if(cgroup_cpu > 0, cgroup_cpu, os_cpu) AS vcpus
+FROM (
+    SELECT
+        (SELECT value FROM system.asynchronous_metrics WHERE metric = 'CGroupMaxCPU') AS cgroup_cpu,
+        (SELECT value FROM system.asynchronous_metrics WHERE metric = 'OSProcessorCount') AS os_cpu
+) AS hw`
+	case "duckdb":
+		// MotherDuck: detect from DuckDB settings
+		cfg := connector.Config
+		if cfg == nil || cfg.Fields == nil {
+			return ""
+		}
+		var pathVal, tokenVal string
+		if v := cfg.Fields["path"]; v != nil {
+			pathVal = v.GetStringValue()
+		}
+		if v := cfg.Fields["token"]; v != nil {
+			tokenVal = v.GetStringValue()
+		}
+		isMotherDuck := strings.HasPrefix(pathVal, "md:") || tokenVal != ""
+		if isMotherDuck {
+			return `SELECT MAX(CASE WHEN name = 'threads' THEN CAST(value AS INT) END) AS vcpus FROM duckdb_settings() WHERE name = 'threads'`
+		}
+		return ""
+	default:
+		return ""
+	}
+}
+
+// syncClusterSlots runs a SQL query against the OLAP connector to detect the cluster's vCPU count
+// and persists it as cluster_slots in the projects table.
+func (w *BillingReporterWorker) syncClusterSlots(ctx context.Context, proj *database.Project, depl *database.Deployment, rt *client.Client, connector *runtimev1.Connector) {
+	sql := clusterDetectionSQL(connector)
+	if sql == "" {
 		return
 	}
 
-	if err := w.admin.DB.UpdateProjectOlapConnector(ctx, proj.ID, connectorType); err != nil {
-		w.logger.Warn("olap sync: failed to update project", zap.String("project_id", proj.ID), zap.Error(err))
+	qc := rt.QueryServiceClient()
+	qResp, err := qc.Query(ctx, &runtimev1.QueryRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Connector:  connector.Name,
+		Sql:        sql,
+		Priority:   -1,
+	})
+	if err != nil {
+		w.logger.Debug("cluster slots sync: query failed", zap.String("project_id", proj.ID), zap.Error(err))
+		return
+	}
+
+	if len(qResp.Data) == 0 {
+		return
+	}
+
+	row := qResp.Data[0]
+	vcpusField := row.Fields["vcpus"]
+	if vcpusField == nil {
+		return
+	}
+	vcpus := int64(vcpusField.GetNumberValue())
+	if vcpus <= 0 {
+		return
+	}
+
+	// Only update if the value has changed
+	if proj.ClusterSlots != nil && *proj.ClusterSlots == vcpus {
+		return
+	}
+
+	if err := w.admin.DB.UpdateProjectClusterSlots(ctx, proj.ID, vcpus); err != nil {
+		w.logger.Warn("cluster slots sync: failed to update", zap.String("project_id", proj.ID), zap.Int64("vcpus", vcpus), zap.Error(err))
+	} else {
+		w.logger.Info("cluster slots sync: updated", zap.String("project_id", proj.ID), zap.Int64("vcpus", vcpus))
 	}
 }

@@ -23,8 +23,8 @@
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
-  import { detectTierSlots, MIN_INFRA_SLOTS } from "./slots-utils";
-  import { useOlapInfo, isMotherDuck } from "./olapInfo";
+  import { MIN_INFRA_SLOTS } from "./slots-utils";
+  import { isMotherDuck } from "./olapInfo";
   import OverviewCard from "./OverviewCard.svelte";
   import { page } from "$app/stores";
 
@@ -105,21 +105,10 @@
   $: devForceNewPricing = $page.url.searchParams.get("newPricing") === "true";
   $: useNewPricing = isFree || isGrowth || devForceNewPricing;
 
-  // SQL-based cluster info: runs for any non-Rill-managed project to detect cluster slots.
-  $: olapInfoQuery = useOlapInfo(runtimeClient, !isRillManaged ? olapConnector : undefined);
-  $: olapInfo = $olapInfoQuery?.data;
-  // Detected cluster slots from SQL (vcpus when available, else memory-tier fallback).
-  $: detectedClusterSlots =
-    olapInfo?.vcpus && olapInfo.vcpus > 0
-      ? olapInfo.vcpus
-      : detectTierSlots(parseMemoryToGb(olapInfo?.memory));
-
-  // Cluster Slots: prefer SQL-detected value, fall back to cluster_slots from backend.
+  // Cluster Slots: synced by the billing reporter job; falls back to MIN_INFRA_SLOTS.
   // Only applies to Live Connect (not Rill-managed).
   $: clusterSlots = !isRillManaged
-    ? detectedClusterSlots ||
-      Number(projectData?.clusterSlots) ||
-      MIN_INFRA_SLOTS
+    ? Number(projectData?.clusterSlots) || MIN_INFRA_SLOTS
     : 0;
   // Rill Slots = additional slots on top of cluster_slots (user-controlled).
   $: rillSlots =
@@ -133,20 +122,6 @@
     ? clusterSlots + rillSlots
     : currentSlots;
 
-  /**
-   * Parses a human-readable memory string from the OLAP SQL queries into GB.
-   * Handles formats like "8.00 GiB", "16.00 GB", "7.45 GiB".
-   */
-  function parseMemoryToGb(memory: string | undefined): number | undefined {
-    if (!memory) return undefined;
-    const m = memory.match(/^([\d.]+)\s*(GiB|GB|MiB|MB)/i);
-    if (!m) return undefined;
-    const value = parseFloat(m[1]);
-    const unit = m[2].toLowerCase();
-    if (unit === "gib" || unit === "gb") return value;
-    if (unit === "mib" || unit === "mb") return value / 1024;
-    return undefined;
-  }
 </script>
 
 <OverviewCard title="Deployment">
@@ -230,13 +205,8 @@
 
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
-      <span class="info-value flex items-center gap-2">
+      <span class="info-value">
         {olapEngineLabel}
-        {#if olapInfo}
-          <span class="text-fg-tertiary text-xs">
-            ({olapInfo.vcpus} vCPU{olapInfo.vcpus !== 1 ? "s" : ""}, {olapInfo.memory}{olapInfo.replicas > 1 ? `, ${olapInfo.replicas} replicas` : ""})
-          </span>
-        {/if}
       </span>
     </div>
 
