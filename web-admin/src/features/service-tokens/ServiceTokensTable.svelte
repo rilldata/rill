@@ -23,11 +23,11 @@
     },
     {
       accessorKey: "roleName",
-      header: "Org Role",
+      header: "Organization access",
     },
     {
       accessorKey: "hasProjectRoles",
-      header: "Projects",
+      header: "Project access",
       enableSorting: false,
       cell: ({ row }) =>
         flexRender(ServiceProjectRolesCell, {

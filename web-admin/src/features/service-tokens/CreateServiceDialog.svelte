@@ -197,7 +197,7 @@
         <!-- Project assignments -->
         <div class="flex flex-col gap-y-2">
           <span class="text-sm font-medium text-fg-primary"
-            >Project roles (optional)</span
+            >Project access (optional)</span
           >
           {#each projectAssignments as assignment, index}
             <div class="flex items-center gap-x-2">

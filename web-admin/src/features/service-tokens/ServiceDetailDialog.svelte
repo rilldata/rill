@@ -34,6 +34,9 @@
   });
   $: service = $serviceQuery.data?.service;
   $: projectMemberships = $serviceQuery.data?.projectMemberships ?? [];
+  $: attributes = Object.entries(
+    (service?.attributes as Record<string, unknown>) ?? {},
+  );
   $: tokensQuery = createAdminServiceListServiceAuthTokens(
     organization,
     serviceName,
@@ -121,27 +124,42 @@
     <div class="flex flex-col gap-y-5 max-h-[45vh] overflow-y-auto">
       <!-- Service info -->
       <div class="grid grid-cols-2 gap-y-2 text-sm">
-        <span class="text-fg-tertiary">Org role</span>
+        <span class="text-fg-tertiary">Organization access</span>
         <span class="text-fg-primary">{service?.roleName ?? "-"}</span>
         <span class="text-fg-tertiary">Created</span>
         <span class="text-fg-primary"
           >{formatServiceDateTime(service?.createdOn)}</span
-        >
-        <span class="text-fg-tertiary">Updated</span>
-        <span class="text-fg-primary"
-          >{formatServiceDateTime(service?.updatedOn)}</span
         >
       </div>
 
       <!-- Project memberships -->
       {#if projectMemberships.length > 0}
         <div class="flex flex-col gap-y-2">
-          <span class="text-sm font-medium text-fg-primary">Project roles</span>
+          <span class="text-sm font-medium text-fg-primary">Project access</span>
           <div class="flex flex-col gap-y-1 text-sm">
             {#each projectMemberships as pm}
               <div class="flex justify-between">
                 <span class="text-fg-primary">{pm.projectName}</span>
                 <span class="text-fg-tertiary">{pm.projectRoleName}</span>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <!-- Custom attributes -->
+      {#if attributes.length > 0}
+        <div class="flex flex-col gap-y-2">
+          <span class="text-sm font-medium text-fg-primary">Custom attributes</span>
+          <div class="flex flex-col border rounded divide-y">
+            {#each attributes as [key, value]}
+              <div class="flex items-center justify-between px-3 py-2 text-sm">
+                <span class="text-fg-secondary">{key}</span>
+                <code
+                  class="text-xs text-fg-primary bg-surface-subtle rounded px-1.5 py-0.5"
+                >
+                  {String(value ?? "")}
+                </code>
               </div>
             {/each}
           </div>
