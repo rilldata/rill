@@ -117,6 +117,10 @@ func (n noop) AddCredits(ctx context.Context, customerID string, amount float64,
 	return nil, nil
 }
 
+func (n noop) VoidCredits(ctx context.Context, customerID string) error {
+	return nil
+}
+
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }

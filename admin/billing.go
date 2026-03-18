@@ -201,16 +201,18 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			return nil, nil, fmt.Errorf("failed to start trial: %w", err)
 		}
 
-		// send trial started email
-		err = s.Email.SendTrialStarted(&email.TrialStarted{
-			ToEmail:      org.BillingEmail,
-			ToName:       org.Name,
-			OrgName:      org.Name,
-			FrontendURL:  s.URLs.Frontend(),
-			TrialEndDate: sub.TrialEndDate,
-		})
-		if err != nil {
-			s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+		// Only send the trial-started email for trial-based plans; free plan has no trial period
+		if sub.Plan == nil || sub.Plan.PlanType != billing.FreePlanType {
+			err = s.Email.SendTrialStarted(&email.TrialStarted{
+				ToEmail:      org.BillingEmail,
+				ToName:       org.Name,
+				OrgName:      org.Name,
+				FrontendURL:  s.URLs.Frontend(),
+				TrialEndDate: sub.TrialEndDate,
+			})
+			if err != nil {
+				s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+			}
 		}
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))

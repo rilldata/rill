@@ -231,6 +231,11 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			return nil, ceErr
 		}
 		wasExhausted = ce != nil
+
+		// Void any remaining free-plan credits in Orb (credits don't carry over to Growth)
+		if voidErr := s.admin.Biller.VoidCredits(ctx, org.BillingCustomerID); voidErr != nil {
+			s.logger.Named("billing").Warn("failed to void free credits on growth upgrade", zap.String("org_id", org.ID), zap.Error(voidErr))
+		}
 	}
 
 	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)

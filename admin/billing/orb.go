@@ -392,7 +392,8 @@ func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditB
 	}
 
 	credits, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{
-		IncludeAllBlocks: orb.F(false), // only active blocks
+		Currency:         orb.F("USD"),   // only monetary (USD) credits
+		IncludeAllBlocks: orb.F(false),   // only active (non-expired, non-voided) blocks
 	})
 	if err != nil {
 		var orbErr *orb.Error
@@ -406,11 +407,17 @@ func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditB
 		return nil, nil
 	}
 
-	// Aggregate across all active credit grants
+	// Aggregate across all active credit grants.
+	// MaximumInitialBalance may be 0 for plan-granted credits where Orb doesn't track
+	// the original cap — fall back to Balance in that case so remaining is still correct.
 	var totalCredit, remainingCredit float64
 	var latestExpiry time.Time
 	for _, c := range credits.Data {
-		totalCredit += c.MaximumInitialBalance
+		if c.MaximumInitialBalance > 0 {
+			totalCredit += c.MaximumInitialBalance
+		} else {
+			totalCredit += c.Balance
+		}
 		remainingCredit += c.Balance
 		if c.ExpiryDate.After(latestExpiry) {
 			latestExpiry = c.ExpiryDate
@@ -471,6 +478,43 @@ func (o *Orb) AddCredits(ctx context.Context, customerID string, amount float64,
 
 	// Return updated balance
 	return o.GetCreditBalance(ctx, customerID)
+}
+
+func (o *Orb) VoidCredits(ctx context.Context, customerID string) error {
+	if customerID == "" {
+		return ErrCustomerIDRequired
+	}
+
+	// List all active USD credit blocks for this customer
+	credits, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{
+		Currency:         orb.F("USD"),
+		IncludeAllBlocks: orb.F(false),
+	})
+	if err != nil {
+		var orbErr *orb.Error
+		if errors.As(err, &orbErr) && orbErr.Status == orb.ErrorStatus404 {
+			return nil // no customer, nothing to void
+		}
+		return fmt.Errorf("failed to list credits for void: %w", err)
+	}
+
+	for _, c := range credits.Data {
+		if c.Balance <= 0 {
+			continue
+		}
+		_, err = o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddVoidCreditLedgerEntryRequestParams{
+			Amount:      orb.F(c.Balance),
+			BlockID:     orb.F(c.ID),
+			EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddVoidCreditLedgerEntryRequestParamsEntryTypeVoid),
+			Currency:    orb.F("USD"),
+			Description: orb.F("Credits voided on upgrade to Growth plan"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to void credit block %s: %w", c.ID, err)
+		}
+	}
+
+	return nil
 }
 
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
