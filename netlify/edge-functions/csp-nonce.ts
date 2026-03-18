@@ -31,7 +31,8 @@ export default async (
 
   if (isEmbeddable) {
     // Embeddable routes use 'unsafe-inline' directly; no nonce injection needed.
-    scriptSrc = "'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com";
+    scriptSrc =
+      "'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com";
   } else {
     const nonceBytes = new Uint8Array(16);
     crypto.getRandomValues(nonceBytes);
@@ -44,7 +45,10 @@ export default async (
     // e.g. src="data:text/html,&lt;script&gt;..." becomes
     //      src="data:text/html,&lt;script nonce=&quot;NONCE&quot;&gt;..."
     // &quot; is required so the nonce value doesn't break the enclosing attribute.
-    body = body.replace(/&lt;script(?=[ &])/g, `&lt;script nonce=&quot;${nonce}&quot;`);
+    body = body.replace(
+      /&lt;script(?=[ &])/g,
+      `&lt;script nonce=&quot;${nonce}&quot;`,
+    );
 
     // 'unsafe-inline' is ignored by browsers that support nonces, kept for older browser fallback.
     // 'strict-dynamic' propagates trust to scripts dynamically created by nonced scripts.
