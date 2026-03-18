@@ -1,6 +1,9 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
@@ -12,6 +15,7 @@
   import QueryEditor from "./QueryEditor.svelte";
   import QueryResultsTable from "./QueryResultsTable.svelte";
   import type { NotebookStore } from "./query-store";
+  import { downloadResultsAsCSV, downloadResultsAsJSON } from "./query-export";
   import { formatExecutionTime } from "./query-utils";
 
   const dispatch = createEventDispatcher<{ focus: void; run: void }>();
@@ -47,6 +51,7 @@
     ? (cell?.result?.data?.length ?? 0)
     : (cell?.lastRowCount ?? 0);
   $: hasSql = (cell?.sql ?? "").trim().length > 0;
+  $: hasResults = (data?.length ?? 0) > 0 && (schema?.fields?.length ?? 0) > 0;
 
   function handleRunButton() {
     if (!cell || cell.isExecuting) return;
@@ -172,6 +177,33 @@
           </Button>
         {/if}
 
+        {#if hasResults}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild let:builder>
+              <Button
+                label="Export results"
+                type="secondary"
+                small
+                builders={[builder]}
+              >
+                <Export size="13px" />
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end">
+              <DropdownMenu.Item
+                on:click={() => downloadResultsAsCSV(schema, data)}
+              >
+                Download as CSV
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                on:click={() => downloadResultsAsJSON(schema, data)}
+              >
+                Download as JSON
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        {/if}
+
         {#if canDelete}
           <button
             class="delete-button"
@@ -188,7 +220,7 @@
     {#if !cell.collapsed}
       <div class="cell-body">
         <div class="editor-pane" style:height="{editorHeight}px">
-          <WorkspaceEditorContainer error={cell.error ?? undefined}>
+          <WorkspaceEditorContainer>
             <QueryEditor
               bind:this={editorRef}
               initialValue={cell.sql}
@@ -196,6 +228,13 @@
             />
           </WorkspaceEditorContainer>
         </div>
+
+        {#if cell.error}
+          <div class="cell-error">
+            <CancelCircle className="text-destructive flex-none" />
+            <span>{cell.error}</span>
+          </div>
+        {/if}
 
         <div class="resize-handle">
           <Resizer
@@ -290,6 +329,12 @@
   .editor-pane {
     @apply flex-none overflow-hidden;
     min-height: 60px;
+  }
+
+  .cell-error {
+    @apply flex items-start gap-x-2 px-3 py-2 text-sm text-fg-primary;
+    @apply border-l-4 border-destructive bg-destructive/15;
+    @apply max-h-40 overflow-auto;
   }
 
   .cell-results {
