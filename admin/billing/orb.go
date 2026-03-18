@@ -442,11 +442,28 @@ func (o *Orb) AddCredits(ctx context.Context, customerID string, amount float64,
 		return nil, ErrCustomerIDRequired
 	}
 
-	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
-		Amount:    orb.F(amount),
-		EntryType: orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
-		ExpiryDate: orb.F(expiryDate),
+	// Fetch internal customer to get their Orb ID (needed if external ID update doesn't set currency)
+	customer, err := o.client.Customers.FetchByExternalID(ctx, customerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find customer: %w", err)
+	}
+
+	// Set currency on the customer if not already set
+	if customer.Currency == "" {
+		_, err = o.client.Customers.Update(ctx, customer.ID, orb.CustomerUpdateParams{
+			Currency: orb.F("USD"),
+		})
+		if err != nil {
+			o.logger.Warn("failed to set customer currency; proceeding anyway", zap.String("customer_id", customerID), zap.Error(err))
+		}
+	}
+
+	_, err = o.client.Customers.Credits.Ledger.NewEntry(ctx, customer.ID, orb.CustomerCreditLedgerNewEntryParamsAddIncrementCreditLedgerEntryRequestParams{
+		Amount:      orb.F(amount),
+		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
+		ExpiryDate:  orb.F(expiryDate),
 		Description: orb.F(description),
+		Currency:    orb.F("USD"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to add credits: %w", err)

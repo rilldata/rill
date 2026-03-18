@@ -24,6 +24,7 @@
     STORAGE_RATE_PER_GB_PER_MONTH,
     INCLUDED_STORAGE_GB,
     detectTierSlots,
+    MIN_INFRA_SLOTS,
   } from "./slots-utils";
 
   export let open = false;
@@ -127,10 +128,10 @@
   async function applySlotChange() {
     try {
       // For new pricing Live Connect: Rill Slots are additional slots on top of
-      // cluster slots (rill_min_slots). prodSlots stored = rillSlots + clusterSlots.
+      // cluster slots (rill_min_slots). Always maintain MIN_INFRA_SLOTS floor.
       const newSlots =
         useNewPricing && !isRillManaged
-          ? selectedRillSlots + clusterSlots
+          ? Math.max(selectedRillSlots + clusterSlots, MIN_INFRA_SLOTS)
           : selectedSlots;
       await $updateProject.mutateAsync({
         org: organization,

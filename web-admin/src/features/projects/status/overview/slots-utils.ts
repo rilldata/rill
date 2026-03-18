@@ -8,6 +8,8 @@ export const CLUSTER_SLOT_RATE_PER_HR = 0.06;
 export const RILL_SLOT_RATE_PER_HR = 0.15;
 export const STORAGE_RATE_PER_GB_PER_MONTH = 1.0;
 export const INCLUDED_STORAGE_GB = 1;
+// Minimum infra slots always assigned to Live Connect projects; not billed separately
+export const MIN_INFRA_SLOTS = 4;
 
 export interface SlotTier {
   slots: number;

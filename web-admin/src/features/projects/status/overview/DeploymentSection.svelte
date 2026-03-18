@@ -27,6 +27,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ProjectClone from "./ProjectClone.svelte";
   import ManageSlotsModal from "./ManageSlotsModal.svelte";
+  import { MIN_INFRA_SLOTS } from "./slots-utils";
   import ClickHouseCloudKeyModal from "./ClickHouseCloudKeyModal.svelte";
   import ClickHouseCloudDetailsModal from "./ClickHouseCloudDetailsModal.svelte";
   import OverviewCard from "./OverviewCard.svelte";
@@ -107,11 +108,13 @@
   $: clusterSlots = !isRillManaged
     ? Number(projectData?.rillMinSlots) || (devForceNewPricing ? 8 : 0)
     : 0;
-  // For new pricing Live Connect, Rill Slots = prodSlots - clusterSlots (rill_min_slots).
-  // Cluster slots already include the hidden 4-slot infra minimum.
+  // For new pricing Live Connect, Rill Slots = prodSlots - max(clusterSlots, MIN_INFRA_SLOTS).
+  // There is always a MIN_INFRA_SLOTS floor; cluster slots may be larger.
+  $: effectiveClusterSlots =
+    !isRillManaged ? Math.max(clusterSlots, MIN_INFRA_SLOTS) : 0;
   $: rillSlots =
     useNewPricing && !isRillManaged
-      ? Math.max(0, currentSlots - clusterSlots)
+      ? Math.max(0, currentSlots - effectiveClusterSlots)
       : 0;
 
   // Slot usage breakdown (dev edit modes coming soon; each consumes 1 slot)
@@ -400,7 +403,7 @@
         <div class="info-row">
           <span class="info-label">Cluster Slots</span>
           <span class="info-value flex items-center gap-3">
-            <span class="slots-count">{clusterSlots}</span>
+            <span class="slots-count">{effectiveClusterSlots}</span>
             <span class="text-fg-tertiary text-xs">(auto-calculated)</span>
           </span>
         </div>
@@ -487,7 +490,7 @@
   viewOnly={isTrial}
   detectedMemoryGb={chcDetectedMemoryGb ?? cloudMaxMemory}
   {useNewPricing}
-  {clusterSlots}
+  clusterSlots={effectiveClusterSlots}
   currentRillSlots={rillSlots}
 />
 
