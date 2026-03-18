@@ -166,7 +166,7 @@
       </span>
     </div>
 
-    {#if !olapConnector || olapConnector.type === "duckdb" || olapConnector.provision}
+    {#if !olapConnector || olapConnector.provision}
       <div class="info-row">
         <span class="info-label">Data usage</span>
         <span class="info-value">
