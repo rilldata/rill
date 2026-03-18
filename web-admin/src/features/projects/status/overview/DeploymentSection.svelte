@@ -73,7 +73,13 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
-  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
+  // When hibernated the runtime is unreachable; fall back to the cached connector type from the admin DB.
+  $: cachedOlapType = projectData?.olapConnector;
+  $: olapEngineLabel = olapConnector
+    ? getOlapEngineLabel(olapConnector)
+    : cachedOlapType
+      ? formatConnectorName(cachedOlapType)
+      : "DuckDB";
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
@@ -82,10 +88,13 @@
   $: currentSlots = Number(projectData?.prodSlots) || 0;
   // Live Connect only when a non-DuckDB connector explicitly has provision=false.
   // DuckDB is always Rill-managed (including local dev where provision=false).
-  $: isRillManaged =
-    !olapConnector ||
-    (olapConnector.type === "duckdb" && !isMotherDuck(olapConnector)) ||
-    olapConnector.provision === true;
+  // When hibernated (no olapConnector), use cached type: clickhouse means Live Connect.
+  $: isRillManaged = olapConnector
+    ? (olapConnector.type === "duckdb" && !isMotherDuck(olapConnector)) ||
+      olapConnector.provision === true
+    : cachedOlapType
+      ? cachedOlapType !== "clickhouse"
+      : true;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
   let slotsModalOpen = false;
 
@@ -111,14 +120,14 @@
       : detectTierSlots(parseMemoryToGb(olapInfo?.memory));
 
   // Backend quota overrides (set via `rill sudo project edit`)
-  $: backendClusterSlots = Number(projectData?.rillMinSlots) || undefined;
+  $: backendClusterSlots = Number(projectData?.clusterSlots) || undefined;
   $: backendInfraSlots = Number(projectData?.infraSlots) || undefined;
 
   // Cluster Slots: prefer SQL-detected value, fall back to RillMinSlots from backend.
   // Only applies to Live Connect (not Rill-managed).
   $: clusterSlots = !isRillManaged
     ? detectedClusterSlots ||
-      Number(projectData?.rillMinSlots) ||
+      Number(projectData?.clusterSlots) ||
       (devForceNewPricing ? 8 : 0)
     : 0;
   // Rill Slots = additional slots on top of cluster_slots (user-controlled).

@@ -92,6 +92,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	UpdateProjectOlapConnector(ctx context.Context, id string, olapConnector string) error
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
@@ -510,12 +511,15 @@ type Project struct {
 	Annotations map[string]string `db:"annotations"`
 	// ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
 	ChcClusterSize *float64 `db:"chc_cluster_size"`
-	// RillMinSlots is the minimum number of Rill slots required, derived from ChcClusterSize.
-	// Represents the cluster_slots component in the new pricing model.
-	RillMinSlots *int64 `db:"rill_min_slots"`
+	// ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+	// For Live Connect projects, this represents the base slots from the BYOLAP cluster.
+	ClusterSlots *int64 `db:"cluster_slots"`
 	// InfraSlots is the Rill infrastructure overhead slot allocation for the project.
 	// Adjustable by Rill staff; defaults to 4 for Live Connect, 0 for Rill Managed.
 	InfraSlots *int64 `db:"infra_slots"`
+	// OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+	// Persisted so the frontend can show the correct engine label even when the project is hibernated.
+	OlapConnector *string `db:"olap_connector"`
 	// CreatedOn is the time the project was created.
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is the time the project was last updated.
@@ -567,7 +571,7 @@ type UpdateProjectOptions struct {
 	DevTTLSeconds        int64
 	Annotations          map[string]string
 	ChcClusterSize       *float64
-	RillMinSlots         *int64
+	ClusterSlots         *int64
 	InfraSlots           *int64
 }
 

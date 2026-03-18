@@ -540,7 +540,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			dev_slots = $18,
 			dev_ttl_seconds = $19,
 			chc_cluster_size = $20,
-			rill_min_slots = $21,
+			cluster_slots = $21,
 			infra_slots = $22,
 			updated_on = now()
 		WHERE id = $23
@@ -566,7 +566,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.DevSlots,
 		opts.DevTTLSeconds,
 		opts.ChcClusterSize,
-		opts.RillMinSlots,
+		opts.ClusterSlots,
 		opts.InfraSlots,
 		id,
 	).StructScan(res)
@@ -574,6 +574,11 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		return nil, parseErr("project", err)
 	}
 	return c.projectFromDTO(res)
+}
+
+func (c *connection) UpdateProjectOlapConnector(ctx context.Context, id string, olapConnector string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET olap_connector = $1 WHERE id = $2", olapConnector, id)
+	return parseErr("project", err)
 }
 
 func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {

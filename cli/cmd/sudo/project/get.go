@@ -47,16 +47,34 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Subpath: %s\n", project.Subpath)
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Primary branch: %s\n", project.PrimaryBranch)
-			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
-			if project.InfraSlots != nil {
-				fmt.Printf("Infra slots: %d\n", *project.InfraSlots)
+			// Rill Managed: DuckDB or any connector that isn't clickhouse/motherduck
+			isRillManaged := project.OlapConnector == "" || project.OlapConnector == "duckdb"
+			if isRillManaged {
+				fmt.Printf("Rill slots:    %d\n", project.ProdSlots)
+				fmt.Printf("Cluster slots: 0\n")
+				fmt.Printf("Infra slots:   0\n")
+				fmt.Printf("Prod slots:    %d\n", project.ProdSlots)
 			} else {
-				fmt.Printf("Infra slots: (default: 4 for Live Connect, 0 for Managed)\n")
-			}
-			if project.RillMinSlots != nil {
-				fmt.Printf("Cluster slots: %d\n", *project.RillMinSlots)
-			} else {
-				fmt.Printf("Cluster slots: (not set)\n")
+				infraSlots := int64(4)
+				infraLabel := " (default)"
+				if project.InfraSlots != nil {
+					infraSlots = *project.InfraSlots
+					infraLabel = ""
+				}
+				if project.ClusterSlots != nil {
+					clusterSlots := *project.ClusterSlots
+					rillSlots := project.ProdSlots - clusterSlots
+					if rillSlots < 0 {
+						rillSlots = 0
+					}
+					fmt.Printf("Rill slots:    %d\n", rillSlots)
+					fmt.Printf("Cluster slots: %d\n", clusterSlots)
+				} else {
+					fmt.Printf("Rill slots:    ? (set --cluster-slots to derive)\n")
+					fmt.Printf("Cluster slots: ? (not set — use --cluster-slots to configure)\n")
+				}
+				fmt.Printf("Infra slots:   %d%s\n", infraSlots, infraLabel)
+				fmt.Printf("Prod slots:    %d (cluster + rill)\n", project.ProdSlots)
 			}
 			fmt.Printf("Primary deployment ID: %s\n", project.PrimaryDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)

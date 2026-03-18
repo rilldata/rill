@@ -141,7 +141,7 @@ func (w *RunAutoscalerWorker) Work(ctx context.Context, job *river.Job[RunAutosc
 			Provisioner:          targetProject.Provisioner,
 			Annotations:          targetProject.Annotations,
 			ChcClusterSize:       targetProject.ChcClusterSize,
-			RillMinSlots:         targetProject.RillMinSlots,
+			ClusterSlots:         targetProject.ClusterSlots,
 			InfraSlots:           targetProject.InfraSlots,
 		})
 		if err != nil {

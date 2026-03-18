@@ -891,11 +891,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
-	// Enforce minimum slots if rill_min_slots is set on the project
 	prodSlots := int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots)))
-	if proj.RillMinSlots != nil && prodSlots < int(*proj.RillMinSlots) {
-		return nil, status.Errorf(codes.InvalidArgument, "prod_slots cannot be less than %d (minimum required for this ClickHouse Cloud cluster)", *proj.RillMinSlots)
-	}
 
 	// Clear auto-scale annotation if user manually adjusts slots
 	annotations := maps.Clone(proj.Annotations)
@@ -924,7 +920,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		RillMinSlots:         valOrDefaultPtr(req.ClusterSlots, proj.RillMinSlots),
+		ClusterSlots:         valOrDefaultPtr(req.ClusterSlots, proj.ClusterSlots),
 		InfraSlots:           valOrDefaultPtr(req.InfraSlots, proj.InfraSlots),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
@@ -1885,7 +1881,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		RillMinSlots:         proj.RillMinSlots,
+		ClusterSlots:         proj.ClusterSlots,
 		InfraSlots:           proj.InfraSlots,
 	})
 	if err != nil {
@@ -2208,8 +2204,9 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
 		UpdatedOn:           timestamppb.New(p.UpdatedOn),
-		RillMinSlots:        p.RillMinSlots,
+		ClusterSlots:        p.ClusterSlots,
 		InfraSlots:          p.InfraSlots,
+		OlapConnector:       safeStr(p.OlapConnector),
 	}
 }
 
@@ -2315,7 +2312,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
 		ChcClusterSize:       p.ChcClusterSize,
-		RillMinSlots:         p.RillMinSlots,
+		ClusterSlots:         p.ClusterSlots,
 		InfraSlots:           p.InfraSlots,
 	})
 	if err != nil {

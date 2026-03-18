@@ -1195,7 +1195,7 @@ paths:
                 type: string
                 format: int64
                 description: |-
-                  ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+                  ClusterSlots overrides the cluster slot allocation (stored as rill_min_slots in DB).
                   Adjustable by Rill staff. Derived from the OLAP cluster size.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
@@ -6039,18 +6039,23 @@ definitions:
         type: number
         format: double
         description: ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
-      rillMinSlots:
+      clusterSlots:
         type: string
         format: int64
         description: |-
-          RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
-          Represents the cluster_slots component in the new pricing model.
+          ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+          For Live Connect projects, this represents the base slots from the BYOLAP cluster.
       infraSlots:
         type: string
         format: int64
         description: |-
           InfraSlots is the Rill infrastructure overhead slot allocation for the project.
           Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
+      olapConnector:
+        type: string
+        description: |-
+          OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+          Persisted so the frontend can show the correct engine label even when the project is hibernated.
   v1ProjectInvite:
     type: object
     properties:

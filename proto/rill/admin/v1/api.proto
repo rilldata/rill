@@ -1828,7 +1828,7 @@ message UpdateProjectRequest {
   // InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
   // Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
   optional int64 infra_slots = 16;
-  // ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+  // ClusterSlots overrides the cluster slot allocation.
   // Adjustable by Rill staff. Derived from the OLAP cluster size.
   optional int64 cluster_slots = 17;
 }
@@ -3273,12 +3273,15 @@ message Project {
   google.protobuf.Timestamp updated_on = 15;
   // ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
   optional double chc_cluster_size = 27;
-  // RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
-  // Represents the cluster_slots component in the new pricing model.
-  optional int64 rill_min_slots = 28;
+  // ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+  // For Live Connect projects, this represents the base slots from the BYOLAP cluster.
+  optional int64 cluster_slots = 28;
   // InfraSlots is the Rill infrastructure overhead slot allocation for the project.
   // Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
   optional int64 infra_slots = 29;
+  // OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+  // Persisted so the frontend can show the correct engine label even when the project is hibernated.
+  string olap_connector = 30;
   // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
   reserved 10, 11;
 }

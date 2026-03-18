@@ -1537,6 +1537,11 @@ components:
                 name:
                     title: Unique in organization
                     type: string
+                olapConnector:
+                    description: |-
+                        OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+                        Persisted so the frontend can show the correct engine label even when the project is hibernated.
+                    type: string
                 orgId:
                     type: string
                 orgName:
@@ -1557,10 +1562,10 @@ components:
                     type: string
                 public:
                     type: boolean
-                rillMinSlots:
+                clusterSlots:
                     description: |-
-                        RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
-                        Represents the cluster_slots component in the new pricing model.
+                        ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+                        For Live Connect projects, this represents the base slots from the BYOLAP cluster.
                     format: int64
                     type: string
                 subpath:
@@ -3816,7 +3821,7 @@ paths:
                                     type: string
                                 clusterSlots:
                                     description: |-
-                                        ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+                                        ClusterSlots overrides the cluster slot allocation (stored as rill_min_slots in DB).
                                         Adjustable by Rill staff. Derived from the OLAP cluster size.
                                     format: int64
                                     type: string

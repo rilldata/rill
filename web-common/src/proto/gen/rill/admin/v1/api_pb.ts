@@ -4023,7 +4023,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   infraSlots?: bigint;
 
   /**
-   * ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+   * ClusterSlots overrides the cluster slot allocation (stored as rill_min_slots in DB).
    * Adjustable by Rill staff. Derived from the OLAP cluster size.
    *
    * @generated from field: optional int64 cluster_slots = 17;
@@ -15902,12 +15902,12 @@ export class Project extends Message<Project> {
   chcClusterSize?: number;
 
   /**
-   * RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
-   * Represents the cluster_slots component in the new pricing model.
+   * ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+   * For Live Connect projects, this represents the base slots from the BYOLAP cluster.
    *
-   * @generated from field: optional int64 rill_min_slots = 28;
+   * @generated from field: optional int64 cluster_slots = 28;
    */
-  rillMinSlots?: bigint;
+  clusterSlots?: bigint;
 
   /**
    * InfraSlots is the Rill infrastructure overhead slot allocation for the project.
@@ -15916,6 +15916,14 @@ export class Project extends Message<Project> {
    * @generated from field: optional int64 infra_slots = 29;
    */
   infraSlots?: bigint;
+
+  /**
+   * OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+   * Persisted so the frontend can show the correct engine label even when the project is hibernated.
+   *
+   * @generated from field: string olap_connector = 30;
+   */
+  olapConnector = "";
 
   constructor(data?: PartialMessage<Project>) {
     super();
@@ -15949,8 +15957,9 @@ export class Project extends Message<Project> {
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
     { no: 27, name: "chc_cluster_size", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
-    { no: 28, name: "rill_min_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 28, name: "cluster_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 29, name: "infra_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 30, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {

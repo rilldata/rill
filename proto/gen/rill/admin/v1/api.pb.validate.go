@@ -43175,12 +43175,14 @@ func (m *Project) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for OlapConnector
+
 	if m.ChcClusterSize != nil {
 		// no validation rules for ChcClusterSize
 	}
 
-	if m.RillMinSlots != nil {
-		// no validation rules for RillMinSlots
+	if m.ClusterSlots != nil {
+		// no validation rules for ClusterSlots
 	}
 
 	if m.InfraSlots != nil {

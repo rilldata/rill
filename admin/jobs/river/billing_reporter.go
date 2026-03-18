@@ -7,6 +7,8 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/database"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -23,6 +25,9 @@ type BillingReporterWorker struct {
 
 // NewBillingReporterWorker creates a new worker that reports billing information.
 func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[BillingReporterArgs]) error {
+	// Sync OLAP connector types for running deployments (best-effort; runs even if billing fails).
+	w.syncOlapConnectors(ctx)
+
 	// Get reporting granularity
 	var granularity time.Duration
 	var sqlGrainIdentifier string
@@ -184,4 +189,77 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 	}
 
 	return nil
+}
+
+// syncOlapConnectors detects and persists the OLAP connector driver type for running deployments.
+// This allows the frontend to show the correct engine label even when a project is hibernated.
+func (w *BillingReporterWorker) syncOlapConnectors(ctx context.Context) {
+	afterID := ""
+	limit := 100
+	for {
+		depls, err := w.admin.DB.FindDeployments(ctx, afterID, limit)
+		if err != nil {
+			w.logger.Warn("olap sync: failed to list deployments", zap.Error(err))
+			return
+		}
+		for _, depl := range depls {
+			if depl.Status != database.DeploymentStatusRunning {
+				continue
+			}
+			w.syncOlapConnectorForDeployment(ctx, depl)
+		}
+		if len(depls) < limit {
+			break
+		}
+		afterID = depls[len(depls)-1].ID
+	}
+}
+
+func (w *BillingReporterWorker) syncOlapConnectorForDeployment(ctx context.Context, depl *database.Deployment) {
+	proj, err := w.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		w.logger.Debug("olap sync: failed to find project", zap.String("project_id", depl.ProjectID), zap.Error(err))
+		return
+	}
+
+	rt, err := w.admin.OpenRuntimeClient(depl)
+	if err != nil {
+		w.logger.Debug("olap sync: failed to open runtime client", zap.String("project_id", depl.ProjectID), zap.Error(err))
+		return
+	}
+	defer rt.Close()
+
+	resp, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
+		InstanceId: depl.RuntimeInstanceID,
+	})
+	if err != nil {
+		w.logger.Debug("olap sync: failed to get instance", zap.String("project_id", depl.ProjectID), zap.Error(err))
+		return
+	}
+
+	olapConnectorName := resp.Instance.OlapConnector
+	if olapConnectorName == "" {
+		return
+	}
+
+	// Resolve the connector driver type from the connector name
+	var connectorType string
+	for _, c := range resp.Instance.ProjectConnectors {
+		if c.Name == olapConnectorName {
+			connectorType = c.Type
+			break
+		}
+	}
+	if connectorType == "" {
+		return
+	}
+
+	// Only update if the value has changed
+	if proj.OlapConnector != nil && *proj.OlapConnector == connectorType {
+		return
+	}
+
+	if err := w.admin.DB.UpdateProjectOlapConnector(ctx, proj.ID, connectorType); err != nil {
+		w.logger.Warn("olap sync: failed to update project", zap.String("project_id", proj.ID), zap.Error(err))
+	}
 }
