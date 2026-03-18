@@ -54,8 +54,8 @@ test.describe.serial("Reports", () => {
       .click();
     // Add "App Site Name" column
     await reportForm.getByLabel("Add Columns fields").click();
+    // Menu content is portaled to document.body, so use page-level scope
     await adminPage
-      .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "App Site Name" })
       .click({ force: true });
     // Assert columns
@@ -64,10 +64,8 @@ test.describe.serial("Reports", () => {
     );
     // Add "Pub Name" row
     await reportForm.getByLabel("Add Rows fields").click();
-    await adminPage
-      .getByLabel("Rows field list")
-      .getByRole("menuitem", { name: "Pub Name" })
-      .click();
+    // Menu content is portaled to document.body, so use page-level scope
+    await adminPage.getByRole("menuitem", { name: "Pub Name" }).click();
     // Assert rows and columns
     await expect(reportForm.getByLabel("Rows field list")).toHaveText(
       /Pub Name/,
@@ -184,14 +182,14 @@ test.describe.serial("Reports", () => {
       .click();
     // Add "App Site Domain" row
     await reportForm.getByLabel("Add Rows fields").click({ force: true });
+    // Menu content is portaled to document.body, so use page-level scope
     await adminPage
-      .getByLabel("Rows field list")
       .getByRole("menuitem", { name: "App Site Domain" })
       .click({ force: true });
     // Add "Time month" column
     await reportForm.getByLabel("Add Columns fields").click();
+    // Menu content is portaled to document.body, so use page-level scope
     await adminPage
-      .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "Time month" })
       .click({ force: true });
     // Assert rows and columns
@@ -205,11 +203,12 @@ test.describe.serial("Reports", () => {
     const filtersForm = reportForm.getByLabel("Filters form");
     // Add "Ad Size" filter
     await filtersForm.getByLabel("Add filter button").click();
-    await filtersForm.getByRole("menuitem", { name: "Ad Size" }).click();
-    // Add filters for 1024x768, 120x600, 160x600
-    await filtersForm.getByRole("menuitem", { name: "1024x768" }).click();
-    await filtersForm.getByRole("menuitem", { name: "120x600" }).click();
-    await filtersForm.getByRole("menuitem", { name: "160x600" }).click();
+    // Menu content is portaled to document.body, so use page-level scope
+    await adminPage.getByRole("menuitem", { name: "Ad Size" }).click();
+    // DimensionFilter values are also portaled
+    await adminPage.getByRole("menuitemcheckbox", { name: "1024x768" }).click();
+    await adminPage.getByRole("menuitemcheckbox", { name: "120x600" }).click();
+    await adminPage.getByRole("menuitemcheckbox", { name: "160x600" }).click();
     await filtersForm.getByLabel("Open ad_size filter").click();
 
     // Save the report
