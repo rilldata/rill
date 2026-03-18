@@ -151,7 +151,7 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		reportTime = timestamppb.Now()
 	}
 
-	retry, warnings, executeErr := r.executeAll(ctx, self, rep, reportTime.AsTime(), adhocTrigger)
+	retry, executeErr := r.executeAll(ctx, self, rep, reportTime.AsTime(), adhocTrigger)
 
 	// If we want to retry, exit without advancing NextRunOn or clearing spec.Trigger.
 	// NOTE: We don't set Retrigger here because we'll leave re-scheduling to whatever cancelled the reconciler.
@@ -174,6 +174,12 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Done
+	var warnings []string
+	if len(rep.State.ExecutionHistory) > 0 {
+		// warnings are added from resolver which is same for all executions
+		// so we can just take it from the most recent execution
+		warnings = rep.State.ExecutionHistory[len(rep.State.ExecutionHistory)-1].Warnings
+	}
 	if rep.State.NextRunOn != nil {
 		return runtime.ReconcileResult{Err: executeErr, Warnings: warnings, Retrigger: rep.State.NextRunOn.AsTime()}
 	}
@@ -357,7 +363,7 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 
 // executeAll runs queries and sends reports. It also adds entries to rep.State.ExecutionHistory.
 // By default, a report is checked once for the current watermark, but if rep.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
-func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, []string, error) {
+func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, error) {
 	// Enforce timeout
 	timeout := reportCheckDefaultTimeout
 	if rep.Spec.TimeoutSeconds > 0 {
@@ -367,9 +373,9 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 	defer cancel()
 
 	// Run report queries and send notifications
-	retry, warnings, executeErr := r.executeAllWrapped(ctx, self, rep, triggerTime, adhocTrigger)
+	retry, executeErr := r.executeAllWrapped(ctx, self, rep, triggerTime, adhocTrigger)
 	if executeErr == nil {
-		return false, warnings, nil
+		return false, nil
 	}
 
 	// If it's a cancellation, don't add the error to the execution history.
@@ -380,10 +386,10 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 			rep.State.CurrentExecution = nil
 			err := r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
-				return false, nil, err
+				return false, err
 			}
 		}
-		return retry, warnings, executeErr
+		return retry, executeErr
 	}
 
 	// There was an execution error. Add it to the execution history.
@@ -399,17 +405,17 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	err := r.popCurrentExecution(ctx, self, rep)
 	if err != nil {
-		return false, warnings, err
+		return false, err
 	}
-	return retry, warnings, executeErr
+	return retry, executeErr
 }
 
 // executeAllWrapped is called by executeAll, which wraps it with timeout and writing of errors to the execution history.
-func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, []string, error) {
+func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, error) {
 	// Check refs
 	err := checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		return false, nil, err
+		return false, err
 	}
 
 	// Evaluate watermark unless refs check failed.
@@ -417,7 +423,7 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 	if rep.Spec.WatermarkInherit {
 		t, ok, err := r.computeInheritedWatermark(ctx, self.Meta.Refs)
 		if err != nil {
-			return false, nil, err
+			return false, err
 		}
 		if ok {
 			watermark = t
@@ -440,32 +446,30 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 		skipErr := &skipError{}
 		if errors.As(err, skipErr) {
 			r.C.Logger.Info("Skipped report", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration), observability.ZapCtx(ctx))
-			return false, nil, nil
+			return false, nil
 		}
 		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-		return false, nil, err
+		return false, err
 	}
 	if len(ts) == 0 {
 		// This should never happen
 		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-		return false, nil, nil
+		return false, nil
 	}
 
 	// Evaluate report for each execution time
-	var allWarnings []string
 	for _, t := range ts {
-		retry, warnings, err := r.executeSingle(ctx, self, rep, t, adhocTrigger)
+		retry, err := r.executeSingle(ctx, self, rep, t, adhocTrigger)
 		if err != nil {
-			return retry, nil, err
+			return retry, err
 		}
-		allWarnings = append(allWarnings, warnings...)
 	}
 
-	return false, allWarnings, nil
+	return false, nil
 }
 
 // executeSingle runs the report query and sends notifications for a single execution time.
-func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, []string, error) {
+func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, error) {
 	// Create new execution and save in State.CurrentExecution
 	rep.State.CurrentExecution = &runtimev1.ReportExecution{
 		Adhoc:      adhocTrigger,
@@ -474,7 +478,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 	}
 	err := r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
-		return false, nil, err
+		return false, err
 	}
 
 	// Execute report
@@ -504,12 +508,13 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 
 	// Commit CurrentExecution to history
 	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
+	rep.State.CurrentExecution.Warnings = warnings
 	err = r.popCurrentExecution(ctx, self, rep)
 	if err != nil {
-		return false, nil, err
+		return false, err
 	}
 
-	return retry, warnings, reportErr
+	return retry, reportErr
 }
 
 // sendReport composes and sends the actual report to the configured recipients.

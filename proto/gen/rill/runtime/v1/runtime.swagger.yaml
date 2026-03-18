@@ -4248,6 +4248,10 @@ definitions:
         type: object
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
   v1AssertionStatus:
     type: string
     enum:
@@ -6910,6 +6914,11 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      warnings:
+        type: array
+        items:
+          type: string
+        description: warnings contains any warnings generated during the model's execution.
       totalExecutionDurationMs:
         type: string
         format: int64
@@ -7327,6 +7336,10 @@ definitions:
         type: boolean
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
       reportTime:
         type: string
         format: date-time

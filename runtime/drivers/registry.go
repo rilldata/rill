@@ -196,6 +196,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
+		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
+		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}
 
 	// Resolve variables

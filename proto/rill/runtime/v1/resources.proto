@@ -167,6 +167,8 @@ message ModelState {
   string partitions_model_id = 10;
   // partitions_have_errors is true if one or more partitions failed to execute.
   bool partitions_have_errors = 11;
+  // warnings contains any warnings generated during the model's execution.
+  repeated string warnings = 29;
   // total_execution_duration_ms is the time user queries took to execute while refreshing the model.
   // In case of incremental models it is the sum of all successful executions so far.
   // This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
@@ -633,6 +635,7 @@ message ReportState {
 message ReportExecution {
   bool adhoc = 1;
   string error_message = 2;
+  repeated string warnings = 6;
   google.protobuf.Timestamp report_time = 3;
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
@@ -700,6 +703,7 @@ message AssertionResult {
   AssertionStatus status = 1;
   google.protobuf.Struct fail_row = 2;
   string error_message = 3;
+  repeated string warnings = 4;
 }
 
 enum AssertionStatus {

@@ -280,43 +280,27 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Reschedule if we're not triggering a refresh
 	if !trigger.any() {
 		// Re-run tests if the test config has changed
-		var testWarnings []string
 		if model.State.TestHash != testHash {
 			var testErrs []string
 			var err error
-			testErrs, testWarnings, err = r.runModelTests(ctx, self)
+			testErrs, err = r.runModelTests(ctx, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
 			}
 			model.State.TestHash = testHash
 			model.State.TestErrors = testErrs
+			err = appendTestWarnings(&cfg, model)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err, Warnings: model.State.Warnings, Retrigger: refreshOn}
+			}
+
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}
 		}
-
-		// Surface partition and test failures as warnings or errors based on instance config
-		var warnings []string
-		warnings = append(warnings, testWarnings...)
-		if model.State.PartitionsHaveErrors {
-			if cfg.ModelPartitionsWarnOnFailure {
-				warnings = append(warnings, errPartitionsHaveErrors.Error())
-			} else {
-				return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
-			}
-		}
-		if len(model.State.TestErrors) > 0 {
-			msg := newTestsWarning(model.State.TestErrors)
-			if cfg.ModelTestsWarnOnFailure {
-				warnings = append(warnings, msg)
-			} else {
-				return runtime.ReconcileResult{Err: errors.New(msg), Retrigger: refreshOn}
-			}
-		}
-		return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
+		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
-
 	// Acquire the execution semaphore for the remainder of the function.
 	err = r.execSem.Acquire(ctx, 1)
 	if err != nil {
@@ -371,7 +355,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			r.C.Logger.Warn("failed to query output table stats", zap.String("model", n.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
 		}
 
-		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes, newRowsTotal, newBytesTotal)
+		warnings, err := buildWarnings(&cfg, model, execRes.Warnings, incrementalStateWarnings)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err, Warnings: model.State.Warnings, Retrigger: refreshOn}
+		}
+		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes, warnings, newRowsTotal, newBytesTotal)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -435,17 +423,20 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the build succeeded, re-run the model tests.
 	// We do this after updating other state to ensure we preserve the successful execution state.
-	var testWarnings []string
 	if execErr == nil && len(model.Spec.Tests) != 0 {
 		var testErrs []string
 		var err error
-		testErrs, testWarnings, err = r.runModelTests(ctx, self)
+		testErrs, err = r.runModelTests(ctx, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
 		}
 
 		model.State.TestHash = testHash
 		model.State.TestErrors = testErrs
+		err = appendTestWarnings(&cfg, model)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err, Warnings: model.State.Warnings}
+		}
 		err = r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -463,28 +454,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	// Surface partition and test failures as warnings or errors based on instance config;
-	// append execution warnings and resolver warnings regardless.
-	var warnings []string
-	warnings = append(warnings, incrementalStateWarnings...)
-	warnings = append(warnings, testWarnings...)
-	warnings = append(warnings, execRes.Warnings...)
-	if model.State.PartitionsHaveErrors {
-		if cfg.ModelPartitionsWarnOnFailure {
-			warnings = append(warnings, errPartitionsHaveErrors.Error())
-		} else {
-			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: warnings, Retrigger: refreshOn}
-		}
-	}
-	if len(model.State.TestErrors) > 0 {
-		msg := newTestsWarning(model.State.TestErrors)
-		if cfg.ModelTestsWarnOnFailure && msg != "" {
-			warnings = append(warnings, msg)
-		} else {
-			return runtime.ReconcileResult{Err: errors.New(msg), Warnings: warnings, Retrigger: refreshOn}
-		}
-	}
-	return runtime.ReconcileResult{Warnings: warnings, Retrigger: refreshOn}
+	return runtime.ReconcileResult{Warnings: model.State.Warnings, Retrigger: refreshOn}
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -718,6 +688,7 @@ func (r *ModelReconciler) updateStateAfterExecution(
 	incrementalStateSchema *runtimev1.StructType,
 	partitionsHaveErrors, firstRunIncremental bool,
 	execRes *drivers.ModelResult,
+	warnings []string,
 	rowsTotal, bytesTotal int64,
 ) error {
 	model.State.ExecutorConnector = executorConnector
@@ -735,6 +706,7 @@ func (r *ModelReconciler) updateStateAfterExecution(
 	} else {
 		model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 	}
+	model.State.Warnings = warnings
 	if rowsTotal > 0 {
 		model.State.RowsTotal = rowsTotal
 	}
@@ -825,6 +797,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.IncrementalStateSchema = nil
 	mdl.State.PartitionsModelId = ""
 	mdl.State.PartitionsHaveErrors = false
+	mdl.State.Warnings = nil
 	mdl.State.RowsTotal = 0
 	mdl.State.BytesTotal = 0
 
@@ -1257,7 +1230,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		if statsErr != nil {
 			r.C.Logger.Warn("failed to query output table stats", zap.String("model", self.Meta.Name.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
 		}
-		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res, newRowsTotal, newBytesTotal)
+		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res, syncWarnings, newRowsTotal, newBytesTotal)
 		if err != nil {
 			return "", nil, false, 0, err
 		}
@@ -1975,28 +1948,26 @@ func (r *ModelReconciler) resolveTrigger(ctx context.Context, self *runtimev1.Re
 
 // runModelTests executes the user defined model-level tests for the model (global, not partition-level).
 // It returns an array of test error messages and an array of resolver warnings.
-func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) ([]string, []string, error) {
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) ([]string, error) {
 	tests := self.GetModel().Spec.Tests
 	if len(tests) == 0 {
-		return nil, nil, nil
+		return nil, nil
 	}
 	var msgs []string
-	var warnings []string
 	for _, test := range tests {
-		msg, testWarnings, err := r.execModelTest(ctx, test)
+		msg, err := r.execModelTest(ctx, test)
 		if err != nil {
-			return nil, warnings, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
+			return nil, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
 		}
-		warnings = append(warnings, testWarnings...)
 		if msg != "" {
 			msgs = append(msgs, msg)
 		}
 	}
-	return msgs, warnings, nil
+	return msgs, nil
 }
 
 // execModelTest runs a single model test and returns an error if it fails.
-func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, []string, error) {
+func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, error) {
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           test.Resolver,
@@ -2006,33 +1977,78 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	})
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return "", nil, err
+			return "", err
 		}
-		return fmt.Sprintf("%s: %v", test.Name, err), nil, nil
+		return fmt.Sprintf("%s: %v", test.Name, err), nil
 	}
 	defer result.Close()
 
-	var warnings []string
+	var warnings string
 	if info != nil {
-		warnings = info.Warnings
+		warnings = strings.Join(info.Warnings, ";")
 	}
 
 	row, err := result.Next()
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return "", warnings, err
+			return "", err
 		}
 		if errors.Is(err, io.EOF) {
-			return "", warnings, nil // Test passed
+			return warnings, nil // Test passed
 		}
-		return fmt.Sprintf("%s: %v", test.Name, err), warnings, nil
+		if warnings != "" {
+			return fmt.Sprintf("%s: %v; Warnings: %v", test.Name, err, warnings), nil
+		}
+		return fmt.Sprintf("%s: %v", test.Name, err), nil
 	}
 
 	if res, ok := row["result"]; ok && res != nil {
-		return fmt.Sprintf("%s: %v", test.Name, res), warnings, nil
+		if warnings != "" {
+			return fmt.Sprintf("%s: %v; Warnings: %v", test.Name, res, warnings), nil
+		}
+		return fmt.Sprintf("%s: %v", test.Name, res), nil
 	}
 
-	return fmt.Sprintf("%s: test did not pass", test.Name), warnings, nil
+	if warnings != "" {
+		return fmt.Sprintf("%s: test did not pass; Warnings: %v", test.Name, warnings), nil
+	}
+	return fmt.Sprintf("%s: test did not pass;", test.Name), nil
+}
+
+// buildWarnings builds the warnings to be associated with a model result based on the instance config and model state.
+// Surface partition and test failures as warnings or errors based on instance config; append execution warnings and resolver warnings regardless.
+func buildWarnings(cfg *drivers.InstanceConfig, model *runtimev1.Model, execWarnings, incrementalStateWarnings []string) ([]string, error) {
+	var warnings []string
+	warnings = append(warnings, incrementalStateWarnings...)
+	warnings = append(warnings, execWarnings...)
+	if model.State.PartitionsHaveErrors {
+		if !cfg.ModelPartitionsWarnOnFailure {
+			return nil, errPartitionsHaveErrors
+		}
+		warnings = append(warnings, errPartitionsHaveErrors.Error())
+	}
+	if len(model.State.TestErrors) > 0 {
+		msg := newTestsWarning(model.State.TestErrors)
+		if !cfg.ModelTestsWarnOnFailure {
+			return nil, errors.New(msg)
+		}
+		warnings = append(warnings, msg)
+	}
+	return warnings, nil
+}
+
+// appendTestWarnings appends warnings related to model test failures to the existing warnings.
+func appendTestWarnings(cfg *drivers.InstanceConfig, model *runtimev1.Model) error {
+	if len(model.State.TestErrors) == 0 {
+		return nil
+	}
+
+	msg := newTestsWarning(model.State.TestErrors)
+	if !cfg.ModelTestsWarnOnFailure {
+		return errors.New(msg)
+	}
+	model.State.Warnings = append(model.State.Warnings, msg)
+	return nil
 }
 
 // newTestsWarning creates a warning message that summarizes the messages returned from runModelTests.

@@ -1179,6 +1179,13 @@ export class ModelState extends Message<ModelState> {
   partitionsHaveErrors = false;
 
   /**
+   * warnings contains any warnings generated during the model's execution.
+   *
+   * @generated from field: repeated string warnings = 29;
+   */
+  warnings: string[] = [];
+
+  /**
    * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
    * In case of incremental models it is the sum of all successful executions so far.
    * This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
@@ -1229,6 +1236,7 @@ export class ModelState extends Message<ModelState> {
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
     { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 29, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 14, name: "rows_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -3610,6 +3618,11 @@ export class ReportExecution extends Message<ReportExecution> {
   errorMessage = "";
 
   /**
+   * @generated from field: repeated string warnings = 6;
+   */
+  warnings: string[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp report_time = 3;
    */
   reportTime?: Timestamp;
@@ -3634,6 +3647,7 @@ export class ReportExecution extends Message<ReportExecution> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "report_time", kind: "message", T: Timestamp },
     { no: 4, name: "started_on", kind: "message", T: Timestamp },
     { no: 5, name: "finished_on", kind: "message", T: Timestamp },
@@ -4078,6 +4092,11 @@ export class AssertionResult extends Message<AssertionResult> {
    */
   errorMessage = "";
 
+  /**
+   * @generated from field: repeated string warnings = 4;
+   */
+  warnings: string[] = [];
+
   constructor(data?: PartialMessage<AssertionResult>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4089,6 +4108,7 @@ export class AssertionResult extends Message<AssertionResult> {
     { no: 1, name: "status", kind: "enum", T: proto3.getEnumType(AssertionStatus) },
     { no: 2, name: "fail_row", kind: "message", T: Struct },
     { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AssertionResult {

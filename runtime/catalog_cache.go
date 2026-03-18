@@ -555,6 +555,7 @@ func resourceFromDriver(r drivers.Resource) *runtimev1.Resource {
 	// Reset ephemeral fields.
 	res.Meta.ReconcileStatus = runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE
 	res.Meta.ReconcileError = ""
+	res.Meta.ReconcileWarnings = nil
 	res.Meta.ReconcileOn = nil
 	res.Meta.RenamedFrom = nil
 
