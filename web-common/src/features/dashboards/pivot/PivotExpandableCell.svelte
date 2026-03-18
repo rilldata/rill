@@ -39,7 +39,7 @@
     {:else if value === ""}
       {"\u00A0"}
     {:else}
-      {value}
+      {value ?? "null"}
     {/if}
   </span>
 </div>

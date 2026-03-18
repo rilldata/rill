@@ -59,9 +59,8 @@
     active = false;
   }
 
-  function toggleMultiSelect() {
-    const newMultiSelect = !multiSelect;
-    if (!newMultiSelect) {
+  function onMultiSelectChange(checked: boolean) {
+    if (!checked) {
       onToggleOff();
     } else {
       // When toggling back to multi-select, restore the last selection
@@ -71,7 +70,7 @@
         setLeaderboardSortByMeasureName(lastMeasures[0]);
       }
     }
-    multiSelect = newMultiSelect;
+    multiSelect = checked;
   }
 
   function toggleMeasure(name: string) {
@@ -197,7 +196,7 @@
                   checked={multiSelect}
                   id="multi-measure-select"
                   small
-                  onclick={toggleMultiSelect}
+                  onCheckedChange={onMultiSelectChange}
                   data-testid="multi-measure-select-switch"
                 />
                 <InputLabel

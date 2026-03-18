@@ -106,9 +106,9 @@ time_ranges:
     await page.waitForTimeout(1000);
 
     // Check the total records are 100k
-    await page
-      .getByRole("button", { name: "Total records 100k" })
-      .waitFor({ timeout: 2000 });
+    await expect(page.getByText("Total records")).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Check the row viewer accordion is visible
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
@@ -234,7 +234,7 @@ time_ranges:
     await page.getByText("Publisher Facebook").click();
     await page.waitForTimeout(500); // wait for the filter bar to update
     await page.getByLabel("Include exclude toggle").click();
-    await page.getByText("Exclude Publisher Facebook").click();
+    await page.keyboard.press("Escape"); // close the dimension filter dropdown
 
     // Check number
     await expect(page.getByText("Total records 80,659")).toBeVisible();

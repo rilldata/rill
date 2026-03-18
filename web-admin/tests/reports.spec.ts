@@ -15,8 +15,10 @@ test.describe.serial("Reports", () => {
     // Enter dimension table "App Site Domain"
     await adminPage.getByText("App Site Domain").click();
 
-    // Dismiss any tooltip that might block the export button
-    await adminPage.keyboard.press("Escape");
+    // Clicking "App Site Domain" can trigger a tooltip that overlays the export
+    // button. Move the mouse away to dismiss it (Tooltip uses hoverIntent which
+    // only dismisses on mouse leave).
+    await adminPage.mouse.move(0, 0);
 
     // Open scheduled report dialog
     await adminPage.getByLabel("Export dimension table data").click();
