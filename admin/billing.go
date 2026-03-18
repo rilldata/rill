@@ -273,7 +273,8 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 			return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
 		}
 
-		if org.CreatedByUserID != nil {
+		// Only count trial orgs for trial-based plans (not Free)
+		if plan.PlanType != billing.FreePlanType && org.CreatedByUserID != nil {
 			err = s.DB.IncrementCurrentTrialOrgCount(ctx, *org.CreatedByUserID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("failed to increment current trial org count: %w", err)
@@ -285,22 +286,6 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		// happens with noop biller
 		return org, sub, nil
 	}
-
-	var userEmail string
-	if org.CreatedByUserID != nil {
-		user, err := s.DB.FindUser(ctx, *org.CreatedByUserID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get user info: %w", err)
-		}
-		userEmail = user.Email
-	}
-
-	s.Logger.Named("billing").Info("started trial for organization",
-		zap.String("org_name", org.Name),
-		zap.String("org_id", org.ID),
-		zap.String("trial_end_date", sub.TrialEndDate.String()),
-		zap.String("user_email", userEmail),
-	)
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -338,6 +323,21 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// Free plan: no trial issue, billing tracked via credit worker
+	if plan.PlanType == billing.FreePlanType {
+		s.Logger.Named("billing").Info("started free plan for organization",
+			zap.String("org_name", org.Name),
+			zap.String("org_id", org.ID),
+		)
+		return org, sub, nil
+	}
+
+	s.Logger.Named("billing").Info("started trial for organization",
+		zap.String("org_name", org.Name),
+		zap.String("org_id", org.ID),
+		zap.String("trial_end_date", sub.TrialEndDate.String()),
+	)
 
 	// raise on-trial billing warning
 	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
@@ -494,6 +494,17 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 
 	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.Before(time.Now()) {
 		return fmt.Errorf("subscription cancelled")
+	}
+
+	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeCreditExhausted)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil {
+		return fmt.Errorf("free credit exhausted")
 	}
 
 	return nil

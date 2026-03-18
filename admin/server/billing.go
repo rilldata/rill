@@ -223,9 +223,44 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
+	// Check for credit exhaustion before cleanup so we know whether to un-hibernate
+	wasExhausted := false
+	if plan.PlanType == billing.GrowthPlanType {
+		ce, ceErr := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeCreditExhausted)
+		if ceErr != nil && !errors.Is(ceErr, database.ErrNotFound) {
+			return nil, ceErr
+		}
+		wasExhausted = ce != nil
+	}
+
 	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
 		return nil, err
+	}
+
+	// Un-hibernate projects that were hibernated due to credit exhaustion
+	if wasExhausted {
+		projLimit := 10
+		afterProjectName := ""
+		for {
+			projs, projErr := s.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, projLimit)
+			if projErr != nil {
+				s.logger.Named("billing").Error("failed to find projects for un-hibernate on growth upgrade", zap.String("org_id", org.ID), zap.Error(projErr))
+				break
+			}
+			for _, proj := range projs {
+				if proj.PrimaryDeploymentID == nil {
+					if _, redeployErr := s.admin.RedeployProject(ctx, proj, nil); redeployErr != nil {
+						s.logger.Named("billing").Warn("failed to redeploy hibernated project on growth upgrade", zap.String("project_id", proj.ID), zap.Error(redeployErr))
+					}
+				}
+				afterProjectName = proj.Name
+			}
+			if len(projs) < projLimit {
+				break
+			}
+		}
+		s.logger.Named("billing").Info("un-hibernated projects on growth upgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	}
 
 	if planChange {
