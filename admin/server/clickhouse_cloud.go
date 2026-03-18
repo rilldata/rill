@@ -106,6 +106,7 @@ func (s *Server) clickhouseCloudLookup(w http.ResponseWriter, r *http.Request) e
 				Annotations:          proj.Annotations,
 				ChcClusterSize:       &clusterSize,
 				RillMinSlots:         &minSlotsInt64,
+				InfraSlots:           proj.InfraSlots,
 			})
 		}
 	}
@@ -246,6 +247,7 @@ func (s *Server) clickhouseCloudSync(w http.ResponseWriter, r *http.Request) err
 			ProdTTLSeconds: proj.ProdTTLSeconds, DevSlots: proj.DevSlots, DevTTLSeconds: proj.DevTTLSeconds,
 			Provisioner: proj.Provisioner, Annotations: proj.Annotations,
 			ChcClusterSize: &info.MaxMemoryGB, RillMinSlots: &minSlotsInt64,
+			InfraSlots: proj.InfraSlots,
 		})
 		if err != nil {
 			http.Error(w, "failed to update cluster info", http.StatusInternalServerError)
@@ -273,6 +275,7 @@ func (s *Server) clickhouseCloudSync(w http.ResponseWriter, r *http.Request) err
 				ProdTTLSeconds: proj.ProdTTLSeconds, DevSlots: proj.DevSlots, DevTTLSeconds: proj.DevTTLSeconds,
 				Provisioner: proj.Provisioner, Annotations: annotations,
 				ChcClusterSize: proj.ChcClusterSize, RillMinSlots: proj.RillMinSlots,
+				InfraSlots: proj.InfraSlots,
 			})
 			if updateErr == nil {
 				proj = updated
@@ -295,6 +298,7 @@ func (s *Server) clickhouseCloudSync(w http.ResponseWriter, r *http.Request) err
 				ProdTTLSeconds: proj.ProdTTLSeconds, DevSlots: proj.DevSlots, DevTTLSeconds: proj.DevTTLSeconds,
 				Provisioner: proj.Provisioner, Annotations: annotations,
 				ChcClusterSize: proj.ChcClusterSize, RillMinSlots: proj.RillMinSlots,
+				InfraSlots: proj.InfraSlots,
 			})
 			if updateErr == nil {
 				proj = updated

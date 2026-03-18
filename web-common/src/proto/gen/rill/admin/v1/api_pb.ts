@@ -4014,6 +4014,22 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   superuserForceAccess = false;
 
+  /**
+   * InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+   * Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
+   *
+   * @generated from field: optional int64 infra_slots = 16;
+   */
+  infraSlots?: bigint;
+
+  /**
+   * ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+   * Adjustable by Rill staff. Derived from the OLAP cluster size.
+   *
+   * @generated from field: optional int64 cluster_slots = 17;
+   */
+  clusterSlots?: bigint;
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4037,6 +4053,8 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "infra_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 17, name: "cluster_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -15885,10 +15903,19 @@ export class Project extends Message<Project> {
 
   /**
    * RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+   * Represents the cluster_slots component in the new pricing model.
    *
    * @generated from field: optional int64 rill_min_slots = 28;
    */
   rillMinSlots?: bigint;
+
+  /**
+   * InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+   * Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
+   *
+   * @generated from field: optional int64 infra_slots = 29;
+   */
+  infraSlots?: bigint;
 
   constructor(data?: PartialMessage<Project>) {
     super();
@@ -15923,6 +15950,7 @@ export class Project extends Message<Project> {
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
     { no: 27, name: "chc_cluster_size", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
     { no: 28, name: "rill_min_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 29, name: "infra_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {

@@ -1185,6 +1185,18 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
+              infraSlots:
+                type: string
+                format: int64
+                description: |-
+                  InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+                  Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
+              clusterSlots:
+                type: string
+                format: int64
+                description: |-
+                  ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+                  Adjustable by Rill staff. Derived from the OLAP cluster size.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
@@ -6030,7 +6042,15 @@ definitions:
       rillMinSlots:
         type: string
         format: int64
-        description: RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+        description: |-
+          RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+          Represents the cluster_slots component in the new pricing model.
+      infraSlots:
+        type: string
+        format: int64
+        description: |-
+          InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+          Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
   v1ProjectInvite:
     type: object
     properties:

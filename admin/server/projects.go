@@ -451,6 +451,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	if permissions.ManageProject {
 		instancePermissions = append(
 			instancePermissions,
+			runtime.ReadOLAP,
 			runtime.ReadInstance,
 			runtime.ReadResolvers,
 			runtime.EditTrigger,
@@ -923,7 +924,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		RillMinSlots:         proj.RillMinSlots,
+		RillMinSlots:         valOrDefaultPtr(req.ClusterSlots, proj.RillMinSlots),
+		InfraSlots:           valOrDefaultPtr(req.InfraSlots, proj.InfraSlots),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
@@ -1884,6 +1886,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Annotations:          req.Annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
 		RillMinSlots:         proj.RillMinSlots,
+		InfraSlots:           proj.InfraSlots,
 	})
 	if err != nil {
 		return nil, err
@@ -2205,6 +2208,8 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
 		UpdatedOn:           timestamppb.New(p.UpdatedOn),
+		RillMinSlots:        p.RillMinSlots,
+		InfraSlots:          p.InfraSlots,
 	}
 }
 
@@ -2311,6 +2316,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		Annotations:          p.Annotations,
 		ChcClusterSize:       p.ChcClusterSize,
 		RillMinSlots:         p.RillMinSlots,
+		InfraSlots:           p.InfraSlots,
 	})
 	if err != nil {
 		return 0, status.Error(codes.Internal, "failed to update project with github repo id")
@@ -2441,4 +2447,12 @@ func valOrDefault[T any](ptr *T, def T) T {
 		return *ptr
 	}
 	return def
+}
+
+// valOrDefaultPtr returns newVal if non-nil, otherwise existing (both pointers).
+func valOrDefaultPtr[T any](newVal *T, existing *T) *T {
+	if newVal != nil {
+		return newVal
+	}
+	return existing
 }

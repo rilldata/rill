@@ -513,7 +513,11 @@ type Project struct {
 	// ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
 	ChcClusterSize *float64 `db:"chc_cluster_size"`
 	// RillMinSlots is the minimum number of Rill slots required, derived from ChcClusterSize.
+	// Represents the cluster_slots component in the new pricing model.
 	RillMinSlots *int64 `db:"rill_min_slots"`
+	// InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+	// Adjustable by Rill staff; defaults to 4 for Live Connect, 0 for Rill Managed.
+	InfraSlots *int64 `db:"infra_slots"`
 	// CreatedOn is the time the project was created.
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is the time the project was last updated.
@@ -566,6 +570,7 @@ type UpdateProjectOptions struct {
 	Annotations          map[string]string
 	ChcClusterSize       *float64
 	RillMinSlots         *int64
+	InfraSlots           *int64
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

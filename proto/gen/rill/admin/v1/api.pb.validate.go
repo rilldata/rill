@@ -10152,6 +10152,14 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for ProdVersion
 	}
 
+	if m.InfraSlots != nil {
+		// no validation rules for InfraSlots
+	}
+
+	if m.ClusterSlots != nil {
+		// no validation rules for ClusterSlots
+	}
+
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
 	}
@@ -43173,6 +43181,10 @@ func (m *Project) validate(all bool) error {
 
 	if m.RillMinSlots != nil {
 		// no validation rules for RillMinSlots
+	}
+
+	if m.InfraSlots != nil {
+		// no validation rules for InfraSlots
 	}
 
 	if len(errors) > 0 {

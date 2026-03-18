@@ -1525,6 +1525,12 @@ components:
                     type: string
                 id:
                     type: string
+                infraSlots:
+                    description: |-
+                        InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+                        Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
+                    format: int64
+                    type: string
                 managedGitId:
                     description: managed_git_id is set if the project is connected to a rill-managed git repo.
                     type: string
@@ -1552,7 +1558,9 @@ components:
                 public:
                     type: boolean
                 rillMinSlots:
-                    description: RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+                    description: |-
+                        RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+                        Represents the cluster_slots component in the new pricing model.
                     format: int64
                     type: string
                 subpath:
@@ -3065,6 +3073,11 @@ paths:
                   name: returnUrl
                   schema:
                     type: string
+                - description: If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+                  in: query
+                  name: setup
+                  schema:
+                    type: boolean
                 - in: query
                   name: superuserForceAccess
                   schema:
@@ -3801,11 +3814,23 @@ paths:
                             properties:
                                 archiveAssetId:
                                     type: string
+                                clusterSlots:
+                                    description: |-
+                                        ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+                                        Adjustable by Rill staff. Derived from the OLAP cluster size.
+                                    format: int64
+                                    type: string
                                 description:
                                     type: string
                                 directoryName:
                                     type: string
                                 gitRemote:
+                                    type: string
+                                infraSlots:
+                                    description: |-
+                                        InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+                                        Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
+                                    format: int64
                                     type: string
                                 newName:
                                     type: string

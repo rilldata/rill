@@ -1825,6 +1825,12 @@ message UpdateProjectRequest {
   optional int64 prod_ttl_seconds = 10;
   optional string prod_version = 11;
   bool superuser_force_access = 14;
+  // InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+  // Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
+  optional int64 infra_slots = 16;
+  // ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+  // Adjustable by Rill staff. Derived from the OLAP cluster size.
+  optional int64 cluster_slots = 17;
 }
 
 message UpdateProjectResponse {
@@ -3268,7 +3274,11 @@ message Project {
   // ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
   optional double chc_cluster_size = 27;
   // RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+  // Represents the cluster_slots component in the new pricing model.
   optional int64 rill_min_slots = 28;
+  // InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+  // Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
+  optional int64 infra_slots = 29;
   // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
   reserved 10, 11;
 }

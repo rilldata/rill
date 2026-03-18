@@ -1079,8 +1079,12 @@ export interface V1Project {
   updatedOn?: string;
   /** ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica). */
   chcClusterSize?: number;
-  /** RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size. */
+  /** RillMinSlots is the minimum number of Rill slots required, derived from the CHC cluster size.
+Represents the cluster_slots component in the new pricing model. */
   rillMinSlots?: string;
+  /** InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed. */
+  infraSlots?: string;
 }
 
 export interface V1ProjectInvite {
@@ -1924,6 +1928,12 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   superuserForceAccess?: boolean;
+  /** InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed. */
+  infraSlots?: string;
+  /** ClusterSlots overrides the cluster slot allocation (maps to rill_min_slots).
+Adjustable by Rill staff. Derived from the OLAP cluster size. */
+  clusterSlots?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {

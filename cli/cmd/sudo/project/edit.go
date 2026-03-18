@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var prodSlots int
+	var prodSlots, infraSlots, clusterSlots int
 	var prodVersion string
 
 	editCmd := &cobra.Command{
@@ -38,6 +38,16 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				req.ProdVersion = &prodVersion
 				isEditRequested = true
 			}
+			if cmd.Flags().Changed("infra-slots") {
+				v := int64(infraSlots)
+				req.InfraSlots = &v
+				isEditRequested = true
+			}
+			if cmd.Flags().Changed("cluster-slots") {
+				v := int64(clusterSlots)
+				req.ClusterSlots = &v
+				isEditRequested = true
+			}
 
 			if !isEditRequested {
 				ch.Printf("No edit requested\n")
@@ -55,13 +65,22 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintfSuccess("Updated project\n")
-			ch.PrintProjects([]*adminv1.Project{updatedProj.Project})
+			proj := updatedProj.Project
+			fmt.Printf("Prod slots: %d\n", proj.ProdSlots)
+			if proj.InfraSlots != nil {
+				fmt.Printf("Infra slots: %d\n", *proj.InfraSlots)
+			}
+			if proj.RillMinSlots != nil {
+				fmt.Printf("Cluster slots: %d\n", *proj.RillMinSlots)
+			}
 
 			return nil
 		},
 	}
 
-	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
+	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Total slots for production deployments")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
+	editCmd.Flags().IntVar(&infraSlots, "infra-slots", 0, "Rill infra overhead slot allocation (Live Connect only; 0 = use default of 4)")
+	editCmd.Flags().IntVar(&clusterSlots, "cluster-slots", 0, "Cluster slot allocation override (maps to rill_min_slots)")
 	return editCmd
 }

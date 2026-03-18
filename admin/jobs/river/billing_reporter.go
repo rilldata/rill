@@ -313,6 +313,7 @@ func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 				Annotations:          proj.Annotations,
 				ChcClusterSize:       &maxMemoryGB,
 				RillMinSlots:         &minSlotsInt64,
+				InfraSlots:           proj.InfraSlots,
 			})
 			if err != nil {
 				w.logger.Warn("CHC sync: failed to update project cluster info", zap.String("project_id", proj.ID), zap.Error(err))
@@ -358,6 +359,7 @@ func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 					Annotations:          annotations,
 					ChcClusterSize:       proj.ChcClusterSize,
 					RillMinSlots:         proj.RillMinSlots,
+					InfraSlots:           proj.InfraSlots,
 				})
 				if err != nil {
 					w.logger.Warn("CHC sync: failed to auto-scale slots down", zap.String("project_id", proj.ID), zap.Error(err))
@@ -398,6 +400,7 @@ func (w *BillingReporterWorker) syncCHCCloudInfo(ctx context.Context) {
 					Annotations:          annotations,
 					ChcClusterSize:       proj.ChcClusterSize,
 					RillMinSlots:         proj.RillMinSlots,
+					InfraSlots:           proj.InfraSlots,
 				})
 				if err != nil {
 					w.logger.Warn("CHC sync: failed to restore slots on wake-up", zap.String("project_id", proj.ID), zap.Error(err))

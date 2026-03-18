@@ -48,6 +48,16 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Primary branch: %s\n", project.PrimaryBranch)
 			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
+			if project.InfraSlots != nil {
+				fmt.Printf("Infra slots: %d\n", *project.InfraSlots)
+			} else {
+				fmt.Printf("Infra slots: (default: 4 for Live Connect, 0 for Managed)\n")
+			}
+			if project.RillMinSlots != nil {
+				fmt.Printf("Cluster slots: %d\n", *project.RillMinSlots)
+			} else {
+				fmt.Printf("Cluster slots: (not set)\n")
+			}
 			fmt.Printf("Primary deployment ID: %s\n", project.PrimaryDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
 			fmt.Printf("Annotations: %s\n", strings.Join(annotations, "; "))

@@ -550,8 +550,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			dev_ttl_seconds = $19,
 			chc_cluster_size = $20,
 			rill_min_slots = $21,
+			infra_slots = $22,
 			updated_on = now()
-		WHERE id = $22
+		WHERE id = $23
 		RETURNING *
 		`,
 		opts.Name,
@@ -575,6 +576,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.DevTTLSeconds,
 		opts.ChcClusterSize,
 		opts.RillMinSlots,
+		opts.InfraSlots,
 		id,
 	).StructScan(res)
 	if err != nil {

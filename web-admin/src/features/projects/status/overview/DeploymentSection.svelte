@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
-    createAdminServiceGetProjectVariables,
     createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
@@ -24,15 +23,11 @@
     getStatusLabel,
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ProjectClone from "./ProjectClone.svelte";
   import ManageSlotsModal from "./ManageSlotsModal.svelte";
-  import { MIN_INFRA_SLOTS } from "./slots-utils";
-  import ClickHouseCloudKeyModal from "./ClickHouseCloudKeyModal.svelte";
-  import ClickHouseCloudDetailsModal from "./ClickHouseCloudDetailsModal.svelte";
+  import { detectTierSlots } from "./slots-utils";
+  import { useOlapInfo, isMotherDuck } from "./olapInfo";
   import OverviewCard from "./OverviewCard.svelte";
-  import { onMount } from "svelte";
   import { page } from "$app/stores";
 
   export let organization: string;
@@ -89,7 +84,7 @@
   // DuckDB is always Rill-managed (including local dev where provision=false).
   $: isRillManaged =
     !olapConnector ||
-    olapConnector.type === "duckdb" ||
+    (olapConnector.type === "duckdb" && !isMotherDuck(olapConnector)) ||
     olapConnector.provision === true;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
   let slotsModalOpen = false;
@@ -105,18 +100,31 @@
   $: devForceNewPricing = $page.url.searchParams.get("newPricing") === "true";
   $: useNewPricing = isFree || isGrowth || devForceNewPricing;
 
-  // Cluster Slots: derived at runtime from RillMinSlots (set by CHC sync from OLAP connector).
+  // SQL-based cluster info: only runs for Free/Growth plans (new pricing).
+  $: olapInfoQuery = useOlapInfo(runtimeClient, useNewPricing ? olapConnector : undefined);
+  $: olapInfo = $olapInfoQuery?.data;
+  $: console.log("[olapInfo] useNewPricing:", useNewPricing, "| olapConnector:", olapConnector, "| query:", { isLoading: $olapInfoQuery?.isLoading, isError: $olapInfoQuery?.isError, error: $olapInfoQuery?.error, data: olapInfo });
+  // Detected cluster slots from SQL (vcpus when available, else memory-tier fallback).
+  $: detectedClusterSlots =
+    olapInfo?.vcpus && olapInfo.vcpus > 0
+      ? olapInfo.vcpus
+      : detectTierSlots(parseMemoryToGb(olapInfo?.memory));
+
+  // Backend quota overrides (set via `rill sudo project edit`)
+  $: backendClusterSlots = Number(projectData?.rillMinSlots) || undefined;
+  $: backendInfraSlots = Number(projectData?.infraSlots) || undefined;
+
+  // Cluster Slots: prefer SQL-detected value, fall back to RillMinSlots from backend.
   // Only applies to Live Connect (not Rill-managed).
   $: clusterSlots = !isRillManaged
-    ? Number(projectData?.rillMinSlots) || (devForceNewPricing ? 8 : 0)
+    ? detectedClusterSlots ||
+      Number(projectData?.rillMinSlots) ||
+      (devForceNewPricing ? 8 : 0)
     : 0;
-  // For new pricing Live Connect, Rill Slots = prodSlots - max(clusterSlots, MIN_INFRA_SLOTS).
-  // There is always a MIN_INFRA_SLOTS floor; cluster slots may be larger.
-  $: effectiveClusterSlots =
-    !isRillManaged ? Math.max(clusterSlots, MIN_INFRA_SLOTS) : 0;
+  // Rill Slots = additional slots on top of cluster_slots (user-controlled).
   $: rillSlots =
     useNewPricing && !isRillManaged
-      ? Math.max(0, currentSlots - effectiveClusterSlots)
+      ? Math.max(0, currentSlots - clusterSlots)
       : 0;
 
   // Slot usage breakdown (dev edit modes coming soon; each consumes 1 slot)
@@ -124,182 +132,46 @@
   $: devSlots = 0; // will increase when dev edit modes are active
   $: usedSlots = prodSlots + devSlots;
 
-  // ClickHouse Cloud detection: prefer backend flag, fall back to host/DSN check
-  $: isClickHouseCloud =
-    olapConnector?.type === "clickhouse" &&
-    (olapConnector?.config?.is_clickhouse_cloud === true ||
-      (olapConnector?.config?.host as string)
-        ?.toLowerCase()
-        .endsWith(".clickhouse.cloud") ||
-      (olapConnector?.config?.dsn as string)
-        ?.toLowerCase()
-        .includes(".clickhouse.cloud"));
-
-  // CHC service details from the runtime (populated after API key is saved and polling runs)
-  $: cloudServiceName = olapConnector?.config?.cloud_service_name as
-    | string
-    | undefined;
-  $: cloudStatus = olapConnector?.config?.cloud_status as string | undefined;
-  $: cloudProvider = olapConnector?.config?.cloud_provider as
-    | string
-    | undefined;
-  $: cloudRegion = olapConnector?.config?.cloud_region as string | undefined;
-  $: cloudMinMemory = olapConnector?.config?.cloud_min_memory_gb as
-    | number
-    | undefined;
-  $: cloudMaxMemory = olapConnector?.config?.cloud_max_memory_gb as
-    | number
-    | undefined;
-  $: cloudReplicas = olapConnector?.config?.cloud_num_replicas as
-    | number
-    | undefined;
-  $: chcAutoScaleAnnotation =
-    projectData?.annotations?.["rill.dev/chc-auto-scaled-slots"] === "true";
-  $: isChcHibernated =
-    cloudStatus === "idle" ||
-    cloudStatus === "stopped" ||
-    cloudStatus === "stopping" ||
-    // If annotation is set and status is unknown, treat as hibernated
-    (chcAutoScaleAnnotation && !cloudStatus);
-  // CHC is running again but slots haven't been restored yet
-  $: isChcRestoring =
-    !isChcHibernated && cloudStatus === "running" && chcAutoScaleAnnotation;
-
-  let chcDetailsModalOpen = false;
-
-  $: projectVariablesQuery = isClickHouseCloud
-    ? createAdminServiceGetProjectVariables(organization, project, {
-        environment: "prod",
-      })
-    : undefined;
-  $: hasCloudApiKey = $projectVariablesQuery?.data?.variables?.some(
-    (v) => v.name === "CLICKHOUSE_CLOUD_API_KEY_ID",
-  );
-
-  // "Remind me later" dismisses for this browser session; re-opens on new visits
-  $: dismissKey = `chc-key-dismissed:${organization}/${project}`;
-  let chcDismissedThisSession = false;
-  onMount(() => {
-    chcDismissedThisSession =
-      sessionStorage.getItem(`chc-key-dismissed:${organization}/${project}`) ===
-      "true";
-  });
-
-  function handleChcDismiss() {
-    sessionStorage.setItem(dismissKey, "true");
-    chcDismissedThisSession = true;
+  /**
+   * Parses a human-readable memory string from the OLAP SQL queries into GB.
+   * Handles formats like "8.00 GiB", "16.00 GB", "7.45 GiB".
+   */
+  function parseMemoryToGb(memory: string | undefined): number | undefined {
+    if (!memory) return undefined;
+    const m = memory.match(/^([\d.]+)\s*(GiB|GB|MiB|MB)/i);
+    if (!m) return undefined;
+    const value = parseFloat(m[1]);
+    const unit = m[2].toLowerCase();
+    if (unit === "gib" || unit === "gb") return value;
+    if (unit === "mib" || unit === "mb") return value / 1024;
+    return undefined;
   }
-
-  $: shouldPromptChcKey =
-    isClickHouseCloud &&
-    hasCloudApiKey === false &&
-    !chcDismissedThisSession &&
-    canManage;
-  let chcKeyModalOpen = false;
-  $: if (shouldPromptChcKey) {
-    chcKeyModalOpen = true;
-  }
-
-  // If CHC key exists but no slots are configured, open the required slots modal once on page load
-  let slotsPromptChecked = false;
-  $: if (
-    !slotsPromptChecked &&
-    isClickHouseCloud &&
-    hasCloudApiKey === true &&
-    currentSlots === 0 &&
-    canManage
-  ) {
-    slotsPromptChecked = true;
-    slotsRequiredMode = true;
-    slotsModalOpen = true;
-  }
-
-  // Use the resolved host from the runtime (handles DSN parsing server-side)
-  $: connectorHost = olapConnector?.config?.resolved_host as string | undefined;
-
-  $: console.log(
-    "[CHC] connectorHost:",
-    connectorHost,
-    "olapConnector config:",
-    olapConnector?.config,
-  );
-
-  // After CHC key is saved, open the slots modal in required mode
-  let slotsRequiredMode = false;
-
-  // Persist detected memory in sessionStorage so it survives modal reopens and navigations
-  const chcMemoryKey = `chc-memory:${organization}/${project}`;
-  let chcDetectedMemoryGb: number | undefined = (() => {
-    const stored = sessionStorage.getItem(chcMemoryKey);
-    return stored ? parseFloat(stored) : undefined;
-  })();
-
-  function handleChcKeySaved(memoryGb?: number) {
-    console.log(
-      "[CHC] Key saved, detectedMemoryGb:",
-      memoryGb,
-      "canManage:",
-      canManage,
-    );
-    if (memoryGb && memoryGb > 0) {
-      chcDetectedMemoryGb = memoryGb;
-      sessionStorage.setItem(chcMemoryKey, String(memoryGb));
-    }
-    if (canManage) {
-      slotsRequiredMode = true;
-      slotsModalOpen = true;
-    }
-  }
-  // Reset required mode when slots modal closes
-  $: if (!slotsModalOpen) slotsRequiredMode = false;
-
-  // CHC auto-scaling: detect when slots were auto-reduced due to CHC hibernation
-  $: isChcAutoScaled =
-    projectData?.annotations?.["rill.dev/chc-auto-scaled-slots"] === "true" &&
-    currentSlots === 1;
 </script>
 
 <OverviewCard title="Deployment">
-  <ProjectClone
-    slot="header-right"
-    {organization}
-    {project}
-    gitRemote={projectData?.gitRemote}
-    managedGitId={projectData?.managedGitId}
-  />
+  <div slot="header-right" class="flex items-center gap-3">
+    {#if canManage && isFree && !$subscriptionQuery?.isLoading}
+      <a
+        class="upgrade-link"
+        href="/{organization}/-/settings/billing"
+      >
+        Upgrade to Growth
+      </a>
+    {/if}
+    <ProjectClone
+      {organization}
+      {project}
+      gitRemote={projectData?.gitRemote}
+      managedGitId={projectData?.managedGitId}
+    />
+  </div>
 
   <div class="info-grid">
     <div class="info-row">
       <span class="info-label">Status</span>
       <span class="info-value flex items-center gap-2">
-        {#if isChcHibernated}
-          <Tooltip distance={8} location="top">
-            <span class="flex items-center gap-2">
-              <span class="status-dot bg-yellow-500"></span>
-              Unhealthy
-            </span>
-            <TooltipContent slot="tooltip-content">
-              ClickHouse Cloud is {cloudStatus === "idle"
-                ? "waking up"
-                : cloudStatus === "stopping"
-                  ? "stopping"
-                  : "hibernated"}
-            </TooltipContent>
-          </Tooltip>
-        {:else if isChcRestoring}
-          <Tooltip distance={8} location="top">
-            <span class="flex items-center gap-2">
-              <span class="status-dot bg-yellow-500"></span>
-              Preparing project
-            </span>
-            <TooltipContent slot="tooltip-content">
-              ClickHouse Cloud is back online. Restoring slots.
-            </TooltipContent>
-          </Tooltip>
-        {:else}
-          <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
-          {getStatusLabel(deploymentStatus)}
-        {/if}
+        <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+        {getStatusLabel(deploymentStatus)}
       </span>
     </div>
 
@@ -359,20 +231,10 @@
       <span class="info-label">OLAP Engine</span>
       <span class="info-value flex items-center gap-2">
         {olapEngineLabel}
-        {#if isClickHouseCloud && hasCloudApiKey}
-          <button
-            class="manage-slots-btn"
-            on:click={() => (chcDetailsModalOpen = true)}
-          >
-            View Details
-          </button>
-        {:else if isClickHouseCloud && !hasCloudApiKey && canManage}
-          <button
-            class="manage-slots-btn"
-            on:click={() => (chcKeyModalOpen = true)}
-          >
-            Connect to ClickHouse Cloud
-          </button>
+        {#if olapInfo}
+          <span class="text-fg-tertiary text-xs">
+            ({olapInfo.vcpus} vCPU{olapInfo.vcpus !== 1 ? "s" : ""}, {olapInfo.memory}{olapInfo.replicas > 1 ? `, ${olapInfo.replicas} replicas` : ""})
+          </span>
         {/if}
       </span>
     </div>
@@ -392,37 +254,37 @@
 
     {#if !$subscriptionQuery?.isLoading && !isEnterprise}
       {#if useNewPricing && !isRillManaged}
-        <!-- New pricing Live Connect: show Cluster Slots + Rill Slots separately -->
-        <div class="info-row">
-          <span class="info-label">Cluster Slots</span>
-          <span class="info-value flex items-center gap-3">
-            <span class="slots-count">{effectiveClusterSlots}</span>
-            <span class="text-fg-tertiary text-xs">(auto-calculated)</span>
-          </span>
-        </div>
+        <!-- Live Connect (new pricing): three separate rows -->
         <div class="info-row">
           <span class="info-label">Rill Slots</span>
           <span class="info-value flex items-center gap-3">
             <span class="slots-count">{rillSlots}</span>
-            {#if canManage && !isFree && !isChcAutoScaled && !isChcHibernated}
+            {#if canManage && !isTrial}
               <button
                 class="manage-slots-btn"
                 on:click={() => (slotsModalOpen = true)}
               >
-                Manage Rill Slots
+                Manage
               </button>
-            {:else if canManage && isFree}
-              <a
-                class="manage-slots-btn"
-                href="/{organization}/-/settings/billing"
-              >
-                Upgrade to Growth
-              </a>
             {/if}
           </span>
         </div>
+        <div class="info-row">
+          <span class="info-label">Cluster Slots</span>
+          <span class="info-value flex items-center gap-2">
+            <span class="slots-count">{clusterSlots}</span>
+            <span class="text-fg-tertiary text-xs">(read-only)</span>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Infra Slots</span>
+          <span class="info-value flex items-center gap-2">
+            <span class="slots-count">{backendInfraSlots ?? 4}</span>
+            <span class="text-fg-tertiary text-xs">{backendInfraSlots === undefined ? "(default, read-only)" : "(read-only)"}</span>
+          </span>
+        </div>
       {:else}
-        <!-- Legacy or Managed: single Slots row -->
+        <!-- Managed or legacy: single Slots row -->
         <div class="info-row">
           <span class="info-label">Slots</span>
           <span class="info-value flex items-center gap-3">
@@ -441,14 +303,7 @@
             {:else}
               <span>0</span>
             {/if}
-            {#if canManage && (isTrial || isFree)}
-              <a
-                class="manage-slots-btn"
-                href="/{organization}/-/settings/billing"
-              >
-                {isFree ? "Upgrade to Growth" : "Upgrade to Team Plan"}
-              </a>
-            {:else if canManage && !isChcAutoScaled && !isChcHibernated}
+            {#if canManage && !isTrial}
               <button
                 class="manage-slots-btn"
                 on:click={() => (slotsModalOpen = true)}
@@ -456,15 +311,6 @@
                 Manage Slots
               </button>
             {/if}
-          </span>
-        </div>
-      {/if}
-      {#if isChcAutoScaled}
-        <div class="info-row pt-0">
-          <span class="info-label"></span>
-          <span class="text-fg-secondary text-xs">
-            Slots reduced to 1 while ClickHouse Cloud is hibernated. They'll be
-            restored when the cluster wakes up.
           </span>
         </div>
       {/if}
@@ -478,48 +324,13 @@
   {project}
   {currentSlots}
   {isRillManaged}
-  {isClickHouseCloud}
-  required={slotsRequiredMode}
   viewOnly={isTrial}
-  detectedMemoryGb={chcDetectedMemoryGb ?? cloudMaxMemory}
+  detectedSlots={detectedClusterSlots}
   {useNewPricing}
-  clusterSlots={effectiveClusterSlots}
+  clusterSlots={clusterSlots}
   currentRillSlots={rillSlots}
+  infraSlots={backendInfraSlots}
 />
-
-{#if isClickHouseCloud && canManage}
-  <ClickHouseCloudKeyModal
-    bind:open={chcKeyModalOpen}
-    {organization}
-    {project}
-    {connectorHost}
-    onDismiss={handleChcDismiss}
-    onSave={handleChcKeySaved}
-  />
-{/if}
-
-{#if isClickHouseCloud && hasCloudApiKey}
-  <ClickHouseCloudDetailsModal
-    bind:open={chcDetailsModalOpen}
-    {organization}
-    {project}
-    serviceName={cloudServiceName}
-    status={cloudStatus}
-    provider={cloudProvider}
-    region={cloudRegion}
-    minMemoryGb={cloudMinMemory}
-    maxMemoryGb={cloudMaxMemory}
-    replicas={cloudReplicas}
-    on:synced={(e) => {
-      if (e.detail?.maxMemoryGb) {
-        chcDetectedMemoryGb = e.detail.maxMemoryGb;
-        sessionStorage.setItem(chcMemoryKey, String(e.detail.maxMemoryGb));
-      }
-      $proj.refetch();
-      $instanceQuery.refetch();
-    }}
-  />
-{/if}
 
 <style lang="postcss">
   .info-grid {
@@ -557,6 +368,12 @@
   }
   .slots-count {
     @apply text-sm text-fg-primary font-medium tabular-nums;
+  }
+  .upgrade-link {
+    @apply text-xs text-primary-500 no-underline;
+  }
+  .upgrade-link:hover {
+    @apply text-primary-600;
   }
   .manage-slots-btn {
     @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 no-underline;

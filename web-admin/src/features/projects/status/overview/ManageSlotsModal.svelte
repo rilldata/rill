@@ -23,8 +23,6 @@
     HOURS_PER_MONTH,
     STORAGE_RATE_PER_GB_PER_MONTH,
     INCLUDED_STORAGE_GB,
-    detectTierSlots,
-    MIN_INFRA_SLOTS,
   } from "./slots-utils";
 
   export let open = false;
@@ -32,13 +30,11 @@
   export let project: string;
   export let currentSlots: number;
   export let isRillManaged: boolean;
-  // Whether the OLAP connector is ClickHouse Cloud (vs generic self-managed Live Connect).
-  export let isClickHouseCloud = false;
-  // When required, the user cannot dismiss the modal and must select + apply slots.
-  export let required = false;
-  // ClickHouse Cloud cluster memory (GB per replica) for auto-detecting the right tier.
-  export let detectedMemoryGb: number | undefined = undefined;
+  // Auto-detected slot count from the OLAP cluster (SQL-based detection).
+  export let detectedSlots: number | undefined = undefined;
   // When true, the user can only view the detected tier and apply it (no selection).
+  // required mode is no longer triggered (kept for template compatibility)
+  export let required = false;
   export let viewOnly = false;
   // When true, uses new PRD v10 pricing (Free/Growth plans). False for legacy Team plans.
   export let useNewPricing = false;
@@ -46,6 +42,8 @@
   export let clusterSlots = 0;
   // Current Rill Slots (user-controlled). Only for Live Connect + new pricing.
   export let currentRillSlots = 0;
+  // Infra slots override from backend (read-only, set by Rill staff).
+  export let infraSlots: number | undefined = undefined;
 
   const POPULAR_RILL_MANAGED = POPULAR_SLOTS.map((s) => ({ slots: s }));
   const ALL_RILL_MANAGED = ALL_SLOTS.map((s) => ({ slots: s }));
@@ -61,12 +59,10 @@
   $: rillSlotsHasChanged = selectedRillSlots !== currentRillSlots;
 
   // Auto-detect matching tier from cluster memory
-  $: detectedTierSlots = isRillManaged
-    ? undefined
-    : detectTierSlots(detectedMemoryGb);
+  $: detectedTierSlots = isRillManaged ? undefined : detectedSlots;
 
   // Rill-managed and self-managed: no minimum floor
-  // CHC (detectedTierSlots set): can downgrade below current but not below detected tier
+  // When detectedTierSlots is set, the user cannot go below that tier.
   $: minimumSlots = detectedTierSlots ?? 0;
 
   // In required mode, pre-select detected tier or minimum; otherwise default to current
@@ -127,11 +123,10 @@
 
   async function applySlotChange() {
     try {
-      // For new pricing Live Connect: Rill Slots are additional slots on top of
-      // cluster slots (rill_min_slots). Always maintain MIN_INFRA_SLOTS floor.
+      // For new pricing Live Connect: prod_slots = cluster_slots + rill_slots.
       const newSlots =
         useNewPricing && !isRillManaged
-          ? Math.max(selectedRillSlots + clusterSlots, MIN_INFRA_SLOTS)
+          ? selectedRillSlots + clusterSlots
           : selectedSlots;
       await $updateProject.mutateAsync({
         org: organization,
@@ -172,19 +167,11 @@
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
         {#if viewOnly}
-          {#if isClickHouseCloud}
-            Based on your ClickHouse Cloud cluster, we recommend the following
-            slot configuration. <a
-              href="/{organization}/-/settings/billing"
-              class="text-primary-500 hover:underline">Start a Team plan</a
-            > to customize your slot allocation.
-          {:else}
-            Based on your OLAP cluster, we recommend the following slot
-            configuration. <a
-              href="/{organization}/-/settings/billing"
-              class="text-primary-500 hover:underline">Start a Team plan</a
-            > to customize your slot allocation.
-          {/if}
+          Based on your OLAP cluster, we recommend the following slot
+          configuration. <a
+            href="/{organization}/-/settings/billing"
+            class="text-primary-500 hover:underline">Start a Team plan</a
+          > to customize your slot allocation.
         {:else if isRillManaged}
           Rill-managed projects are billed at ${managedRate}/slot/hr.{#if useNewPricing} Storage is ${STORAGE_RATE_PER_GB_PER_MONTH}/GB/month above {INCLUDED_STORAGE_GB}GB included.{:else} Data
           storage is charged separately based on usage.{/if} Monthly estimates assume
@@ -192,13 +179,10 @@
         {:else if useNewPricing}
           Cluster Slots are auto-calculated from your OLAP cluster at ${CLUSTER_SLOT_RATE_PER_HR}/slot/hr.
           Add Rill Slots at ${RILL_SLOT_RATE_PER_HR}/slot/hr for extra performance or dev environments.
-        {:else if isClickHouseCloud}
-          Slots are matched to your ClickHouse Cloud cluster size. We
-          auto-detect the minimum tier from your service configuration. You can
-          increase slots if needed but cannot go below the detected minimum.
         {:else}
-          Choose the slot tier that matches your OLAP cluster's resources. You
-          can increase slots at any time to handle larger workloads.
+          Choose the slot tier that matches your OLAP cluster's resources. We
+          auto-detect the minimum tier from your cluster configuration. You can
+          increase slots if needed but cannot go below the detected minimum.
         {/if}
       </Dialog.Description>
     </Dialog.Header>
@@ -263,7 +247,7 @@
         <div class="slot-group">
           <div class="slot-group-header">
             <span class="slot-group-title">Cluster Slots</span>
-            <span class="slot-group-subtitle">Auto-calculated from your OLAP cluster</span>
+            <span class="slot-group-subtitle">Auto-calculated from your OLAP cluster · read-only</span>
           </div>
           <div class="cluster-slot-display">
             <span class="cluster-slot-count">{clusterSlots}</span>
@@ -272,6 +256,11 @@
               (~${Math.round(clusterSlots * CLUSTER_SLOT_RATE_PER_HR * HOURS_PER_MONTH).toLocaleString()}/mo)
             </span>
           </div>
+          {#if infraSlots !== undefined}
+            <div class="infra-slot-display">
+              <span class="text-xs text-fg-tertiary">Infra slots: {infraSlots} · read-only</span>
+            </div>
+          {/if}
         </div>
 
         <div class="slot-group">
@@ -342,9 +331,7 @@
       <!-- Legacy Live Connect tier table -->
       <div class="tier-table">
         <div class="tier-header">
-          <span class="tier-cell tier-cell-wide">
-            {isClickHouseCloud ? "CHC Cluster" : "Cluster Size"}
-          </span>
+          <span class="tier-cell tier-cell-wide">Cluster Size</span>
           <span class="tier-cell">Rill Slots</span>
           <span class="tier-cell">Estimated Rill $/mo</span>
         </div>
@@ -392,19 +379,9 @@
       {/if}
       <p class="chc-note">
         Estimated costs are calculated at a full month. Billing is charged at
-        compute/hr, therefore variable based on your needs.
+        compute/hr, therefore variable based on your needs. Select the tier that best
+        matches your cluster's memory and vCPU allocation.
       </p>
-      {#if isClickHouseCloud}
-        <p class="chc-note">
-          Cluster specs are auto-detected from your ClickHouse Cloud service and
-          assume 2 replicas.
-        </p>
-      {:else}
-        <p class="chc-note">
-          Select the tier that best matches your cluster's memory and vCPU
-          allocation. The cluster size column is for reference only.
-        </p>
-      {/if}
     {/if}
 
     <div class="footer">
@@ -534,6 +511,9 @@
   }
   .cluster-slot-rate {
     @apply text-sm text-fg-secondary;
+  }
+  .infra-slot-display {
+    @apply mt-1;
   }
   .total-row {
     @apply flex items-center justify-between px-3 py-2.5 mt-3 bg-surface-subtle rounded-md border border-border;
