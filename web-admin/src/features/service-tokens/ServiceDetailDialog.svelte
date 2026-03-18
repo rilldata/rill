@@ -135,7 +135,8 @@
       <!-- Project memberships -->
       {#if projectMemberships.length > 0}
         <div class="flex flex-col gap-y-2">
-          <span class="text-sm font-medium text-fg-primary">Project access</span>
+          <span class="text-sm font-medium text-fg-primary">Project access</span
+          >
           <div class="flex flex-col gap-y-1 text-sm">
             {#each projectMemberships as pm}
               <div class="flex justify-between">
@@ -150,7 +151,9 @@
       <!-- Custom attributes -->
       {#if attributes.length > 0}
         <div class="flex flex-col gap-y-2">
-          <span class="text-sm font-medium text-fg-primary">Custom attributes</span>
+          <span class="text-sm font-medium text-fg-primary"
+            >Custom attributes</span
+          >
           <div class="flex flex-col border rounded divide-y">
             {#each attributes as [key, value]}
               <div class="flex items-center justify-between px-3 py-2 text-sm">
