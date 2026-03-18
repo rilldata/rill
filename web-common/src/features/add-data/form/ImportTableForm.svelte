@@ -8,18 +8,11 @@
   import TableSchema from "@rilldata/web-common/features/connectors/explorer/TableSchema.svelte";
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import {
-    compileSourceYAML,
-    inferModelNameFromSQL,
-  } from "@rilldata/web-common/features/sources/sourceUtils.ts";
+  import { inferModelNameFromSQL } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import {
     type AddDataConfig,
     type ImportAddDataStepConfig,
-    ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
@@ -93,39 +86,19 @@
           values.mode === "table"
             ? `SELECT * FROM ${values.schema ? values.schema + "." : ""}${values.table ?? ""}`
             : values.sql;
-        const name =
+        const source =
           values.mode === "table"
             ? values.table
             : inferModelNameFromSQL(values.sql ?? "");
-        if (!name) return; // TODO: error
-
-        let modelName = values.table;
-        let yaml = "";
-        if (importSteps[0] === ImportDataStep.CreateModel) {
-          modelName = getName(
-            name,
-            fileArtifacts.getNamesForKind(ResourceKind.Model),
-          );
-          yaml = compileSourceYAML(
-            connectorDriver,
-            {
-              name: modelName,
-              sql,
-              database: values.database,
-            },
-            {
-              connectorInstanceName: connectorName,
-            },
-          );
-        }
+        if (!source) return; // TODO: error
 
         onSubmit({
           importSteps,
-          source: modelName,
+          source: name,
           sourceSchema: values.schema ?? "",
           sourceDatabase: values.database ?? "",
           connector: connectorName,
-          yaml,
+          sql,
           envBlob: null,
         } satisfies ImportAddDataStepConfig);
       },
@@ -154,7 +127,6 @@
     table,
   }: ConnectorExplorerEntry) {
     if (!table) return;
-    console.log(database, databaseSchema, table);
     form.update((f) => {
       f.database = database;
       f.schema = databaseSchema;

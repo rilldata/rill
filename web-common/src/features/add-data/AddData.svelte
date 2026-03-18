@@ -67,7 +67,6 @@
   }
 
   async function setAndStartImport(importConfig: ImportAddDataStepConfig) {
-    console.log(importConfig);
     const newState = await transitionToNextStep(runtimeClient, stepState, {
       importConfig,
     });

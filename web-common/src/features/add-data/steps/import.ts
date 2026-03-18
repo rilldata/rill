@@ -17,9 +17,9 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { get } from "svelte/store";
-import { createResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
-import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { compileSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils.ts";
+import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
 
 export async function runImportStep(
   runtimeClient: RuntimeClient,
@@ -39,7 +39,7 @@ export async function runImportStep(
             step: ImportDataStep.CreateModel,
             source: step.config.source,
             connector: step.config.connector,
-            yaml: step.config.yaml,
+            sql: step.config.sql,
             envBlob: step.config.envBlob,
           };
           break;
@@ -101,12 +101,38 @@ async function runCreateModelStep(
     throw new Error("Invalid model import step");
   }
 
+  const modelName = getName(
+    step.config.source,
+    fileArtifacts.getNamesForKind(ResourceKind.Model),
+  );
+  const connectorDriver = await maybeGetConnectorDriver(
+    runtimeClient,
+    undefined,
+    step.config.connector,
+  );
+  if (!connectorDriver) {
+    throw new Error(
+      `Failed to get connector driver for ${step.config.connector}`,
+    );
+  }
+  const yaml = compileSourceYAML(
+    connectorDriver,
+    {
+      name: modelName,
+      sql: step.config.sql,
+      database: step.config.sourceDatabase,
+    },
+    {
+      connectorInstanceName: step.config.connector,
+    },
+  );
+
   const filePath = `/models/${step.config.source}.yaml`;
   onNewRoute(`/files${filePath}`);
 
   await runtimeServicePutFile(runtimeClient, {
     path: filePath,
-    blob: modelImportStep.yaml,
+    blob: yaml,
     create: true,
     createOnly: false,
   });

@@ -71,7 +71,7 @@ export type ImportAddDataStepConfig = {
   sourceSchema: string;
   sourceDatabase: string;
   connector: string;
-  yaml: string;
+  sql: string;
   envBlob: string | null;
 };
 
@@ -97,7 +97,7 @@ type CreateModelImportStep = {
   step: ImportDataStep.CreateModel;
   source: string;
   connector: string;
-  yaml: string;
+  sql: string;
   envBlob: string | null;
 };
 

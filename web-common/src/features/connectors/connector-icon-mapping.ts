@@ -43,14 +43,13 @@ export const connectorIconMapping = {
   postgres: PostgresIcon,
   redshift: RedshiftIcon,
   s3: AmazonS3Icon,
-  azure: MicrosoftAzureBlobStorageIcon,
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
   sqlite: RedshiftIcon,
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
   local_file: File,
-  https: icons.GlobeLock, // TODO: why does this fail in `npm run dev`?
+  https: icons.GlobeLock, // TODO: why does importing GlobeLock fail in `npm run dev`?
 };
 
 export const connectorClassMapping = {

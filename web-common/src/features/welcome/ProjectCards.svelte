@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
@@ -12,12 +13,12 @@
     createRuntimeServiceUnpackExampleMutation,
   } from "../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
-  const runtimeClient = useRuntimeClient();
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
-  import { Button } from "@rilldata/web-common/components/button";
+  import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
+
+  const runtimeClient = useRuntimeClient();
 
   const unpackExampleProject =
     createRuntimeServiceUnpackExampleMutation(runtimeClient);
@@ -51,8 +52,7 @@
       });
 
       setTimeout(() => {
-        if (window.location.search.includes("redirect=true"))
-          window.location.reload();
+        window.location.assign("/?redirect=true");
       }, 5000);
     } catch {
       selectedProjectName = null;
@@ -65,27 +65,30 @@
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     {#each EXAMPLES as example (example.name)}
       {@const icon = connectorIconMapping[example.connector]}
-      <button on:click={() => unpackProject(example)}>
-        {#if icon}
-          <svelte:component this={icon} />
-        {/if}
+      {@const loading = selectedProjectName === example.name}
+      <ProjectCard
+        onClick={() => unpackProject(example)}
+        {loading}
+        disabled={!!selectedProjectName}
+      >
+        <svelte:fragment slot="icon">
+          {#if icon}
+            <svelte:component this={icon} />
+          {/if}
+        </svelte:fragment>
         <span>{example.title}</span>
-      </button>
+      </ProjectCard>
     {/each}
 
-    <button on:click={() => unpackProject()}>
-      <AddCircleOutline size="2em" />
+    <ProjectCard
+      onClick={() => unpackProject()}
+      loading={selectedProjectName === EMPTY_PROJECT_TITLE}
+      disabled={!!selectedProjectName}
+    >
+      <svelte:fragment slot="icon">
+        <AddCircleOutline size="16px" />
+      </svelte:fragment>
       <span>Start with an empty project</span>
-    </button>
+    </ProjectCard>
   </div>
 </section>
-
-<style lang="postcss">
-  button {
-    @apply flex flex-row items-center justify-center gap-2 px-4 py-2;
-    @apply text-sm bg-surface-overlay rounded-md border text-fg-secondary;
-  }
-  button:hover {
-    @apply border-accent-primary-action shadow-lg cursor-pointer;
-  }
-</style>
