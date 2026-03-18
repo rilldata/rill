@@ -24,7 +24,7 @@
     children?: Snippet;
   } = $props();
 
-  let locked = $state(lockable);
+  let locked = lockable;
 </script>
 
 <SelectPrimitive.Trigger
