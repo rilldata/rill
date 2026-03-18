@@ -297,25 +297,6 @@
     </div>
   </section>
 
-  <section class="detail-section">
-    <h3 class="section-title">Estimated Cost Over Time</h3>
-    <div class="analytics-placeholder">
-      <div class="placeholder-chart">
-        <div class="placeholder-bar-group">
-          {#each Array(12) as _, i}
-            <div
-              class="placeholder-bar placeholder-bar-cost"
-              style:height="{25 + Math.cos(i * 0.6) * 12 + Math.random() * 8}%"
-            />
-          {/each}
-        </div>
-        <div class="placeholder-axis" />
-      </div>
-      <p class="placeholder-text">
-        Cost analytics coming soon. This will show cluster slot costs and rill slot costs broken down over time.
-      </p>
-    </div>
-  </section>
 </div>
 
 <ManageSlotsModal
@@ -463,9 +444,6 @@
   .placeholder-bar {
     @apply flex-1 bg-primary-100 rounded-t-sm;
     min-height: 8px;
-  }
-  .placeholder-bar-cost {
-    @apply bg-green-100;
   }
   .placeholder-axis {
     @apply h-px bg-border mt-1;
