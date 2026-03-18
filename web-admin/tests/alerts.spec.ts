@@ -27,7 +27,7 @@ test.describe.serial("Alerts", () => {
       await alertForm.getByLabel("Toggle time comparison").click();
 
       // Select "App Site Name" as split by dimension
-      await adminPage.getByLabel("Split by dimension").click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Name").click();
 
       // Preview should have the correct 1st row
@@ -186,7 +186,7 @@ test.describe.serial("Alerts", () => {
       await alertForm.getByLabel("Open ad_size filter").click();
 
       // Update split by dimension to "App Site Domain"
-      await adminPage.getByLabel("Split by dimension").click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Domain").click();
 
       // Preview should have the correct 1st row
@@ -294,7 +294,7 @@ test.describe.serial("Alerts", () => {
       const alertForm = adminPage.locator("form#create-alert-form");
 
       // Select "App Site Name" as split by dimension
-      await adminPage.getByLabel("Split by dimension").click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Name").click();
 
       // Go to criteria tab

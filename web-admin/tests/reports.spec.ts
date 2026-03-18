@@ -15,10 +15,8 @@ test.describe.serial("Reports", () => {
     // Enter dimension table "App Site Domain"
     await adminPage.getByText("App Site Domain").click();
 
-    // Now and then clicking "App Site Domain" results in a tooltip being shown for a column in the dimension table.
-    // This tooltip blocks the export button causing the test to fail.
-    // So hover over "select all" to get rid of this tooltip.
-    await adminPage.getByText("Select all").hover();
+    // Dismiss any tooltip that might block the export button
+    await adminPage.keyboard.press("Escape");
 
     // Open scheduled report dialog
     await adminPage.getByLabel("Export dimension table data").click();

@@ -24,7 +24,8 @@
     children?: Snippet;
   } = $props();
 
-  let locked = lockable;
+  // svelte-ignore state_referenced_locally
+  let locked = $state(lockable);
 </script>
 
 <SelectPrimitive.Trigger
