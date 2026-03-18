@@ -280,6 +280,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"catalog":   "workspace",
 			"schema":    "rill_ingestion_test",
 		}
+	},
 	"azure_cloud": func(t TestingT) map[string]string {
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_AZURE_TEST_CONNECTION_STRING")
