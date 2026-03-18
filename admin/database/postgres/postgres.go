@@ -265,15 +265,6 @@ func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterID
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsWithCHC(ctx context.Context) ([]*database.Project, error) {
-	var res []*projectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.chc_cluster_size IS NOT NULL AND p.primary_deployment_id IS NOT NULL")
-	if err != nil {
-		return nil, parseErr("projects", err)
-	}
-	return c.projectsFromDTOs(res)
-}
-
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
 	var res []string
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id

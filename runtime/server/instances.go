@@ -9,7 +9,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	chdriver "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -325,7 +324,7 @@ func (s *Server) enrichConnectorWithRuntimeMetadata(ctx context.Context, instanc
 
 	runtimeConfig := handle.Config()
 
-	// Find the OLAP connector in ProjectConnectors and merge runtime fields
+	// Find the OLAP connector in ProjectConnectors and merge runtime-derived fields
 	for _, conn := range pb.ProjectConnectors {
 		if conn.Name != pb.OlapConnector {
 			continue
@@ -333,27 +332,15 @@ func (s *Server) enrichConnectorWithRuntimeMetadata(ctx context.Context, instanc
 		if conn.Config == nil {
 			conn.Config = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
 		}
-		// Inject runtime-derived fields
 		for k, v := range runtimeConfig {
-			if k == "is_clickhouse_cloud" || k == "resolved_host" {
-				switch val := v.(type) {
-				case bool:
-					conn.Config.Fields[k] = structpb.NewBoolValue(val)
-				case string:
-					conn.Config.Fields[k] = structpb.NewStringValue(val)
-				}
+			if k != "is_clickhouse_cloud" && k != "resolved_host" {
+				continue
 			}
-			if len(k) > 6 && k[:6] == "cloud_" {
-				switch val := v.(type) {
-				case string:
-					conn.Config.Fields[k] = structpb.NewStringValue(val)
-				case bool:
-					conn.Config.Fields[k] = structpb.NewBoolValue(val)
-				case float64:
-					conn.Config.Fields[k] = structpb.NewNumberValue(val)
-				case int:
-					conn.Config.Fields[k] = structpb.NewNumberValue(float64(val))
-				}
+			switch val := v.(type) {
+			case bool:
+				conn.Config.Fields[k] = structpb.NewBoolValue(val)
+			case string:
+				conn.Config.Fields[k] = structpb.NewStringValue(val)
 			}
 		}
 		break
@@ -412,28 +399,6 @@ func (s *Server) enrichConnectorFromResolvedConfig(ctx context.Context, instance
 	conn.Config.Fields["is_clickhouse_cloud"] = structpb.NewBoolValue(isChc)
 	if resolvedHost != "" {
 		conn.Config.Fields["resolved_host"] = structpb.NewStringValue(resolvedHost)
-	}
-
-	// Call the CHC Cloud API to get live service info (status, memory, etc.)
-	if isChc && resolvedHost != "" {
-		keyID, _ := resolved["clickhouse_cloud_api_key_id"].(string)
-		keySecret, _ := resolved["clickhouse_cloud_api_key_secret"].(string)
-		client := chdriver.NewCloudAPIClient(keyID, keySecret)
-		if client != nil {
-			info, err := client.FindServiceByHost(ctx, resolvedHost)
-			if err == nil {
-				conn.Config.Fields["cloud_service_id"] = structpb.NewStringValue(info.ID)
-				conn.Config.Fields["cloud_service_name"] = structpb.NewStringValue(info.Name)
-				conn.Config.Fields["cloud_status"] = structpb.NewStringValue(info.Status)
-				conn.Config.Fields["cloud_provider"] = structpb.NewStringValue(info.CloudProvider)
-				conn.Config.Fields["cloud_region"] = structpb.NewStringValue(info.Region)
-				conn.Config.Fields["cloud_tier"] = structpb.NewStringValue(info.Tier)
-				conn.Config.Fields["cloud_idle_scaling"] = structpb.NewBoolValue(info.IdleScaling)
-				conn.Config.Fields["cloud_min_memory_gb"] = structpb.NewNumberValue(info.MinMemoryGB)
-				conn.Config.Fields["cloud_max_memory_gb"] = structpb.NewNumberValue(info.MaxMemoryGB)
-				conn.Config.Fields["cloud_num_replicas"] = structpb.NewNumberValue(float64(info.NumReplicas))
-			}
-		}
 	}
 }
 
