@@ -95,7 +95,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 					} else if proj.Project.ClusterSlots != nil {
 						clusterSlotsForCalc = *proj.Project.ClusterSlots
 					} else {
-						return fmt.Errorf("cluster_slots (rill_min_slots) is not set for this project -- set it first with --cluster-slots")
+						clusterSlotsForCalc = 4 // default for Live Connect
 					}
 					newProdSlots := clusterSlotsForCalc + int64(rillSlots)
 					req.ProdSlots = &newProdSlots
@@ -122,18 +122,18 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 					infraLabel = ""
 					infraVal = *proj.InfraSlots
 				}
+				clusterSlotsVal := int64(4)
+				clusterLabel := "(default)"
 				if proj.ClusterSlots != nil {
-					clusterSlotsVal := *proj.ClusterSlots
-					rillSlotsVal := proj.ProdSlots - clusterSlotsVal
-					if rillSlotsVal < 0 {
-						rillSlotsVal = 0
-					}
-					fmt.Printf("Rill slots:    %d\n", rillSlotsVal)
-					fmt.Printf("Cluster slots: %d\n", clusterSlotsVal)
-				} else {
-					fmt.Printf("Rill slots:    ? (set --cluster-slots to derive)\n")
-					fmt.Printf("Cluster slots: ? (not set — use --cluster-slots to configure)\n")
+					clusterSlotsVal = *proj.ClusterSlots
+					clusterLabel = ""
 				}
+				rillSlotsVal := proj.ProdSlots - clusterSlotsVal
+				if rillSlotsVal < 0 {
+					rillSlotsVal = 0
+				}
+				fmt.Printf("Rill slots:    %d\n", rillSlotsVal)
+				fmt.Printf("Cluster slots: %d %s\n", clusterSlotsVal, clusterLabel)
 				fmt.Printf("Infra slots:   %d %s\n", infraVal, infraLabel)
 				fmt.Printf("Prod slots:    %d (cluster + rill)\n", proj.ProdSlots)
 			}

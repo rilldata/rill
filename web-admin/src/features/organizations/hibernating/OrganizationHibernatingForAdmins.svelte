@@ -5,7 +5,6 @@
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
   import StartGrowthPlanDialog from "@rilldata/web-admin/features/billing/plans/StartGrowthPlanDialog.svelte";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
@@ -20,9 +19,6 @@
   $: billingIssueMessage = useBillingIssueMessage(organization);
   $: billingCTAHandler = new BillingCTAHandler(organization);
   $: ({
-    showStartTeamPlanDialog,
-    startTeamPlanType,
-    teamPlanEndDate,
     showStartGrowthPlanDialog,
     startGrowthPlanType,
     wakingProjects,
@@ -96,13 +92,6 @@
     <CTANeedHelp />
   </div>
 {/if}
-
-<StartTeamPlanDialog
-  bind:open={$showStartTeamPlanDialog}
-  type={$startTeamPlanType}
-  endDate={$teamPlanEndDate}
-  {organization}
-/>
 
 <StartGrowthPlanDialog
   bind:open={$showStartGrowthPlanDialog}

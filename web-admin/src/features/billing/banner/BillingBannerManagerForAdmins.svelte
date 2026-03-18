@@ -4,7 +4,6 @@
     type BillingIssueMessage,
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import StartGrowthPlanDialog from "@rilldata/web-admin/features/billing/plans/StartGrowthPlanDialog.svelte";
   import {
     BillingBannerID,
@@ -16,8 +15,6 @@
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
   $: billingCTAHandler = new BillingCTAHandler(organization);
-  $: ({ showStartTeamPlanDialog, startTeamPlanType, teamPlanEndDate } =
-    billingCTAHandler);
   $: ({ showStartGrowthPlanDialog, startGrowthPlanType } = billingCTAHandler);
 
   function showBillingIssueBanner(message: BillingIssueMessage | undefined) {
@@ -50,13 +47,6 @@
 
   $: showBillingIssueBanner($billingIssueMessage.data);
 </script>
-
-<StartTeamPlanDialog
-  bind:open={$showStartTeamPlanDialog}
-  type={$startTeamPlanType}
-  endDate={$teamPlanEndDate}
-  {organization}
-/>
 
 <StartGrowthPlanDialog
   bind:open={$showStartGrowthPlanDialog}

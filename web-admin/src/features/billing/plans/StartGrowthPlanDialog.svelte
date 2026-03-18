@@ -91,10 +91,11 @@
     try {
       growthPlan = await fetchGrowthPlan();
       if (paymentIssues?.length) {
+        const returnUrl = getBillingUpgradeUrl($page, organization) + "?upgradeToGrowth=true";
         window.open(
           await fetchPaymentsPortalURL(
             organization,
-            getBillingUpgradeUrl($page, organization),
+            returnUrl,
           ),
           "_self",
         );

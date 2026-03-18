@@ -12,7 +12,6 @@
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchTeamPlan,
     fetchGrowthPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
@@ -37,11 +36,9 @@
   /**
    * Landing page to upgrade a user to a paid plan.
    * Is set as a return url on stripe portal.
-   * Detects whether to upgrade to Growth (from free-plan) or Team (legacy trial).
+   * Always upgrades to Growth plan.
    */
   $: organization = $page.params.organization;
-  // ?upgradeToGrowth=true signals this is a Growth plan upgrade (set by StartGrowthPlanDialog)
-  $: upgradeToGrowth = $page.url.searchParams.get("upgradeToGrowth") === "true";
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
@@ -67,10 +64,8 @@
       return goto(`/${organization}/-/settings/billing`);
     }
 
-    const targetPlan = upgradeToGrowth
-      ? await fetchGrowthPlan()
-      : await fetchTeamPlan();
-    const planLabel = upgradeToGrowth ? "Growth" : "Team";
+    const targetPlan = await fetchGrowthPlan();
+    const planLabel = "Growth";
 
     try {
       if (cancelled) {
@@ -116,9 +111,9 @@
     </div>
     <CtaHeader variant="bold">
       {#if cancelled}
-        Renewing {upgradeToGrowth ? "Growth" : "Team"} plan...
+        Renewing Growth plan...
       {:else}
-        Upgrading to {upgradeToGrowth ? "Growth" : "Team"} plan...
+        Upgrading to Growth plan...
       {/if}
     </CtaHeader>
     <CtaNeedHelp />

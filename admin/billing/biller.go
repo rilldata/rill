@@ -118,12 +118,12 @@ type Quotas struct {
 type planMetadata struct {
 	Default                        bool   `mapstructure:"default"`
 	Public                         bool   `mapstructure:"public"`
-	StorageLimitBytesPerDeployment *int64 `mapstructure:"storage_limit_bytes_per_deployment"`
-	NumProjects                    *int   `mapstructure:"num_projects"`
-	NumDeployments                 *int   `mapstructure:"num_deployments"`
-	NumSlotsTotal                  *int   `mapstructure:"num_slots_total"`
-	NumSlotsPerDeployment          *int   `mapstructure:"num_slots_per_deployment"`
-	NumOutstandingInvites          *int   `mapstructure:"num_outstanding_invites"`
+	StorageLimitBytesPerDeployment *int64  `mapstructure:"storage_limit_bytes_per_deployment"`
+	NumProjects                    *int    `mapstructure:"num_projects"`
+	NumDeployments                 *int    `mapstructure:"num_deployments"`
+	NumSlotsTotal                  *int    `mapstructure:"num_slots_total"`
+	NumSlotsPerDeployment          *int    `mapstructure:"num_slots_per_deployment"`
+	NumOutstandingInvites          *int    `mapstructure:"num_outstanding_invites"`
 }
 
 type Subscription struct {

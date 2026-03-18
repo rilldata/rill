@@ -73,6 +73,13 @@ func (o *Orb) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Prefer the Free plan as default for new organizations
+	for _, p := range plans {
+		if p.PlanType == FreePlanType {
+			return p, nil
+		}
+	}
+	// Fall back to any plan marked as default in Orb metadata
 	for _, p := range plans {
 		if p.Default {
 			return p, nil

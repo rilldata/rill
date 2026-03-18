@@ -60,18 +60,18 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 					infraSlots = *project.InfraSlots
 					infraLabel = ""
 				}
+				clusterSlots := int64(4)
+				clusterLabel := " (default)"
 				if project.ClusterSlots != nil {
-					clusterSlots := *project.ClusterSlots
-					rillSlots := project.ProdSlots - clusterSlots
-					if rillSlots < 0 {
-						rillSlots = 0
-					}
-					fmt.Printf("Rill slots:    %d\n", rillSlots)
-					fmt.Printf("Cluster slots: %d\n", clusterSlots)
-				} else {
-					fmt.Printf("Rill slots:    ? (set --cluster-slots to derive)\n")
-					fmt.Printf("Cluster slots: ? (not set — use --cluster-slots to configure)\n")
+					clusterSlots = *project.ClusterSlots
+					clusterLabel = ""
 				}
+				rillSlots := project.ProdSlots - clusterSlots
+				if rillSlots < 0 {
+					rillSlots = 0
+				}
+				fmt.Printf("Rill slots:    %d\n", rillSlots)
+				fmt.Printf("Cluster slots: %d%s\n", clusterSlots, clusterLabel)
 				fmt.Printf("Infra slots:   %d%s\n", infraSlots, infraLabel)
 				fmt.Printf("Prod slots:    %d (cluster + rill)\n", project.ProdSlots)
 			}

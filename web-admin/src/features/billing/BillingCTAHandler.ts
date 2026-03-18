@@ -4,7 +4,6 @@ import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/pla
 import { fetchOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import type {
   GrowthPlanDialogTypes,
-  TeamPlanDialogTypes,
 } from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import {
@@ -16,9 +15,6 @@ import { writable } from "svelte/store";
 import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
 
 export class BillingCTAHandler {
-  public showStartTeamPlanDialog = writable(false);
-  public startTeamPlanType = writable<TeamPlanDialogTypes>("base");
-  public teamPlanEndDate = writable("");
   public showStartGrowthPlanDialog = writable(false);
   public startGrowthPlanType = writable<GrowthPlanDialogTypes>("base");
   public wakingProjects = writable(false);
@@ -44,17 +40,10 @@ export class BillingCTAHandler {
     if (!issueMessage.cta) return;
     switch (issueMessage.cta.type) {
       case "upgrade":
-        // Route to Growth dialog if a Growth plan dialog type is specified; otherwise Team
-        if (issueMessage.cta.growthPlanDialogType) {
-          this.showStartGrowthPlanDialog.set(true);
-          this.startGrowthPlanType.set(issueMessage.cta.growthPlanDialogType);
-        } else {
-          this.showStartTeamPlanDialog.set(true);
-          this.startTeamPlanType.set(
-            issueMessage.cta.teamPlanDialogType ?? "base",
-          );
-          this.teamPlanEndDate.set(issueMessage.cta.teamPlanEndDate ?? "");
-        }
+        this.showStartGrowthPlanDialog.set(true);
+        this.startGrowthPlanType.set(
+          issueMessage.cta.growthPlanDialogType ?? "base",
+        );
         break;
 
       case "payment": {

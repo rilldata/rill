@@ -5,7 +5,6 @@ import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billin
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
 import type {
   GrowthPlanDialogTypes,
-  TeamPlanDialogTypes,
 } from "@rilldata/web-admin/features/billing/plans/types";
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
@@ -24,8 +23,6 @@ export type BillingIssueMessageCTA = {
   type: "upgrade" | "payment" | "contact" | "wake-projects";
   text: string;
 
-  teamPlanDialogType?: TeamPlanDialogTypes;
-  teamPlanEndDate?: string;
   growthPlanDialogType?: GrowthPlanDialogTypes;
 };
 

@@ -6,7 +6,6 @@
   import GrowthPlan from "@rilldata/web-admin/features/billing/plans/GrowthPlan.svelte";
   import POCPlan from "@rilldata/web-admin/features/billing/plans/POCPlan.svelte";
   import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
-  import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
   import {
     isFreePlan,
     isGrowthPlan,
@@ -47,12 +46,10 @@
 
 {#if neverSubbed}
   <!-- TODO: once mocks are in. Right now we just disable the routes. -->
-{:else if subIsFreePlan}
+{:else if subIsFreePlan || isTrial}
   <FreePlan {organization} {subscription} {creditInfo} {showUpgradeDialog} {plan} />
 {:else if subIsGrowthPlan}
   <GrowthPlan {organization} {subscription} {plan} />
-{:else if isTrial}
-  <TrialPlan {organization} {subscription} {showUpgradeDialog} {plan} />
 {:else if subHasEnded}
   <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} />
 {:else if subIsTeamPlan}

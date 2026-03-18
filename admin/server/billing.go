@@ -118,24 +118,26 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		return nil, err
 	}
-	// if its a trial plan, start trial only if its a new org
-	if plan.Default {
+	// Default plans (Free or trial) can only be started for new orgs (never-subscribed)
+	if plan.Default || plan.PlanType == billing.FreePlanType || plan.PlanType == billing.TrailPlanType {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Errorf(codes.FailedPrecondition, "only new organizations can subscribe to the trial plan %s", plan.Name)
+				return nil, status.Errorf(codes.FailedPrecondition, "only new organizations can subscribe to the %s plan", plan.DisplayName)
 			}
 			return nil, err
 		}
 		if bi != nil {
-			// check against trial orgs quota, skip for superusers
-			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
-				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
-				if err != nil {
-					return nil, err
-				}
-				if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
-					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota of %d reached for user %s", u.QuotaTrialOrgs, u.Email)
+			// Trial quota check only applies to trial-based plans, not Free
+			if plan.PlanType != billing.FreePlanType {
+				if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
+					u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
+					if err != nil {
+						return nil, err
+					}
+					if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+						return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota of %d reached for user %s", u.QuotaTrialOrgs, u.Email)
+					}
 				}
 			}
 
@@ -144,16 +146,18 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				return nil, err
 			}
 
-			// send trial started email
-			err = s.admin.Email.SendTrialStarted(&email.TrialStarted{
-				ToEmail:      org.BillingEmail,
-				ToName:       org.Name,
-				OrgName:      org.Name,
-				FrontendURL:  s.admin.URLs.Frontend(),
-				TrialEndDate: sub.TrialEndDate,
-			})
-			if err != nil {
-				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+			// Send trial-started email only for trial-based plans; free plan has no trial period
+			if plan.PlanType != billing.FreePlanType {
+				err = s.admin.Email.SendTrialStarted(&email.TrialStarted{
+					ToEmail:      org.BillingEmail,
+					ToName:       org.Name,
+					OrgName:      org.Name,
+					FrontendURL:  s.admin.URLs.Frontend(),
+					TrialEndDate: sub.TrialEndDate,
+				})
+				if err != nil {
+					s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+				}
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{

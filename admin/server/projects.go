@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
@@ -688,25 +689,28 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.ArchiveAssetID = &req.ArchiveAssetId
 	}
 
-	// if there is no subscription for the org, submit a job to start a trial
+	// If the org has no subscription, start one (free plan or trial depending on default plan config)
 	bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 	if bi != nil {
-		// check against trial orgs quota but skip if the user is a superuser
-		if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
-			u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to find user: %w", err)
-			}
-			if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
-				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
+		// Check trial org quota for trial-based plans; free plan orgs are not counted against this quota
+		defaultPlan, planErr := s.admin.Biller.GetDefaultPlan(ctx)
+		if planErr == nil && defaultPlan.PlanType != billing.FreePlanType {
+			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
+				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to find user: %w", err)
+				}
+				if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
+				}
 			}
 		}
 		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
 		if err != nil {
-			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+			s.logger.Named("billing").Error("failed to submit job to start subscription for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
 			// continue creating the project
 		}
 	}
