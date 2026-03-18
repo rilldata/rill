@@ -79,5 +79,5 @@ export const config: Config = {
     windowLimit: 300,
     windowSize: 60,
     aggregateBy: ["ip", "domain"],
-  }
+  },
 };
