@@ -4,6 +4,7 @@
     type BillingIssueMessage,
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
+  import StartGrowthPlanDialog from "@rilldata/web-admin/features/billing/plans/StartGrowthPlanDialog.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -22,6 +23,8 @@
     showStartTeamPlanDialog,
     startTeamPlanType,
     teamPlanEndDate,
+    showStartGrowthPlanDialog,
+    startGrowthPlanType,
     wakingProjects,
   } = billingCTAHandler);
   let issueForHibernation: BillingIssueMessage;
@@ -98,5 +101,11 @@
   bind:open={$showStartTeamPlanDialog}
   type={$startTeamPlanType}
   endDate={$teamPlanEndDate}
+  {organization}
+/>
+
+<StartGrowthPlanDialog
+  bind:open={$showStartGrowthPlanDialog}
+  type={$startGrowthPlanType}
   {organization}
 />
