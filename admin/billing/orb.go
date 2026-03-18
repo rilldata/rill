@@ -408,11 +408,15 @@ func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditB
 	}
 
 	// Aggregate across all active credit grants.
-	// MaximumInitialBalance may be 0 for plan-granted credits where Orb doesn't track
-	// the original cap — fall back to Balance in that case so remaining is still correct.
+	// Orb returns exhausted blocks (Balance=0) even with IncludeAllBlocks=false because
+	// they aren't voided or expired yet. Skip them so they don't inflate total/distort %.
+	// MaximumInitialBalance may be 0 for plan-granted credits — fall back to Balance.
 	var totalCredit, remainingCredit float64
 	var latestExpiry time.Time
 	for _, c := range credits.Data {
+		if c.Balance <= 0 {
+			continue // exhausted block; exclude from current balance view
+		}
 		if c.MaximumInitialBalance > 0 {
 			totalCredit += c.MaximumInitialBalance
 		} else {
@@ -422,6 +426,10 @@ func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditB
 		if c.ExpiryDate.After(latestExpiry) {
 			latestExpiry = c.ExpiryDate
 		}
+	}
+
+	if totalCredit == 0 {
+		return nil, nil // all blocks exhausted; treat as no active credit
 	}
 
 	usedCredit := totalCredit - remainingCredit
@@ -449,25 +457,9 @@ func (o *Orb) AddCredits(ctx context.Context, customerID string, amount float64,
 		return nil, ErrCustomerIDRequired
 	}
 
-	// Fetch internal customer to get their Orb ID (needed if external ID update doesn't set currency)
-	customer, err := o.client.Customers.FetchByExternalID(ctx, customerID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find customer: %w", err)
-	}
-
-	// Set currency on the customer if not already set
-	if customer.Currency == "" {
-		_, err = o.client.Customers.Update(ctx, customer.ID, orb.CustomerUpdateParams{
-			Currency: orb.F("USD"),
-		})
-		if err != nil {
-			o.logger.Warn("failed to set customer currency; proceeding anyway", zap.String("customer_id", customerID), zap.Error(err))
-		}
-	}
-
-	_, err = o.client.Customers.Credits.Ledger.NewEntry(ctx, customer.ID, orb.CustomerCreditLedgerNewEntryParamsAddIncrementCreditLedgerEntryRequestParams{
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
 		Amount:      orb.F(amount),
-		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
+		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
 		ExpiryDate:  orb.F(expiryDate),
 		Description: orb.F(description),
 		Currency:    orb.F("USD"),
