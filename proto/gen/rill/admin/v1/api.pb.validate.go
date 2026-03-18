@@ -17119,6 +17119,265 @@ var _ interface {
 	ErrorName() string
 } = SudoExtendTrialResponseValidationError{}
 
+// Validate checks the field values on SudoAddCreditsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoAddCreditsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoAddCreditsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoAddCreditsRequestMultiError, or nil if none found.
+func (m *SudoAddCreditsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoAddCreditsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := SudoAddCreditsRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetAmount() <= 0 {
+		err := SudoAddCreditsRequestValidationError{
+			field:  "Amount",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for ExpiryDays
+
+	// no validation rules for Description
+
+	if len(errors) > 0 {
+		return SudoAddCreditsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoAddCreditsRequestMultiError is an error wrapping multiple validation
+// errors returned by SudoAddCreditsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoAddCreditsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoAddCreditsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoAddCreditsRequestMultiError) AllErrors() []error { return m }
+
+// SudoAddCreditsRequestValidationError is the validation error returned by
+// SudoAddCreditsRequest.Validate if the designated constraints aren't met.
+type SudoAddCreditsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoAddCreditsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoAddCreditsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoAddCreditsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoAddCreditsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoAddCreditsRequestValidationError) ErrorName() string {
+	return "SudoAddCreditsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoAddCreditsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoAddCreditsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoAddCreditsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoAddCreditsRequestValidationError{}
+
+// Validate checks the field values on SudoAddCreditsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoAddCreditsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoAddCreditsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoAddCreditsResponseMultiError, or nil if none found.
+func (m *SudoAddCreditsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoAddCreditsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetCreditInfo()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SudoAddCreditsResponseValidationError{
+					field:  "CreditInfo",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SudoAddCreditsResponseValidationError{
+					field:  "CreditInfo",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreditInfo()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SudoAddCreditsResponseValidationError{
+				field:  "CreditInfo",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SudoAddCreditsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoAddCreditsResponseMultiError is an error wrapping multiple validation
+// errors returned by SudoAddCreditsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SudoAddCreditsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoAddCreditsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoAddCreditsResponseMultiError) AllErrors() []error { return m }
+
+// SudoAddCreditsResponseValidationError is the validation error returned by
+// SudoAddCreditsResponse.Validate if the designated constraints aren't met.
+type SudoAddCreditsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoAddCreditsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoAddCreditsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoAddCreditsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoAddCreditsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoAddCreditsResponseValidationError) ErrorName() string {
+	return "SudoAddCreditsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoAddCreditsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoAddCreditsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoAddCreditsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoAddCreditsResponseValidationError{}
+
 // Validate checks the field values on
 // SudoUpdateOrganizationCustomDomainRequest with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

@@ -65,6 +65,8 @@ type Biller interface {
 	// GetCreditBalance returns the credit balance for the given customer.
 	// Returns nil if the customer has no credit grants (e.g. not on a free plan).
 	GetCreditBalance(ctx context.Context, customerID string) (*CreditBalance, error)
+	// AddCredits adds a credit grant to the given customer. Returns the new total balance.
+	AddCredits(ctx context.Context, customerID string, amount float64, expiryDate time.Time, description string) (*CreditBalance, error)
 
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string

@@ -437,6 +437,25 @@ func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditB
 	}, nil
 }
 
+func (o *Orb) AddCredits(ctx context.Context, customerID string, amount float64, expiryDate time.Time, description string) (*CreditBalance, error) {
+	if customerID == "" {
+		return nil, ErrCustomerIDRequired
+	}
+
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
+		Amount:    orb.F(amount),
+		EntryType: orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
+		ExpiryDate: orb.F(expiryDate),
+		Description: orb.F(description),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to add credits: %w", err)
+	}
+
+	// Return updated balance
+	return o.GetCreditBalance(ctx, customerID)
+}
+
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	var orbUsage []orb.EventIngestParamsEvent
 	// sync max 500 events at a time

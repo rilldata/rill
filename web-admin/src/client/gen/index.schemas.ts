@@ -1415,6 +1415,17 @@ export interface V1Subscription {
   trialEndDate?: string;
 }
 
+export interface V1SudoAddCreditsRequest {
+  org?: string;
+  amount?: number;
+  expiryDays?: number;
+  description?: string;
+}
+
+export interface V1SudoAddCreditsResponse {
+  creditInfo?: V1BillingCreditInfo;
+}
+
 export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: unknown;
 }

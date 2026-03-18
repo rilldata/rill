@@ -907,6 +907,14 @@ service AdminService {
     };
   }
 
+  // SudoAddCredits adds billing credits to an organization
+  rpc SudoAddCredits(SudoAddCreditsRequest) returns (SudoAddCreditsResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/credits/add",
+      body: "*"
+    };
+  }
+
   // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
@@ -2083,6 +2091,18 @@ message SudoExtendTrialRequest {
 
 message SudoExtendTrialResponse {
   google.protobuf.Timestamp trial_end = 1;
+}
+
+message SudoAddCreditsRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  double amount = 2 [(validate.rules).double.gt = 0];
+  // Number of days until credits expire; defaults to 365
+  int32 expiry_days = 3;
+  string description = 4;
+}
+
+message SudoAddCreditsResponse {
+  BillingCreditInfo credit_info = 1;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {

@@ -6339,6 +6339,100 @@ export class SudoExtendTrialResponse extends Message<SudoExtendTrialResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.SudoAddCreditsRequest
+ */
+export class SudoAddCreditsRequest extends Message<SudoAddCreditsRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: double amount = 2;
+   */
+  amount = 0;
+
+  /**
+   * Number of days until credits expire; defaults to 365
+   *
+   * @generated from field: int32 expiry_days = 3;
+   */
+  expiryDays = 0;
+
+  /**
+   * @generated from field: string description = 4;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<SudoAddCreditsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoAddCreditsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 3, name: "expiry_days", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoAddCreditsRequest {
+    return new SudoAddCreditsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoAddCreditsRequest {
+    return new SudoAddCreditsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoAddCreditsRequest {
+    return new SudoAddCreditsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoAddCreditsRequest | PlainMessage<SudoAddCreditsRequest> | undefined, b: SudoAddCreditsRequest | PlainMessage<SudoAddCreditsRequest> | undefined): boolean {
+    return proto3.util.equals(SudoAddCreditsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoAddCreditsResponse
+ */
+export class SudoAddCreditsResponse extends Message<SudoAddCreditsResponse> {
+  /**
+   * @generated from field: rill.admin.v1.BillingCreditInfo credit_info = 1;
+   */
+  creditInfo?: BillingCreditInfo;
+
+  constructor(data?: PartialMessage<SudoAddCreditsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoAddCreditsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "credit_info", kind: "message", T: BillingCreditInfo },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoAddCreditsResponse {
+    return new SudoAddCreditsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoAddCreditsResponse {
+    return new SudoAddCreditsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoAddCreditsResponse {
+    return new SudoAddCreditsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoAddCreditsResponse | PlainMessage<SudoAddCreditsResponse> | undefined, b: SudoAddCreditsResponse | PlainMessage<SudoAddCreditsResponse> | undefined): boolean {
+    return proto3.util.equals(SudoAddCreditsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.SudoUpdateOrganizationCustomDomainRequest
  */
 export class SudoUpdateOrganizationCustomDomainRequest extends Message<SudoUpdateOrganizationCustomDomainRequest> {

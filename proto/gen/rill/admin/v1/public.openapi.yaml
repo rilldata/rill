@@ -2013,6 +2013,25 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1SudoAddCreditsRequest:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                description:
+                    type: string
+                expiryDays:
+                    format: int32
+                    title: Number of days until credits expire; defaults to 365
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoAddCreditsResponse:
+            properties:
+                creditInfo:
+                    $ref: '#/components/schemas/v1BillingCreditInfo'
+            type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
         v1SudoExtendTrialRequest:
@@ -3784,6 +3803,7 @@ paths:
     /v1/superuser/deployments/manager-token: {}
     /v1/superuser/members: {}
     /v1/superuser/organization/billing/customer_id: {}
+    /v1/superuser/organization/credits/add: {}
     /v1/superuser/organization/custom-domain: {}
     /v1/superuser/organization/trial/extend: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}

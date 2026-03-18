@@ -2013,6 +2013,25 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1SudoAddCreditsRequest:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                description:
+                    type: string
+                expiryDays:
+                    format: int32
+                    title: Number of days until credits expire; defaults to 365
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoAddCreditsResponse:
+            properties:
+                creditInfo:
+                    $ref: '#/components/schemas/v1BillingCreditInfo'
+            type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
         v1SudoExtendTrialRequest:
@@ -7015,6 +7034,30 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+    /v1/superuser/organization/credits/add:
+        post:
+            operationId: AdminService_SudoAddCredits
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoAddCreditsRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoAddCreditsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoAddCredits adds billing credits to an organization
     /v1/superuser/organization/custom-domain:
         patch:
             operationId: AdminService_SudoUpdateOrganizationCustomDomain

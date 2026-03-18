@@ -757,6 +757,62 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	return &adminv1.SudoExtendTrialResponse{TrialEnd: timestamppb.New(newEndDate)}, nil
 }
 
+func (s *Server) SudoAddCredits(ctx context.Context, req *adminv1.SudoAddCreditsRequest) (*adminv1.SudoAddCreditsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+	observability.AddRequestAttributes(ctx, attribute.Float64("args.amount", req.Amount))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can add credits")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
+	}
+
+	expiryDays := int(req.ExpiryDays)
+	if expiryDays <= 0 {
+		expiryDays = 365
+	}
+	expiryDate := time.Now().AddDate(0, 0, expiryDays)
+
+	description := req.Description
+	if description == "" {
+		description = "Credits added via CLI"
+	}
+
+	balance, err := s.admin.Biller.AddCredits(ctx, org.BillingCustomerID, req.Amount, expiryDate, description)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to add credits: %v", err)
+	}
+
+	s.logger.Named("billing").Info("credits added",
+		zap.String("org_id", org.ID),
+		zap.String("org_name", org.Name),
+		zap.Float64("amount", req.Amount),
+		zap.Int("expiry_days", expiryDays),
+	)
+
+	resp := &adminv1.SudoAddCreditsResponse{}
+	if balance != nil {
+		resp.CreditInfo = &adminv1.BillingCreditInfo{
+			TotalCredit:     balance.TotalCredit,
+			UsedCredit:      balance.UsedCredit,
+			RemainingCredit: balance.RemainingCredit,
+			BurnRatePerDay:  balance.BurnRatePerDay,
+		}
+		if !balance.ExpiryDate.IsZero() {
+			resp.CreditInfo.CreditExpiry = timestamppb.New(balance.ExpiryDate)
+		}
+	}
+	return resp, nil
+}
+
 func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {

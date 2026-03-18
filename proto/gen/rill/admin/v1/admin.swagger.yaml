@@ -3789,6 +3789,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+  /v1/superuser/organization/credits/add:
+    post:
+      summary: SudoAddCredits adds billing credits to an organization
+      operationId: AdminService_SudoAddCredits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoAddCreditsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoAddCreditsRequest'
   /v1/superuser/organization/custom-domain:
     patch:
       summary: |-
@@ -6464,6 +6483,25 @@ definitions:
       trialEndDate:
         type: string
         format: date-time
+  v1SudoAddCreditsRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      amount:
+        type: number
+        format: double
+      expiryDays:
+        type: integer
+        format: int32
+        title: Number of days until credits expire; defaults to 365
+      description:
+        type: string
+  v1SudoAddCreditsResponse:
+    type: object
+    properties:
+      creditInfo:
+        $ref: '#/definitions/v1BillingCreditInfo'
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
   v1SudoExtendTrialRequest:

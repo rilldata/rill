@@ -114,6 +114,7 @@ const (
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName           = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName  = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
 	AdminService_SudoExtendTrial_FullMethodName                        = "/rill.admin.v1.AdminService/SudoExtendTrial"
+	AdminService_SudoAddCredits_FullMethodName                         = "/rill.admin.v1.AdminService/SudoAddCredits"
 	AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName     = "/rill.admin.v1.AdminService/SudoUpdateOrganizationCustomDomain"
 	AdminService_SudoUpdateAnnotations_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName           = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
@@ -392,6 +393,8 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoExtendTrial extends the trial period for an organization
 	SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error)
+	// SudoAddCredits adds billing credits to an organization
+	SudoAddCredits(ctx context.Context, in *SudoAddCreditsRequest, opts ...grpc.CallOption) (*SudoAddCreditsResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -1472,6 +1475,16 @@ func (c *adminServiceClient) SudoExtendTrial(ctx context.Context, in *SudoExtend
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoAddCredits(ctx context.Context, in *SudoAddCreditsRequest, opts ...grpc.CallOption) (*SudoAddCreditsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoAddCreditsResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoAddCredits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateOrganizationCustomDomainResponse)
@@ -2297,6 +2310,8 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoExtendTrial extends the trial period for an organization
 	SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error)
+	// SudoAddCredits adds billing credits to an organization
+	SudoAddCredits(context.Context, *SudoAddCreditsRequest) (*SudoAddCreditsResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -2711,6 +2726,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(con
 }
 func (UnimplementedAdminServiceServer) SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoExtendTrial not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoAddCredits(context.Context, *SudoAddCreditsRequest) (*SudoAddCreditsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoAddCredits not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationCustomDomain not implemented")
@@ -4626,6 +4644,24 @@ func _AdminService_SudoExtendTrial_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoAddCredits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoAddCreditsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoAddCredits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoAddCredits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoAddCredits(ctx, req.(*SudoAddCreditsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoUpdateOrganizationCustomDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateOrganizationCustomDomainRequest)
 	if err := dec(in); err != nil {
@@ -6110,6 +6146,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoExtendTrial",
 			Handler:    _AdminService_SudoExtendTrial_Handler,
+		},
+		{
+			MethodName: "SudoAddCredits",
+			Handler:    _AdminService_SudoAddCredits_Handler,
 		},
 		{
 			MethodName: "SudoUpdateOrganizationCustomDomain",

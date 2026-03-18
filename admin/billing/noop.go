@@ -113,6 +113,10 @@ func (n noop) GetCreditBalance(ctx context.Context, customerID string) (*CreditB
 	return nil, nil
 }
 
+func (n noop) AddCredits(ctx context.Context, customerID string, amount float64, expiryDate time.Time, description string) (*CreditBalance, error) {
+	return nil, nil
+}
+
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }
