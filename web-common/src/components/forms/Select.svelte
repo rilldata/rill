@@ -34,7 +34,7 @@
   export let minWidth: number | null = null;
   export let dropdownWidth: string | null = null;
   export let disabled = false;
-  export let selectElement: HTMLButtonElement | undefined = undefined;
+  export let selectElement: HTMLButtonElement | null = null;
   export let full = false;
   export let fontSize = 12;
   export let sameWidth = false;

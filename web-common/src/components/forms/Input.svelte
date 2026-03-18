@@ -70,7 +70,7 @@
   let hitEnter = false;
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
-  let selectElement: HTMLButtonElement | undefined;
+  let selectElement: HTMLButtonElement | null = null;
   let focus = false;
 
   $: type = secret && !showPassword ? "password" : inputType;
