@@ -79,9 +79,9 @@ To check the precise version of available releases, you can navigate to the [**R
 
 To install Rill on Windows, you'll first need to install WSL and one dependency in your WSL environment. To install WSL, please refer to [Microsoft's documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
 
-We have verified that Rill runs on Ubuntu 22.04 LTS. Other distributions and versions may work, but are not tested. You can install Ubuntu 22.04 LTS with the following PowerShell command:
+We have verified that Rill runs on Ubuntu 24.04 LTS. Other distributions and versions may work, but are not tested. You can install Ubuntu 24.04 LTS with the following PowerShell command:
 ```bash
-wsl --install -d Ubuntu-22.04
+wsl --install -d Ubuntu-24.04
 ```
 
 Once you have installed WSL and logged in to your Linux instance, you just need to install the `unzip` package to use Rill's `curl` installer. This can be done from the **Linux command line** with the following commands:
