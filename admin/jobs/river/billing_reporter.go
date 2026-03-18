@@ -78,7 +78,10 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 		return nil
 	}
 
+	const slotRatePerHr = 0.15 // $/slot/hr for credit accounting
+
 	reportedOrgs := make(map[string]struct{})
+	orgCreditCost := make(map[string]float64) // org_id -> accumulated dollar cost for this reporting window
 	stop := false
 	limit := 10000
 	afterTime := time.Time{}
@@ -113,6 +116,10 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 		var usage []*billing.Usage
 		for _, m := range u {
 			reportedOrgs[m.OrgID] = struct{}{}
+
+			// Accumulate slot cost per org for free-plan credit accounting
+			hours := m.EndTime.Sub(m.StartTime).Hours()
+			orgCreditCost[m.OrgID] += m.MaxValue * slotRatePerHr * hours
 
 			customerID := m.OrgID
 			if m.BillingCustomerID != nil && *m.BillingCustomerID != "" {
@@ -166,6 +173,16 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 	err = w.admin.DB.UpdateBillingUsageReportedOn(ctx, maxEndTime)
 	if err != nil {
 		return fmt.Errorf("failed to update last usage reporting time: %w", err)
+	}
+
+	// Increment credit_used for free-plan orgs based on slot usage cost
+	for orgID, cost := range orgCreditCost {
+		if cost <= 0 {
+			continue
+		}
+		if err := w.admin.DB.IncrementOrganizationCreditUsed(ctx, orgID, cost); err != nil {
+			w.logger.Warn("failed to increment credit usage for org", zap.String("org_id", orgID), zap.Float64("cost", cost), zap.Error(err))
+		}
 	}
 
 	// TODO move the validation to background job

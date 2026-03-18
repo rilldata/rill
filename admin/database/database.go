@@ -329,6 +329,12 @@ type DB interface {
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
 	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
 
+	// Credit operations for free-plan orgs
+	SetOrganizationCredits(ctx context.Context, orgID string, total float64, expiry time.Time) error
+	AddOrganizationCredits(ctx context.Context, orgID string, amount float64, expiry time.Time) error
+	IncrementOrganizationCreditUsed(ctx context.Context, orgID string, amount float64) error
+	ResetOrganizationCredits(ctx context.Context, orgID string) error
+
 	FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*BillingIssue, error)
 	FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
 	FindBillingIssueByType(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
@@ -396,8 +402,11 @@ type Organization struct {
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
 	BillingPlanName                     *string   `db:"billing_plan_name"`
-	BillingPlanDisplayName              *string   `db:"billing_plan_display_name"`
-	CreatedByUserID                     *string   `db:"created_by_user_id"`
+	BillingPlanDisplayName              *string    `db:"billing_plan_display_name"`
+	CreatedByUserID                     *string    `db:"created_by_user_id"`
+	CreditTotal                         float64    `db:"credit_total"`
+	CreditUsed                          float64    `db:"credit_used"`
+	CreditExpiry                        *time.Time `db:"credit_expiry"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org

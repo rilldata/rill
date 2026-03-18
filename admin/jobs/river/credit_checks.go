@@ -47,30 +47,35 @@ func (w *CreditCheckWorker) Work(ctx context.Context, job *river.Job[CreditCheck
 }
 
 func (w *CreditCheckWorker) checkOrg(ctx context.Context, org *database.Organization) error {
-	if org.BillingCustomerID == "" {
+	if org.CreditTotal <= 0 {
 		return nil
 	}
 
-	bal, err := w.admin.Biller.GetCreditBalance(ctx, org.BillingCustomerID)
-	if err != nil {
-		return fmt.Errorf("failed to get credit balance: %w", err)
+	remaining := org.CreditTotal - org.CreditUsed
+	if remaining < 0 {
+		remaining = 0
 	}
-	if bal == nil || bal.TotalCredit <= 0 {
-		return nil
-	}
-
-	usedFraction := bal.UsedCredit / bal.TotalCredit
+	usedFraction := org.CreditUsed / org.CreditTotal
 	now := time.Now().UTC()
 
+	// Also check expiry
+	expired := org.CreditExpiry != nil && org.CreditExpiry.Before(now)
+
+	var err error
 	switch {
-	case bal.RemainingCredit <= 0:
+	case remaining <= 0 || expired:
 		// 100%: exhausted — upsert exhausted issue and hibernate all projects
+		var expiry time.Time
+		if org.CreditExpiry != nil {
+			expiry = *org.CreditExpiry
+		}
+
 		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeCreditExhausted,
 			Metadata: &database.BillingIssueMetadataCreditExhausted{
-				CreditTotal:  bal.TotalCredit,
-				CreditExpiry: bal.ExpiryDate,
+				CreditTotal:  org.CreditTotal,
+				CreditExpiry: expiry,
 				ExhaustedOn:  now,
 			},
 			EventTime: now,
@@ -108,39 +113,44 @@ func (w *CreditCheckWorker) checkOrg(ctx context.Context, org *database.Organiza
 		w.logger.Warn("credit exhausted: hibernated all projects",
 			zap.String("org_id", org.ID),
 			zap.String("org_name", org.Name),
-			zap.Float64("total_credit", bal.TotalCredit),
-			zap.Float64("used_credit", bal.UsedCredit),
+			zap.Float64("total_credit", org.CreditTotal),
+			zap.Float64("used_credit", org.CreditUsed),
 		)
 
 	case usedFraction >= 0.95:
-		// 95%+: critical
+		var expiry time.Time
+		if org.CreditExpiry != nil {
+			expiry = *org.CreditExpiry
+		}
 		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeCreditCritical,
 			Metadata: &database.BillingIssueMetadataCreditCritical{
-				CreditRemaining: bal.RemainingCredit,
-				CreditTotal:     bal.TotalCredit,
-				CreditExpiry:    bal.ExpiryDate,
+				CreditRemaining: remaining,
+				CreditTotal:     org.CreditTotal,
+				CreditExpiry:    expiry,
 			},
 			EventTime: now,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to upsert credit critical issue: %w", err)
 		}
-		// low is superseded by critical
 		if delErr := w.admin.DB.DeleteBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeCreditLow); delErr != nil {
 			w.logger.Warn("failed to delete credit low issue", zap.String("org_id", org.ID), zap.Error(delErr))
 		}
 
 	case usedFraction >= 0.80:
-		// 80%+: low
+		var expiry time.Time
+		if org.CreditExpiry != nil {
+			expiry = *org.CreditExpiry
+		}
 		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeCreditLow,
 			Metadata: &database.BillingIssueMetadataCreditLow{
-				CreditRemaining: bal.RemainingCredit,
-				CreditTotal:     bal.TotalCredit,
-				CreditExpiry:    bal.ExpiryDate,
+				CreditRemaining: remaining,
+				CreditTotal:     org.CreditTotal,
+				CreditExpiry:    expiry,
 			},
 			EventTime: now,
 		})

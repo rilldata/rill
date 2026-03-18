@@ -398,57 +398,92 @@ func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditB
 		return nil, ErrCustomerIDRequired
 	}
 
-	credits, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{
-		Currency:         orb.F("USD"),   // only monetary (USD) credits
-		IncludeAllBlocks: orb.F(false),   // only active (non-expired, non-voided) blocks
+	// Read the credit ledger (ordered by most recent first by default).
+	// The most recent entry's EndingBalance is the current balance.
+	// We scan all increment entries to compute the total granted.
+	ledger, err := o.client.Customers.Credits.Ledger.ListByExternalID(ctx, customerID, orb.CustomerCreditLedgerListByExternalIDParams{
+		Limit: orb.F(int64(100)),
 	})
 	if err != nil {
 		var orbErr *orb.Error
 		if errors.As(err, &orbErr) && orbErr.Status == orb.ErrorStatus404 {
+			o.logger.Info("credit balance: customer not found in Orb ledger", zap.String("customer_id", customerID))
 			return nil, nil
 		}
 		return nil, err
 	}
 
-	if len(credits.Data) == 0 {
+	o.logger.Info("credit balance: ledger response",
+		zap.String("customer_id", customerID),
+		zap.Int("entry_count", len(ledger.Data)),
+	)
+	for i, e := range ledger.Data {
+		o.logger.Info("credit balance: ledger entry",
+			zap.Int("index", i),
+			zap.String("id", e.ID),
+			zap.String("entry_status", string(e.EntryStatus)),
+			zap.Float64("amount", e.Amount),
+			zap.Float64("starting_balance", e.StartingBalance),
+			zap.Float64("ending_balance", e.EndingBalance),
+			zap.String("currency", e.Currency),
+			zap.String("description", e.Description),
+			zap.Time("created_at", e.CreatedAt),
+		)
+	}
+
+	if len(ledger.Data) == 0 {
 		return nil, nil
 	}
 
-	// Aggregate across all active credit grants.
-	// Orb returns exhausted blocks (Balance=0) even with IncludeAllBlocks=false because
-	// they aren't voided or expired yet. Skip them so they don't inflate total/distort %.
-	// MaximumInitialBalance may be 0 for plan-granted credits — fall back to Balance.
-	var totalCredit, remainingCredit float64
+	// Current balance is the most recent entry's ending balance
+	remainingCredit := ledger.Data[0].EndingBalance
+
+	// Sum all increment entries to get total granted; track earliest grant date
+	var totalCredit float64
+	var earliestGrant time.Time
 	var latestExpiry time.Time
-	for _, c := range credits.Data {
-		if c.Balance <= 0 {
-			continue // exhausted block; exclude from current balance view
-		}
-		if c.MaximumInitialBalance > 0 {
-			totalCredit += c.MaximumInitialBalance
-		} else {
-			totalCredit += c.Balance
-		}
-		remainingCredit += c.Balance
-		if c.ExpiryDate.After(latestExpiry) {
-			latestExpiry = c.ExpiryDate
+	for _, entry := range ledger.Data {
+		if entry.EntryStatus == orb.CustomerCreditLedgerListByExternalIDResponseEntryStatusCommitted &&
+			entry.Amount > 0 {
+			totalCredit += entry.Amount
+			if earliestGrant.IsZero() || entry.CreatedAt.Before(earliestGrant) {
+				earliestGrant = entry.CreatedAt
+			}
 		}
 	}
 
+	// If no committed increments found, use the ending balance as both total and remaining
 	if totalCredit == 0 {
-		return nil, nil // all blocks exhausted; treat as no active credit
+		totalCredit = remainingCredit
+	}
+
+	if totalCredit == 0 && remainingCredit == 0 {
+		return nil, nil
 	}
 
 	usedCredit := totalCredit - remainingCredit
+	if usedCredit < 0 {
+		usedCredit = 0
+	}
 
-	// Estimate burn rate from credit usage; if credit has been active, calculate daily rate
+	// Estimate burn rate from credit usage
 	var burnRatePerDay float64
-	if usedCredit > 0 && !credits.Data[0].EffectiveDate.IsZero() {
-		daysSinceStart := time.Since(credits.Data[0].EffectiveDate).Hours() / 24
+	if usedCredit > 0 && !earliestGrant.IsZero() {
+		daysSinceStart := time.Since(earliestGrant).Hours() / 24
 		if daysSinceStart > 0 {
 			burnRatePerDay = usedCredit / daysSinceStart
 		}
 	}
+
+	o.logger.Info("credit balance: computed from ledger",
+		zap.String("customer_id", customerID),
+		zap.Int("ledger_entries", len(ledger.Data)),
+		zap.Float64("total", totalCredit),
+		zap.Float64("used", usedCredit),
+		zap.Float64("remaining", remainingCredit),
+		zap.Float64("burn_rate_per_day", burnRatePerDay),
+		zap.Time("latest_expiry", latestExpiry),
+	)
 
 	return &CreditBalance{
 		TotalCredit:     totalCredit,
@@ -464,7 +499,7 @@ func (o *Orb) AddCredits(ctx context.Context, customerID string, amount float64,
 		return nil, ErrCustomerIDRequired
 	}
 
-	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
+	ledgerResp, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
 		Amount:      orb.F(amount),
 		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
 		ExpiryDate:  orb.F(expiryDate),
@@ -474,6 +509,16 @@ func (o *Orb) AddCredits(ctx context.Context, customerID string, amount float64,
 	if err != nil {
 		return nil, fmt.Errorf("failed to add credits: %w", err)
 	}
+
+	o.logger.Info("AddCredits: Orb ledger entry created",
+		zap.String("customer_id", customerID),
+		zap.Float64("amount", amount),
+		zap.String("ledger_id", ledgerResp.ID),
+		zap.String("entry_status", string(ledgerResp.EntryStatus)),
+		zap.Float64("starting_balance", ledgerResp.StartingBalance),
+		zap.Float64("ending_balance", ledgerResp.EndingBalance),
+		zap.Float64("ledger_amount", ledgerResp.Amount),
+	)
 
 	// Return updated balance
 	return o.GetCreditBalance(ctx, customerID)

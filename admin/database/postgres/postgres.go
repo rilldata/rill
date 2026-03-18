@@ -586,6 +586,38 @@ func (c *connection) UpdateProjectClusterSlots(ctx context.Context, id string, c
 	return parseErr("project", err)
 }
 
+func (c *connection) SetOrganizationCredits(ctx context.Context, orgID string, total float64, expiry time.Time) error {
+	_, err := c.getDB(ctx).ExecContext(ctx,
+		"UPDATE orgs SET credit_total = $1, credit_used = 0, credit_expiry = $2 WHERE id = $3",
+		total, expiry, orgID,
+	)
+	return parseErr("org", err)
+}
+
+func (c *connection) AddOrganizationCredits(ctx context.Context, orgID string, amount float64, expiry time.Time) error {
+	_, err := c.getDB(ctx).ExecContext(ctx,
+		"UPDATE orgs SET credit_total = credit_total + $1, credit_expiry = $2 WHERE id = $3",
+		amount, expiry, orgID,
+	)
+	return parseErr("org", err)
+}
+
+func (c *connection) IncrementOrganizationCreditUsed(ctx context.Context, orgID string, amount float64) error {
+	_, err := c.getDB(ctx).ExecContext(ctx,
+		"UPDATE orgs SET credit_used = LEAST(credit_used + $1, credit_total) WHERE id = $2",
+		amount, orgID,
+	)
+	return parseErr("org", err)
+}
+
+func (c *connection) ResetOrganizationCredits(ctx context.Context, orgID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx,
+		"UPDATE orgs SET credit_total = 0, credit_used = 0, credit_expiry = NULL WHERE id = $1",
+		orgID,
+	)
+	return parseErr("org", err)
+}
+
 func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
 	res := &database.ProjectsQuotaUsage{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `

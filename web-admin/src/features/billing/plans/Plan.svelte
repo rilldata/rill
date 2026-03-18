@@ -23,6 +23,17 @@
   $: hasPayment = !!$subscriptionQuery?.data?.organization?.paymentCustomerId;
   $: plan = subscription?.plan;
 
+  // DEBUG: log full subscription response to browser console
+  $: if ($subscriptionQuery?.data) {
+    console.log("[Billing DEBUG] subscription response:", {
+      planName: plan?.name,
+      planType: plan?.planType,
+      creditInfo,
+      billingPortalUrl: $subscriptionQuery.data.billingPortalUrl,
+      orgBillingCustomerId: $subscriptionQuery.data.organization?.billingCustomerId,
+    });
+  }
+
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
 
   // fresh orgs will have a never subscribed issue associated with it

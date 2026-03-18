@@ -326,11 +326,18 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return nil, nil, err
 	}
 
-	// Free plan: no trial issue, billing tracked via credit worker
+	// Free plan: grant initial credits in DB; no trial issue, billing tracked via credit worker
 	if plan.PlanType == billing.FreePlanType {
+		creditAmount := 250.0
+		creditExpiry := time.Now().AddDate(1, 0, 0) // 1 year from now
+		err := s.DB.SetOrganizationCredits(ctx, org.ID, creditAmount, creditExpiry)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to grant free plan credits: %w", err)
+		}
 		s.Logger.Named("billing").Info("started free plan for organization",
 			zap.String("org_name", org.Name),
 			zap.String("org_id", org.ID),
+			zap.Float64("credits_granted", creditAmount),
 		)
 		return org, sub, nil
 	}

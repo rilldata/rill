@@ -56,21 +56,19 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 		BillingPortalUrl: sub.Customer.PortalURL,
 	}
 
-	// Fetch credit balance for free-tier orgs
-	if sub.Plan != nil && sub.Plan.PlanType == billing.FreePlanType {
-		creditBalance, err := s.admin.Biller.GetCreditBalance(ctx, org.BillingCustomerID)
-		if err != nil {
-			s.logger.Warn("failed to fetch credit balance", zap.String("org_id", org.ID), zap.Error(err))
-		} else if creditBalance != nil {
-			resp.CreditInfo = &adminv1.BillingCreditInfo{
-				TotalCredit:     creditBalance.TotalCredit,
-				UsedCredit:      creditBalance.UsedCredit,
-				RemainingCredit: creditBalance.RemainingCredit,
-				BurnRatePerDay:  creditBalance.BurnRatePerDay,
-			}
-			if !creditBalance.ExpiryDate.IsZero() {
-				resp.CreditInfo.CreditExpiry = timestamppb.New(creditBalance.ExpiryDate)
-			}
+	// Populate credit info from DB for free-tier orgs
+	if sub.Plan != nil && sub.Plan.PlanType == billing.FreePlanType && org.CreditTotal > 0 {
+		remaining := org.CreditTotal - org.CreditUsed
+		if remaining < 0 {
+			remaining = 0
+		}
+		resp.CreditInfo = &adminv1.BillingCreditInfo{
+			TotalCredit:     org.CreditTotal,
+			UsedCredit:      org.CreditUsed,
+			RemainingCredit: remaining,
+		}
+		if org.CreditExpiry != nil {
+			resp.CreditInfo.CreditExpiry = timestamppb.New(*org.CreditExpiry)
 		}
 	}
 
@@ -236,9 +234,9 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		wasExhausted = ce != nil
 
-		// Void any remaining free-plan credits in Orb (credits don't carry over to Growth)
-		if voidErr := s.admin.Biller.VoidCredits(ctx, org.BillingCustomerID); voidErr != nil {
-			s.logger.Named("billing").Warn("failed to void free credits on growth upgrade", zap.String("org_id", org.ID), zap.Error(voidErr))
+		// Zero out free-plan credits (credits don't carry over to Growth)
+		if voidErr := s.admin.DB.ResetOrganizationCredits(ctx, org.ID); voidErr != nil {
+			s.logger.Named("billing").Warn("failed to reset credits on growth upgrade", zap.String("org_id", org.ID), zap.Error(voidErr))
 		}
 	}
 
@@ -825,12 +823,9 @@ func (s *Server) SudoAddCredits(ctx context.Context, req *adminv1.SudoAddCredits
 	}
 	expiryDate := time.Now().AddDate(0, 0, expiryDays)
 
-	description := req.Description
-	if description == "" {
-		description = "Credits added via CLI"
-	}
-
-	balance, err := s.admin.Biller.AddCredits(ctx, org.BillingCustomerID, req.Amount, expiryDate, description)
+	// Add credits to DB: increment total, extend expiry (preserve existing usage)
+	newTotal := org.CreditTotal + req.Amount
+	err = s.admin.DB.AddOrganizationCredits(ctx, org.ID, req.Amount, expiryDate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to add credits: %v", err)
 	}
@@ -839,20 +834,21 @@ func (s *Server) SudoAddCredits(ctx context.Context, req *adminv1.SudoAddCredits
 		zap.String("org_id", org.ID),
 		zap.String("org_name", org.Name),
 		zap.Float64("amount", req.Amount),
+		zap.Float64("new_total", newTotal),
 		zap.Int("expiry_days", expiryDays),
 	)
 
-	resp := &adminv1.SudoAddCreditsResponse{}
-	if balance != nil {
-		resp.CreditInfo = &adminv1.BillingCreditInfo{
-			TotalCredit:     balance.TotalCredit,
-			UsedCredit:      balance.UsedCredit,
-			RemainingCredit: balance.RemainingCredit,
-			BurnRatePerDay:  balance.BurnRatePerDay,
-		}
-		if !balance.ExpiryDate.IsZero() {
-			resp.CreditInfo.CreditExpiry = timestamppb.New(balance.ExpiryDate)
-		}
+	remaining := newTotal - org.CreditUsed
+	if remaining < 0 {
+		remaining = 0
+	}
+	resp := &adminv1.SudoAddCreditsResponse{
+		CreditInfo: &adminv1.BillingCreditInfo{
+			TotalCredit:     newTotal,
+			UsedCredit:      org.CreditUsed,
+			RemainingCredit: remaining,
+			CreditExpiry:    timestamppb.New(expiryDate),
+		},
 	}
 	return resp, nil
 }
