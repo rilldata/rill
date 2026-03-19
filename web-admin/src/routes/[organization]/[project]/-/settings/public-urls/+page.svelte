@@ -35,6 +35,14 @@
       },
     );
 
+  // Auto-fetch all remaining pages
+  $: if (
+    $magicAuthTokensInfiniteQuery.hasNextPage &&
+    !$magicAuthTokensInfiniteQuery.isFetchingNextPage
+  ) {
+    void $magicAuthTokensInfiniteQuery.fetchNextPage();
+  }
+
   $: allRows =
     $magicAuthTokensInfiniteQuery.data?.pages.flatMap(
       (page) => page.tokens ?? [],
