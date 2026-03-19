@@ -66,6 +66,10 @@ type globProps struct {
 	Connector string `mapstructure:"connector"`
 	// Path is the glob pattern to match.
 	Path string `mapstructure:"path"`
+	// Start reading patition from
+	Start string `mapstructure:"start"`
+	// Read last N parition
+	Last int `mapstructure:"last"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
 	// RollupFiles is a flag to roll up and include the files in each partition in the output.

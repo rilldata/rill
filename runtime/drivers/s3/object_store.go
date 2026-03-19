@@ -71,7 +71,7 @@ func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter st
 }
 
 // ListObjectsForGlob implements drivers.ObjectStore.
-func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken string, startAfter string) ([]drivers.ObjectStoreEntry, string, error) {
+func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken, startAfter string) ([]drivers.ObjectStoreEntry, string, error) {
 	blobBucket, err := c.openBucket(ctx, bucket, false)
 	if err != nil {
 		return nil, "", err

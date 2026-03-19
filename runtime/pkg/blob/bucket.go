@@ -47,7 +47,7 @@ func (b *Bucket) Underlying() *blob.Bucket {
 // ListObjectsForGlob lists objects in the bucket that match the given glob pattern.
 // The glob pattern should be a valid path *without* scheme or bucket name.
 // E.g. to list gs://my-bucket/path/to/files/*, the glob pattern should be "path/to/files/*".
-func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize uint32, pageToken string, startAfter string) ([]drivers.ObjectStoreEntry, string, error) {
+func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize uint32, pageToken, startAfter string) ([]drivers.ObjectStoreEntry, string, error) {
 	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSizeForObjects)
 	var driverStartAfter string
 	driverPageToken := blob.FirstPageToken
