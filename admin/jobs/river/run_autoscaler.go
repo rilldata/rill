@@ -141,8 +141,6 @@ func (w *RunAutoscalerWorker) Work(ctx context.Context, job *river.Job[RunAutosc
 			Provisioner:          targetProject.Provisioner,
 			Annotations:          targetProject.Annotations,
 			ChcClusterSize:       targetProject.ChcClusterSize,
-			ClusterSlots:         targetProject.ClusterSlots,
-			InfraSlots:           targetProject.InfraSlots,
 		})
 		if err != nil {
 			w.logger.Error("failed to autoscale: error updating the project", zap.String("project_name", targetProject.Name), zap.String("organization_name", projectOrg.Name), zap.Error(err))

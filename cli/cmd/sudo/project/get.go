@@ -47,26 +47,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Subpath: %s\n", project.Subpath)
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Primary branch: %s\n", project.PrimaryBranch)
-			isRillManaged := isRillManagedProject(project)
-			if isRillManaged {
-				fmt.Printf("Rill slots:    %d\n", project.ProdSlots)
-				fmt.Printf("Cluster slots: 0\n")
-				fmt.Printf("Prod slots:    %d\n", project.ProdSlots)
-			} else {
-				clusterSlots := int64(4)
-				clusterLabel := " (default)"
-				if project.ClusterSlots != nil {
-					clusterSlots = *project.ClusterSlots
-					clusterLabel = ""
-				}
-				rillSlots := project.ProdSlots - clusterSlots
-				if rillSlots < 0 {
-					rillSlots = 0
-				}
-				fmt.Printf("Rill slots:    %d\n", rillSlots)
-				fmt.Printf("Cluster slots: %d%s\n", clusterSlots, clusterLabel)
-				fmt.Printf("Prod slots:    %d (cluster + rill)\n", project.ProdSlots)
-			}
+			fmt.Printf("Rill Slots: %d\n", project.ProdSlots)
 			fmt.Printf("Primary deployment ID: %s\n", project.PrimaryDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
 			fmt.Printf("Annotations: %s\n", strings.Join(annotations, "; "))
@@ -76,18 +57,4 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	return getCmd
-}
-
-// isRillManagedProject returns true if the project uses Rill-managed OLAP (DuckDB).
-// When olap_connector is not yet populated, falls back to checking whether
-// cluster_slots or infra_slots are set (which indicates Live Connect).
-func isRillManagedProject(p *adminv1.Project) bool {
-	if p.OlapConnector != "" {
-		return p.OlapConnector == "duckdb"
-	}
-	// olap_connector not populated; use presence of cluster/infra slots as a Live Connect signal
-	if p.ClusterSlots != nil || p.InfraSlots != nil {
-		return false
-	}
-	return true
 }

@@ -23,8 +23,6 @@
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
-  import { MIN_INFRA_SLOTS } from "./slots-utils";
-  import { isMotherDuck } from "./olapInfo";
   import OverviewCard from "./OverviewCard.svelte";
   import { page } from "$app/stores";
 
@@ -84,44 +82,13 @@
 
   // Slots
   $: currentSlots = Number(projectData?.prodSlots) || 0;
-  // Live Connect only when a non-DuckDB connector explicitly has provision=false.
-  // DuckDB is always Rill-managed (including local dev where provision=false).
-  // When hibernated (no olapConnector), use cached type: clickhouse means Live Connect.
-  $: isRillManaged = olapConnector
-    ? (olapConnector.type === "duckdb" && !isMotherDuck(olapConnector)) ||
-      olapConnector.provision === true
-    : cachedOlapType
-      ? cachedOlapType !== "clickhouse"
-      : true;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
 
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
   $: isFree = isFreePlan(planName);
-  $: isGrowth = isGrowthPlan(planName);
   $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
-  // New pricing applies to Free and Growth plans; ?newPricing=true forces it for testing
-  $: devForceNewPricing = $page.url.searchParams.get("newPricing") === "true";
-  $: useNewPricing = isFree || isGrowth || devForceNewPricing;
-
-  // Cluster Slots: synced by the billing reporter job; falls back to MIN_INFRA_SLOTS.
-  // Only applies to Live Connect (not Rill-managed).
-  $: clusterSlots = !isRillManaged
-    ? Number(projectData?.clusterSlots) || MIN_INFRA_SLOTS
-    : 0;
-  // Rill Slots = additional slots on top of cluster_slots (user-controlled).
-  $: rillSlots =
-    useNewPricing && !isRillManaged
-      ? Math.max(0, currentSlots - clusterSlots)
-      : 0;
-
-  // Effective provisioned slots: for Live Connect, use detected cluster + rill;
-  // for Rill Managed, use DB prod_slots directly.
-  $: provisionedSlots = !isRillManaged
-    ? clusterSlots + rillSlots
-    : currentSlots;
-
 </script>
 
 <OverviewCard title="Deployment">
@@ -225,13 +192,13 @@
 
     {#if !$subscriptionQuery?.isLoading && !isEnterprise}
       <div class="info-row">
-        <span class="info-label">Provisioned Slots</span>
+        <span class="info-label">Rill Slots</span>
         <span class="info-value flex items-center gap-3">
           <a
             href="/{organization}/{project}/-/status/deployments"
             class="slots-link"
           >
-            <span class="slots-count">{provisionedSlots}</span>
+            <span class="slots-count">{currentSlots}</span>
             <span class="slots-detail">View details</span>
           </a>
         </span>

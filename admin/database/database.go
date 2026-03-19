@@ -93,7 +93,6 @@ type DB interface {
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	UpdateProjectOlapConnector(ctx context.Context, id string, olapConnector string) error
-	UpdateProjectClusterSlots(ctx context.Context, id string, clusterSlots int64) error
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
@@ -329,12 +328,6 @@ type DB interface {
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
 	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
 
-	// Credit operations for free-plan orgs
-	SetOrganizationCredits(ctx context.Context, orgID string, total float64, expiry time.Time) error
-	AddOrganizationCredits(ctx context.Context, orgID string, amount float64, expiry time.Time) error
-	IncrementOrganizationCreditUsed(ctx context.Context, orgID string, amount float64) error
-	ResetOrganizationCredits(ctx context.Context, orgID string) error
-
 	FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*BillingIssue, error)
 	FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
 	FindBillingIssueByType(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
@@ -404,9 +397,6 @@ type Organization struct {
 	BillingPlanName                     *string   `db:"billing_plan_name"`
 	BillingPlanDisplayName              *string    `db:"billing_plan_display_name"`
 	CreatedByUserID                     *string    `db:"created_by_user_id"`
-	CreditTotal                         float64    `db:"credit_total"`
-	CreditUsed                          float64    `db:"credit_used"`
-	CreditExpiry                        *time.Time `db:"credit_expiry"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -521,12 +511,6 @@ type Project struct {
 	Annotations map[string]string `db:"annotations"`
 	// ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
 	ChcClusterSize *float64 `db:"chc_cluster_size"`
-	// ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
-	// For Live Connect projects, this represents the base slots from the BYOLAP cluster.
-	ClusterSlots *int64 `db:"cluster_slots"`
-	// InfraSlots is the Rill infrastructure overhead slot allocation for the project.
-	// Adjustable by Rill staff; defaults to 4 for Live Connect, 0 for Rill Managed.
-	InfraSlots *int64 `db:"infra_slots"`
 	// OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
 	// Persisted so the frontend can show the correct engine label even when the project is hibernated.
 	OlapConnector *string `db:"olap_connector"`
@@ -581,8 +565,6 @@ type UpdateProjectOptions struct {
 	DevTTLSeconds        int64
 	Annotations          map[string]string
 	ChcClusterSize       *float64
-	ClusterSlots         *int64
-	InfraSlots           *int64
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

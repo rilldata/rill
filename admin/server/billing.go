@@ -56,22 +56,6 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 		BillingPortalUrl: sub.Customer.PortalURL,
 	}
 
-	// Populate credit info from DB for free-tier orgs
-	if sub.Plan != nil && sub.Plan.PlanType == billing.FreePlanType && org.CreditTotal > 0 {
-		remaining := org.CreditTotal - org.CreditUsed
-		if remaining < 0 {
-			remaining = 0
-		}
-		resp.CreditInfo = &adminv1.BillingCreditInfo{
-			TotalCredit:     org.CreditTotal,
-			UsedCredit:      org.CreditUsed,
-			RemainingCredit: remaining,
-		}
-		if org.CreditExpiry != nil {
-			resp.CreditInfo.CreditExpiry = timestamppb.New(*org.CreditExpiry)
-		}
-	}
-
 	return resp, nil
 }
 
@@ -225,49 +209,9 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
-	// Check for credit exhaustion before cleanup so we know whether to un-hibernate
-	wasExhausted := false
-	if plan.PlanType == billing.GrowthPlanType {
-		ce, ceErr := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeCreditExhausted)
-		if ceErr != nil && !errors.Is(ceErr, database.ErrNotFound) {
-			return nil, ceErr
-		}
-		wasExhausted = ce != nil
-
-		// Zero out free-plan credits (credits don't carry over to Growth)
-		if voidErr := s.admin.DB.ResetOrganizationCredits(ctx, org.ID); voidErr != nil {
-			s.logger.Named("billing").Warn("failed to reset credits on growth upgrade", zap.String("org_id", org.ID), zap.Error(voidErr))
-		}
-	}
-
 	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
 		return nil, err
-	}
-
-	// Un-hibernate projects that were hibernated due to credit exhaustion
-	if wasExhausted {
-		projLimit := 10
-		afterProjectName := ""
-		for {
-			projs, projErr := s.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, projLimit)
-			if projErr != nil {
-				s.logger.Named("billing").Error("failed to find projects for un-hibernate on growth upgrade", zap.String("org_id", org.ID), zap.Error(projErr))
-				break
-			}
-			for _, proj := range projs {
-				if proj.PrimaryDeploymentID == nil {
-					if _, redeployErr := s.admin.RedeployProject(ctx, proj, nil); redeployErr != nil {
-						s.logger.Named("billing").Warn("failed to redeploy hibernated project on growth upgrade", zap.String("project_id", proj.ID), zap.Error(redeployErr))
-					}
-				}
-				afterProjectName = proj.Name
-			}
-			if len(projs) < projLimit {
-				break
-			}
-		}
-		s.logger.Named("billing").Info("un-hibernated projects on growth upgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	}
 
 	if planChange {
@@ -800,57 +744,8 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 }
 
 func (s *Server) SudoAddCredits(ctx context.Context, req *adminv1.SudoAddCreditsRequest) (*adminv1.SudoAddCreditsResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
-	observability.AddRequestAttributes(ctx, attribute.Float64("args.amount", req.Amount))
-
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can add credits")
-	}
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if org.BillingCustomerID == "" {
-		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
-	}
-
-	expiryDays := int(req.ExpiryDays)
-	if expiryDays <= 0 {
-		expiryDays = 365
-	}
-	expiryDate := time.Now().AddDate(0, 0, expiryDays)
-
-	// Add credits to DB: increment total, extend expiry (preserve existing usage)
-	newTotal := org.CreditTotal + req.Amount
-	err = s.admin.DB.AddOrganizationCredits(ctx, org.ID, req.Amount, expiryDate)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to add credits: %v", err)
-	}
-
-	s.logger.Named("billing").Info("credits added",
-		zap.String("org_id", org.ID),
-		zap.String("org_name", org.Name),
-		zap.Float64("amount", req.Amount),
-		zap.Float64("new_total", newTotal),
-		zap.Int("expiry_days", expiryDays),
-	)
-
-	remaining := newTotal - org.CreditUsed
-	if remaining < 0 {
-		remaining = 0
-	}
-	resp := &adminv1.SudoAddCreditsResponse{
-		CreditInfo: &adminv1.BillingCreditInfo{
-			TotalCredit:     newTotal,
-			UsedCredit:      org.CreditUsed,
-			RemainingCredit: remaining,
-			CreditExpiry:    timestamppb.New(expiryDate),
-		},
-	}
-	return resp, nil
+	// Credits are now managed by Orb; this endpoint is a no-op
+	return &adminv1.SudoAddCreditsResponse{}, nil
 }
 
 func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
@@ -1058,11 +953,6 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		return nil, fmt.Errorf("failed to cleanup subscription cancellation errors: %w", err)
 	}
 
-	// delete any credit billing issues (free-plan → Growth upgrade)
-	err = s.admin.CleanupCreditBillingIssues(ctx, org.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to cleanup credit billing issues: %w", err)
-	}
 
 	return org, nil
 }

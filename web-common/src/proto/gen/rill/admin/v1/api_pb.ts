@@ -4023,7 +4023,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   infraSlots?: bigint;
 
   /**
-   * ClusterSlots overrides the cluster slot allocation (stored as rill_min_slots in DB).
+   * ClusterSlots overrides the cluster slot allocation.
    * Adjustable by Rill staff. Derived from the OLAP cluster size.
    *
    * @generated from field: optional int64 cluster_slots = 17;

@@ -540,10 +540,8 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			dev_slots = $18,
 			dev_ttl_seconds = $19,
 			chc_cluster_size = $20,
-			cluster_slots = $21,
-			infra_slots = $22,
 			updated_on = now()
-		WHERE id = $23
+		WHERE id = $21
 		RETURNING *
 		`,
 		opts.Name,
@@ -566,8 +564,6 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.DevSlots,
 		opts.DevTTLSeconds,
 		opts.ChcClusterSize,
-		opts.ClusterSlots,
-		opts.InfraSlots,
 		id,
 	).StructScan(res)
 	if err != nil {
@@ -581,42 +577,7 @@ func (c *connection) UpdateProjectOlapConnector(ctx context.Context, id string, 
 	return parseErr("project", err)
 }
 
-func (c *connection) UpdateProjectClusterSlots(ctx context.Context, id string, clusterSlots int64) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET cluster_slots = $1 WHERE id = $2", clusterSlots, id)
-	return parseErr("project", err)
-}
 
-func (c *connection) SetOrganizationCredits(ctx context.Context, orgID string, total float64, expiry time.Time) error {
-	_, err := c.getDB(ctx).ExecContext(ctx,
-		"UPDATE orgs SET credit_total = $1, credit_used = 0, credit_expiry = $2 WHERE id = $3",
-		total, expiry, orgID,
-	)
-	return parseErr("org", err)
-}
-
-func (c *connection) AddOrganizationCredits(ctx context.Context, orgID string, amount float64, expiry time.Time) error {
-	_, err := c.getDB(ctx).ExecContext(ctx,
-		"UPDATE orgs SET credit_total = credit_total + $1, credit_expiry = $2 WHERE id = $3",
-		amount, expiry, orgID,
-	)
-	return parseErr("org", err)
-}
-
-func (c *connection) IncrementOrganizationCreditUsed(ctx context.Context, orgID string, amount float64) error {
-	_, err := c.getDB(ctx).ExecContext(ctx,
-		"UPDATE orgs SET credit_used = LEAST(credit_used + $1, credit_total) WHERE id = $2",
-		amount, orgID,
-	)
-	return parseErr("org", err)
-}
-
-func (c *connection) ResetOrganizationCredits(ctx context.Context, orgID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx,
-		"UPDATE orgs SET credit_total = 0, credit_used = 0, credit_expiry = NULL WHERE id = $1",
-		orgID,
-	)
-	return parseErr("org", err)
-}
 
 func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
 	res := &database.ProjectsQuotaUsage{}

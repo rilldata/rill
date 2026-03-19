@@ -1195,7 +1195,7 @@ paths:
                 type: string
                 format: int64
                 description: |-
-                  ClusterSlots overrides the cluster slot allocation (stored as rill_min_slots in DB).
+                  ClusterSlots overrides the cluster slot allocation.
                   Adjustable by Rill staff. Derived from the OLAP cluster size.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:

@@ -1934,7 +1934,7 @@ export type AdminServiceUpdateProjectBody = {
   /** InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
 Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed. */
   infraSlots?: string;
-  /** ClusterSlots overrides the cluster slot allocation (stored as rill_min_slots in DB).
+  /** ClusterSlots overrides the cluster slot allocation.
 Adjustable by Rill staff. Derived from the OLAP cluster size. */
   clusterSlots?: string;
 };

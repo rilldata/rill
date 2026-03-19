@@ -924,8 +924,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		ClusterSlots:         valOrDefaultPtr(req.ClusterSlots, proj.ClusterSlots),
-		InfraSlots:           valOrDefaultPtr(req.InfraSlots, proj.InfraSlots),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
@@ -1885,8 +1883,6 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		ClusterSlots:         proj.ClusterSlots,
-		InfraSlots:           proj.InfraSlots,
 	})
 	if err != nil {
 		return nil, err
@@ -2208,8 +2204,6 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
 		UpdatedOn:           timestamppb.New(p.UpdatedOn),
-		ClusterSlots:        p.ClusterSlots,
-		InfraSlots:          p.InfraSlots,
 		OlapConnector:       safeStr(p.OlapConnector),
 	}
 }
@@ -2316,8 +2310,6 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
 		ChcClusterSize:       p.ChcClusterSize,
-		ClusterSlots:         p.ClusterSlots,
-		InfraSlots:           p.InfraSlots,
 	})
 	if err != nil {
 		return 0, status.Error(codes.Internal, "failed to update project with github repo id")

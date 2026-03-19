@@ -418,8 +418,6 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			DevTTLSeconds:        proj.DevTTLSeconds,
 			Annotations:          proj.Annotations,
 			ChcClusterSize:       proj.ChcClusterSize,
-			ClusterSlots:         proj.ClusterSlots,
-			InfraSlots:           proj.InfraSlots,
 		})
 		if err != nil {
 			return nil, err

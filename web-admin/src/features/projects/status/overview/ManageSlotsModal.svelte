@@ -4,131 +4,70 @@
     getAdminServiceGetProjectQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
   import {
-    LIVE_CONNECT_TIERS,
-    RILL_SLOT_TIERS,
+    SLOT_TIERS,
     POPULAR_SLOTS,
     ALL_SLOTS,
-    MANAGED_SLOT_RATE_PER_HR,
-    RILL_SLOT_RATE_PER_HR,
+    SLOT_RATE_PER_HR,
     HOURS_PER_MONTH,
-    STORAGE_RATE_PER_GB_PER_MONTH,
-    INCLUDED_STORAGE_GB,
+    DEFAULT_MANAGED_SLOTS,
+    DEFAULT_SELF_MANAGED_SLOTS,
   } from "./slots-utils";
 
   export let open = false;
   export let organization: string;
   export let project: string;
   export let currentSlots: number;
-  export let isRillManaged: boolean;
-  // Auto-detected slot count from the OLAP cluster (SQL-based detection).
-  export let detectedSlots: number | undefined = undefined;
+  export let isRillManaged = true;
   export let viewOnly = false;
-  // When true, uses new PRD v10 pricing (Free/Growth plans). False for legacy Team plans.
-  export let useNewPricing = false;
-  // Cluster Slots (auto-calculated from default OLAP connector; read-only). Only for Live Connect + new pricing.
-  export let clusterSlots = 0;
-  // Current Rill Slots (user-controlled). Only for Live Connect + new pricing.
-  export let currentRillSlots = 0;
-  const POPULAR_RILL_MANAGED = POPULAR_SLOTS.map((s) => ({ slots: s }));
-  const ALL_RILL_MANAGED = ALL_SLOTS.map((s) => ({ slots: s }));
 
-  const managedRate = MANAGED_SLOT_RATE_PER_HR;
-
-  // For new pricing Live Connect: Rill Slots selection
-  let selectedRillSlots = currentRillSlots;
-  $: if (open && useNewPricing && !isRillManaged) {
-    selectedRillSlots = currentRillSlots;
-  }
-  $: rillSlotsHasChanged = selectedRillSlots !== currentRillSlots;
-
-  // Auto-detect matching tier from cluster memory
-  $: detectedTierSlots = isRillManaged ? undefined : detectedSlots;
-
-  // Rill-managed and self-managed: no minimum floor
-  // When detectedTierSlots is set, the user cannot go below that tier.
-  $: minimumSlots = detectedTierSlots ?? 0;
-
-  // In required mode, pre-select detected tier or minimum; otherwise default to current
-  $: minimumTierSlots = isRillManaged
-    ? POPULAR_RILL_MANAGED[0].slots
-    : LIVE_CONNECT_TIERS[0].slots;
+  // Minimum slots: 2 for Rill-managed, 4 for self-managed
+  $: minSlots = isRillManaged ? DEFAULT_MANAGED_SLOTS : DEFAULT_SELF_MANAGED_SLOTS;
 
   let selectedSlots = currentSlots;
   $: if (open) {
-    if (viewOnly) {
-      selectedSlots = detectedTierSlots ?? minimumTierSlots;
-    } else {
-      selectedSlots = currentSlots;
-    }
+    selectedSlots = currentSlots;
+    showAllSizes = false;
   }
-
-  const updateProject = createAdminServiceUpdateProject();
-
-  // GB usage for Rill-managed projects
-  $: usageMetrics = isRillManaged
-    ? getOrganizationUsageMetrics(organization)
-    : undefined;
-  $: projectUsageBytes =
-    $usageMetrics?.data?.find((m) => m.project_name === project)?.size ?? 0;
 
   let showAllSizes = false;
 
-  // Ensure the detected and current tiers always appear in the popular list
+  const updateProject = createAdminServiceUpdateProject();
+
+  // Filter tiers to only show slots >= minimum
+  $: availableTiers = SLOT_TIERS.filter((t) => t.slots >= minSlots);
+
+  // Ensure the current slot count always appears in the popular list
   $: popularSlotsWithExtras = (() => {
-    let slots = [...POPULAR_SLOTS];
-    const extras = [detectedTierSlots, currentSlots].filter(
-      (s): s is number => s != null && s > 0,
-    );
-    for (const s of extras) {
-      if (!slots.includes(s) && ALL_SLOTS.includes(s)) {
-        slots.push(s);
-      }
+    let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
+    if (currentSlots >= minSlots && !slots.includes(currentSlots) && ALL_SLOTS.includes(currentSlots)) {
+      slots.push(currentSlots);
     }
     return slots.sort((a, b) => a - b);
   })();
 
-  $: visibleRillManaged = showAllSizes
-    ? ALL_RILL_MANAGED
-    : ALL_RILL_MANAGED.filter((t) => popularSlotsWithExtras.includes(t.slots));
+  $: visibleTiers = showAllSizes
+    ? availableTiers
+    : availableTiers.filter((t) => popularSlotsWithExtras.includes(t.slots));
 
-  $: visibleLiveConnect = showAllSizes
-    ? LIVE_CONNECT_TIERS
-    : LIVE_CONNECT_TIERS.filter((t) =>
-        popularSlotsWithExtras.includes(t.slots),
-      );
-
-  $: hasChanged =
-    useNewPricing && !isRillManaged
-      ? rillSlotsHasChanged
-      : selectedSlots !== currentSlots;
+  $: hasChanged = selectedSlots !== currentSlots;
 
   async function applySlotChange() {
     try {
-      // For new pricing Live Connect: prod_slots = cluster_slots + rill_slots.
-      const newSlots =
-        useNewPricing && !isRillManaged
-          ? selectedRillSlots + clusterSlots
-          : selectedSlots;
       await $updateProject.mutateAsync({
         org: organization,
         project,
-        data: { prodSlots: String(newSlots) },
+        data: { prodSlots: String(selectedSlots) },
       });
       await queryClient.refetchQueries({
         queryKey: getAdminServiceGetProjectQueryKey(organization, project),
       });
       eventBus.emit("notification", {
-        message:
-          useNewPricing && !isRillManaged
-            ? `Rill Slots updated to ${selectedRillSlots}`
-            : `Slots updated to ${newSlots}`,
+        message: `Slots updated to ${selectedSlots}`,
       });
       open = false;
     } catch (err) {
@@ -152,186 +91,83 @@
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
         {#if viewOnly}
-          Based on your OLAP cluster, we recommend the following slot
+          Based on your current plan, we recommend the following slot
           configuration. <a
             href="/{organization}/-/settings/billing"
             class="text-primary-500 hover:underline">Upgrade to Growth</a
           > to customize your slot allocation.
-        {:else if isRillManaged}
-          Rill-managed projects are billed at ${managedRate}/slot/hr.{#if useNewPricing} Storage is ${STORAGE_RATE_PER_GB_PER_MONTH}/GB/month above {INCLUDED_STORAGE_GB}GB included.{:else} Data
-          storage is charged separately based on usage.{/if} Monthly estimates assume
-          ~{HOURS_PER_MONTH} hours/month.
-        {:else if useNewPricing}
-          Add Rill Slots at ${RILL_SLOT_RATE_PER_HR}/slot/hr for extra performance or dev environments.
-          Cluster Slots are auto-detected from your OLAP cluster and shown on the Deployments page.
         {:else}
-          Choose the slot tier that matches your OLAP cluster's resources. We
-          auto-detect the minimum tier from your cluster configuration. You can
-          increase slots if needed but cannot go below the detected minimum.
+          All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr.
+          Monthly estimates assume ~{HOURS_PER_MONTH} hours/month.
+          {#if isRillManaged}
+            Minimum {DEFAULT_MANAGED_SLOTS} slots for Rill-managed deployments.
+          {:else}
+            Minimum {DEFAULT_SELF_MANAGED_SLOTS} slots for self-managed OLAP deployments.
+          {/if}
         {/if}
       </Dialog.Description>
     </Dialog.Header>
 
-    {#if isRillManaged && projectUsageBytes > 0}
-      <div class="usage-row">
-        <span class="usage-label">Data usage</span>
-        <span class="usage-value">{formatMemorySize(projectUsageBytes)}</span>
+    <!-- Tier table -->
+    <div class="tier-table">
+      <div class="tier-header">
+        <span class="tier-cell tier-cell-wide">Cluster Size</span>
+        <span class="tier-cell">Slots</span>
+        <span class="tier-cell">Est. $/mo</span>
       </div>
-    {/if}
-
-    {#if isRillManaged}
-      <!-- Rill-managed tier table -->
-      <div class="tier-table">
-        <div class="tier-header">
-          <span class="tier-cell">Slots</span>
-          <span class="tier-cell">$/slot/hr</span>
-          <span class="tier-cell">Est. $/mo</span>
-        </div>
-        <div class="tier-list">
-          {#each visibleRillManaged as tier}
-            <button
-              class="tier-row"
-              class:tier-active={tier.slots === currentSlots ||
-                (viewOnly && tier.slots === selectedSlots)}
-              class:tier-selected={!viewOnly &&
-                tier.slots === selectedSlots &&
-                tier.slots !== currentSlots}
-              class:tier-disabled={viewOnly && tier.slots !== selectedSlots}
-              disabled={viewOnly && tier.slots !== selectedSlots}
-              on:click={() => {
-                if (!viewOnly) selectedSlots = tier.slots;
-              }}
-            >
-              <span class="tier-cell">
-                {tier.slots}
-                {#if tier.slots === currentSlots}
-                  <span class="current-badge">current</span>
-                {/if}
-              </span>
-              <span class="tier-cell">${managedRate.toFixed(2)}</span>
-              <span class="tier-cell">
-                ~${Math.round(
-                  tier.slots * managedRate * HOURS_PER_MONTH,
-                ).toLocaleString()}
-              </span>
-            </button>
-          {/each}
-        </div>
-      </div>
-      {#if !viewOnly}
-        <button
-          class="show-all-btn"
-          on:click={() => (showAllSizes = !showAllSizes)}
-        >
-          {showAllSizes ? "Show popular sizes" : "Show all sizes"}
-        </button>
-      {/if}
-    {:else if useNewPricing}
-      <!-- New pricing: Rill Slots (user-controlled) -->
-      <div class="tier-table">
-        <div class="tier-header">
-          <span class="tier-cell">Rill Slots</span>
-          <span class="tier-cell">$/slot/hr</span>
-          <span class="tier-cell">Est. $/mo</span>
-        </div>
-        <div class="tier-list">
-          <!-- Option for 0 Rill Slots -->
+      <div class="tier-list">
+        {#each visibleTiers as tier}
           <button
             class="tier-row"
-            class:tier-active={0 === currentRillSlots}
-            class:tier-selected={0 === selectedRillSlots && 0 !== currentRillSlots}
-            on:click={() => (selectedRillSlots = 0)}
+            class:tier-active={tier.slots === currentSlots ||
+              (viewOnly && tier.slots === selectedSlots)}
+            class:tier-selected={!viewOnly &&
+              tier.slots === selectedSlots &&
+              tier.slots !== currentSlots}
+            class:tier-disabled={viewOnly && tier.slots !== selectedSlots}
+            disabled={viewOnly && tier.slots !== selectedSlots}
+            on:click={() => {
+              if (!viewOnly) selectedSlots = tier.slots;
+            }}
           >
+            <span class="tier-cell tier-cell-wide">
+              {tier.instance}
+            </span>
             <span class="tier-cell">
-              0
-              {#if 0 === currentRillSlots}
+              {tier.slots}
+              {#if tier.slots === currentSlots}
                 <span class="current-badge">current</span>
               {/if}
+              {#if tier.slots === minSlots}
+                <span class="min-badge">min</span>
+              {/if}
             </span>
-            <span class="tier-cell">-</span>
-            <span class="tier-cell">$0</span>
+            <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
           </button>
-          {#each RILL_SLOT_TIERS.filter((t) => showAllSizes || POPULAR_SLOTS.includes(t.slots)) as tier}
-            <button
-              class="tier-row"
-              class:tier-active={tier.slots === currentRillSlots}
-              class:tier-selected={tier.slots === selectedRillSlots && tier.slots !== currentRillSlots}
-              on:click={() => (selectedRillSlots = tier.slots)}
-            >
-              <span class="tier-cell">
-                {tier.slots}
-                {#if tier.slots === currentRillSlots}
-                  <span class="current-badge">current</span>
-                {/if}
-              </span>
-              <span class="tier-cell">${RILL_SLOT_RATE_PER_HR.toFixed(2)}</span>
-              <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
-            </button>
-          {/each}
-        </div>
+        {/each}
       </div>
+    </div>
+    {#if !viewOnly}
       <button
         class="show-all-btn"
         on:click={() => (showAllSizes = !showAllSizes)}
       >
         {showAllSizes ? "Show popular sizes" : "Show all sizes"}
       </button>
-    {:else}
-      <!-- Legacy Live Connect tier table -->
-      <div class="tier-table">
-        <div class="tier-header">
-          <span class="tier-cell tier-cell-wide">Cluster Size</span>
-          <span class="tier-cell">Rill Slots</span>
-          <span class="tier-cell">Estimated Rill $/mo</span>
-        </div>
-        <div class="tier-list">
-          {#each visibleLiveConnect as tier}
-            <button
-              class="tier-row"
-              class:tier-active={tier.slots === currentSlots ||
-                (viewOnly && tier.slots === selectedSlots)}
-              class:tier-selected={!viewOnly &&
-                tier.slots === selectedSlots &&
-                tier.slots !== currentSlots}
-              class:tier-disabled={tier.slots < minimumSlots ||
-                (viewOnly && tier.slots !== selectedSlots)}
-              disabled={tier.slots < minimumSlots ||
-                (viewOnly && tier.slots !== selectedSlots)}
-              on:click={() => {
-                if (!viewOnly) selectedSlots = tier.slots;
-              }}
-            >
-              <span class="tier-cell tier-cell-wide">
-                {tier.instance}
-                {#if detectedTierSlots === tier.slots}
-                  <span class="detected-badge">detected</span>
-                {/if}
-              </span>
-              <span class="tier-cell">
-                {tier.slots}
-                {#if tier.slots === currentSlots}
-                  <span class="current-badge">current</span>
-                {/if}
-              </span>
-              <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-      {#if !viewOnly}
-        <button
-          class="show-all-btn"
-          on:click={() => (showAllSizes = !showAllSizes)}
-        >
-          {showAllSizes ? "Show popular sizes" : "Show all sizes"}
-        </button>
-      {/if}
-      <p class="chc-note">
-        Estimated costs are calculated at a full month. Billing is charged at
-        compute/hr, therefore variable based on your needs. Select the tier that best
-        matches your cluster's memory and vCPU allocation.
-      </p>
     {/if}
+
+    <!-- Hibernate CTA -->
+    <p class="hibernate-note">
+      Want to stop billing entirely?
+      <a
+        href="/{organization}/{project}/-/settings"
+        class="hibernate-link"
+        on:click={() => (open = false)}
+      >
+        Hibernate this project
+      </a>
+      from the project settings page.
+    </p>
 
     <div class="footer">
       <button class="cancel-btn" on:click={() => (open = false)}>
@@ -353,15 +189,6 @@
 </Dialog.Root>
 
 <style lang="postcss">
-  .usage-row {
-    @apply flex items-center gap-2 mb-3;
-  }
-  .usage-label {
-    @apply text-sm text-fg-secondary w-28 shrink-0;
-  }
-  .usage-value {
-    @apply text-sm text-fg-primary font-medium;
-  }
   .tier-table {
     @apply border border-border rounded-md overflow-hidden;
   }
@@ -401,8 +228,8 @@
   .current-badge {
     @apply text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
   }
-  .detected-badge {
-    @apply text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
+  .min-badge {
+    @apply text-[10px] text-fg-tertiary bg-surface-subtle px-1.5 py-0.5 rounded-full leading-none font-medium;
   }
   .show-all-btn {
     @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 mt-2;
@@ -410,8 +237,14 @@
   .show-all-btn:hover {
     @apply text-primary-600;
   }
-  .chc-note {
-    @apply text-xs text-fg-tertiary mt-2 italic;
+  .hibernate-note {
+    @apply text-xs text-fg-tertiary mt-3 italic;
+  }
+  .hibernate-link {
+    @apply text-primary-500 no-underline;
+  }
+  .hibernate-link:hover {
+    @apply text-primary-600 underline;
   }
   .footer {
     @apply flex justify-end gap-2 mt-4;

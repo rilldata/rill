@@ -326,18 +326,10 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return nil, nil, err
 	}
 
-	// Free plan: grant initial credits in DB; no trial issue, billing tracked via credit worker
 	if plan.PlanType == billing.FreePlanType {
-		creditAmount := 250.0
-		creditExpiry := time.Now().AddDate(1, 0, 0) // 1 year from now
-		err := s.DB.SetOrganizationCredits(ctx, org.ID, creditAmount, creditExpiry)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to grant free plan credits: %w", err)
-		}
 		s.Logger.Named("billing").Info("started free plan for organization",
 			zap.String("org_name", org.Name),
 			zap.String("org_id", org.ID),
-			zap.Float64("credits_granted", creditAmount),
 		)
 		return org, sub, nil
 	}
@@ -427,20 +419,6 @@ func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) e
 	return nil
 }
 
-// CleanupCreditBillingIssues removes free-plan credit billing issues (called on upgrade to Growth)
-func (s *Service) CleanupCreditBillingIssues(ctx context.Context, orgID string) error {
-	for _, t := range []database.BillingIssueType{
-		database.BillingIssueTypeCreditLow,
-		database.BillingIssueTypeCreditCritical,
-		database.BillingIssueTypeCreditExhausted,
-	} {
-		err := s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, t)
-		if err != nil && !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to delete credit billing issue: %w", err)
-		}
-	}
-	return nil
-}
 
 // CleanupSubscriptionBillingIssues removes subscription related billing issues
 func (s *Service) CleanupSubscriptionBillingIssues(ctx context.Context, orgID string) error {
@@ -503,17 +481,6 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 
 	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.Before(time.Now()) {
 		return fmt.Errorf("subscription cancelled")
-	}
-
-	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeCreditExhausted)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return err
-		}
-	}
-
-	if be != nil {
-		return fmt.Errorf("free credit exhausted")
 	}
 
 	return nil

@@ -123,8 +123,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		ClusterSlots:         proj.ClusterSlots,
-		InfraSlots:           proj.InfraSlots,
 	})
 	if err != nil {
 		return nil, err
@@ -237,8 +235,6 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 				DevTTLSeconds:        proj.DevTTLSeconds,
 				Annotations:          proj.Annotations,
 				ChcClusterSize:       proj.ChcClusterSize,
-				ClusterSlots:         proj.ClusterSlots,
-				InfraSlots:           proj.InfraSlots,
 			})
 			if err != nil {
 				return nil, err
@@ -389,8 +385,6 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		ClusterSlots:         proj.ClusterSlots,
-		InfraSlots:           proj.InfraSlots,
 	})
 	if err != nil {
 		err2 := s.TeardownDeployment(ctx, newDepl)
@@ -442,8 +436,6 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 		ChcClusterSize:       proj.ChcClusterSize,
-		ClusterSlots:         proj.ClusterSlots,
-		InfraSlots:           proj.InfraSlots,
 	})
 	if err != nil {
 		return nil, err
