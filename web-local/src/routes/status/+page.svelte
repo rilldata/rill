@@ -53,7 +53,10 @@
     $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
   // Resource errors grouped by kind
-  $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
+  $: erroredResources = allResources.filter(
+    (r) =>
+      !!r.meta?.reconcileError && r.meta?.name?.kind !== ResourceKind.Component,
+  );
   $: errorsByKind = groupErrorsByKind(erroredResources);
   $: totalErrors = parseErrors.length + erroredResources.length;
 
@@ -133,6 +136,8 @@
   isLoading={$projectParserQuery.isLoading || $resourcesQuery.isLoading}
   isError={$projectParserQuery.isError || $resourcesQuery.isError}
   onSectionClick={() => goToResources(["error"])}
+  onParseErrorChipClick={() => goToResources(["error"])}
+  onKindChipClick={(kind) => goToResources(["error"], [kind])}
 />
 
 <style lang="postcss">

@@ -1,5 +1,6 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import type { V1Connector } from "@rilldata/web-common/runtime-client";
+import { formatConnectorName } from "@rilldata/web-common/features/resources/display-utils";
 
 // Re-export shared utilities from web-common
 export {

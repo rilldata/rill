@@ -34,7 +34,10 @@
   // Resource errors grouped by kind
   $: resourcesQuery = useResources(runtimeClient);
   $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
-  $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
+  $: erroredResources = allResources.filter(
+    (r) =>
+      !!r.meta?.reconcileError && r.meta?.name?.kind !== ResourceKind.Component,
+  );
   $: errorsByKind = groupErrorsByKind(erroredResources);
   $: totalErrors = parseErrors.length + erroredResources.length;
 </script>

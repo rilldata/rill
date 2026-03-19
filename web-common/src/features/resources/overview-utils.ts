@@ -53,7 +53,8 @@ export function groupErrorsByKind(resources: V1Resource[]): ResourceCount[] {
   const counts = new Map<string, number>();
   for (const r of resources) {
     const kind = r.meta?.name?.kind;
-    if (kind) counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    if (kind && kind !== ResourceKind.Component)
+      counts.set(kind, (counts.get(kind) ?? 0) + 1);
   }
   return Array.from(counts.entries())
     .map(([kind, count]) => ({
