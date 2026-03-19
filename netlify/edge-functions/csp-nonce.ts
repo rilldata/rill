@@ -1,0 +1,96 @@
+import type { Context } from "@netlify/edge-functions";
+
+// Injects a per-request CSP nonce into HTML responses and sets the
+// Content-Security-Policy header dynamically. This replaces the static
+// Content-Security-Policy entries in netlify.toml, which cannot include
+// nonces because Netlify header rules are evaluated at build time.
+//
+// With 'strict-dynamic': scripts loaded by a nonced script inherit trust, so
+// third-party loaders (Pylon, Pusher) that dynamically inject child scripts
+// work without needing their child scripts individually allowlisted.
+// Domain allowlists are kept for backwards compatibility with older browsers
+// that do not support 'strict-dynamic'.
+export default async (
+  request: Request,
+  context: Context,
+): Promise<Response> => {
+  const response = await context.next();
+
+  // Only process HTML documents; pass other assets through unchanged.
+  if (!response.headers.get("content-type")?.includes("text/html")) {
+    return response;
+  }
+
+  const url = new URL(request.url);
+  const isEmbed = url.pathname.startsWith("/-/embed");
+  const isShare = url.pathname.includes("/-/share");
+  const isEmbeddable = isEmbed || isShare;
+
+  let body = await response.text();
+  let scriptSrc: string;
+
+  if (isEmbeddable) {
+    // Embeddable routes use 'unsafe-inline' directly; no nonce injection needed.
+    scriptSrc =
+      "'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com";
+  } else {
+    const nonceBytes = new Uint8Array(16);
+    crypto.getRandomValues(nonceBytes);
+    const nonce = btoa(String.fromCharCode(...nonceBytes));
+
+    // Inject nonce onto every <script and <style opening tag.
+    body = body.replace(/<script(?=[ >])/g, `<script nonce="${nonce}"`);
+    body = body.replace(/<style(?=[ >])/g, `<style nonce="${nonce}"`);
+    // Inject nonce into entity-encoded <script> tags inside data: URI iframe srcs.
+    // e.g. src="data:text/html,&lt;script&gt;..." becomes
+    //      src="data:text/html,&lt;script nonce=&quot;NONCE&quot;&gt;..."
+    // &quot; is required so the nonce value doesn't break the enclosing attribute.
+    body = body.replace(
+      /&lt;script(?=[ &])/g,
+      `&lt;script nonce=&quot;${nonce}&quot;`,
+    );
+
+    // 'unsafe-inline' is ignored by browsers that support nonces, kept for older browser fallback.
+    // 'strict-dynamic' propagates trust to scripts dynamically created by nonced scripts.
+    // Domain allowlists below are fallbacks for browsers without strict-dynamic support.
+    scriptSrc = `'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'unsafe-eval' https://*.app-us1.com/ https://*.usepylon.com https://*.pusher.com`;
+  }
+
+  // Embeddable routes allow framing from any HTTPS origin; the main app
+  // restricts framing to same-origin only.
+  const frameAncestors = isEmbeddable ? "https:" : "'self'";
+
+  // Pylon CDN is used for styling on the main app; embeds keep styles tighter.
+  const pylonStyles = isEmbeddable ? "" : " https://*.usepylon.com";
+
+  const csp = [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    // style-src keeps 'unsafe-inline' for now: runtime style injection from
+    // CodeMirror and other libraries cannot be nonce-attributed. Revisit when
+    // those libraries are audited.
+    `style-src 'self' 'unsafe-inline'${pylonStyles}`,
+    "img-src https: data: blob:",
+    "frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:",
+    `frame-ancestors ${frameAncestors}`,
+    "form-action 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "connect-src 'self' https://*.rilldata.com https://*.rilldata.io https://*.rilldata.in https://*.usepylon.com https://docs.google.com https://storage.googleapis.com https://cdn.prod.website-files.com https://*.stripe.com wss://*.pusher.com",
+    "font-src 'self' https://fonts.gstatic.com https://*.usepylon.com",
+  ].join("; ");
+
+  const headers = new Headers(response.headers);
+  headers.set("Content-Security-Policy", csp);
+
+  return new Response(body, { status: response.status, headers });
+};
+
+export const config: Config = {
+  path: "/*",
+  rateLimit: {
+    windowLimit: 3000,
+    windowSize: 60,
+    aggregateBy: ["ip", "domain"],
+  },
+};
