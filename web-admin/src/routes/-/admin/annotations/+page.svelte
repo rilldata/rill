@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     createAdminServiceSudoUpdateAnnotations,
-    createAdminServiceSudoGetResource,
   } from "@rilldata/web-admin/client";
   import AdminPageHeader from "@rilldata/web-admin/features/admin/layout/AdminPageHeader.svelte";
   import ActionResultBanner from "@rilldata/web-admin/features/admin/shared/ActionResultBanner.svelte";
@@ -71,7 +70,7 @@
     </label>
     <textarea
       class="input w-full h-32 font-mono text-xs"
-      placeholder='{"key": "value"}'
+      placeholder={'{"key": "value"}'}
       bind:value={annotationsJson}
     ></textarea>
   </div>
