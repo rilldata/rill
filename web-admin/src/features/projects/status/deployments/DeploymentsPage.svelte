@@ -100,7 +100,7 @@
     <h3 class="section-title">Slot Usage Over Time</h3>
     <RillEmbed
       org={organization}
-      resource="project_slots"
+      resource="prod_slots"
       height="500px"
     />
   </section>
