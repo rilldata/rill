@@ -334,7 +334,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     content="Connect to MySQL databases using ClickHouse's mysql() table function."
     link="/developers/build/connectors/data-source/clickhouse/mysql"
     linkLabel="Learn more"
-    referenceLink="mysql"
   />
   <ConnectorIcon
     icon={<PostgresLogo />}
@@ -342,7 +341,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     content="Connect to PostgreSQL databases using ClickHouse's postgresql() table function."
     link="/developers/build/connectors/data-source/clickhouse/postgres"
     linkLabel="Learn more"
-    referenceLink="postgresql"
   />
   <ConnectorIcon
     icon={<SupabaseLogo />}
@@ -350,7 +348,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     content="Connect to Supabase's managed PostgreSQL databases via ClickHouse's postgresql() table function."
     link="/developers/build/connectors/data-source/clickhouse/supabase"
     linkLabel="Learn more"
-    referenceLink="supabase"
   />
 </div>
 
@@ -368,7 +365,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     content="Connect to Amazon S3 buckets using ClickHouse's s3() table function."
     link="/developers/build/connectors/data-source/clickhouse/s3"
     linkLabel="Learn more"
-    referenceLink="s3"
   />
   <ConnectorIcon
     icon={<AzureLogo />}
@@ -376,7 +372,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     content="Connect to Azure Blob Storage using ClickHouse's azureBlobStorage() table function."
     link="/developers/build/connectors/data-source/clickhouse/azure"
     linkLabel="Learn more"
-    referenceLink="azure"
   />
   <ConnectorIcon
     icon={<GCSLogo />}
@@ -384,7 +379,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     content="Connect to GCS using ClickHouse's gcs() table function with HMAC keys."
     link="/developers/build/connectors/data-source/clickhouse/gcs"
     linkLabel="Learn more"
-    referenceLink="gcs"
   />
   <ConnectorIcon
     icon={<HadoopLogo />}
@@ -436,7 +430,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     content="Download data from HTTP/HTTPS URLs using ClickHouse's url() table function."
     link="/developers/build/connectors/data-source/clickhouse/https"
     linkLabel="Learn more"
-    referenceLink="https"
   />
   <ConnectorIcon
     icon={<KafkaLogo />}
