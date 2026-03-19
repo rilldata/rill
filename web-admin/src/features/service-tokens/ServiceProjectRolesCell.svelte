@@ -12,9 +12,10 @@
 
   $: organization = $page.params.organization;
   $: serviceQuery = createAdminServiceGetService(organization, serviceName, {
-    query: { enabled: hasProjectRoles && isDropdownOpen },
+    query: { enabled: hasProjectRoles },
   });
   $: memberships = $serviceQuery.data?.projectMemberships ?? [];
+  $: projectCount = memberships.length;
 </script>
 
 {#if hasProjectRoles}
@@ -24,7 +25,7 @@
         ? 'bg-gray-200'
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
-      <span>Projects</span>
+      <span>{projectCount} {projectCount === 1 ? "project" : "projects"}</span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
       {:else}

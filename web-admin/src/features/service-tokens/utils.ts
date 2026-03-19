@@ -1,4 +1,4 @@
-export const ORG_ROLES = ["admin", "editor", "viewer", "guest"];
+export const ORG_ROLES = ["admin", "editor", "viewer"];
 export const PROJECT_ROLES = ["admin", "editor", "viewer"];
 
 export const NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
