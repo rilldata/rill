@@ -20,6 +20,7 @@ import { snowflakeSchema } from "../../templates/schemas/snowflake";
 import { sqliteSchema } from "../../templates/schemas/sqlite";
 import { localFileSchema } from "../../templates/schemas/local_file";
 import { duckdbSchema } from "../../templates/schemas/duckdb";
+import { deltaSchema } from "../../templates/schemas/delta";
 import { httpsSchema } from "../../templates/schemas/https";
 import { icebergSchema } from "../../templates/schemas/iceberg";
 import { motherduckSchema } from "../../templates/schemas/motherduck";
@@ -52,6 +53,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   gcs: gcsSchema,
   iceberg: icebergSchema,
   azure: azureSchema,
+  delta: deltaSchema,
   claude: claudeSchema,
   openai: openaiSchema,
   gemini: geminiSchema,
