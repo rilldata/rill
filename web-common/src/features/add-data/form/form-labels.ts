@@ -28,14 +28,18 @@ export function getLabelsForConnector(
   values: Record<string, unknown>,
 ) {
   const schemaSpecificLabels = getSchemaButtonLabels(schema, values);
-  if (!schemaSpecificLabels) return connectorFormLabels;
-  // Merge with legacy label calculations.
-  // TODO: refactor getSchemaButtonLabels to output new labels object
-  return {
-    ...connectorFormLabels,
-    primaryLoadingCopy: schemaSpecificLabels.loading,
-    primaryButtonLabel: schemaSpecificLabels.idle,
-  };
+  const labels = schemaSpecificLabels
+    ? {
+        ...connectorFormLabels,
+        primaryLoadingCopy: schemaSpecificLabels.loading,
+        primaryButtonLabel: schemaSpecificLabels.idle,
+      }
+    : connectorFormLabels;
+
+  if (values.auth_method === "public") {
+    labels.primaryButtonLabel = "Continue";
+  }
+  return labels;
 }
 
 const importOnlySourceFormLabels: AddDataFormLabels = {

@@ -249,6 +249,27 @@ export function getAnalyzedConnectors(
   );
 }
 
+export function getAnalyzedConnectorByName(
+  client: RuntimeClient,
+  connectorName: string,
+) {
+  return createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        // Retry transient errors during runtime resets (e.g. project initialization)
+        retry: (failureCount) => failureCount < 3,
+        retryDelay: 1000,
+        // sort alphabetically
+        select: (data) => {
+          return data.connectors?.find((c) => c?.name === connectorName);
+        },
+      },
+    },
+  );
+}
+
 export async function fetchAnalyzeConnectors(client: RuntimeClient) {
   const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
     client.instanceId,

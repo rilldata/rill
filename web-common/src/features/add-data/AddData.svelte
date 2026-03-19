@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import NewSourceSelector from "@rilldata/web-common/features/add-data/form/NewSourceSelector.svelte";
+  import SourceSelector from "@rilldata/web-common/features/add-data/form/SourceSelector.svelte";
   import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
   import SourceForm from "@rilldata/web-common/features/add-data/form/SourceForm.svelte";
   import ImportTableForm from "@rilldata/web-common/features/add-data/form/ImportTableForm.svelte";
@@ -42,9 +42,7 @@
   );
 
   $: isImportStep = stepState.step === AddDataStep.Import;
-  $: sizeClass = isImportStep
-    ? "h-fit w-[500px]"
-    : "max-h-[900px] min-h-[600px] w-[900px]";
+  $: sizeClass = isImportStep ? "h-fit w-[500px]" : "h-[630px] w-[900px]";
   $: shouldShowHeader =
     stepState.step === AddDataStep.CreateConnector ||
     stepState.step === AddDataStep.CreateModel ||
@@ -64,7 +62,6 @@
         connector,
       },
     );
-    console.log("transition:init", newState);
     pushState("", newState);
   }
 
@@ -72,16 +69,6 @@
     const newState = await transitionToNextStep(runtimeClient, stepState, {
       schema,
     });
-    console.log("transition:schema", newState);
-    pushState("", newState);
-  }
-
-  async function transitionToConnector(connector: string) {
-    const newState = await transitionToNextStep(runtimeClient, stepState, {
-      schema,
-      connector,
-    });
-    console.log("transition:connector", newState);
     pushState("", newState);
   }
 
@@ -89,13 +76,12 @@
     const newState = await transitionToNextStep(runtimeClient, stepState, {
       importConfig,
     });
-    console.log("transition:source/explorer", newState);
     pushState("", newState);
   }
 </script>
 
 <div
-  class="flex flex-col {sizeClass} bg-surface-background border rounded-lg shadow-sm;"
+  class="flex flex-col {sizeClass} bg-surface-background border rounded-lg shadow-sm"
 >
   {#if shouldShowHeader && schema}
     <ConnectorHeader
@@ -108,34 +94,24 @@
   {/if}
 
   {#if stepState.step === AddDataStep.SelectConnector}
-    <NewSourceSelector
+    <SourceSelector
       {config}
       onSelect={transitionToSchema}
       onBack={() => window.history.back()}
     />
   {:else if stepState.step === AddDataStep.CreateConnector}
-    {#if connectorDriver}
-      <ConnectorForm
-        {connectorDriver}
-        onSubmit={transitionToConnector}
-        onBack={() => window.history.back()}
-      />
-    {:else}
-      <div>No connector driver (TODO)</div>
-    {/if}
+    <ConnectorForm
+      step={stepState}
+      onSubmit={(newState) => pushState("", newState)}
+      onBack={() => window.history.back()}
+    />
   {:else if stepState.step === AddDataStep.CreateModel}
-    {#if connectorDriver && schema && connector}
-      <SourceForm
-        {config}
-        {connectorDriver}
-        schemaName={schema}
-        connectorName={connector}
-        onSubmit={setAndStartImport}
-        onBack={() => window.history.back()}
-      />
-    {:else}
-      <div>Missing connector driver, schema name, or connector name (TODO)</div>
-    {/if}
+    <SourceForm
+      {config}
+      step={stepState}
+      onSubmit={setAndStartImport}
+      onBack={() => window.history.back()}
+    />
   {:else if stepState.step === AddDataStep.ExploreConnector}
     {#if connectorDriver && connector}
       <ImportTableForm

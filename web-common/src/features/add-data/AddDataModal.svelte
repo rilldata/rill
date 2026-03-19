@@ -31,7 +31,7 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="p-0 w-fit max-w-fit h-fit">
+  <Dialog.Content class="p-0 w-fit max-w-fit h-fit" noClose>
     {#if open}
       <AddData {config} onClose={() => (open = false)} />
     {/if}

@@ -37,6 +37,7 @@ export async function transitionToNextStep(
     driver = getConnectorDriverForSchema(selectedSchema);
   }
 
+  console.log("[Transition] from", AddDataStep[current.step]);
   switch (current.step) {
     case AddDataStep.SelectConnector:
       if (selectedConnector) {
@@ -44,9 +45,10 @@ export async function transitionToNextStep(
           driver!,
           selectedConnector,
           selectedSchema!,
+          args,
         );
       } else if (selectedSchema) {
-        return transitionFromSchema(driver!, selectedSchema);
+        return transitionFromSchema(driver!, selectedSchema, args);
       } else {
         return current;
       }
@@ -60,6 +62,7 @@ export async function transitionToNextStep(
         driver!,
         selectedConnector,
         selectedSchema!,
+        args,
       );
 
     case AddDataStep.ExploreConnector:
@@ -127,17 +130,21 @@ export function getImportStepsForSource(config: AddDataConfig) {
 function transitionFromSchema(
   driver: V1ConnectorDriver,
   schema: string,
+  args: AddDataTransitionArgs,
 ): AddDataState {
   if (isConnectorType(driver)) {
+    console.log("[Transition] To CreateConnector");
     return {
       step: AddDataStep.CreateConnector,
       schema,
     };
   } else {
+    console.log("[Transition] To CreateModel");
     return {
       step: AddDataStep.CreateModel,
       schema,
       connector: driver.name!,
+      isPublicConnector: args.isPublicConnector,
     };
   }
 }
@@ -146,23 +153,27 @@ function transitionFromConnector(
   driver: V1ConnectorDriver,
   connector: string,
   schema: string,
+  args: AddDataTransitionArgs,
 ): AddDataState {
   if (isExplorerType(driver)) {
+    console.log("[Transition] To ExploreConnector");
     return {
       step: AddDataStep.ExploreConnector,
       schema,
       connector,
     };
   } else {
+    console.log("[Transition] To CreateModel");
     return {
       step: AddDataStep.CreateModel,
       schema,
       connector,
+      isPublicConnector: args.isPublicConnector,
     };
   }
 }
 
-function getConnectorDriverForSchema(
+export function getConnectorDriverForSchema(
   schemaName: string,
 ): V1ConnectorDriver | null {
   const connectorInfo = connectorInfoMap.get(schemaName);
@@ -192,8 +203,6 @@ async function getConnectorDriverForConnector(
 
 function isConnectorType(connectorDriver: V1ConnectorDriver) {
   return (
-    (connectorDriver?.implementsFileStore &&
-      connectorDriver?.name !== "local_file") ||
     connectorDriver?.implementsObjectStore ||
     connectorDriver?.implementsOlap ||
     connectorDriver?.implementsSqlStore ||

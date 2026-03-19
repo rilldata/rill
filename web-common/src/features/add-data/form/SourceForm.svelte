@@ -1,9 +1,6 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
-  import {
-    runtimeServiceGetFile,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { onMount } from "svelte";
   import { getSourceYamlPreview } from "./yaml-preview.ts";
@@ -14,25 +11,34 @@
   import { updateDotEnvWithSecrets } from "@rilldata/web-common/features/connectors/code-utils.ts";
   import {
     type AddDataConfig,
+    type CreateModelStep,
     type ImportAddDataStepConfig,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getImportStepsForSource } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import {
+    getConnectorDriverForSchema,
+    getImportStepsForSource,
+  } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import { uploadFile } from "@rilldata/web-common/features/sources/modal/file-upload.ts";
   import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { getAnalyzedConnectorByName } from "@rilldata/web-common/features/connectors/selectors.ts";
 
   export let config: AddDataConfig;
-  export let connectorDriver: V1ConnectorDriver;
-  export let schemaName: string;
-  export let connectorName: string;
+  export let step: CreateModelStep;
   export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
   export let onBack: () => void;
 
   const runtimeClient = useRuntimeClient();
+  $: connectorDriverQuery = getAnalyzedConnectorByName(
+    runtimeClient,
+    step.connector,
+  );
+  $: connectorDriver =
+    $connectorDriverQuery.data ?? getConnectorDriverForSchema(step.schema);
 
   const importSteps = getImportStepsForSource(config);
 
@@ -53,7 +59,7 @@
   });
 
   const superFormsParams = createConnectorForm({
-    schemaName,
+    schemaName: step.schema,
     formType: "source",
     onUpdate: async ({ form }) => {
       if (!form.valid) return;
@@ -63,21 +69,27 @@
 
   $: ({ form } = superFormsParams);
 
-  $: schema = getConnectorSchema(schemaName);
-  $: yamlPreview = getSourceYamlPreview({
-    connector: connectorDriver,
-    formValues: $form,
-    schema,
-    existingEnvBlob,
-  });
+  $: schema = getConnectorSchema(step.schema);
+  $: yamlPreview = connectorDriver
+    ? getSourceYamlPreview({
+        connector: connectorDriver,
+        formValues: $form,
+        schema,
+        existingEnvBlob,
+      })
+    : "";
 
   $: sourceFormLabels = getLabelsForSource(importSteps);
 
   async function submitImportConfig(formValues: any) {
+    if (!connectorDriver) {
+      throw new Error("Connector driver not found for: " + step.connector);
+    }
+
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connectorDriver,
       formValues,
-      { connectorInstanceName: connectorName },
+      { connectorInstanceName: step.connector },
     );
     const schema = getConnectorSchema(rewrittenConnector.name ?? "");
     const schemaSecretKeys = schema
@@ -129,12 +141,14 @@
   }
 </script>
 
-<AddDataFormStructure
-  {connectorDriver}
-  {schema}
-  {superFormsParams}
-  labels={sourceFormLabels}
-  {yamlPreview}
-  step="source"
-  {onBack}
-/>
+{#if connectorDriver}
+  <AddDataFormStructure
+    {connectorDriver}
+    {schema}
+    {superFormsParams}
+    labels={sourceFormLabels}
+    {yamlPreview}
+    step="source"
+    {onBack}
+  />
+{/if}

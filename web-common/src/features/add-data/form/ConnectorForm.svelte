@@ -1,9 +1,6 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
-  import {
-    runtimeServiceGetFile,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { onMount } from "svelte";
   import { getConnectorYamlPreview } from "./yaml-preview.ts";
@@ -16,16 +13,27 @@
   import { createConnector } from "@rilldata/web-common/features/add-data/steps/connector.ts";
   import { getLabelsForConnector } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
+  import type {
+    AddDataState,
+    CreateConnectorStep,
+  } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import {
+    getConnectorDriverForSchema,
+    transitionToNextStep,
+  } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
 
-  export let connectorDriver: V1ConnectorDriver;
-  export let onSubmit: (name: string) => void;
+  export let step: CreateConnectorStep;
+  export let onSubmit: (newState: AddDataState) => void;
   export let onBack: () => void;
 
   const runtimeClient = useRuntimeClient();
+
   const connectorName = getName(
-    connectorDriver.name!,
+    step.schema,
     fileArtifacts.getNamesForKind(ResourceKind.Connector),
   );
+
+  $: connectorDriver = getConnectorDriverForSchema(step.schema);
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
@@ -44,10 +52,10 @@
   });
 
   const superFormsParams = createConnectorForm({
-    schemaName: connectorDriver.name ?? "",
+    schemaName: step.schema,
     formType: "connector",
     onUpdate: async ({ form }) => {
-      if (!form.valid) return;
+      if (!form.valid || !connectorDriver) return;
       try {
         await createConnector({
           runtimeClient,
@@ -57,7 +65,12 @@
           formValues: form.data,
           saveAnyway: false,
         });
-        onSubmit(connectorName);
+        const newState = await transitionToNextStep(runtimeClient, step, {
+          schema: step.schema,
+          connector: connectorName,
+          isPublicConnector: form.data.auth_method === "public",
+        });
+        onSubmit(newState);
       } catch (e) {
         setSubmitError(form, e);
       }
@@ -66,23 +79,27 @@
 
   $: ({ form } = superFormsParams);
 
-  $: schema = getConnectorSchema(connectorDriver.name ?? "");
-  $: yamlPreview = getConnectorYamlPreview({
-    connector: connectorDriver,
-    formValues: $form,
-    schema,
-    existingEnvBlob,
-  });
+  $: schema = getConnectorSchema(step.schema);
+  $: yamlPreview = connectorDriver
+    ? getConnectorYamlPreview({
+        connector: connectorDriver,
+        formValues: $form,
+        schema,
+        existingEnvBlob,
+      })
+    : "";
 
   $: labelsForConnector = getLabelsForConnector(schema, $form);
 </script>
 
-<AddDataFormStructure
-  {connectorDriver}
-  {schema}
-  {superFormsParams}
-  labels={labelsForConnector}
-  {yamlPreview}
-  step="connector"
-  {onBack}
-/>
+{#if connectorDriver}
+  <AddDataFormStructure
+    {connectorDriver}
+    {schema}
+    {superFormsParams}
+    labels={labelsForConnector}
+    {yamlPreview}
+    step="connector"
+    {onBack}
+  />
+{/if}
