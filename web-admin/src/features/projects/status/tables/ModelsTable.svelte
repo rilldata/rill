@@ -6,6 +6,7 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
+  import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import { compareSizes } from "@rilldata/web-common/features/projects/status/tables/utils";
   import ModelSizeCell from "@rilldata/web-common/features/projects/status/tables/ModelSizeCell.svelte";
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
@@ -104,6 +105,7 @@
         const resource = modelResources.get(tableName.toLowerCase());
         return flexRender(ModelActionsCell, {
           resource,
+          isReconciling: resource ? isResourceReconciling(resource) : false,
           isDropdownOpen: openDropdownTableName === tableName,
           onDropdownOpenChange: (isOpen: boolean) => {
             openDropdownTableName = isOpen ? tableName : "";

@@ -3308,6 +3308,15 @@ func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) e
 	return checkDeleteRow("provisioner resource", res, err)
 }
 
+func (c *connection) FindManagedGitRepos(ctx context.Context, afterRemote string, limit int) ([]*database.ManagedGitRepo, error) {
+	var res []*database.ManagedGitRepo
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM managed_git_repos WHERE remote > $1 ORDER BY remote LIMIT $2", afterRemote, limit)
+	if err != nil {
+		return nil, parseErr("managed git repos", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindManagedGitRepo(ctx context.Context, remote string) (*database.ManagedGitRepo, error) {
 	res := &database.ManagedGitRepo{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM managed_git_repos WHERE remote = $1", remote).StructScan(res)

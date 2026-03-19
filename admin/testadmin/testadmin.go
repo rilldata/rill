@@ -25,6 +25,7 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -156,7 +157,19 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	}
 	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), mockAI, nil, billing.NewNoop(), payment.NewNoop())
 	require.NoError(t, err)
-	t.Cleanup(func() { adm.Close() })
+	t.Cleanup(func() {
+		// cleanup any managed repos created during testing since the repos are cleaned in a river job not executed in tests
+		// ignore pagination since we don't expect more than 20 repos to be created during testing
+		repos, err := adm.DB.FindManagedGitRepos(context.Background(), "", 20)
+		require.NoError(t, err)
+		for _, repo := range repos {
+			_, name, ok := gitutil.SplitGithubRemote(repo.Remote)
+			require.True(t, ok, "invalid github remote: %s", repo.Remote)
+			err := adm.Github.DeleteManagedRepo(context.Background(), name)
+			require.NoError(t, err, "failed to delete managed github repo %s", repo.Remote)
+		}
+		adm.Close()
+	})
 
 	// Background jobs
 	jobs, err := river.New(ctx, pg.DatabaseURL, adm)
@@ -329,6 +342,10 @@ func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (s
 
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockGithub) DeleteManagedRepo(ctx context.Context, repo string) error {
+	return fmt.Errorf("not implemented")
 }
 
 func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {

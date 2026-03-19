@@ -61,8 +61,13 @@ func (t *ListFiles) Handler(ctx context.Context, args *ListFilesArgs) (*ListFile
 		return nil, err
 	}
 	parseErrorsByPath := make(map[string][]string)
+	parseWarningsByPath := make(map[string][]string)
 	for _, e := range parser.GetProjectParser().State.ParseErrors {
-		parseErrorsByPath[e.FilePath] = append(parseErrorsByPath[e.FilePath], e.Message)
+		if e.Warning {
+			parseWarningsByPath[e.FilePath] = append(parseWarningsByPath[e.FilePath], e.Message)
+		} else {
+			parseErrorsByPath[e.FilePath] = append(parseErrorsByPath[e.FilePath], e.Message)
+		}
 	}
 
 	files, err := t.Runtime.ListFiles(ctx, s.InstanceID(), "**")
@@ -93,6 +98,9 @@ func (t *ListFiles) Handler(ctx context.Context, args *ListFilesArgs) (*ListFile
 		}
 		if len(parseErrorsByPath[file.Path]) > 0 {
 			data["parse_errors"] = parseErrorsByPath[file.Path]
+		}
+		if len(parseWarningsByPath[file.Path]) > 0 {
+			data["parse_warnings"] = parseWarningsByPath[file.Path]
 		}
 
 		res = append(res, data)

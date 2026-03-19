@@ -90,12 +90,8 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		}
 		if p != nil {
 			if ch.Interactive {
-				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), "", true)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), true); err != nil {
 					return err
-				}
-				if !ok {
-					return fmt.Errorf("aborting deploy")
 				}
 			}
 			o.pushToProject = p
@@ -158,14 +154,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		if !ch.Interactive {
 			return nil
 		}
-		ok, err := cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", "", true)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return fmt.Errorf("aborting deploy")
-		}
-		return nil
+		return cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", true)
 	}
 
 	if o.remoteURL == "" {
@@ -185,14 +174,14 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 	if o.Managed {
 		// if user explicitly wants managed deploys confirm if they want to really skip github connection
-		ok, err := cmdutil.ConfirmPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", "", true)
+		ok, err := cmdutil.YesNoPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", true)
 		if err != nil {
 			return err
 		}
 		connectToGithub = !ok
 	} else if !o.Github && ch.Interactive {
 		// still confirm if user wants to connect to github
-		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+		connectToGithub, err = cmdutil.YesNoPrompt("Enable automatic deploys to Rill Cloud from GitHub?", true)
 		if err != nil {
 			return err
 		}
@@ -267,7 +256,9 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 }
 
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
-	opts := &DeployOpts{}
+	opts := &DeployOpts{
+		ProdVersion: "latest",
+	}
 
 	deployCmd := &cobra.Command{
 		Use:   "deploy [<path>]",
@@ -293,7 +284,6 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
-	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
@@ -356,6 +346,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	// We create a default org based on the user name.
 	// TODO : Ask user prompt similar to UI instead of silently creating org based on email
 	if ch.Org == "" {
+		if !ch.Interactive {
+			return fmt.Errorf("--org flag is required when not running interactively")
+		}
 		err = createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
