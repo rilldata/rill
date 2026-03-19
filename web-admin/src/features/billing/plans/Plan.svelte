@@ -22,17 +22,7 @@
   $: creditInfo = $subscriptionQuery?.data?.creditInfo;
   $: hasPayment = !!$subscriptionQuery?.data?.organization?.paymentCustomerId;
   $: plan = subscription?.plan;
-
-  // DEBUG: log full subscription response to browser console
-  $: if ($subscriptionQuery?.data) {
-    console.log("[Billing DEBUG] subscription response:", {
-      planName: plan?.name,
-      planType: plan?.planType,
-      creditInfo,
-      billingPortalUrl: $subscriptionQuery.data.billingPortalUrl,
-      orgBillingCustomerId: $subscriptionQuery.data.organization?.billingCustomerId,
-    });
-  }
+  $: billingPortalUrl = $subscriptionQuery?.data?.billingPortalUrl;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
 
@@ -60,13 +50,13 @@
 {:else if subIsFreePlan || isTrial}
   <FreePlan {organization} {subscription} {creditInfo} {showUpgradeDialog} {plan} />
 {:else if subIsGrowthPlan}
-  <GrowthPlan {organization} {subscription} {plan} />
+  <GrowthPlan {organization} {subscription} {plan} {billingPortalUrl} />
 {:else if subHasEnded}
-  <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} />
+  <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} {billingPortalUrl} />
 {:else if subIsTeamPlan}
-  <TeamPlan {organization} {subscription} {plan} />
+  <TeamPlan {organization} {subscription} {plan} {billingPortalUrl} />
 {:else if subIsManagedPlan}
-  <POCPlan {organization} {hasPayment} {plan} />
+  <POCPlan {organization} {hasPayment} {plan} {billingPortalUrl} />
 {:else if subIsEnterprisePlan}
   <EnterprisePlan {organization} {plan} />
 {/if}

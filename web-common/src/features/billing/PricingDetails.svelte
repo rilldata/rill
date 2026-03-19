@@ -13,14 +13,6 @@
   {:else}
     Cluster Slots are auto-calculated from your OLAP cluster. Add Rill Slots for extra performance.
   {/if}
-  <a
-    href="https://www.rilldata.com/pricing"
-    target="_blank"
-    rel="noreferrer noopener"
-  >
-    See pricing details ->
-  </a>
-
   <ul class="mt-5 ml-5 list-disc">
     {#if mode === "legacy"}
       <li>Starts at $250/month with 10 GB included, $25/GB thereafter</li>

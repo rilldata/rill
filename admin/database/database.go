@@ -395,8 +395,8 @@ type Organization struct {
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
 	BillingPlanName                     *string   `db:"billing_plan_name"`
-	BillingPlanDisplayName              *string    `db:"billing_plan_display_name"`
-	CreatedByUserID                     *string    `db:"created_by_user_id"`
+	BillingPlanDisplayName              *string   `db:"billing_plan_display_name"`
+	CreatedByUserID                     *string   `db:"created_by_user_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org

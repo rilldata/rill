@@ -27,6 +27,7 @@
   export let organization: string;
   export let subscription: V1Subscription;
   export let plan: V1BillingPlan;
+  export let billingPortalUrl: string | undefined;
 
   $: planCanceller = createAdminServiceCancelBillingSubscription();
   async function handleCancelPlan() {
@@ -57,11 +58,14 @@
       Usage-based billing, no base fee. Next billing cycle starts on
       <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate ?? "")}</b>.
     </div>
-    <a
-      href="https://www.rilldata.com/pricing"
-      target="_blank"
-      rel="noreferrer noopener">See pricing details -></a
-    >
+    {#if billingPortalUrl}
+      <a
+        href={billingPortalUrl}
+        target="_blank"
+        rel="noreferrer noopener"
+        class="invoice-link">View Invoice</a
+      >
+    {/if}
     <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
@@ -103,3 +107,12 @@
     </AlertDialogContent>
   </AlertDialog>
 </SettingsContainer>
+
+<style lang="postcss">
+  .invoice-link {
+    @apply text-sm text-primary-500 no-underline mt-2 inline-block;
+  }
+  .invoice-link:hover {
+    @apply text-primary-600 underline;
+  }
+</style>

@@ -46,6 +46,7 @@ import type {
   AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentBody,
   AdminServiceGetDeploymentCredentialsBody,
+  AdminServiceGetEmbeddedAnalyticsBody,
   AdminServiceGetGithubRepoStatusParams,
   AdminServiceGetIFrameBody,
   AdminServiceGetOrganizationParams,
@@ -92,6 +93,7 @@ import type {
   AdminServiceTriggerReconcileBodyBody,
   AdminServiceTriggerRefreshSourcesBody,
   AdminServiceUnsubscribeAlertBodyBody,
+  AdminServiceUpdateAutoRefillSettingsBody,
   AdminServiceUpdateBillingSubscriptionBodyBody,
   AdminServiceUpdateOrganizationBody,
   AdminServiceUpdateOrganizationMemberUserAttributesBody,
@@ -140,6 +142,7 @@ import type {
   V1GenerateReportYAMLResponse,
   V1GetAlertMetaResponse,
   V1GetAlertYAMLResponse,
+  V1GetAutoRefillSettingsResponse,
   V1GetBillingProjectCredentialsRequest,
   V1GetBillingProjectCredentialsResponse,
   V1GetBillingSubscriptionResponse,
@@ -150,6 +153,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbeddedAnalyticsResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -267,6 +271,7 @@ import type {
   V1TriggerReportResponse,
   V1UnsubscribeAlertResponse,
   V1UnsubscribeReportResponse,
+  V1UpdateAutoRefillSettingsResponse,
   V1UpdateBillingSubscriptionResponse,
   V1UpdateBookmarkRequest,
   V1UpdateBookmarkResponse,
@@ -2238,6 +2243,188 @@ export const createAdminServiceUpdateOrganization = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary GetAutoRefillSettings returns the auto-refill settings for an organization
+ */
+export const adminServiceGetAutoRefillSettings = (
+  org: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetAutoRefillSettingsResponse>({
+    url: `/v1/orgs/${org}/billing/auto-refill`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetAutoRefillSettingsQueryKey = (org: string) => {
+  return [`/v1/orgs/${org}/billing/auto-refill`] as const;
+};
+
+export const getAdminServiceGetAutoRefillSettingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetAutoRefillSettings>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetAutoRefillSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetAutoRefillSettingsQueryKey(org);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetAutoRefillSettings>>
+  > = ({ signal }) => adminServiceGetAutoRefillSettings(org, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!org,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetAutoRefillSettings>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetAutoRefillSettingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetAutoRefillSettings>>
+>;
+export type AdminServiceGetAutoRefillSettingsQueryError = RpcStatus;
+
+/**
+ * @summary GetAutoRefillSettings returns the auto-refill settings for an organization
+ */
+
+export function createAdminServiceGetAutoRefillSettings<
+  TData = Awaited<ReturnType<typeof adminServiceGetAutoRefillSettings>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetAutoRefillSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetAutoRefillSettingsQueryOptions(
+    org,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary UpdateAutoRefillSettings updates the auto-refill settings for an organization
+ */
+export const adminServiceUpdateAutoRefillSettings = (
+  org: string,
+  adminServiceUpdateAutoRefillSettingsBody: AdminServiceUpdateAutoRefillSettingsBody,
+) => {
+  return httpClient<V1UpdateAutoRefillSettingsResponse>({
+    url: `/v1/orgs/${org}/billing/auto-refill`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateAutoRefillSettingsBody,
+  });
+};
+
+export const getAdminServiceUpdateAutoRefillSettingsMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateAutoRefillSettings>>,
+    TError,
+    { org: string; data: AdminServiceUpdateAutoRefillSettingsBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUpdateAutoRefillSettings>>,
+  TError,
+  { org: string; data: AdminServiceUpdateAutoRefillSettingsBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceUpdateAutoRefillSettings"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateAutoRefillSettings>>,
+    { org: string; data: AdminServiceUpdateAutoRefillSettingsBody }
+  > = (props) => {
+    const { org, data } = props ?? {};
+
+    return adminServiceUpdateAutoRefillSettings(org, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUpdateAutoRefillSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateAutoRefillSettings>>
+>;
+export type AdminServiceUpdateAutoRefillSettingsMutationBody =
+  AdminServiceUpdateAutoRefillSettingsBody;
+export type AdminServiceUpdateAutoRefillSettingsMutationError = RpcStatus;
+
+/**
+ * @summary UpdateAutoRefillSettings updates the auto-refill settings for an organization
+ */
+export const createAdminServiceUpdateAutoRefillSettings = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateAutoRefillSettings>>,
+      TError,
+      { org: string; data: AdminServiceUpdateAutoRefillSettingsBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceUpdateAutoRefillSettings>>,
+  TError,
+  { org: string; data: AdminServiceUpdateAutoRefillSettingsBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceUpdateAutoRefillSettingsMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
  */
 export const adminServiceListOrganizationBillingIssues = (
@@ -2989,6 +3176,94 @@ export const createAdminServiceCreateAsset = <
   TContext
 > => {
   const mutationOptions = getAdminServiceCreateAssetMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+ */
+export const adminServiceGetEmbeddedAnalytics = (
+  org: string,
+  adminServiceGetEmbeddedAnalyticsBody: AdminServiceGetEmbeddedAnalyticsBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbeddedAnalyticsResponse>({
+    url: `/v1/orgs/${org}/embedded-analytics`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceGetEmbeddedAnalyticsBody,
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbeddedAnalyticsMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+    TError,
+    { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError,
+  { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceGetEmbeddedAnalytics"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+    { org: string; data: AdminServiceGetEmbeddedAnalyticsBody }
+  > = (props) => {
+    const { org, data } = props ?? {};
+
+    return adminServiceGetEmbeddedAnalytics(org, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceGetEmbeddedAnalyticsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>
+>;
+export type AdminServiceGetEmbeddedAnalyticsMutationBody =
+  AdminServiceGetEmbeddedAnalyticsBody;
+export type AdminServiceGetEmbeddedAnalyticsMutationError = RpcStatus;
+
+/**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+ */
+export const createAdminServiceGetEmbeddedAnalytics = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+      TError,
+      { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError,
+  { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceGetEmbeddedAnalyticsMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

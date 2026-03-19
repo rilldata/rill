@@ -21,6 +21,7 @@
     HOURS_PER_MONTH,
   } from "../overview/slots-utils";
   import ManageSlotsModal from "../overview/ManageSlotsModal.svelte";
+  import RillEmbed from "@rilldata/web-admin/features/embeds/RillEmbed.svelte";
 
   export let organization: string;
   export let project: string;
@@ -85,7 +86,7 @@
         (~${rillMonthlyCost.toLocaleString()}/mo)
       </span>
       <a
-        href="/{organization}/-/settings/billing"
+        href="/{organization}/-/settings/usage"
         class="pricing-link"
       >
         See price breakdown
@@ -94,25 +95,14 @@
 
   </div>
 
-  <!-- Analytics placeholder -->
+  <!-- Slot usage analytics -->
   <section class="detail-section">
     <h3 class="section-title">Slot Usage Over Time</h3>
-    <div class="analytics-placeholder">
-      <div class="placeholder-chart">
-        <div class="placeholder-bar-group">
-          {#each Array(12) as _, i}
-            <div
-              class="placeholder-bar"
-              style:height="{20 + Math.sin(i * 0.8) * 15 + Math.random() * 10}%"
-            />
-          {/each}
-        </div>
-        <div class="placeholder-axis" />
-      </div>
-      <p class="placeholder-text">
-        Slot usage analytics coming soon. This will show Rill Slots usage over time.
-      </p>
-    </div>
+    <RillEmbed
+      org={organization}
+      resource="project_slots"
+      height="500px"
+    />
   </section>
 
 </div>
@@ -190,24 +180,4 @@
     @apply text-sm font-semibold text-fg-primary uppercase tracking-wide mb-4;
   }
 
-  /* Analytics placeholder */
-  .analytics-placeholder {
-    @apply flex flex-col items-center gap-4 py-6;
-  }
-  .placeholder-chart {
-    @apply w-full max-w-md flex flex-col items-stretch;
-  }
-  .placeholder-bar-group {
-    @apply flex items-end justify-between gap-1.5 h-24;
-  }
-  .placeholder-bar {
-    @apply flex-1 bg-primary-100 rounded-t-sm;
-    min-height: 8px;
-  }
-  .placeholder-axis {
-    @apply h-px bg-border mt-1;
-  }
-  .placeholder-text {
-    @apply text-sm text-fg-tertiary text-center max-w-sm;
-  }
 </style>

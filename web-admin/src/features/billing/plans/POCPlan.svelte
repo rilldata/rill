@@ -9,6 +9,7 @@
   export let organization: string;
   export let hasPayment: boolean;
   export let plan: V1BillingPlan;
+  export let billingPortalUrl: string | undefined;
 
   let open = false;
 </script>
@@ -16,6 +17,14 @@
 <SettingsContainer title={plan?.displayName}>
   <div slot="body">
     <div>You're currently on a custom contract.</div>
+    {#if billingPortalUrl}
+      <a
+        href={billingPortalUrl}
+        target="_blank"
+        rel="noreferrer noopener"
+        class="invoice-link">View Invoice</a
+      >
+    {/if}
     <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
@@ -32,3 +41,12 @@
 </SettingsContainer>
 
 <StartTeamPlanDialog bind:open {organization} type="base" />
+
+<style lang="postcss">
+  .invoice-link {
+    @apply text-sm text-primary-500 no-underline mt-2 inline-block;
+  }
+  .invoice-link:hover {
+    @apply text-primary-600 underline;
+  }
+</style>

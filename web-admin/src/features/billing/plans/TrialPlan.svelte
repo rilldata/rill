@@ -53,11 +53,6 @@
   <div slot="body">
     <div>
       {trialEndMessage} Ready to get started with Rill?
-      <a
-        href="https://www.rilldata.com/pricing"
-        target="_blank"
-        rel="noreferrer noopener">See pricing details -></a
-      >
       {#if plan}
         <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
         <PlanQuotas {organization} />

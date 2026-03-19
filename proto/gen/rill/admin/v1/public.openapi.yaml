@@ -675,6 +675,17 @@ components:
                 yaml:
                     type: string
             type: object
+        v1GetAutoRefillSettingsResponse:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                enabled:
+                    type: boolean
+                threshold:
+                    format: double
+                    type: number
+            type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
                 org:
@@ -786,6 +797,14 @@ components:
                 instanceId:
                     type: string
                 runtimeHost:
+                    type: string
+                ttlSeconds:
+                    format: int64
+                    type: integer
+            type: object
+        v1GetEmbeddedAnalyticsResponse:
+            properties:
+                iframeSrc:
                     type: string
                 ttlSeconds:
                     format: int64
@@ -2242,6 +2261,17 @@ components:
             type: object
         v1UnsubscribeReportResponse:
             type: object
+        v1UpdateAutoRefillSettingsResponse:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                enabled:
+                    type: boolean
+                threshold:
+                    format: double
+                    type: number
+            type: object
         v1UpdateBillingSubscriptionResponse:
             properties:
                 organization:
@@ -2601,12 +2631,14 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/auto-refill: {}
     /v1/orgs/{org}/billing/issues: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
     /v1/orgs/{org}/billing/subscriptions: {}
     /v1/orgs/{org}/billing/subscriptions/renew: {}
     /v1/orgs/{org}/create-managed-git-repo: {}
     /v1/orgs/{org}/create_asset: {}
+    /v1/orgs/{org}/embedded-analytics: {}
     /v1/orgs/{org}/invites:
         get:
             operationId: AdminService_ListOrganizationInvites

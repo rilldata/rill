@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -503,6 +504,71 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 	return &adminv1.GetPaymentsPortalURLResponse{Url: url}, nil
 }
 
+func (s *Server) UpdateAutoRefillSettings(ctx context.Context, req *adminv1.UpdateAutoRefillSettingsRequest) (*adminv1.UpdateAutoRefillSettingsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
+	}
+
+	if req.Enabled && req.Threshold <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "threshold must be positive when auto-refill is enabled")
+	}
+	if req.Enabled && req.Amount <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "amount must be positive when auto-refill is enabled")
+	}
+
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing customer not initialized")
+	}
+
+	result, err := s.admin.Biller.SetAutoTopUp(ctx, org.BillingCustomerID, req.Enabled, req.Threshold, req.Amount)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to configure auto top-up: %v", err)
+	}
+
+	return &adminv1.UpdateAutoRefillSettingsResponse{
+		Enabled:   result.Enabled,
+		Threshold: result.Threshold,
+		Amount:    result.Amount,
+	}, nil
+}
+
+func (s *Server) GetAutoRefillSettings(ctx context.Context, req *adminv1.GetAutoRefillSettingsRequest) (*adminv1.GetAutoRefillSettingsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
+	}
+
+	if org.BillingCustomerID == "" {
+		return &adminv1.GetAutoRefillSettingsResponse{Enabled: false}, nil
+	}
+
+	result, err := s.admin.Biller.GetAutoTopUp(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get auto top-up settings: %v", err)
+	}
+
+	return &adminv1.GetAutoRefillSettingsResponse{
+		Enabled:   result.Enabled,
+		Threshold: result.Threshold,
+		Amount:    result.Amount,
+	}, nil
+}
+
 // SudoUpdateOrganizationBillingCustomer updates the billing customer id for an organization. May be useful if customer is initialized manually in billing system
 func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -845,6 +911,97 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		InstanceId:  prodDepl.RuntimeInstanceID,
 		AccessToken: jwt,
 		TtlSeconds:  uint32(runtimeAccessTokenDefaultTTL.Seconds()),
+	}, nil
+}
+
+func (s *Server) GetEmbeddedAnalytics(ctx context.Context, req *adminv1.GetEmbeddedAnalyticsRequest) (*adminv1.GetEmbeddedAnalyticsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.resource", req.Resource),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to view embedded analytics")
+	}
+
+	if s.admin.MetricsProjectID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "metrics project not configured")
+	}
+
+	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if metricsProj.PrimaryDeploymentID == nil {
+		return nil, status.Error(codes.InvalidArgument, "metrics project does not have a deployment")
+	}
+
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.PrimaryDeploymentID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Issue a JWT scoped to this org's data in the metrics project
+	ttl := runtimeAccessTokenEmbedTTL
+	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
+		AudienceURL: prodDepl.RuntimeAudience,
+		Subject:     claims.OwnerID(),
+		TTL:         ttl,
+		InstancePermissions: map[string][]runtime.Permission{
+			prodDepl.RuntimeInstanceID: {
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+			},
+		},
+		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
+		SecurityRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{
+							Kind: "rill.runtime.v1.Canvas",
+							Name: req.Resource,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not issue jwt: %w", err)
+	}
+
+	s.admin.Used.Deployment(prodDepl.ID)
+
+	// Build iframe URL
+	metricsOrg, err := s.admin.DB.FindOrganization(ctx, metricsProj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not find metrics org: %s", err.Error())
+	}
+
+	iframeSrc, err := s.admin.URLs.WithCustomDomain(metricsOrg.CustomDomain).Embed(map[string]string{
+		"runtime_host": prodDepl.RuntimeHost,
+		"instance_id":  prodDepl.RuntimeInstanceID,
+		"access_token": jwt,
+		"type":         "rill.runtime.v1.Canvas",
+		"kind":         "rill.runtime.v1.Canvas",
+		"resource":     req.Resource,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
+	}
+
+	return &adminv1.GetEmbeddedAnalyticsResponse{
+		IframeSrc:  iframeSrc,
+		TtlSeconds: uint32(ttl.Seconds()),
 	}, nil
 }
 

@@ -529,6 +529,12 @@ export interface V1GetAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1GetAutoRefillSettingsResponse {
+  enabled?: boolean;
+  threshold?: number;
+  amount?: number;
+}
+
 export interface V1GetBillingProjectCredentialsRequest {
   org?: string;
 }
@@ -604,6 +610,11 @@ export interface V1GetDeploymentResponse {
   runtimeHost?: string;
   instanceId?: string;
   accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetEmbeddedAnalyticsResponse {
+  iframeSrc?: string;
   ttlSeconds?: number;
 }
 
@@ -1583,6 +1594,12 @@ export interface V1UnsubscribeReportResponse {
   [key: string]: unknown;
 }
 
+export interface V1UpdateAutoRefillSettingsResponse {
+  enabled?: boolean;
+  threshold?: number;
+  amount?: number;
+}
+
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -1790,6 +1807,12 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceUpdateAutoRefillSettingsBody = {
+  enabled?: boolean;
+  threshold?: number;
+  amount?: number;
+};
+
 export type AdminServiceListOrganizationBillingIssuesParams = {
   superuserForceAccess?: boolean;
 };
@@ -1823,6 +1846,10 @@ export type AdminServiceCreateAssetBody = {
   extension?: string;
   public?: boolean;
   estimatedSizeBytes?: string;
+};
+
+export type AdminServiceGetEmbeddedAnalyticsBody = {
+  resource?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {

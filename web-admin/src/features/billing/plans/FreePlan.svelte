@@ -59,12 +59,6 @@
         </div>
       {/if}
 
-      <a
-        href="https://www.rilldata.com/pricing"
-        target="_blank"
-        rel="noreferrer noopener">See pricing details -></a
-      >
-
       {#if plan}
         <PlanQuotas {organization} />
       {/if}

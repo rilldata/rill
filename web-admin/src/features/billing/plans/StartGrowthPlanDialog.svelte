@@ -148,14 +148,6 @@
       <AlertDialogDescription>
         <div>
           {description}
-          <a
-            href="https://www.rilldata.com/pricing"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            See pricing details ->
-          </a>
-
           <ul class="mt-5 ml-5 list-disc">
             <li>Pure usage-based billing, no base fee</li>
             <li>Managed: $0.15/slot/hr + $1/GB/month storage above 1GB</li>

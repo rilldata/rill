@@ -496,6 +496,57 @@ paths:
               billingEmail:
                 type: string
       x-visibility: public
+  /v1/orgs/{org}/billing/auto-refill:
+    get:
+      summary: GetAutoRefillSettings returns the auto-refill settings for an organization
+      operationId: AdminService_GetAutoRefillSettings
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAutoRefillSettingsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+    patch:
+      summary: UpdateAutoRefillSettings updates the auto-refill settings for an organization
+      operationId: AdminService_UpdateAutoRefillSettings
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateAutoRefillSettingsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              enabled:
+                type: boolean
+              threshold:
+                type: number
+                format: double
+                title: Credit balance threshold that triggers a refill (in USD)
+              amount:
+                type: number
+                format: double
+                title: Amount to refill when triggered (in USD)
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -711,6 +762,33 @@ paths:
               estimatedSizeBytes:
                 type: string
                 format: int64
+  /v1/orgs/{org}/embedded-analytics:
+    post:
+      summary: GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+      operationId: AdminService_GetEmbeddedAnalytics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetEmbeddedAnalyticsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resource:
+                type: string
+                title: Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
   /v1/orgs/{org}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -5123,6 +5201,17 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetAutoRefillSettingsResponse:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      threshold:
+        type: number
+        format: double
+      amount:
+        type: number
+        format: double
   v1GetBillingProjectCredentialsRequest:
     type: object
     properties:
@@ -5235,6 +5324,14 @@ definitions:
       instanceId:
         type: string
       accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
+  v1GetEmbeddedAnalyticsResponse:
+    type: object
+    properties:
+      iframeSrc:
         type: string
       ttlSeconds:
         type: integer
@@ -6729,6 +6826,17 @@ definitions:
     type: object
   v1UnsubscribeReportResponse:
     type: object
+  v1UpdateAutoRefillSettingsResponse:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      threshold:
+        type: number
+        format: double
+      amount:
+        type: number
+        format: double
   v1UpdateBillingSubscriptionResponse:
     type: object
     properties:
