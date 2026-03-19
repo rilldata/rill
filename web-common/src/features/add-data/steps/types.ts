@@ -8,6 +8,7 @@ export enum AddDataStep {
 }
 
 export type AddDataConfig = {
+  welcomeScreen?: boolean;
   importOnly?: boolean;
 };
 

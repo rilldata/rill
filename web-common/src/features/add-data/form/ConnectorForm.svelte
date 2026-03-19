@@ -64,8 +64,7 @@
     },
   });
 
-  $: ({ form, errors } = superFormsParams);
-  $: console.log($errors);
+  $: ({ form } = superFormsParams);
 
   $: schema = getConnectorSchema(connectorDriver.name ?? "");
   $: yamlPreview = getConnectorYamlPreview({

@@ -4,14 +4,20 @@
     connectorClassMapping,
     connectorIconMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import type { AddDataConfig } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import { Button } from "@rilldata/web-common/components/button";
 
+  export let config: AddDataConfig;
   export let onSelect: (name: string) => void;
+  export let onBack: () => void;
 
-  const sortedConnectors = connectors.sort((a, b) => {
-    if (a.name === "https" || a.name === "local_file") return 1;
-    if (b.name === "https" || b.name === "local_file") return -1;
-    return a.displayName.localeCompare(b.displayName);
-  });
+  const sortedConnectors = connectors
+    .filter((c) => (config.importOnly ? true : c.name !== "duckdb"))
+    .sort((a, b) => {
+      if (a.name === "https" || a.name === "local_file") return 1;
+      if (b.name === "https" || b.name === "local_file") return -1;
+      return a.displayName.localeCompare(b.displayName);
+    });
 </script>
 
 <div class="source-selector">
@@ -30,6 +36,11 @@
         <span class="text-sm">{connector.displayName}</span>
       </button>
     {/each}
+  </div>
+  <div class="source-selector-footer">
+    {#if config.welcomeScreen}
+      <Button type="secondary" onClick={onBack}>Back</Button>
+    {/if}
   </div>
 </div>
 
@@ -53,5 +64,9 @@
   .source-selector-cell {
     @apply flex flex-row items-center gap-x-2 p-4;
     @apply bg-surface-overlay border rounded-lg shadow-sm;
+  }
+
+  .source-selector-footer {
+    @apply flex justify-between p-6 gap-2;
   }
 </style>

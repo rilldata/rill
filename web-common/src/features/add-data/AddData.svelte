@@ -42,8 +42,9 @@
   );
 
   $: isImportStep = stepState.step === AddDataStep.Import;
-  $: height = isImportStep ? "h-fit" : "h-[600px]";
-  $: width = isImportStep ? "w-[500px]" : "w-[900px]";
+  $: sizeClass = isImportStep
+    ? "h-fit w-[500px]"
+    : "max-h-[900px] min-h-[600px] w-[900px]";
   $: shouldShowHeader =
     stepState.step === AddDataStep.CreateConnector ||
     stepState.step === AddDataStep.CreateModel ||
@@ -76,14 +77,18 @@
 </script>
 
 <div
-  class="flex flex-col {width} {height} bg-surface-background border rounded-lg shadow-sm;"
+  class="flex flex-col {sizeClass} bg-surface-background border rounded-lg shadow-sm;"
 >
   {#if shouldShowHeader && schema}
     <ConnectorHeader schemaName={schema} />
   {/if}
 
   {#if stepState.step === AddDataStep.SelectConnector}
-    <NewSourceSelector onSelect={transitionToSchema} />
+    <NewSourceSelector
+      {config}
+      onSelect={transitionToSchema}
+      onBack={() => window.history.back()}
+    />
   {:else if stepState.step === AddDataStep.CreateConnector}
     {#if connectorDriver}
       <ConnectorForm
@@ -102,6 +107,7 @@
         schemaName={schema}
         connectorName={connector}
         onSubmit={setAndStartImport}
+        onBack={() => window.history.back()}
       />
     {:else}
       <div>Missing connector driver, schema name, or connector name (TODO)</div>

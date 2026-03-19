@@ -19,6 +19,7 @@
     isVisibleForValues,
   } from "@rilldata/web-common/features/templates/schema-utils.ts";
   import { isEmpty } from "@rilldata/web-common/features/sources/modal/utils.ts";
+  import NeedHelpText from "@rilldata/web-common/features/sources/modal/NeedHelpText.svelte";
 
   export let connectorDriver: V1ConnectorDriver;
   export let schema: MultiStepFormSchema | null;
@@ -186,6 +187,8 @@
 
         <YamlPreview title={labels.yamlPreviewTitle} yaml={yamlPreview} />
       </div>
+
+      <NeedHelpText connector={connectorDriver} />
     </div>
   {/if}
 </div>
