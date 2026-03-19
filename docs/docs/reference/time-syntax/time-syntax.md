@@ -58,6 +58,8 @@ grain          = "s" | "m" | "h" | "D" | "W" | "M" | "Q" | "Y"
 
 ## Reference Points
 
+A reference point is the time that an expression is evaluated relative to. Expressions like `7D` implicitly use `ref`, which resolves to `now` by default. You can override this with the `as of` modifier — for example, `7D as of watermark` evaluates the range relative to the data completeness boundary instead. Choosing the right reference point determines whether your range follows the clock, the latest data, or a data completeness boundary.
+
 | Keyword | Description | Use Case |
 |---------|-------------|----------|
 | `ref` | Contextual reference time | Internal use, modified by `as of` |
