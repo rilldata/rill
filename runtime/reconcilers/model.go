@@ -888,13 +888,27 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			return err
 		}
 	}
+	rPropMap := mdl.Spec.PartitionsResolverProperties.AsMap()
+	rArgs := map[string]any{"state": incrementalState}
+	if mdl.Spec.PartitionsResolver == "glob" {
+		start, _ := rPropMap["start"].(string)
+		last := ""
+		if _, ok := rPropMap["last"].(string); ok {
+			last = "" // TODO: add logic to get last
+		}
+		if start > last {
+			rArgs["partition_start"] = start
+		} else {
+			rArgs["partition_start"] = last
+		}
+	}
 
 	// Resolve partition rows
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.PartitionsResolver,
-		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
-		Args:               map[string]any{"state": incrementalState},
+		ResolverProperties: rPropMap,
+		Args:               rArgs,
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {

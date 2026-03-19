@@ -75,7 +75,7 @@ func (b *Bucket) Download(ctx context.Context, opts *DownloadOptions) (res drive
 
 	entries, err := pagination.CollectAll(ctx,
 		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
-			return b.ListObjectsForGlob(ctx, opts.Glob, pz, tk)
+			return b.ListObjectsForGlob(ctx, opts.Glob, pz, tk, "")
 		},
 		1000)
 	if err != nil {

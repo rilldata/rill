@@ -1,6 +1,7 @@
 package blob
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -46,7 +47,7 @@ func (b *Bucket) Underlying() *blob.Bucket {
 // ListObjectsForGlob lists objects in the bucket that match the given glob pattern.
 // The glob pattern should be a valid path *without* scheme or bucket name.
 // E.g. to list gs://my-bucket/path/to/files/*, the glob pattern should be "path/to/files/*".
-func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize uint32, pageToken string, startAfter string) ([]drivers.ObjectStoreEntry, string, error) {
 	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSizeForObjects)
 	var driverStartAfter string
 	driverPageToken := blob.FirstPageToken
@@ -54,6 +55,10 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken, &driverStartAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
+	}
+	// use startAfter from user only if this is first page and driverStartAfter
+	if bytes.Equal(driverPageToken, blob.FirstPageToken) && driverStartAfter == "" {
+		driverStartAfter = startAfter
 	}
 
 	// If it's not a glob, we're pulling a single file.
