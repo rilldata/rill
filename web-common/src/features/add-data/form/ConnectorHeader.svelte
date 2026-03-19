@@ -1,13 +1,14 @@
 <script lang="ts">
-  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
   import { connectorInfoMap } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
 
   export let schemaName: string;
-  // export let onConnectorChange: (connector: V1ConnectorDriver) => void;
-  // export let onNewConnector: () => void;
+  export let connectorName: string | undefined = undefined;
+  export let onConnectorChange: (connectorName: string) => void;
+  export let onNewConnector: () => void;
 
   $: connectorInfo = connectorInfoMap.get(schemaName);
   $: displayIcon = connectorIconMapping[schemaName];
@@ -18,6 +19,11 @@
   $: connectorsForSchema = $analyzedConnectorsQuery.data?.connectors.filter(
     (connector) => connector.driver?.name === schemaName,
   );
+  $: connectorOptions =
+    connectorsForSchema?.map((connector) => ({
+      label: connector.name!,
+      value: connector.name!,
+    })) ?? [];
 </script>
 
 {#if connectorInfo}
@@ -28,5 +34,17 @@
     <span class="text-lg leading-none font-semibold">
       {connectorInfo.displayName}
     </span>
+
+    {#if connectorName && connectorOptions.length > 1}
+      <Select
+        id="connector"
+        value={connectorName}
+        options={connectorOptions}
+        onChange={onConnectorChange}
+        onAddNew={onNewConnector}
+        addNewLabel="+ {connectorInfo.displayName} connector"
+        outline={false}
+      />
+    {/if}
   </div>
 {/if}

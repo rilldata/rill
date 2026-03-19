@@ -50,6 +50,24 @@
     stepState.step === AddDataStep.CreateModel ||
     stepState.step === AddDataStep.ExploreConnector;
 
+  async function transitionFromInit(
+    schema: string | undefined,
+    connector: string | undefined,
+  ) {
+    const newState = await transitionToNextStep(
+      runtimeClient,
+      {
+        step: AddDataStep.SelectConnector,
+      },
+      {
+        schema,
+        connector,
+      },
+    );
+    console.log("transition:init", newState);
+    pushState("", newState);
+  }
+
   async function transitionToSchema(schema: string) {
     const newState = await transitionToNextStep(runtimeClient, stepState, {
       schema,
@@ -80,7 +98,13 @@
   class="flex flex-col {sizeClass} bg-surface-background border rounded-lg shadow-sm;"
 >
   {#if shouldShowHeader && schema}
-    <ConnectorHeader schemaName={schema} />
+    <ConnectorHeader
+      schemaName={schema}
+      connectorName={connector}
+      onConnectorChange={(newConnector) =>
+        transitionFromInit(undefined, newConnector)}
+      onNewConnector={() => transitionFromInit(schema, undefined)}
+    />
   {/if}
 
   {#if stepState.step === AddDataStep.SelectConnector}

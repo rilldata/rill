@@ -8,7 +8,6 @@ import {
 import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
   connectorInfoMap,
-  connectors,
   getBackendConnectorName,
   getConnectorSchema,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
