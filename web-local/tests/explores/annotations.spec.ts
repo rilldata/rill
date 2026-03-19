@@ -143,8 +143,6 @@ test.describe("annotations (rendering)", () => {
     timezoneId: "UTC",
     locale: "en-US",
   });
-  // Extra time for installAnnotations (file writes + reconciliation).
-  test.setTimeout(60_000);
 
   for (const dashboardTZ of DASHBOARD_TIMEZONES) {
     test.describe(`dashboard: ${dashboardTZ}`, () => {

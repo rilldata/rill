@@ -1,1 +1,0 @@
-{"name":"AdBids_range_annotations","version":"1773660037963","created_version":"1773660037963","type":"VIEW","sql":"select TIMESTAMP '2022-03-25' as time, TIMESTAMP '2022-03-27' as time_end, 'Range annotation C' as description"}

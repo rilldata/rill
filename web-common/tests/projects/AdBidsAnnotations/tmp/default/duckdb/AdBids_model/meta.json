@@ -1,1 +1,0 @@
-{"name":"AdBids_model","version":"1773659920721","created_version":"1773659920721","type":"VIEW","sql":"select\n    *,\n    -- Add an offset timestamp that is 7 days earlier than the primary timestamp\n    \"timestamp\" - INTERVAL '7 days' as offset_timestamp\nfrom AdBids"}
