@@ -84,6 +84,12 @@
         @ ${SLOT_RATE_PER_HR}/slot/hr
         (~${rillMonthlyCost.toLocaleString()}/mo)
       </span>
+      <a
+        href="/{organization}/-/settings/billing"
+        class="pricing-link"
+      >
+        See price breakdown
+      </a>
     </div>
 
   </div>
@@ -168,6 +174,12 @@
   }
   .slot-card-sub {
     @apply text-xs text-fg-tertiary;
+  }
+  .pricing-link {
+    @apply text-xs text-primary-500 no-underline mt-1;
+  }
+  .pricing-link:hover {
+    @apply text-primary-600 underline;
   }
 
   /* Detail sections */
