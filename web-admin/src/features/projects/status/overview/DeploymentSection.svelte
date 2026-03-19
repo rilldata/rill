@@ -62,6 +62,14 @@
   $: planName = $page.data?.organization?.billingPlanName ?? "";
   $: storageCap = isTeamPlan(planName) ? TEAM_STORAGE_CAP : 0;
 
+  // Fill percentage for the usage pill (0–100)
+  $: usagePercent = (() => {
+    const bytes = Number(dataSizeBytes ?? 0);
+    if (!storageCap) return bytes > 0 ? 100 : 0;
+    return Math.min(Math.round((bytes / storageCap) * 100), 100);
+  })();
+  $: isOverCap = storageCap > 0 && Number(dataSizeBytes ?? 0) >= storageCap;
+
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -169,15 +177,24 @@
     {#if !olapConnector || olapConnector.provision}
       <div class="info-row">
         <span class="info-label">Data usage</span>
-        <span class="info-value">
+        <span class="info-value flex items-center gap-2">
           {#if dataSizeBytes}
             <a
               href="/{organization}/{project}/-/status/tables"
-              class="data-usage-link"
+              class="usage-pill-link"
             >
-              {formatMemorySize(Number(dataSizeBytes))}{#if storageCap}
-                {" "}/ {formatMemorySize(storageCap)}{/if}
+              <span class="usage-pill">
+                <span
+                  class="usage-pill-fill"
+                  class:over-cap={isOverCap}
+                  style:width="{usagePercent}%"
+                ></span>
+              </span>
             </a>
+            <span class="text-xs text-fg-secondary whitespace-nowrap">
+              {formatMemorySize(Number(dataSizeBytes))}{#if storageCap}
+                / {formatMemorySize(storageCap)}{/if}
+            </span>
           {:else}
             —
           {/if}
@@ -206,8 +223,14 @@
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
   }
-  .data-usage-link {
-    @apply text-fg-primary no-underline;
+  .usage-pill-link {
+    @apply no-underline;
+  }
+  .usage-pill {
+    @apply w-24 h-2.5 rounded-full bg-surface-subtle overflow-hidden inline-block;
+  }
+  .usage-pill-fill {
+    @apply h-full rounded-full bg-primary-500 block transition-all;
   }
   .repo-link {
     @apply text-primary-500 text-sm;
