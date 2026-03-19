@@ -81,6 +81,7 @@ export class CanvasEntity {
   fileArtifact: FileArtifact | undefined;
 
   selectedComponent = writable<string | null>(null);
+  activeComponent = writable<string | null>(null);
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   public specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
@@ -726,6 +727,14 @@ export class CanvasEntity {
 
   setSelectedComponent = (id: string | null) => {
     this.selectedComponent.set(id);
+  };
+
+  setActiveComponent = (id: string) => {
+    this.activeComponent.set(id);
+  };
+
+  clearActiveComponent = () => {
+    this.activeComponent.set(null);
   };
 
   removeComponent = (componentName: string) => {

@@ -9,10 +9,10 @@
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
-  import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
   import { Tooltip } from "bits-ui";
+  import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
+  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -29,6 +29,7 @@
   $: ({ instanceId } = runtimeClient);
   $: ({
     canvasEntity: {
+      clearActiveComponent,
       filterManager: {
         allDimensionsStore,
         allMeasuresStore,
@@ -130,8 +131,10 @@
 </script>
 
 <div
+  role="presentation"
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
+  on:click|capture={clearActiveComponent}
 >
   {#if hasTimeSeries}
     <div class="p-2 flex justify-between size-full py-0">
