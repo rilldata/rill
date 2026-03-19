@@ -39,6 +39,7 @@ export async function runImportStep(
             step: ImportDataStep.CreateModel,
             source: step.config.source,
             connector: step.config.connector,
+            yaml: step.config.yaml,
             sql: step.config.sql,
             envBlob: step.config.envBlob,
           };
@@ -101,31 +102,38 @@ async function runCreateModelStep(
     throw new Error("Invalid model import step");
   }
 
-  const modelName = getName(
-    step.config.source,
-    fileArtifacts.getNamesForKind(ResourceKind.Model),
-  );
-  const connectorDriver = await maybeGetConnectorDriver(
-    runtimeClient,
-    undefined,
-    step.config.connector,
-  );
-  if (!connectorDriver) {
-    throw new Error(
-      `Failed to get connector driver for ${step.config.connector}`,
+  let yaml = modelImportStep.yaml;
+  if (!yaml) {
+    if (!modelImportStep.sql) {
+      throw new Error("Must specify either yaml or sql");
+    }
+
+    const modelName = getName(
+      step.config.source,
+      fileArtifacts.getNamesForKind(ResourceKind.Model),
+    );
+    const connectorDriver = await maybeGetConnectorDriver(
+      runtimeClient,
+      undefined,
+      step.config.connector,
+    );
+    if (!connectorDriver) {
+      throw new Error(
+        `Failed to get connector driver for ${step.config.connector}`,
+      );
+    }
+    yaml = compileSourceYAML(
+      connectorDriver,
+      {
+        name: modelName,
+        sql: step.config.sql,
+        database: step.config.sourceDatabase,
+      },
+      {
+        connectorInstanceName: step.config.connector,
+      },
     );
   }
-  const yaml = compileSourceYAML(
-    connectorDriver,
-    {
-      name: modelName,
-      sql: step.config.sql,
-      database: step.config.sourceDatabase,
-    },
-    {
-      connectorInstanceName: step.config.connector,
-    },
-  );
 
   const filePath = `/models/${step.config.source}.yaml`;
   onNewRoute(`/files${filePath}`);

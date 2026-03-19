@@ -94,7 +94,7 @@
 
         onSubmit({
           importSteps,
-          source: name,
+          source,
           sourceSchema: values.schema ?? "",
           sourceDatabase: values.database ?? "",
           connector: connectorName,
