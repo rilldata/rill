@@ -690,7 +690,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/kafka',
-            to: '/developers/build/connectors/data-source/duckdb/kafka',
+            to: '/developers/build/connectors/data-source/clickhouse/kafka',
           },
           {
             from: '/build/connectors/data-source/local-file',
@@ -767,7 +767,7 @@ const config = {
           },
           {
             from: '/developers/build/connectors/data-source/kafka',
-            to: '/developers/build/connectors/data-source/duckdb/kafka',
+            to: '/developers/build/connectors/data-source/clickhouse/kafka',
           },
           {
             from: '/developers/build/connectors/data-source/local-file',
@@ -981,7 +981,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/kafka',
-            to: '/developers/build/connectors/data-source/duckdb/kafka',
+            to: '/developers/build/connectors/data-source/clickhouse/kafka',
           },
           {
             from: '/build/connect/data-source/openai',
@@ -1100,7 +1100,7 @@ const config = {
           },
           {
             from: '/connect/data-source/kafka',
-            to: '/developers/build/connectors/data-source/duckdb/kafka',
+            to: '/developers/build/connectors/data-source/clickhouse/kafka',
           },
           {
             from: '/connect/data-source/openai',
