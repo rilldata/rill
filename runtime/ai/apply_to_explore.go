@@ -9,38 +9,35 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
-const NavigateName = "navigate"
+const ApplyToExploreName = "apply_to_explore"
 
-type Navigate struct{}
+type ApplyToExplore struct{}
 
-var _ Tool[*NavigateArgs, *NavigateResult] = (*Navigate)(nil)
+var _ Tool[*ApplyToExploreArgs, *ApplyToExploreResult] = (*ApplyToExplore)(nil)
 
-type NavigateArgs struct {
-	Kind string `json:"kind" jsonschema:"The kind of navigation to perform. Supported values: 'file', 'explore', 'canvas'."`
-	Name string `json:"name" jsonschema:"The name of the item to navigate to."`
-
-	// Optional parameters for explore kind
+type ApplyToExploreArgs struct {
+	Name       string   `json:"name" jsonschema:"The name of the explore to navigate to."`
 	Dimensions []string `json:"dimensions,omitempty" jsonschema:"Optional dimensions to preview in the explore."`
 	Measures   []string `json:"measures,omitempty" jsonschema:"Optional measures to preview in the explore."`
 	SortBy     string   `json:"sort_by,omitempty" jsonschema:"Optional measure to sort by in the explore."`
 	SortDesc   bool     `json:"sort_desc,omitempty" jsonschema:"Optional flag to sort in descending order in the explore."`
 }
 
-type NavigateResult struct{}
+type ApplyToExploreResult struct{}
 
-func (t *Navigate) Spec() *mcp.Tool {
+func (t *ApplyToExplore) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        NavigateName,
-		Title:       "Navigate UI",
-		Description: "Navigate to a specific UI element in the Rill UI. Supported kinds: 'file', 'explore', 'canvas'.",
+		Name:        ApplyToExploreName,
+		Title:       "Apply to explore",
+		Description: "Apply settings to a specific explore.",
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Navigating...",
-			"openai/toolInvocation/invoked":  "Navigated",
+			"openai/toolInvocation/invoking": "Applying...",
+			"openai/toolInvocation/invoked":  "Applied",
 		},
 	}
 }
 
-func (t *Navigate) CheckAccess(ctx context.Context) (bool, error) {
+func (t *ApplyToExplore) CheckAccess(ctx context.Context) (bool, error) {
 	// Must be allowed to use AI features
 	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) {
@@ -54,14 +51,10 @@ func (t *Navigate) CheckAccess(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (t *Navigate) Handler(ctx context.Context, args *NavigateArgs) (*NavigateResult, error) {
-	if args.Kind == "" {
-		return nil, errors.New("kind is required")
-	}
-
+func (t *ApplyToExplore) Handler(ctx context.Context, args *ApplyToExploreArgs) (*ApplyToExploreResult, error) {
 	if args.Name == "" {
 		return nil, errors.New("name is required")
 	}
 
-	return &NavigateResult{}, nil
+	return &ApplyToExploreResult{}, nil
 }
