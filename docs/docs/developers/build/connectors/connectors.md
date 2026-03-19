@@ -314,6 +314,32 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 </OLAPToggle.DuckDB>
 <OLAPToggle.ClickHouse>
 
+<!-- ## Data Warehouses
+
+:::note Staging Models
+
+:::
+
+### BigQuery
+### Snowflake
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<BigQueryLogo />}
+    header="BigQuery"
+    content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
+    link="/developers/build/connectors/data-source/duckdb/bigquery"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+    icon={<SnowflakeLogo />}
+    header="Snowflake"
+    content="Connect to Snowflake data warehouse with support for individual credentials and JWT authentication."
+    link="/developers/build/connectors/data-source/duckdb/snowflake"
+    linkLabel="Learn more"
+  />
+</div> -->
+
 ## Databases
 ### MongoDB
 ### MySQL
