@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { httpClient } from "@rilldata/web-admin/client/http-client";
+  import { adminServiceGetEmbeddedAnalytics } from "@rilldata/web-admin/client/gen/default/default";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { onMount } from "svelte";
@@ -19,12 +19,7 @@
 
   onMount(async () => {
     try {
-      const resp = await httpClient<{ iframeSrc: string }>({
-        url: `/v1/orgs/${org}/embedded-analytics`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: { resource },
-      });
+      const resp = await adminServiceGetEmbeddedAnalytics(org, { resource });
       iframeSrc = resp.iframeSrc;
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to load embed";

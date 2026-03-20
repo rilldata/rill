@@ -1,10 +1,15 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -12,7 +17,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -930,78 +934,58 @@ func (s *Server) GetEmbeddedAnalytics(ctx context.Context, req *adminv1.GetEmbed
 		return nil, status.Error(codes.PermissionDenied, "not allowed to view embedded analytics")
 	}
 
-	if s.admin.MetricsProjectID == "" {
-		return nil, status.Error(codes.FailedPrecondition, "metrics project not configured")
+	// Get the service token for the embedded-analytics project
+	svcToken := os.Getenv("RILL_RUNTIME_EMBEDDED_ANALYTICS_SERVICE_TOKEN")
+	if svcToken == "" {
+		return nil, status.Error(codes.FailedPrecondition, "embedded analytics service token not configured")
 	}
 
-	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	// TODO: make configurable; hardcoded to embedded-analytics org/project for POC
+	embeddedOrg := "embedded-analytics"
+	embeddedProject := "embedded-analytics"
 
-	if metricsProj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.InvalidArgument, "metrics project does not have a deployment")
-	}
-
-	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.PrimaryDeploymentID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// Issue a JWT scoped to this org's data in the metrics project
-	ttl := runtimeAccessTokenEmbedTTL
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
-		TTL:         ttl,
-		InstancePermissions: map[string][]runtime.Permission{
-			prodDepl.RuntimeInstanceID: {
-				runtime.ReadObjects,
-				runtime.ReadMetrics,
-				runtime.ReadAPI,
-			},
-		},
-		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
-		SecurityRules: []*runtimev1.SecurityRule{
-			{
-				Rule: &runtimev1.SecurityRule_TransitiveAccess{
-					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-						Resource: &runtimev1.ResourceName{
-							Kind: "rill.runtime.v1.Canvas",
-							Name: req.Resource,
-						},
-					},
-				},
-			},
+	// Call the iframe API using the service token
+	iframeReqBody, err := json.Marshal(map[string]any{
+		"resource": req.Resource,
+		"type":     "canvas",
+		"attributes": map[string]any{
+			"organization_id": org.ID,
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not issue jwt: %w", err)
+		return nil, status.Errorf(codes.Internal, "could not marshal iframe request: %s", err.Error())
 	}
 
-	s.admin.Used.Deployment(prodDepl.ID)
-
-	// Build iframe URL
-	metricsOrg, err := s.admin.DB.FindOrganization(ctx, metricsProj.OrganizationID)
+	iframeURL := fmt.Sprintf("https://api.rilldata.com/v1/organizations/%s/projects/%s/iframe", embeddedOrg, embeddedProject)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, iframeURL, bytes.NewReader(iframeReqBody))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not find metrics org: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "could not create iframe request: %s", err.Error())
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+svcToken)
+
+	httpResp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "iframe request failed: %s", err.Error())
+	}
+	defer httpResp.Body.Close()
+
+	if httpResp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(httpResp.Body)
+		return nil, status.Errorf(codes.Internal, "iframe API returned %d: %s", httpResp.StatusCode, string(body))
 	}
 
-	iframeSrc, err := s.admin.URLs.WithCustomDomain(metricsOrg.CustomDomain).Embed(map[string]string{
-		"runtime_host": prodDepl.RuntimeHost,
-		"instance_id":  prodDepl.RuntimeInstanceID,
-		"access_token": jwt,
-		"type":         "rill.runtime.v1.Canvas",
-		"kind":         "rill.runtime.v1.Canvas",
-		"resource":     req.Resource,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
+	var iframeResp struct {
+		IframeSrc string `json:"iframeSrc"`
+		TtlSeconds uint32 `json:"ttlSeconds"`
+	}
+	if err := json.NewDecoder(httpResp.Body).Decode(&iframeResp); err != nil {
+		return nil, status.Errorf(codes.Internal, "could not decode iframe response: %s", err.Error())
 	}
 
 	return &adminv1.GetEmbeddedAnalyticsResponse{
-		IframeSrc:  iframeSrc,
-		TtlSeconds: uint32(ttl.Seconds()),
+		IframeSrc:  iframeResp.IframeSrc,
+		TtlSeconds: iframeResp.TtlSeconds,
 	}, nil
 }
 
