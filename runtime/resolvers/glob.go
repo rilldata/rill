@@ -71,6 +71,8 @@ type globProps struct {
 	Start string `mapstructure:"start"`
 	// Read last N parition
 	Last int `mapstructure:"last"`
+	// Read untill patition
+	End string `mapstructure:"end"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
 	// RollupFiles is a flag to roll up and include the files in each partition in the output.
@@ -163,7 +165,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		bucketURI:      bucketURI,
 		tmpTableName:   tmpTableName,
 		partitionStart: args.PartitionStart,
-		partitionEnd:   args.PartitionStart,
+		partitionEnd:   args.PartitionEnd,
 	}, nil
 }
 
