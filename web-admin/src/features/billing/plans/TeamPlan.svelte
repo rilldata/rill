@@ -57,12 +57,14 @@
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
     {#if billingPortalUrl}
-      <a
-        href={billingPortalUrl}
-        target="_blank"
-        rel="noreferrer noopener"
-        class="invoice-link">View Invoice</a
-      >
+      <div>
+        <a
+          href={billingPortalUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          class="invoice-link">View Invoice</a
+        >
+      </div>
     {/if}
     <PlanQuotas {organization} />
   </div>
