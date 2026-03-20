@@ -1,26 +1,24 @@
 <!-- web-admin/src/routes/-/admin/quotas/+page.svelte -->
 <script lang="ts">
   import AdminPageHeader from "@rilldata/web-admin/features/admin/layout/AdminPageHeader.svelte";
-  import ActionResultBanner from "@rilldata/web-admin/features/admin/shared/ActionResultBanner.svelte";
+  import OrgSearchInput from "@rilldata/web-admin/features/admin/shared/OrgSearchInput.svelte";
+  import {
+    notifySuccess,
+    notifyError,
+  } from "@rilldata/web-admin/features/admin/shared/notify";
   import {
     getOrgForQuotas,
     createUpdateOrgQuotasMutation,
-    createUpdateUserQuotasMutation,
   } from "@rilldata/web-admin/features/admin/quotas/selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
 
-  let bannerRef: ActionResultBanner;
-  let quotaType: "org" | "user" = "org";
-  let lookupValue = "";
+  let orgValue = "";
   let activeOrg = "";
-  let activeUser = "";
-  let lookupDone = false;
 
   const queryClient = useQueryClient();
   const updateOrgQuotas = createUpdateOrgQuotasMutation();
-  const updateUserQuotas = createUpdateUserQuotasMutation();
 
-  // Quota fields for editing (org quotas)
+  // Quota fields for editing
   let projects = "";
   let deployments = "";
   let slotsTotal = "";
@@ -28,100 +26,71 @@
   let outstandingInvites = "";
   let storageLimitBytes = "";
 
-  // Quota fields for editing (user quotas)
-  let singleuserOrgs = "";
-
   $: orgQuery = getOrgForQuotas(activeOrg);
 
-  function handleLookup() {
-    lookupDone = true;
-    if (quotaType === "org") {
-      activeOrg = lookupValue;
-      activeUser = "";
-    } else {
-      activeUser = lookupValue;
-      activeOrg = "";
-    }
+  function handleOrgSelect(e: CustomEvent<string>) {
+    activeOrg = e.detail;
   }
 
   // Populate fields when org data loads
   $: if ($orgQuery.data?.organization?.quotas) {
     const q = $orgQuery.data.organization.quotas;
-    projects = q.projects ?? "";
-    deployments = q.deployments ?? "";
-    slotsTotal = q.slotsTotal ?? "";
-    slotsPerDeployment = q.slotsPerDeployment ?? "";
-    outstandingInvites = q.outstandingInvites ?? "";
+    projects = q.projects != null ? String(q.projects) : "";
+    deployments = q.deployments != null ? String(q.deployments) : "";
+    slotsTotal = q.slotsTotal != null ? String(q.slotsTotal) : "";
+    slotsPerDeployment = q.slotsPerDeployment != null ? String(q.slotsPerDeployment) : "";
+    outstandingInvites = q.outstandingInvites != null ? String(q.outstandingInvites) : "";
     storageLimitBytes = q.storageLimitBytesPerDeployment ?? "";
   }
 
   async function handleSaveQuotas() {
     try {
-      if (quotaType === "org") {
-        await $updateOrgQuotas.mutateAsync({
-          data: {
-            org: activeOrg,
-            projects: projects ? Number(projects) : undefined,
-            deployments: deployments ? Number(deployments) : undefined,
-            slotsTotal: slotsTotal ? Number(slotsTotal) : undefined,
-            slotsPerDeployment: slotsPerDeployment ? Number(slotsPerDeployment) : undefined,
-            outstandingInvites: outstandingInvites ? Number(outstandingInvites) : undefined,
-            storageLimitBytesPerDeployment: storageLimitBytes ? storageLimitBytes : undefined,
-          },
-        });
-        bannerRef.show("success", `Quotas updated for org: ${activeOrg}`);
-      } else {
-        await $updateUserQuotas.mutateAsync({
-          data: {
-            email: activeUser,
-            singleuserOrgs: singleuserOrgs ? Number(singleuserOrgs) : undefined,
-          },
-        });
-        bannerRef.show("success", `Quotas updated for user: ${activeUser}`);
-      }
+      await $updateOrgQuotas.mutateAsync({
+        data: {
+          org: activeOrg,
+          projects: projects ? Number(projects) : undefined,
+          deployments: deployments ? Number(deployments) : undefined,
+          slotsTotal: slotsTotal ? Number(slotsTotal) : undefined,
+          slotsPerDeployment: slotsPerDeployment ? Number(slotsPerDeployment) : undefined,
+          outstandingInvites: outstandingInvites ? Number(outstandingInvites) : undefined,
+          storageLimitBytesPerDeployment: storageLimitBytes ? storageLimitBytes : undefined,
+        },
+      });
+      notifySuccess(`Quotas updated for org: ${activeOrg}`);
       await queryClient.invalidateQueries({
         predicate: (q) =>
           (q.queryKey[0] as string)?.includes("/v1/superuser/quotas") ||
           (q.queryKey[0] as string)?.includes("/v1/organizations"),
       });
     } catch (err) {
-      bannerRef.show("error", `Failed to update quotas: ${err}`);
+      notifyError(`Failed to update quotas: ${err}`);
     }
   }
 </script>
 
 <AdminPageHeader
   title="Quotas"
-  description="View and adjust resource quotas for organizations and users."
+  description="View and adjust resource quotas for organizations."
 />
-
-<ActionResultBanner bind:this={bannerRef} />
 
 <div class="sections">
   <section class="card">
-    <div class="flex gap-4 mb-4">
-      <label class="flex items-center gap-2 text-sm">
-        <input type="radio" value="org" bind:group={quotaType} />
-        Organization
-      </label>
-      <label class="flex items-center gap-2 text-sm">
-        <input type="radio" value="user" bind:group={quotaType} />
-        User
-      </label>
-    </div>
-
     <div class="form-row mb-4">
-      <input
-        type="text"
-        class="input"
-        placeholder={quotaType === "org" ? "Organization name" : "User email"}
-        bind:value={lookupValue}
-        on:keydown={(e) => e.key === "Enter" && handleLookup()}
-      />
-      <button class="btn-primary" on:click={handleLookup}>Lookup</button>
+      <div class="w-64">
+        <OrgSearchInput
+          bind:value={orgValue}
+          placeholder="Search organization..."
+          on:select={handleOrgSelect}
+        />
+      </div>
     </div>
 
-    {#if quotaType === "org" && activeOrg && $orgQuery.data?.organization}
+    {#if activeOrg && $orgQuery.isFetching}
+      <div class="loading">
+        <div class="spinner" />
+        <span class="text-sm text-slate-500">Loading quotas...</span>
+      </div>
+    {:else if activeOrg && $orgQuery.data?.organization}
       <div class="quota-grid">
         <div class="quota-field">
           <label class="quota-label" for="projects">Projects</label>
@@ -152,18 +121,6 @@
       <div class="mt-4">
         <button class="btn-primary" on:click={handleSaveQuotas}>Save Quotas</button>
       </div>
-    {:else if quotaType === "user" && activeUser && lookupDone}
-      <div class="quota-grid">
-        <div class="quota-field">
-          <label class="quota-label" for="singleuserOrgs">Single-user Orgs Limit</label>
-          <input id="singleuserOrgs" type="number" class="input" bind:value={singleuserOrgs} />
-        </div>
-      </div>
-      <p class="text-xs text-slate-500 mt-2">User quotas are limited to the single-user orgs field. Other quotas are managed at the org level.</p>
-
-      <div class="mt-4">
-        <button class="btn-primary" on:click={handleSaveQuotas}>Save Quotas</button>
-      </div>
     {/if}
   </section>
 </div>
@@ -181,4 +138,6 @@
   .quota-grid { @apply grid grid-cols-2 lg:grid-cols-3 gap-4; }
   .quota-field { @apply flex flex-col gap-1; }
   .quota-label { @apply text-xs font-medium text-slate-500 dark:text-slate-400; }
+  .loading { @apply flex items-center gap-2 py-4; }
+  .spinner { @apply w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin; }
 </style>

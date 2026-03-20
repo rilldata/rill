@@ -2,7 +2,6 @@
 import {
   createAdminServiceGetOrganization,
   createAdminServiceSudoUpdateOrganizationQuotas,
-  createAdminServiceSudoUpdateUserQuotas,
 } from "@rilldata/web-admin/client";
 
 export function getOrgForQuotas(org: string) {
@@ -15,8 +14,4 @@ export function getOrgForQuotas(org: string) {
 
 export function createUpdateOrgQuotasMutation() {
   return createAdminServiceSudoUpdateOrganizationQuotas();
-}
-
-export function createUpdateUserQuotasMutation() {
-  return createAdminServiceSudoUpdateUserQuotas();
 }

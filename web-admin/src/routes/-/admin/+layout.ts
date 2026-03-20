@@ -24,12 +24,11 @@ export const load = async () => {
     currentUserEmail = userResp.user?.email;
   } catch (e) {
     if (isAxiosError(e) && e.response?.status === 401) {
-      // redirectToLogin() throws a SvelteKit redirect internally;
-      // call it outside the catch to avoid swallowing the redirect exception
-    } else {
-      throw redirect(307, "/");
+      // redirectToLogin() throws a SvelteKit redirect internally.
+      // It's safe to call here; the redirect propagates out of the catch block.
+      redirectToLogin();
     }
-    redirectToLogin();
+    throw redirect(307, "/");
   }
 
   if (!currentUserEmail) {

@@ -15,6 +15,9 @@
     try {
       await onConfirm();
       open = false;
+    } catch {
+      // Error handling is the caller's responsibility (via notifyError in onConfirm).
+      // Keep dialog open so the user can retry or cancel.
     } finally {
       loading = false;
     }
