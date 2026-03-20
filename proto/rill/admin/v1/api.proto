@@ -1275,19 +1275,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/payments/portal-url"};
   }
 
-  // GetAutoRefillSettings returns the auto-refill settings for an organization
-  rpc GetAutoRefillSettings(GetAutoRefillSettingsRequest) returns (GetAutoRefillSettingsResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{org}/billing/auto-refill"};
-  }
-
-  // UpdateAutoRefillSettings updates the auto-refill settings for an organization
-  rpc UpdateAutoRefillSettings(UpdateAutoRefillSettingsRequest) returns (UpdateAutoRefillSettingsResponse) {
-    option (google.api.http) = {
-      patch: "/v1/orgs/{org}/billing/auto-refill",
-      body: "*"
-    };
-  }
-
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
@@ -3109,29 +3096,6 @@ message GetPaymentsPortalURLResponse {
   string url = 1;
 }
 
-message UpdateAutoRefillSettingsRequest {
-  string org = 1 [(validate.rules).string.min_len = 1];
-  bool enabled = 2;
-  double threshold = 3; // Credit balance threshold that triggers a refill (in USD)
-  double amount = 4; // Amount to refill when triggered (in USD)
-}
-
-message UpdateAutoRefillSettingsResponse {
-  bool enabled = 1;
-  double threshold = 2;
-  double amount = 3;
-}
-
-message GetAutoRefillSettingsRequest {
-  string org = 1 [(validate.rules).string.min_len = 1];
-}
-
-message GetAutoRefillSettingsResponse {
-  bool enabled = 1;
-  double threshold = 2;
-  double amount = 3;
-}
-
 message ListPublicBillingPlansRequest {}
 
 message ListPublicBillingPlansResponse {
@@ -3153,6 +3117,8 @@ message GetEmbeddedAnalyticsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   // Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
   string resource = 2 [(validate.rules).string.min_len = 1];
+  // Optional: project name for project-scoped embeds
+  string project = 3;
 }
 
 message GetEmbeddedAnalyticsResponse {

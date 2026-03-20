@@ -14488,200 +14488,6 @@ export class GetPaymentsPortalURLResponse extends Message<GetPaymentsPortalURLRe
 }
 
 /**
- * @generated from message rill.admin.v1.UpdateAutoRefillSettingsRequest
- */
-export class UpdateAutoRefillSettingsRequest extends Message<UpdateAutoRefillSettingsRequest> {
-  /**
-   * @generated from field: string org = 1;
-   */
-  org = "";
-
-  /**
-   * @generated from field: bool enabled = 2;
-   */
-  enabled = false;
-
-  /**
-   * Credit balance threshold that triggers a refill (in USD)
-   *
-   * @generated from field: double threshold = 3;
-   */
-  threshold = 0;
-
-  /**
-   * Amount to refill when triggered (in USD)
-   *
-   * @generated from field: double amount = 4;
-   */
-  amount = 0;
-
-  constructor(data?: PartialMessage<UpdateAutoRefillSettingsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UpdateAutoRefillSettingsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "threshold", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 4, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAutoRefillSettingsRequest {
-    return new UpdateAutoRefillSettingsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAutoRefillSettingsRequest {
-    return new UpdateAutoRefillSettingsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAutoRefillSettingsRequest {
-    return new UpdateAutoRefillSettingsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: UpdateAutoRefillSettingsRequest | PlainMessage<UpdateAutoRefillSettingsRequest> | undefined, b: UpdateAutoRefillSettingsRequest | PlainMessage<UpdateAutoRefillSettingsRequest> | undefined): boolean {
-    return proto3.util.equals(UpdateAutoRefillSettingsRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.UpdateAutoRefillSettingsResponse
- */
-export class UpdateAutoRefillSettingsResponse extends Message<UpdateAutoRefillSettingsResponse> {
-  /**
-   * @generated from field: bool enabled = 1;
-   */
-  enabled = false;
-
-  /**
-   * @generated from field: double threshold = 2;
-   */
-  threshold = 0;
-
-  /**
-   * @generated from field: double amount = 3;
-   */
-  amount = 0;
-
-  constructor(data?: PartialMessage<UpdateAutoRefillSettingsResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UpdateAutoRefillSettingsResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "threshold", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 3, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAutoRefillSettingsResponse {
-    return new UpdateAutoRefillSettingsResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAutoRefillSettingsResponse {
-    return new UpdateAutoRefillSettingsResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAutoRefillSettingsResponse {
-    return new UpdateAutoRefillSettingsResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: UpdateAutoRefillSettingsResponse | PlainMessage<UpdateAutoRefillSettingsResponse> | undefined, b: UpdateAutoRefillSettingsResponse | PlainMessage<UpdateAutoRefillSettingsResponse> | undefined): boolean {
-    return proto3.util.equals(UpdateAutoRefillSettingsResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetAutoRefillSettingsRequest
- */
-export class GetAutoRefillSettingsRequest extends Message<GetAutoRefillSettingsRequest> {
-  /**
-   * @generated from field: string org = 1;
-   */
-  org = "";
-
-  constructor(data?: PartialMessage<GetAutoRefillSettingsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetAutoRefillSettingsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAutoRefillSettingsRequest {
-    return new GetAutoRefillSettingsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAutoRefillSettingsRequest {
-    return new GetAutoRefillSettingsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAutoRefillSettingsRequest {
-    return new GetAutoRefillSettingsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetAutoRefillSettingsRequest | PlainMessage<GetAutoRefillSettingsRequest> | undefined, b: GetAutoRefillSettingsRequest | PlainMessage<GetAutoRefillSettingsRequest> | undefined): boolean {
-    return proto3.util.equals(GetAutoRefillSettingsRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetAutoRefillSettingsResponse
- */
-export class GetAutoRefillSettingsResponse extends Message<GetAutoRefillSettingsResponse> {
-  /**
-   * @generated from field: bool enabled = 1;
-   */
-  enabled = false;
-
-  /**
-   * @generated from field: double threshold = 2;
-   */
-  threshold = 0;
-
-  /**
-   * @generated from field: double amount = 3;
-   */
-  amount = 0;
-
-  constructor(data?: PartialMessage<GetAutoRefillSettingsResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetAutoRefillSettingsResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "threshold", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 3, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAutoRefillSettingsResponse {
-    return new GetAutoRefillSettingsResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAutoRefillSettingsResponse {
-    return new GetAutoRefillSettingsResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAutoRefillSettingsResponse {
-    return new GetAutoRefillSettingsResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetAutoRefillSettingsResponse | PlainMessage<GetAutoRefillSettingsResponse> | undefined, b: GetAutoRefillSettingsResponse | PlainMessage<GetAutoRefillSettingsResponse> | undefined): boolean {
-    return proto3.util.equals(GetAutoRefillSettingsResponse, a, b);
-  }
-}
-
-/**
  * @generated from message rill.admin.v1.ListPublicBillingPlansRequest
  */
 export class ListPublicBillingPlansRequest extends Message<ListPublicBillingPlansRequest> {
@@ -14857,6 +14663,13 @@ export class GetEmbeddedAnalyticsRequest extends Message<GetEmbeddedAnalyticsReq
    */
   resource = "";
 
+  /**
+   * Optional: project name for project-scoped embeds
+   *
+   * @generated from field: string project = 3;
+   */
+  project = "";
+
   constructor(data?: PartialMessage<GetEmbeddedAnalyticsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -14867,6 +14680,7 @@ export class GetEmbeddedAnalyticsRequest extends Message<GetEmbeddedAnalyticsReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsRequest {

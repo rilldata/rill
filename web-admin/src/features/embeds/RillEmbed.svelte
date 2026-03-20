@@ -5,6 +5,7 @@
   import { onMount } from "svelte";
 
   export let org: string;
+  export let project: string | undefined = undefined;
   export let resource: string;
   export let height = "500px";
 
@@ -19,7 +20,7 @@
 
   onMount(async () => {
     try {
-      const resp = await adminServiceGetEmbeddedAnalytics(org, { resource });
+      const resp = await adminServiceGetEmbeddedAnalytics(org, { resource, ...(project ? { project } : {}) });
       iframeSrc = resp.iframeSrc;
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to load embed";

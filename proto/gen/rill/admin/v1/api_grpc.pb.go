@@ -169,8 +169,6 @@ const (
 	AdminService_CancelBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/CancelBillingSubscription"
 	AdminService_RenewBillingSubscription_FullMethodName               = "/rill.admin.v1.AdminService/RenewBillingSubscription"
 	AdminService_GetPaymentsPortalURL_FullMethodName                   = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
-	AdminService_GetAutoRefillSettings_FullMethodName                  = "/rill.admin.v1.AdminService/GetAutoRefillSettings"
-	AdminService_UpdateAutoRefillSettings_FullMethodName               = "/rill.admin.v1.AdminService/UpdateAutoRefillSettings"
 	AdminService_ListPublicBillingPlans_FullMethodName                 = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_GetBillingProjectCredentials_FullMethodName           = "/rill.admin.v1.AdminService/GetBillingProjectCredentials"
 	AdminService_GetEmbeddedAnalytics_FullMethodName                   = "/rill.admin.v1.AdminService/GetEmbeddedAnalytics"
@@ -508,10 +506,6 @@ type AdminServiceClient interface {
 	RenewBillingSubscription(ctx context.Context, in *RenewBillingSubscriptionRequest, opts ...grpc.CallOption) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
-	// GetAutoRefillSettings returns the auto-refill settings for an organization
-	GetAutoRefillSettings(ctx context.Context, in *GetAutoRefillSettingsRequest, opts ...grpc.CallOption) (*GetAutoRefillSettingsResponse, error)
-	// UpdateAutoRefillSettings updates the auto-refill settings for an organization
-	UpdateAutoRefillSettings(ctx context.Context, in *UpdateAutoRefillSettingsRequest, opts ...grpc.CallOption) (*UpdateAutoRefillSettingsResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -2034,26 +2028,6 @@ func (c *adminServiceClient) GetPaymentsPortalURL(ctx context.Context, in *GetPa
 	return out, nil
 }
 
-func (c *adminServiceClient) GetAutoRefillSettings(ctx context.Context, in *GetAutoRefillSettingsRequest, opts ...grpc.CallOption) (*GetAutoRefillSettingsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetAutoRefillSettingsResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetAutoRefillSettings_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) UpdateAutoRefillSettings(ctx context.Context, in *UpdateAutoRefillSettingsRequest, opts ...grpc.CallOption) (*UpdateAutoRefillSettingsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UpdateAutoRefillSettingsResponse)
-	err := c.cc.Invoke(ctx, AdminService_UpdateAutoRefillSettings_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminServiceClient) ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPublicBillingPlansResponse)
@@ -2461,10 +2435,6 @@ type AdminServiceServer interface {
 	RenewBillingSubscription(context.Context, *RenewBillingSubscriptionRequest) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
-	// GetAutoRefillSettings returns the auto-refill settings for an organization
-	GetAutoRefillSettings(context.Context, *GetAutoRefillSettingsRequest) (*GetAutoRefillSettingsResponse, error)
-	// UpdateAutoRefillSettings updates the auto-refill settings for an organization
-	UpdateAutoRefillSettings(context.Context, *UpdateAutoRefillSettingsRequest) (*UpdateAutoRefillSettingsResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -2936,12 +2906,6 @@ func (UnimplementedAdminServiceServer) RenewBillingSubscription(context.Context,
 }
 func (UnimplementedAdminServiceServer) GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPaymentsPortalURL not implemented")
-}
-func (UnimplementedAdminServiceServer) GetAutoRefillSettings(context.Context, *GetAutoRefillSettingsRequest) (*GetAutoRefillSettingsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAutoRefillSettings not implemented")
-}
-func (UnimplementedAdminServiceServer) UpdateAutoRefillSettings(context.Context, *UpdateAutoRefillSettingsRequest) (*UpdateAutoRefillSettingsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateAutoRefillSettings not implemented")
 }
 func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPublicBillingPlans not implemented")
@@ -5688,42 +5652,6 @@ func _AdminService_GetPaymentsPortalURL_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetAutoRefillSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAutoRefillSettingsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetAutoRefillSettings(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetAutoRefillSettings_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetAutoRefillSettings(ctx, req.(*GetAutoRefillSettingsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_UpdateAutoRefillSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateAutoRefillSettingsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).UpdateAutoRefillSettings(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_UpdateAutoRefillSettings_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).UpdateAutoRefillSettings(ctx, req.(*UpdateAutoRefillSettingsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_ListPublicBillingPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPublicBillingPlansRequest)
 	if err := dec(in); err != nil {
@@ -6474,14 +6402,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPaymentsPortalURL",
 			Handler:    _AdminService_GetPaymentsPortalURL_Handler,
-		},
-		{
-			MethodName: "GetAutoRefillSettings",
-			Handler:    _AdminService_GetAutoRefillSettings_Handler,
-		},
-		{
-			MethodName: "UpdateAutoRefillSettings",
-			Handler:    _AdminService_UpdateAutoRefillSettings_Handler,
 		},
 		{
 			MethodName: "ListPublicBillingPlans",

@@ -121,14 +121,6 @@ func (n noop) VoidCredits(ctx context.Context, customerID string) error {
 	return nil
 }
 
-func (n noop) SetAutoTopUp(ctx context.Context, customerID string, enabled bool, threshold float64, amount float64) (*AutoTopUp, error) {
-	return &AutoTopUp{Enabled: enabled, Threshold: threshold, Amount: amount}, nil
-}
-
-func (n noop) GetAutoTopUp(ctx context.Context, customerID string) (*AutoTopUp, error) {
-	return &AutoTopUp{Enabled: false}, nil
-}
-
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }

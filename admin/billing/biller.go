@@ -70,13 +70,6 @@ type Biller interface {
 	// VoidCredits voids all active credit grants for the given customer (called on upgrade from Free to Growth).
 	VoidCredits(ctx context.Context, customerID string) error
 
-	// SetAutoTopUp configures or disables automatic credit top-ups for a customer.
-	// When enabled, the billing provider will automatically charge the customer and grant credits
-	// when their balance drops below the threshold.
-	SetAutoTopUp(ctx context.Context, customerID string, enabled bool, threshold float64, amount float64) (*AutoTopUp, error)
-	// GetAutoTopUp returns the current auto top-up configuration for a customer, or nil if none.
-	GetAutoTopUp(ctx context.Context, customerID string) (*AutoTopUp, error)
-
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string
 
@@ -159,13 +152,6 @@ type CreditBalance struct {
 	RemainingCredit float64
 	ExpiryDate      time.Time
 	BurnRatePerDay  float64 // Estimated daily burn rate based on recent usage
-}
-
-type AutoTopUp struct {
-	ID        string
-	Enabled   bool
-	Threshold float64
-	Amount    float64
 }
 
 type Usage struct {

@@ -31,8 +31,10 @@ type Options struct {
 	Version                   version.Version
 	MetricsProjectOrg         string
 	MetricsProjectName        string
-	AutoscalerCron            string
-	ScaleDownConstraint       int
+	AutoscalerCron                string
+	ScaleDownConstraint           int
+	EmbeddedAnalyticsAPIURL      string
+	EmbeddedAnalyticsServiceToken string
 }
 
 type Service struct {
@@ -51,11 +53,15 @@ type Service struct {
 	issuer                    *auth.Issuer
 	authCache                 *lru.Cache
 	Version                   version.Version
-	MetricsProjectID          string
-	AutoscalerCron            string
-	ScaleDownConstraint       int
-	Biller                    billing.Biller
-	PaymentProvider           payment.Provider
+	MetricsProjectID              string
+	MetricsProjectOrg             string
+	MetricsProjectName            string
+	AutoscalerCron                string
+	ScaleDownConstraint           int
+	Biller                        billing.Biller
+	PaymentProvider               payment.Provider
+	EmbeddedAnalyticsAPIURL       string
+	EmbeddedAnalyticsServiceToken string
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiService drivers.AIService, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
@@ -136,10 +142,14 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		authCache:                 authCache,
 		Version:                   opts.Version,
 		MetricsProjectID:          metricsProjectID,
+		MetricsProjectOrg:         opts.MetricsProjectOrg,
+		MetricsProjectName:        opts.MetricsProjectName,
 		AutoscalerCron:            opts.AutoscalerCron,
 		ScaleDownConstraint:       opts.ScaleDownConstraint,
-		Biller:                    biller,
-		PaymentProvider:           p,
+		Biller:                        biller,
+		PaymentProvider:               p,
+		EmbeddedAnalyticsAPIURL:       opts.EmbeddedAnalyticsAPIURL,
+		EmbeddedAnalyticsServiceToken: opts.EmbeddedAnalyticsServiceToken,
 	}, nil
 }
 

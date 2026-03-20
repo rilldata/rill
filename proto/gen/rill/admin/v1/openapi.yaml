@@ -675,17 +675,6 @@ components:
                 yaml:
                     type: string
             type: object
-        v1GetAutoRefillSettingsResponse:
-            properties:
-                amount:
-                    format: double
-                    type: number
-                enabled:
-                    type: boolean
-                threshold:
-                    format: double
-                    type: number
-            type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
                 org:
@@ -2261,17 +2250,6 @@ components:
             type: object
         v1UnsubscribeReportResponse:
             type: object
-        v1UpdateAutoRefillSettingsResponse:
-            properties:
-                amount:
-                    format: double
-                    type: number
-                enabled:
-                    type: boolean
-                threshold:
-                    format: double
-                    type: number
-            type: object
         v1UpdateBillingSubscriptionResponse:
             properties:
                 organization:
@@ -3068,69 +3046,6 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
-    /v1/orgs/{org}/billing/auto-refill:
-        get:
-            operationId: AdminService_GetAutoRefillSettings
-            parameters:
-                - in: path
-                  name: org
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/v1GetAutoRefillSettingsResponse'
-                    description: A successful response.
-                default:
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/rpcStatus'
-                    description: An unexpected error response.
-            summary: GetAutoRefillSettings returns the auto-refill settings for an organization
-        patch:
-            operationId: AdminService_UpdateAutoRefillSettings
-            parameters:
-                - in: path
-                  name: org
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                amount:
-                                    format: double
-                                    title: Amount to refill when triggered (in USD)
-                                    type: number
-                                enabled:
-                                    type: boolean
-                                threshold:
-                                    format: double
-                                    title: Credit balance threshold that triggers a refill (in USD)
-                                    type: number
-                            type: object
-                required: true
-                x-originalParamName: body
-            responses:
-                "200":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/v1UpdateAutoRefillSettingsResponse'
-                    description: A successful response.
-                default:
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/rpcStatus'
-                    description: An unexpected error response.
-            summary: UpdateAutoRefillSettings updates the auto-refill settings for an organization
     /v1/orgs/{org}/billing/issues:
         get:
             operationId: AdminService_ListOrganizationBillingIssues
@@ -3408,6 +3323,9 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                project:
+                                    title: 'Optional: project name for project-scoped embeds'
+                                    type: string
                                 resource:
                                     title: Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
                                     type: string
