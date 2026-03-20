@@ -1,12 +1,15 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
+  import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
     formatEnvironmentName,
@@ -52,6 +55,21 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+  $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
+
+  // Plan-based storage cap (from root layout data)
+  const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
+  $: planName = $page.data?.organization?.billingPlanName ?? "";
+  $: storageCap = isTeamPlan(planName) ? TEAM_STORAGE_CAP : 0;
+
+  // Fill percentage for the usage pill (0–100)
+  $: usagePercent = (() => {
+    const bytes = Number(dataSizeBytes ?? 0);
+    if (!storageCap) return bytes > 0 ? 100 : 0;
+    return Math.min(Math.round((bytes / storageCap) * 100), 100);
+  })();
+  $: isOverCap = storageCap > 0 && Number(dataSizeBytes ?? 0) >= storageCap;
+
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -155,6 +173,34 @@
         {/if}
       </span>
     </div>
+
+    {#if !olapConnector || olapConnector.provision}
+      <div class="info-row">
+        <span class="info-label">Data usage</span>
+        <span class="info-value flex items-center gap-2">
+          {#if dataSizeBytes}
+            <a
+              href="/{organization}/{project}/-/status/tables"
+              class="usage-pill-link"
+            >
+              <span class="usage-pill">
+                <span
+                  class="usage-pill-fill"
+                  class:over-cap={isOverCap}
+                  style:width="{usagePercent}%"
+                ></span>
+              </span>
+            </a>
+            <span class="text-xs text-fg-secondary whitespace-nowrap">
+              {formatMemorySize(Number(dataSizeBytes))}{#if storageCap}
+                / {formatMemorySize(storageCap)}{/if}
+            </span>
+          {:else}
+            —
+          {/if}
+        </span>
+      </div>
+    {/if}
   </div>
 </OverviewCard>
 
@@ -176,6 +222,15 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
+  }
+  .usage-pill-link {
+    @apply no-underline;
+  }
+  .usage-pill {
+    @apply w-24 h-2.5 rounded-full bg-surface-subtle overflow-hidden inline-block;
+  }
+  .usage-pill-fill {
+    @apply h-full rounded-full bg-primary-500 block transition-all;
   }
   .repo-link {
     @apply text-primary-500 text-sm;
