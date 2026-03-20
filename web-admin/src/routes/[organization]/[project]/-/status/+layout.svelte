@@ -14,11 +14,6 @@
       hasPermission: true,
     },
     {
-      label: "Deployments",
-      route: "/deployments",
-      hasPermission: true,
-    },
-    {
       label: "Resources",
       route: "/resources",
       hasPermission: true,

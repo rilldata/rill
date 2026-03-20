@@ -121,7 +121,8 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
   const name = formatConnectorName(connectorTypeName);
 
   // Show management suffix for non-default-DuckDB connectors
-  const showSuffix = connector.provision || isMotherDuck || isClickHouseCloud || !isDuckDB;
+  const showSuffix =
+    connector.provision || isMotherDuck || isClickHouseCloud || !isDuckDB;
   if (!showSuffix) return name;
 
   let suffix: string;

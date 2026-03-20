@@ -26,7 +26,9 @@
   export let viewOnly = false;
 
   // Minimum slots: 2 for Rill-managed, 4 for self-managed
-  $: minSlots = isRillManaged ? DEFAULT_MANAGED_SLOTS : DEFAULT_SELF_MANAGED_SLOTS;
+  $: minSlots = isRillManaged
+    ? DEFAULT_MANAGED_SLOTS
+    : DEFAULT_SELF_MANAGED_SLOTS;
 
   let selectedSlots = currentSlots;
   $: if (open) {
@@ -44,7 +46,11 @@
   // Ensure the current slot count always appears in the popular list
   $: popularSlotsWithExtras = (() => {
     let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
-    if (currentSlots >= minSlots && !slots.includes(currentSlots) && ALL_SLOTS.includes(currentSlots)) {
+    if (
+      currentSlots >= minSlots &&
+      !slots.includes(currentSlots) &&
+      ALL_SLOTS.includes(currentSlots)
+    ) {
       slots.push(currentSlots);
     }
     return slots.sort((a, b) => a - b);
@@ -97,8 +103,8 @@
             class="text-primary-500 hover:underline">Upgrade to Growth</a
           > to customize your slot allocation.
         {:else}
-          All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr.
-          Monthly estimates assume ~{HOURS_PER_MONTH} hours/month.
+          All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr. Monthly
+          estimates assume ~{HOURS_PER_MONTH} hours/month.
           {#if isRillManaged}
             Minimum {DEFAULT_MANAGED_SLOTS} slots for Rill-managed deployments.
           {:else}
