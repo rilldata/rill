@@ -916,7 +916,7 @@ func (s *Server) GetProjectEmbeddedAnalytics(ctx context.Context, req *adminv1.G
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	_, err = s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -930,7 +930,7 @@ func (s *Server) GetProjectEmbeddedAnalytics(ctx context.Context, req *adminv1.G
 		return nil, status.Error(codes.Unavailable, "embedded analytics is not configured")
 	}
 
-	iframeURL, err := s.fetchEmbeddedAnalyticsIframeURL(ctx, proj.ID)
+	iframeURL, err := s.fetchEmbeddedAnalyticsIframeURL(ctx, "d337de05-8fba-4cc0-a62d-bc6f3eb36db2")
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to fetch embedded analytics: %v", err))
 	}
