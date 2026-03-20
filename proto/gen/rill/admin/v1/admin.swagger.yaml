@@ -738,9 +738,6 @@ paths:
               resource:
                 type: string
                 title: Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
-              project:
-                type: string
-                title: 'Optional: project name for project-scoped embeds'
   /v1/orgs/{org}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites

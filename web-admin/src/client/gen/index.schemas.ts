@@ -1832,7 +1832,6 @@ export type AdminServiceCreateAssetBody = {
 
 export type AdminServiceGetEmbeddedAnalyticsBody = {
   resource?: string;
-  project?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {

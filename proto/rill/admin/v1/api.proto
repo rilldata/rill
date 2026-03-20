@@ -3117,8 +3117,6 @@ message GetEmbeddedAnalyticsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   // Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
   string resource = 2 [(validate.rules).string.min_len = 1];
-  // Optional: project name for project-scoped embeds
-  string project = 3;
 }
 
 message GetEmbeddedAnalyticsResponse {

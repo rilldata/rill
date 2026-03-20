@@ -3323,9 +3323,6 @@ paths:
                     application/json:
                         schema:
                             properties:
-                                project:
-                                    title: 'Optional: project name for project-scoped embeds'
-                                    type: string
                                 resource:
                                     title: Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
                                     type: string

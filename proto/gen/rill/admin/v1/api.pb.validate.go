@@ -40271,8 +40271,6 @@ func (m *GetEmbeddedAnalyticsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Project
-
 	if len(errors) > 0 {
 		return GetEmbeddedAnalyticsRequestMultiError(errors)
 	}

@@ -14663,13 +14663,6 @@ export class GetEmbeddedAnalyticsRequest extends Message<GetEmbeddedAnalyticsReq
    */
   resource = "";
 
-  /**
-   * Optional: project name for project-scoped embeds
-   *
-   * @generated from field: string project = 3;
-   */
-  project = "";
-
   constructor(data?: PartialMessage<GetEmbeddedAnalyticsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -14680,7 +14673,6 @@ export class GetEmbeddedAnalyticsRequest extends Message<GetEmbeddedAnalyticsReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsRequest {

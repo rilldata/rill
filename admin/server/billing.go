@@ -1,14 +1,10 @@
 package server
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
-	"net/http"
 	"strings"
 	"time"
 
@@ -16,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -507,7 +504,70 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 	return &adminv1.GetPaymentsPortalURLResponse{Url: url}, nil
 }
 
+func (s *Server) UpdateAutoRefillSettings(ctx context.Context, req *adminv1.UpdateAutoRefillSettingsRequest) (*adminv1.UpdateAutoRefillSettingsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
+	}
+
+	if req.Enabled && req.Threshold <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "threshold must be positive when auto-refill is enabled")
+	}
+	if req.Enabled && req.Amount <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "amount must be positive when auto-refill is enabled")
+	}
+
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing customer not initialized")
+	}
+
+	result, err := s.admin.Biller.SetAutoTopUp(ctx, org.BillingCustomerID, req.Enabled, req.Threshold, req.Amount)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to configure auto top-up: %v", err)
+	}
+
+	return &adminv1.UpdateAutoRefillSettingsResponse{
+		Enabled:   result.Enabled,
+		Threshold: result.Threshold,
+		Amount:    result.Amount,
+	}, nil
+}
+
+func (s *Server) GetAutoRefillSettings(ctx context.Context, req *adminv1.GetAutoRefillSettingsRequest) (*adminv1.GetAutoRefillSettingsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
+	}
+
+	if org.BillingCustomerID == "" {
+		return &adminv1.GetAutoRefillSettingsResponse{Enabled: false}, nil
+	}
+
+	result, err := s.admin.Biller.GetAutoTopUp(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get auto top-up settings: %v", err)
+	}
+
+	return &adminv1.GetAutoRefillSettingsResponse{
+		Enabled:   result.Enabled,
+		Threshold: result.Threshold,
+		Amount:    result.Amount,
+	}, nil
+}
 
 // SudoUpdateOrganizationBillingCustomer updates the billing customer id for an organization. May be useful if customer is initialized manually in billing system
 func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
@@ -870,77 +930,78 @@ func (s *Server) GetEmbeddedAnalytics(ctx context.Context, req *adminv1.GetEmbed
 		return nil, status.Error(codes.PermissionDenied, "not allowed to view embedded analytics")
 	}
 
-	if s.admin.EmbeddedAnalyticsServiceToken == "" || s.admin.EmbeddedAnalyticsAPIURL == "" {
-		return nil, status.Error(codes.FailedPrecondition, "embedded analytics not configured")
-	}
-
-	if s.admin.MetricsProjectOrg == "" || s.admin.MetricsProjectName == "" {
+	if s.admin.MetricsProjectID == "" {
 		return nil, status.Error(codes.FailedPrecondition, "metrics project not configured")
 	}
 
-	// Call the prod iframe API using the service token
-	iframeURL := fmt.Sprintf("%s/v1/orgs/%s/projects/%s/iframe",
-		s.admin.EmbeddedAnalyticsAPIURL,
-		s.admin.MetricsProjectOrg,
-		s.admin.MetricsProjectName,
-	)
-
-	attrs := map[string]any{
-		"organization_id": org.ID,
-		"is_embed":        true,
-	}
-	if req.Project != "" {
-		proj, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.Project)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		attrs["project_id"] = proj.ID
-	}
-
-	body := map[string]any{
-		"resource":   req.Resource,
-		"type":       "rill.runtime.v1.Canvas",
-		"attributes": attrs,
-	}
-
-	bodyJSON, err := json.Marshal(body)
+	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not marshal request body: %s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	s.admin.Logger.Info("embedded analytics request", zap.String("url", iframeURL), zap.String("body", string(bodyJSON)))
+	if metricsProj.PrimaryDeploymentID == nil {
+		return nil, status.Error(codes.InvalidArgument, "metrics project does not have a deployment")
+	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, iframeURL, bytes.NewReader(bodyJSON))
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not create request: %s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+s.admin.EmbeddedAnalyticsServiceToken)
 
-	httpResp, err := http.DefaultClient.Do(httpReq)
+	// Issue a JWT scoped to this org's data in the metrics project
+	ttl := runtimeAccessTokenEmbedTTL
+	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
+		AudienceURL: prodDepl.RuntimeAudience,
+		Subject:     claims.OwnerID(),
+		TTL:         ttl,
+		InstancePermissions: map[string][]runtime.Permission{
+			prodDepl.RuntimeInstanceID: {
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+			},
+		},
+		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
+		SecurityRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{
+							Kind: "rill.runtime.v1.Canvas",
+							Name: req.Resource,
+						},
+					},
+				},
+			},
+		},
+	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "embedded analytics request failed: %s", err.Error())
-	}
-	defer httpResp.Body.Close()
-
-	respBody, _ := io.ReadAll(httpResp.Body)
-	s.admin.Logger.Info("embedded analytics response", zap.Int("status", httpResp.StatusCode), zap.String("body", string(respBody)))
-
-	if httpResp.StatusCode != http.StatusOK {
-		return nil, status.Errorf(codes.Internal, "embedded analytics returned %d: %s", httpResp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("could not issue jwt: %w", err)
 	}
 
-	var iframeResp struct {
-		IframeSrc  string `json:"iframe_src"`
-		TTLSeconds uint32 `json:"ttl_seconds"`
+	s.admin.Used.Deployment(prodDepl.ID)
+
+	// Build iframe URL
+	metricsOrg, err := s.admin.DB.FindOrganization(ctx, metricsProj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not find metrics org: %s", err.Error())
 	}
-	if err := json.Unmarshal(respBody, &iframeResp); err != nil {
-		return nil, status.Errorf(codes.Internal, "could not decode iframe response: %s", err.Error())
+
+	iframeSrc, err := s.admin.URLs.WithCustomDomain(metricsOrg.CustomDomain).Embed(map[string]string{
+		"runtime_host": prodDepl.RuntimeHost,
+		"instance_id":  prodDepl.RuntimeInstanceID,
+		"access_token": jwt,
+		"type":         "rill.runtime.v1.Canvas",
+		"kind":         "rill.runtime.v1.Canvas",
+		"resource":     req.Resource,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
 	}
 
 	return &adminv1.GetEmbeddedAnalyticsResponse{
-		IframeSrc:  iframeResp.IframeSrc,
-		TtlSeconds: iframeResp.TTLSeconds,
+		IframeSrc:  iframeSrc,
+		TtlSeconds: uint32(ttl.Seconds()),
 	}, nil
 }
 
