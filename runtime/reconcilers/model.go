@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
@@ -888,13 +889,53 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			return err
 		}
 	}
+
 	rPropMap := mdl.Spec.PartitionsResolverProperties.AsMap()
 	rArgs := map[string]any{"state": incrementalState}
 	if mdl.Spec.PartitionsResolver == "glob" {
-		start, _ := rPropMap["start"].(string)
+		type globResolverArgs struct {
+			Start string `mapstructure:"start"`
+			Last  int    `mapstructure:"last"`
+		}
+		var args globResolverArgs
+		if err := mapstructureutil.WeakDecode(rPropMap, &args); err != nil {
+			return err
+		}
+		start := args.Start
 		last := ""
-		if _, ok := rPropMap["last"].(string); ok {
-			last = "" // TODO: add logic to get last
+		if args.Last > 0 {
+			catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+			if err != nil {
+				return err
+			}
+			defer release()
+
+			partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+				ModelID:         mdl.State.PartitionsModelId,
+				WhereSuccessful: true,
+			})
+
+			paths := make([]string, len(partitions))
+			for _, p := range partitions {
+				var data map[string]any
+
+				if err := json.Unmarshal(p.DataJSON, &data); err != nil {
+					return fmt.Errorf("partition %s: invalid JSON: %w", p.Key, err)
+				}
+				pathVal, ok := data["path"]
+				if !ok {
+					return fmt.Errorf("partition %s: missing 'path' field", p.Key)
+				}
+				pathStr, ok := pathVal.(string)
+				if !ok || pathStr == "" {
+					return fmt.Errorf("partition %s: 'path' is not valid string", p.Key)
+				}
+				paths = append(paths, pathStr)
+			}
+			sort.Strings(paths)
+			if args.Last <= len(paths) {
+				last = paths[len(paths)-args.Last]
+			}
 		}
 		if start > last {
 			rArgs["partition_start"] = start
