@@ -272,14 +272,16 @@
     class="flex items-center gap-x-1 px-2.5"
   >
     {#if showTimeDimensionDetail}
-      <BackToExplore />
-      <ChartTypeSelector
-        hasComparison={Boolean(
-          showComparison || includedValuesForDimension.length,
-        )}
-        {exploreName}
-        chartType={tddChartType}
-      />
+      <div class="flex justify-between w-full items-center py-2">
+        <BackToExplore />
+        <ChartTypeSelector
+          hasComparison={Boolean(
+            showComparison || includedValuesForDimension.length,
+          )}
+          {exploreName}
+          chartType={tddChartType}
+        />
+      </div>
     {:else}
       <DashboardMetricsDraggableList
         type="measure"
