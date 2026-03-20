@@ -27,6 +27,8 @@
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
   <Plan {organization} {showUpgradeDialog} />
+
   <Payment {organization} />
   <BillingContactSetting {organization} />
 {/if}
+
