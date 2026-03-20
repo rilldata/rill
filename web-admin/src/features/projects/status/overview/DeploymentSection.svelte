@@ -1,8 +1,14 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import {
+    isTrialPlan,
+    // isGrowthPlan,
+    isEnterprisePlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
@@ -62,20 +68,38 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
-  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
+  $: olapEngineLabel = olapConnector
+    ? getOlapEngineLabel(olapConnector)
+    : "Rill Managed";
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
+
+  // Slots
+  $: currentSlots = Number(projectData?.prodSlots) || 0;
+  $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
+
+  // Billing plan detection
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
+  $: isFree = isTrialPlan(planName);
+  $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
-  <ProjectClone
-    slot="header-right"
-    {organization}
-    {project}
-    gitRemote={projectData?.gitRemote}
-    managedGitId={projectData?.managedGitId}
-  />
+  <div slot="header-right" class="flex items-center gap-3">
+    {#if canManage && isFree && !$subscriptionQuery?.isLoading}
+      <a class="upgrade-link" href="/{organization}/-/settings/billing">
+        Upgrade to Teams
+      </a>
+    {/if}
+    <ProjectClone
+      {organization}
+      {project}
+      gitRemote={projectData?.gitRemote}
+      managedGitId={projectData?.managedGitId}
+    />
+  </div>
 
   <div class="info-grid">
     <div class="info-row">
@@ -140,7 +164,9 @@
 
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
-      <span class="info-value">{olapEngineLabel}</span>
+      <span class="info-value">
+        {olapEngineLabel}
+      </span>
     </div>
 
     <div class="info-row">
@@ -155,6 +181,13 @@
         {/if}
       </span>
     </div>
+
+    {#if !$subscriptionQuery?.isLoading && !isEnterprise}
+      <div class="info-row">
+        <span class="info-label">Rill Slots</span>
+        <span class="slots-count">{currentSlots}</span>
+      </div>
+    {/if}
   </div>
 </OverviewCard>
 
@@ -182,5 +215,23 @@
   }
   .repo-link:hover {
     @apply underline;
+  }
+  .slots-link {
+    @apply flex items-center gap-2 no-underline;
+  }
+  .slots-link:hover .slots-detail {
+    @apply text-primary-600;
+  }
+  .slots-count {
+    @apply text-sm text-fg-primary font-medium tabular-nums;
+  }
+  .slots-detail {
+    @apply text-xs text-primary-500;
+  }
+  .upgrade-link {
+    @apply text-xs text-primary-500 no-underline;
+  }
+  .upgrade-link:hover {
+    @apply text-primary-600;
   }
 </style>
