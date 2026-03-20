@@ -162,43 +162,27 @@ h3:has(~ div.component-icon-grid) {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  
-  svg {
+
+  svg, img {
     height: 2rem;
     width: auto;
     max-width: 100%;
-    min-width: 120px;
+    overflow: visible;
   }
-}
-
-.Connector-icon-img {
-  height: 2rem;
-  width: 100%;
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
-.sheets-icon {
-  height: 3rem !important;
-}
-
-.slack-icon {
-  height: 2.5rem !important;
-}
-
-.duckdb-icon {
-  height: 2rem !important;
-}
-
-.starrocks-icon {
-  height: 1.5rem !important;
 }
 
 .https-icon {
   font-size: 1.8rem !important;
   font-style: italic !important;
   font-weight: 500 !important;
-  color: #181818 !important;
+  color: currentColor !important;
+  margin: 0 !important;
+}
+
+.hdfs-icon {
+  font-size: 1.8rem !important;
+  font-weight: 500 !important;
+  color: currentColor !important;
   margin: 0 !important;
 }
 
@@ -259,6 +243,11 @@ h3:has(~ div.component-icon-grid) {
   .Connector-icon-action-link:after {
     content: none;
   }
+}
+
+// Invert dark logos in dark mode so they remain visible
+[data-theme='dark'] .dark-invert {
+  filter: invert(1) hue-rotate(180deg);
 }
 
 // Dark mode styles

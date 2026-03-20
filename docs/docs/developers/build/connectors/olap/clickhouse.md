@@ -110,16 +110,29 @@ driver: clickhouse
 managed: true
 ```
 
-Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/developers/tutorials/rill-clickhouse/r_ch_ingest).
+:::warning Managed ClickHouse is in Testing
 
+Rill Managed ClickHouse is currently in testing. If you encounter any issues, please [contact us](/contact).
 
-## Read Only Connector
+:::
 
-You can configure your ClickHouse connector to operate in read-only mode by adding a mode parameter. This provides an additional security layer by ensuring your connector can only read data and cannot perform write operations.
+Data ingestion is configured through [model YAML files](/reference/project-files/models) — there is no UI support for ingesting data into ClickHouse at this time. You write SQL that uses ClickHouse [table functions](https://clickhouse.com/docs/en/sql-reference/table-functions) to read from external sources, and Rill materializes the results into your ClickHouse instance.
+
+For a list of supported data sources, see [Ingesting Data into ClickHouse](#ingesting-data-into-clickhouse) below.
+
+## Connector Mode
+
+By default, ClickHouse connectors operate in read-only mode. You can explicitly set the mode using the `mode` parameter:
 
 ```yaml
-mode: read # readwrite
+mode: read
 ```
+
+:::note Read-Write Mode in Development
+
+Read-write mode (`mode: readwrite`) for self-managed ClickHouse is currently in development. For now, data ingestion is supported through Rill Managed ClickHouse.
+
+:::
 
 ## Advanced Configuration Options
 
@@ -130,6 +143,55 @@ When using incremental models with partition overwrite strategies, you can enabl
 ```yaml
 optimize_temporary_tables_before_partition_replace: true # default: false
 ```
+
+## Ingesting Data into ClickHouse
+
+When using ClickHouse as your OLAP engine, you can ingest data from external sources by writing models that use ClickHouse's built-in [table functions](https://clickhouse.com/docs/en/sql-reference/table-functions). Each model is a YAML file with a SQL query that Rill executes against your ClickHouse connector.
+
+There is no UI support for configuring ClickHouse data sources at this time — all configuration is done through model YAML files. Credentials are stored in your project's `.env` file and referenced using `{{ .env.VARIABLE_NAME }}` [template syntax](/developers/build/connectors/templating).
+
+### Supported Data Sources
+
+**Object Storage**
+- [Amazon S3](/developers/build/connectors/data-source/clickhouse/s3) — `s3()` table function
+- [Google Cloud Storage](/developers/build/connectors/data-source/clickhouse/gcs) — `s3()` with GCS HMAC keys
+- [Azure Blob Storage](/developers/build/connectors/data-source/clickhouse/azure) — `azureBlobStorage()` table function
+- [HTTPS](/developers/build/connectors/data-source/clickhouse/https) — `url()` table function
+
+**Databases**
+- [PostgreSQL](/developers/build/connectors/data-source/clickhouse/postgres) — `postgresql()` table function
+- [MySQL](/developers/build/connectors/data-source/clickhouse/mysql) — `mysql()` table function
+- [MongoDB](/developers/build/connectors/data-source/clickhouse/mongodb) — `mongodb()` table function
+- [Supabase](/developers/build/connectors/data-source/clickhouse/supabase) — `postgresql()` table function
+- [Remote ClickHouse](/developers/build/connectors/data-source/clickhouse/remote-clickhouse) — `remoteSecure()` / `remote()` table functions
+
+**Table Formats**
+- [Apache Iceberg](/developers/build/connectors/data-source/clickhouse/iceberg) — `icebergS3()` / `icebergAzure()` table functions
+- [Delta Lake](/developers/build/connectors/data-source/clickhouse/delta-lake) — `deltaLake()` table function
+- [Apache Hudi](/developers/build/connectors/data-source/clickhouse/hudi) — `hudi()` table function
+
+**Other**
+- [HDFS](/developers/build/connectors/data-source/clickhouse/hdfs) — `hdfs()` table function
+
+### Example
+
+Create `models/s3_events.yaml`:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM s3(
+    'https://my-bucket.s3.amazonaws.com/events/*.parquet',
+    '{{ .env.AWS_ACCESS_KEY_ID }}',
+    '{{ .env.AWS_SECRET_ACCESS_KEY }}',
+    'Parquet'
+  )
+```
+
+For dev/prod environment handling, see [Model Environment Templating](/developers/build/models/templating).
 
 ## Configuring Rill Cloud
 
@@ -146,7 +208,7 @@ If you are developing on a locally running ClickHouse server, this will not be d
 
 ## Setting the Default OLAP Connection
 
-Creating a connection to an OLAP engine will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to ClickHouse. Once this is changed, you'll notice that some of the UI features are removed as we currently do not support modeling and direct source ingestion in ClickHouse. However, this is behind a feature flag, [contact us](/contact) for more information!
+Creating a connection to ClickHouse will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to ClickHouse.
 
 ```yaml
 olap_connector: clickhouse
@@ -164,6 +226,6 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 ## Additional Notes
 
-- At the moment, we do not officially support modeling with ClickHouse; however, this is available via a feature flag. If this is something you're interested in, please [contact us](/contact).
 - For dashboards powered by ClickHouse, [measure definitions](/developers/build/metrics-view/#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.
+- Data ingestion into ClickHouse is configured through model YAML files — see [Ingesting Data into ClickHouse](#ingesting-data-into-clickhouse) for supported sources and examples.

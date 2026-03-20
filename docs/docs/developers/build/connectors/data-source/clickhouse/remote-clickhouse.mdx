@@ -1,0 +1,89 @@
+---
+title: Remote ClickHouse
+description: Query data from other ClickHouse servers
+sidebar_label: Remote ClickHouse
+sidebar_position: 110
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
+
+<WrongOLAP engine="clickhouse" solo />
+
+## Overview
+
+Pull data from other ClickHouse servers into your models using ClickHouse's [`remote()` and `remoteSecure()` table functions](https://clickhouse.com/docs/en/sql-reference/table-functions/remote). This is useful for cross-cluster analytics and data federation across ClickHouse instances.
+
+<ClickHousePrereq />
+
+## Credentials
+
+Add the remote ClickHouse server credentials to your project's `.env` file:
+
+```bash
+REMOTE_CLICKHOUSE_HOST=remote-host.example.com
+REMOTE_CLICKHOUSE_PORT=9440
+REMOTE_CLICKHOUSE_DATABASE=default
+REMOTE_CLICKHOUSE_USER=your_user
+REMOTE_CLICKHOUSE_PASSWORD=your_password
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
+
+## Model Configuration
+
+### Using `remoteSecure()` (recommended)
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM remoteSecure(
+    '{{ .env.REMOTE_CLICKHOUSE_HOST }}:{{ .env.REMOTE_CLICKHOUSE_PORT }}',
+    '{{ .env.REMOTE_CLICKHOUSE_DATABASE }}.my_table',
+    '{{ .env.REMOTE_CLICKHOUSE_USER }}',
+    '{{ .env.REMOTE_CLICKHOUSE_PASSWORD }}'
+  )
+```
+
+### Using `remote()` (unencrypted)
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM remote(
+    '{{ .env.REMOTE_CLICKHOUSE_HOST }}:{{ .env.REMOTE_CLICKHOUSE_PORT }}',
+    '{{ .env.REMOTE_CLICKHOUSE_DATABASE }}.my_table',
+    '{{ .env.REMOTE_CLICKHOUSE_USER }}',
+    '{{ .env.REMOTE_CLICKHOUSE_PASSWORD }}'
+  )
+```
+
+:::tip
+Use `remoteSecure()` for production workloads — it connects over TLS. `remote()` uses an unencrypted connection and should only be used for internal networks.
+:::
+
+### Querying with a Custom SQL Expression
+
+You can also pass a SQL query to the remote server:
+
+```yaml
+sql: |
+  SELECT *
+  FROM remoteSecure(
+    '{{ .env.REMOTE_CLICKHOUSE_HOST }}:{{ .env.REMOTE_CLICKHOUSE_PORT }}',
+    '{{ .env.REMOTE_CLICKHOUSE_DATABASE }}',
+    '{{ .env.REMOTE_CLICKHOUSE_USER }}',
+    '{{ .env.REMOTE_CLICKHOUSE_PASSWORD }}'
+  ) AS r
+  WHERE r.created_at >= now() - INTERVAL 30 DAY
+```
+
+## Reference
+
+See the [ClickHouse remote documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/remote) for full syntax details, including support for sharding and replication patterns.

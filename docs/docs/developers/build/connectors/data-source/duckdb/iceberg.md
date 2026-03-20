@@ -2,8 +2,12 @@
 title: Apache Iceberg
 description: Read Iceberg tables from object storage
 sidebar_label: Apache Iceberg
-sidebar_position: 27
+sidebar_position: 5
 ---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="duckdb" />
 
 ## Overview
 
@@ -19,9 +23,9 @@ Iceberg tables can be read from any of the following storage backends:
 
 | Backend | URI format | Authentication |
 |---|---|---|
-| Amazon S3 | `s3://bucket/path/to/table` | Requires an [S3 connector](/developers/build/connectors/data-source/s3) |
-| Google Cloud Storage | `gs://bucket/path/to/table` | Requires a [GCS connector](/developers/build/connectors/data-source/gcs) with HMAC keys |
-| Azure Blob Storage | `azure://container/path/to/table` | Requires an [Azure connector](/developers/build/connectors/data-source/azure) |
+| Amazon S3 | `s3://bucket/path/to/table` | Requires an [S3 connector](/developers/build/connectors/data-source/duckdb/s3) |
+| Google Cloud Storage | `gs://bucket/path/to/table` | Requires a [GCS connector](/developers/build/connectors/data-source/duckdb/gcs) with HMAC keys |
+| Azure Blob Storage | `azure://container/path/to/table` | Requires an [Azure connector](/developers/build/connectors/data-source/duckdb/azure) |
 | Local filesystem | `/path/to/table` | No authentication needed |
 
 For cloud storage backends, you must first configure the corresponding storage connector with valid credentials. Rill uses these credentials to authenticate when reading the Iceberg table files.
@@ -59,7 +63,7 @@ sql: |
 ### Reading from GCS
 
 :::info HMAC keys required
-DuckDB's `iceberg_scan()` authenticates to GCS using HMAC keys, not JSON service account credentials. When configuring your [GCS connector](/developers/build/connectors/data-source/gcs), use the `key_id` and `secret` (HMAC) properties instead of `google_application_credentials`.
+DuckDB's `iceberg_scan()` authenticates to GCS using HMAC keys, not JSON service account credentials. When configuring your [GCS connector](/developers/build/connectors/data-source/duckdb/gcs), use the `key_id` and `secret` (HMAC) properties instead of `google_application_credentials`.
 :::
 
 ```yaml
@@ -120,9 +124,9 @@ FROM iceberg_scan('s3://my-bucket/path/to/iceberg_table',
 
 Since Iceberg tables are read through DuckDB using your existing storage connector credentials, deploying to Rill Cloud follows the same process as the underlying storage connector:
 
-- **S3**: Follow the [S3 deployment guide](/developers/build/connectors/data-source/s3#deploy-to-rill-cloud)
-- **GCS**: Follow the [GCS deployment guide](/developers/build/connectors/data-source/gcs#deploy-to-rill-cloud)
-- **Azure**: Follow the [Azure deployment guide](/developers/build/connectors/data-source/azure#deploy-to-rill-cloud)
+- **S3**: Follow the [S3 deployment guide](/developers/build/connectors/data-source/duckdb/s3#deploy-to-rill-cloud)
+- **GCS**: Follow the [GCS deployment guide](/developers/build/connectors/data-source/duckdb/gcs#deploy-to-rill-cloud)
+- **Azure**: Follow the [Azure deployment guide](/developers/build/connectors/data-source/duckdb/azure#deploy-to-rill-cloud)
 
 Ensure your storage connector credentials are configured in your Rill Cloud project before deploying.
 
