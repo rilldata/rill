@@ -1882,6 +1882,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for FrontendUrl
 
+	// no validation rules for WatchRepo
+
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}

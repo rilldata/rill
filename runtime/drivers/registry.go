@@ -71,6 +71,8 @@ type Instance struct {
 	FrontendURL string `db:"frontend_url"`
 	// Theme is the name of the theme resource to use for AI-generated charts.
 	Theme string `db:"theme"`
+	// WatchRepo indicates whether to set up a file watcher to instantly detect and reconcile changes to project files.
+	WatchRepo bool `db:"watch_repo"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.
@@ -178,7 +180,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		DownloadLimitBytes:                   int64(datasize.MB * 128),
 		InteractiveSQLRowLimit:               10_000,
 		StageChanges:                         true,
-		WatchRepo:                            i.Environment == "dev",
+		WatchRepo:                            i.WatchRepo,
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
 		ModelConcurrentExecutionLimit:        5,

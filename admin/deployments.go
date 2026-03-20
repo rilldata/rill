@@ -315,6 +315,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		Variables:      vars,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
+		WatchRepo:      depl.Editable, // Watch the repo for changes if the deployment is editable
 	})
 	if err != nil {
 		return err

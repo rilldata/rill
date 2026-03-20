@@ -91,6 +91,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.admin_connector", req.AdminConnector),
 		attribute.String("args.ai_connector", req.AiConnector),
 		attribute.StringSlice("args.connectors", connectorsStrings(req.Connectors)),
+		attribute.Bool("args.watch_repo", req.WatchRepo),
 	)
 
 	claims := auth.GetClaims(ctx, "")
@@ -109,6 +110,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
 		FrontendURL:    req.FrontendUrl,
+		WatchRepo:      req.WatchRepo,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)

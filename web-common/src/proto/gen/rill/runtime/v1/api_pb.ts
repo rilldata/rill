@@ -877,6 +877,11 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
    */
   frontendUrl = "";
 
+  /**
+   * @generated from field: bool watch_repo = 19;
+   */
+  watchRepo = false;
+
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -895,6 +900,7 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
