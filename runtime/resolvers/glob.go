@@ -58,6 +58,7 @@ type globResolver struct {
 	bucketURI      *globutil.URL
 	tmpTableName   string
 	partitionStart string
+	partitionEnd   string
 }
 
 // globProps declares the properties for a "glob" resolver.
@@ -85,6 +86,7 @@ type globArgs struct {
 	// State to make available for template resolution in the props.
 	State          map[string]any `mapstructure:"state"`
 	PartitionStart string         `mapstructure:"partition_start"`
+	PartitionEnd   string         `mapstructure:"partition_end"`
 }
 
 func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -161,6 +163,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		bucketURI:      bucketURI,
 		tmpTableName:   tmpTableName,
 		partitionStart: args.PartitionStart,
+		partitionEnd:   args.PartitionStart,
 	}, nil
 }
 
@@ -205,7 +208,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 
 	entries, err := pagination.CollectAll(ctx,
 		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
-			return store.ListObjectsForGlob(ctx, url.Host, url.Path, pz, tk, r.partitionStart)
+			return store.ListObjectsForGlob(ctx, url.Host, url.Path, pz, tk, r.partitionStart, r.partitionEnd)
 		},
 		1000)
 	if err != nil {

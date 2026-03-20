@@ -894,13 +894,19 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 	rArgs := map[string]any{"state": incrementalState}
 	if mdl.Spec.PartitionsResolver == "glob" {
 		type globResolverArgs struct {
-			Start string `mapstructure:"start"`
-			Last  int    `mapstructure:"last"`
+			Start        string `mapstructure:"start"`
+			Last         int    `mapstructure:"last"`
+			End          string `mapstructure:"end"`
+			TransformSQL string `mapstructure:"transform_sql"`
 		}
 		var args globResolverArgs
 		if err := mapstructureutil.WeakDecode(rPropMap, &args); err != nil {
 			return err
 		}
+		if args.TransformSQL != "" && (args.Start != "" || args.Last > 0 || args.End != "") {
+			return fmt.Errorf("Properties `start`, `last` and `end` is not support with transform_sql")
+		}
+
 		start := args.Start
 		last := ""
 		if args.Last > 0 {
@@ -914,6 +920,9 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 				ModelID:         mdl.State.PartitionsModelId,
 				WhereSuccessful: true,
 			})
+			if err != nil {
+				return err
+			}
 
 			paths := make([]string, len(partitions))
 			for _, p := range partitions {
@@ -942,6 +951,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		} else {
 			rArgs["partition_start"] = last
 		}
+		rArgs["partition_end"] = args.End
 	}
 
 	// Resolve partition rows

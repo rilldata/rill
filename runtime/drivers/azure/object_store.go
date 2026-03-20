@@ -84,14 +84,14 @@ func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter st
 }
 
 // ListObjectsForGlob implements drivers.ObjectStore.
-func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken, startAfter string) ([]drivers.ObjectStoreEntry, string, error) {
+func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken, start, end string) ([]drivers.ObjectStoreEntry, string, error) {
 	blobBucket, err := c.openBucket(ctx, bucket, false)
 	if err != nil {
 		return nil, "", err
 	}
 	defer blobBucket.Close()
 
-	return blobBucket.ListObjectsForGlob(ctx, glob, pageSize, pageToken, startAfter)
+	return blobBucket.ListObjectsForGlob(ctx, glob, pageSize, pageToken, start, end)
 }
 
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.
