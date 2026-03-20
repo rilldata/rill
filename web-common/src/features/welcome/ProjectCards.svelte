@@ -23,6 +23,7 @@
     connectorIconMapping,
     connectorLabelMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import { waitForReconciliation } from "./is-project-initialized";
 
   const unpackExampleProject =
     createRuntimeServiceUnpackExampleMutation(runtimeClient);
@@ -55,10 +56,12 @@
         force: true,
       });
 
-      setTimeout(() => {
-        if (window.location.search.includes("redirect=true"))
-          window.location.reload();
-      }, 5000);
+      // Wait for all resources to finish reconciling before reloading
+      await waitForReconciliation(runtimeClient);
+
+      if (window.location.search.includes("redirect=true")) {
+        window.location.reload();
+      }
     } catch {
       selectedProjectName = null;
     }
