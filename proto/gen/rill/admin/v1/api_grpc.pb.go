@@ -171,7 +171,6 @@ const (
 	AdminService_GetPaymentsPortalURL_FullMethodName                   = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
 	AdminService_ListPublicBillingPlans_FullMethodName                 = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_GetBillingProjectCredentials_FullMethodName           = "/rill.admin.v1.AdminService/GetBillingProjectCredentials"
-	AdminService_GetEmbeddedAnalytics_FullMethodName                   = "/rill.admin.v1.AdminService/GetEmbeddedAnalytics"
 	AdminService_RequestProjectAccess_FullMethodName                   = "/rill.admin.v1.AdminService/RequestProjectAccess"
 	AdminService_GetProjectAccessRequest_FullMethodName                = "/rill.admin.v1.AdminService/GetProjectAccessRequest"
 	AdminService_ApproveProjectAccess_FullMethodName                   = "/rill.admin.v1.AdminService/ApproveProjectAccess"
@@ -510,8 +509,6 @@ type AdminServiceClient interface {
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
 	GetBillingProjectCredentials(ctx context.Context, in *GetBillingProjectCredentialsRequest, opts ...grpc.CallOption) (*GetBillingProjectCredentialsResponse, error)
-	// GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
-	GetEmbeddedAnalytics(ctx context.Context, in *GetEmbeddedAnalyticsRequest, opts ...grpc.CallOption) (*GetEmbeddedAnalyticsResponse, error)
 	RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error)
 	GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error)
@@ -2048,16 +2045,6 @@ func (c *adminServiceClient) GetBillingProjectCredentials(ctx context.Context, i
 	return out, nil
 }
 
-func (c *adminServiceClient) GetEmbeddedAnalytics(ctx context.Context, in *GetEmbeddedAnalyticsRequest, opts ...grpc.CallOption) (*GetEmbeddedAnalyticsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetEmbeddedAnalyticsResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetEmbeddedAnalytics_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminServiceClient) RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RequestProjectAccessResponse)
@@ -2439,8 +2426,6 @@ type AdminServiceServer interface {
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
 	GetBillingProjectCredentials(context.Context, *GetBillingProjectCredentialsRequest) (*GetBillingProjectCredentialsResponse, error)
-	// GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
-	GetEmbeddedAnalytics(context.Context, *GetEmbeddedAnalyticsRequest) (*GetEmbeddedAnalyticsResponse, error)
 	RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error)
 	GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error)
@@ -2912,9 +2897,6 @@ func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *
 }
 func (UnimplementedAdminServiceServer) GetBillingProjectCredentials(context.Context, *GetBillingProjectCredentialsRequest) (*GetBillingProjectCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBillingProjectCredentials not implemented")
-}
-func (UnimplementedAdminServiceServer) GetEmbeddedAnalytics(context.Context, *GetEmbeddedAnalyticsRequest) (*GetEmbeddedAnalyticsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetEmbeddedAnalytics not implemented")
 }
 func (UnimplementedAdminServiceServer) RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestProjectAccess not implemented")
@@ -5688,24 +5670,6 @@ func _AdminService_GetBillingProjectCredentials_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetEmbeddedAnalytics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEmbeddedAnalyticsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetEmbeddedAnalytics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetEmbeddedAnalytics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetEmbeddedAnalytics(ctx, req.(*GetEmbeddedAnalyticsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_RequestProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestProjectAccessRequest)
 	if err := dec(in); err != nil {
@@ -6410,10 +6374,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBillingProjectCredentials",
 			Handler:    _AdminService_GetBillingProjectCredentials_Handler,
-		},
-		{
-			MethodName: "GetEmbeddedAnalytics",
-			Handler:    _AdminService_GetEmbeddedAnalytics_Handler,
 		},
 		{
 			MethodName: "RequestProjectAccess",

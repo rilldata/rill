@@ -21,7 +21,6 @@
     HOURS_PER_MONTH,
   } from "../overview/slots-utils";
   import ManageSlotsModal from "../overview/ManageSlotsModal.svelte";
-  import RillEmbed from "@rilldata/web-admin/features/embeds/RillEmbed.svelte";
 
   export let organization: string;
   export let project: string;
@@ -94,16 +93,6 @@
     </div>
 
   </div>
-
-  <!-- Slot usage analytics -->
-  <section class="detail-section">
-    <h3 class="section-title">Slot Usage Over Time</h3>
-    <RillEmbed
-      org={organization}
-      resource="project_slots"
-      height="500px"
-    />
-  </section>
 
 </div>
 

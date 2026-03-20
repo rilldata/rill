@@ -711,33 +711,6 @@ paths:
               estimatedSizeBytes:
                 type: string
                 format: int64
-  /v1/orgs/{org}/embedded-analytics:
-    post:
-      summary: GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
-      operationId: AdminService_GetEmbeddedAnalytics
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetEmbeddedAnalyticsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              resource:
-                type: string
-                title: Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
   /v1/orgs/{org}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -5262,14 +5235,6 @@ definitions:
       instanceId:
         type: string
       accessToken:
-        type: string
-      ttlSeconds:
-        type: integer
-        format: int64
-  v1GetEmbeddedAnalyticsResponse:
-    type: object
-    properties:
-      iframeSrc:
         type: string
       ttlSeconds:
         type: integer
