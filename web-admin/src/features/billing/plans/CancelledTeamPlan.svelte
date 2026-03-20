@@ -12,6 +12,7 @@
   export let organization: string;
   export let plan: V1BillingPlan;
   export let showUpgradeDialog: boolean;
+  export let billingPortalUrl: string | undefined;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: cancelledSubIssue = $categorisedIssues.data?.cancelled;
@@ -40,6 +41,16 @@
           and your subscription has ended.
         {/if}
       </div>
+      {#if billingPortalUrl}
+        <div>
+          <a
+            href={billingPortalUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            class="invoice-link">View Invoice</a
+          >
+        </div>
+      {/if}
       {#if plan}
         <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
         <PlanQuotas {organization} />
@@ -64,3 +75,12 @@
     endDate={cancelledSubIssue?.metadata.subscriptionCancelled?.endDate}
   />
 {/if}
+
+<style lang="postcss">
+  .invoice-link {
+    @apply text-sm text-primary-500 no-underline mt-2 inline-block;
+  }
+  .invoice-link:hover {
+    @apply text-primary-600 underline;
+  }
+</style>

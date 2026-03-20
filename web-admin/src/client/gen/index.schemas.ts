@@ -569,6 +569,10 @@ export interface V1GetDeploymentResponse {
   ttlSeconds?: number;
 }
 
+export interface V1GetEmbeddedAnalyticsResponse {
+  iframeUrl?: string;
+}
+
 export interface V1GetGithubRepoStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
@@ -621,6 +625,10 @@ export interface V1GetProjectAccessRequestResponse {
 
 export interface V1GetProjectByIDResponse {
   project?: V1Project;
+}
+
+export interface V1GetProjectEmbeddedAnalyticsResponse {
+  iframeUrl?: string;
 }
 
 export interface V1GetProjectMemberUserResponse {

@@ -723,6 +723,11 @@ components:
                     format: int64
                     type: integer
             type: object
+        v1GetEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
+            type: object
         v1GetGithubRepoStatusResponse:
             properties:
                 defaultBranch:
@@ -799,6 +804,11 @@ components:
             properties:
                 project:
                     $ref: '#/components/schemas/v1Project'
+            type: object
+        v1GetProjectEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
             type: object
         v1GetProjectMemberUserResponse:
             properties:
@@ -2321,7 +2331,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.83.6
+    version: v0.83.8
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
@@ -2499,6 +2509,7 @@ paths:
     /v1/orgs/{org}/billing/subscriptions/renew: {}
     /v1/orgs/{org}/create-managed-git-repo: {}
     /v1/orgs/{org}/create_asset: {}
+    /v1/orgs/{org}/embedded-analytics: {}
     /v1/orgs/{org}/invites:
         get:
             operationId: AdminService_ListOrganizationInvites
@@ -2898,6 +2909,7 @@ paths:
     /v1/orgs/{org}/projects/{project}/connect-to-github: {}
     /v1/orgs/{org}/projects/{project}/credentials: {}
     /v1/orgs/{org}/projects/{project}/deployments: {}
+    /v1/orgs/{org}/projects/{project}/embedded-analytics: {}
     /v1/orgs/{org}/projects/{project}/hibernate: {}
     /v1/orgs/{org}/projects/{project}/iframe: {}
     /v1/orgs/{org}/projects/{project}/invites:
