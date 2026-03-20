@@ -191,11 +191,15 @@ export function toConnectorDriver(
  * Some connectors with more fields use a taller form.
  */
 export function getFormHeight(schema: MultiStepFormSchema | null): string {
-  const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
+  const FORM_HEIGHT_XTALL = "max-h-[45rem] min-h-[45rem]";
+  const FORM_HEIGHT_TALL = "max-h-[41rem] min-h-[41rem]";
+  const FORM_HEIGHT_MEDIUM = "max-h-[39rem] min-h-[39rem]";
   const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
-  return schema?.["x-form-height"] === "tall"
-    ? FORM_HEIGHT_TALL
-    : FORM_HEIGHT_DEFAULT;
+  const height = schema?.["x-form-height"];
+  if (height === "xtall") return FORM_HEIGHT_XTALL;
+  if (height === "tall") return FORM_HEIGHT_TALL;
+  if (height === "medium") return FORM_HEIGHT_MEDIUM;
+  return FORM_HEIGHT_DEFAULT;
 }
 
 /**

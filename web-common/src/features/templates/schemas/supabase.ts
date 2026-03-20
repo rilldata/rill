@@ -5,6 +5,7 @@ export const supabaseSchema: MultiStepFormSchema = {
   type: "object",
   title: "Supabase",
   "x-category": "sqlStore",
+  "x-form-height": "medium",
   properties: {
     connection_mode: {
       type: "string",
@@ -69,10 +70,15 @@ export const supabaseSchema: MultiStepFormSchema = {
     sslmode: {
       type: "string",
       title: "SSL mode",
-      description: "Use disable, allow, prefer, require",
-      enum: ["disable", "allow", "prefer", "require"],
+      description: "Supabase requires SSL for all connections",
       default: "require",
-      "x-placeholder": "require",
+      "x-disabled": true,
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
     },
     sql: {
       type: "string",

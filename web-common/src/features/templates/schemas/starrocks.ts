@@ -5,7 +5,8 @@ export const starrocksSchema: MultiStepFormSchema = {
   type: "object",
   title: "StarRocks",
   "x-category": "olap",
-  "x-form-height": "tall",
+  "x-form-height": "xtall",
+  "x-form-width": "wide",
   properties: {
     connection_mode: {
       type: "string",
@@ -84,6 +85,12 @@ export const starrocksSchema: MultiStepFormSchema = {
       type: "boolean",
       title: "SSL",
       description: "Enable SSL/TLS encryption for the connection",
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
     },
   },
   required: [],
