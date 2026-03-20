@@ -80,6 +80,7 @@
   let grainDropdownOpen = false;
   let connectNulls = true;
   let forceLineChart = false;
+  let dynamicYAxis = false;
   let chartSettingsOpen = false;
 
   const client = useRuntimeClient();
@@ -354,6 +355,14 @@
               onCheckedChange={() => (forceLineChart = !forceLineChart)}
             />
           </div>
+          <div class="flex flex-row items-center justify-between gap-x-2">
+            <span>Dynamic Y axis scale</span>
+            <Switch
+              small
+              checked={dynamicYAxis}
+              onCheckedChange={() => (dynamicYAxis = !dynamicYAxis)}
+            />
+          </div>
         </PopoverContent>
       </Popover>
 
@@ -439,6 +448,7 @@
             {showComparison}
             {showTimeDimensionDetail}
             {forceLineChart}
+            {dynamicYAxis}
             onScrub={handleScrub}
             onScrubClear={() => {
               metricsExplorerStore.setSelectedScrubRange(
