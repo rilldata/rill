@@ -24,7 +24,6 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "./OverviewCard.svelte";
-  import { page } from "$app/stores";
 
   export let organization: string;
   export let project: string;
@@ -69,13 +68,9 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
-  // When hibernated the runtime is unreachable; fall back to the cached connector type from the admin DB.
-  $: cachedOlapType = projectData?.olapConnector;
   $: olapEngineLabel = olapConnector
     ? getOlapEngineLabel(olapConnector)
-    : cachedOlapType
-      ? formatConnectorName(cachedOlapType)
-      : "DuckDB";
+    : "Rill Managed";
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
