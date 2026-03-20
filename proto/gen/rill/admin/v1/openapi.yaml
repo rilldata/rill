@@ -723,6 +723,11 @@ components:
                     format: int64
                     type: integer
             type: object
+        v1GetEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
+            type: object
         v1GetGithubRepoStatusResponse:
             properties:
                 defaultBranch:
@@ -2321,7 +2326,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.83.6
+    version: v0.83.8
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -3193,6 +3198,29 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
+    /v1/orgs/{org}/embedded-analytics:
+        get:
+            operationId: AdminService_GetEmbeddedAnalytics
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetEmbeddedAnalyticsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetEmbeddedAnalytics returns an iframe URL for the embedded analytics dashboard
     /v1/orgs/{org}/invites:
         get:
             operationId: AdminService_ListOrganizationInvites

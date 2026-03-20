@@ -13,6 +13,7 @@
 
   export let organization: string;
   export let showUpgradeDialog: boolean;
+  export let billingPortalUrl: string | undefined;
 
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
@@ -38,11 +39,16 @@
 {:else if isTrial}
   <TrialPlan {organization} {subscription} {showUpgradeDialog} {plan} />
 {:else if subHasEnded}
-  <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} />
+  <CancelledTeamPlan
+    {organization}
+    {showUpgradeDialog}
+    {plan}
+    {billingPortalUrl}
+  />
 {:else if subIsTeamPlan}
-  <TeamPlan {organization} {subscription} {plan} />
+  <TeamPlan {organization} {subscription} {plan} {billingPortalUrl} />
 {:else if subIsManagedPlan}
-  <POCPlan {organization} {hasPayment} {plan} />
+  <POCPlan {organization} {hasPayment} {plan} {billingPortalUrl} />
 {:else if subIsEnterprisePlan}
   <EnterprisePlan {organization} {plan} />
 {/if}
