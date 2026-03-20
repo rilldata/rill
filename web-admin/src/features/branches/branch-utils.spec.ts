@@ -1,0 +1,390 @@
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import type { BeforeNavigate } from "@sveltejs/kit";
+import {
+  extractBranchFromPath,
+  injectBranchIntoPath,
+  removeBranchFromPath,
+  branchPathPrefix,
+  requestSkipBranchInjection,
+  consumeSkipBranchInjection,
+  getBranchRedirect,
+  handleBranchNavigation,
+} from "./branch-utils";
+
+describe("branch-utils", () => {
+  describe("extractBranchFromPath", () => {
+    it("returns undefined for production paths (no @branch)", () => {
+      expect(extractBranchFromPath("/acme/analytics")).toBeUndefined();
+      expect(
+        extractBranchFromPath("/acme/analytics/explore/revenue-overview"),
+      ).toBeUndefined();
+    });
+
+    it("extracts a simple branch name", () => {
+      expect(
+        extractBranchFromPath(
+          "/acme/analytics/@staging/explore/revenue-overview",
+        ),
+      ).toBe("staging");
+    });
+
+    it("extracts branch from path with no trailing segments", () => {
+      expect(
+        extractBranchFromPath("/acme/analytics/@q4-dashboard-refresh"),
+      ).toBe("q4-dashboard-refresh");
+    });
+
+    it("decodes branches containing / (encoded as ~)", () => {
+      expect(
+        extractBranchFromPath(
+          "/acme/analytics/@eric~revenue-metrics/explore/revenue-overview",
+        ),
+      ).toBe("eric/revenue-metrics");
+    });
+
+    it("decodes percent-encoded characters", () => {
+      expect(
+        extractBranchFromPath(
+          "/acme/analytics/@WIP%20churn%20model/explore/churn",
+        ),
+      ).toBe("WIP churn model");
+    });
+
+    it("handles branches with multiple / segments", () => {
+      expect(
+        extractBranchFromPath(
+          "/acme/analytics/@team~maya~funnel-rework/explore/conversion",
+        ),
+      ).toBe("team/maya/funnel-rework");
+    });
+
+    it("returns undefined for @ in wrong position", () => {
+      expect(
+        extractBranchFromPath("/@staging/analytics/explore"),
+      ).toBeUndefined();
+      expect(extractBranchFromPath("/acme/@staging/explore")).toBeUndefined();
+      expect(
+        extractBranchFromPath("/acme/analytics/explore/@staging"),
+      ).toBeUndefined();
+    });
+
+    it("returns undefined for empty pathname", () => {
+      expect(extractBranchFromPath("")).toBeUndefined();
+    });
+
+    it("returns undefined for root path", () => {
+      expect(extractBranchFromPath("/")).toBeUndefined();
+    });
+  });
+
+  describe("injectBranchIntoPath", () => {
+    it("injects branch after the project segment", () => {
+      expect(
+        injectBranchIntoPath(
+          "/acme/analytics/explore/revenue-overview",
+          "staging",
+        ),
+      ).toBe("/acme/analytics/@staging/explore/revenue-overview");
+    });
+
+    it("injects branch into a path with only org/project", () => {
+      expect(
+        injectBranchIntoPath("/acme/analytics", "q4-dashboard-refresh"),
+      ).toBe("/acme/analytics/@q4-dashboard-refresh");
+    });
+
+    it("encodes / in branch names as ~", () => {
+      expect(
+        injectBranchIntoPath(
+          "/acme/analytics/explore/conversion",
+          "eric/revenue-metrics",
+        ),
+      ).toBe("/acme/analytics/@eric~revenue-metrics/explore/conversion");
+    });
+
+    it("returns original path if fewer than 3 segments", () => {
+      expect(injectBranchIntoPath("/acme", "staging")).toBe("/acme");
+      expect(injectBranchIntoPath("/", "staging")).toBe("/");
+    });
+  });
+
+  describe("removeBranchFromPath", () => {
+    it("removes @branch from the path", () => {
+      expect(
+        removeBranchFromPath(
+          "/acme/analytics/@staging/explore/revenue-overview",
+        ),
+      ).toBe("/acme/analytics/explore/revenue-overview");
+    });
+
+    it("removes @branch when it is the last segment", () => {
+      expect(removeBranchFromPath("/acme/analytics/@staging")).toBe(
+        "/acme/analytics",
+      );
+    });
+
+    it("returns the path unchanged if no @branch present", () => {
+      expect(
+        removeBranchFromPath("/acme/analytics/explore/revenue-overview"),
+      ).toBe("/acme/analytics/explore/revenue-overview");
+    });
+
+    it("handles encoded branch names", () => {
+      expect(
+        removeBranchFromPath(
+          "/acme/analytics/@eric~revenue-metrics/explore/conversion",
+        ),
+      ).toBe("/acme/analytics/explore/conversion");
+    });
+  });
+
+  describe("round-trip: inject then extract", () => {
+    const branches = [
+      "main",
+      "staging",
+      "eric/revenue-metrics",
+      "team/maya/funnel-rework",
+      "q4-dashboard-refresh",
+    ];
+    const basePath = "/acme/analytics/explore/revenue-overview";
+
+    for (const branch of branches) {
+      it(`round-trips "${branch}"`, () => {
+        const injected = injectBranchIntoPath(basePath, branch);
+        expect(extractBranchFromPath(injected)).toBe(branch);
+      });
+    }
+  });
+
+  describe("round-trip: inject then remove", () => {
+    it("restores the original path", () => {
+      const original = "/acme/analytics/explore/revenue-overview";
+      const injected = injectBranchIntoPath(original, "eric/revenue-metrics");
+      expect(removeBranchFromPath(injected)).toBe(original);
+    });
+  });
+
+  describe("branchPathPrefix", () => {
+    it("returns empty string for undefined", () => {
+      expect(branchPathPrefix(undefined)).toBe("");
+    });
+
+    it("returns empty string for empty string", () => {
+      expect(branchPathPrefix("")).toBe("");
+    });
+
+    it("returns /@encoded-branch for a simple branch", () => {
+      expect(branchPathPrefix("staging")).toBe("/@staging");
+    });
+
+    it("encodes / in branch names", () => {
+      expect(branchPathPrefix("eric/revenue-metrics")).toBe(
+        "/@eric~revenue-metrics",
+      );
+    });
+  });
+
+  describe("getBranchRedirect", () => {
+    const org = "acme";
+    const proj = "analytics";
+    const branch = "staging";
+    const url = (path: string) => new URL(`http://localhost${path}`);
+
+    it("returns redirect URL for a project-internal path missing @branch", () => {
+      expect(
+        getBranchRedirect(
+          url("/acme/analytics/explore/revenue-overview"),
+          branch,
+          org,
+          proj,
+        ),
+      ).toBe("/acme/analytics/@staging/explore/revenue-overview");
+    });
+
+    it("preserves search params and hash", () => {
+      expect(
+        getBranchRedirect(
+          url("/acme/analytics/explore/revenue-overview?filter=us#section"),
+          branch,
+          org,
+          proj,
+        ),
+      ).toBe(
+        "/acme/analytics/@staging/explore/revenue-overview?filter=us#section",
+      );
+    });
+
+    it("returns null if path already has @branch", () => {
+      expect(
+        getBranchRedirect(
+          url("/acme/analytics/@staging/explore/revenue-overview"),
+          branch,
+          org,
+          proj,
+        ),
+      ).toBeNull();
+    });
+
+    it("returns null for paths outside the project", () => {
+      expect(
+        getBranchRedirect(url("/other-org/other-project"), branch, org, proj),
+      ).toBeNull();
+    });
+
+    it("returns null for a different project that shares a name prefix", () => {
+      expect(
+        getBranchRedirect(
+          url("/acme/analytics-v2/explore/dashboard"),
+          branch,
+          org,
+          proj,
+        ),
+      ).toBeNull();
+    });
+
+    it("returns null for public share URLs", () => {
+      expect(
+        getBranchRedirect(
+          url("/acme/analytics/-/share/abc123"),
+          branch,
+          org,
+          proj,
+        ),
+      ).toBeNull();
+    });
+
+    it("handles the bare project path", () => {
+      expect(getBranchRedirect(url("/acme/analytics"), branch, org, proj)).toBe(
+        "/acme/analytics/@staging",
+      );
+    });
+  });
+
+  describe("handleBranchNavigation", () => {
+    const org = "acme";
+    const proj = "analytics";
+    const branch = "staging";
+
+    function makeNav(
+      pathname: string,
+      type: BeforeNavigate["type"] = "link",
+    ): { nav: BeforeNavigate; navigateFn: ReturnType<typeof vi.fn> } {
+      const nav = {
+        from: null,
+        to: {
+          params: {},
+          route: { id: null },
+          url: new URL(`http://localhost${pathname}`),
+        },
+        type,
+        willUnload: false,
+        complete: Promise.resolve(),
+        cancel: vi.fn(),
+      } as unknown as BeforeNavigate;
+      return { nav, navigateFn: vi.fn().mockResolvedValue(undefined) };
+    }
+
+    beforeEach(() => {
+      consumeSkipBranchInjection();
+    });
+
+    it("redirects a branch-unaware project URL", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).toHaveBeenCalled();
+      expect(navigateFn).toHaveBeenCalledWith(
+        "/acme/analytics/@staging/explore/revenue-overview",
+      );
+    });
+
+    it("does nothing when there is no active branch", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+      );
+      handleBranchNavigation(nav, undefined, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("does nothing for popstate navigations", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+        "popstate",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("preserves search params and hash in redirect", () => {
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview?filter=us#section",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).toHaveBeenCalled();
+      expect(navigateFn).toHaveBeenCalledWith(
+        "/acme/analytics/@staging/explore/revenue-overview?filter=us#section",
+      );
+    });
+
+    it("respects the skip flag", () => {
+      requestSkipBranchInjection();
+      const { nav, navigateFn } = makeNav(
+        "/acme/analytics/explore/revenue-overview",
+      );
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when nav.to is null", () => {
+      const nav = {
+        from: null,
+        to: null,
+        type: "link" as const,
+        willUnload: false,
+        complete: Promise.resolve(),
+        cancel: vi.fn(),
+      } as unknown as BeforeNavigate;
+      const navigateFn = vi.fn();
+      handleBranchNavigation(nav, branch, org, proj, navigateFn);
+      expect(nav.cancel).not.toHaveBeenCalled();
+      expect(navigateFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("skipBranchInjection flag", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      consumeSkipBranchInjection();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("returns false when not requested", () => {
+      expect(consumeSkipBranchInjection()).toBe(false);
+    });
+
+    it("returns true after request, then resets", () => {
+      requestSkipBranchInjection();
+      expect(consumeSkipBranchInjection()).toBe(true);
+      expect(consumeSkipBranchInjection()).toBe(false);
+    });
+
+    it("only fires once per request", () => {
+      requestSkipBranchInjection();
+      consumeSkipBranchInjection();
+      expect(consumeSkipBranchInjection()).toBe(false);
+    });
+
+    it("expires after 500ms if not consumed", () => {
+      requestSkipBranchInjection();
+      vi.advanceTimersByTime(501);
+      expect(consumeSkipBranchInjection()).toBe(false);
+    });
+  });
+});

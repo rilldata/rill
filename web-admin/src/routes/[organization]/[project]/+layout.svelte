@@ -29,8 +29,13 @@
 </script>
 
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
+  import { beforeNavigate, goto, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import {
+    branchPathPrefix,
+    extractBranchFromPath,
+    handleBranchNavigation,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
     V1DeploymentStatus,
     type V1Organization,
@@ -46,6 +51,7 @@
     isPublicReportPage,
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
@@ -75,6 +81,9 @@
     data: pageData,
   } = $page);
 
+  // Branch selector: read from @branch path segment
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
+
   // Root layout data used by ProjectHeader / SlimProjectHeader
   $: organizationPermissions = pageData?.organizationPermissions ?? {};
   $: planDisplayName = pageData?.planDisplayName;
@@ -100,10 +109,16 @@
     }
   });
 
+  beforeNavigate((nav) =>
+    handleBranchNavigation(nav, activeBranch, organization, project, goto),
+  );
+
   // Clear view-as state when unmounting (e.g., navigating to org page)
   onDestroy(() => {
     viewAsUserStore.clear();
   });
+
+  $: branchPrefix = branchPathPrefix(activeBranch);
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -116,11 +131,13 @@
   /**
    * `GetProject` with default cookie-based auth.
    * This returns the deployment credentials for the current logged-in user.
+   * When `activeBranch` is set, the branch param is passed to GetProject
+   * so the API returns the branch deployment instead of production.
    */
   $: cookieProjectQuery = createAdminServiceGetProject(
     organization,
     project,
-    undefined,
+    activeBranch ? { branch: activeBranch } : undefined,
     {
       query: baseGetProjectQueryOptions,
     },
@@ -152,7 +169,10 @@
     createAdminServiceGetDeploymentCredentials(
       organization,
       project,
-      { userId: mockedUserId },
+      {
+        userId: mockedUserId,
+        ...(activeBranch ? { branch: activeBranch } : {}),
+      },
       {
         query: {
           enabled: !!mockedUserId,
@@ -252,6 +272,8 @@
     {organization}
     {project}
     readProjects={organizationPermissions?.readProjects}
+    readDev={!!effectiveProjectPermissions?.readDev}
+    primaryBranch={projectData?.project?.primaryBranch}
     {planDisplayName}
     {organizationLogoUrl}
   />
@@ -276,6 +298,7 @@
           manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
           manageOrgMembers={organizationPermissions?.manageOrgMembers}
           readProjects={organizationPermissions?.readProjects}
+          primaryBranch={projectData?.project?.primaryBranch}
           {planDisplayName}
           {organizationLogoUrl}
         />
@@ -285,6 +308,7 @@
             {organization}
             {pathname}
             {project}
+            {branchPrefix}
           />
         {/if}
         <slot />
@@ -295,6 +319,8 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
+      readDev={!!effectiveProjectPermissions?.readDev}
+      primaryBranch={projectData?.project?.primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -310,6 +336,15 @@
         body={projectData.deployment.statusMessage !== ""
           ? projectData.deployment.statusMessage
           : "There was an error deploying your project. Please contact support."}
+      />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
+      <BranchDeploymentStopped
+        {organization}
+        {project}
+        deploymentId={projectData.deployment.id}
+        status={deploymentStatus}
+        canManage={!!effectiveProjectPermissions?.manageDev}
+        branch={activeBranch}
       />
     {:else}
       <ProjectBuilding />
