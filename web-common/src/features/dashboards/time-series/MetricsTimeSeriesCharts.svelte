@@ -80,7 +80,7 @@
   let grainDropdownOpen = false;
   let connectNulls = true;
   let forceLineChart = false;
-  let dynamicYAxis = false;
+  let zeroBasedOrigin = false;
   let chartSettingsOpen = false;
 
   const client = useRuntimeClient();
@@ -356,11 +356,11 @@
             />
           </div>
           <div class="flex flex-row items-center justify-between gap-x-2">
-            <span>Dynamic Y axis scale</span>
+            <span>Zero-based origin</span>
             <Switch
               small
-              checked={dynamicYAxis}
-              onCheckedChange={() => (dynamicYAxis = !dynamicYAxis)}
+              checked={zeroBasedOrigin}
+              onCheckedChange={() => (zeroBasedOrigin = !zeroBasedOrigin)}
             />
           </div>
         </PopoverContent>
@@ -448,7 +448,7 @@
             {showComparison}
             {showTimeDimensionDetail}
             {forceLineChart}
-            {dynamicYAxis}
+            dynamicYAxis={!zeroBasedOrigin}
             onScrub={handleScrub}
             onScrubClear={() => {
               metricsExplorerStore.setSelectedScrubRange(
