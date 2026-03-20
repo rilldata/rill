@@ -15,6 +15,7 @@ import {
   getTrialIssue,
   trialHasPastGracePeriod,
 } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
+import { getCreditIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCreditIssues";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function fetchOrganizationBillingIssues(organization: string) {
@@ -32,6 +33,9 @@ export type CategorisedOrganizationBillingIssues = {
   trial?: V1BillingIssue;
   cancelled?: V1BillingIssue;
   payment: V1BillingIssue[];
+  creditLow?: V1BillingIssue;
+  creditCritical?: V1BillingIssue;
+  creditExhausted?: V1BillingIssue;
 };
 export function useCategorisedOrganizationBillingIssues(organization: string) {
   return createAdminServiceListOrganizationBillingIssues(
@@ -41,11 +45,15 @@ export function useCategorisedOrganizationBillingIssues(organization: string) {
       query: {
         select: (data) => {
           const issues = data.issues ?? [];
+          const credit = getCreditIssue(issues);
           return <CategorisedOrganizationBillingIssues>{
             neverSubscribed: getNeverSubscribedIssue(issues),
             trial: getTrialIssue(issues),
             cancelled: getCancelledIssue(issues),
             payment: getPaymentIssues(issues),
+            creditLow: credit.creditLow,
+            creditCritical: credit.creditCritical,
+            creditExhausted: credit.creditExhausted,
           };
         },
       },
@@ -54,6 +62,10 @@ export function useCategorisedOrganizationBillingIssues(organization: string) {
 }
 
 export function hasBlockerIssues(issues: V1BillingIssue[]) {
+  // Credit exhaustion is a blocker
+  const credit = getCreditIssue(issues);
+  if (credit.creditExhausted) return true;
+
   const trialIssue = getTrialIssue(issues);
   if (trialIssue) {
     return (

@@ -56,6 +56,7 @@ type DB interface {
 	FindMigrationVersion(ctx context.Context) (int, error)
 
 	FindOrganizations(ctx context.Context, afterName string, limit int) ([]*Organization, error)
+	FindOrganizationsByBillingPlanName(ctx context.Context, planName string, afterName string, limit int) ([]*Organization, error)
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
@@ -91,6 +92,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	UpdateProjectOlapConnector(ctx context.Context, id string, olapConnector string) error
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
@@ -507,6 +509,11 @@ type Project struct {
 	// Annotations are internally configured key-value metadata about the project.
 	// They propagate to the project's deployments and telemetry.
 	Annotations map[string]string `db:"annotations"`
+	// ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
+	ChcClusterSize *float64 `db:"chc_cluster_size"`
+	// OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+	// Persisted so the frontend can show the correct engine label even when the project is hibernated.
+	OlapConnector *string `db:"olap_connector"`
 	// CreatedOn is the time the project was created.
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is the time the project was last updated.
@@ -557,6 +564,7 @@ type UpdateProjectOptions struct {
 	DevSlots             int
 	DevTTLSeconds        int64
 	Annotations          map[string]string
+	ChcClusterSize       *float64
 }
 
 // DeploymentStatus is an enum representing the state of a deployment
@@ -1305,6 +1313,9 @@ const (
 	BillingIssueTypePaymentFailed                          = 5
 	BillingIssueTypeSubscriptionCancelled                  = 6
 	BillingIssueTypeNeverSubscribed                        = 7
+	BillingIssueTypeCreditLow                              = 8
+	BillingIssueTypeCreditCritical                         = 9
+	BillingIssueTypeCreditExhausted                        = 10
 )
 
 type BillingIssueLevel int
@@ -1365,6 +1376,24 @@ type BillingIssueMetadataSubscriptionCancelled struct {
 }
 
 type BillingIssueMetadataNeverSubscribed struct{}
+
+type BillingIssueMetadataCreditLow struct {
+	CreditRemaining float64   `json:"credit_remaining"`
+	CreditTotal     float64   `json:"credit_total"`
+	CreditExpiry    time.Time `json:"credit_expiry"`
+}
+
+type BillingIssueMetadataCreditCritical struct {
+	CreditRemaining float64   `json:"credit_remaining"`
+	CreditTotal     float64   `json:"credit_total"`
+	CreditExpiry    time.Time `json:"credit_expiry"`
+}
+
+type BillingIssueMetadataCreditExhausted struct {
+	CreditTotal  float64   `json:"credit_total"`
+	CreditExpiry time.Time `json:"credit_expiry"`
+	ExhaustedOn  time.Time `json:"exhausted_on"`
+}
 
 type UpsertBillingIssueOptions struct {
 	OrgID     string           `validate:"required"`

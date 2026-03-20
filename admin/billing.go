@@ -201,16 +201,18 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			return nil, nil, fmt.Errorf("failed to start trial: %w", err)
 		}
 
-		// send trial started email
-		err = s.Email.SendTrialStarted(&email.TrialStarted{
-			ToEmail:      org.BillingEmail,
-			ToName:       org.Name,
-			OrgName:      org.Name,
-			FrontendURL:  s.URLs.Frontend(),
-			TrialEndDate: sub.TrialEndDate,
-		})
-		if err != nil {
-			s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+		// Only send the trial-started email for trial-based plans; free plan has no trial period
+		if sub.Plan == nil || sub.Plan.PlanType != billing.FreePlanType {
+			err = s.Email.SendTrialStarted(&email.TrialStarted{
+				ToEmail:      org.BillingEmail,
+				ToName:       org.Name,
+				OrgName:      org.Name,
+				FrontendURL:  s.URLs.Frontend(),
+				TrialEndDate: sub.TrialEndDate,
+			})
+			if err != nil {
+				s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+			}
 		}
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
@@ -273,7 +275,8 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 			return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
 		}
 
-		if org.CreatedByUserID != nil {
+		// Only count trial orgs for trial-based plans (not Free)
+		if plan.PlanType != billing.FreePlanType && org.CreatedByUserID != nil {
 			err = s.DB.IncrementCurrentTrialOrgCount(ctx, *org.CreatedByUserID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("failed to increment current trial org count: %w", err)
@@ -285,22 +288,6 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		// happens with noop biller
 		return org, sub, nil
 	}
-
-	var userEmail string
-	if org.CreatedByUserID != nil {
-		user, err := s.DB.FindUser(ctx, *org.CreatedByUserID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get user info: %w", err)
-		}
-		userEmail = user.Email
-	}
-
-	s.Logger.Named("billing").Info("started trial for organization",
-		zap.String("org_name", org.Name),
-		zap.String("org_id", org.ID),
-		zap.String("trial_end_date", sub.TrialEndDate.String()),
-		zap.String("user_email", userEmail),
-	)
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -338,6 +325,20 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if plan.PlanType == billing.FreePlanType {
+		s.Logger.Named("billing").Info("started free plan for organization",
+			zap.String("org_name", org.Name),
+			zap.String("org_id", org.ID),
+		)
+		return org, sub, nil
+	}
+
+	s.Logger.Named("billing").Info("started trial for organization",
+		zap.String("org_name", org.Name),
+		zap.String("org_id", org.ID),
+		zap.String("trial_end_date", sub.TrialEndDate.String()),
+	)
 
 	// raise on-trial billing warning
 	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
@@ -417,6 +418,7 @@ func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) e
 
 	return nil
 }
+
 
 // CleanupSubscriptionBillingIssues removes subscription related billing issues
 func (s *Service) CleanupSubscriptionBillingIssues(ctx context.Context, orgID string) error {

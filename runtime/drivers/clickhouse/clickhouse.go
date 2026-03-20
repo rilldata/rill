@@ -199,6 +199,10 @@ type configProperties struct {
 	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
 	// ReadTimeout is the maximum amount of time a connection may be reused. Default is 300s.
 	ReadTimeout string `mapstructure:"read_timeout"`
+	// ClickHouseCloudAPIKeyID is the key ID for the ClickHouse Cloud Admin API.
+	ClickHouseCloudAPIKeyID string `mapstructure:"clickhouse_cloud_api_key_id"`
+	// ClickHouseCloudAPIKeySecret is the key secret for the ClickHouse Cloud Admin API.
+	ClickHouseCloudAPIKeySecret string `mapstructure:"clickhouse_cloud_api_key_secret"`
 }
 
 func (c *configProperties) validate() error {
@@ -462,6 +466,11 @@ func (c *Connection) Driver() string {
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
+	// Inject ClickHouse Cloud info if available (for frontend consumption)
+	m["is_clickhouse_cloud"] = c.isClickHouseCloud()
+	if host := c.resolvedHost(); host != "" {
+		m["resolved_host"] = host
+	}
 	return m
 }
 
@@ -594,6 +603,59 @@ func (c *Connection) used() {
 // This can be used to guess if the DB may currently be scaled to zero.
 func (c *Connection) lastUsedOn() time.Time {
 	return time.Unix(c.lastUsedUnixTime.Load(), 0)
+}
+
+// isClickHouseCloud returns true if the connected host looks like a ClickHouse Cloud endpoint.
+func (c *Connection) isClickHouseCloud() bool {
+	host := c.resolvedHost()
+	return strings.HasSuffix(strings.ToLower(host), ".clickhouse.cloud")
+}
+
+// resolvedHost returns the host this connection targets, checking config, parsed opts, and DSN.
+func (c *Connection) resolvedHost() string {
+	if c.config.Host != "" {
+		return c.config.Host
+	}
+	// Try parsed opts (populated after Open via ParseDSN or manual config)
+	if c.opts != nil && len(c.opts.Addr) > 0 {
+		host, _, err := net.SplitHostPort(c.opts.Addr[0])
+		if err == nil && host != "" {
+			return host
+		}
+		return c.opts.Addr[0]
+	}
+	// Fallback: parse DSN directly (handles https:// and clickhouse:// schemes)
+	if c.config.DSN != "" {
+		return hostFromDSN(c.config.DSN)
+	}
+	return ""
+}
+
+// hostFromDSN extracts the hostname from a DSN string.
+// Handles schemes like clickhouse://, https://, http://.
+func hostFromDSN(dsn string) string {
+	// Strip scheme
+	if idx := strings.Index(dsn, "://"); idx >= 0 {
+		dsn = dsn[idx+3:]
+	}
+	// Strip userinfo
+	if idx := strings.Index(dsn, "@"); idx >= 0 {
+		dsn = dsn[idx+1:]
+	}
+	// Strip query params
+	if idx := strings.Index(dsn, "?"); idx >= 0 {
+		dsn = dsn[:idx]
+	}
+	// Strip path
+	if idx := strings.Index(dsn, "/"); idx >= 0 {
+		dsn = dsn[:idx]
+	}
+	// Strip port
+	host, _, err := net.SplitHostPort(dsn)
+	if err == nil && host != "" {
+		return host
+	}
+	return dsn
 }
 
 // Periodically collects stats about the database and emit them as activity events.

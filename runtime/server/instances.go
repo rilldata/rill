@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -14,6 +15,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -76,8 +78,15 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	pb := instanceToPB(inst, featureFlags, req.Sensitive)
+
+	// Enrich OLAP connector with runtime metadata (e.g. ClickHouse Cloud info)
+	if req.Sensitive && pb.OlapConnector != "" {
+		s.enrichConnectorWithRuntimeMetadata(ctx, req.InstanceId, pb)
+	}
+
 	return &runtimev1.GetInstanceResponse{
-		Instance: instanceToPB(inst, featureFlags, req.Sensitive),
+		Instance: pb,
 	}, nil
 }
 
@@ -298,6 +307,99 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 		return nil, err
 	}
 	return &runtimev1.ReloadConfigResponse{}, nil
+}
+
+// enrichConnectorWithRuntimeMetadata merges dynamic fields from the live OLAP connector handle
+// into the proto connector config. This lets the frontend access runtime-derived metadata
+// (e.g. ClickHouse Cloud service info) that isn't in the static YAML config.
+func (s *Server) enrichConnectorWithRuntimeMetadata(ctx context.Context, instanceID string, pb *runtimev1.Instance) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, instanceID, pb.OlapConnector)
+	if err != nil {
+		// Handle not available (e.g. CHC is stopped and Open() failed).
+		// Fall back to deriving is_clickhouse_cloud from the resolved connector config.
+		s.enrichConnectorFromResolvedConfig(ctx, instanceID, pb)
+		return
+	}
+	defer release()
+
+	runtimeConfig := handle.Config()
+
+	// Find the OLAP connector in ProjectConnectors and merge runtime-derived fields
+	for _, conn := range pb.ProjectConnectors {
+		if conn.Name != pb.OlapConnector {
+			continue
+		}
+		if conn.Config == nil {
+			conn.Config = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+		}
+		for k, v := range runtimeConfig {
+			if k != "is_clickhouse_cloud" && k != "resolved_host" {
+				continue
+			}
+			switch val := v.(type) {
+			case bool:
+				conn.Config.Fields[k] = structpb.NewBoolValue(val)
+			case string:
+				conn.Config.Fields[k] = structpb.NewStringValue(val)
+			}
+		}
+		break
+	}
+}
+
+// enrichConnectorFromResolvedConfig derives is_clickhouse_cloud from the resolved connector config
+// (with variables substituted) when the OLAP handle is unavailable (e.g. CHC is stopped).
+// It also calls the CHC Cloud API to get live service status when possible.
+func (s *Server) enrichConnectorFromResolvedConfig(ctx context.Context, instanceID string, pb *runtimev1.Instance) {
+	// Resolve the connector config (substitutes template variables)
+	cfg, err := s.runtime.ConnectorConfig(ctx, instanceID, pb.OlapConnector)
+	if err != nil {
+		return
+	}
+	resolved := cfg.Resolve()
+
+	// Extract host from resolved config
+	host, _ := resolved["host"].(string)
+	dsn, _ := resolved["dsn"].(string)
+
+	isChc := strings.HasSuffix(strings.ToLower(host), ".clickhouse.cloud") ||
+		strings.Contains(strings.ToLower(dsn), ".clickhouse.cloud")
+
+	// If host is empty but DSN contains a clickhouse.cloud URL, try to extract the host
+	resolvedHost := host
+	if resolvedHost == "" && isChc {
+		h := dsn
+		if idx := strings.Index(h, "://"); idx >= 0 {
+			h = h[idx+3:]
+		}
+		if idx := strings.IndexAny(h, "/?"); idx >= 0 {
+			h = h[:idx]
+		}
+		if idx := strings.Index(h, ":"); idx >= 0 {
+			h = h[:idx]
+		}
+		resolvedHost = h
+	}
+
+	// Find the OLAP connector proto to inject fields into
+	var conn *runtimev1.Connector
+	for _, c := range pb.ProjectConnectors {
+		if c.Name == pb.OlapConnector {
+			conn = c
+			break
+		}
+	}
+	if conn == nil {
+		return
+	}
+	if conn.Config == nil {
+		conn.Config = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+	}
+
+	conn.Config.Fields["is_clickhouse_cloud"] = structpb.NewBoolValue(isChc)
+	if resolvedHost != "" {
+		conn.Config.Fields["resolved_host"] = structpb.NewStringValue(resolvedHost)
+	}
 }
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {

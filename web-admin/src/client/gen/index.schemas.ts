@@ -130,6 +130,17 @@ export interface V1ApproveProjectAccessResponse {
   [key: string]: unknown;
 }
 
+/**
+ * BillingCreditInfo contains credit balance information for free-tier organizations.
+ */
+export interface V1BillingCreditInfo {
+  totalCredit?: number;
+  usedCredit?: number;
+  remainingCredit?: number;
+  creditExpiry?: string;
+  burnRatePerDay?: number;
+}
+
 export interface V1BillingIssue {
   org?: string;
   type?: V1BillingIssueType;
@@ -157,6 +168,27 @@ export interface V1BillingIssueMetadata {
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+  creditLow?: V1BillingIssueMetadataCreditLow;
+  creditCritical?: V1BillingIssueMetadataCreditCritical;
+  creditExhausted?: V1BillingIssueMetadataCreditExhausted;
+}
+
+export interface V1BillingIssueMetadataCreditCritical {
+  creditRemaining?: number;
+  creditTotal?: number;
+  creditExpiry?: string;
+}
+
+export interface V1BillingIssueMetadataCreditExhausted {
+  creditTotal?: number;
+  creditExpiry?: string;
+  exhaustedOn?: string;
+}
+
+export interface V1BillingIssueMetadataCreditLow {
+  creditRemaining?: number;
+  creditTotal?: number;
+  creditExpiry?: string;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -215,6 +247,9 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+  BILLING_ISSUE_TYPE_CREDIT_LOW: "BILLING_ISSUE_TYPE_CREDIT_LOW",
+  BILLING_ISSUE_TYPE_CREDIT_CRITICAL: "BILLING_ISSUE_TYPE_CREDIT_CRITICAL",
+  BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED: "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED",
 } as const;
 
 export interface V1BillingPlan {
@@ -239,6 +274,8 @@ export const V1BillingPlanType = {
   BILLING_PLAN_TYPE_TEAM: "BILLING_PLAN_TYPE_TEAM",
   BILLING_PLAN_TYPE_MANAGED: "BILLING_PLAN_TYPE_MANAGED",
   BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
+  BILLING_PLAN_TYPE_FREE: "BILLING_PLAN_TYPE_FREE",
+  BILLING_PLAN_TYPE_GROWTH: "BILLING_PLAN_TYPE_GROWTH",
 } as const;
 
 export interface V1Bookmark {
@@ -507,6 +544,7 @@ export interface V1GetBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
   billingPortalUrl?: string;
+  creditInfo?: V1BillingCreditInfo;
 }
 
 export interface V1GetBookmarkResponse {
@@ -566,6 +604,11 @@ export interface V1GetDeploymentResponse {
   runtimeHost?: string;
   instanceId?: string;
   accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetEmbeddedAnalyticsResponse {
+  iframeSrc?: string;
   ttlSeconds?: number;
 }
 
@@ -1039,6 +1082,17 @@ export interface V1Project {
   prodVersion?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica). */
+  chcClusterSize?: number;
+  /** ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+For Live Connect projects, this represents the base slots from the BYOLAP cluster. */
+  clusterSlots?: string;
+  /** InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed. */
+  infraSlots?: string;
+  /** OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+Persisted so the frontend can show the correct engine label even when the project is hibernated. */
+  olapConnector?: string;
 }
 
 export interface V1ProjectInvite {
@@ -1371,6 +1425,17 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoAddCreditsRequest {
+  org?: string;
+  amount?: number;
+  expiryDays?: number;
+  description?: string;
+}
+
+export interface V1SudoAddCreditsResponse {
+  creditInfo?: V1BillingCreditInfo;
 }
 
 export interface V1SudoDeleteOrganizationBillingIssueResponse {
@@ -1765,6 +1830,10 @@ export type AdminServiceCreateAssetBody = {
   estimatedSizeBytes?: string;
 };
 
+export type AdminServiceGetEmbeddedAnalyticsBody = {
+  resource?: string;
+};
+
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1871,6 +1940,12 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   superuserForceAccess?: boolean;
+  /** InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed. */
+  infraSlots?: string;
+  /** ClusterSlots overrides the cluster slot allocation.
+Adjustable by Rill staff. Derived from the OLAP cluster size. */
+  clusterSlots?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {

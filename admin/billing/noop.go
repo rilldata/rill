@@ -109,6 +109,18 @@ func (n noop) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) er
 	return nil
 }
 
+func (n noop) GetCreditBalance(ctx context.Context, customerID string) (*CreditBalance, error) {
+	return nil, nil
+}
+
+func (n noop) AddCredits(ctx context.Context, customerID string, amount float64, expiryDate time.Time, description string) (*CreditBalance, error) {
+	return nil, nil
+}
+
+func (n noop) VoidCredits(ctx context.Context, customerID string) error {
+	return nil
+}
+
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }

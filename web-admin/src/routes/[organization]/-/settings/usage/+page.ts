@@ -13,4 +13,8 @@ export const load: PageLoad = async ({ params: { organization }, parent }) => {
   if (subscription?.plan && isEnterprisePlan(subscription.plan.name)) {
     throw error(404, "Page not found");
   }
+
+  return {
+    organization,
+  };
 };

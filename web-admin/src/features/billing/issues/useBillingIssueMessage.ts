@@ -1,8 +1,11 @@
 import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
+import { getMessageForCreditIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCreditIssues";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
-import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
+import type {
+  GrowthPlanDialogTypes,
+} from "@rilldata/web-admin/features/billing/plans/types";
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
@@ -20,8 +23,7 @@ export type BillingIssueMessageCTA = {
   type: "upgrade" | "payment" | "contact" | "wake-projects";
   text: string;
 
-  teamPlanDialogType?: TeamPlanDialogTypes;
-  teamPlanEndDate?: string;
+  growthPlanDialogType?: GrowthPlanDialogTypes;
 };
 
 export function useBillingIssueMessage(organization: string) {
@@ -55,6 +57,38 @@ export function useBillingIssueMessage(organization: string) {
             orgResp.error ??
             categorisedIssuesResp.error ??
             allProjectsHibernatingResp.error,
+        };
+      }
+
+      // Credit issues take priority (free-tier orgs)
+      if (categorisedIssuesResp.data?.creditExhausted) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCreditIssue(
+            categorisedIssuesResp.data.creditExhausted,
+          ),
+        };
+      }
+      if (categorisedIssuesResp.data?.creditCritical) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCreditIssue(
+            categorisedIssuesResp.data.creditCritical,
+          ),
+        };
+      }
+      if (categorisedIssuesResp.data?.creditLow) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCreditIssue(
+            categorisedIssuesResp.data.creditLow,
+          ),
         };
       }
 

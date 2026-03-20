@@ -107,19 +107,21 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 
 	trialOrg, sub, err := w.admin.StartTrial(ctx, org)
 	if err != nil {
-		return fmt.Errorf("failed to start trial for organization %s: %w", org.Name, err)
+		return fmt.Errorf("failed to start subscription for organization %s: %w", org.Name, err)
 	}
 
-	// send trial started email
-	err = w.admin.Email.SendTrialStarted(&email.TrialStarted{
-		ToEmail:      trialOrg.BillingEmail,
-		ToName:       trialOrg.Name,
-		OrgName:      trialOrg.Name,
-		FrontendURL:  w.admin.URLs.Frontend(),
-		TrialEndDate: sub.TrialEndDate,
-	})
-	if err != nil {
-		w.logger.Error("failed to send trial started email", zap.String("org_name", trialOrg.Name), zap.String("org_id", trialOrg.ID), zap.String("billing_email", trialOrg.BillingEmail), zap.Error(err))
+	// Only send the trial-started email for trial-based plans; free plan has no trial period
+	if sub.Plan != nil && sub.Plan.PlanType != billing.FreePlanType {
+		err = w.admin.Email.SendTrialStarted(&email.TrialStarted{
+			ToEmail:      trialOrg.BillingEmail,
+			ToName:       trialOrg.Name,
+			OrgName:      trialOrg.Name,
+			FrontendURL:  w.admin.URLs.Frontend(),
+			TrialEndDate: sub.TrialEndDate,
+		})
+		if err != nil {
+			w.logger.Error("failed to send trial started email", zap.String("org_name", trialOrg.Name), zap.String("org_id", trialOrg.ID), zap.String("billing_email", trialOrg.BillingEmail), zap.Error(err))
+		}
 	}
 
 	return nil

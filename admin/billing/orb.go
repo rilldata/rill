@@ -73,6 +73,13 @@ func (o *Orb) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Prefer the Free plan as default for new organizations
+	for _, p := range plans {
+		if p.PlanType == FreePlanType {
+			return p, nil
+		}
+	}
+	// Fall back to any plan marked as default in Orb metadata
 	for _, p := range plans {
 		if p.Default {
 			return p, nil
@@ -386,6 +393,174 @@ func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) er
 	return nil
 }
 
+func (o *Orb) GetCreditBalance(ctx context.Context, customerID string) (*CreditBalance, error) {
+	if customerID == "" {
+		return nil, ErrCustomerIDRequired
+	}
+
+	// Read the credit ledger (ordered by most recent first by default).
+	// The most recent entry's EndingBalance is the current balance.
+	// We scan all increment entries to compute the total granted.
+	ledger, err := o.client.Customers.Credits.Ledger.ListByExternalID(ctx, customerID, orb.CustomerCreditLedgerListByExternalIDParams{
+		Limit: orb.F(int64(100)),
+	})
+	if err != nil {
+		var orbErr *orb.Error
+		if errors.As(err, &orbErr) && orbErr.Status == orb.ErrorStatus404 {
+			o.logger.Info("credit balance: customer not found in Orb ledger", zap.String("customer_id", customerID))
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	o.logger.Info("credit balance: ledger response",
+		zap.String("customer_id", customerID),
+		zap.Int("entry_count", len(ledger.Data)),
+	)
+	for i, e := range ledger.Data {
+		o.logger.Info("credit balance: ledger entry",
+			zap.Int("index", i),
+			zap.String("id", e.ID),
+			zap.String("entry_status", string(e.EntryStatus)),
+			zap.Float64("amount", e.Amount),
+			zap.Float64("starting_balance", e.StartingBalance),
+			zap.Float64("ending_balance", e.EndingBalance),
+			zap.String("currency", e.Currency),
+			zap.String("description", e.Description),
+			zap.Time("created_at", e.CreatedAt),
+		)
+	}
+
+	if len(ledger.Data) == 0 {
+		return nil, nil
+	}
+
+	// Current balance is the most recent entry's ending balance
+	remainingCredit := ledger.Data[0].EndingBalance
+
+	// Sum all increment entries to get total granted; track earliest grant date
+	var totalCredit float64
+	var earliestGrant time.Time
+	var latestExpiry time.Time
+	for _, entry := range ledger.Data {
+		if entry.EntryStatus == orb.CustomerCreditLedgerListByExternalIDResponseEntryStatusCommitted &&
+			entry.Amount > 0 {
+			totalCredit += entry.Amount
+			if earliestGrant.IsZero() || entry.CreatedAt.Before(earliestGrant) {
+				earliestGrant = entry.CreatedAt
+			}
+		}
+	}
+
+	// If no committed increments found, use the ending balance as both total and remaining
+	if totalCredit == 0 {
+		totalCredit = remainingCredit
+	}
+
+	if totalCredit == 0 && remainingCredit == 0 {
+		return nil, nil
+	}
+
+	usedCredit := totalCredit - remainingCredit
+	if usedCredit < 0 {
+		usedCredit = 0
+	}
+
+	// Estimate burn rate from credit usage
+	var burnRatePerDay float64
+	if usedCredit > 0 && !earliestGrant.IsZero() {
+		daysSinceStart := time.Since(earliestGrant).Hours() / 24
+		if daysSinceStart > 0 {
+			burnRatePerDay = usedCredit / daysSinceStart
+		}
+	}
+
+	o.logger.Info("credit balance: computed from ledger",
+		zap.String("customer_id", customerID),
+		zap.Int("ledger_entries", len(ledger.Data)),
+		zap.Float64("total", totalCredit),
+		zap.Float64("used", usedCredit),
+		zap.Float64("remaining", remainingCredit),
+		zap.Float64("burn_rate_per_day", burnRatePerDay),
+		zap.Time("latest_expiry", latestExpiry),
+	)
+
+	return &CreditBalance{
+		TotalCredit:     totalCredit,
+		UsedCredit:      usedCredit,
+		RemainingCredit: remainingCredit,
+		ExpiryDate:      latestExpiry,
+		BurnRatePerDay:  burnRatePerDay,
+	}, nil
+}
+
+func (o *Orb) AddCredits(ctx context.Context, customerID string, amount float64, expiryDate time.Time, description string) (*CreditBalance, error) {
+	if customerID == "" {
+		return nil, ErrCustomerIDRequired
+	}
+
+	ledgerResp, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
+		Amount:      orb.F(amount),
+		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
+		ExpiryDate:  orb.F(expiryDate),
+		Description: orb.F(description),
+		Currency:    orb.F("USD"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to add credits: %w", err)
+	}
+
+	o.logger.Info("AddCredits: Orb ledger entry created",
+		zap.String("customer_id", customerID),
+		zap.Float64("amount", amount),
+		zap.String("ledger_id", ledgerResp.ID),
+		zap.String("entry_status", string(ledgerResp.EntryStatus)),
+		zap.Float64("starting_balance", ledgerResp.StartingBalance),
+		zap.Float64("ending_balance", ledgerResp.EndingBalance),
+		zap.Float64("ledger_amount", ledgerResp.Amount),
+	)
+
+	// Return updated balance
+	return o.GetCreditBalance(ctx, customerID)
+}
+
+func (o *Orb) VoidCredits(ctx context.Context, customerID string) error {
+	if customerID == "" {
+		return ErrCustomerIDRequired
+	}
+
+	// List all active USD credit blocks for this customer
+	credits, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{
+		Currency:         orb.F("USD"),
+		IncludeAllBlocks: orb.F(false),
+	})
+	if err != nil {
+		var orbErr *orb.Error
+		if errors.As(err, &orbErr) && orbErr.Status == orb.ErrorStatus404 {
+			return nil // no customer, nothing to void
+		}
+		return fmt.Errorf("failed to list credits for void: %w", err)
+	}
+
+	for _, c := range credits.Data {
+		if c.Balance <= 0 {
+			continue
+		}
+		_, err = o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddVoidCreditLedgerEntryRequestParams{
+			Amount:      orb.F(c.Balance),
+			BlockID:     orb.F(c.ID),
+			EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddVoidCreditLedgerEntryRequestParamsEntryTypeVoid),
+			Currency:    orb.F("USD"),
+			Description: orb.F("Credits voided on upgrade to Growth plan"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to void credit block %s: %w", c.ID, err)
+		}
+	}
+
+	return nil
+}
+
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	var orbUsage []orb.EventIngestParamsEvent
 	// sync max 500 events at a time
@@ -651,6 +826,10 @@ func getPlanType(externalID string) PlanType {
 		return TeamPlanType
 	case "managed":
 		return ManagedPlanType
+	case "free-plan":
+		return FreePlanType
+	case "growth-plan":
+		return GrowthPlanType
 	default:
 		return EnterprisePlanType
 	}
@@ -664,6 +843,10 @@ func getPlanDisplayName(externalID string) string {
 		return "Team"
 	case "managed":
 		return "Managed"
+	case "free-plan":
+		return "Free"
+	case "growth-plan":
+		return "Growth"
 	default:
 		return "Enterprise"
 	}

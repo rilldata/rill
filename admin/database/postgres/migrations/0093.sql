@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN chc_cluster_size DOUBLE PRECISION;

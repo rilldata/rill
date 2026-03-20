@@ -29,7 +29,6 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.GetPaymentsPortalURL(ctx, &adminv1.GetPaymentsPortalURLRequest{
 				Org:                  org,
-				Setup:                !update,
 				SuperuserForceAccess: true,
 			})
 			if err != nil {

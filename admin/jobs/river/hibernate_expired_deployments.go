@@ -76,6 +76,7 @@ func (w *HibernateExpiredDeploymentsWorker) hibernateExpiredDeployment(ctx conte
 				DevSlots:             proj.DevSlots,
 				DevTTLSeconds:        proj.DevTTLSeconds,
 				Annotations:          proj.Annotations,
+				ChcClusterSize:       proj.ChcClusterSize,
 			})
 			if err != nil {
 				return err

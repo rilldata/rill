@@ -711,6 +711,33 @@ paths:
               estimatedSizeBytes:
                 type: string
                 format: int64
+  /v1/orgs/{org}/embedded-analytics:
+    post:
+      summary: GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+      operationId: AdminService_GetEmbeddedAnalytics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetEmbeddedAnalyticsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resource:
+                type: string
+                title: Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
   /v1/orgs/{org}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -1185,6 +1212,18 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
+              infraSlots:
+                type: string
+                format: int64
+                description: |-
+                  InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+                  Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
+              clusterSlots:
+                type: string
+                format: int64
+                description: |-
+                  ClusterSlots overrides the cluster slot allocation.
+                  Adjustable by Rill staff. Derived from the OLAP cluster size.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
@@ -3794,6 +3833,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+  /v1/superuser/organization/credits/add:
+    post:
+      summary: SudoAddCredits adds billing credits to an organization
+      operationId: AdminService_SudoAddCredits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoAddCreditsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoAddCreditsRequest'
   /v1/superuser/organization/custom-domain:
     patch:
       summary: |-
@@ -3866,6 +3924,9 @@ paths:
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+            - BILLING_ISSUE_TYPE_CREDIT_LOW
+            - BILLING_ISSUE_TYPE_CREDIT_CRITICAL
+            - BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -4562,6 +4623,25 @@ definitions:
         description: Annotation for the base64-encoded UI state to open for the report.
   v1ApproveProjectAccessResponse:
     type: object
+  v1BillingCreditInfo:
+    type: object
+    properties:
+      totalCredit:
+        type: number
+        format: double
+      usedCredit:
+        type: number
+        format: double
+      remainingCredit:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
+      burnRatePerDay:
+        type: number
+        format: double
+    description: BillingCreditInfo contains credit balance information for free-tier organizations.
   v1BillingIssue:
     type: object
     properties:
@@ -4603,6 +4683,48 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
       neverSubscribed:
         $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+      creditLow:
+        $ref: '#/definitions/v1BillingIssueMetadataCreditLow'
+      creditCritical:
+        $ref: '#/definitions/v1BillingIssueMetadataCreditCritical'
+      creditExhausted:
+        $ref: '#/definitions/v1BillingIssueMetadataCreditExhausted'
+  v1BillingIssueMetadataCreditCritical:
+    type: object
+    properties:
+      creditRemaining:
+        type: number
+        format: double
+      creditTotal:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataCreditExhausted:
+    type: object
+    properties:
+      creditTotal:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
+      exhaustedOn:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataCreditLow:
+    type: object
+    properties:
+      creditRemaining:
+        type: number
+        format: double
+      creditTotal:
+        type: number
+        format: double
+      creditExpiry:
+        type: string
+        format: date-time
   v1BillingIssueMetadataNeverSubscribed:
     type: object
   v1BillingIssueMetadataNoBillableAddress:
@@ -4674,6 +4796,9 @@ definitions:
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+      - BILLING_ISSUE_TYPE_CREDIT_LOW
+      - BILLING_ISSUE_TYPE_CREDIT_CRITICAL
+      - BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -4706,6 +4831,8 @@ definitions:
       - BILLING_PLAN_TYPE_TEAM
       - BILLING_PLAN_TYPE_MANAGED
       - BILLING_PLAN_TYPE_ENTERPRISE
+      - BILLING_PLAN_TYPE_FREE
+      - BILLING_PLAN_TYPE_GROWTH
     default: BILLING_PLAN_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object
@@ -5049,6 +5176,8 @@ definitions:
         $ref: '#/definitions/v1Subscription'
       billingPortalUrl:
         type: string
+      creditInfo:
+        $ref: '#/definitions/v1BillingCreditInfo'
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -5133,6 +5262,14 @@ definitions:
       instanceId:
         type: string
       accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
+  v1GetEmbeddedAnalyticsResponse:
+    type: object
+    properties:
+      iframeSrc:
         type: string
       ttlSeconds:
         type: integer
@@ -5933,6 +6070,27 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      chcClusterSize:
+        type: number
+        format: double
+        description: ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
+      clusterSlots:
+        type: string
+        format: int64
+        description: |-
+          ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+          For Live Connect projects, this represents the base slots from the BYOLAP cluster.
+      infraSlots:
+        type: string
+        format: int64
+        description: |-
+          InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+          Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
+      olapConnector:
+        type: string
+        description: |-
+          OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+          Persisted so the frontend can show the correct engine label even when the project is hibernated.
   v1ProjectInvite:
     type: object
     properties:
@@ -6390,6 +6548,25 @@ definitions:
       trialEndDate:
         type: string
         format: date-time
+  v1SudoAddCreditsRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      amount:
+        type: number
+        format: double
+      expiryDays:
+        type: integer
+        format: int32
+        title: Number of days until credits expire; defaults to 365
+      description:
+        type: string
+  v1SudoAddCreditsResponse:
+    type: object
+    properties:
+      creditInfo:
+        $ref: '#/definitions/v1BillingCreditInfo'
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
   v1SudoExtendTrialRequest:

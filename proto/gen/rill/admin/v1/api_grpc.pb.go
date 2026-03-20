@@ -114,6 +114,7 @@ const (
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName           = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName  = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
 	AdminService_SudoExtendTrial_FullMethodName                        = "/rill.admin.v1.AdminService/SudoExtendTrial"
+	AdminService_SudoAddCredits_FullMethodName                         = "/rill.admin.v1.AdminService/SudoAddCredits"
 	AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName     = "/rill.admin.v1.AdminService/SudoUpdateOrganizationCustomDomain"
 	AdminService_SudoUpdateAnnotations_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName           = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
@@ -170,6 +171,7 @@ const (
 	AdminService_GetPaymentsPortalURL_FullMethodName                   = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
 	AdminService_ListPublicBillingPlans_FullMethodName                 = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_GetBillingProjectCredentials_FullMethodName           = "/rill.admin.v1.AdminService/GetBillingProjectCredentials"
+	AdminService_GetEmbeddedAnalytics_FullMethodName                   = "/rill.admin.v1.AdminService/GetEmbeddedAnalytics"
 	AdminService_RequestProjectAccess_FullMethodName                   = "/rill.admin.v1.AdminService/RequestProjectAccess"
 	AdminService_GetProjectAccessRequest_FullMethodName                = "/rill.admin.v1.AdminService/GetProjectAccessRequest"
 	AdminService_ApproveProjectAccess_FullMethodName                   = "/rill.admin.v1.AdminService/ApproveProjectAccess"
@@ -392,6 +394,8 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoExtendTrial extends the trial period for an organization
 	SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error)
+	// SudoAddCredits adds billing credits to an organization
+	SudoAddCredits(ctx context.Context, in *SudoAddCreditsRequest, opts ...grpc.CallOption) (*SudoAddCreditsResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -506,6 +510,8 @@ type AdminServiceClient interface {
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
 	GetBillingProjectCredentials(ctx context.Context, in *GetBillingProjectCredentialsRequest, opts ...grpc.CallOption) (*GetBillingProjectCredentialsResponse, error)
+	// GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+	GetEmbeddedAnalytics(ctx context.Context, in *GetEmbeddedAnalyticsRequest, opts ...grpc.CallOption) (*GetEmbeddedAnalyticsResponse, error)
 	RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error)
 	GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error)
@@ -1472,6 +1478,16 @@ func (c *adminServiceClient) SudoExtendTrial(ctx context.Context, in *SudoExtend
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoAddCredits(ctx context.Context, in *SudoAddCreditsRequest, opts ...grpc.CallOption) (*SudoAddCreditsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoAddCreditsResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoAddCredits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateOrganizationCustomDomainResponse)
@@ -2032,6 +2048,16 @@ func (c *adminServiceClient) GetBillingProjectCredentials(ctx context.Context, i
 	return out, nil
 }
 
+func (c *adminServiceClient) GetEmbeddedAnalytics(ctx context.Context, in *GetEmbeddedAnalyticsRequest, opts ...grpc.CallOption) (*GetEmbeddedAnalyticsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEmbeddedAnalyticsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetEmbeddedAnalytics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RequestProjectAccessResponse)
@@ -2297,6 +2323,8 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoExtendTrial extends the trial period for an organization
 	SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error)
+	// SudoAddCredits adds billing credits to an organization
+	SudoAddCredits(context.Context, *SudoAddCreditsRequest) (*SudoAddCreditsResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -2411,6 +2439,8 @@ type AdminServiceServer interface {
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
 	GetBillingProjectCredentials(context.Context, *GetBillingProjectCredentialsRequest) (*GetBillingProjectCredentialsResponse, error)
+	// GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+	GetEmbeddedAnalytics(context.Context, *GetEmbeddedAnalyticsRequest) (*GetEmbeddedAnalyticsResponse, error)
 	RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error)
 	GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error)
@@ -2712,6 +2742,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(con
 func (UnimplementedAdminServiceServer) SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoExtendTrial not implemented")
 }
+func (UnimplementedAdminServiceServer) SudoAddCredits(context.Context, *SudoAddCreditsRequest) (*SudoAddCreditsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoAddCredits not implemented")
+}
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationCustomDomain not implemented")
 }
@@ -2879,6 +2912,9 @@ func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *
 }
 func (UnimplementedAdminServiceServer) GetBillingProjectCredentials(context.Context, *GetBillingProjectCredentialsRequest) (*GetBillingProjectCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBillingProjectCredentials not implemented")
+}
+func (UnimplementedAdminServiceServer) GetEmbeddedAnalytics(context.Context, *GetEmbeddedAnalyticsRequest) (*GetEmbeddedAnalyticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEmbeddedAnalytics not implemented")
 }
 func (UnimplementedAdminServiceServer) RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestProjectAccess not implemented")
@@ -4626,6 +4662,24 @@ func _AdminService_SudoExtendTrial_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoAddCredits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoAddCreditsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoAddCredits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoAddCredits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoAddCredits(ctx, req.(*SudoAddCreditsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoUpdateOrganizationCustomDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateOrganizationCustomDomainRequest)
 	if err := dec(in); err != nil {
@@ -5634,6 +5688,24 @@ func _AdminService_GetBillingProjectCredentials_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetEmbeddedAnalytics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEmbeddedAnalyticsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetEmbeddedAnalytics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetEmbeddedAnalytics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetEmbeddedAnalytics(ctx, req.(*GetEmbeddedAnalyticsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_RequestProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestProjectAccessRequest)
 	if err := dec(in); err != nil {
@@ -6112,6 +6184,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SudoExtendTrial_Handler,
 		},
 		{
+			MethodName: "SudoAddCredits",
+			Handler:    _AdminService_SudoAddCredits_Handler,
+		},
+		{
 			MethodName: "SudoUpdateOrganizationCustomDomain",
 			Handler:    _AdminService_SudoUpdateOrganizationCustomDomain_Handler,
 		},
@@ -6334,6 +6410,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBillingProjectCredentials",
 			Handler:    _AdminService_GetBillingProjectCredentials_Handler,
+		},
+		{
+			MethodName: "GetEmbeddedAnalytics",
+			Handler:    _AdminService_GetEmbeddedAnalytics_Handler,
 		},
 		{
 			MethodName: "RequestProjectAccess",

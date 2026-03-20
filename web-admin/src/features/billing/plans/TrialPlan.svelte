@@ -7,8 +7,8 @@
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-  import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
+  import StartGrowthPlanDialog from "@rilldata/web-admin/features/billing/plans/StartGrowthPlanDialog.svelte";
+  import type { GrowthPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -46,18 +46,13 @@
     (plan?.displayName || "Trial plan") + (trialEnded ? " expired" : "");
 
   let open = showUpgradeDialog;
-  $: type = (trialEnded ? "trial-expired" : "base") as TeamPlanDialogTypes;
+  $: type = (trialEnded ? "credit-exhausted" : "base") as GrowthPlanDialogTypes;
 </script>
 
 <SettingsContainer {title}>
   <div slot="body">
     <div>
       {trialEndMessage} Ready to get started with Rill?
-      <a
-        href="https://www.rilldata.com/pricing"
-        target="_blank"
-        rel="noreferrer noopener">See pricing details -></a
-      >
       {#if plan}
         <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
         <PlanQuotas {organization} />
@@ -71,13 +66,13 @@
 
   <Button type="primary" slot="action" onClick={() => (open = true)}>
     {#if trialEnded}
-      Start Team plan
+      Upgrade to Growth
     {:else}
-      End trial and start Team plan
+      End trial and upgrade to Growth
     {/if}
   </Button>
 </SettingsContainer>
 
 {#if !$categorisedIssues.isLoading}
-  <StartTeamPlanDialog bind:open {organization} {type} />
+  <StartGrowthPlanDialog bind:open {organization} {type} />
 {/if}

@@ -90,6 +90,9 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &TrialEndCheckWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 
+	// credit check worker (free-plan orgs)
+	river.AddWorker(workers, &CreditCheckWorker{admin: adm, logger: billingLogger})
+
 	// subscription related workers
 	river.AddWorker(workers, &SubscriptionCancellationCheckWorker{admin: adm, logger: billingLogger})
 
@@ -120,6 +123,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	jobConfigs := []periodicJobConfig{
 		{&ValidateDeploymentsArgs{}, "*/30 * * * *", true},         // half-hourly
+		{&CreditCheckArgs{}, "30 * * * *", true},                   // hourly at :30
 		{&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true},  // daily at 1am UTC
 		{&TrialEndingSoonArgs{}, "5 1 * * *", true},                // daily at 1:05am UTC
 		{&TrialEndCheckArgs{}, "10 1 * * *", true},                 // daily at 1:10am UTC
@@ -285,6 +289,8 @@ func (c *Client) EnqueueByKind(ctx context.Context, kind string) (*jobs.InsertRe
 		return c.HibernateInactiveOrgs(ctx)
 	case "billing_reporter":
 		return c.BillingReporter(ctx)
+	case "credit_check":
+		return c.CreditCheck(ctx)
 	case "delete_expired_auth_codes":
 		return c.DeleteExpiredAuthCodes(ctx)
 	case "delete_expired_device_auth_codes":
@@ -629,6 +635,26 @@ func (c *Client) BillingReporter(ctx context.Context) (*jobs.InsertResult, error
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("BillingReporter job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) CreditCheck(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, CreditCheckArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("CreditCheck job skipped as duplicate")
 	}
 
 	return &jobs.InsertResult{

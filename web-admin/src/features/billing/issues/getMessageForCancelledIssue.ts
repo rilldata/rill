@@ -40,9 +40,7 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
     cta: {
       text: "Renew",
       type: "upgrade",
-      teamPlanDialogType: "renew",
-      teamPlanEndDate:
-        cancelledSubIssue.metadata?.subscriptionCancelled?.endDate,
+      growthPlanDialogType: "renew",
     },
   };
 }

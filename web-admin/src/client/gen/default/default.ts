@@ -46,6 +46,7 @@ import type {
   AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentBody,
   AdminServiceGetDeploymentCredentialsBody,
+  AdminServiceGetEmbeddedAnalyticsBody,
   AdminServiceGetGithubRepoStatusParams,
   AdminServiceGetIFrameBody,
   AdminServiceGetOrganizationParams,
@@ -150,6 +151,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbeddedAnalyticsResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -240,6 +242,8 @@ import type {
   V1SetSuperuserResponse,
   V1StartDeploymentResponse,
   V1StopDeploymentResponse,
+  V1SudoAddCreditsRequest,
+  V1SudoAddCreditsResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
   V1SudoExtendTrialRequest,
   V1SudoExtendTrialResponse,
@@ -2987,6 +2991,94 @@ export const createAdminServiceCreateAsset = <
   TContext
 > => {
   const mutationOptions = getAdminServiceCreateAssetMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+ */
+export const adminServiceGetEmbeddedAnalytics = (
+  org: string,
+  adminServiceGetEmbeddedAnalyticsBody: AdminServiceGetEmbeddedAnalyticsBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbeddedAnalyticsResponse>({
+    url: `/v1/orgs/${org}/embedded-analytics`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceGetEmbeddedAnalyticsBody,
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbeddedAnalyticsMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+    TError,
+    { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError,
+  { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceGetEmbeddedAnalytics"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+    { org: string; data: AdminServiceGetEmbeddedAnalyticsBody }
+  > = (props) => {
+    const { org, data } = props ?? {};
+
+    return adminServiceGetEmbeddedAnalytics(org, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceGetEmbeddedAnalyticsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>
+>;
+export type AdminServiceGetEmbeddedAnalyticsMutationBody =
+  AdminServiceGetEmbeddedAnalyticsBody;
+export type AdminServiceGetEmbeddedAnalyticsMutationError = RpcStatus;
+
+/**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
+ */
+export const createAdminServiceGetEmbeddedAnalytics = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+      TError,
+      { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError,
+  { org: string; data: AdminServiceGetEmbeddedAnalyticsBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceGetEmbeddedAnalyticsMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -13420,6 +13512,91 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary SudoAddCredits adds billing credits to an organization
+ */
+export const adminServiceSudoAddCredits = (
+  v1SudoAddCreditsRequest: V1SudoAddCreditsRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoAddCreditsResponse>({
+    url: `/v1/superuser/organization/credits/add`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoAddCreditsRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoAddCreditsMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoAddCredits>>,
+    TError,
+    { data: V1SudoAddCreditsRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoAddCredits>>,
+  TError,
+  { data: V1SudoAddCreditsRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoAddCredits"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoAddCredits>>,
+    { data: V1SudoAddCreditsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoAddCredits(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoAddCreditsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoAddCredits>>
+>;
+export type AdminServiceSudoAddCreditsMutationBody = V1SudoAddCreditsRequest;
+export type AdminServiceSudoAddCreditsMutationError = RpcStatus;
+
+/**
+ * @summary SudoAddCredits adds billing credits to an organization
+ */
+export const createAdminServiceSudoAddCredits = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoAddCredits>>,
+      TError,
+      { data: V1SudoAddCreditsRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoAddCredits>>,
+  TError,
+  { data: V1SudoAddCreditsRequest },
+  TContext
+> => {
+  const mutationOptions = getAdminServiceSudoAddCreditsMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 It only updates the custom domain in the database, which is used to ensure correct redirects.
 The DNS records and ingress TLS must be configured separately.
@@ -13613,7 +13790,10 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
     | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+    | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+    | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+    | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${org}/billing/issues/${type}`,
@@ -13638,7 +13818,10 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+          | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+          | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
       },
       TContext
     >;
@@ -13655,7 +13838,10 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+        | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+        | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+        | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
     },
     TContext
   > => {
@@ -13682,7 +13868,10 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+          | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+          | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
       }
     > = (props) => {
       const { org, type } = props ?? {};
@@ -13724,7 +13913,10 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+          | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+          | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
       },
       TContext
     >;
@@ -13743,7 +13935,10 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
       | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
       | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+      | "BILLING_ISSUE_TYPE_CREDIT_LOW"
+      | "BILLING_ISSUE_TYPE_CREDIT_CRITICAL"
+      | "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED";
   },
   TContext
 > => {

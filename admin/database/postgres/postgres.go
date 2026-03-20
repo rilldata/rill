@@ -65,6 +65,15 @@ func (c *connection) FindOrganizations(ctx context.Context, afterName string, li
 	return res, nil
 }
 
+func (c *connection) FindOrganizationsByBillingPlanName(ctx context.Context, planName, afterName string, limit int) ([]*database.Organization, error) {
+	var res []*database.Organization
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE billing_plan_name = $1 AND lower(name) > lower($2) ORDER BY lower(name) LIMIT $3", planName, afterName, limit)
+	if err != nil {
+		return nil, parseErr("orgs", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindOrganizationsForUser(ctx context.Context, userID, afterName string, limit int) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -132,7 +141,8 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID,
+	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -530,8 +540,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			prod_version = $17,
 			dev_slots = $18,
 			dev_ttl_seconds = $19,
+			chc_cluster_size = $20,
 			updated_on = now()
-		WHERE id = $20
+		WHERE id = $21
 		RETURNING *
 		`,
 		opts.Name,
@@ -553,6 +564,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.ProdVersion,
 		opts.DevSlots,
 		opts.DevTTLSeconds,
+		opts.ChcClusterSize,
 		id,
 	).StructScan(res)
 	if err != nil {
@@ -560,6 +572,13 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	}
 	return c.projectFromDTO(res)
 }
+
+func (c *connection) UpdateProjectOlapConnector(ctx context.Context, id string, olapConnector string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET olap_connector = $1 WHERE id = $2", olapConnector, id)
+	return parseErr("project", err)
+}
+
+
 
 func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
 	res := &database.ProjectsQuotaUsage{}
@@ -3721,6 +3740,12 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
 	case database.BillingIssueTypeNeverSubscribed:
 		metadata = &database.BillingIssueMetadataNeverSubscribed{}
+	case database.BillingIssueTypeCreditLow:
+		metadata = &database.BillingIssueMetadataCreditLow{}
+	case database.BillingIssueTypeCreditCritical:
+		metadata = &database.BillingIssueMetadataCreditCritical{}
+	case database.BillingIssueTypeCreditExhausted:
+		metadata = &database.BillingIssueMetadataCreditExhausted{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {
@@ -3741,7 +3766,7 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 	if b.Type == database.BillingIssueTypeUnspecified {
 		return database.BillingIssueLevelUnspecified
 	}
-	if b.Type == database.BillingIssueTypeOnTrial {
+	if b.Type == database.BillingIssueTypeOnTrial || b.Type == database.BillingIssueTypeCreditLow {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError

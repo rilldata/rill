@@ -12,7 +12,7 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
+  import { isEnterprisePlan, isFreePlan, isManagedPlan } from "./plans/utils";
 
   export let organization: string;
 
@@ -25,11 +25,13 @@
   $: onTrial = !!$categorisedIssues.data?.trial;
   $: onManagedPlan = plan && isManagedPlan(plan.name);
   $: onEnterprisePlan = plan && isEnterprisePlan(plan.name);
+  $: onFreePlan = plan && isFreePlan(plan.name);
   // For enterprise and managed orgs, hide when payment details haven't been
   // entered yet (setup done via CLI). Once set up, show the Manage button.
-  // neverSubscribed orgs are always hidden since the billing page is not shown.
+  // neverSubscribed and free-plan orgs are always hidden.
   $: pendingSetup =
     neverSubscribed ||
+    onFreePlan ||
     ((onManagedPlan || onEnterprisePlan) &&
       needsPaymentSetup(paymentIssues ?? []));
 

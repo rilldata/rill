@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
@@ -451,6 +452,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	if permissions.ManageProject {
 		instancePermissions = append(
 			instancePermissions,
+			runtime.ReadOLAP,
 			runtime.ReadInstance,
 			runtime.ReadResolvers,
 			runtime.EditTrigger,
@@ -687,25 +689,28 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.ArchiveAssetID = &req.ArchiveAssetId
 	}
 
-	// if there is no subscription for the org, submit a job to start a trial
+	// If the org has no subscription, start one (free plan or trial depending on default plan config)
 	bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 	if bi != nil {
-		// check against trial orgs quota but skip if the user is a superuser
-		if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
-			u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to find user: %w", err)
-			}
-			if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
-				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
+		// Check trial org quota for trial-based plans; free plan orgs are not counted against this quota
+		defaultPlan, planErr := s.admin.Biller.GetDefaultPlan(ctx)
+		if planErr == nil && defaultPlan.PlanType != billing.FreePlanType {
+			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
+				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to find user: %w", err)
+				}
+				if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
+				}
 			}
 		}
 		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
 		if err != nil {
-			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+			s.logger.Named("billing").Error("failed to submit job to start subscription for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
 			// continue creating the project
 		}
 	}
@@ -890,6 +895,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	prodSlots := int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots)))
+
+	// Clear auto-scale annotation if user manually adjusts slots
+	annotations := maps.Clone(proj.Annotations)
+	if annotations != nil && req.ProdSlots != nil {
+		delete(annotations, "rill.dev/chc-auto-scaled-slots")
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -904,12 +917,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		PrimaryBranch:        primaryBranch,
 		PrimaryDeploymentID:  proj.PrimaryDeploymentID,
-		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
+		ProdSlots:            prodSlots,
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
-		Annotations:          proj.Annotations,
+		Annotations:          annotations,
+		ChcClusterSize:       proj.ChcClusterSize,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
@@ -1868,6 +1882,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
+		ChcClusterSize:       proj.ChcClusterSize,
 	})
 	if err != nil {
 		return nil, err
@@ -2189,6 +2204,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
 		UpdatedOn:           timestamppb.New(p.UpdatedOn),
+		OlapConnector:       safeStr(p.OlapConnector),
 	}
 }
 
@@ -2293,6 +2309,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		DevTTLSeconds:        p.DevTTLSeconds,
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
+		ChcClusterSize:       p.ChcClusterSize,
 	})
 	if err != nil {
 		return 0, status.Error(codes.Internal, "failed to update project with github repo id")
@@ -2423,4 +2440,12 @@ func valOrDefault[T any](ptr *T, def T) T {
 		return *ptr
 	}
 	return def
+}
+
+// valOrDefaultPtr returns newVal if non-nil, otherwise existing (both pointers).
+func valOrDefaultPtr[T any](newVal *T, existing *T) *T {
+	if newVal != nil {
+		return newVal
+	}
+	return existing
 }

@@ -13,3 +13,16 @@ export type TeamPlanDialogTypes =
   | "proj"
   | "renew"
   | "trial-expired";
+
+/**
+ * Growth plan dialog variants (PRD v10):
+ * 1. base             - Free → Growth upgrade
+ * 2. credit-low       - Credit warning (80% used) upgrade prompt
+ * 3. credit-exhausted - Credit exhausted, projects hibernated
+ * 4. renew            - Cancelled Growth plan renewal
+ */
+export type GrowthPlanDialogTypes =
+  | "base"
+  | "credit-low"
+  | "credit-exhausted"
+  | "renew";

@@ -47,7 +47,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Subpath: %s\n", project.Subpath)
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Primary branch: %s\n", project.PrimaryBranch)
-			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
+			fmt.Printf("Rill Slots: %d\n", project.ProdSlots)
 			fmt.Printf("Primary deployment ID: %s\n", project.PrimaryDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
 			fmt.Printf("Annotations: %s\n", strings.Join(annotations, "; "))

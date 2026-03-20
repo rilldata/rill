@@ -254,6 +254,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		}
 	} else if permissions.ManageProd {
 		instancePermissions = append(instancePermissions,
+			runtime.ReadOLAP,
 			runtime.ReadResolvers,
 			runtime.EditTrigger,
 		)
@@ -416,6 +417,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			DevSlots:             proj.DevSlots,
 			DevTTLSeconds:        proj.DevTTLSeconds,
 			Annotations:          proj.Annotations,
+			ChcClusterSize:       proj.ChcClusterSize,
 		})
 		if err != nil {
 			return nil, err

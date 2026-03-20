@@ -6,6 +6,7 @@
 
   export let organization: string;
   export let plan: V1BillingPlan;
+
 </script>
 
 <SettingsContainer title={plan?.displayName}>

@@ -62,6 +62,14 @@ type Biller interface {
 
 	ReportUsage(ctx context.Context, usage []*Usage) error
 
+	// GetCreditBalance returns the credit balance for the given customer.
+	// Returns nil if the customer has no credit grants (e.g. not on a free plan).
+	GetCreditBalance(ctx context.Context, customerID string) (*CreditBalance, error)
+	// AddCredits adds a credit grant to the given customer. Returns the new total balance.
+	AddCredits(ctx context.Context, customerID string, amount float64, expiryDate time.Time, description string) (*CreditBalance, error)
+	// VoidCredits voids all active credit grants for the given customer (called on upgrade from Free to Growth).
+	VoidCredits(ctx context.Context, customerID string) error
+
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string
 
@@ -81,6 +89,8 @@ const (
 	TeamPlanType
 	ManagedPlanType
 	EnterprisePlanType
+	FreePlanType
+	GrowthPlanType
 )
 
 type Plan struct {
@@ -108,12 +118,12 @@ type Quotas struct {
 type planMetadata struct {
 	Default                        bool   `mapstructure:"default"`
 	Public                         bool   `mapstructure:"public"`
-	StorageLimitBytesPerDeployment *int64 `mapstructure:"storage_limit_bytes_per_deployment"`
-	NumProjects                    *int   `mapstructure:"num_projects"`
-	NumDeployments                 *int   `mapstructure:"num_deployments"`
-	NumSlotsTotal                  *int   `mapstructure:"num_slots_total"`
-	NumSlotsPerDeployment          *int   `mapstructure:"num_slots_per_deployment"`
-	NumOutstandingInvites          *int   `mapstructure:"num_outstanding_invites"`
+	StorageLimitBytesPerDeployment *int64  `mapstructure:"storage_limit_bytes_per_deployment"`
+	NumProjects                    *int    `mapstructure:"num_projects"`
+	NumDeployments                 *int    `mapstructure:"num_deployments"`
+	NumSlotsTotal                  *int    `mapstructure:"num_slots_total"`
+	NumSlotsPerDeployment          *int    `mapstructure:"num_slots_per_deployment"`
+	NumOutstandingInvites          *int    `mapstructure:"num_outstanding_invites"`
 }
 
 type Subscription struct {
@@ -134,6 +144,14 @@ type Customer struct {
 	Name              string
 	PaymentProviderID string
 	PortalURL         string
+}
+
+type CreditBalance struct {
+	TotalCredit     float64
+	UsedCredit      float64
+	RemainingCredit float64
+	ExpiryDate      time.Time
+	BurnRatePerDay  float64 // Estimated daily burn rate based on recent usage
 }
 
 type Usage struct {

@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var prodSlots int
+	var rillSlots int
 	var prodVersion string
 
 	editCmd := &cobra.Command{
@@ -26,12 +26,13 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			isEditRequested := false
-			if cmd.Flags().Changed("prod-slots") {
-				if prodSlots <= 0 {
-					return fmt.Errorf("--prod-slots must be greater than zero")
+
+			if cmd.Flags().Changed("rill-slots") {
+				if rillSlots < 2 {
+					return fmt.Errorf("--rill-slots must be >= 2")
 				}
-				prodSlotsInt64 := int64(prodSlots)
-				req.ProdSlots = &prodSlotsInt64
+				v := int64(rillSlots)
+				req.ProdSlots = &v
 				isEditRequested = true
 			}
 			if cmd.Flags().Changed("prod-version") {
@@ -55,13 +56,14 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintfSuccess("Updated project\n")
-			ch.PrintProjects([]*adminv1.Project{updatedProj.Project})
+			proj := updatedProj.Project
+			fmt.Printf("Rill Slots: %d\n", proj.ProdSlots)
 
 			return nil
 		},
 	}
 
-	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
+	editCmd.Flags().IntVar(&rillSlots, "rill-slots", 0, "Rill slots (minimum 2); sets prod_slots directly")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
 	return editCmd
 }

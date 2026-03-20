@@ -32,7 +32,7 @@ export function getMessageForTrialPlan(
     cta: {
       text: "Upgrade",
       type: "upgrade",
-      teamPlanDialogType: "base",
+      growthPlanDialogType: "base",
     },
   };
 
@@ -66,7 +66,7 @@ export function getMessageForTrialPlan(
         "Your trial has expired and this org’s projects are now hibernating.";
       message.description = "Upgrade to wake projects and regain full access.";
       message.type = "error";
-      message.cta.teamPlanDialogType = "trial-expired";
+      message.cta.growthPlanDialogType = "credit-exhausted";
     }
   }
 

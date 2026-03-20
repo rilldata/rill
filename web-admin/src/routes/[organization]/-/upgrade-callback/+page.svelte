@@ -12,10 +12,13 @@
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchTeamPlan,
+    fetchGrowthPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    isFreePlan,
+    showWelcomeToRillDialog,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -31,8 +34,9 @@
   $: redirect = $page.url.searchParams.get("redirect");
 
   /**
-   * Landing page to upgrade a user to team plan.
+   * Landing page to upgrade a user to a paid plan.
    * Is set as a return url on stripe portal.
+   * Always upgrades to Growth plan.
    */
   $: organization = $page.params.organization;
 
@@ -59,28 +63,29 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const teamPlan = await fetchTeamPlan();
+
+    const targetPlan = await fetchGrowthPlan();
+    const planLabel = "Growth";
+
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({
           org: organization,
           data: {
-            planName: teamPlan.name,
+            planName: targetPlan?.name,
           },
         });
         eventBus.emit("notification", {
           type: "success",
-          message: "Your Team plan was renewed",
+          message: `Your ${planLabel} plan was renewed`,
         });
       } else {
         await $planUpdater.mutateAsync({
           org: organization,
           data: {
-            planName: teamPlan.name,
+            planName: targetPlan?.name,
           },
         });
-        // if redirect is set then this page won't be active.
-        // so this will lead to pop-in of the modal before navigating away
         if (!redirect) {
           showWelcomeToRillDialog.set(true);
         }
@@ -90,8 +95,6 @@
       // TODO
     }
     if (redirect) {
-      // redirect param could be on a different domain like the rill developer instance
-      // so using goto won't work
       window.open(redirect, "_self");
     } else {
       return goto(`/${organization}`);
@@ -108,9 +111,9 @@
     </div>
     <CtaHeader variant="bold">
       {#if cancelled}
-        Renewing team plan...
+        Renewing Growth plan...
       {:else}
-        Upgrading to team plan...
+        Upgrading to Growth plan...
       {/if}
     </CtaHeader>
     <CtaNeedHelp />

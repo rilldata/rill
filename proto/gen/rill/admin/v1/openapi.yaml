@@ -154,6 +154,25 @@ components:
             type: object
         v1ApproveProjectAccessResponse:
             type: object
+        v1BillingCreditInfo:
+            description: BillingCreditInfo contains credit balance information for free-tier organizations.
+            properties:
+                burnRatePerDay:
+                    format: double
+                    type: number
+                creditExpiry:
+                    format: date-time
+                    type: string
+                remainingCredit:
+                    format: double
+                    type: number
+                totalCredit:
+                    format: double
+                    type: number
+                usedCredit:
+                    format: double
+                    type: number
+            type: object
         v1BillingIssue:
             properties:
                 createdOn:
@@ -180,6 +199,12 @@ components:
             type: string
         v1BillingIssueMetadata:
             properties:
+                creditCritical:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataCreditCritical'
+                creditExhausted:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataCreditExhausted'
+                creditLow:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataCreditLow'
                 neverSubscribed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNeverSubscribed'
                 noBillableAddress:
@@ -194,6 +219,42 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataSubscriptionCancelled'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
+            type: object
+        v1BillingIssueMetadataCreditCritical:
+            properties:
+                creditExpiry:
+                    format: date-time
+                    type: string
+                creditRemaining:
+                    format: double
+                    type: number
+                creditTotal:
+                    format: double
+                    type: number
+            type: object
+        v1BillingIssueMetadataCreditExhausted:
+            properties:
+                creditExpiry:
+                    format: date-time
+                    type: string
+                creditTotal:
+                    format: double
+                    type: number
+                exhaustedOn:
+                    format: date-time
+                    type: string
+            type: object
+        v1BillingIssueMetadataCreditLow:
+            properties:
+                creditExpiry:
+                    format: date-time
+                    type: string
+                creditRemaining:
+                    format: double
+                    type: number
+                creditTotal:
+                    format: double
+                    type: number
             type: object
         v1BillingIssueMetadataNeverSubscribed:
             type: object
@@ -265,6 +326,9 @@ components:
                 - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                 - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                - BILLING_ISSUE_TYPE_CREDIT_LOW
+                - BILLING_ISSUE_TYPE_CREDIT_CRITICAL
+                - BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED
             type: string
         v1BillingPlan:
             properties:
@@ -297,6 +361,8 @@ components:
                 - BILLING_PLAN_TYPE_TEAM
                 - BILLING_PLAN_TYPE_MANAGED
                 - BILLING_PLAN_TYPE_ENTERPRISE
+                - BILLING_PLAN_TYPE_FREE
+                - BILLING_PLAN_TYPE_GROWTH
             type: string
         v1Bookmark:
             properties:
@@ -630,6 +696,8 @@ components:
             properties:
                 billingPortalUrl:
                     type: string
+                creditInfo:
+                    $ref: '#/components/schemas/v1BillingCreditInfo'
                 organization:
                     $ref: '#/components/schemas/v1Organization'
                 subscription:
@@ -718,6 +786,14 @@ components:
                 instanceId:
                     type: string
                 runtimeHost:
+                    type: string
+                ttlSeconds:
+                    format: int64
+                    type: integer
+            type: object
+        v1GetEmbeddedAnalyticsResponse:
+            properties:
+                iframeSrc:
                     type: string
                 ttlSeconds:
                     format: int64
@@ -1434,6 +1510,16 @@ components:
                     type: object
                 archiveAssetId:
                     type: string
+                chcClusterSize:
+                    description: ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
+                    format: double
+                    type: number
+                clusterSlots:
+                    description: |-
+                        ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
+                        For Live Connect projects, this represents the base slots from the BYOLAP cluster.
+                    format: int64
+                    type: string
                 createdByUserId:
                     type: string
                 createdOn:
@@ -1453,11 +1539,22 @@ components:
                     type: string
                 id:
                     type: string
+                infraSlots:
+                    description: |-
+                        InfraSlots is the Rill infrastructure overhead slot allocation for the project.
+                        Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
+                    format: int64
+                    type: string
                 managedGitId:
                     description: managed_git_id is set if the project is connected to a rill-managed git repo.
                     type: string
                 name:
                     title: Unique in organization
+                    type: string
+                olapConnector:
+                    description: |-
+                        OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
+                        Persisted so the frontend can show the correct engine label even when the project is hibernated.
                     type: string
                 orgId:
                     type: string
@@ -1937,6 +2034,25 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1SudoAddCreditsRequest:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                description:
+                    type: string
+                expiryDays:
+                    format: int32
+                    title: Number of days until credits expire; defaults to 365
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoAddCreditsResponse:
+            properties:
+                creditInfo:
+                    $ref: '#/components/schemas/v1BillingCreditInfo'
+            type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
         v1SudoExtendTrialRequest:
@@ -2321,7 +2437,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.83.6
+    version: v0.83.8
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -3193,6 +3309,40 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
+    /v1/orgs/{org}/embedded-analytics:
+        post:
+            operationId: AdminService_GetEmbeddedAnalytics
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                resource:
+                                    title: Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetEmbeddedAnalyticsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas from the metrics-monitoring project
     /v1/orgs/{org}/invites:
         get:
             operationId: AdminService_ListOrganizationInvites
@@ -3711,11 +3861,23 @@ paths:
                             properties:
                                 archiveAssetId:
                                     type: string
+                                clusterSlots:
+                                    description: |-
+                                        ClusterSlots overrides the cluster slot allocation.
+                                        Adjustable by Rill staff. Derived from the OLAP cluster size.
+                                    format: int64
+                                    type: string
                                 description:
                                     type: string
                                 directoryName:
                                     type: string
                                 gitRemote:
+                                    type: string
+                                infraSlots:
+                                    description: |-
+                                        InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
+                                        Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
+                                    format: int64
                                     type: string
                                 newName:
                                     type: string
@@ -6944,6 +7106,30 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+    /v1/superuser/organization/credits/add:
+        post:
+            operationId: AdminService_SudoAddCredits
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoAddCreditsRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoAddCreditsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoAddCredits adds billing credits to an organization
     /v1/superuser/organization/custom-domain:
         patch:
             operationId: AdminService_SudoUpdateOrganizationCustomDomain
@@ -7017,6 +7203,9 @@ paths:
                         - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                         - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                         - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                        - BILLING_ISSUE_TYPE_CREDIT_LOW
+                        - BILLING_ISSUE_TYPE_CREDIT_CRITICAL
+                        - BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED
                     type: string
             responses:
                 "200":
