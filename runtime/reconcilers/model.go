@@ -299,7 +299,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				return runtime.ReconcileResult{Err: err}
 			}
 		}
-		return runtime.ReconcileResult{Retrigger: refreshOn}
+		// Show if any partitions errored
+		if model.State.PartitionsHaveErrors && !cfg.ModelPartitionsWarnOnFailure {
+			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: model.State.Warnings, Retrigger: refreshOn}
+		}
+		// Show if any model tests failed
+		if len(model.State.TestErrors) > 0 && !cfg.ModelTestsWarnOnFailure {
+			return runtime.ReconcileResult{Err: errors.New(newTestsWarning(model.State.TestErrors)), Warnings: model.State.Warnings, Retrigger: refreshOn}
+		}
+		return runtime.ReconcileResult{Warnings: model.State.Warnings, Retrigger: refreshOn}
 	}
 	// Acquire the execution semaphore for the remainder of the function.
 	err = r.execSem.Acquire(ctx, 1)
