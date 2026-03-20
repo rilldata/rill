@@ -21,6 +21,11 @@
       route: "/billing",
       hasPermission: !hideBillingSettings,
     },
+    {
+      label: "Usage",
+      route: "/usage",
+      hasPermission: !hideBillingSettings,
+    },
   ];
 </script>
 

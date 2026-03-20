@@ -31,8 +31,9 @@ type Options struct {
 	Version                   version.Version
 	MetricsProjectOrg         string
 	MetricsProjectName        string
-	AutoscalerCron            string
-	ScaleDownConstraint       int
+	AutoscalerCron                string
+	ScaleDownConstraint           int
+	EmbeddedAnalyticsServiceToken string
 }
 
 type Service struct {
@@ -54,8 +55,9 @@ type Service struct {
 	MetricsProjectID          string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
-	Biller                    billing.Biller
-	PaymentProvider           payment.Provider
+	Biller                        billing.Biller
+	PaymentProvider               payment.Provider
+	EmbeddedAnalyticsServiceToken string
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiService drivers.AIService, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
@@ -138,8 +140,9 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		MetricsProjectID:          metricsProjectID,
 		AutoscalerCron:            opts.AutoscalerCron,
 		ScaleDownConstraint:       opts.ScaleDownConstraint,
-		Biller:                    biller,
-		PaymentProvider:           p,
+		Biller:                        biller,
+		PaymentProvider:               p,
+		EmbeddedAnalyticsServiceToken: opts.EmbeddedAnalyticsServiceToken,
 	}, nil
 }
 
