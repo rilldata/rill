@@ -20,6 +20,7 @@
 
   $: navItems = [
     { label: "General", route: "", hasPermission: true },
+    { label: "Service Accounts", route: "/tokens", hasPermission: true },
     {
       label: "Billing",
       route: "/billing",
