@@ -20,7 +20,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
-	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
@@ -889,77 +888,12 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			return err
 		}
 	}
-
-	rPropMap := mdl.Spec.PartitionsResolverProperties.AsMap()
-	rArgs := map[string]any{"state": incrementalState}
-	if mdl.Spec.PartitionsResolver == "glob" {
-		type globResolverArgs struct {
-			Start        string `mapstructure:"start"`
-			Last         int    `mapstructure:"last"`
-			End          string `mapstructure:"end"`
-			TransformSQL string `mapstructure:"transform_sql"`
-		}
-		var args globResolverArgs
-		if err := mapstructureutil.WeakDecode(rPropMap, &args); err != nil {
-			return err
-		}
-		if args.TransformSQL != "" && (args.Start != "" || args.Last > 0 || args.End != "") {
-			return fmt.Errorf("Properties `start`, `last` and `end` is not support with transform_sql")
-		}
-
-		start := args.Start
-		last := ""
-		if args.Last > 0 {
-			catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
-			if err != nil {
-				return err
-			}
-			defer release()
-
-			partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
-				ModelID:         mdl.State.PartitionsModelId,
-				WhereSuccessful: true,
-			})
-			if err != nil {
-				return err
-			}
-
-			paths := make([]string, len(partitions))
-			for _, p := range partitions {
-				var data map[string]any
-
-				if err := json.Unmarshal(p.DataJSON, &data); err != nil {
-					return fmt.Errorf("partition %s: invalid JSON: %w", p.Key, err)
-				}
-				pathVal, ok := data["path"]
-				if !ok {
-					return fmt.Errorf("partition %s: missing 'path' field", p.Key)
-				}
-				pathStr, ok := pathVal.(string)
-				if !ok || pathStr == "" {
-					return fmt.Errorf("partition %s: 'path' is not valid string", p.Key)
-				}
-				paths = append(paths, pathStr)
-			}
-			sort.Strings(paths)
-			if args.Last <= len(paths) {
-				last = paths[len(paths)-args.Last]
-			}
-		}
-		if start > last {
-			rArgs["partition_start"] = start
-		} else {
-			rArgs["partition_start"] = last
-		}
-		rArgs["partition_end"] = args.End
-	}
-
 	// Resolve partition rows
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.PartitionsResolver,
-		ResolverProperties: rPropMap,
-		Args:               rArgs,
+		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
+		Args:               map[string]any{"state": incrementalState, "partitions_model_id": mdl.State.PartitionsModelId},
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {

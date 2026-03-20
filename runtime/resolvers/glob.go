@@ -12,6 +12,7 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -71,7 +72,7 @@ type globProps struct {
 	Start string `mapstructure:"start"`
 	// Read last N parition
 	Last int `mapstructure:"last"`
-	// Read untill patition
+	// Read before this patition
 	End string `mapstructure:"end"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
@@ -86,9 +87,8 @@ type globProps struct {
 // globArgs declares the arguments for a "glob" resolver.
 type globArgs struct {
 	// State to make available for template resolution in the props.
-	State          map[string]any `mapstructure:"state"`
-	PartitionStart string         `mapstructure:"partition_start"`
-	PartitionEnd   string         `mapstructure:"partition_end"`
+	State             map[string]any `mapstructure:"state"`
+	PartitionsModelID string         `mapstructure:"partitions_model_id"`
 }
 
 func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -130,6 +130,54 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	props.Path = strings.TrimSpace(props.Path)
 
+	if props.TransformSQL != "" && (props.Start != "" || props.Last > 0 || props.End != "") {
+		return nil, fmt.Errorf("Properties `start`, `last` and `end` is not support with transform_sql")
+	}
+
+	partitionStart := props.Start
+	partitionEnd := props.End
+	last := ""
+	if props.Last > 0 {
+		catalog, release, err := opts.Runtime.Catalog(ctx, opts.InstanceID)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+
+		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+			ModelID:         args.PartitionsModelID,
+			WhereSuccessful: true,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		paths := make([]string, len(partitions))
+		for _, p := range partitions {
+			var data map[string]any
+
+			if err := json.Unmarshal(p.DataJSON, &data); err != nil {
+				return nil, fmt.Errorf("partition %s: invalid JSON: %w", p.Key, err)
+			}
+			pathVal, ok := data["path"]
+			if !ok {
+				return nil, fmt.Errorf("partition %s: missing 'path' field", p.Key)
+			}
+			pathStr, ok := pathVal.(string)
+			if !ok || pathStr == "" {
+				return nil, fmt.Errorf("partition %s: 'path' is not valid string", p.Key)
+			}
+			paths = append(paths, pathStr)
+		}
+		sort.Strings(paths)
+		if props.Last <= len(paths) {
+			last = paths[len(paths)-props.Last]
+		}
+	}
+	if last != "" && partitionStart > last {
+		partitionStart = last
+	}
+
 	// set props to span attributes
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
@@ -164,8 +212,8 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		props:          props,
 		bucketURI:      bucketURI,
 		tmpTableName:   tmpTableName,
-		partitionStart: args.PartitionStart,
-		partitionEnd:   args.PartitionEnd,
+		partitionStart: partitionStart,
+		partitionEnd:   partitionEnd,
 	}, nil
 }
 
