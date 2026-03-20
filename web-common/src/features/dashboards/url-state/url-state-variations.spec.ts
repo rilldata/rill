@@ -250,33 +250,35 @@ const TestCases: {
     title:
       "Measures/dimensions visibility with no preset and partially visible measures/dimensions in state",
     mutations: [
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
-    expectedSearch: "measures=impressions&dims=publisher",
+    expectedSearch:
+      "measures=impressions%2Cpublisher_count&dims=publisher%2Ccountry",
   },
   {
     title:
       "Measures/dimensions visibility with no preset and all measures/dimensions visible in state",
     mutations: [
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
       // re-toggle to show
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
-    expectedSearch: "",
+    expectedSearch:
+      "measures=impressions%2Cpublisher_count%2Cbid_price&dims=publisher%2Ccountry%2Cdomain",
   },
   {
     title:
       "Measures/dimensions visibility with preset and partially visible measures/dimensions in state matching preset",
     mutations: [
       // initially hidden due to preset, show them now.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
       // hide them back.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
@@ -287,20 +289,20 @@ const TestCases: {
       "Measures/dimensions visibility with preset and all measures/dimensions visible in state not matching preset",
     mutations: [
       // initially hidden due to preset, show them now.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions%2Cbid_price&dims=publisher%2Cdomain&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Show and hide measures/dimensions",
     mutations: [
-      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     expectedSearch:
       "measures=bid_price%2Cimpressions&dims=domain%2Cpublisher&sort_by=bid_price",
