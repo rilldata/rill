@@ -37,24 +37,24 @@ type Options struct {
 }
 
 type Service struct {
-	DB                        database.DB
-	Jobs                      jobs.Client
-	URLs                      *URLs
-	ProvisionerSet            map[string]provisioner.Provisioner
-	ProvisionerMaxConcurrency int
-	Email                     *email.Client
-	Github                    Github
-	AI                        drivers.AIService
-	Assets                    *storage.BucketHandle
-	Used                      *usedFlusher
-	Logger                    *zap.Logger
-	opts                      *Options
-	issuer                    *auth.Issuer
-	authCache                 *lru.Cache
-	Version                   version.Version
-	MetricsProjectID          string
-	AutoscalerCron            string
-	ScaleDownConstraint       int
+	DB                            database.DB
+	Jobs                          jobs.Client
+	URLs                          *URLs
+	ProvisionerSet                map[string]provisioner.Provisioner
+	ProvisionerMaxConcurrency     int
+	Email                         *email.Client
+	Github                        Github
+	AI                            drivers.AIService
+	Assets                        *storage.BucketHandle
+	Used                          *usedFlusher
+	Logger                        *zap.Logger
+	opts                          *Options
+	issuer                        *auth.Issuer
+	authCache                     *lru.Cache
+	Version                       version.Version
+	MetricsProjectID              string
+	AutoscalerCron                string
+	ScaleDownConstraint           int
 	Biller                        billing.Biller
 	PaymentProvider               payment.Provider
 	EmbeddedAnalyticsServiceToken string
