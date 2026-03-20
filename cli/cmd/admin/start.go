@@ -319,17 +319,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:            conf.DatabaseDriver,
-				DatabaseDSN:               conf.DatabaseURL,
-				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
-				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
-				FrontendURL:               conf.FrontendURL,
-				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
-				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
-				DefaultProvisioner:        conf.DefaultProvisioner,
-				Version:                   ch.Version,
-				MetricsProjectOrg:         metricsProjectOrg,
-				MetricsProjectName:        metricsProjectName,
+				DatabaseDriver:                conf.DatabaseDriver,
+				DatabaseDSN:                   conf.DatabaseURL,
+				DatabaseEncryptionKeyring:     conf.DatabaseEncryptionKeyring,
+				ExternalURL:                   conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:                   conf.FrontendURL,
+				ProvisionerSetJSON:            conf.ProvisionerSetJSON,
+				ProvisionerMaxConcurrency:     conf.ProvisionerMaxConcurrency,
+				DefaultProvisioner:            conf.DefaultProvisioner,
+				Version:                       ch.Version,
+				MetricsProjectOrg:             metricsProjectOrg,
+				MetricsProjectName:            metricsProjectName,
 				AutoscalerCron:                conf.AutoscalerCron,
 				ScaleDownConstraint:           conf.ScaleDownConstraint,
 				EmbeddedAnalyticsServiceToken: conf.EmbeddedAnalyticsServiceToken,

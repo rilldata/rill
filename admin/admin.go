@@ -20,17 +20,17 @@ import (
 )
 
 type Options struct {
-	DatabaseDriver            string
-	DatabaseDSN               string
-	DatabaseEncryptionKeyring string
-	ExternalURL               string
-	FrontendURL               string
-	ProvisionerSetJSON        string
-	ProvisionerMaxConcurrency int
-	DefaultProvisioner        string
-	Version                   version.Version
-	MetricsProjectOrg         string
-	MetricsProjectName        string
+	DatabaseDriver                string
+	DatabaseDSN                   string
+	DatabaseEncryptionKeyring     string
+	ExternalURL                   string
+	FrontendURL                   string
+	ProvisionerSetJSON            string
+	ProvisionerMaxConcurrency     int
+	DefaultProvisioner            string
+	Version                       version.Version
+	MetricsProjectOrg             string
+	MetricsProjectName            string
 	AutoscalerCron                string
 	ScaleDownConstraint           int
 	EmbeddedAnalyticsServiceToken string
@@ -123,23 +123,23 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	}
 
 	return &Service{
-		DB:                        db,
-		URLs:                      urls,
-		ProvisionerSet:            provSet,
-		ProvisionerMaxConcurrency: opts.ProvisionerMaxConcurrency,
-		Email:                     emailClient,
-		Github:                    github,
-		AI:                        aiService,
-		Assets:                    assets,
-		Used:                      newUsedFlusher(logger, db),
-		Logger:                    logger,
-		opts:                      opts,
-		issuer:                    issuer,
-		authCache:                 authCache,
-		Version:                   opts.Version,
-		MetricsProjectID:          metricsProjectID,
-		AutoscalerCron:            opts.AutoscalerCron,
-		ScaleDownConstraint:       opts.ScaleDownConstraint,
+		DB:                            db,
+		URLs:                          urls,
+		ProvisionerSet:                provSet,
+		ProvisionerMaxConcurrency:     opts.ProvisionerMaxConcurrency,
+		Email:                         emailClient,
+		Github:                        github,
+		AI:                            aiService,
+		Assets:                        assets,
+		Used:                          newUsedFlusher(logger, db),
+		Logger:                        logger,
+		opts:                          opts,
+		issuer:                        issuer,
+		authCache:                     authCache,
+		Version:                       opts.Version,
+		MetricsProjectID:              metricsProjectID,
+		AutoscalerCron:                opts.AutoscalerCron,
+		ScaleDownConstraint:           opts.ScaleDownConstraint,
 		Biller:                        biller,
 		PaymentProvider:               p,
 		EmbeddedAnalyticsServiceToken: opts.EmbeddedAnalyticsServiceToken,
