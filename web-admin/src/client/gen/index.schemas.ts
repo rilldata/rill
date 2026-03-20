@@ -627,6 +627,10 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
+export interface V1GetProjectEmbeddedAnalyticsResponse {
+  iframeUrl?: string;
+}
+
 export interface V1GetProjectMemberUserResponse {
   member?: V1ProjectMemberUser;
 }

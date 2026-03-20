@@ -35,6 +35,11 @@
       route: "/console",
       hasPermission: false,
     },
+    {
+      label: "Analytics",
+      route: "/analytics",
+      hasPermission: true,
+    },
   ];
 </script>
 
