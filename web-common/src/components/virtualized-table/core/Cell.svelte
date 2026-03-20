@@ -177,7 +177,11 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType slot="name" value={tooltipValue} />
+      <FormattedDataType
+        slot="name"
+        value={tooltipValue}
+        color="text-fg-inverse"
+      />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>

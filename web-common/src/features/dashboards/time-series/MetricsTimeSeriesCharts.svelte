@@ -200,7 +200,7 @@
       { name: TimeRangePreset.CUSTOM, start, end },
       activeTimeGrain,
       comparisonTimeRange,
-      {},
+      $exploreValidSpec.data?.metricsView ?? {},
     );
   }
 
