@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
@@ -21,6 +22,7 @@
     getConnectorDriverForSchema,
     transitionToNextStep,
   } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 
   export let step: CreateConnectorStep;
   export let onSubmit: (newState: AddDataState) => void;
@@ -63,7 +65,8 @@
           connectorName,
           connectorDriver,
           formValues: form.data,
-          saveAnyway: false,
+          validate: true,
+          existingEnvBlob,
         });
         const newState = await transitionToNextStep(runtimeClient, step, {
           schema: step.schema,
@@ -90,6 +93,20 @@
     : "";
 
   $: labelsForConnector = getLabelsForConnector(schema, $form);
+
+  async function saveConnector() {
+    if (!connectorDriver) return;
+    const connectorPath = await createConnector({
+      runtimeClient,
+      queryClient,
+      connectorName,
+      connectorDriver,
+      formValues: $form,
+      validate: false,
+      existingEnvBlob,
+    });
+    return goto(`/files${addLeadingSlash(connectorPath)}`);
+  }
 </script>
 
 {#if connectorDriver}
@@ -100,6 +117,7 @@
     labels={labelsForConnector}
     {yamlPreview}
     step="connector"
+    onSave={saveConnector}
     {onBack}
   />
 {/if}

@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    type ConnectorInfo,
-    connectorInfoMap,
-    connectors,
-  } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+  import { connectors } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import {
     connectorClassMapping,
     connectorIconMapping,

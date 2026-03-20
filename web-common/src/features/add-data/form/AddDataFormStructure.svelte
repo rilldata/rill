@@ -27,6 +27,7 @@
   export let labels = defaultFormLabels;
   export let yamlPreview: string;
   export let step: "connector" | "source";
+  export let onSave: (() => void) | undefined = undefined;
   export let onBack: () => void;
 
   $: ({ form, formId, tainted, submit, submitting, errors, enhance } =
@@ -36,8 +37,6 @@
   $: ({ message, details } = getSubmitError($errors));
 
   $: hideRightPannel = connectorDriver.name === "local_file";
-
-  let shouldShowSaveAnywayButton = false;
 
   $: isSubmitDisabled = (() => {
     // No schema = disable submit (schema is required for all connectors)
@@ -157,8 +156,8 @@
       <Button onClick={onBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
-        {#if shouldShowSaveAnywayButton}
-          <Button type="secondary">Save (TODO)</Button>
+        {#if onSave}
+          <Button type="secondary" onClick={onSave}>Save</Button>
         {/if}
 
         <Button

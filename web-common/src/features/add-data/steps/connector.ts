@@ -41,14 +41,16 @@ export async function createConnector({
   connectorName,
   connectorDriver,
   formValues,
-  saveAnyway,
+  validate,
+  existingEnvBlob,
 }: {
   runtimeClient: RuntimeClient;
   queryClient: QueryClient;
   connectorName: string;
   connectorDriver: V1ConnectorDriver;
   formValues: Record<string, unknown>;
-  saveAnyway: boolean;
+  validate: boolean;
+  existingEnvBlob: string | null;
 }) {
   await maybeInitProject(runtimeClient, connectorDriver);
 
@@ -87,6 +89,7 @@ export async function createConnector({
         {
           secretKeys: schemaSecretKeys,
           schema: schema ?? undefined,
+          existingEnvBlob: existingEnvBlob ?? undefined,
         },
       );
 
@@ -120,7 +123,7 @@ export async function createConnector({
       createOnly: false,
     });
 
-    if (!saveAnyway) {
+    if (validate) {
       // Wait for connector resource-level reconciliation
       // This must happen after .env reconciliation since connectors depend on secrets
       await waitForResourceReconciliation(
@@ -148,7 +151,7 @@ export async function createConnector({
       );
     }
 
-    return connectorName;
+    return newConnectorFilePath;
   } catch (error) {
     const errorDetails = error.details;
     if (errorDetails && errorDetails !== error.message) {

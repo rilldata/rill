@@ -9,7 +9,7 @@
   import { normalizeErrors } from "./error-utils";
   import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
-  import ShadcnInput from "@rilldata/web-common/components/forms/ShadcnInput.svelte";
+  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
 
   export let id: string;
   export let prop: JSONSchemaField;
@@ -47,7 +47,7 @@
       accept={getFileAccept(prop)}
     />
   {:else}
-    <ShadcnInput type="file" bind:files={value} accept={getFileAccept(prop)} />
+    <FileInput bind:files={value} accept={getFileAccept(prop)} />
   {/if}
 {:else if prop.type === "boolean"}
   <Checkbox
