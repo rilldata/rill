@@ -54,6 +54,10 @@
     });
   }
 
+  $: if (!open) {
+    query = "";
+  }
+
   $: searchItems = [...projectItems, ...resourceItems];
   $: results = searchIndex(searchItems, query);
   $: hasResults =
@@ -103,8 +107,10 @@
   <CommandList>
     {#if query.length < 2}
       <div class="py-6 text-center text-sm text-gray-500">
-        Type to search...
+        {$projectListQuery.isLoading ? "Loading..." : "Type to search..."}
       </div>
+    {:else if $projectListQuery.isError}
+      <CommandEmpty>Unable to load search data</CommandEmpty>
     {:else if !hasResults}
       <CommandEmpty>No results found.</CommandEmpty>
     {:else}
