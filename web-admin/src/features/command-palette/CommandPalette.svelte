@@ -3,17 +3,32 @@
   import { page } from "$app/stores";
   import { browser } from "$app/environment";
   import { Command } from "cmdk-sv";
+  import {
+    Home,
+    Folders,
+    Bot,
+    LayoutDashboard,
+    Bell,
+    FileText,
+    Activity,
+    Settings,
+    Users,
+  } from "lucide-svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog/index.js";
   import { createAdminServiceListProjectsForOrganization } from "@rilldata/web-admin/client";
+  import type { V1OrganizationPermissions } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { searchIndex } from "./search-orchestrator";
   import { buildRoute } from "./route-builders";
   import { prefetchAllResources } from "./resource-prefetch";
+  import { recentItems } from "./recents";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import CommandPaletteItem from "./CommandPaletteItem.svelte";
   import type { SearchableItem } from "./types";
 
   let open = false;
   let query = "";
+  let navigatingRoute: string | null = null;
 
   $: orgName = $page.params.organization;
   $: isMac = browser && window.navigator.userAgent.includes("Macintosh");
@@ -45,15 +60,21 @@
 
   $: if (!open) {
     query = "";
+    navigatingRoute = null;
   }
 
   $: searchItems = [...projectItems, ...resourceItems];
   $: results = searchIndex(searchItems, query);
+  // Filter quick actions by query when searching
+  $: matchingActions = query.length >= 2
+    ? quickActions.filter((a) => a.label.toLowerCase().includes(query.toLowerCase()))
+    : [];
   $: hasResults =
     results.projects.length > 0 ||
     results.dashboards.length > 0 ||
     results.reports.length > 0 ||
-    results.alerts.length > 0;
+    results.alerts.length > 0 ||
+    matchingActions.length > 0;
   $: isLoading = $projectListQuery.isLoading;
   $: isError = $projectListQuery.isError;
 
@@ -73,16 +94,105 @@
       }));
   }
 
+  // Lookup from route value to item for onSelect callback
+  $: itemsByRoute = new Map(
+    searchItems.map((item) => [item.route, item]),
+  );
+
+  // Filter recents to current org
+  $: orgRecents = $recentItems.filter((i) => i.orgName === orgName);
+  $: isDefaultState = !isLoading && !isError && query.length < 2;
+
+  // Context detection: are we inside a project?
+  $: projectName = $page.params.project as string | undefined;
+  $: inProject = !!projectName;
+
+  // Org permissions for admin-only actions
+  $: orgPermissions = ($page.data?.organizationPermissions ?? {}) as V1OrganizationPermissions;
+  $: isOrgAdmin = !!orgPermissions.manageOrg;
+
+  interface QuickAction {
+    label: string;
+    route: string;
+    icon: string;
+  }
+
+  // Build context-aware quick actions
+  $: quickActions = buildQuickActions(orgName, projectName, inProject, isOrgAdmin);
+
+  function buildQuickActions(
+    org: string,
+    project: string | undefined,
+    isInProject: boolean,
+    admin: boolean,
+  ): QuickAction[] {
+    const actions: QuickAction[] = [];
+
+    if (isInProject && project) {
+      const base = `/${org}/${project}`;
+      actions.push(
+        { label: "Project Home", route: base, icon: "home" },
+        { label: "AI Chat", route: `${base}/-/ai`, icon: "ai" },
+        { label: "Dashboards", route: `${base}/-/dashboards`, icon: "dashboards" },
+        { label: "Reports", route: `${base}/-/reports`, icon: "reports" },
+        { label: "Alerts", route: `${base}/-/alerts`, icon: "alerts" },
+        { label: "Status", route: `${base}/-/status`, icon: "status" },
+        { label: "Project Settings", route: `${base}/-/settings`, icon: "settings" },
+      );
+      // Always offer a way back to org level
+      actions.push({ label: "View all projects", route: `/${org}`, icon: "projects" });
+    } else {
+      actions.push({ label: "View all projects", route: `/${org}`, icon: "projects" });
+    }
+
+    if (admin) {
+      actions.push(
+        { label: "User Management", route: `/${org}/-/users`, icon: "users" },
+        { label: "Organization Settings", route: `/${org}/-/settings`, icon: "settings" },
+      );
+    }
+
+    return actions;
+  }
+
   function handleSelect(item: SearchableItem) {
-    open = false;
-    query = "";
-    void goto(item.route);
+    if (navigatingRoute) return;
+    const route = item.route;
+    navigatingRoute = route;
+    recentItems.add(item);
+    goto(route)
+      .then(() => {
+        open = false;
+      })
+      .catch(() => {
+        open = false;
+        window.location.href = route;
+      });
+  }
+
+  function handleValueSelect(value: string) {
+    const item = itemsByRoute.get(value);
+    if (item) handleSelect(item);
+  }
+
+  function handleQuickAction(route: string) {
+    if (navigatingRoute) return;
+    navigatingRoute = route;
+    goto(route)
+      .then(() => {
+        open = false;
+      })
+      .catch(() => {
+        open = false;
+        window.location.href = route;
+      });
   }
 
   function handleKeydown(e: KeyboardEvent) {
     const metaOrCtrl = isMac ? e.metaKey : e.ctrlKey;
     if (metaOrCtrl && e.key === "k") {
       e.preventDefault();
+      e.stopImmediatePropagation();
       open = !open;
     }
   }
@@ -105,8 +215,54 @@
             <div class="command-palette-status">Loading...</div>
           {:else if isError}
             <div class="command-palette-status">Unable to load search data</div>
-          {:else if query.length < 2}
-            <div class="command-palette-status">Type to search...</div>
+          {:else if isDefaultState}
+            {#if orgRecents.length > 0}
+              <Command.Group heading="Recent">
+                {#each orgRecents as item (item.route)}
+                  <Command.Item
+                    value={"recent:" + item.route}
+                    onSelect={() => handleSelect(item)}
+                  >
+                    <CommandPaletteItem {item} loading={navigatingRoute === item.route} />
+                  </Command.Item>
+                {/each}
+              </Command.Group>
+            {/if}
+            <Command.Group heading="Quick Actions">
+              {#each quickActions as action (action.route + action.label)}
+                <Command.Item
+                  value={"action:" + action.label}
+                  onSelect={() => handleQuickAction(action.route)}
+                >
+                  <div class="palette-item-content">
+                    <span class="palette-item-icon">
+                      {#if navigatingRoute === action.route}
+                        <LoadingSpinner size="16px" />
+                      {:else if action.icon === "home"}
+                        <Home size={16} />
+                      {:else if action.icon === "projects"}
+                        <Folders size={16} />
+                      {:else if action.icon === "ai"}
+                        <Bot size={16} />
+                      {:else if action.icon === "dashboards"}
+                        <LayoutDashboard size={16} />
+                      {:else if action.icon === "reports"}
+                        <FileText size={16} />
+                      {:else if action.icon === "alerts"}
+                        <Bell size={16} />
+                      {:else if action.icon === "status"}
+                        <Activity size={16} />
+                      {:else if action.icon === "settings"}
+                        <Settings size={16} />
+                      {:else if action.icon === "users"}
+                        <Users size={16} />
+                      {/if}
+                    </span>
+                    <span>{action.label}</span>
+                  </div>
+                </Command.Item>
+              {/each}
+            </Command.Group>
           {:else if !hasResults}
             <Command.Empty>No results found.</Command.Empty>
           {:else}
@@ -115,9 +271,9 @@
                 {#each results.projects as item (item.route)}
                   <Command.Item
                     value={item.route}
-                    onSelect={() => handleSelect(item)}
+                    onSelect={handleValueSelect}
                   >
-                    <CommandPaletteItem {item} />
+                    <CommandPaletteItem {item} loading={navigatingRoute === item.route} />
                   </Command.Item>
                 {/each}
               </Command.Group>
@@ -128,9 +284,9 @@
                 {#each results.dashboards as item (item.route)}
                   <Command.Item
                     value={item.route}
-                    onSelect={() => handleSelect(item)}
+                    onSelect={handleValueSelect}
                   >
-                    <CommandPaletteItem {item} />
+                    <CommandPaletteItem {item} loading={navigatingRoute === item.route} />
                   </Command.Item>
                 {/each}
               </Command.Group>
@@ -141,9 +297,9 @@
                 {#each results.reports as item (item.route)}
                   <Command.Item
                     value={item.route}
-                    onSelect={() => handleSelect(item)}
+                    onSelect={handleValueSelect}
                   >
-                    <CommandPaletteItem {item} />
+                    <CommandPaletteItem {item} loading={navigatingRoute === item.route} />
                   </Command.Item>
                 {/each}
               </Command.Group>
@@ -154,9 +310,47 @@
                 {#each results.alerts as item (item.route)}
                   <Command.Item
                     value={item.route}
-                    onSelect={() => handleSelect(item)}
+                    onSelect={handleValueSelect}
                   >
-                    <CommandPaletteItem {item} />
+                    <CommandPaletteItem {item} loading={navigatingRoute === item.route} />
+                  </Command.Item>
+                {/each}
+              </Command.Group>
+            {/if}
+
+            {#if matchingActions.length > 0}
+              <Command.Group heading="Actions">
+                {#each matchingActions as action (action.route + action.label)}
+                  <Command.Item
+                    value={"action:" + action.label}
+                    onSelect={() => handleQuickAction(action.route)}
+                  >
+                    <div class="palette-item-content">
+                      <span class="palette-item-icon">
+                        {#if navigatingRoute === action.route}
+                          <LoadingSpinner size="16px" />
+                        {:else if action.icon === "home"}
+                          <Home size={16} />
+                        {:else if action.icon === "projects"}
+                          <Folders size={16} />
+                        {:else if action.icon === "ai"}
+                          <Bot size={16} />
+                        {:else if action.icon === "dashboards"}
+                          <LayoutDashboard size={16} />
+                        {:else if action.icon === "reports"}
+                          <FileText size={16} />
+                        {:else if action.icon === "alerts"}
+                          <Bell size={16} />
+                        {:else if action.icon === "status"}
+                          <Activity size={16} />
+                        {:else if action.icon === "settings"}
+                          <Settings size={16} />
+                        {:else if action.icon === "users"}
+                          <Users size={16} />
+                        {/if}
+                      </span>
+                      <span>{action.label}</span>
+                    </div>
                   </Command.Item>
                 {/each}
               </Command.Group>
@@ -291,6 +485,25 @@
 
   .command-palette :global(*:not([hidden]) + [data-cmdk-group]) {
     margin-top: 8px;
+  }
+
+  /* Inline item content (for quick actions) */
+  .command-palette :global(.palette-item-content) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .command-palette :global(.palette-item-icon) {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--icon-muted);
   }
 
   /* Empty state */

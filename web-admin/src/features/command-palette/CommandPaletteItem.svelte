@@ -4,9 +4,11 @@
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import type { SearchableItem } from "./types";
 
   export let item: SearchableItem;
+  export let loading = false;
 
   const iconComponents = {
     project: null,
@@ -22,7 +24,9 @@
 
 <div class="palette-item-content">
   <span class="palette-item-icon">
-    {#if item.type === "project"}
+    {#if loading}
+      <LoadingSpinner size="16px" />
+    {:else if item.type === "project"}
       <Folders size={16} />
     {:else if IconComponent}
       <svelte:component this={IconComponent} size="16px" />

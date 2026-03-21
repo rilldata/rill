@@ -81,7 +81,8 @@ async function fetchProjectResources(
           route: buildRoute(type, orgName, projectName, name),
         };
       });
-  } catch {
+  } catch (e) {
+    console.error("[CmdK] fetchProjectResources failed for", projectName, e);
     return [];
   }
 }
