@@ -4,7 +4,7 @@
   import { browser } from "$app/environment";
   import { Command } from "cmdk-sv";
   import * as Dialog from "@rilldata/web-common/components/dialog/index.js";
-  import { createAdminServiceListProjectsForOrganizationAndUser } from "@rilldata/web-admin/client";
+  import { createAdminServiceListProjectsForOrganization } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { searchIndex } from "./search-orchestrator";
   import { buildRoute } from "./route-builders";
@@ -18,9 +18,9 @@
   $: orgName = $page.params.organization;
   $: isMac = browser && window.navigator.userAgent.includes("Macintosh");
 
-  $: projectListQuery = createAdminServiceListProjectsForOrganizationAndUser(
+  $: projectListQuery = createAdminServiceListProjectsForOrganization(
     orgName,
-    { pageSize: 50 },
+    undefined,
     {
       query: {
         enabled: !!orgName,
