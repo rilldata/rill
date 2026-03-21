@@ -9,8 +9,8 @@ import {
 
 export function searchProjects(namePattern: string) {
   return createAdminServiceSearchProjectNames(
-    { namePattern, pageSize: 50 },
-    { query: { enabled: namePattern.length >= 2 } },
+    { namePattern: `%${namePattern}%`, pageSize: 50 },
+    { query: { enabled: namePattern.length >= 3 } },
   );
 }
 

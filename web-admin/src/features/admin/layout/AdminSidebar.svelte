@@ -4,13 +4,9 @@
 
   const navGroups = [
     {
-      heading: "Overview",
-      items: [{ label: "Dashboard", href: "/-/admin" }],
-    },
-    {
       heading: "People",
       items: [
-        { label: "Users", href: "/-/admin/users" },
+        { label: "Users", href: "/-/admin" },
         { label: "Superusers", href: "/-/admin/superusers" },
       ],
     },
@@ -26,15 +22,6 @@
       items: [
         { label: "Organizations", href: "/-/admin/organizations" },
         { label: "Projects", href: "/-/admin/projects" },
-        { label: "Whitelist", href: "/-/admin/whitelist" },
-      ],
-    },
-    {
-      heading: "Advanced",
-      items: [
-        { label: "Annotations", href: "/-/admin/annotations" },
-        { label: "Virtual Files", href: "/-/admin/virtual-files" },
-        { label: "Runtime", href: "/-/admin/runtime" },
       ],
     },
   ];
