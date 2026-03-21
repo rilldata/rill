@@ -22,12 +22,22 @@
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
   import { posthogIdentify } from "@rilldata/web-common/lib/analytics/posthog";
-  import { createAdminServiceGetCurrentUser } from "../../client";
+  import {
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListSuperusers,
+  } from "../../client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   const user = createAdminServiceGetCurrentUser();
+  const superusers = createAdminServiceListSuperusers();
+  $: isSuperuser =
+    $superusers.isSuccess &&
+    !!$user.data?.user?.email &&
+    ($superusers.data?.users ?? []).some(
+      (su) => su.email === $user.data?.user?.email,
+    );
 
   let imgContainer: HTMLElement;
   let primaryMenuOpen = false;
@@ -124,6 +134,11 @@
           Reports
         </DropdownMenu.Item>
       {/if}
+    {/if}
+
+    {#if isSuperuser}
+      <DropdownMenu.Item href="/-/admin">Admin Console</DropdownMenu.Item>
+      <DropdownMenu.Separator />
     {/if}
 
     <ThemeToggle />
