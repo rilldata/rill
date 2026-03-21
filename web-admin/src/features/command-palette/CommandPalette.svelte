@@ -11,8 +11,10 @@
     Item as CommandItem,
   } from "@rilldata/web-common/components/command";
   import { createAdminServiceListProjectsForOrganizationAndUser } from "@rilldata/web-admin/client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { searchIndex } from "./search-orchestrator";
   import { buildRoute } from "./route-builders";
+  import { prefetchAllResources } from "./resource-prefetch";
   import CommandPaletteItem from "./CommandPaletteItem.svelte";
   import type { SearchableItem } from "./types";
 
@@ -37,8 +39,20 @@
   // Build search index from projects
   $: projectItems = buildProjectItems(orgName, $projectListQuery.data?.projects);
 
-  // Resource items will be populated by Task 6 (resource prefetch)
+  // Resource items populated by cross-project prefetch
   let resourceItems: SearchableItem[] = [];
+
+  const queryClient = useQueryClient();
+
+  // When the project list loads, start prefetching resources
+  $: if ($projectListQuery.data?.projects) {
+    const names = $projectListQuery.data.projects
+      .filter((p): p is { name: string } => !!p.name)
+      .map((p) => p.name);
+    void prefetchAllResources(queryClient, orgName, names, (items) => {
+      resourceItems = items;
+    });
+  }
 
   $: searchItems = [...projectItems, ...resourceItems];
   $: results = searchIndex(searchItems, query);
