@@ -37,20 +37,20 @@
     on:click={handleCancel}
   >
     <div
-      class="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+      class="bg-slate-50 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
       on:click|stopPropagation
     >
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+      <h2 class="text-lg font-semibold text-slate-900">
         {title}
       </h2>
       {#if description}
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+        <p class="text-sm text-slate-500 mt-2">
           {description}
         </p>
       {/if}
       <div class="flex justify-end gap-3 mt-6">
         <button
-          class="px-4 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 text-sm rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           on:click={handleCancel}
           disabled={loading}
         >

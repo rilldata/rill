@@ -86,22 +86,22 @@
     <div
       class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
     />
-    <span class="text-sm text-slate-500 dark:text-slate-400">Searching projects...</span>
+    <span class="text-sm text-slate-500">Searching projects...</span>
   </div>
 {:else if $projectsQuery.data?.names?.length}
-  <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+  <p class="text-xs text-slate-500 mb-2">
     {$projectsQuery.data.names.length} result{$projectsQuery.data.names.length === 1 ? "" : "s"}
   </p>
   <table class="w-full">
     <thead>
       <tr>
         <th
-          class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-200 dark:border-slate-700"
+          class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-4 py-2 border-b border-slate-200"
         >
           Project
         </th>
         <th
-          class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-200 dark:border-slate-700"
+          class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-4 py-2 border-b border-slate-200"
         >
           Actions
         </th>
@@ -111,30 +111,30 @@
       {#each $projectsQuery.data.names as name}
         <tr class="group">
           <td
-            class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50 font-mono text-xs"
+            class="px-4 py-3 text-sm text-slate-700 border-b border-slate-100 group-hover:bg-slate-50 font-mono text-xs"
           >
             {name}
           </td>
           <td
-            class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50"
+            class="px-4 py-3 text-sm text-slate-700 border-b border-slate-100 group-hover:bg-slate-50"
           >
             <div class="flex gap-2">
               <a
                 href={`/${name}`}
                 target="_blank"
-                class="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100"
               >
                 View
               </a>
               <button
-                class="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={actionInProgress === `hibernate:${name}`}
                 on:click={() => handleHibernate(name)}
               >
                 {actionInProgress === `hibernate:${name}` ? "Hibernating..." : "Hibernate"}
               </button>
               <button
-                class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={actionInProgress === `redeploy:${name}`}
                 on:click={() => handleRedeploy(name)}
               >
@@ -147,9 +147,9 @@
     </tbody>
   </table>
 {:else if searchQuery.length >= 3 && $projectsQuery.isSuccess}
-  <p class="text-sm text-slate-500 dark:text-slate-400">No projects found for "{searchQuery}"</p>
+  <p class="text-sm text-slate-500">No projects found for "{searchQuery}"</p>
 {:else if searchQuery.length < 3}
-  <p class="text-sm text-slate-400 dark:text-slate-500">
+  <p class="text-sm text-slate-400">
     Type at least 3 characters to search across all organizations.
   </p>
 {/if}

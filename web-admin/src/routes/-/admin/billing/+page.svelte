@@ -140,12 +140,12 @@
 <div class="flex flex-col gap-6 pb-12">
   <!-- Billing Setup (Primary feature) -->
   <section
-    class="p-5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10"
+    class="p-5 rounded-lg border border-blue-200 bg-blue-50/50"
   >
-    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+    <h2 class="text-sm font-semibold text-slate-900 mb-1">
       Billing Setup
     </h2>
-    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+    <p class="text-xs text-slate-500 mb-4">
       Generate a Stripe checkout page link for an organization to enter their
       billing information.
     </p>
@@ -173,22 +173,22 @@
     </div>
     {#if setupUrl}
       <div class="mt-4 flex flex-col gap-1">
-        <span class="text-xs text-slate-500 dark:text-slate-400"
+        <span class="text-xs text-slate-500"
           >Share this link with the customer:</span
         >
         <div
-          class="flex items-center gap-2 p-3 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+          class="flex items-center gap-2 p-3 rounded-md bg-slate-50 border border-slate-200"
         >
           <a
             href={setupUrl}
             target="_blank"
             rel="noreferrer"
-            class="flex-1 text-sm text-blue-600 dark:text-blue-400 break-all hover:underline"
+            class="flex-1 text-sm text-blue-600 break-all hover:underline"
           >
             {setupUrl}
           </a>
           <button
-            class="text-xs px-3 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 whitespace-nowrap"
+            class="text-xs px-3 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 whitespace-nowrap"
             on:click={() => {
               navigator.clipboard.writeText(setupUrl);
               notifySuccess( "URL copied to clipboard");
@@ -202,11 +202,11 @@
   </section>
 
   <!-- Extend Trial -->
-  <section class="p-5 rounded-lg border border-slate-200 dark:border-slate-700">
-    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+  <section class="p-5 rounded-lg border border-slate-200">
+    <h2 class="text-sm font-semibold text-slate-900 mb-1">
       Extend Trial
     </h2>
-    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+    <p class="text-xs text-slate-500 mb-4">
       Add days to an organization's trial period.
     </p>
     <div class="flex gap-3 items-center flex-wrap">
@@ -218,7 +218,7 @@
       </div>
       <input
         type="number"
-        class="w-24 px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="w-24 px-3 py-2 text-sm rounded-md border border-slate-300 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         min="1"
         max="365"
         bind:value={trialDays}
@@ -241,11 +241,11 @@
   </section>
 
   <!-- Set Billing Customer ID -->
-  <section class="p-5 rounded-lg border border-slate-200 dark:border-slate-700">
-    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+  <section class="p-5 rounded-lg border border-slate-200">
+    <h2 class="text-sm font-semibold text-slate-900 mb-1">
       Set Billing Customer ID
     </h2>
-    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+    <p class="text-xs text-slate-500 mb-4">
       Associate a Stripe customer ID with an organization.
     </p>
     <div class="flex gap-3 items-center flex-wrap">
@@ -257,7 +257,7 @@
       </div>
       <input
         type="text"
-        class="px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="px-3 py-2 text-sm rounded-md border border-slate-300 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         placeholder="Stripe customer ID (cus_...)"
         bind:value={customerId}
       />
@@ -279,11 +279,11 @@
   </section>
 
   <!-- Billing Repair -->
-  <section class="p-5 rounded-lg border border-slate-200 dark:border-slate-700">
-    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+  <section class="p-5 rounded-lg border border-slate-200">
+    <h2 class="text-sm font-semibold text-slate-900 mb-1">
       Billing Repair
     </h2>
-    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+    <p class="text-xs text-slate-500 mb-4">
       Trigger a billing state recalculation for an organization.
     </p>
     <div class="flex gap-3 items-center flex-wrap">
@@ -304,11 +304,11 @@
   </section>
 
   <!-- Billing Issues -->
-  <section class="p-5 rounded-lg border border-slate-200 dark:border-slate-700">
-    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+  <section class="p-5 rounded-lg border border-slate-200">
+    <h2 class="text-sm font-semibold text-slate-900 mb-1">
       Billing Issues
     </h2>
-    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+    <p class="text-xs text-slate-500 mb-4">
       View and resolve billing issues for an organization.
     </p>
     <div class="flex gap-3 items-center flex-wrap mb-4">
@@ -324,24 +324,24 @@
         <div
           class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
         />
-        <span class="text-sm text-slate-500 dark:text-slate-400">Loading issues...</span>
+        <span class="text-sm text-slate-500">Loading issues...</span>
       </div>
     {:else if $billingIssuesQuery.data?.issues?.length}
       <div class="flex flex-col gap-2">
         {#each $billingIssuesQuery.data.issues as issue}
           <div
-            class="flex items-center justify-between px-3 py-2 rounded bg-slate-50 dark:bg-slate-800"
+            class="flex items-center justify-between px-3 py-2 rounded bg-slate-50"
           >
             <div>
-              <span class="text-sm font-mono text-slate-700 dark:text-slate-300"
+              <span class="text-sm font-mono text-slate-700"
                 >{issue.type}</span
               >
-              <span class="text-xs text-slate-500 dark:text-slate-400 ml-2"
+              <span class="text-xs text-slate-500 ml-2"
                 >{issue.metadata ?? ""}</span
               >
             </div>
             <button
-              class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+              class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50"
               on:click={() =>
                 handleDeleteIssue(issuesOrg, issue.type ?? "BILLING_ISSUE_TYPE_UNSPECIFIED")}
             >
@@ -351,7 +351,7 @@
         {/each}
       </div>
     {:else if issuesOrg && $billingIssuesQuery.isSuccess}
-      <p class="text-sm text-slate-500 dark:text-slate-400">No billing issues found.</p>
+      <p class="text-sm text-slate-500">No billing issues found.</p>
     {/if}
   </section>
 </div>

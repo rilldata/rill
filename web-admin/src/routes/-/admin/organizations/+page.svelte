@@ -126,7 +126,7 @@
   <div class="relative">
     <input
       type="text"
-      class="w-full px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full px-3 py-2 text-sm rounded-md border border-slate-300 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
       placeholder="Search organizations (min 3 characters)..."
       bind:value={searchInput}
       on:keydown={handleInputKeydown}
@@ -140,11 +140,11 @@
     {/if}
     {#if showDropdown && orgNames.length > 0}
       <div
-        class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto"
+        class="absolute z-10 w-full mt-1 bg-slate-50 border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto"
       >
         {#each orgNames as org}
           <button
-            class="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+            class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 cursor-pointer"
             on:mousedown|preventDefault={() => selectOrg(org)}
           >
             {org}
@@ -153,7 +153,7 @@
       </div>
     {:else if showDropdown && searchInput.length >= 3 && $orgSearchQuery.isSuccess && orgNames.length === 0}
       <div
-        class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto"
+        class="absolute z-10 w-full mt-1 bg-slate-50 border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto"
       >
         <div class="px-3 py-2 text-sm text-slate-400">No organizations found</div>
       </div>
@@ -169,7 +169,7 @@
     <div
       class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
     />
-    <span class="text-sm text-slate-500 dark:text-slate-400">Looking up organization...</span>
+    <span class="text-sm text-slate-500">Looking up organization...</span>
   </div>
 {:else if $orgQuery.isError && lookupOrg}
   <p class="text-sm text-red-600">
@@ -178,75 +178,75 @@
 {:else if $orgQuery.data?.organization}
   {@const org = $orgQuery.data.organization}
   <div class="flex flex-col gap-4">
-    <section class="p-5 rounded-lg border border-slate-200 dark:border-slate-700">
+    <section class="p-5 rounded-lg border border-slate-200">
       <h2
-        class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3"
+        class="text-sm font-semibold text-slate-900 mb-3"
       >
         Organization Details
       </h2>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >ID</span
           >
           <span
-            class="text-sm text-slate-900 dark:text-slate-100 font-mono text-xs"
+            class="text-sm text-slate-900 font-mono text-xs"
             >{org.id}</span
           >
         </div>
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >Name</span
           >
-          <span class="text-sm text-slate-900 dark:text-slate-100"
+          <span class="text-sm text-slate-900"
             >{org.name}</span
           >
         </div>
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >Description</span
           >
-          <span class="text-sm text-slate-900 dark:text-slate-100"
+          <span class="text-sm text-slate-900"
             >{org.description ?? "-"}</span
           >
         </div>
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >Billing Plan</span
           >
-          <span class="text-sm text-slate-900 dark:text-slate-100"
+          <span class="text-sm text-slate-900"
             >{org.billingPlanDisplayName ?? "-"}</span
           >
         </div>
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >Billing Customer ID</span
           >
           <span
-            class="text-sm text-slate-900 dark:text-slate-100 font-mono text-xs"
+            class="text-sm text-slate-900 font-mono text-xs"
             >{org.billingCustomerId ?? "-"}</span
           >
         </div>
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >Custom Domain</span
           >
-          <span class="text-sm text-slate-900 dark:text-slate-100"
+          <span class="text-sm text-slate-900"
             >{org.customDomain ?? "None"}</span
           >
         </div>
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >Created</span
           >
-          <span class="text-sm text-slate-900 dark:text-slate-100">
+          <span class="text-sm text-slate-900">
             {org.createdOn
               ? new Date(org.createdOn).toLocaleDateString()
               : "-"}
@@ -254,10 +254,10 @@
         </div>
         <div class="flex flex-col">
           <span
-            class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            class="text-[11px] text-slate-500 uppercase tracking-wider"
             >Projects</span
           >
-          <span class="text-sm text-slate-900 dark:text-slate-100">
+          <span class="text-sm text-slate-900">
             {#if $projectsQuery.isFetching}
               <span class="text-slate-400">Loading...</span>
             {:else if $projectsQuery.data?.projects}
@@ -273,28 +273,28 @@
     <!-- Projects list -->
     {#if $projectsQuery.data?.projects?.length}
       <section
-        class="p-5 rounded-lg border border-slate-200 dark:border-slate-700"
+        class="p-5 rounded-lg border border-slate-200"
       >
         <h2
-          class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3"
+          class="text-sm font-semibold text-slate-900 mb-3"
         >
           Projects ({$projectsQuery.data.projects.length})
         </h2>
         <div class="flex flex-col gap-1">
           {#each $projectsQuery.data.projects as project}
             <div
-              class="flex items-center justify-between px-3 py-2 rounded bg-slate-50 dark:bg-slate-800"
+              class="flex items-center justify-between px-3 py-2 rounded bg-slate-50"
             >
               <a
                 href={`/${org.name}/${project.name}`}
                 target="_blank"
-                class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                class="text-sm text-blue-600 hover:underline"
               >
                 {project.name}
               </a>
               <div class="flex gap-2">
                 <button
-                  class="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={actionInProgress ===
                     `hibernate:${project.name}`}
                   on:click={() =>
@@ -305,7 +305,7 @@
                     : "Hibernate"}
                 </button>
                 <button
-                  class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={actionInProgress ===
                     `redeploy:${project.name}`}
                   on:click={() =>
@@ -328,14 +328,14 @@
         <div
           class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
         />
-        <span class="text-sm text-slate-500 dark:text-slate-400">Loading members...</span>
+        <span class="text-sm text-slate-500">Loading members...</span>
       </div>
     {:else if $membersQuery.data?.members?.length}
       <section
-        class="p-5 rounded-lg border border-slate-200 dark:border-slate-700"
+        class="p-5 rounded-lg border border-slate-200"
       >
         <h2
-          class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3"
+          class="text-sm font-semibold text-slate-900 mb-3"
         >
           Members ({$membersQuery.data.members.length})
         </h2>
@@ -343,12 +343,12 @@
           <thead>
             <tr>
               <th
-                class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-200 dark:border-slate-700"
+                class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-4 py-2 border-b border-slate-200"
               >
                 Email
               </th>
               <th
-                class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-200 dark:border-slate-700"
+                class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-4 py-2 border-b border-slate-200"
               >
                 Role
               </th>
@@ -358,12 +358,12 @@
             {#each $membersQuery.data.members as member}
               <tr>
                 <td
-                  class="px-4 py-2 text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 font-mono text-xs"
+                  class="px-4 py-2 text-sm text-slate-700 border-b border-slate-100 font-mono text-xs"
                 >
                   {member.userEmail}
                 </td>
                 <td
-                  class="px-4 py-2 text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800"
+                  class="px-4 py-2 text-sm text-slate-700 border-b border-slate-100"
                 >
                   {member.roleName}
                 </td>

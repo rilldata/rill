@@ -33,10 +33,10 @@
 </script>
 
 <nav
-  class="w-56 flex-shrink-0 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col h-full"
+  class="w-56 flex-shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col h-full"
 >
-  <div class="px-4 py-4 border-b border-slate-200 dark:border-slate-700">
-    <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+  <div class="px-4 py-4 border-b border-slate-200">
+    <span class="text-sm font-semibold text-slate-900">
       Admin Console
     </span>
   </div>
@@ -45,7 +45,7 @@
     {#each navGroups as group}
       <div class="mb-4">
         <span
-          class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 mb-1 block"
+          class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-2 mb-1 block"
         >
           {group.heading}
         </span>
@@ -56,8 +56,8 @@
               item.href,
               $page.url.pathname,
             )
-              ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}"
+              ? 'bg-slate-100 text-slate-900 font-medium'
+              : 'text-slate-600 hover:bg-slate-100'}"
           >
             {item.label}
           </a>

@@ -6,9 +6,9 @@
   <title>Admin Console | Rill</title>
 </svelte:head>
 
-<div class="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
+<div class="flex h-screen overflow-hidden bg-slate-50">
   <AdminSidebar />
-  <div class="flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-slate-950">
+  <div class="flex-1 overflow-y-auto p-8 bg-slate-50">
     <slot />
   </div>
 </div>

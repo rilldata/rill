@@ -67,14 +67,14 @@
   description="Manage who has superuser (super admin) access across all of Rill Cloud."
 />
 
-<div class="p-5 rounded-lg border border-slate-200 dark:border-slate-700 mb-6">
-  <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+<div class="p-5 rounded-lg border border-slate-200 mb-6">
+  <h2 class="text-sm font-semibold text-slate-900 mb-3">
     Add Superuser
   </h2>
   <div class="flex gap-3 items-center flex-wrap">
     <input
       type="email"
-      class="px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="px-3 py-2 text-sm rounded-md border border-slate-300 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
       placeholder="Email address"
       bind:value={newEmail}
       on:keydown={(e) => e.key === "Enter" && handleAdd()}
@@ -101,27 +101,27 @@
     <div
       class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
     />
-    <span class="text-sm text-slate-500 dark:text-slate-400">Loading superusers...</span>
+    <span class="text-sm text-slate-500">Loading superusers...</span>
   </div>
 {:else if $superusersQuery.data?.users?.length}
-  <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+  <p class="text-xs text-slate-500 mb-2">
     {$superusersQuery.data.users.length} superuser{$superusersQuery.data.users.length === 1 ? "" : "s"}
   </p>
   <table class="w-full">
     <thead>
       <tr>
         <th
-          class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-200 dark:border-slate-700"
+          class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-4 py-2 border-b border-slate-200"
         >
           Email
         </th>
         <th
-          class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-200 dark:border-slate-700"
+          class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-4 py-2 border-b border-slate-200"
         >
           Display Name
         </th>
         <th
-          class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-200 dark:border-slate-700"
+          class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-4 py-2 border-b border-slate-200"
         >
           Actions
         </th>
@@ -131,20 +131,20 @@
       {#each $superusersQuery.data.users as user}
         <tr>
           <td
-            class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 font-mono text-xs"
+            class="px-4 py-3 text-sm text-slate-700 border-b border-slate-100 font-mono text-xs"
           >
             {user.email}
           </td>
           <td
-            class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800"
+            class="px-4 py-3 text-sm text-slate-700 border-b border-slate-100"
           >
             {user.displayName ?? "-"}
           </td>
           <td
-            class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800"
+            class="px-4 py-3 text-sm text-slate-700 border-b border-slate-100"
           >
             <button
-              class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
+              class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50"
               on:click={() => handleRemove(user.email ?? "")}
             >
               Remove
