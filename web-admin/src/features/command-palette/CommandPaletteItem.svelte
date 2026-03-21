@@ -20,18 +20,49 @@
   $: showBreadcrumb = item.type !== "project";
 </script>
 
-<div class="flex items-center gap-2.5 w-full">
-  <div class="flex-none w-4 h-4 text-gray-400">
+<div class="palette-item-content">
+  <span class="palette-item-icon">
     {#if item.type === "project"}
       <Folders size={16} />
     {:else if IconComponent}
       <svelte:component this={IconComponent} size="16px" />
     {/if}
-  </div>
-  <div class="flex flex-col min-w-0">
-    <span class="text-sm text-gray-200 truncate">{item.name}</span>
-    {#if showBreadcrumb}
-      <span class="text-xs text-gray-500 truncate">{item.projectName}</span>
-    {/if}
-  </div>
+  </span>
+  <span class="palette-item-name">{item.name}</span>
+  {#if showBreadcrumb}
+    <span class="palette-item-meta">{item.projectName}</span>
+  {/if}
 </div>
+
+<style>
+  .palette-item-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .palette-item-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(163, 163, 163);
+  }
+
+  .palette-item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .palette-item-meta {
+    margin-left: auto;
+    color: rgb(113, 113, 113);
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+</style>
