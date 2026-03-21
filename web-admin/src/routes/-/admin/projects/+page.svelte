@@ -86,7 +86,7 @@
     <div
       class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
     />
-    <span class="text-sm text-slate-500">Searching projects...</span>
+    <span class="text-sm text-slate-500 dark:text-slate-400">Searching projects...</span>
   </div>
 {:else if $projectsQuery.data?.names?.length}
   <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
@@ -147,9 +147,9 @@
     </tbody>
   </table>
 {:else if searchQuery.length >= 3 && $projectsQuery.isSuccess}
-  <p class="text-sm text-slate-500">No projects found for "{searchQuery}"</p>
+  <p class="text-sm text-slate-500 dark:text-slate-400">No projects found for "{searchQuery}"</p>
 {:else if searchQuery.length < 3}
-  <p class="text-sm text-slate-400">
+  <p class="text-sm text-slate-400 dark:text-slate-500">
     Type at least 3 characters to search across all organizations.
   </p>
 {/if}

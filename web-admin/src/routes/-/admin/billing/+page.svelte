@@ -324,7 +324,7 @@
         <div
           class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
         />
-        <span class="text-sm text-slate-500">Loading issues...</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">Loading issues...</span>
       </div>
     {:else if $billingIssuesQuery.data?.issues?.length}
       <div class="flex flex-col gap-2">
@@ -336,7 +336,7 @@
               <span class="text-sm font-mono text-slate-700 dark:text-slate-300"
                 >{issue.type}</span
               >
-              <span class="text-xs text-slate-500 ml-2"
+              <span class="text-xs text-slate-500 dark:text-slate-400 ml-2"
                 >{issue.metadata ?? ""}</span
               >
             </div>
@@ -351,7 +351,7 @@
         {/each}
       </div>
     {:else if issuesOrg && $billingIssuesQuery.isSuccess}
-      <p class="text-sm text-slate-500">No billing issues found.</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400">No billing issues found.</p>
     {/if}
   </section>
 </div>

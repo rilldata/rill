@@ -169,7 +169,7 @@
     <div
       class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
     />
-    <span class="text-sm text-slate-500">Looking up organization...</span>
+    <span class="text-sm text-slate-500 dark:text-slate-400">Looking up organization...</span>
   </div>
 {:else if $orgQuery.isError && lookupOrg}
   <p class="text-sm text-red-600">
@@ -328,7 +328,7 @@
         <div
           class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
         />
-        <span class="text-sm text-slate-500">Loading members...</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">Loading members...</span>
       </div>
     {:else if $membersQuery.data?.members?.length}
       <section

@@ -101,7 +101,7 @@
     <div
       class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
     />
-    <span class="text-sm text-slate-500">Loading superusers...</span>
+    <span class="text-sm text-slate-500 dark:text-slate-400">Loading superusers...</span>
   </div>
 {:else if $superusersQuery.data?.users?.length}
   <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">

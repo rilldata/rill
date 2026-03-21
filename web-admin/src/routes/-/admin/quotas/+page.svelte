@@ -90,7 +90,7 @@
         <div
           class="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
         />
-        <span class="text-sm text-slate-500">Loading quotas...</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">Loading quotas...</span>
       </div>
     {:else if activeOrg && $orgQuery.data?.organization}
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
