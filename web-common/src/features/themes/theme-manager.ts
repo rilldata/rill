@@ -138,10 +138,8 @@ class ThemeManager {
 
     // Handle legacy theme format (colors: primary/secondary)
     // Fall back to legacy color fields in both light and dark modes
-    const primaryColor =
-      modeTheme?.primary || themeSpec.primaryColorRaw;
-    const secondaryColor =
-      modeTheme?.secondary || themeSpec.secondaryColorRaw;
+    const primaryColor = modeTheme?.primary || themeSpec.primaryColorRaw;
+    const secondaryColor = modeTheme?.secondary || themeSpec.secondaryColorRaw;
 
     return {
       primary: primaryColor ? getChroma(primaryColor) : primary[`500`],
