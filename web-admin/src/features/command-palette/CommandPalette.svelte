@@ -54,6 +54,8 @@
     results.dashboards.length > 0 ||
     results.reports.length > 0 ||
     results.alerts.length > 0;
+  $: isLoading = $projectListQuery.isLoading;
+  $: isError = $projectListQuery.isError;
 
   function buildProjectItems(
     org: string,
@@ -99,14 +101,12 @@
         />
         <div class="command-palette-separator" />
         <Command.List>
-          {#if $projectListQuery.isLoading}
-            <Command.Loading>
-              <div class="command-palette-loading">Loading...</div>
-            </Command.Loading>
-          {:else if $projectListQuery.isError}
-            <div class="command-palette-empty">Unable to load search data</div>
+          {#if isLoading}
+            <div class="command-palette-status">Loading...</div>
+          {:else if isError}
+            <div class="command-palette-status">Unable to load search data</div>
           {:else if query.length < 2}
-            <div class="command-palette-empty">Type to search...</div>
+            <div class="command-palette-status">Type to search...</div>
           {:else if !hasResults}
             <Command.Empty>No results found.</Command.Empty>
           {:else}
@@ -196,18 +196,18 @@
     width: 100%;
   }
 
-  /* Root container */
+  /* Root container: uses Rill semantic tokens */
   .command-palette :global([data-cmdk-root]) {
     max-width: 640px;
     width: 100%;
-    background: rgb(22, 22, 22);
+    background: var(--surface-overlay);
     border-radius: 12px;
     padding: 8px 0;
     font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
-    border: 1px solid rgb(38, 38, 38);
+    border: 1px solid var(--border);
     box-shadow:
-      0 16px 70px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.05);
+      0 16px 70px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(0, 0, 0, 0.05);
     position: relative;
   }
 
@@ -219,18 +219,18 @@
     padding: 8px 16px;
     outline: none;
     background: transparent;
-    color: rgb(237, 237, 237);
+    color: var(--fg-primary);
     font-family: inherit;
   }
 
   .command-palette :global([data-cmdk-input])::placeholder {
-    color: rgb(113, 113, 113);
+    color: var(--fg-muted);
   }
 
   /* Separator between input and list */
   .command-palette-separator {
     height: 1px;
-    background: rgb(38, 38, 38);
+    background: var(--border);
     margin: 8px 0;
   }
 
@@ -254,7 +254,7 @@
     align-items: center;
     gap: 8px;
     padding: 0 8px;
-    color: rgb(237, 237, 237);
+    color: var(--fg-primary);
     user-select: none;
     will-change: background, color;
     transition: all 150ms ease;
@@ -262,12 +262,12 @@
   }
 
   .command-palette :global([data-cmdk-item][data-selected="true"]) {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface-hover);
   }
 
   .command-palette :global([data-cmdk-item]:active) {
     transition-property: background;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface-active);
   }
 
   .command-palette :global([data-cmdk-item]:first-child) {
@@ -282,7 +282,7 @@
   .command-palette :global([data-cmdk-group-heading]) {
     user-select: none;
     font-size: 12px;
-    color: rgb(113, 113, 113);
+    color: var(--fg-muted);
     padding: 0 8px;
     display: flex;
     align-items: center;
@@ -295,24 +295,14 @@
 
   /* Empty state */
   .command-palette :global([data-cmdk-empty]),
-  .command-palette-empty {
+  .command-palette-status {
     font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 64px;
     white-space: pre-wrap;
-    color: rgb(113, 113, 113);
-  }
-
-  /* Loading state */
-  .command-palette-loading {
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 64px;
-    color: rgb(113, 113, 113);
+    color: var(--fg-muted);
   }
 
   /* Footer */
@@ -322,10 +312,10 @@
     align-items: center;
     width: 100%;
     padding: 8px 16px;
-    border-top: 1px solid rgb(38, 38, 38);
+    border-top: 1px solid var(--border);
     gap: 12px;
     font-size: 12px;
-    color: rgb(113, 113, 113);
+    color: var(--fg-tertiary);
   }
 
   .command-palette-footer-hint {
@@ -342,8 +332,8 @@
   }
 
   .command-palette-footer :global(kbd) {
-    background: rgb(38, 38, 38);
-    color: rgb(163, 163, 163);
+    background: var(--surface-muted);
+    color: var(--fg-secondary);
     height: 20px;
     min-width: 20px;
     border-radius: 4px;

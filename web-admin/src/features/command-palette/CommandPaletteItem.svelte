@@ -50,7 +50,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgb(163, 163, 163);
+    color: var(--icon-muted);
   }
 
   .palette-item-name {
@@ -61,7 +61,7 @@
 
   .palette-item-meta {
     margin-left: auto;
-    color: rgb(113, 113, 113);
+    color: var(--fg-muted);
     font-size: 13px;
     flex-shrink: 0;
   }
