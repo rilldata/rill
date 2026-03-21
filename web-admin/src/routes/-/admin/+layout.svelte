@@ -6,19 +6,9 @@
   <title>Admin Console | Rill</title>
 </svelte:head>
 
-<div class="admin-layout">
+<div class="flex h-screen overflow-hidden">
   <AdminSidebar />
-  <div class="admin-content">
+  <div class="flex-1 overflow-y-auto p-8">
     <slot />
   </div>
 </div>
-
-<style lang="postcss">
-  .admin-layout {
-    @apply flex h-screen overflow-hidden;
-  }
-
-  .admin-content {
-    @apply flex-1 overflow-y-auto p-8;
-  }
-</style>

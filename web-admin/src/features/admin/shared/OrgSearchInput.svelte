@@ -60,10 +60,10 @@
   }
 </script>
 
-<div class="search-container">
+<div class="relative">
   <input
     type="text"
-    class="input"
+    class="w-full px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     {placeholder}
     bind:value
     on:keydown={handleKeydown}
@@ -71,13 +71,17 @@
     on:blur={handleBlur}
   />
   {#if $orgSearchQuery.isFetching && value.length >= 3}
-    <div class="search-spinner" />
+    <div
+      class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"
+    />
   {/if}
   {#if showDropdown && orgNames.length > 0}
-    <div class="dropdown">
+    <div
+      class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto"
+    >
       {#each orgNames as org}
         <button
-          class="dropdown-item"
+          class="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
           on:mousedown|preventDefault={() => selectOrg(org)}
         >
           {org}
@@ -86,33 +90,3 @@
     </div>
   {/if}
 </div>
-
-<style lang="postcss">
-  .search-container {
-    @apply relative;
-  }
-
-  .input {
-    @apply w-full px-3 py-2 text-sm rounded-md border border-slate-300
-      dark:border-slate-600 bg-white dark:bg-slate-800
-      text-slate-900 dark:text-slate-100
-      placeholder:text-slate-400 dark:placeholder:text-slate-500
-      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
-  }
-
-  .search-spinner {
-    @apply absolute right-3 top-1/2 -translate-y-1/2
-      w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin;
-  }
-
-  .dropdown {
-    @apply absolute z-10 w-full mt-1 bg-white dark:bg-slate-800
-      border border-slate-200 dark:border-slate-700
-      rounded-md shadow-lg max-h-48 overflow-y-auto;
-  }
-
-  .dropdown-item {
-    @apply w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-300
-      hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer;
-  }
-</style>

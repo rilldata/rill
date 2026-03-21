@@ -25,27 +25,13 @@
   }
 </script>
 
-<div class="search-container">
+<div class="relative">
   <input
     type="text"
-    class="search-input"
+    class="w-full px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     {placeholder}
     {value}
     on:input={handleInput}
     on:keydown={(e) => e.key === "Enter" && handleSubmit()}
   />
 </div>
-
-<style lang="postcss">
-  .search-container {
-    @apply relative;
-  }
-
-  .search-input {
-    @apply w-full px-3 py-2 text-sm rounded-md border border-slate-300
-      dark:border-slate-600 bg-white dark:bg-slate-800
-      text-slate-900 dark:text-slate-100
-      placeholder:text-slate-400 dark:placeholder:text-slate-500
-      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
-  }
-</style>
