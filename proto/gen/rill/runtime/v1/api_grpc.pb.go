@@ -25,7 +25,6 @@ const (
 	RuntimeService_ListInstances_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListInstances"
 	RuntimeService_GetInstance_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetInstance"
 	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
-	RuntimeService_EditInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/EditInstance"
 	RuntimeService_DeleteInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteInstance"
 	RuntimeService_ReloadConfig_FullMethodName            = "/rill.runtime.v1.RuntimeService/ReloadConfig"
 	RuntimeService_ListFiles_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListFiles"
@@ -94,8 +93,6 @@ type RuntimeServiceClient interface {
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error)
 	// CreateInstance creates a new instance
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
-	// EditInstance edits an existing instance
-	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
 	// ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
@@ -264,16 +261,6 @@ func (c *runtimeServiceClient) CreateInstance(ctx context.Context, in *CreateIns
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateInstanceResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_CreateInstance_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EditInstanceResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_EditInstance_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -805,8 +792,6 @@ type RuntimeServiceServer interface {
 	GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error)
 	// CreateInstance creates a new instance
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
-	// EditInstance edits an existing instance
-	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
 	// ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
@@ -938,9 +923,6 @@ func (UnimplementedRuntimeServiceServer) GetInstance(context.Context, *GetInstan
 }
 func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateInstance not implemented")
-}
-func (UnimplementedRuntimeServiceServer) EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EditInstance not implemented")
 }
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
@@ -1208,24 +1190,6 @@ func _RuntimeService_CreateInstance_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).CreateInstance(ctx, req.(*CreateInstanceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_EditInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EditInstanceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).EditInstance(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_EditInstance_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).EditInstance(ctx, req.(*EditInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2078,10 +2042,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateInstance",
 			Handler:    _RuntimeService_CreateInstance_Handler,
-		},
-		{
-			MethodName: "EditInstance",
-			Handler:    _RuntimeService_EditInstance_Handler,
 		},
 		{
 			MethodName: "DeleteInstance",
