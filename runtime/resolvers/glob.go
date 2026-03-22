@@ -87,8 +87,9 @@ type globProps struct {
 // globArgs declares the arguments for a "glob" resolver.
 type globArgs struct {
 	// State to make available for template resolution in the props.
-	State             map[string]any `mapstructure:"state"`
-	PartitionsModelID string         `mapstructure:"partitions_model_id"`
+	State                map[string]any `mapstructure:"state"`
+	PartitionsModelID    string         `mapstructure:"partitions_model_id"`
+	SkipLastOptimization bool           `mapstructure:"skip_last_optimization"`
 }
 
 func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -134,10 +135,20 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, fmt.Errorf("Properties `start`, `last` and `end` is not support with transform_sql")
 	}
 
-	partitionStart := props.Start
-	partitionEnd := props.End
+	startURL, err := globutil.ParseBucketURLLenient(props.Start)
+	if err != nil {
+		return nil, err
+	}
+
+	endURL, err := globutil.ParseBucketURLLenient(props.End)
+	if err != nil {
+		return nil, err
+	}
+
+	partitionStart := startURL.Path
+	partitionEnd := endURL.Path
 	last := ""
-	if props.Last > 0 {
+	if props.Last > 0 && !args.SkipLastOptimization {
 		catalog, release, err := opts.Runtime.Catalog(ctx, opts.InstanceID)
 		if err != nil {
 			return nil, err
