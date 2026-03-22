@@ -64,16 +64,21 @@ type globResolver struct {
 
 // globProps declares the properties for a "glob" resolver.
 type globProps struct {
-	// Connector is the object store connector to target.
+	// Connector specifies the object store connector to use (e.g. "s3", "gcs").
+	// If not provided, it is inferred from the scheme of the path (e.g. "s3://", "gs://").
 	Connector string `mapstructure:"connector"`
-	// Path is the glob pattern to match.
+	// Path is the glob pattern used to match files or directories in the object store.
 	Path string `mapstructure:"path"`
-	// Start reading patition from
+	// Start defines the lower bound (inclusive) for partition filtering.
+	// Only partitions with paths greater than or equal to this value are considered.
 	Start string `mapstructure:"start"`
-	// Read last N parition
-	Last int `mapstructure:"last"`
-	// Read before this patition
+	// End defines the upper bound (exclusive) for partition filtering.
+	// Only partitions with paths less than this value are considered.
 	End string `mapstructure:"end"`
+	// Last sets a lower bound based on the Nth partition from the end of the
+	// lexicographically sorted, successfully processed partitions. Only partitions
+	// after this point are included.
+	Last int `mapstructure:"last"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
 	// RollupFiles is a flag to roll up and include the files in each partition in the output.
