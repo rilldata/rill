@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -91,12 +92,22 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.admin_connector", req.AdminConnector),
 		attribute.String("args.ai_connector", req.AiConnector),
 		attribute.StringSlice("args.connectors", connectorsStrings(req.Connectors)),
-		attribute.Bool("args.watch_repo", req.WatchRepo),
 	)
+	entries := make([]string, 0, len(req.PresetConfig))
+	for k, v := range req.PresetConfig {
+		entries = append(entries, k+"="+v)
+	}
+	observability.AddRequestAttributes(ctx, attribute.StringSlice("args.preset_config", entries))
 
 	claims := auth.GetClaims(ctx, "")
 	if !claims.Can(runtime.ManageInstances) {
 		return nil, ErrForbidden
+	}
+
+	var presets presetConfig
+	err := mapstructure.WeakDecode(req.PresetConfig, &presets)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid `preset_config`: %v", err)
 	}
 
 	inst := &drivers.Instance{
@@ -110,10 +121,10 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
 		FrontendURL:    req.FrontendUrl,
-		WatchRepo:      req.WatchRepo,
+		WatchRepo:      presets.WatchRepo,
 	}
 
-	err := s.runtime.CreateInstance(ctx, inst)
+	err = s.runtime.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -352,4 +363,8 @@ func connectorsStrings(connectors []*runtimev1.Connector) []string {
 		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
 	}
 	return res
+}
+
+type presetConfig struct {
+	WatchRepo bool `mapstructure:"watch_repo"`
 }

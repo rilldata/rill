@@ -4977,10 +4977,12 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      presetConfig:
+        type: object
+        additionalProperties:
+          type: string
       frontendUrl:
         type: string
-      watchRepo:
-        type: boolean
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.

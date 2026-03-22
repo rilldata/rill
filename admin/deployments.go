@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -315,7 +316,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		Variables:      vars,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
-		WatchRepo:      depl.Editable, // Watch the repo for changes if the deployment is editable
+		PresetConfig:   map[string]string{"watch_repo": strconv.FormatBool(depl.Editable)}, // Watch the repo for changes if the deployment is editable
 	})
 	if err != nil {
 		return err

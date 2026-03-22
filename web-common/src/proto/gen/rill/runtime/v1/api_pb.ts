@@ -873,14 +873,14 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
   annotations: { [key: string]: string } = {};
 
   /**
+   * @generated from field: map<string, string> preset_config = 19;
+   */
+  presetConfig: { [key: string]: string } = {};
+
+  /**
    * @generated from field: string frontend_url = 18;
    */
   frontendUrl = "";
-
-  /**
-   * @generated from field: bool watch_repo = 19;
-   */
-  watchRepo = false;
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -899,8 +899,8 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 19, name: "preset_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 19, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
