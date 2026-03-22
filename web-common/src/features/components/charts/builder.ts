@@ -2,7 +2,7 @@ import {
   sanitizeFieldName,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
-import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts";
+import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import type {
   ChartDataResult,
   ChartDomainValues,
@@ -42,6 +42,7 @@ import type {
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
+import type { SelectionParameter } from "vega-lite/build/src/selection";
 import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
 
@@ -450,6 +451,7 @@ export function buildHoverRuleLayer(args: {
   xBand?: number;
   isBarMark?: boolean;
   isDarkMode?: boolean;
+  isInteractive?: boolean;
 }): UnitSpec<Field> {
   const {
     xField,
@@ -462,7 +464,31 @@ export function buildHoverRuleLayer(args: {
     xBand,
     isBarMark = false,
     isDarkMode = false,
+    isInteractive = false,
   } = args;
+
+  const params: SelectionParameter[] = [
+    {
+      name: "hover",
+      select: {
+        type: "point",
+        encodings: ["x"],
+        on: "pointerover",
+        clear: "pointerout",
+        ...(!isBarMark && { nearest: true }),
+      },
+    },
+  ];
+
+  if (isInteractive) {
+    params.push({
+      name: "brush",
+      select: {
+        type: "interval",
+        encodings: ["x"],
+      },
+    });
+  }
 
   return {
     transform:
@@ -505,17 +531,6 @@ export function buildHoverRuleLayer(args: {
         ? multiValueTooltipChannel
         : defaultTooltip,
     },
-    params: [
-      {
-        name: "hover",
-        select: {
-          type: "point",
-          encodings: ["x"],
-          on: "pointerover",
-          clear: "pointerout",
-          ...(!isBarMark && { nearest: true }),
-        },
-      },
-    ],
+    params,
   };
 }

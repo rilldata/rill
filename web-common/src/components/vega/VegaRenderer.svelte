@@ -1,5 +1,6 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
@@ -23,7 +24,9 @@
   export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
   export let theme: "light" | "dark" = "light";
+  export let hasComparison: boolean = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
+  export let colorMapping: ColorMapping = [];
   export let view: View;
   export let isScrubbing: boolean;
 
@@ -68,6 +71,17 @@
     void view.runAsync();
   }
 
+  // Memoize colorMapping/hasComparison so they don't cause options to change
+  // (which triggers svelte-vega to recreate the entire view, losing brush state).
+  let stableColorMapping: ColorMapping = [];
+  let stableHasComparison = false;
+  $: if (JSON.stringify(colorMapping) !== JSON.stringify(stableColorMapping)) {
+    stableColorMapping = colorMapping;
+  }
+  $: if (hasComparison !== stableHasComparison) {
+    stableHasComparison = hasComparison;
+  }
+
   $: options = createEmbedOptions({
     client: runtimeClient,
     canvasDashboard,
@@ -75,8 +89,9 @@
     height,
     renderer,
     themeMode: theme,
-    colorMapping: [],
     expressionFunctions,
+    colorMapping: stableColorMapping,
+    hasComparison: stableHasComparison,
     useExpressionInterpreter: false,
   });
 

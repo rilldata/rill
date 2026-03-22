@@ -148,6 +148,8 @@ interface NominalFieldConfig {
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;
+  /** Explicit dimension values to use (skips topN query) */
+  values?: string[];
 }
 
 interface MarkFieldConfig {
