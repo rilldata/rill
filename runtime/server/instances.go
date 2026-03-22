@@ -280,13 +280,6 @@ func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitiv
 	return pb
 }
 
-func valOrDefault[T any](ptr *T, def T) T {
-	if ptr != nil {
-		return *ptr
-	}
-	return def
-}
-
 func connectorsStrings(connectors []*runtimev1.Connector) []string {
 	res := make([]string, len(connectors))
 	for i, c := range connectors {
