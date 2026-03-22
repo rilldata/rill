@@ -37,6 +37,7 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/confluentinc/confluent-kafka-go/v2 v2.2.0
 	github.com/coreos/go-oidc/v3 v3.17.0
+  github.com/databricks/databricks-sql-go v1.10.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/docker/go-connections v0.6.0
 	github.com/duckdb/duckdb-go/v2 v2.5.5
@@ -141,6 +142,8 @@ require (
 )
 
 require (
+	github.com/apache/arrow/go/v12 v12.0.1 // indirect
+	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/docker/compose/v5 v5.1.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.3.3 // indirect
@@ -148,6 +151,8 @@ require (
 	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.3.3 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.3.3 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.3.3 // indirect
+	github.com/rs/zerolog v1.28.0 // indirect
+	gotest.tools/gotestsum v1.8.2 // indirect
 	github.com/go-openapi/swag/cmdutils v0.25.3 // indirect
 	github.com/go-openapi/swag/conv v0.25.3 // indirect
 	github.com/go-openapi/swag/fileutils v0.25.3 // indirect

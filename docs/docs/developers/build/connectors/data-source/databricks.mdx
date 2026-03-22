@@ -1,0 +1,138 @@
+---
+title: Databricks
+description: Connect to data in Databricks
+sidebar_label: Databricks
+sidebar_position: 15
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[Databricks](https://docs.databricks.com/) is a unified analytics platform built on Apache Spark that provides a collaborative environment for data engineering, data science, and machine learning. With Unity Catalog, Databricks organizes data in a three-level hierarchy: **catalog > schema > table**. Rill connects to Databricks SQL Warehouses using the [Databricks SQL Go Driver](https://github.com/databricks/databricks-sql-go) and can be used both as a data source (to import data) and as an OLAP engine (to power dashboards directly).
+
+## Authentication
+
+To connect to Databricks, you need a personal access token and your SQL warehouse connection details.
+
+<TwoStepFlowIntro
+  connector="Databricks"
+  step1Description="Set up your Databricks connector with workspace hostname, HTTP path, and access token"
+  step2Description="Define which catalog, schema, table, or query to execute"
+/>
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Databricks** as the data source type
+3. In the authentication step:
+   - Enter your workspace hostname
+   - Enter the HTTP path to your SQL warehouse
+   - Enter your personal access token
+   - Optionally specify a catalog and schema
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/databricks.yaml`:
+
+```yaml
+type: connector
+driver: databricks
+
+host: adb-12345.azuredatabricks.net
+http_path: /sql/1.0/warehouses/abc123
+token: "{{ .env.DATABRICKS_TOKEN }}"
+catalog: main
+schema: default
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+DATABRICKS_TOKEN=dapi...
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured, create a model to define what data to pull.
+
+Create `models/databricks_data.yaml`:
+
+```yaml
+type: model
+connector: databricks
+
+dev:
+  sql: SELECT * FROM my_catalog.my_schema.my_table LIMIT 10000
+
+sql: SELECT * FROM my_catalog.my_schema.my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Finding Your Connection Details
+
+### Workspace Hostname
+
+Your workspace hostname is the URL you use to access Databricks, without the `https://` prefix. For example: `adb-12345678901234.azuredatabricks.net`.
+
+### HTTP Path
+
+To find the HTTP path for your SQL warehouse:
+
+1. In your Databricks workspace, navigate to **SQL Warehouses**
+2. Select your warehouse
+3. Go to the **Connection details** tab
+4. Copy the **HTTP path** value (e.g., `/sql/1.0/warehouses/abc123`)
+
+### Personal Access Token
+
+To generate a personal access token:
+
+1. In your Databricks workspace, click your username in the top bar
+2. Select **Settings**
+3. Go to **Developer** > **Access tokens**
+4. Click **Generate new token**
+5. Give it a description and set an expiration
+
+## Naming Mapping
+
+Databricks uses Unity Catalog's three-level hierarchy. In Rill's API:
+
+| Rill Parameter   | Databricks Concept | Example            |
+| ---------------- | ------------------ | ------------------ |
+| `database`       | Catalog            | `main`             |
+| `databaseSchema` | Schema             | `default`          |
+| `table`          | Table              | `my_table`         |
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="Databricks"
+  connectorId="databricks"
+  credentialDescription="a Databricks personal access token as the connector's `token` field"
+/>
+
+:::info Need help connecting to Databricks?
+
+If you would like to connect Rill to an existing Databricks instance, please don't hesitate to [contact us](/contact). We'd love to help!
+
+:::

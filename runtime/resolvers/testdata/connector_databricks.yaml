@@ -1,0 +1,42 @@
+expensive: true
+connectors:
+  - databricks
+project_files:
+  ad_events_duckdb.yaml:
+    type: model
+    connector: databricks
+    sql: "SELECT * FROM ad_events_fact"
+    output:
+      connector: duckdb
+tests:
+  - name: test_databricks_row_count
+    resolver: sql
+    properties:
+      sql: "SELECT count(*) as count FROM ad_events_duckdb"
+    result_csv: |
+      count
+      1051200
+  - name: test_databricks_schema
+    resolver: sql
+    properties:
+      sql: "describe ad_events_duckdb"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      event_id,BIGINT,YES,,,
+      event_ts_utc,TIMESTAMP WITH TIME ZONE,YES,,,
+      ingest_ts_utc,TIMESTAMP WITH TIME ZONE,YES,,,
+      user_id,VARCHAR,YES,,,
+      campaign_id,VARCHAR,YES,,,
+      publisher_id,VARCHAR,YES,,,
+      show_id,VARCHAR,YES,,,
+      country,VARCHAR,YES,,,
+      device,VARCHAR,YES,,,
+      traffic_source,VARCHAR,YES,,,
+      impressions,INTEGER,YES,,,
+      clicks,INTEGER,YES,,,
+      conversions,INTEGER,YES,,,
+      revenue_usd,DOUBLE,YES,,,
+      variant,VARCHAR,YES,,,
+      payload_json,VARCHAR,YES,,,
+      event_date,DATE,YES,,,
+      event_hour,INTEGER,YES,,,

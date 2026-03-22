@@ -55,6 +55,8 @@
     return () => observer.disconnect();
   });
 
+  $: errorMessage = error?.message || (error as any)?.response?.data?.message;
+
   // Normalize V1TableInfo[] from ListTables into the TableEntry input shape
   $: typedData = data?.tables?.map((table: V1TableInfo) => ({
     name: table.name ?? "",
@@ -92,7 +94,7 @@
   {#if expanded}
     {#if error && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Error: {error.message}
+        Error: {errorMessage}
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
