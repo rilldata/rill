@@ -6,6 +6,8 @@
 
   $: spec = theme?.spec;
 
+  const hexPattern = /^#[0-9a-fA-F]{3,8}$/;
+
   function colorToHex(
     color: { red?: number; green?: number; blue?: number } | undefined,
   ): string {
@@ -16,92 +18,84 @@
     return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
   }
 
+  function isValidColor(value: string): boolean {
+    return hexPattern.test(value);
+  }
+
   $: primaryHex = spec?.primaryColorRaw || colorToHex(spec?.primaryColor);
   $: secondaryHex = spec?.secondaryColorRaw || colorToHex(spec?.secondaryColor);
+
+  // Collect all color rows for the Colors section
+  $: colorRows = [
+    { label: "Primary", value: primaryHex },
+    { label: "Secondary", value: secondaryHex },
+  ].filter((r) => r.value);
 
   // Build mode sections data-driven to avoid duplication
   $: modeSections = [
     { label: "Light Mode", mode: spec?.light },
     { label: "Dark Mode", mode: spec?.dark },
   ].filter((s) => s.mode);
+
+  function getModeColorRows(mode: {
+    primary?: string;
+    secondary?: string;
+    variables?: Record<string, string>;
+  }) {
+    const rows: { label: string; value: string }[] = [];
+    if (mode.primary) rows.push({ label: "Primary", value: mode.primary });
+    if (mode.secondary)
+      rows.push({ label: "Secondary", value: mode.secondary });
+    if (mode.variables) {
+      for (const [key, val] of Object.entries(mode.variables)) {
+        rows.push({ label: key, value: val });
+      }
+    }
+    return rows;
+  }
 </script>
 
 <div class="flex flex-col gap-y-3">
   <!-- Colors -->
   <DescribeSection title="Colors">
-    {#if primaryHex}
-      <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-        <span class="text-xs text-fg-secondary">Primary</span>
-        <div class="flex items-center gap-x-2">
-          <span
-            class="inline-block w-3 h-3 rounded-sm border border-border"
-            style="background-color: {primaryHex}"
-          />
-          <span class="text-xs font-mono text-fg-primary">{primaryHex}</span>
+    {#if colorRows.length > 0}
+      {#each colorRows as { label, value } (label)}
+        <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
+          <span class="text-xs text-fg-secondary">{label}</span>
+          <div class="flex items-center gap-x-2">
+            {#if isValidColor(value)}
+              <span
+                class="inline-block w-3 h-3 rounded-sm border border-border"
+                style="background-color: {value}"
+              />
+            {/if}
+            <span class="text-xs font-mono text-fg-primary">{value}</span>
+          </div>
         </div>
-      </div>
-    {/if}
-    {#if secondaryHex}
-      <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-        <span class="text-xs text-fg-secondary">Secondary</span>
-        <div class="flex items-center gap-x-2">
-          <span
-            class="inline-block w-3 h-3 rounded-sm border border-border"
-            style="background-color: {secondaryHex}"
-          />
-          <span class="text-xs font-mono text-fg-primary">{secondaryHex}</span>
-        </div>
-      </div>
-    {/if}
-    {#if !primaryHex && !secondaryHex}
+      {/each}
+    {:else}
       <span class="text-xs text-fg-muted">No custom colors defined</span>
     {/if}
   </DescribeSection>
 
   <!-- Light / Dark Mode sections -->
   {#each modeSections as { label, mode } (label)}
+    {@const rows = getModeColorRows(mode)}
     <DescribeSection title={label}>
-      {#if mode.primary}
+      {#each rows as row (row.label)}
         <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-          <span class="text-xs text-fg-secondary">Primary</span>
+          <span class="text-xs text-fg-secondary">{row.label}</span>
           <div class="flex items-center gap-x-2">
-            <span
-              class="inline-block w-3 h-3 rounded-sm border border-border"
-              style="background-color: {mode.primary}"
-            />
-            <span class="text-xs font-mono text-fg-primary">{mode.primary}</span
-            >
-          </div>
-        </div>
-      {/if}
-      {#if mode.secondary}
-        <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-          <span class="text-xs text-fg-secondary">Secondary</span>
-          <div class="flex items-center gap-x-2">
-            <span
-              class="inline-block w-3 h-3 rounded-sm border border-border"
-              style="background-color: {mode.secondary}"
-            />
-            <span class="text-xs font-mono text-fg-primary"
-              >{mode.secondary}</span
-            >
-          </div>
-        </div>
-      {/if}
-      {#if mode.variables}
-        {#each Object.entries(mode.variables) as [key, val] (key)}
-          <div class="flex items-center justify-between gap-x-4 min-h-[20px]">
-            <span class="text-xs text-fg-secondary">{key}</span>
-            <div class="flex items-center gap-x-2">
+            {#if isValidColor(row.value)}
               <span
                 class="inline-block w-3 h-3 rounded-sm border border-border"
-                style="background-color: {val}"
+                style="background-color: {row.value}"
               />
-              <span class="text-xs font-mono text-fg-primary">{val}</span>
-            </div>
+            {/if}
+            <span class="text-xs font-mono text-fg-primary">{row.value}</span>
           </div>
-        {/each}
-      {/if}
+        </div>
+      {/each}
     </DescribeSection>
   {/each}
 </div>

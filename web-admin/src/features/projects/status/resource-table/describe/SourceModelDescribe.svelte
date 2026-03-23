@@ -76,10 +76,12 @@
         value={formatChangeMode(modelSpec.changeMode)}
       />
     {/if}
-    <DescribeRow
-      label="Input / Output"
-      value="{inputConnector} / {outputConnector}"
-    />
+    {#if inputConnector || outputConnector}
+      <DescribeRow
+        label="Input / Output"
+        value="{inputConnector ?? ''} / {outputConnector ?? ''}"
+      />
+    {/if}
     {#if schedule && !schedule.disable}
       <DescribeRow label="Refresh" value={formatSchedule(schedule)} />
       {#if schedule.timeZone}

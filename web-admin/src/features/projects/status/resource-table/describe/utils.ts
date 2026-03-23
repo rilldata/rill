@@ -25,7 +25,7 @@ export function formatSchedule(schedule: V1Schedule | undefined): string {
 export function formatBytes(bytes: string | number | undefined): string {
   if (bytes === undefined || bytes === null) return "";
   const num = typeof bytes === "string" ? Number(bytes) : bytes;
-  if (isNaN(num) || num === 0) return "0 B";
+  if (isNaN(num) || num <= 0) return "0 B";
 
   const units = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(num) / Math.log(1024));
@@ -105,5 +105,6 @@ export function formatMonthOfYear(month: number | undefined): string {
 export function formatPropertyValue(val: unknown): string {
   if (val === undefined || val === null) return "";
   if (typeof val === "object") return JSON.stringify(val);
-  return String(val);
+  if (typeof val === "string") return val;
+  return String(val as number | boolean);
 }

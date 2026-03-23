@@ -2,6 +2,7 @@
   import type { V1Component } from "@rilldata/web-common/runtime-client";
   import DescribeSection from "./DescribeSection.svelte";
   import DescribeRow from "./DescribeRow.svelte";
+  import { formatPropertyValue } from "./utils";
 
   export let component: V1Component;
 
@@ -32,14 +33,9 @@
   <!-- Renderer Properties -->
   <DescribeSection title="Renderer Properties">
     {#if rendererPropKeys.length > 0}
-      {#each rendererPropKeys as key}
+      {#each rendererPropKeys as key (key)}
         {@const val = rendererProps[key]}
-        <DescribeRow
-          label={key}
-          value={typeof val === "object"
-            ? JSON.stringify(val)
-            : String(val ?? "")}
-        />
+        <DescribeRow label={key} value={formatPropertyValue(val)} />
       {/each}
     {:else}
       <span class="text-xs text-fg-muted">None</span>
@@ -49,10 +45,10 @@
   <!-- Input Variables -->
   <DescribeSection title="Input">
     {#if inputs.length > 0}
-      {#each inputs as v}
+      {#each inputs as v (v.name)}
         <DescribeRow
           label={v.name ?? ""}
-          value={String(v.defaultValue ?? "")}
+          value={formatPropertyValue(v.defaultValue)}
         />
       {/each}
     {:else}

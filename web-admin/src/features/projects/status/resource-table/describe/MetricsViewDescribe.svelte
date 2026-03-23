@@ -152,22 +152,20 @@
   {/if}
 
   <!-- AI Instructions -->
-  <DescribeSection title="AI Instructions">
-    <span
-      class="text-xs {spec?.aiInstructions
-        ? 'text-fg-primary'
-        : 'text-fg-muted'}"
-    >
-      {spec?.aiInstructions || "None defined"}
-    </span>
-  </DescribeSection>
+  {#if spec?.aiInstructions}
+    <DescribeSection title="AI Instructions">
+      <span class="text-xs text-fg-primary">
+        {spec.aiInstructions}
+      </span>
+    </DescribeSection>
+  {/if}
 
   <!-- Security -->
   <SecurityRulesSection rules={spec?.securityRules} />
 
   <!-- Annotations -->
-  <DescribeSection title="Annotations">
-    {#if spec?.annotations?.length}
+  {#if spec?.annotations?.length}
+    <DescribeSection title="Annotations">
       {#each spec.annotations as annotation, i (annotation.name ?? i)}
         <DescribeRow label="Annotation {i + 1}" value={annotation.name} />
         <DescribeRow label="  Table" value={annotation.table} />
@@ -179,8 +177,6 @@
           />
         {/if}
       {/each}
-    {:else}
-      <span class="text-xs text-fg-muted">None defined</span>
-    {/if}
-  </DescribeSection>
+    </DescribeSection>
+  {/if}
 </div>

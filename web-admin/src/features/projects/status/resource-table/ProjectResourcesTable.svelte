@@ -302,8 +302,8 @@
         specResourceKind = ResourceKind.Component;
         specResource = resp.resource;
       }
-    } catch {
-      // Component not found; ignore
+    } catch (err) {
+      console.error("Failed to load component:", err);
     }
   }}
   on:back={() => {

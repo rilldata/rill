@@ -2,6 +2,7 @@
   import type { V1ConnectorV2 } from "@rilldata/web-common/runtime-client";
   import DescribeSection from "./DescribeSection.svelte";
   import DescribeRow from "./DescribeRow.svelte";
+  import { formatPropertyValue } from "./utils";
 
   export let connector: V1ConnectorV2;
 
@@ -24,24 +25,24 @@
 
   {#if envVarKeys.length > 0}
     <DescribeSection title="Environment Variables">
-      {#each envVarKeys as key}
-        <DescribeRow label={key} value={String(properties[key])} />
+      {#each envVarKeys as key (key)}
+        <DescribeRow label={key} value={formatPropertyValue(properties[key])} />
       {/each}
     </DescribeSection>
   {/if}
 
   {#if regularKeys.length > 0}
     <DescribeSection title="Properties">
-      {#each regularKeys as key}
-        <DescribeRow label={key} value={String(properties[key])} />
+      {#each regularKeys as key (key)}
+        <DescribeRow label={key} value={formatPropertyValue(properties[key])} />
       {/each}
     </DescribeSection>
   {/if}
 
   {#if spec?.provisionArgs}
     <DescribeSection title="Provision Arguments">
-      {#each Object.entries(spec.provisionArgs) as [key, val]}
-        <DescribeRow label={key} value={String(val)} />
+      {#each Object.entries(spec.provisionArgs) as [key, val] (key)}
+        <DescribeRow label={key} value={formatPropertyValue(val)} />
       {/each}
     </DescribeSection>
   {/if}

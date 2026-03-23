@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
@@ -6,7 +7,6 @@
     resourceLabelMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { createEventDispatcher } from "svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import CanvasDescribe from "./describe/CanvasDescribe.svelte";
   import ComponentDescribe from "./describe/ComponentDescribe.svelte";
@@ -38,31 +38,40 @@
   $: label = resourceLabelMapping[kind];
   $: filePath = resource?.meta?.filePaths?.[0];
 
-  // Extract display name and description from resource
-  $: displayName = (() => {
-    switch (kind) {
+  function getDisplayName(
+    k: ResourceKind,
+    r: V1Resource | undefined,
+  ): string | undefined {
+    switch (k) {
       case ResourceKind.MetricsView:
-        return resource?.metricsView?.spec?.displayName;
+        return r?.metricsView?.spec?.displayName;
       case ResourceKind.Explore:
-        return resource?.explore?.spec?.displayName;
+        return r?.explore?.spec?.displayName;
       case ResourceKind.Canvas:
-        return resource?.canvas?.spec?.displayName;
+        return r?.canvas?.spec?.displayName;
       default:
         return undefined;
     }
-  })();
-  $: description = (() => {
-    switch (kind) {
+  }
+
+  function getDescription(
+    k: ResourceKind,
+    r: V1Resource | undefined,
+  ): string | undefined {
+    switch (k) {
       case ResourceKind.MetricsView:
-        return resource?.metricsView?.spec?.description;
+        return r?.metricsView?.spec?.description;
       case ResourceKind.Explore:
-        return resource?.explore?.spec?.description;
+        return r?.explore?.spec?.description;
       case ResourceKind.Component:
-        return resource?.component?.spec?.description;
+        return r?.component?.spec?.description;
       default:
         return undefined;
     }
-  })();
+  }
+
+  $: displayName = getDisplayName(kind, resource);
+  $: description = getDescription(kind, resource);
 </script>
 
 <Dialog.Root bind:open>
