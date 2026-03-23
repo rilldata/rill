@@ -62,13 +62,15 @@ export function getSourceYamlPreview({
   formValues: Record<string, unknown>;
   existingEnvBlob: string | null;
 }) {
+  const isPublicAuth = formValues.auth_method === "public";
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
     {
-      connectorInstanceName: connector.name,
+      connectorInstanceName: isPublicAuth ? undefined : connector.name,
     },
   );
+
   const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
   const rewrittenSchema = getConnectorSchema(rewrittenConnector.name ?? "");
   const rewrittenSecretKeys = rewrittenSchema

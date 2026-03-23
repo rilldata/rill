@@ -10,6 +10,7 @@ import {
   connectorInfoMap,
   getBackendConnectorName,
   getConnectorSchema,
+  getDocsCategory,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
@@ -144,7 +145,7 @@ function transitionFromSchema(
       step: AddDataStep.CreateModel,
       schema,
       connector: driver.name!,
-      isPublicConnector: args.isPublicConnector,
+      connectorFormValues: args.connectorFormValues ?? {},
     };
   }
 }
@@ -168,7 +169,7 @@ function transitionFromConnector(
       step: AddDataStep.CreateModel,
       schema,
       connector,
-      isPublicConnector: args.isPublicConnector,
+      connectorFormValues: args.connectorFormValues ?? {},
     };
   }
 }
@@ -184,12 +185,14 @@ export function getConnectorDriverForSchema(
 
   return {
     name: backendName,
-    displayName: connectorInfo.displayName,
+    displayName: schema?.title ?? connectorInfo.displayName ?? schemaName,
+    docsUrl: `https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${backendName}`,
     implementsObjectStore: category === "objectStore",
     implementsOlap: category === "olap",
     implementsSqlStore: category === "sqlStore",
     implementsWarehouse: category === "warehouse",
     implementsFileStore: category === "fileStore",
+    implementsAi: category === "ai",
   };
 }
 
@@ -206,7 +209,8 @@ function isConnectorType(connectorDriver: V1ConnectorDriver) {
     connectorDriver?.implementsObjectStore ||
     connectorDriver?.implementsOlap ||
     connectorDriver?.implementsSqlStore ||
-    connectorDriver?.implementsWarehouse
+    connectorDriver?.implementsWarehouse ||
+    connectorDriver?.name === "https"
   );
 }
 

@@ -224,15 +224,12 @@ export function maybeRewriteToDuckDb(
     case "gcs":
     case "azure":
       // Ensure DuckDB creates a temporary secret for the original connector.
-      if (secretConnectorName) {
-        if (connectorInstanceName) {
-          if (!formValues.create_secrets_from_connectors) {
-            formValues.create_secrets_from_connectors = secretConnectorName;
-          }
-        } else {
-          // When skipping connector creation, force the default driver name.
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -245,10 +242,12 @@ export function maybeRewriteToDuckDb(
     case "https": {
       // HTTP sources are typically public; avoid surfacing secret wiring unless
       // the user is explicitly targeting a configured connector instance.
-      if (connectorInstanceName && secretConnectorName) {
-        if (!formValues.create_secrets_from_connectors) {
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
 
       connectorCopy.name = "duckdb";

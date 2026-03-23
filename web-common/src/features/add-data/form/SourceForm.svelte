@@ -65,6 +65,7 @@
       if (!form.valid) return;
       return submitImportConfig(form.data);
     },
+    additionalDefaults: step.connectorFormValues,
   });
 
   $: ({ form } = superFormsParams);

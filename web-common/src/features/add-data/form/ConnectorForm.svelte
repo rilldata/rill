@@ -71,7 +71,7 @@
         const newState = await transitionToNextStep(runtimeClient, step, {
           schema: step.schema,
           connector: connectorName,
-          isPublicConnector: form.data.auth_method === "public",
+          connectorFormValues: form.data,
         });
         onSubmit(newState);
       } catch (e) {

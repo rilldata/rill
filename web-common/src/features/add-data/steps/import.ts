@@ -249,7 +249,7 @@ async function runCreateCanvasStep(
 
   // Get a unique name for the canvas dashboard
   const canvasName = getName(
-    `${metricsViewName}}_canvas`,
+    `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
   const canvasFilePath = `/dashboards/${canvasName}.yaml`;

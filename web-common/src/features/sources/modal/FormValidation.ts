@@ -34,8 +34,9 @@ export function createConnectorForm(args: {
   onUpdate: (event: {
     form: SuperValidated<FormData, string, FormData>;
   }) => void | Promise<void>;
+  additionalDefaults?: Partial<FormData>;
 }) {
-  const { schemaName, formType, onUpdate } = args;
+  const { schemaName, formType, onUpdate, additionalDefaults } = args;
   const schema = getConnectorSchema(schemaName);
 
   // Don't pass step filter - include defaults for ALL fields so multi-step
@@ -60,6 +61,13 @@ export function createConnectorForm(args: {
 
   // Merge: all fields as empty strings, then schema defaults on top
   const initialValues = { ...allFields, ...schemaDefaults };
+  if (additionalDefaults) {
+    Object.entries(additionalDefaults).forEach(([key, value]) => {
+      if (key in initialValues) {
+        initialValues[key] = value;
+      }
+    });
+  }
 
   const formDefaults = defaults<FormData, string, FormData>(
     initialValues as Partial<FormData>,

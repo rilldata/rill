@@ -16,7 +16,7 @@ export type AddDataTransitionArgs = {
   schema?: string;
   connector?: string;
   importConfig?: ImportAddDataStepConfig;
-  isPublicConnector?: boolean;
+  connectorFormValues?: Record<string, unknown>;
 };
 
 export enum ImportDataStep {
@@ -52,7 +52,7 @@ export type CreateModelStep = {
   step: AddDataStep.CreateModel;
   schema: string;
   connector: string;
-  isPublicConnector?: boolean;
+  connectorFormValues: Record<string, unknown>;
 };
 
 type ExploreConnectorStep = {

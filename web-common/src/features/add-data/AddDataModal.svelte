@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { pushState } from "$app/navigation";
+  import { pushState, replaceState } from "$app/navigation";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import AddData from "@rilldata/web-common/features/add-data/AddData.svelte";
   import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
@@ -17,6 +17,8 @@
 
   const config: AddDataConfig = { importOnly: true };
 
+  $: if (open) void transitionToInit();
+
   async function transitionToInit() {
     pushState(
       "",
@@ -27,10 +29,15 @@
       ),
     );
   }
-  $: if (open) void transitionToInit();
+
+  function maybeReplaceState(newOpen: boolean) {
+    if (!newOpen) {
+      replaceState("", {});
+    }
+  }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open onOpenChange={maybeReplaceState}>
   <Dialog.Content class="p-0 w-fit max-w-fit h-fit" noClose>
     {#if open}
       <AddData {config} onClose={() => (open = false)} />

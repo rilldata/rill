@@ -33,6 +33,7 @@
   $: if ("step" in $page.state) {
     stepState = $page.state as AddDataState;
   }
+  $: console.log(stepState);
 
   $: schema = (stepState as any).schema as string | undefined;
   $: connector = (stepState as any).connector as string | undefined;
