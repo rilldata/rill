@@ -3,7 +3,7 @@
   import { type V1Resource } from "@rilldata/web-common/runtime-client";
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { ResourceKindMap } from "../file-explorer/new-files";
+  import { ResourceKindMap } from "../entity-management/add/new-files.ts";
   import CrumbTrigger from "./CrumbTrigger.svelte";
   import {
     ResourceKind,

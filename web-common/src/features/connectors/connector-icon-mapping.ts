@@ -9,8 +9,6 @@ import DeltaLakeIcon from "../../components/icons/connectors/DeltaLakeIcon.svelt
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
-import GoogleCloudStorageIcon from "../../components/icons/connectors/GoogleCloudStorageIcon.svelte";
-import MicrosoftAzureBlobStorageIcon from "../../components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
@@ -20,7 +18,11 @@ import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte"
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
+import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
+import { File } from "lucide-svelte";
+import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
+import HTTPSIcon from "@rilldata/web-common/components/icons/connectors/HTTPSIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -44,11 +46,22 @@ export const connectorIconMapping = {
   s3: AmazonS3Icon,
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
+  sqlite: RedshiftIcon,
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
+  local_file: File,
+  https: HTTPSIcon,
+};
+
+export const connectorClassMapping = {
+  local_file: "text-slate-300",
+  https: "text-slate-300",
 };
 
 export const connectorLabelMapping = {
   duckdb: "DuckDB",
   clickhouse: "ClickHouse",
+  motherduck: "MotherDuck",
+  s3: "S3",
+  snowflake: "Snowflake",
 };

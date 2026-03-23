@@ -1,0 +1,124 @@
+export enum AddDataStep {
+  SelectConnector,
+  CreateConnector,
+  CreateModel,
+  ExploreConnector,
+  Import,
+  Done,
+}
+
+export type AddDataConfig = {
+  welcomeScreen?: boolean;
+  importOnly?: boolean;
+};
+
+export type AddDataTransitionArgs = {
+  schema?: string;
+  connector?: string;
+  importConfig?: ImportAddDataStepConfig;
+  connectorFormValues?: Record<string, unknown>;
+};
+
+export enum ImportDataStep {
+  Init,
+  CreateModel,
+  CreateMetricsView,
+  CreateCanvas,
+  Done,
+}
+
+export type AddDataState =
+  | SelectConnectorStep
+  | CreateConnectorStep
+  | CreateModelStep
+  | ExploreConnectorStep
+  | ImportAddDataStep
+  | DoneAddDataStep;
+
+/**
+ * Individual steps for strong typing
+ */
+
+type SelectConnectorStep = {
+  step: AddDataStep.SelectConnector;
+};
+
+export type CreateConnectorStep = {
+  step: AddDataStep.CreateConnector;
+  schema: string;
+};
+
+export type CreateModelStep = {
+  step: AddDataStep.CreateModel;
+  schema: string;
+  connector: string;
+  connectorFormValues: Record<string, unknown>;
+};
+
+type ExploreConnectorStep = {
+  step: AddDataStep.ExploreConnector;
+  schema: string;
+  connector: string;
+};
+
+type DoneAddDataStep = {
+  step: AddDataStep.Done;
+  finalPath: string;
+};
+
+// Import data step and types
+
+export type ImportAddDataStepConfig = {
+  importSteps: ImportDataStep[];
+  source: string;
+  sourceSchema: string;
+  sourceDatabase: string;
+  connector: string;
+  yaml?: string;
+  sql?: string;
+  envBlob: string | null;
+};
+
+export type ImportAddDataStep = {
+  step: AddDataStep.Import;
+  importStep: ImportStep;
+  currentFilePath: string;
+  config: ImportAddDataStepConfig;
+};
+
+type ImportStep =
+  | InitImportStep
+  | CreateModelImportStep
+  | CreateMetricsViewImportStep
+  | CreateCanvasImportStep
+  | DoneImportStep;
+
+type InitImportStep = {
+  step: ImportDataStep.Init;
+};
+
+type CreateModelImportStep = {
+  step: ImportDataStep.CreateModel;
+  source: string;
+  connector: string;
+  yaml?: string;
+  sql?: string;
+  envBlob: string | null;
+};
+
+type CreateMetricsViewImportStep = {
+  step: ImportDataStep.CreateMetricsView;
+  source: string;
+  sourceSchema: string;
+  sourceDatabase: string;
+  connector: string;
+};
+
+type CreateCanvasImportStep = {
+  step: ImportDataStep.CreateCanvas;
+  metricsViewFilePath: string;
+};
+
+type DoneImportStep = {
+  step: ImportDataStep.Done;
+};

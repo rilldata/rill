@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
+  import { builderActions, getAttrs } from "bits-ui";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
@@ -11,11 +11,10 @@
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
-  export let type: "init" | "home" | "modal";
+  export let type: "home" | "modal";
   export let open = false;
 
   const runtimeClient = useRuntimeClient();
-  const initializeProject = type === "init";
 
   const { developerChat } = featureFlags;
 
@@ -36,7 +35,7 @@
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
-      void generateSampleData(runtimeClient, initializeProject, values.prompt);
+      void generateSampleData(runtimeClient, false, values.prompt);
       open = false;
     },
     invalidateAll: false,
@@ -54,22 +53,15 @@
 {#if $developerChat}
   <Dialog.Root bind:open>
     <Dialog.Trigger asChild let:builder>
-      {#if type === "init"}
-        <Button builders={[builder]} type="secondary" large>
-          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-          <span>Generate sample data</span>
-        </Button>
-      {:else if type === "home"}
-        <Button
+      {#if type === "home"}
+        <button
           class="button-home"
-          type="tertiary"
-          builders={[builder]}
-          large
-          forcedStyle="height: 3rem;"
+          {...getAttrs([builder])}
+          use:builderActions={{ builders: [builder] }}
         >
           <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
           <span>Generate sample data</span>
-        </Button>
+        </button>
       {:else}
         <div class="hidden"></div>
       {/if}
@@ -128,5 +120,13 @@
 
   .error {
     @apply text-xs text-red-600 font-normal pb-2;
+  }
+
+  .button-home {
+    @apply flex flex-row gap-2 items-center justify-center p-2 h-12;
+    @apply text-sm bg-surface-overlay rounded-md border;
+  }
+  .button-home:hover {
+    @apply bg-surface-hover;
   }
 </style>

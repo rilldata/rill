@@ -22,6 +22,7 @@ import {
 } from "../../connectors/code-utils";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
+  waitForProjectParser,
   waitForResourceReconciliation,
 } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -34,12 +35,14 @@ import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { AI_CONNECTORS, OLAP_ENGINES } from "./constants";
 import { sourceIngestionTracker } from "../sources-store";
-import { getConnectorSchema } from "./connector-schemas";
+import { getConnectorSchema, isMultiStepConnector } from "./connector-schemas";
 import {
+  findRadioEnumKey,
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
+import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -416,10 +419,10 @@ export async function submitAddConnectorForm(
         await rollbackChanges(client, newConnectorFilePath, originalEnvBlob);
       }
 
-      const errorDetails = (error as any).details;
-      if (errorDetails && errorDetails !== (error as any).message) {
+      const errorDetails = error.details;
+      if (errorDetails && errorDetails !== error.message) {
         throw {
-          message: (error as any).message || "Unable to establish a connection",
+          message: error.message || "Unable to establish a connection",
           details: errorDetails,
         };
       }
@@ -449,7 +452,7 @@ export async function submitAddSourceForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
-): Promise<void> {
+): Promise<string> {
   await beforeSubmitForm(client, connector);
   const newSourceName = formValues.name as string;
 
@@ -525,7 +528,7 @@ export async function submitAddSourceForm(
     // The source file was already created, so we need to delete it
     sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
     await rollbackChanges(client, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    const errorDetails = error.details;
 
     throw {
       message: error.message || "Unable to establish a connection",
@@ -549,4 +552,5 @@ export async function submitAddSourceForm(
   }
 
   await goto(`/files/${newSourceFilePath}`);
+  return newSourceName;
 }

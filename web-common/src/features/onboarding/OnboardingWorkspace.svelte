@@ -1,15 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { builderActions, getAttrs } from "bits-ui";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import Button from "../../components/button/Button.svelte";
   import { createRuntimeServiceUnpackExampleMutation } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
-  import { addSourceModal } from "../sources/modal/add-source-visibility";
-  import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { createResourceAndNavigate } from "@rilldata/web-common/features/file-explorer/new-files.ts";
+  import { createResourceAndNavigate } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
   import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import {
@@ -20,8 +18,13 @@
   import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import ConnectYourDataSmall from "@rilldata/web-common/features/add-data/ConnectYourDataSmall.svelte";
+  import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
 
   const runtimeClient = useRuntimeClient();
+
+  let openAddDataDialog = false;
+  let selectedAddDataSchema: string | undefined = undefined;
 
   const unpackExampleProject =
     createRuntimeServiceUnpackExampleMutation(runtimeClient);
@@ -52,62 +55,49 @@
 
 <div class="container">
   <div class="cta-container">
-    <div class="import-data-container cta-item">
-      <div class="flex flex-col gap-y-1">
-        <div class="font-semibold text-base">Import data</div>
-        <div class="text-xs">
-          Add or drag a file here (Parquet, NDJSON, CSV).
-        </div>
-      </div>
-      <div class="mx-auto">
-        <ImportData />
-      </div>
-      <Button type="primary" onClick={() => addSourceModal.open()}
-        >+ Add Data</Button
-      >
-    </div>
+    <ConnectYourDataSmall
+      startConnectorSelection={(newSchemaName) => {
+        selectedAddDataSchema = newSchemaName;
+        openAddDataDialog = true;
+      }}
+    />
 
     <div class="my-auto text-gray-400 text-base">or</div>
 
     <div class="flex flex-col w-64 gap-y-4">
       <GenerateSampleData type="home" />
-      <Button
-        onClick={() =>
+      <button
+        on:click={() =>
           createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
-        type="tertiary"
-        large
-        forcedStyle="height: 3rem;"
+        class="onboarding-cta"
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
           size="14px"
         />
         Create blank model
-      </Button>
-      <Button
-        onClick={() =>
+      </button>
+      <button
+        on:click={() =>
           createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
-        type="tertiary"
-        large
-        forcedStyle="height: 3rem;"
+        class="onboarding-cta"
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.MetricsView]}
           size="14px"
         />
         Create a metrics view
-      </Button>
+      </button>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
-          <Button
-            type="tertiary"
-            builders={[builder]}
-            large
-            forcedStyle="height: 3rem;"
+          <button
+            class="onboarding-cta"
+            {...getAttrs([builder])}
+            use:builderActions={{ builders: [builder] }}
           >
             <PresentationIcon size="16px" />
             Try demo projects
-          </Button>
+          </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}
@@ -137,6 +127,8 @@
   </div>
 </div>
 
+<AddDataModal bind:open={openAddDataDialog} schema={selectedAddDataSchema} />
+
 <style lang="postcss">
   .container {
     @apply flex flex-col m-auto px-8 gap-y-6 w-fit;
@@ -146,11 +138,11 @@
     @apply flex flex-row text-center gap-x-6;
   }
 
-  .import-data-container {
-    @apply flex flex-col w-64 p-6 gap-y-4;
+  .onboarding-cta {
+    @apply flex flex-row gap-2 items-center justify-center p-2 h-12;
+    @apply text-sm bg-surface-overlay rounded-md border;
   }
-
-  .cta-item {
-    @apply bg-surface border rounded-md shadow-sm;
+  .onboarding-cta:hover {
+    @apply bg-surface-hover;
   }
 </style>

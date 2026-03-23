@@ -9,42 +9,47 @@
     PlusCircleIcon,
     Wand,
   } from "lucide-svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Button from "../../../components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
-  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
-  import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import { behaviourEvent } from "../../metrics/initMetrics";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { behaviourEvent } from "../../../metrics/initMetrics.ts";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
-  } from "../../metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
+  } from "../../../metrics/service/BehaviourEventTypes.ts";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes.ts";
   import {
     createRuntimeServiceCreateDirectoryMutation,
     createRuntimeServicePutFileMutation,
-  } from "../../runtime-client";
-  import { useRuntimeClient } from "../../runtime-client/v2";
-  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
-  import { directoryState } from "../file-explorer/directory-store";
-  import { createResourceAndNavigate } from "../file-explorer/new-files";
-  import { addSourceModal } from "../sources/modal/add-source-visibility";
-  import AddAiConnectorDialog from "../connectors/ai/AddAiConnectorDialog.svelte";
+  } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors.ts";
+  import { directoryState } from "../../file-explorer/directory-store.ts";
+  import { createResourceAndNavigate } from "./new-files.ts";
+  import { addSourceModal } from "../../sources/modal/add-source-visibility.ts";
+  import AddAiConnectorDialog from "../../connectors/ai/AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
-  import { removeLeadingSlash } from "./entity-mappers";
+  import { removeLeadingSlash } from "../entity-mappers.ts";
   import {
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
-  } from "./file-selectors";
-  import { getName } from "./name-utils";
-  import { resourceIconMapping } from "./resource-icon-mapping";
-  import { ResourceKind, useFilteredResources } from "./resource-selectors";
+  } from "../file-selectors.ts";
+  import { getName } from "../name-utils.ts";
+  import { resourceIconMapping } from "../resource-icon-mapping.ts";
+  import { ResourceKind, useFilteredResources } from "../resource-selectors.ts";
+  import AddModelSubOption from "@rilldata/web-common/features/entity-management/add/AddModelSubOption.svelte";
+  import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
+  import AddMetricsViewSubOption from "@rilldata/web-common/features/entity-management/add/AddMetricsViewSubOption.svelte";
 
   let active = false;
   let showExploreDialog = false;
   let generateDataDialog = false;
   let showAiConnectorDialog = false;
+  let addDataModalOpen = false;
+  let addDataConnector = "";
 
   const runtimeClient = useRuntimeClient();
 
@@ -171,38 +176,18 @@
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      aria-label="Add Model"
-      class="flex gap-x-2"
-      disabled={!isModelingSupported}
-      on:click={() =>
-        createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
-    >
-      <svelte:component
-        this={resourceIconMapping[ResourceKind.Model]}
-        size="16px"
-      />
-      <div class="flex flex-col items-start">
-        Model
-        {#if !isModelingSupported}
-          <span class="text-fg-secondary text-xs">
-            Requires a supported OLAP driver
-          </span>
-        {/if}
-      </div>
-    </DropdownMenu.Item>
-    <DropdownMenu.Item
-      aria-label="Add Metrics View"
-      class="flex gap-x-2"
-      on:click={() =>
-        createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
-    >
-      <svelte:component
-        this={resourceIconMapping[ResourceKind.MetricsView]}
-        size="16px"
-      />
-      Metrics view
-    </DropdownMenu.Item>
+    <AddModelSubOption
+      onSelect={(connector) => {
+        addDataModalOpen = true;
+        addDataConnector = connector;
+      }}
+    />
+    <AddMetricsViewSubOption
+      onSelect={(connector) => {
+        addDataModalOpen = true;
+        addDataConnector = connector;
+      }}
+    />
     <DropdownMenu.Separator />
     <DropdownMenu.Item
       aria-label="Add Explore Dashboard"
@@ -337,3 +322,5 @@
 <AddAiConnectorDialog bind:open={showAiConnectorDialog} />
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />
+
+<AddDataModal bind:open={addDataModalOpen} connector={addDataConnector} />

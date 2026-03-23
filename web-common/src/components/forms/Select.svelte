@@ -40,6 +40,7 @@
   export let sameWidth = false;
   export let ringFocus = true;
   export let truncate = false;
+  export let outline = true;
   export let enableSearch = false;
   export let lockable = false;
   export let forcedTriggerStyle = "";
@@ -128,7 +129,7 @@
           `min-w-[${minWidth}px]`} {ringFocus &&
           'focus:ring-2 focus:ring-primary-100'} {truncate
           ? 'break-all overflow-hidden'
-          : ''} {forcedTriggerStyle}"
+          : ''} {forcedTriggerStyle} {outline ? '' : 'border-0'}"
         aria-label={label || ariaLabel}
       >
         <Select.Value

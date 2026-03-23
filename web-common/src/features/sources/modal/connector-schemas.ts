@@ -85,12 +85,18 @@ export const connectors: ConnectorInfo[] = [
       category: schema["x-category"] as ConnectorCategory,
     };
   });
+/**
+ * Map of connector names to ConnectorInfo objects.
+ * We need connector info by name in a lot of places, so we have a map to optimize lookups.
+ */
+export const connectorInfoMap = new Map<string, ConnectorInfo>(
+  connectors.map((connector) => [connector.name, connector]),
+);
 
 export function getConnectorSchema(
   connectorName: string,
 ): MultiStepFormSchema | null {
-  const schema =
-    multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
+  const schema = multiStepFormSchemas[connectorName];
   return schema?.properties ? schema : null;
 }
 

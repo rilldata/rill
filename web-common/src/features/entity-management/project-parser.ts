@@ -16,7 +16,8 @@ export function getProjectParserVersion(instanceId: string) {
   );
 
   if (!projectParserQuery?.resource?.meta?.version) {
-    throw new Error("Project parser version not found");
+    // throw new Error("Project parser version not found");
+    return 0;
   }
 
   return Number(projectParserQuery.resource.meta.version);
@@ -39,10 +40,11 @@ export async function waitForProjectParserVersion(
     );
 
     if (!projectParserQuery?.resource?.meta?.version) {
-      throw new Error("Project parser version not found");
+      // throw new Error("Project parser version not found");
+      currentVersion = 0;
+    } else {
+      currentVersion = Number(projectParserQuery.resource.meta.version);
     }
-
-    currentVersion = Number(projectParserQuery.resource.meta.version);
 
     // If the current version is greater than or equal to the target version, we're done
     if (currentVersion >= version) return;

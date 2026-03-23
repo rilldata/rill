@@ -6,6 +6,13 @@ type ConnectorExplorerState = {
   expandedItems: Record<string, boolean>;
 };
 
+type ConnectorTableEntry = {
+  connector: string;
+  database?: string;
+  schema?: string;
+  table?: string;
+};
+
 export class ConnectorExplorerStore {
   allowNavigateToTable: boolean;
   allowContextMenu: boolean;
@@ -20,6 +27,9 @@ export class ConnectorExplorerStore {
         schema?: string,
         table?: string,
       ) => void) = undefined;
+
+  // Used to show selection when clicking on items do not navigate to a route
+  public selectedTableStore: Writable<ConnectorTableEntry>;
 
   constructor(
     {
@@ -38,6 +48,12 @@ export class ConnectorExplorerStore {
       schema?: string,
       table?: string,
     ) => void,
+    selectedTableStore: Writable<ConnectorTableEntry> = writable({
+      connector: "",
+      database: "",
+      schema: "",
+      table: "",
+    }),
   ) {
     this.allowNavigateToTable = allowNavigateToTable;
     this.allowContextMenu = allowContextMenu;
@@ -52,6 +68,7 @@ export class ConnectorExplorerStore {
           expandedItems,
         })
       : writable({ showConnectors, expandedItems });
+    this.selectedTableStore = selectedTableStore;
   }
 
   createItemIfNotExists(
@@ -127,6 +144,12 @@ export class ConnectorExplorerStore {
   ) => {
     if (this.onToggleItem)
       this.onToggleItem(connector, database, schema, table);
+    this.selectedTableStore.set({
+      connector,
+      database: database,
+      schema,
+      table,
+    });
 
     if (table && !this.allowShowSchema) return;
 

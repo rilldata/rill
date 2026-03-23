@@ -2,7 +2,7 @@
   import { createAdminServiceCreateAsset } from "@rilldata/web-admin/client";
   import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import { Button } from "@rilldata/web-common/components/button/index.js";
-  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
+  import ImageInput from "@rilldata/web-common/components/forms/ImageInput.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import {
     Popover,
@@ -109,7 +109,7 @@
     class="flex flex-col gap-y-2 w-[400px] p-4"
   >
     <div class="text-base font-medium">Upload org {label}</div>
-    <FileInput bind:value={url} {accept} {uploadFile} />
+    <ImageInput bind:value={url} {accept} {uploadFile} />
     {#if error}
       <div class="text-red-600 text-xs">
         {error}
