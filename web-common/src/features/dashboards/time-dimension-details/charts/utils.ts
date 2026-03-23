@@ -165,36 +165,3 @@ export function updateChartOnTableCellHover(
   viewVL.signal("hover_tuple", newValue);
   viewVL.runAsync();
 }
-
-function checkLayerForBrush(layer) {
-  if (layer.params && Array.isArray(layer.params)) {
-    for (const param of layer.params) {
-      if (param.name === "brush") {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-// Check if vega lite spec has brush params
-// If so, we need to compile vega lite spec to vega spec
-export function hasBrushParam(spec) {
-  if (spec && spec.layer && Array.isArray(spec.layer)) {
-    // Layered and Multi-view
-    // https://vega.github.io/vega-lite/docs/spec.html#layered-and-multi-view-specifications
-    for (const layer of spec.layer) {
-      if (checkLayerForBrush(layer)) {
-        return true;
-      }
-    }
-  } else if (spec && spec.params && Array.isArray(spec.params)) {
-    // Single view
-    // https://vega.github.io/vega-lite/docs/spec.html#single
-    if (checkLayerForBrush(spec)) {
-      return true;
-    }
-  }
-
-  return false;
-}

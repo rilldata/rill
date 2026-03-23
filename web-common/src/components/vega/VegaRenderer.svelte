@@ -9,6 +9,7 @@
     type View,
     type VisualizationSpec,
   } from "svelte-vega";
+  import type { Config } from "vega-lite";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
@@ -22,6 +23,7 @@
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
   export let canvasDashboard = false;
+  export let config: Config | undefined = undefined;
   export let renderer: "canvas" | "svg" = "canvas";
   export let theme: "light" | "dark" = "light";
   export let hasComparison: boolean = false;
@@ -87,6 +89,7 @@
     canvasDashboard,
     width,
     height,
+    config,
     renderer,
     themeMode: theme,
     expressionFunctions,

@@ -1,9 +1,9 @@
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { definedLightModeColors } from "@rilldata/web-common/features/themes/colors";
 import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
 import type { Config } from "vega-lite";
-import { definedLightModeColors } from "@rilldata/web-common/features/themes/colors";
 
 function resolveCSSVariable(
   cssVar: string,
@@ -105,7 +105,6 @@ export const getRillTheme: (
     },
     bar: {
       fill: barColor,
-      ...(!isCanvasDashboard && { opacity: 0.8 }),
     },
     line: { stroke: lineColor, strokeWidth: 1.5, strokeOpacity: 1 },
     path: { stroke: lineColor },
@@ -144,9 +143,7 @@ export const getRillTheme: (
       labelOverlap: false,
     },
     axisX: {
-      ...(isCanvasDashboard && {
-        grid: false,
-      }),
+      grid: false,
       gridColor: gridColor,
       gridDash: [2],
       tickColor: gridColor,
@@ -164,6 +161,9 @@ export const getRillTheme: (
       titleFontSize: 12,
       titleFontWeight: 500,
       titlePadding: 10,
+    },
+    axisXTemporal: {
+      grid: false,
     },
     view: {
       strokeWidth: 0,

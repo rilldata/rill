@@ -2,6 +2,7 @@ import {
   sanitizeFieldName,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
+import { createBrushParam } from "@rilldata/web-common/features/components/charts/brush-builder";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import type {
   ChartDataResult,
@@ -41,8 +42,8 @@ import type {
   PositionFieldDef,
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
-import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { SelectionParameter } from "vega-lite/build/src/selection";
+import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
 
@@ -481,13 +482,7 @@ export function buildHoverRuleLayer(args: {
   ];
 
   if (isInteractive) {
-    params.push({
-      name: "brush",
-      select: {
-        type: "interval",
-        encodings: ["x"],
-      },
-    });
+    params.push(createBrushParam());
   }
 
   return {
@@ -504,8 +499,8 @@ export function buildHoverRuleLayer(args: {
     mark: {
       type: isBarMark ? "bar" : "rule",
       clip: true,
-      opacity: 0.6,
-      ...(!isBarMark && { strokeWidth: 5 }),
+      opacity: 0.8,
+      ...(!isBarMark && { strokeWidth: 1.5 }),
     },
     encoding: {
       x: {

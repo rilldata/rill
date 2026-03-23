@@ -1,18 +1,26 @@
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { VegaLiteSpec, VegaSpec } from "svelte-vega";
 import { compile } from "vega-lite";
-import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
+import type { SelectionParameter } from "vega-lite/build/src/selection";
 import type { Signal } from "vega-typings";
 
 /**
  * Creates a Vega-Lite brush parameter for interval selection on the x-axis.
  * Add this to a layer's `params` array to enable brush/scrub selection.
  */
-export function createBrushParam(): TopLevelParameter {
+export function createBrushParam(): SelectionParameter {
   return {
     name: "brush",
     select: {
       type: "interval",
       encodings: ["x"],
+      mark: {
+        fill: ScrubBoxColor,
+        fillOpacity: 0.4,
+        stroke: ScrubBoxColor,
+        strokeWidth: 1,
+        strokeOpacity: 0.8,
+      },
     },
   };
 }
