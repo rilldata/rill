@@ -73,7 +73,7 @@
   let grainDropdownOpen = false;
   let connectNulls = true;
   let forceLineChart = false;
-  let zeroBasedOrigin = false;
+  let dynamicYAxisScale = false;
 
   const client = useRuntimeClient();
 
@@ -277,7 +277,7 @@
           <ChartSettingsMenu
             bind:connectNulls
             bind:forceLineChart
-            bind:zeroBasedOrigin
+            bind:dynamicYAxisScale
             showForceLineChart={false}
           />
         </div>
@@ -333,7 +333,7 @@
       <ChartSettingsMenu
         bind:connectNulls
         bind:forceLineChart
-        bind:zeroBasedOrigin
+        bind:dynamicYAxisScale
       />
 
       {#if !hideStartPivotButton}
@@ -418,7 +418,7 @@
             {showComparison}
             {showTimeDimensionDetail}
             {forceLineChart}
-            dynamicYAxis={!zeroBasedOrigin}
+            dynamicYAxis={dynamicYAxisScale}
             onScrub={handleScrub}
             onScrubClear={() => {
               metricsExplorerStore.setSelectedScrubRange(

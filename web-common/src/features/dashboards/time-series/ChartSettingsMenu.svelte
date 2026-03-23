@@ -10,7 +10,7 @@
 
   export let connectNulls: boolean;
   export let forceLineChart: boolean;
-  export let zeroBasedOrigin: boolean;
+  export let dynamicYAxisScale: boolean;
   export let showForceLineChart = true;
 
   let open = false;
@@ -46,11 +46,11 @@
       </div>
     {/if}
     <div class="flex flex-row items-center justify-between gap-x-2">
-      <span>Zero-based origin</span>
+      <span>Dynamic Y-axis scale</span>
       <Switch
         small
-        checked={zeroBasedOrigin}
-        onCheckedChange={() => (zeroBasedOrigin = !zeroBasedOrigin)}
+        checked={dynamicYAxisScale}
+        onCheckedChange={() => (dynamicYAxisScale = !dynamicYAxisScale)}
       />
     </div>
   </PopoverContent>
