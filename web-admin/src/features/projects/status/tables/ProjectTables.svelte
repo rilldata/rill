@@ -16,24 +16,24 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { writable } from "svelte/store";
-  import ModelsTable from "./ModelsTable.svelte";
-  import ExternalTablesTable from "./ExternalTablesTable.svelte";
+  import ModelsTable from "@rilldata/web-common/features/projects/status/tables/ModelsTable.svelte";
+  import ExternalTablesTable from "@rilldata/web-common/features/projects/status/tables/ExternalTablesTable.svelte";
   import { useInfiniteTablesList, useModelResources } from "../selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     filterTemporaryTables,
     applyTableFilters,
     splitTablesByModel,
-  } from "./utils";
-  import ResourceSpecDialog from "../resource-table/ResourceSpecDialog.svelte";
-  import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
-  import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
-  import RefreshResourceConfirmDialog from "../resource-table/RefreshResourceConfirmDialog.svelte";
+  } from "@rilldata/web-common/features/projects/status/tables/utils";
+  import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
+  import ModelPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/ModelPartitionsDialog.svelte";
+  import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
+  import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
   import {
     createUrlFilterSync,
     parseEnumParam,
     parseStringParam,
-  } from "../url-filter-sync";
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
   const runtimeClient = useRuntimeClient();

@@ -8,7 +8,7 @@
     shouldFilterByErrored,
     shouldFilterByPending,
     type PartitionFilterType,
-  } from "./utils";
+  } from "@rilldata/web-common/features/projects/status/tables/utils";
 
   export let open = false;
   export let resource: V1Resource | null = null;

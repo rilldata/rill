@@ -11,10 +11,14 @@
   } from "../entity-management/resource-selectors";
   import { builderActions } from "bits-ui";
   import { GitBranch } from "lucide-svelte";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
+    [ResourceKind.Explore, new Set([ResourceKind.MetricsView])],
     [ResourceKind.Source, new Set([ResourceKind.Model])],
     [
       ResourceKind.Model,
@@ -46,6 +50,18 @@
   $: withoutComponents = resources?.filter((r) => !r?.component);
 
   $: componentsOnly = !withoutComponents.length && resources.length;
+
+  // Whether this crumb is disabled in preview mode (models and upstream non-dashboard resources)
+  $: isDisabledInPreview =
+    $previewModeStore &&
+    (resourceKind === ResourceKind.Model ||
+      (upstream &&
+        resourceKind !== ResourceKind.MetricsView &&
+        resourceKind !== ResourceKind.Explore));
+
+  function getFileHref(filePaths: string[] | undefined): string {
+    return `/files${filePaths?.[0] ?? filePath}`;
+  }
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
@@ -109,50 +125,85 @@
 {#if !componentsOnly}
   <div class="crumb">
     <div class="crumb__trigger">
-      <DropdownMenu.Root bind:open>
-        <DropdownMenu.Trigger asChild let:builder>
-          <svelte:element
-            this={dropdown ? "button" : "a"}
-            class:open
-            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
-            class:selected={current}
-            href={dropdown
-              ? undefined
-              : exampleResource
-                ? `/files${exampleResource?.meta?.filePaths?.[0]}`
-                : "#"}
-            {...dropdown ? builder : {}}
-            use:builderActions={{ builders: dropdown ? [builder] : [] }}
-          >
-            <CrumbTrigger
-              {filePath}
-              kind={resourceKind}
-              label={!selectedResource && dropdown
-                ? generateLabel(resources)
-                : resourceName}
-            />
-          </svelte:element>
-        </DropdownMenu.Trigger>
-
-        {#if dropdown}
-          <DropdownMenu.Content align="start">
-            {#each resources as resource (resource?.meta?.name?.name)}
-              {@const kind = resource?.meta?.name?.kind}
-              <DropdownMenu.Item
-                href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
-              >
-                {#if kind}
-                  <svelte:component
-                    this={resourceIconMapping[kind]}
-                    size="14px"
+      {#if isDisabledInPreview}
+        <Tooltip distance={8}>
+          <div>
+            <DropdownMenu.Root bind:open>
+              <DropdownMenu.Trigger asChild let:builder>
+                <svelte:element
+                  this={dropdown ? "button" : "a"}
+                  role={dropdown ? "button" : "link"}
+                  class:open
+                  class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
+                  class:selected={current}
+                  class:disabled={true}
+                  href="#"
+                  on:click={(e) => e.preventDefault()}
+                  {...dropdown ? builder : {}}
+                  use:builderActions={{ builders: dropdown ? [builder] : [] }}
+                >
+                  <CrumbTrigger
+                    {filePath}
+                    kind={resourceKind}
+                    label={!selectedResource && dropdown
+                      ? generateLabel(resources)
+                      : resourceName}
                   />
-                {/if}
-                {resource?.meta?.name?.name}
-              </DropdownMenu.Item>
-            {/each}
-          </DropdownMenu.Content>
-        {/if}
-      </DropdownMenu.Root>
+                </svelte:element>
+              </DropdownMenu.Trigger>
+            </DropdownMenu.Root>
+          </div>
+          <TooltipContent slot="tooltip-content">
+            Available in Developer mode
+          </TooltipContent>
+        </Tooltip>
+      {:else}
+        <DropdownMenu.Root bind:open>
+          <DropdownMenu.Trigger asChild let:builder>
+            <svelte:element
+              this={dropdown ? "button" : "a"}
+              role={dropdown ? "button" : "link"}
+              class:open
+              class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
+              class:selected={current}
+              href={dropdown
+                ? undefined
+                : exampleResource
+                  ? getFileHref(exampleResource?.meta?.filePaths)
+                  : "#"}
+              {...dropdown ? builder : {}}
+              use:builderActions={{ builders: dropdown ? [builder] : [] }}
+            >
+              <CrumbTrigger
+                {filePath}
+                kind={resourceKind}
+                label={!selectedResource && dropdown
+                  ? generateLabel(resources)
+                  : resourceName}
+              />
+            </svelte:element>
+          </DropdownMenu.Trigger>
+
+          {#if dropdown}
+            <DropdownMenu.Content align="start">
+              {#each resources as resource (resource?.meta?.name?.name)}
+                {@const kind = resource?.meta?.name?.kind}
+                <DropdownMenu.Item
+                  href={getFileHref(resource?.meta?.filePaths)}
+                >
+                  {#if kind}
+                    <svelte:component
+                      this={resourceIconMapping[kind]}
+                      size="14px"
+                    />
+                  {/if}
+                  {resource?.meta?.name?.name}
+                </DropdownMenu.Item>
+              {/each}
+            </DropdownMenu.Content>
+          {/if}
+        </DropdownMenu.Root>
+      {/if}
     </div>
     {#if current && graphSupported && openGraph}
       <Button
@@ -186,6 +237,14 @@
   a:hover,
   button:hover {
     @apply text-fg-primary;
+  }
+
+  .disabled {
+    @apply text-fg-disabled;
+  }
+
+  .disabled:hover {
+    @apply text-fg-disabled;
   }
 
   .selected {

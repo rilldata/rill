@@ -20,13 +20,20 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
-  import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+  import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
+  import PreviewModeNav from "../features/preview/PreviewModeNav.svelte";
+  import {
+    isPreviewRoute,
+    isDeveloperRoute,
+    showPreviewNav,
+  } from "./route-constants";
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
@@ -37,9 +44,24 @@
     errorEventHandler?.requestErrorEventHandler(error, query);
   initPylonWidget();
 
+  // Preview mode store sync:
+  // 1. Backend lock: if --preview flag is set, always true
+  // 2. URL-derived: preview routes (/dashboards, /ai, /status) → true,
+  //    developer routes (/, /files) → false
+  // 3. Preserved: shared routes (/explore, /canvas, /deploy) keep previous value
+  $: {
+    if (data.previewMode) {
+      previewModeStore.set(true);
+    } else if (isPreviewRoute($page.url.pathname)) {
+      previewModeStore.set(true);
+    } else if (isDeveloperRoute($page.url.pathname)) {
+      previewModeStore.set(false);
+    }
+  }
+
   let removeJavascriptListeners: () => void;
   onMount(async () => {
-    const config = await localServiceGetMetadata();
+    const config = data.metadata;
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
@@ -56,7 +78,7 @@
     }
 
     featureFlags.set(false, "adminServer");
-    featureFlags.set(config.readonly, "readOnly");
+    featureFlags.set(config.readonly || data.previewMode, "readOnly");
   });
 
   /**
@@ -71,8 +93,15 @@
   const instanceId = LOCAL_INSTANCE_ID;
 
   $: ({ route } = $page);
+  $: onDeployPage = isDeployPage($page);
+  $: isPreviewMode = $previewModeStore;
 
-  $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
+  // Preview mode from store OR (viz) route group
+  $: mode =
+    isPreviewMode || route.id?.includes("(viz)") ? "Preview" : "Developer";
+
+  $: shouldShowPreviewNav =
+    isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -85,12 +114,17 @@
           <BannerCenter />
           <RepresentingUserBanner />
           <ApplicationHeader {mode} />
+          {#if shouldShowPreviewNav}
+            <PreviewModeNav />
+          {/if}
           {#if $deploy}
             <RemoteProjectManager />
           {/if}
         {/if}
 
-        <slot />
+        <div class="flex-1 overflow-hidden bg-surface-background">
+          <slot />
+        </div>
       </div>
     </FileAndResourceWatcher>
   </RuntimeProvider>

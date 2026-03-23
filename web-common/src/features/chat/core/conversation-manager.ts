@@ -28,6 +28,12 @@ export interface ConversationManagerOptions {
    * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
    */
   agent?: string;
+  /**
+   * Base path builder for URL-based conversation selectors.
+   * Only used when conversationState is "url".
+   * Defaults to `/${org}/${project}/-/ai` (web-admin pattern).
+   */
+  basePath?: () => string;
 }
 
 /**
@@ -65,7 +71,9 @@ export class ConversationManager {
 
     switch (options.conversationState) {
       case "url":
-        this.conversationSelector = new URLConversationSelector();
+        this.conversationSelector = new URLConversationSelector(
+          options.basePath,
+        );
         break;
       case "browserStorage":
         this.conversationSelector = new BrowserStorageConversationSelector();

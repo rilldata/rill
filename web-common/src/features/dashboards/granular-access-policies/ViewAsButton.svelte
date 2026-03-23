@@ -13,8 +13,6 @@
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
-  const iconColor = "#15141A";
-
   let viewAsMenuOpen = false;
   let open = false;
 
@@ -66,7 +64,7 @@
           class="flex gap-x-2 items-center"
         >
           {#if $selectedMockUserStore?.email === user?.email}
-            <Check size="16px" color={iconColor} />
+            <Check size="16px" />
           {:else}
             <Spacer size="16px" />
           {/if}
@@ -78,9 +76,9 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Item
       href={`/files/rill.yaml?addMockUser=true`}
-      class="flex gap-x-2 items-center text-black font-normal"
+      class="flex gap-x-2 items-center font-normal"
     >
-      <Add color={iconColor} size="16px" />
+      <Add size="16px" />
       Add mock user
     </DropdownMenu.Item>
   </DropdownMenu.Content>

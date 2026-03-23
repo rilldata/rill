@@ -8,6 +8,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
+  import { getStatusPriority } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
@@ -15,13 +16,13 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import ActionsCell from "./ActionsCell.svelte";
-  import NameCell from "./NameCell.svelte";
-  import RefreshCell from "./RefreshCell.svelte";
-  import RefreshErroredPartitionsDialog from "../tables/RefreshErroredPartitionsDialog.svelte";
-  import ModelPartitionsDialog from "../tables/ModelPartitionsDialog.svelte";
-  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
-  import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
-  import ResourceSpecDialog from "./ResourceSpecDialog.svelte";
+  import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
+  import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
+  import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
+  import ModelPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/ModelPartitionsDialog.svelte";
+  import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
+  import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
+  import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
 
   export let data: V1Resource[];
 
@@ -161,21 +162,6 @@
       accessorFn: (row) => row.meta.reconcileStatus,
       header: "Status",
       sortingFn: (rowA, rowB) => {
-        // Priority order: Running (highest) -> Pending -> Idle -> Unknown (lowest)
-        const getStatusPriority = (status: V1ReconcileStatus) => {
-          switch (status) {
-            case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-              return 4;
-            case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
-              return 3;
-            case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
-              return 2;
-            case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
-            default:
-              return 1;
-          }
-        };
-
         return (
           getStatusPriority(rowB.original.meta.reconcileStatus) -
           getStatusPriority(rowA.original.meta.reconcileStatus)
