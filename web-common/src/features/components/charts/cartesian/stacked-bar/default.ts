@@ -56,6 +56,7 @@ export function generateVLStackedBarChartSpec(
     xSort: config.x?.sort,
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
+    isInteractive: config.isInteractive,
     pivot: createVegaTransformPivotConfig(
       xField,
       yField,

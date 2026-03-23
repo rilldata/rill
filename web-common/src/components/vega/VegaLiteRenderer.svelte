@@ -50,7 +50,6 @@
 
   $: options = createEmbedOptions({
     client: runtimeClient,
-    canvasDashboard,
     width,
     height,
     config,
