@@ -223,6 +223,7 @@ export function processPivot(
         ...state,
         rowPage: 1,
       }));
+      config.pivot.rowPage = 1;
     }
   }
 
@@ -309,6 +310,7 @@ export function processFlat(
         ...state,
         rowPage: 1,
       }));
+      config.pivot.rowPage = 1;
     }
   }
 

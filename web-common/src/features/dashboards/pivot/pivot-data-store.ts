@@ -1,3 +1,4 @@
+import type { ConnectError } from "@connectrpc/connect";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   calculateEffectiveRowLimit,
@@ -14,7 +15,6 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { ConnectError } from "@connectrpc/connect";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { type Readable, derived, readable } from "svelte/store";
@@ -171,23 +171,6 @@ export function createTableCellQuery(
 }
 
 /**
- * Stores the last pivot data and column def to be used when there is no data
- * to be displayed. This is to avoid the table from flickering when there is no
- * data to be displayed.
- */
-let lastPivotData: PivotDataRow[] = [];
-let lastPivotColumnDef: ColumnDef<PivotDataRow>[] = [];
-let lastTotalColumns: number = 0;
-
-/**
- * The expanded table has to iterate over itself to find nested dimension values
- * which are being expanded. Since the expanded values are added in one go, the previously
- * expanded values are not available in the table data. This map stores the expanded table
- * data for each pivot config. This is cleared when the pivot config changes.
- */
-let expandedTableMap: Record<string, PivotDataRow[]> = {};
-
-/**
  * Main store for pivot table data
  *
  * At a high-level, we make the following queries in the order below:
@@ -219,6 +202,15 @@ export function createPivotDataStore(
   ctx: PivotDashboardContext,
   configStore: Readable<PivotDataStoreConfig>,
 ): PivotDataStore {
+  // Per-instance caching: avoids flicker when data is loading and prevents
+  // cross-contamination when multiple pivot stores exist simultaneously
+  let lastPivotData: PivotDataRow[] = [];
+  let lastPivotColumnDef: ColumnDef<PivotDataRow>[] = [];
+  let lastTotalColumns: number = 0;
+  let lastProcessedRowPage: number = 0;
+  let lastProcessedConfigKey: string = "";
+  let expandedTableMap: Record<string, PivotDataRow[]> = {};
+
   /**
    * Derive a store using pivot config
    */
@@ -561,16 +553,28 @@ export function createPivotDataStore(
                   rowMeasureTotalsAxesQuery?.totals?.[anchorDimension] || [],
                 );
 
+                // Track config key to detect context changes and prevent
+                // re-accumulating cached data on config re-derivations
+                const configKey = getPivotConfigKey(config);
+                if (configKey !== lastProcessedConfigKey) {
+                  lastProcessedRowPage = 0;
+                  lastProcessedConfigKey = configKey;
+                }
+
                 let pivotSkeleton = mergedRowTotals;
                 if (!isFlat && rowPage > 1) {
-                  pivotSkeleton = [...lastPivotData, ...mergedRowTotals];
+                  if (rowPage > lastProcessedRowPage) {
+                    pivotSkeleton = [...lastPivotData, ...mergedRowTotals];
+                  } else {
+                    pivotSkeleton = lastPivotData as PivotDataRow[];
+                  }
                 }
 
                 let pivotData: PivotDataRow[] = [];
                 let cellData: PivotDataRow[] = [];
                 let isCellDataEmpty = false;
-                if (getPivotConfigKey(config) in expandedTableMap) {
-                  pivotData = expandedTableMap[getPivotConfigKey(config)];
+                if (configKey in expandedTableMap) {
+                  pivotData = expandedTableMap[configKey];
                 } else {
                   if (tableCellData === null) {
                     cellData = pivotSkeleton as PivotDataRow[];
@@ -594,8 +598,10 @@ export function createPivotDataStore(
 
                   let tableDataWithCells: PivotDataRow[] = [];
                   if (isFlat) {
-                    if (rowPage > 1) {
+                    if (rowPage > 1 && rowPage > lastProcessedRowPage) {
                       tableDataWithCells = [...lastPivotData, ...cellData];
+                    } else if (rowPage > 1) {
+                      tableDataWithCells = lastPivotData;
                     } else {
                       tableDataWithCells = cellData;
                     }
@@ -676,6 +682,7 @@ export function createPivotDataStore(
                     }
 
                     lastPivotData = tableDataExpanded;
+                    lastProcessedRowPage = rowPage;
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
 
