@@ -356,7 +356,8 @@ describe("build-resource-graph", () => {
       const { nodes } = buildResourceGraph(resources);
 
       expect(nodes[0].data.resource).toBeDefined();
-      expect(nodes[0].data.kind).toBe(ResourceKind.Model);
+      // Root models with no dependencies are coerced to Source (Source Models)
+      expect(nodes[0].data.kind).toBe(ResourceKind.Source);
       expect(nodes[0].data.label).toBe("model1");
     });
 

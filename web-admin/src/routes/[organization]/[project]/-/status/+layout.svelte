@@ -17,6 +17,7 @@
       label: "Resources",
       route: "/resources",
       hasPermission: true,
+      matchPrefix: true,
     },
     {
       label: "Tables",

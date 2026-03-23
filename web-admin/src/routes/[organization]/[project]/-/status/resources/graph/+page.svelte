@@ -11,7 +11,12 @@
   import { setGraphNavigation } from "@rilldata/web-common/features/resource-graph/shared/graph-navigation-context";
   import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
   import {
+    ResourceKind,
+    SingletonProjectParserName,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
     createRuntimeServiceCreateTriggerMutation,
+    createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -22,24 +27,14 @@
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
+  $: graphBasePath = `/${$page.params.organization}/${$page.params.project}/-/status/resources/graph`;
+
   setGraphNavigation({
     viewLineage(kindToken, resourceName) {
       const params = new URLSearchParams();
       if (kindToken) params.set("kind", kindToken);
       if (resourceName) params.set("resource", resourceName);
-      goto(`/graph?${params.toString()}`);
-    },
-    openFile(filePath) {
-      try {
-        const prefs = JSON.parse(localStorage.getItem(filePath) || "{}");
-        localStorage.setItem(
-          filePath,
-          JSON.stringify({ ...prefs, view: "code" }),
-        );
-      } catch {
-        // ignore
-      }
-      goto(`/files${filePath}`);
+      goto(`${graphBasePath}?${params.toString()}`);
     },
   });
 
@@ -58,9 +53,7 @@
       ? urlParams.resources
       : [activeKind];
 
-  // Sidebar selection from URL ?resource= param.
-  // Only use controlled mode when the URL explicitly names a resource;
-  // otherwise let the sidebar auto-select internally without touching the URL.
+  // Sidebar selection from URL ?resource= param
   $: hasResourceParam = urlParams.resources.length > 0;
   $: selectedGroupId = hasResourceParam ? urlParams.resources[0] : null;
 
@@ -74,7 +67,7 @@
     const params = new URLSearchParams();
     params.set("kind", derivedKind ?? activeKind);
     if (name) params.set("resource", name);
-    goto(`/graph?${params.toString()}`, {
+    goto(`${graphBasePath}?${params.toString()}`, {
       replaceState: true,
       noScroll: true,
     });
@@ -82,9 +75,9 @@
 
   function handleKindChange(kind: string | null) {
     if (kind) {
-      goto(`/graph?kind=${kind}`);
+      goto(`${graphBasePath}?kind=${kind}`);
     } else {
-      goto("/graph");
+      goto(graphBasePath);
     }
   }
 
@@ -106,10 +99,8 @@
     }
   }
 
-  // True when the URL has any explicit filter params (kind or resource)
   $: hasUrlFilters = !!urlParams.kind || urlParams.resources.length > 0;
 
-  // Clear all filters
   function handleClearFilters() {
     selectedStatuses = [];
     handleKindChange(null);
@@ -140,11 +131,21 @@
         console.error("Failed to refresh all sources and models:", err);
       });
   }
-</script>
 
-<svelte:head>
-  <title>Rill Developer | Project graph</title>
-</svelte:head>
+  // Parse errors
+  $: projectParserQuery = createRuntimeServiceGetResource(
+    runtimeClient,
+    {
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
+    },
+    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
+  );
+  $: parseErrors =
+    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
+</script>
 
 <div class="graph-wrapper">
   <GraphContainer
@@ -158,9 +159,32 @@
     statusFilterOptions={statusOptions}
     onStatusToggle={toggleStatus}
     onClearFilters={handleClearFilters}
-    onSelectAll={() => goto("/graph")}
+    onSelectAll={() => goto(graphBasePath)}
     {hasUrlFilters}
   />
+</div>
+
+<div class="parse-errors">
+  <h3 class="parse-errors-header">
+    Parse Errors
+    {#if parseErrors.length > 0}
+      <span class="parse-errors-badge">{parseErrors.length}</span>
+    {/if}
+  </h3>
+  {#if parseErrors.length === 0}
+    <p class="text-sm text-fg-secondary">No parse errors</p>
+  {:else}
+    <div class="parse-errors-list">
+      {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}
+        <div class="parse-error-item">
+          {#if error.filePath}
+            <span class="parse-error-file">{error.filePath}</span>
+          {/if}
+          <span class="parse-error-message">{error.message}</span>
+        </div>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <RefreshConfirmDialog
@@ -170,6 +194,35 @@
 
 <style lang="postcss">
   .graph-wrapper {
-    @apply flex flex-col size-full overflow-hidden;
+    @apply flex flex-col w-full min-w-0 overflow-hidden;
+    height: 600px;
+  }
+
+  /* Prevent sidebar-main from overflowing past the toolbar */
+  .graph-wrapper :global(.sidebar-main) {
+    height: 0;
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+  .parse-errors {
+    @apply pt-4 mt-2;
+  }
+  .parse-errors-header {
+    @apply text-sm font-semibold text-fg-primary flex items-center gap-2 mb-3;
+  }
+  .parse-errors-badge {
+    @apply text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 min-w-[20px] text-center;
+  }
+  .parse-errors-list {
+    @apply flex flex-col gap-2;
+  }
+  .parse-error-item {
+    @apply flex flex-col gap-0.5 px-3 py-2 rounded-md bg-red-50 text-sm;
+  }
+  .parse-error-file {
+    @apply font-mono text-xs text-fg-secondary;
+  }
+  .parse-error-message {
+    @apply text-red-700;
   }
 </style>
