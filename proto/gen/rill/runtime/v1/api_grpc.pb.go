@@ -61,6 +61,7 @@ const (
 	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
+	RuntimeService_GenerateChart_FullMethodName           = "/rill.runtime.v1.RuntimeService/GenerateChart"
 	RuntimeService_GetAIMessage_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetAIMessage"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
@@ -173,6 +174,8 @@ type RuntimeServiceClient interface {
 	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
 	CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error)
+	// GenerateChart generates metrics_sql queries and a Vega-Lite spec for a canvas custom chart from a natural language prompt.
+	GenerateChart(ctx context.Context, in *GenerateChartRequest, opts ...grpc.CallOption) (*GenerateChartResponse, error)
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -666,6 +669,16 @@ func (c *runtimeServiceClient) CompleteStreaming(ctx context.Context, in *Comple
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RuntimeService_CompleteStreamingClient = grpc.ServerStreamingClient[CompleteStreamingResponse]
 
+func (c *runtimeServiceClient) GenerateChart(ctx context.Context, in *GenerateChartRequest, opts ...grpc.CallOption) (*GenerateChartResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateChartResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GenerateChart_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAIMessageResponse)
@@ -884,6 +897,8 @@ type RuntimeServiceServer interface {
 	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
 	CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error
+	// GenerateChart generates metrics_sql queries and a Vega-Lite spec for a canvas custom chart from a natural language prompt.
+	GenerateChart(context.Context, *GenerateChartRequest) (*GenerateChartResponse, error)
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -1046,6 +1061,9 @@ func (UnimplementedRuntimeServiceServer) Complete(context.Context, *CompleteRequ
 }
 func (UnimplementedRuntimeServiceServer) CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method CompleteStreaming not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GenerateChart(context.Context, *GenerateChartRequest) (*GenerateChartResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateChart not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAIMessage not implemented")
@@ -1832,6 +1850,24 @@ func _RuntimeService_CompleteStreaming_Handler(srv interface{}, stream grpc.Serv
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RuntimeService_CompleteStreamingServer = grpc.ServerStreamingServer[CompleteStreamingResponse]
 
+func _RuntimeService_GenerateChart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateChartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GenerateChart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GenerateChart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GenerateChart(ctx, req.(*GenerateChartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_GetAIMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAIMessageRequest)
 	if err := dec(in); err != nil {
@@ -2206,6 +2242,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Complete",
 			Handler:    _RuntimeService_Complete_Handler,
+		},
+		{
+			MethodName: "GenerateChart",
+			Handler:    _RuntimeService_GenerateChart_Handler,
 		},
 		{
 			MethodName: "GetAIMessage",

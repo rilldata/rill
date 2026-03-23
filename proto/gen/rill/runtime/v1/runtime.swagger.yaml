@@ -645,6 +645,44 @@ paths:
             title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/generate-chart:
+    post:
+      summary: GenerateChart generates metrics_sql queries and a Vega-Lite spec for a canvas custom chart from a natural language prompt.
+      operationId: RuntimeService_GenerateChart
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateChartResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+                description: Natural language description of the desired chart.
+              previousSql:
+                type: array
+                items:
+                  type: string
+                description: Previous metrics_sql queries (for iterative refinement).
+              previousSpec:
+                type: string
+                description: Previous Vega-Lite spec JSON (for iterative refinement).
+            title: Request message for RuntimeService.GenerateChart
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
     get:
       summary: |-
@@ -5373,6 +5411,18 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateCanvasFile
+  v1GenerateChartResponse:
+    type: object
+    properties:
+      metricsSql:
+        type: array
+        items:
+          type: string
+        description: Generated metrics_sql queries.
+      vegaSpec:
+        type: string
+        description: Generated Vega-Lite specification as a JSON string.
+    title: Response message for RuntimeService.GenerateChart
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:

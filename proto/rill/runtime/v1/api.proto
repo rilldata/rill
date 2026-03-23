@@ -297,6 +297,14 @@ service RuntimeService {
     };
   }
 
+  // GenerateChart generates metrics_sql queries and a Vega-Lite spec for a canvas custom chart from a natural language prompt.
+  rpc GenerateChart(GenerateChartRequest) returns (GenerateChartResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/generate-chart",
+      body: "*"
+    };
+  }
+
   // GetAIMessage returns a message in a conversaion.
   rpc GetAIMessage(GetAIMessageRequest) returns (GetAIMessageResponse) {
     option (google.api.http) = {
@@ -1393,3 +1401,24 @@ message GitPushRequest {
 }
 
 message GitPushResponse {}
+
+// Request message for RuntimeService.GenerateChart
+message GenerateChartRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Reserved: was single metrics_view field, now loads all metrics views automatically.
+  reserved 2;
+  // Natural language description of the desired chart.
+  string prompt = 3 [(validate.rules).string.min_len = 1];
+  // Previous metrics_sql queries (for iterative refinement).
+  repeated string previous_sql = 4;
+  // Previous Vega-Lite spec JSON (for iterative refinement).
+  string previous_spec = 5;
+}
+
+// Response message for RuntimeService.GenerateChart
+message GenerateChartResponse {
+  // Generated metrics_sql queries.
+  repeated string metrics_sql = 1;
+  // Generated Vega-Lite specification as a JSON string.
+  string vega_spec = 2;
+}

@@ -56,7 +56,8 @@ export type CanvasComponentType =
   | "image"
   | "pivot"
   | "table"
-  | "leaderboard";
+  | "leaderboard"
+  | "custom_chart";
 
 interface LineChart {
   line_chart: CartesianCanvasChartSpec;
