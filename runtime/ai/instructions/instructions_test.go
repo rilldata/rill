@@ -13,7 +13,7 @@ func TestLoad(t *testing.T) {
 	require.NotNil(t, inst)
 
 	require.Equal(t, "development", inst.Name)
-	require.Equal(t, "How to develop a Rill project with an introduction to Rill's concepts and resource types", inst.Description)
+	require.Equal(t, "Overview of how to develop a Rill project", inst.Description)
 	require.NotEmpty(t, inst.Body)
 	require.Contains(t, inst.Body, "# Instructions for developing a Rill project")
 }
