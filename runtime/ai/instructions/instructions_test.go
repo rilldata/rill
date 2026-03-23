@@ -33,11 +33,25 @@ func TestLoadNotFound(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestLoadAgentsMD(t *testing.T) {
+	inst, err := Load("AGENTS.md", Options{External: false})
+	require.NoError(t, err)
+	require.NotNil(t, inst)
+	require.Equal(t, "AGENTS", inst.Name)
+	require.Equal(t, "Entry point for Rill project development instructions", inst.Description)
+	require.Contains(t, inst.Body, "rill-development")
+}
+
 func TestLoadAll(t *testing.T) {
 	// Test loading all instruction files
 	instructions, err := LoadAll(Options{External: false})
 	require.NoError(t, err)
 	require.NotEmpty(t, instructions)
+
+	// Check that AGENTS.md (entry point) is included
+	agents, ok := instructions["AGENTS.md"]
+	require.True(t, ok, "AGENTS.md should be loaded")
+	require.Equal(t, "AGENTS", agents.Name)
 
 	// Check that development.md is included
 	dev, ok := instructions["development.md"]
