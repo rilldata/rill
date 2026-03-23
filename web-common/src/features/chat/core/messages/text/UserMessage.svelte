@@ -1,6 +1,6 @@
 <!-- Renders user prompt messages. -->
 <script lang="ts">
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.svelte.ts";
   import { Editor } from "@tiptap/core";
   import { onMount } from "svelte";
   import type { V1Message } from "../../../../../runtime-client";

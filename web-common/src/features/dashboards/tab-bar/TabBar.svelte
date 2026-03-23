@@ -61,7 +61,7 @@
           theme
           {selected}
           href="?{ExploreStateURLParams.WebView}={tab}"
-          on:click={() => handleTabChange(tab)}
+          onclick={() => handleTabChange(tab)}
         >
           <Icon />
           <div class="flex gap-x-1 items-center group">

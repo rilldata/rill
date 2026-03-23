@@ -389,7 +389,7 @@
     aria-label="Measure Chart for {measureName}"
     class="size w-full overflow-visible"
     height="{height}px"
-    on:mousemove={(e) => {
+    onmousemove={(e) => {
       const x = clampX(e.offsetX);
       const fractionalIndex = xScale.invert(x);
 
@@ -409,10 +409,10 @@
       mousePageX = e.pageX;
       mousePageY = e.pageY;
     }}
-    on:mouseleave={handleSvgMouseLeave}
-    on:mousedown={handleMouseDown}
-    on:mouseup={handleMouseUp}
-    on:click={handleChartClick}
+    onmouseleave={handleSvgMouseLeave}
+    onmousedown={handleMouseDown}
+    onmouseup={handleMouseUp}
+    onclick={handleChartClick}
   >
     <!-- Clip chart body to plot area so lines/bars don't bleed into margins when overplotting -->
     <defs>

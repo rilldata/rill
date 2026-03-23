@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-  import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -185,9 +185,9 @@
   class:border-b={borderBottom}
   class:border-t={borderTop}
   class="relative"
-  on:pointerover={() => (hovered = true)}
-  on:pointerout={() => (hovered = false)}
-  on:click={(e) => {
+  onpointerover={() => (hovered = true)}
+  onpointerout={() => (hovered = false)}
+  onclick={(e) => {
     if (e.shiftKey) return;
     onDimensionCellClick(e);
   }}
@@ -226,7 +226,9 @@
           rel="noopener noreferrer"
           {href}
           title={href}
-          on:click|stopPropagation
+          onclick={(e) => {
+            e.stopPropagation();
+          }}
           class:hovered
         >
           <ExternalLink className="fill-primary-600" />

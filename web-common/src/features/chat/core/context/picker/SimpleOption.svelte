@@ -34,7 +34,7 @@
   class="context-item"
   class:focused
   type="button"
-  on:click={() => onSelect(item.context)}
+  onclick={() => onSelect(item.context)}
   use:enhancePickerNode={item}
 >
   <div class="context-item-checkbox">

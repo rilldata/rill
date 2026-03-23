@@ -10,21 +10,23 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Chip
-      removable
-      {active}
-      builders={[builder]}
-      removeTooltipText="Clear view"
-      onRemove={() => {
-        viewAsUserStore.set(null);
-        errorStore.reset();
-      }}
-    >
-      <div slot="body">
-        Viewing as <b>{$viewAsUserStore.email}</b>
-      </div>
-    </Chip>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Chip
+        {...props}
+        removable
+        {active}
+        removeTooltipText="Clear view"
+        onRemove={() => {
+          viewAsUserStore.set(null);
+          errorStore.reset();
+        }}
+      >
+        <div slot="body">
+          Viewing as <b>{$viewAsUserStore.email}</b>
+        </div>
+      </Chip>
+    {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"
