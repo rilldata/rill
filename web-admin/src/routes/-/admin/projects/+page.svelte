@@ -7,6 +7,7 @@
     notifyError,
   } from "@rilldata/web-admin/features/admin/shared/notify";
   import SearchInput from "@rilldata/web-admin/features/admin/shared/SearchInput.svelte";
+  import { adminServiceGetProject } from "@rilldata/web-admin/client";
   import {
     searchProjects,
     createUpdateProjectMutation,
@@ -25,6 +26,8 @@
   // Change Slots inline edit state
   let slotsEditProject = "";
   let slotsValue = "";
+  let slotsCurrentValue = "";
+  let slotsLoading = false;
 
   const updateProject = createUpdateProjectMutation();
   const redeployProject = createRedeployProjectMutation();
@@ -36,9 +39,23 @@
     searchQuery = e.detail;
   }
 
-  function handleChangeSlots(name: string) {
+  async function handleChangeSlots(name: string) {
+    const [org, project] = name.split("/");
     slotsEditProject = name;
     slotsValue = "";
+    slotsCurrentValue = "";
+    slotsLoading = true;
+    try {
+      const resp = await adminServiceGetProject(org, project, {
+        superuserForceAccess: true,
+      });
+      slotsCurrentValue = resp.project?.prodSlots ?? "";
+      slotsValue = slotsCurrentValue;
+    } catch {
+      slotsCurrentValue = "?";
+    } finally {
+      slotsLoading = false;
+    }
   }
 
   async function handleSaveSlots(name: string) {
@@ -165,39 +182,46 @@
                 View
               </a>
               {#if slotsEditProject === name}
-                <input
-                  type="number"
-                  class="w-16 px-2 py-1 text-xs rounded border border-blue-400 bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="slots"
-                  min="1"
-                  bind:value={slotsValue}
-                  on:keydown={(e) => {
-                    if (e.key === "Enter") handleSaveSlots(name);
-                    if (e.key === "Escape") {
+                {#if slotsLoading}
+                  <span class="text-xs text-slate-400">Loading...</span>
+                {:else}
+                  <span class="text-xs text-slate-500"
+                    >Current: {slotsCurrentValue}</span
+                  >
+                  <input
+                    type="number"
+                    class="w-16 px-2 py-1 text-xs rounded border border-blue-400 bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="slots"
+                    min="1"
+                    bind:value={slotsValue}
+                    on:keydown={(e) => {
+                      if (e.key === "Enter") handleSaveSlots(name);
+                      if (e.key === "Escape") {
+                        slotsEditProject = "";
+                        slotsValue = "";
+                      }
+                    }}
+                  />
+                  <button
+                    class="text-xs px-2 py-1 rounded border border-blue-400 text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={actionInProgress === `slots:${name}` ||
+                      !slotsValue}
+                    on:click={() => handleSaveSlots(name)}
+                  >
+                    {actionInProgress === `slots:${name}`
+                      ? "Saving..."
+                      : "Save"}
+                  </button>
+                  <button
+                    class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-500 hover:bg-slate-100"
+                    on:click={() => {
                       slotsEditProject = "";
                       slotsValue = "";
-                    }
-                  }}
-                />
-                <button
-                  class="text-xs px-2 py-1 rounded border border-blue-400 text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={actionInProgress === `slots:${name}` ||
-                    !slotsValue}
-                  on:click={() => handleSaveSlots(name)}
-                >
-                  {actionInProgress === `slots:${name}`
-                    ? "Saving..."
-                    : "Save"}
-                </button>
-                <button
-                  class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-500 hover:bg-slate-100"
-                  on:click={() => {
-                    slotsEditProject = "";
-                    slotsValue = "";
-                  }}
-                >
-                  Cancel
-                </button>
+                    }}
+                  >
+                    Cancel
+                  </button>
+                {/if}
               {:else}
                 <button
                   class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100"
