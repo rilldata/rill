@@ -1,5 +1,6 @@
+import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-import type { VegaLiteSpec, VegaSpec } from "svelte-vega";
+import type { VegaLiteSpec, VegaSpec, VisualizationSpec } from "svelte-vega";
 import { compile } from "vega-lite";
 import type { SelectionParameter } from "vega-lite/build/src/selection";
 import type { Signal } from "vega-typings";
@@ -36,18 +37,24 @@ export function createBrushParam(): SelectionParameter {
  * See: https://github.com/vega/vega-lite/issues/3338
  */
 export async function compileToBrushedVegaSpec(
-  vlSpec: VegaLiteSpec,
+  vlSpec: VisualizationSpec,
+  isThemeModeDark: boolean,
+  theme: Record<string, string> | undefined,
 ): Promise<VegaSpec> {
   const existingConfig =
     (vlSpec as { config?: Record<string, unknown> }).config ?? {};
+  // Merge the Rill theme config so axis settings (e.g. grid: false) are baked
+  // into the compiled Vega spec
+  const rillThemeConfig = getRillTheme(true, isThemeModeDark, theme);
   const specWithConfig = {
     ...vlSpec,
     config: {
+      ...rillThemeConfig,
       ...existingConfig,
       customFormatTypes: true,
     },
   };
-  const compiledSpec = compile(specWithConfig).spec;
+  const compiledSpec = compile(specWithConfig as VegaLiteSpec).spec;
   const originalSignals = compiledSpec.signals || [];
 
   const updatedSignals = originalSignals.map((signal: Signal): Signal => {

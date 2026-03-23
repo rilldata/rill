@@ -20,7 +20,7 @@
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
-  import type { SignalListeners, VegaLiteSpec, VegaSpec } from "svelte-vega";
+  import type { SignalListeners, VegaSpec } from "svelte-vega";
   import type { Readable } from "svelte/store";
   import type { View } from "vega-typings";
   import { getChroma } from "../../themes/theme-utils";
@@ -90,9 +90,11 @@
       JSON.stringify(spec) !== JSON.stringify(prevVlSpec)
     ) {
       prevVlSpec = spec;
-      void compileToBrushedVegaSpec(spec as VegaLiteSpec).then((compiled) => {
-        vegaSpec = compiled;
-      });
+      void compileToBrushedVegaSpec(spec, isThemeModeDark, theme).then(
+        (compiled) => {
+          vegaSpec = compiled;
+        },
+      );
     }
   }
 
