@@ -1,4 +1,5 @@
 import {
+  isMeasurePercentFormat,
   mapExprToMeasureFilter,
   mapMeasureFilterToExpr,
   type MeasureFilterEntry,
@@ -13,6 +14,7 @@ import {
   createOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
+  type MetricsViewSpecMeasure,
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -220,5 +222,63 @@ describe("mapExprToMeasureFilter", () => {
     it(title, () => {
       expect(mapExprToMeasureFilter(expr)).toEqual(criteria);
     });
+  });
+});
+
+describe("isMeasurePercentFormat", () => {
+  it("returns false for undefined measure", () => {
+    expect(isMeasurePercentFormat(undefined)).toBe(false);
+  });
+
+  it("returns false for measure with no format", () => {
+    expect(isMeasurePercentFormat({} as MetricsViewSpecMeasure)).toBe(false);
+  });
+
+  it("returns true for formatPreset percentage", () => {
+    expect(
+      isMeasurePercentFormat({
+        formatPreset: "percentage",
+      } as MetricsViewSpecMeasure),
+    ).toBe(true);
+  });
+
+  it("returns false for formatPreset humanize", () => {
+    expect(
+      isMeasurePercentFormat({
+        formatPreset: "humanize",
+      } as MetricsViewSpecMeasure),
+    ).toBe(false);
+  });
+
+  it("returns true for formatD3 with percent", () => {
+    expect(
+      isMeasurePercentFormat({
+        formatD3: ".1%",
+      } as MetricsViewSpecMeasure),
+    ).toBe(true);
+  });
+
+  it("returns true for formatD3 with percent specifier", () => {
+    expect(
+      isMeasurePercentFormat({
+        formatD3: ".2%",
+      } as MetricsViewSpecMeasure),
+    ).toBe(true);
+  });
+
+  it("returns false for formatD3 without percent", () => {
+    expect(
+      isMeasurePercentFormat({
+        formatD3: ",.2f",
+      } as MetricsViewSpecMeasure),
+    ).toBe(false);
+  });
+
+  it("returns false for formatD3 currency", () => {
+    expect(
+      isMeasurePercentFormat({
+        formatD3: "$,.2f",
+      } as MetricsViewSpecMeasure),
+    ).toBe(false);
   });
 });

@@ -30,12 +30,27 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let pinned = false;
   export let showPinControl = false;
+  export let isPercent = false;
+
+  function toDisplayValue(rawValue: string): string {
+    if (!isPercent || !rawValue) return rawValue;
+    const num = Number(rawValue);
+    if (Number.isNaN(num)) return rawValue;
+    return String(num * 100);
+  }
+
+  function toRawValue(displayValue: string): string {
+    if (!isPercent || !displayValue) return displayValue;
+    const num = Number(displayValue);
+    if (Number.isNaN(num)) return displayValue;
+    return String(num / 100);
+  }
 
   const initialValues = {
     dimension: dimensionName,
     operation: filter?.operation ?? MeasureFilterOperationOptions[0].value,
-    value1: filter?.value1 ?? "",
-    value2: filter?.value2 ?? "",
+    value1: toDisplayValue(filter?.value1 ?? ""),
+    value2: toDisplayValue(filter?.value2 ?? ""),
   };
 
   const validationSchema = object().shape({
@@ -76,8 +91,8 @@
             measure: name,
             operation: values.operation,
             type: MeasureFilterType.Value,
-            value1: values.value1,
-            value2: values.value2 ?? "",
+            value1: toRawValue(values.value1),
+            value2: toRawValue(values.value2 ?? ""),
           },
         });
 
@@ -172,24 +187,34 @@
       label="Threshold"
       options={MeasureFilterOperationOptions}
     />
-    <Input
-      bind:value={$form["value1"]}
-      errors={$errors["value1"]}
-      id="value1"
-      onEnter={submit}
-      alwaysShowError
-      placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
-    />
+    <div class="flex items-center gap-x-1">
+      <Input
+        bind:value={$form["value1"]}
+        errors={$errors["value1"]}
+        id="value1"
+        onEnter={submit}
+        alwaysShowError
+        placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
+      />
+      {#if isPercent}
+        <span class="text-xs text-fg-secondary flex-none">%</span>
+      {/if}
+    </div>
 
     {#if isBetweenExpression}
-      <Input
-        bind:value={$form["value2"]}
-        errors={$errors["value2"]}
-        id="value2"
-        placeholder="Higher Value"
-        alwaysShowError
-        onEnter={submit}
-      />
+      <div class="flex items-center gap-x-1">
+        <Input
+          bind:value={$form["value2"]}
+          errors={$errors["value2"]}
+          id="value2"
+          placeholder="Higher Value"
+          alwaysShowError
+          onEnter={submit}
+        />
+        {#if isPercent}
+          <span class="text-xs text-fg-secondary flex-none">%</span>
+        {/if}
+      </div>
     {/if}
 
     <Button submitForm type="primary" form="measure">Apply</Button>

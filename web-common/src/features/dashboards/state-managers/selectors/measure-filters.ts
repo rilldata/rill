@@ -1,5 +1,8 @@
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
+  isMeasurePercentFormat,
+  type MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -26,6 +29,7 @@ export type MeasureFilterItem = {
   filter?: MeasureFilterEntry;
   pinned?: boolean;
   metricsViewNames?: string[];
+  isPercent?: boolean;
 };
 
 export const getMeasureFilterItems = (
@@ -85,6 +89,7 @@ export function getMeasureFilterForDimension(
       name: filter.measure,
       label: measure.displayName || measure.expression || filter.measure,
       filter,
+      isPercent: isMeasurePercentFormat(measure),
     });
   });
 
@@ -105,12 +110,14 @@ export const getAllMeasureFilterItems = (
       dashData.dashboard.temporaryFilterName &&
       measureIdMap.has(dashData.dashboard.temporaryFilterName)
     ) {
+      const tempMeasure = measureIdMap.get(
+        dashData.dashboard.temporaryFilterName,
+      );
       allMeasureFilterItems.push({
         dimensionName: "",
         name: dashData.dashboard.temporaryFilterName,
-        label: getMeasureDisplayName(
-          measureIdMap.get(dashData.dashboard.temporaryFilterName),
-        ),
+        label: getMeasureDisplayName(tempMeasure),
+        isPercent: isMeasurePercentFormat(tempMeasure),
       });
     }
 

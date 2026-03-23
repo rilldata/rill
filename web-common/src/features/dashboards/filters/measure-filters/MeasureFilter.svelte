@@ -29,7 +29,8 @@
   let open = openOnMount && !filterData.filter;
   let curPinned = filterData.pinned;
 
-  $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
+  $: ({ filter, pinned, label, measures, dimensionName, name, isPercent } =
+    filterData);
 
   $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
 </script>
@@ -68,6 +69,7 @@
           })?.displayName ?? ""}
           {filter}
           {label}
+          isPercent={!!isPercent}
           slot="body"
         />
       </Chip>
@@ -92,6 +94,7 @@
       {label}
       {dimensionName}
       {allDimensions}
+      isPercent={!!isPercent}
       onApply={(params) => {
         if (pinned !== curPinned) {
           toggleFilterPin?.(name, metricsViewNames);

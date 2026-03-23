@@ -1,5 +1,8 @@
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
-import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
+  isMeasurePercentFormat,
+  type MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { type DimensionFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type {
@@ -391,6 +394,7 @@ export class FilterManager {
               pinned: pinned,
               measures: measureMap,
               metricsViewNames: metricsViewNames,
+              isPercent: isMeasurePercentFormat(measureSpecs[0]),
             });
           }
         } else {

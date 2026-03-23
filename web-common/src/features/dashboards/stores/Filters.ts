@@ -3,7 +3,10 @@ import {
   getDimensionDisplayName,
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
+import {
+  isMeasurePercentFormat,
+  type MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { toggleDimensionFilterValue } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters.ts";
 import {
   type DimensionFilterItem,
@@ -124,10 +127,12 @@ export class Filters {
       ([$measureNameMap, $measureFilterItems, tempFilter]) => {
         const itemsCopy = [...$measureFilterItems];
         if (tempFilter && $measureNameMap.has(tempFilter)) {
+          const tempMeasure = $measureNameMap.get(tempFilter);
           itemsCopy.push({
             dimensionName: "",
             name: tempFilter,
-            label: getMeasureDisplayName($measureNameMap.get(tempFilter)),
+            label: getMeasureDisplayName(tempMeasure),
+            isPercent: isMeasurePercentFormat(tempMeasure),
             // dimensions, // TODO: for canvas
           });
         }
@@ -500,6 +505,7 @@ export class Filters {
           name: filter.measure,
           label: measure.displayName || measure.expression || filter.measure,
           filter,
+          isPercent: isMeasurePercentFormat(measure),
           // dimensions, // TODO: for canvas
         };
       })
