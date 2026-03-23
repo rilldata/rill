@@ -9,6 +9,7 @@
   import SearchInput from "@rilldata/web-admin/features/admin/shared/SearchInput.svelte";
   import {
     searchProjects,
+    createUpdateProjectMutation,
     createRedeployProjectMutation,
     createHibernateProjectMutation,
   } from "@rilldata/web-admin/features/admin/projects/selectors";
@@ -21,6 +22,11 @@
   let confirmAction: () => Promise<void> = async () => {};
   let actionInProgress = "";
 
+  // Change Slots inline edit state
+  let slotsEditProject = "";
+  let slotsValue = "";
+
+  const updateProject = createUpdateProjectMutation();
   const redeployProject = createRedeployProjectMutation();
   const hibernateProject = createHibernateProjectMutation();
 
@@ -28,6 +34,35 @@
 
   function handleSearch(e: CustomEvent<string>) {
     searchQuery = e.detail;
+  }
+
+  function handleChangeSlots(name: string) {
+    slotsEditProject = name;
+    slotsValue = "";
+  }
+
+  async function handleSaveSlots(name: string) {
+    const slots = parseInt(slotsValue, 10);
+    if (!slots || slots < 1) {
+      notifyError("Prod slots must be a positive integer");
+      return;
+    }
+    const [org, project] = name.split("/");
+    actionInProgress = `slots:${name}`;
+    try {
+      await $updateProject.mutateAsync({
+        org,
+        project,
+        data: { prodSlots: String(slots), superuserForceAccess: true },
+      });
+      notifySuccess(`Prod slots for ${name} set to ${slots}`);
+      slotsEditProject = "";
+      slotsValue = "";
+    } catch (err) {
+      notifyError(`Failed to update slots: ${err}`);
+    } finally {
+      actionInProgress = "";
+    }
   }
 
   function handleHibernate(name: string) {
@@ -39,9 +74,9 @@
       actionInProgress = `hibernate:${name}`;
       try {
         await $hibernateProject.mutateAsync({ org, project });
-        notifySuccess( `Project ${name} hibernated`);
+        notifySuccess(`Project ${name} hibernated`);
       } catch (err) {
-        notifyError( `Failed: ${err}`);
+        notifyError(`Failed: ${err}`);
       } finally {
         actionInProgress = "";
       }
@@ -58,9 +93,9 @@
       actionInProgress = `redeploy:${name}`;
       try {
         await $redeployProject.mutateAsync({ org, project });
-        notifySuccess( `Project ${name} redeployed`);
+        notifySuccess(`Project ${name} redeployed`);
       } catch (err) {
-        notifyError( `Failed: ${err}`);
+        notifyError(`Failed: ${err}`);
       } finally {
         actionInProgress = "";
       }
@@ -71,7 +106,7 @@
 
 <AdminPageHeader
   title="Projects"
-  description="Search projects across all organizations by name pattern."
+  description="Search projects across all organizations. Change prod slots, hibernate, or redeploy."
 />
 
 <div class="mb-4 max-w-md">
@@ -90,7 +125,10 @@
   </div>
 {:else if $projectsQuery.data?.names?.length}
   <p class="text-xs text-slate-500 mb-2">
-    {$projectsQuery.data.names.length} result{$projectsQuery.data.names.length === 1 ? "" : "s"}
+    {$projectsQuery.data.names.length} result{$projectsQuery.data.names
+      .length === 1
+      ? ""
+      : "s"}
   </p>
   <table class="w-full">
     <thead>
@@ -118,7 +156,7 @@
           <td
             class="px-4 py-3 text-sm text-slate-700 border-b border-slate-100 group-hover:bg-slate-50"
           >
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
               <a
                 href={`/${name}`}
                 target="_blank"
@@ -126,19 +164,65 @@
               >
                 View
               </a>
+              {#if slotsEditProject === name}
+                <input
+                  type="number"
+                  class="w-16 px-2 py-1 text-xs rounded border border-blue-400 bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="slots"
+                  min="1"
+                  bind:value={slotsValue}
+                  on:keydown={(e) => {
+                    if (e.key === "Enter") handleSaveSlots(name);
+                    if (e.key === "Escape") {
+                      slotsEditProject = "";
+                      slotsValue = "";
+                    }
+                  }}
+                />
+                <button
+                  class="text-xs px-2 py-1 rounded border border-blue-400 text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={actionInProgress === `slots:${name}` ||
+                    !slotsValue}
+                  on:click={() => handleSaveSlots(name)}
+                >
+                  {actionInProgress === `slots:${name}`
+                    ? "Saving..."
+                    : "Save"}
+                </button>
+                <button
+                  class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-500 hover:bg-slate-100"
+                  on:click={() => {
+                    slotsEditProject = "";
+                    slotsValue = "";
+                  }}
+                >
+                  Cancel
+                </button>
+              {:else}
+                <button
+                  class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100"
+                  on:click={() => handleChangeSlots(name)}
+                >
+                  Change Slots
+                </button>
+              {/if}
               <button
                 class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={actionInProgress === `hibernate:${name}`}
                 on:click={() => handleHibernate(name)}
               >
-                {actionInProgress === `hibernate:${name}` ? "Hibernating..." : "Hibernate"}
+                {actionInProgress === `hibernate:${name}`
+                  ? "Hibernating..."
+                  : "Hibernate"}
               </button>
               <button
                 class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={actionInProgress === `redeploy:${name}`}
                 on:click={() => handleRedeploy(name)}
               >
-                {actionInProgress === `redeploy:${name}` ? "Redeploying..." : "Redeploy"}
+                {actionInProgress === `redeploy:${name}`
+                  ? "Redeploying..."
+                  : "Redeploy"}
               </button>
             </div>
           </td>
