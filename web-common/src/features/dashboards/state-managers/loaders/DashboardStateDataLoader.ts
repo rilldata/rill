@@ -251,6 +251,7 @@ export class DashboardStateDataLoader {
         }
 
         if (
+          !fullTimeRange.isLoading &&
           fullTimeRange.data?.timeRangeSummary?.min == null &&
           fullTimeRange.data?.timeRangeSummary?.max == null
         ) {
