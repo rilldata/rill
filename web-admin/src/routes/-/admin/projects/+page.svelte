@@ -188,6 +188,7 @@
                   <span class="text-xs text-slate-500"
                     >Current: {slotsCurrentValue}</span
                   >
+                  <span class="text-xs text-slate-500">New:</span>
                   <input
                     type="number"
                     class="w-16 px-2 py-1 text-xs rounded border border-blue-400 bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
