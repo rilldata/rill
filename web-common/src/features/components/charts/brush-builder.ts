@@ -45,7 +45,7 @@ export async function compileToBrushedVegaSpec(
     (vlSpec as { config?: Record<string, unknown> }).config ?? {};
   // Merge the Rill theme config so axis settings (e.g. grid: false) are baked
   // into the compiled Vega spec
-  const rillThemeConfig = getRillTheme(true, isThemeModeDark, theme);
+  const rillThemeConfig = getRillTheme(isThemeModeDark, theme);
   const specWithConfig = {
     ...vlSpec,
     config: {

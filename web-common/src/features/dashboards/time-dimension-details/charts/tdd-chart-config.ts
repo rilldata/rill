@@ -41,10 +41,12 @@ export function createTDDCartesianSpec(
     x: {
       field: timeDimension,
       type: "temporal",
+      axisOrient: "top",
     },
     y: {
       field: measureName,
       type: "quantitative",
+      axisOrient: "right",
     },
     isInteractive: true,
   };

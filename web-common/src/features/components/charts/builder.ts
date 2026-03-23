@@ -97,6 +97,7 @@ export function createPositionEncoding(
     }),
     axis: {
       ...(field.labelAngle !== undefined && { labelAngle: field.labelAngle }),
+      ...(field.axisOrient && { orient: field.axisOrient }),
       ...(field.type === "quantitative" && {
         formatType: sanitizeFieldName(field.field),
       }),

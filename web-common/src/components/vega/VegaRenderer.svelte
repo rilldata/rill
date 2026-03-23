@@ -36,7 +36,7 @@
   let tooltipHandler: VegaLiteTooltipHandler | null = null;
 
   $: width = contentRect.width;
-  $: height = contentRect.height * 0.95 - 80;
+  $: height = contentRect.height - 10;
 
   let tooltipTimer: number | null = null;
   const TOOLTIP_DELAY = 200;
@@ -86,7 +86,6 @@
 
   $: options = createEmbedOptions({
     client: runtimeClient,
-    canvasDashboard,
     width,
     height,
     config,
@@ -126,8 +125,7 @@
 <div
   bind:contentRect
   role="presentation"
-  class:px-4={canvasDashboard}
-  class:pb-2={canvasDashboard}
+  class:px-2={canvasDashboard}
   class="rill-vega-container overflow-hidden size-full flex flex-col items-center justify-center"
   on:mouseleave={handleMouseLeave}
 >

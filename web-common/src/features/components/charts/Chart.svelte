@@ -225,6 +225,6 @@
     renderer="canvas"
     {expressionFunctions}
     {hasComparison}
-    config={getRillTheme(true, isThemeModeDark, theme)}
+    config={getRillTheme(isThemeModeDark, theme)}
   />
 {/if}
