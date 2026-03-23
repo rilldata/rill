@@ -22,7 +22,7 @@
 </script>
 
 <DropdownMenu.Sub>
-  <DropdownMenu.SubTrigger class="flex gap-x-2">
+  <DropdownMenu.SubTrigger class="flex gap-x-2" aria-label="Add metrics view">
     <svelte:component
       this={resourceIconMapping[ResourceKind.MetricsView]}
       size="16px"
@@ -36,6 +36,7 @@
       <DropdownMenu.Item
         on:click={() => onSelect(connector)}
         class="flex gap-x-2"
+        aria-label="Create metrics view for {displayName}"
       >
         <svelte:component this={icon} size="16px" class={className} />
         {displayName}
@@ -45,6 +46,7 @@
       class="flex gap-x-2"
       on:click={() =>
         createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
+      aria-label="Blank metrics view"
     >
       <File size="14px" class="stroke-icon-muted" />
       Blank metrics view

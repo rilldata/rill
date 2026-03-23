@@ -19,21 +19,19 @@ import {
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import {
   findRadioEnumKey,
-  getSchemaFieldMetaList,
   getSchemaSecretKeys,
-  getSchemaStringKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
-  compileConnectorYAML,
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -61,14 +59,8 @@ export async function createConnector({
     return connectorDriver.name!;
   }
 
-  const schemaFields = schema
-    ? getSchemaFieldMetaList(schema, { step: "connector" })
-    : [];
   const schemaSecretKeys = schema
     ? getSchemaSecretKeys(schema, { step: "connector" })
-    : [];
-  const schemaStringKeys = schema
-    ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
 
   // Create connector file path outside try block for cleanup
@@ -108,16 +100,11 @@ export async function createConnector({
 
     await runtimeServicePutFile(runtimeClient, {
       path: newConnectorFilePath,
-      blob: compileConnectorYAML(connectorDriver, formValues, {
-        connectorInstanceName: connectorName,
-        orderedProperties: schemaFields,
-        secretKeys: schemaSecretKeys,
-        stringKeys: schemaStringKeys,
-        schema: schema ?? undefined,
+      blob: getConnectorYamlPreview({
+        connector: connectorDriver,
+        formValues,
+        schema,
         existingEnvBlob: originalEnvBlob,
-        fieldFilter: schemaFields
-          ? (property) => !("internal" in property && property.internal)
-          : undefined,
       }),
       create: true,
       createOnly: false,

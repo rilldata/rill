@@ -47,6 +47,7 @@
       class="entry {leftPadClass}"
       class:bg-gray-100={selected}
       on:click={() => onSelect(node.entry)}
+      aria-label="Node: {node.name}, level {level}"
     >
       <TableIcon size="14px" className="shrink-0 text-fg-secondary" />
       <span>{node.name}</span>
@@ -60,6 +61,7 @@
           class:bg-gray-100={selected}
           {...getAttrs([builder])}
           use:builderActions={{ builders: [builder] }}
+          aria-label="Node: {node.name}, level {level}"
         >
           <CaretDownIcon
             className="transform transition-transform text-fg-secondary {expanded

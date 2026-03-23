@@ -20,6 +20,7 @@ import { get } from "svelte/store";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { compileSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils.ts";
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
 export async function runImportStep(
   runtimeClient: RuntimeClient,
@@ -202,7 +203,7 @@ async function runCreateMetricsViewStep(
     database: metricsViewImportStep.sourceDatabase,
     databaseSchema: metricsViewImportStep.sourceSchema,
     path: newMetricsViewFilePath,
-    useAi: true, // TODO: check feature flags
+    useAi: get(featureFlags.ai),
   });
   // Wait for the metrics view to successfully reconcile
   await waitForResourceReconciliation(
@@ -257,7 +258,7 @@ async function runCreateCanvasStep(
   await runtimeServiceGenerateCanvasFile(runtimeClient, {
     metricsViewName,
     path: canvasFilePath,
-    useAi: true, // TODO: check feature flags
+    useAi: get(featureFlags.ai),
   });
   onNewRoute(`/files${canvasFilePath}`);
 

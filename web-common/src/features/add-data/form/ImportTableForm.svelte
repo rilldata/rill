@@ -13,6 +13,7 @@
   import {
     type AddDataConfig,
     type ImportAddDataStepConfig,
+    ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
@@ -30,6 +31,7 @@
   const runtimeClient = useRuntimeClient();
 
   $: importSteps = getImportStepsForConnector(config, connectorDriver);
+  $: supportsModeling = importSteps[0] === ImportDataStep.CreateModel;
 
   const modeOptions = [
     {
@@ -143,12 +145,18 @@
   class="flex flex-col gap-1 h-full overflow-y-auto"
 >
   <div class="flex flex-col gap-2 px-6 pt-2">
-    <div>Pick a table or Input your file SQL to power your first dashboard</div>
-    <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
-      {#each modeOptions as option (option.value)}
-        <TabsContent value={option.value} />
-      {/each}
-    </Tabs>
+    {#if supportsModeling}
+      <div>
+        Pick a table or input your file SQL to power your first dashboard
+      </div>
+      <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
+        {#each modeOptions as option (option.value)}
+          <TabsContent value={option.value} />
+        {/each}
+      </Tabs>
+    {:else}
+      <div>Pick a table to power your first dashboard</div>
+    {/if}
   </div>
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}

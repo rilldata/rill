@@ -37,6 +37,7 @@
   class="container {onWelcomeScreen ? 'container-welcome' : 'container-home'}"
   on:click={() => startConnectorSelection(null)}
   class:jitter-suppress={suppressJitter}
+  aria-label="Connect your data"
 >
   <div class="header">
     <DatabaseIcon />
@@ -55,6 +56,7 @@
         class="primary-connector-entry"
         on:click={(e) => selectConnector(e, connector)}
         on:mouseleave={handleSuppressJitter}
+        aria-label={`Connect to ${connector}`}
       >
         <svelte:component this={icon} />
         <span>{label}</span>

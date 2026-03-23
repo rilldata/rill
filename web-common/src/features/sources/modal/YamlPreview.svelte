@@ -30,7 +30,10 @@
       {/if}
     </button>
     <pre
-      class="bg-surface-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yaml}</pre>
+      class="bg-surface-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto"
+      aria-label="Yaml preview">
+      {yaml}
+    </pre>
   </div>
   <slot />
   <!-- support need help, errors etc -->

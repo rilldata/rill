@@ -27,7 +27,7 @@
 
 {#if isModelingSupported}
   <DropdownMenu.Sub>
-    <DropdownMenu.SubTrigger class="flex gap-x-2">
+    <DropdownMenu.SubTrigger class="flex gap-x-2" aria-label="Add Model">
       <svelte:component
         this={resourceIconMapping[ResourceKind.Model]}
         size="16px"
@@ -41,6 +41,7 @@
         <DropdownMenu.Item
           on:click={() => onSelect(connector)}
           class="flex gap-x-2"
+          aria-label="Create model for {displayName}"
         >
           <svelte:component this={icon} size="16px" class={className} />
           {displayName}
@@ -50,6 +51,7 @@
         class="flex gap-x-2"
         on:click={() =>
           createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
+        aria-label="Create blank model"
       >
         <File size="14px" class="stroke-icon-muted" />
         Blank model
