@@ -48,6 +48,9 @@ func newUnion(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resol
 			_ = closeResolvers(resolvers)
 			return nil, fmt.Errorf("no resolver found of type %q", entry.Name)
 		}
+		if entry.Name == "glob" {
+			opts.Args["skip_last_optimization"] = true
+		}
 		r, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    opts.Runtime,
 			InstanceID: opts.InstanceID,
