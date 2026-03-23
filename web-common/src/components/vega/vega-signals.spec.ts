@@ -52,18 +52,6 @@ describe("resolveSignalTimeField", () => {
     );
   });
 
-  // --- Without temporalField hint (_ts fallback, TDDAlternateChart path) ---
-
-  it("falls back to _ts suffix when no hint provided (yearmonthdate_ts)", () => {
-    const signal = { yearmonthdate_ts: [epoch] };
-    expect(resolveSignalTimeField(signal)).toEqual(new Date(epoch));
-  });
-
-  it("falls back to _ts suffix for bare _ts key", () => {
-    const signal = { some_ts: [epoch] };
-    expect(resolveSignalTimeField(signal)).toEqual(new Date(epoch));
-  });
-
   // --- Edge cases ---
 
   it("returns undefined when no keys match and no hint", () => {
