@@ -34,6 +34,36 @@ export function useExplore(
   );
 }
 
+/**
+ * Like `useExplore`, but with built-in polling that refetches while the
+ * explore is reconciling or errored.
+ */
+export function useExploreWithPolling(
+  client: RuntimeClient,
+  exploreName: string,
+  queryOptions?: Partial<
+    CreateQueryOptions<V1GetExploreResponse, ConnectError, V1GetExploreResponse>
+  >,
+  queryClient?: QueryClient,
+) {
+  return useExplore(
+    client,
+    exploreName,
+    {
+      refetchInterval: (query) => {
+        if (!query.state.data) return false;
+        if (isExploreReconcilingForFirstTime(query.state.data))
+          return PollIntervalWhenExploreReconciling;
+        if (isExploreErrored(query.state.data))
+          return PollIntervalWhenExploreErrored;
+        return false;
+      },
+      ...queryOptions,
+    },
+    queryClient,
+  );
+}
+
 export type ExploreValidSpecResponse = {
   explore: V1ExploreSpec | undefined;
   metricsView: V1MetricsViewSpec | undefined;

@@ -13,11 +13,9 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
-    useExplore,
+    useExploreWithPolling,
     isExploreReconcilingForFirstTime,
     isExploreErrored,
-    PollIntervalWhenExploreReconciling,
-    PollIntervalWhenExploreErrored,
   } from "@rilldata/web-common/features/explores/selectors";
   import {
     extractErrorStatusCode,
@@ -35,16 +33,7 @@
 
   resetSelectedMockUserAfterNavigate(queryClient, runtimeClient);
 
-  $: exploreResource = useExplore(runtimeClient, exploreName, {
-    refetchInterval: (query) => {
-      if (!query.state.data) return false;
-      if (isExploreReconcilingForFirstTime(query.state.data))
-        return PollIntervalWhenExploreReconciling;
-      if (isExploreErrored(query.state.data))
-        return PollIntervalWhenExploreErrored;
-      return false;
-    },
-  });
+  $: exploreResource = useExploreWithPolling(runtimeClient, exploreName);
 
   $: validSpec = $exploreResource.data?.explore?.explore?.state?.validSpec;
   $: metricsViewName = $exploreResource.data?.metricsView?.meta?.name

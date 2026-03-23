@@ -13,11 +13,9 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import {
-    useExplore,
+    useExploreWithPolling,
     isExploreReconcilingForFirstTime,
     isExploreErrored,
-    PollIntervalWhenExploreReconciling,
-    PollIntervalWhenExploreErrored,
   } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
@@ -34,16 +32,7 @@
     dashboard: exploreName,
   } = $page.params);
 
-  $: explore = useExplore(runtimeClient, exploreName, {
-    refetchInterval: (query) => {
-      if (!query.state.data) return false;
-      if (isExploreReconcilingForFirstTime(query.state.data))
-        return PollIntervalWhenExploreReconciling;
-      if (isExploreErrored(query.state.data))
-        return PollIntervalWhenExploreErrored;
-      return false;
-    },
-  });
+  $: explore = useExploreWithPolling(runtimeClient, exploreName);
 
   $: isDashboardNotFound =
     !$explore.data && $explore.isError && isNotFoundError($explore.error);
