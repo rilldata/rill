@@ -18,6 +18,7 @@ import {
   computePivotRowSelection,
   extractDimensionFiltersFromExpression,
   extractSelectionDimensionFilters,
+  getActiveDimensionNames,
   getDimensionValuesForRow,
   getFiltersForColumnHeader,
   getFiltersForRowHeader,
@@ -86,23 +87,26 @@ export function createPivotClickToFilter(
   // Maps rowId → dimension column index for dimension-cell clicks (flat table only)
   const rowDimClickIndex = new Map<string, number>();
 
+  // Svelte store subscriptions fire synchronously on setup. This flag prevents
+  // onBecomeInactive from firing during the initial subscription cascade before
+  // the factory has been fully wired into the component tree.
+  let initialized = false;
+
   // --- Prune selfFilteredDimensions when filters are cleared externally ---
   const pruneUnsub = whereFilterStore.subscribe(($whereFilter) => {
-    const activeDims = new Set(
-      $whereFilter?.cond?.exprs
-        ?.map((e) => e.cond?.exprs?.[0]?.ident)
-        .filter(Boolean) ?? [],
-    );
+    const activeDims = getActiveDimensionNames($whereFilter);
     const dims = get(selfFilteredDimensions);
+    const pruned = new Set<string>();
     let changed = false;
     for (const dim of dims) {
-      if (!activeDims.has(dim)) {
-        dims.delete(dim);
+      if (activeDims.has(dim)) {
+        pruned.add(dim);
+      } else {
         changed = true;
       }
     }
     if (changed) {
-      selfFilteredDimensions.set(new Set(dims));
+      selfFilteredDimensions.set(pruned);
     }
   });
 
@@ -111,7 +115,9 @@ export function createPivotClickToFilter(
     if ($selfFiltered.size === 0) {
       rowDimClickIndex.clear();
       clickSelectionStore.set(createEmptyClickSelectionState());
-      onBecomeInactive?.();
+      if (initialized) {
+        onBecomeInactive?.();
+      }
     }
   });
 
@@ -121,6 +127,8 @@ export function createPivotClickToFilter(
       selfFilteredDimensions.set(new Set());
     }
   });
+
+  initialized = true;
 
   // --- Derived row selection state ---
   const dimensionFilterMap = derived(
@@ -141,6 +149,23 @@ export function createPivotClickToFilter(
         );
       },
     );
+
+  // --- Helpers ---
+
+  /** Check if any remaining cell selection for a row is a dimension column. */
+  function rowHasDimensionCell(
+    cells: Set<string>,
+    rowId: string,
+    config: PivotDataStoreConfig,
+  ): boolean {
+    const prefix = rowId + ":";
+    for (const key of cells) {
+      if (!key.startsWith(prefix)) continue;
+      const colId = key.slice(prefix.length);
+      if (config.rowDimensionNames.includes(colId)) return true;
+    }
+    return false;
+  }
 
   // --- Retained value computation for safe deselect ---
 
@@ -217,8 +242,6 @@ export function createPivotClickToFilter(
     return retainedValues;
   }
 
-  // --- Core filter application ---
-
   function applyDimensionFilters(
     filters: V1Expression,
     isDeselect: boolean,
@@ -234,12 +257,7 @@ export function createPivotClickToFilter(
     // Capture which dimensions were already in the global filter before this click.
     // Dimensions present here were not added by this component and should not be
     // excluded from its own query (they are not "self-filtered").
-    const preClickWhere = get(whereFilterStore);
-    const preExistingDims = new Set(
-      preClickWhere?.cond?.exprs
-        ?.map((e) => e.cond?.exprs?.[0]?.ident)
-        .filter(Boolean) ?? [],
-    );
+    const preExistingDims = getActiveDimensionNames(get(whereFilterStore));
 
     const filterClass = filterManager.metricsViewFilters.get(metricsViewName);
     if (!filterClass) return;
@@ -384,13 +402,20 @@ export function createPivotClickToFilter(
           const key = cellKey(rowId, columnId);
           if (nextCells.has(key)) {
             nextCells.delete(key);
-            rowDimClickIndex.delete(rowId);
+            // Only remove the dimension click index if no remaining cell
+            // selection for this row is a dimension cell. Otherwise a
+            // measure-cell deselect would corrupt the dimension highlight.
+            if (!rowHasDimensionCell(nextCells, rowId, $config)) {
+              rowDimClickIndex.delete(rowId);
+            }
           } else {
             nextCells.add(key);
             // Track which dimension index was clicked for visual classification
             if (upToDimensionIndex !== undefined) {
               rowDimClickIndex.set(rowId, upToDimensionIndex);
-            } else {
+            } else if (!rowDimClickIndex.has(rowId)) {
+              // Only clear if there is no existing dimension cell index for
+              // this row; a prior dimension click should be preserved.
               rowDimClickIndex.delete(rowId);
             }
           }

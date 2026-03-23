@@ -18,10 +18,11 @@ import {
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type {
-  V1Expression,
-  V1MetricsViewSpec,
-  V1TimeRange,
+import {
+  V1Operation,
+  type V1Expression,
+  type V1MetricsViewSpec,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import {
   type Readable,
@@ -46,9 +47,13 @@ function excludeOwnDimensionFilters(
 ): V1Expression | undefined {
   if (!where?.cond?.exprs || dimensionNames.length === 0) return where;
   const dimSet = new Set(dimensionNames);
-  const filtered = where.cond.exprs.filter(
-    (e) => !dimSet.has(e.cond?.exprs?.[0]?.ident ?? ""),
-  );
+  // Only exclude IN expressions whose ident matches a self-filtered dimension.
+  // Other filter types (LIKE, NIN) are never produced by click-to-filter and
+  // must be preserved even if they share a dimension name.
+  const filtered = where.cond.exprs.filter((e) => {
+    if (e.cond?.op !== V1Operation.OPERATION_IN) return true;
+    return !dimSet.has(e.cond?.exprs?.[0]?.ident ?? "");
+  });
   return createAndExpression(filtered);
 }
 

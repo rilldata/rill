@@ -281,3 +281,24 @@ export function extractDimensionFiltersFromExpression(
 
   return result;
 }
+
+/**
+ * Returns the set of dimension names present in a top-level AND expression.
+ * Checks that each sub-expression is an IN operation before extracting the
+ * ident, so LIKE/NIN/other filter types are not incorrectly included.
+ *
+ * Shared by pruneUnsub, excludeOwnDimensionFilters, and preExistingDims
+ * to ensure consistent dimension detection across the codebase.
+ */
+export function getActiveDimensionNames(
+  expr: V1Expression | undefined,
+): Set<string> {
+  if (!expr?.cond?.exprs) return new Set();
+  const names = new Set<string>();
+  for (const sub of expr.cond.exprs) {
+    if (sub.cond?.op !== V1Operation.OPERATION_IN) continue;
+    const ident = sub.cond.exprs?.[0]?.ident;
+    if (ident) names.add(ident);
+  }
+  return names;
+}

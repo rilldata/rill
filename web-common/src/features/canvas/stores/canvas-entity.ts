@@ -325,6 +325,10 @@ export class CanvasEntity {
           pinnedFilters,
           filterExpressions,
         );
+        // Clears the active component when a global filter changes through
+        // FilterManager.actions.* (user-driven filter UI). Pivot click-to-filter
+        // bypasses actions and mutates FilterState directly, so it does NOT
+        // trigger this callback; see pivot-click-to-filter.ts for details.
         this.filterManager.onFilterChange = () => this.clearActiveComponent();
       }
     } else {
