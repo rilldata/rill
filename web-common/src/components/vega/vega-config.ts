@@ -76,9 +76,6 @@ export const getRillTheme: (
       type: "fit-x",
     },
     background: "transparent",
-    mark: {
-      tooltip: true,
-    },
     arc: { fill: lineColor },
     area: {
       line: { stroke: lineColor, strokeWidth: 1 },
