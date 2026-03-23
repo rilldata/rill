@@ -68,9 +68,8 @@
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
-  class:outline={allowBorder || open}
-  class:shadow-sm={allowBorder || open}
-  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-border bg-surface-card overflow-hidden rounded-sm"
+  class:shadow={allowBorder || open}
+  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative bg-surface-card overflow-hidden rounded-sm border border-border"
 >
   <Toolbar
     {component}
@@ -84,6 +83,7 @@
   <div
     role="presentation"
     class="size-full grow flex flex-col"
+    class:p-4={allowBorder}
     on:mousedown={onMouseDown}
   >
     {#if component}

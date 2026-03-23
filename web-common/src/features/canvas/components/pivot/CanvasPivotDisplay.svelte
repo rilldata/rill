@@ -64,18 +64,20 @@
   }
 </script>
 
-<ComponentHeader
-  {component}
-  {title}
-  {description}
-  showDescriptionAsTooltip={show_description_as_tooltip}
-  {filters}
-/>
+<div class="size-full flex flex-col overflow-hidden gap-y-4">
+  <ComponentHeader
+    {component}
+    {title}
+    {description}
+    showDescriptionAsTooltip={show_description_as_tooltip}
+    {filters}
+  />
 
-<CanvasPivotRenderer
-  {hasHeader}
-  {schema}
-  {pivotDataStore}
-  pivotConfig={config}
-  {pivotState}
-/>
+  <CanvasPivotRenderer
+    {hasHeader}
+    {schema}
+    {pivotDataStore}
+    pivotConfig={config}
+    {pivotState}
+  />
+</div>
