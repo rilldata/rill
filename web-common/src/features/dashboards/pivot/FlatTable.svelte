@@ -98,6 +98,8 @@
     return clickSelection?.isCellSelected(cell.row.id, cell.column.id) ?? false;
   }
 
+  $: lastDimIdx = (config?.rowDimensionNames.length ?? 0) - 1;
+
   function hasBorderRight(columnId: string): boolean {
     if (!hasMeasureContextColumns) return true;
     const measureIndex = measures.findIndex((m) => m.name === columnId);
@@ -201,8 +203,17 @@
         clickSelection?.hasSelectedCellInRow(rowId) ?? false}
       {@const clickedDimIdx =
         clickSelection?.getClickedDimensionIndex(rowId) ?? -1}
+      {@const effectiveDimIdx = hasClickedCell
+        ? clickedDimIdx >= 0
+          ? clickedDimIdx
+          : lastDimIdx
+        : isSelected
+          ? (rowSelectionState?.maxFilteredDimensionIndex ?? -1)
+          : -1}
       <tr
-        class:selected-row={isSelected && !hasClickedCell}
+        class:selected-row={isSelected &&
+          !hasClickedCell &&
+          effectiveDimIdx < 0}
         class:dimmed-row={hasSelection && !isSelected && !hasClickedCell}
       >
         {#each cells as cell (cell.id)}
@@ -214,17 +225,16 @@
           {@const isClicked = isCellClicked(cell)}
           {@const colDimIdx =
             config?.rowDimensionNames.indexOf(cell.column.id) ?? -1}
-          {@const lastDimIdx = (config?.rowDimensionNames.length ?? 0) - 1}
           {@const isLeftOfClick =
-            clickedDimIdx >= 0 &&
+            effectiveDimIdx >= 0 &&
             (colDimIdx >= 0
-              ? colDimIdx < clickedDimIdx
-              : clickedDimIdx === lastDimIdx)}
+              ? colDimIdx <= effectiveDimIdx
+              : effectiveDimIdx === lastDimIdx)}
           {@const isMutedCell =
-            (clickedDimIdx >= 0 && colDimIdx > clickedDimIdx) ||
+            (effectiveDimIdx >= 0 && colDimIdx > effectiveDimIdx) ||
             (colDimIdx === -1 &&
-              clickedDimIdx >= 0 &&
-              clickedDimIdx < lastDimIdx)}
+              effectiveDimIdx >= 0 &&
+              effectiveDimIdx < lastDimIdx)}
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}

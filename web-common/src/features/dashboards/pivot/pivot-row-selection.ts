@@ -28,6 +28,8 @@ export interface PivotRowSelectionState {
   hasActiveSelection: boolean;
   /** Check if a specific row (by rowId) is selected based on current filters */
   isRowSelected: (rowId: string) => boolean;
+  /** Highest row dimension index with an active selection filter, or -1 */
+  maxFilteredDimensionIndex: number;
 }
 
 /**
@@ -124,15 +126,24 @@ export function computePivotRowSelection(
 ): PivotRowSelectionState {
   const hasActiveSelection = dimensionFilters.size > 0;
 
+  const maxFilteredDimensionIndex = hasActiveSelection
+    ? config.rowDimensionNames.reduce(
+        (max, name, idx) => (dimensionFilters.has(name) ? idx : max),
+        -1,
+      )
+    : -1;
+
   if (!hasActiveSelection) {
     return {
       hasActiveSelection: false,
       isRowSelected: () => false,
+      maxFilteredDimensionIndex: -1,
     };
   }
 
   return {
     hasActiveSelection: true,
+    maxFilteredDimensionIndex,
     isRowSelected: (rowId: string) => {
       const rowDimValues = getDimensionValuesForRow(config, rowId, tableData);
       if (rowDimValues.length === 0) return false;
