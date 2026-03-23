@@ -29,7 +29,6 @@
   $: ({ instanceId } = runtimeClient);
   $: ({
     canvasEntity: {
-      clearActiveComponent,
       filterManager: {
         allDimensionsStore,
         allMeasuresStore,
@@ -134,7 +133,6 @@
   role="presentation"
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
-  on:click|capture={clearActiveComponent}
 >
   {#if hasTimeSeries}
     <div class="p-2 flex justify-between size-full py-0">

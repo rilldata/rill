@@ -325,10 +325,12 @@ export class CanvasEntity {
           pinnedFilters,
           filterExpressions,
         );
+        this.filterManager.onFilterChange = () => this.clearActiveComponent();
       }
     } else {
       // need to find a better way to initialize this in certain contextx - bgh
       this.filterManager = new FilterManager({}, "", [], {});
+      this.filterManager.onFilterChange = () => this.clearActiveComponent();
     }
 
     this.processRows({ canvas, components, metricsViews, filePath });
