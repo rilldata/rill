@@ -543,13 +543,12 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}
-				exists, err := projectExists(ctx, ch, orgName, name)
+				_, exists, err := getProject(ctx, ch, orgName, name)
 				if err != nil {
-					return fmt.Errorf("project already exists at %s/%s", orgName, name)
+					return fmt.Errorf("failed to check project name: %w", err)
 				}
 				if exists {
-					// this should always be true but adding this check from completeness POV
-					return fmt.Errorf("project with name %q already exists in the org", name)
+					return fmt.Errorf("project already exists at %s/%s", orgName, name)
 				}
 				return nil
 			},
