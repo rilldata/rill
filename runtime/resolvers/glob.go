@@ -240,19 +240,21 @@ func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, 
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
 	rows := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
+		p := entry.Path
 		if entry.IsDir {
-			continue
+			// removing the tralling '/'
+			p = path.Clean(entry.Path)
 		}
 
 		uri := &globutil.URL{
 			Scheme: r.bucketURI.Scheme,
 			Host:   r.bucketURI.Host,
-			Path:   entry.Path,
+			Path:   p,
 		}
 
 		rows = append(rows, map[string]any{
 			"uri":        uri.String(),
-			"path":       entry.Path,
+			"path":       uri.Path,
 			"updated_on": entry.UpdatedOn,
 		})
 	}

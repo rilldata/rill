@@ -76,7 +76,7 @@ require (
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/modelcontextprotocol/go-sdk v1.3.1
+	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/openai/openai-go/v3 v3.17.0
 	github.com/orbcorp/orb-go v0.74.0
 	github.com/paulmach/orb v0.12.0
@@ -122,7 +122,7 @@ require (
 	gocloud.dev v0.36.0
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 	golang.org/x/net v0.49.0
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/sys v0.41.0
 	golang.org/x/term v0.39.0
@@ -163,7 +163,7 @@ require (
 	github.com/moby/moby/api v1.54.0 // indirect
 	github.com/moby/moby/client v0.3.0 // indirect
 	github.com/prometheus/otlptranslator v0.0.2 // indirect
-	github.com/segmentio/encoding v0.5.3 // indirect
+	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/sigstore/sigstore v1.10.4 // indirect
 	github.com/sigstore/sigstore-go v1.1.4-0.20251124094504-b5fe07a5a7d7 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
@@ -462,3 +462,6 @@ exclude modernc.org/sqlite v1.18.1
 // v5 module but can have backward compatibility issues but keeping it since it is used in test containers and likely unused code path
 // TODO : once we upgrade to v5 module we can replace to v4 which is compatible with v3
 replace github.com/golang-jwt/jwt v3.2.2+incompatible => github.com/golang-jwt/jwt/v5 v5.2.2
+
+// till fix for startFrom https://github.com/Azure/azure-sdk-for-go/pull/26243 is not merged
+replace github.com/Azure/azure-sdk-for-go/sdk/storage/azblob => github.com/NamanMahor/azure-sdk-for-go/sdk/storage/azblob v0.0.0-20260313191855-ecc1443e1e8a
