@@ -107,7 +107,7 @@
   {#if hasErrored}
     <Button type="secondary" noStroke onClick={onBack}>Back</Button>
   {/if}
-  <Button type="secondary" href={currentFileRoute}>
+  <Button type="secondary" href={currentFileRoute} onClick={onClose}>
     Skip and view project
   </Button>
   {#if hasErrored}

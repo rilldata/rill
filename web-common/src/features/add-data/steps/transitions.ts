@@ -134,13 +134,13 @@ function transitionFromSchema(
   args: AddDataTransitionArgs,
 ): AddDataState {
   if (isConnectorType(driver)) {
-    console.log("[Transition] To CreateConnector");
+    console.log("[Transition] To CreateConnector", schema);
     return {
       step: AddDataStep.CreateConnector,
       schema,
     };
   } else {
-    console.log("[Transition] To CreateModel");
+    console.log("[Transition] To CreateModel", schema);
     return {
       step: AddDataStep.CreateModel,
       schema,
@@ -157,14 +157,14 @@ function transitionFromConnector(
   args: AddDataTransitionArgs,
 ): AddDataState {
   if (isExplorerType(driver)) {
-    console.log("[Transition] To ExploreConnector");
+    console.log("[Transition] To ExploreConnector", connector);
     return {
       step: AddDataStep.ExploreConnector,
       schema,
       connector,
     };
   } else {
-    console.log("[Transition] To CreateModel");
+    console.log("[Transition] To CreateModel", schema);
     return {
       step: AddDataStep.CreateModel,
       schema,

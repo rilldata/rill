@@ -29,7 +29,6 @@
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors.ts";
   import { directoryState } from "../../file-explorer/directory-store.ts";
   import { createResourceAndNavigate } from "./new-files.ts";
-  import { addSourceModal } from "../../sources/modal/add-source-visibility.ts";
   import AddAiConnectorDialog from "../../connectors/ai/AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "../entity-mappers.ts";
@@ -87,7 +86,8 @@
    * Open the Add Data modal
    */
   async function handleAddData() {
-    addSourceModal.open();
+    addDataModalOpen = true;
+    addDataConnector = "";
 
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,

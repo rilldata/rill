@@ -27,6 +27,7 @@
   export let step: CreateConnectorStep;
   export let onSubmit: (newState: AddDataState) => void;
   export let onBack: () => void;
+  export let onClose: () => void;
 
   const runtimeClient = useRuntimeClient();
 
@@ -105,6 +106,7 @@
       validate: false,
       existingEnvBlob,
     });
+    onClose();
     return goto(`/files${addLeadingSlash(connectorPath)}`);
   }
 </script>

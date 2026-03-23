@@ -3,20 +3,24 @@ import { test } from "../setup/base";
 import { ClickHouseTestContainer } from "../utils/clickhouse";
 
 test.describe("ClickHouse connector", () => {
-  const clickhouse = new ClickHouseTestContainer();
+  const clickhouseOne = new ClickHouseTestContainer();
+  const clickhouseTwo = new ClickHouseTestContainer();
 
   test.beforeAll(async () => {
-    await clickhouse.start();
-    await clickhouse.seed();
+    await clickhouseOne.start();
+    await clickhouseOne.seedAdBids();
+    await clickhouseTwo.start();
+    await clickhouseTwo.seedAdImpressions();
   });
 
   test.afterAll(async () => {
-    await clickhouse.stop();
+    await clickhouseOne.stop();
+    await clickhouseTwo.stop();
   });
 
   test.describe("Welcome screen", () => {
     test("Create connector using individual fields", async ({ page }) => {
-      await enterClickhouseCredentials(page, clickhouse);
+      await enterClickhouseCredentials(page, clickhouseOne);
 
       // Submit the form
       await page.getByRole("button", { name: "Test and Connect" }).click();
@@ -49,7 +53,7 @@ test.describe("ClickHouse connector", () => {
       await page
         .getByRole("textbox", { name: "Connection String" })
         .fill(
-          `http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
+          `http://${clickhouseOne.getHost()}:${clickhouseOne.getPort().toString()}?username=default&password=password`,
         );
 
       // Assert that the preview has correct properties
@@ -71,7 +75,7 @@ test.describe("ClickHouse connector", () => {
         .getByLabel("codemirror editor")
         .getByRole("textbox");
       await expect(envEditor).toContainText(
-        `CLICKHOUSE_DSN=http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
+        `CLICKHOUSE_DSN=http://${clickhouseOne.getHost()}:${clickhouseOne.getPort().toString()}?username=default&password=password`,
       );
 
       // Go to the `rill.yaml` and verify the OLAP connector is set
@@ -99,7 +103,7 @@ test.describe("ClickHouse connector", () => {
     test("Create connector and metrics view from home screen", async ({
       page,
     }) => {
-      await enterClickhouseCredentials(page, clickhouse);
+      await enterClickhouseCredentials(page, clickhouseOne);
 
       // Submit the form
       await page.getByRole("button", { name: "Test and Connect" }).click();
@@ -127,11 +131,9 @@ test.describe("ClickHouse connector", () => {
     test("Create connector from home screen and metrics view from add asset", async ({
       page,
     }) => {
-      await enterClickhouseCredentials(page, clickhouse);
-
+      await enterClickhouseCredentials(page, clickhouseOne);
       // Save without testing connection
       await page.getByRole("button", { name: "Save" }).click();
-
       // Assert that the connector explorer now has a ClickHouse connector
       await expect(
         page
@@ -148,6 +150,54 @@ test.describe("ClickHouse connector", () => {
       await page.getByLabel("Create metrics view for ClickHouse").click();
 
       await selectAdBidsAndSubmit(page, true);
+
+      // Open the add data modal.
+      await page.getByLabel("Add Asset").click();
+      await page.getByLabel("Add Data").click();
+
+      // Create another clickhouse connector.
+      await enterClickhouseCredentials(page, clickhouseTwo, false);
+      // Save without testing connection
+      await page.getByRole("button", { name: "Save" }).click();
+      // Assert that the connector explorer now has a ClickHouse connector
+      await expect(
+        page
+          .getByRole("region", { name: "Data explorer" })
+          .getByRole("button", {
+            name: "clickhouse_1",
+            exact: true,
+          }),
+      ).toBeVisible();
+
+      // add asset button
+      await page.getByLabel("Add Asset").click();
+      await page.getByLabel("Add metrics view").hover();
+      await page.getByLabel("Create metrics view for ClickHouse").click();
+
+      // ad_bids from 1st connector is showing.
+      await page.getByLabel("Node: default, level 0").click();
+      await expect(page.getByLabel("Node: ad_bids, level 1")).toBeVisible();
+
+      // Select the second clickhouse connector
+      await page.getByLabel("Select connector").click();
+      await page.getByRole("option", { name: "clickhouse_1" }).click();
+
+      // Select `ad_impressions` from the second connector
+      await page.getByLabel("Node: default, level 0").click();
+      await page.getByLabel("Node: ad_impressions, level 1").click();
+
+      // Click generate dashboard button
+      await page
+        .getByRole("button", { name: "Generate dashboard with AI" })
+        .click();
+
+      // Creating metrics view is triggered.
+      await expect(page.getByText("Creating Metrics View...")).toBeVisible();
+
+      // Wait for navigation to the new file
+      await page.waitForURL(/\/files\/metrics\/ad_impressions_metrics.yaml/, {
+        timeout: 10_000,
+      });
     });
   });
 });
@@ -155,6 +205,7 @@ test.describe("ClickHouse connector", () => {
 async function enterClickhouseCredentials(
   page: Page,
   clickhouse: ClickHouseTestContainer,
+  assertYaml = true,
 ) {
   // Open the connect to clickhouse modal
   await page.getByLabel("Connect to clickhouse").click();
@@ -180,19 +231,21 @@ async function enterClickhouseCredentials(
   await page.getByRole("checkbox").scrollIntoViewIfNeeded();
   await page.getByRole("checkbox").click();
 
-  // Assert that the yaml contains key properties
-  const yamlPreview = page.getByLabel("Yaml preview");
-  await expect(yamlPreview).toContainText("type: connector");
-  await expect(yamlPreview).toContainText("driver: clickhouse");
-  await expect(yamlPreview).toContainText(`host: "${clickhouse.getHost()}"`);
-  await expect(yamlPreview).toContainText(
-    `port: "${clickhouse.getPort().toString()}"`,
-  );
-  await expect(yamlPreview).toContainText('username: "default"');
-  await expect(yamlPreview).toContainText(
-    'password: "{{ .env.CLICKHOUSE_PASSWORD }}"',
-  );
-  await expect(yamlPreview).toContainText("ssl: false");
+  if (assertYaml) {
+    // Assert that the yaml contains key properties
+    const yamlPreview = page.getByLabel("Yaml preview");
+    await expect(yamlPreview).toContainText("type: connector");
+    await expect(yamlPreview).toContainText("driver: clickhouse");
+    await expect(yamlPreview).toContainText(`host: "${clickhouse.getHost()}"`);
+    await expect(yamlPreview).toContainText(
+      `port: "${clickhouse.getPort().toString()}"`,
+    );
+    await expect(yamlPreview).toContainText('username: "default"');
+    await expect(yamlPreview).toContainText(
+      'password: "{{ .env.CLICKHOUSE_PASSWORD }}"',
+    );
+    await expect(yamlPreview).toContainText("ssl: false");
+  }
 }
 
 async function selectAdBidsAndSubmit(page: Page, metricsViewOnly: boolean) {

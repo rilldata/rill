@@ -55,7 +55,7 @@ export type CreateModelStep = {
   connectorFormValues: Record<string, unknown>;
 };
 
-type ExploreConnectorStep = {
+export type ExploreConnectorStep = {
   step: AddDataStep.ExploreConnector;
   schema: string;
   connector: string;

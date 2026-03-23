@@ -38,7 +38,8 @@
     step.connector,
   );
   $: connectorDriver =
-    $connectorDriverQuery.data ?? getConnectorDriverForSchema(step.schema);
+    $connectorDriverQuery.data?.driver ??
+    getConnectorDriverForSchema(step.schema);
 
   const importSteps = getImportStepsForSource(config);
 
@@ -73,6 +74,7 @@
   $: schema = getConnectorSchema(step.schema);
   $: yamlPreview = connectorDriver
     ? getSourceYamlPreview({
+        connectorName: step.connector,
         connector: connectorDriver,
         formValues: $form,
         schema,
@@ -122,6 +124,7 @@
       }
     }
     const yaml = getSourceYamlPreview({
+      connectorName: step.connector,
       connector: connectorDriver,
       formValues,
       schema,

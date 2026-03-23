@@ -6,31 +6,46 @@
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import TableSchema from "@rilldata/web-common/features/connectors/explorer/TableSchema.svelte";
-  import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
+  import {
+    getAnalyzedConnectorByName,
+    getAnalyzedConnectors,
+  } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { inferModelNameFromSQL } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import {
     type AddDataConfig,
+    type ExploreConnectorStep,
     type ImportAddDataStepConfig,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import {
+    getConnectorDriverForSchema,
+    getImportStepsForConnector,
+  } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
   import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
 
   export let config: AddDataConfig;
-  export let connectorName: string;
-  export let connectorDriver: V1ConnectorDriver;
+  export let step: ExploreConnectorStep;
   export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
 
   const FormId = "import-table-form";
 
   const runtimeClient = useRuntimeClient();
 
-  $: importSteps = getImportStepsForConnector(config, connectorDriver);
+  $: connectorDriverQuery = getAnalyzedConnectorByName(
+    runtimeClient,
+    step.connector,
+  );
+  $: connectorDriver =
+    $connectorDriverQuery.data?.driver ??
+    getConnectorDriverForSchema(step.schema);
+
+  $: importSteps = connectorDriver
+    ? getImportStepsForConnector(config, connectorDriver)
+    : [];
   $: supportsModeling = importSteps[0] === ImportDataStep.CreateModel;
 
   const modeOptions = [
@@ -99,7 +114,7 @@
           source,
           sourceSchema: values.schema ?? "",
           sourceDatabase: values.database ?? "",
-          connector: connectorName,
+          connector: step.connector,
           sql,
           envBlob: null,
         } satisfies ImportAddDataStepConfig);
@@ -118,7 +133,7 @@
 
   $: connectors = getAnalyzedConnectors(runtimeClient, false);
   $: analyzedConnector = $connectors.data?.connectors?.find(
-    (c) => c.name === connectorName,
+    (c) => c.name === step.connector,
   );
 
   $: sourceFormLabels = getLabelsForSource(importSteps);
@@ -162,12 +177,15 @@
     {#if analyzedConnector}
       <div class="flex flex-row size-full overflow-auto border-t">
         <div class="flex-grow overflow-auto border-r ml-6 mt-2">
-          <ConnectorExplorer {connectorName} onSelect={handleTableChange} />
+          <ConnectorExplorer
+            connectorName={step.connector}
+            onSelect={handleTableChange}
+          />
         </div>
         <div class="bg-surface-subtle w-[40%] p-2">
           {#if $form["table"]}
             <TableSchema
-              connector={connectorName}
+              connector={step.connector}
               database={$form["database"]}
               databaseSchema={$form["schema"]}
               table={$form["table"]}

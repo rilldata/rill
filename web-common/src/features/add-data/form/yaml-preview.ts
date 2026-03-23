@@ -52,11 +52,13 @@ export function getConnectorYamlPreview({
 }
 
 export function getSourceYamlPreview({
+  connectorName,
   connector,
   schema,
   formValues,
   existingEnvBlob,
 }: {
+  connectorName: string;
   connector: V1ConnectorDriver;
   schema: MultiStepFormSchema | null;
   formValues: Record<string, unknown>;
@@ -67,7 +69,7 @@ export function getSourceYamlPreview({
     connector,
     formValues,
     {
-      connectorInstanceName: isPublicAuth ? undefined : connector.name,
+      connectorInstanceName: isPublicAuth ? undefined : connectorName,
     },
   );
 

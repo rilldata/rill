@@ -86,6 +86,7 @@
 >
   {#if shouldShowHeader && schema}
     <ConnectorHeader
+      {config}
       schemaName={schema}
       connectorName={connector}
       onConnectorChange={(newConnector) =>
@@ -105,25 +106,21 @@
       step={stepState}
       onSubmit={(newState) => pushState("", newState)}
       onBack={() => window.history.back()}
+      {onClose}
     />
   {:else if stepState.step === AddDataStep.CreateModel}
-    <SourceForm
-      {config}
-      step={stepState}
-      onSubmit={setAndStartImport}
-      onBack={() => window.history.back()}
-    />
-  {:else if stepState.step === AddDataStep.ExploreConnector}
-    {#if connectorDriver && connector}
-      <ImportTableForm
+    {#key stepState.connector}
+      <SourceForm
         {config}
-        {connectorDriver}
-        connectorName={connector}
+        step={stepState}
         onSubmit={setAndStartImport}
+        onBack={() => window.history.back()}
       />
-    {:else}
-      <div>Missing connector driver or connector name (TODO)</div>
-    {/if}
+    {/key}
+  {:else if stepState.step === AddDataStep.ExploreConnector}
+    {#key stepState.connector}
+      <ImportTableForm {config} step={stepState} onSubmit={setAndStartImport} />
+    {/key}
   {:else if stepState.step === AddDataStep.Import}
     <ImportTableStatus
       importAddDataStep={stepState}

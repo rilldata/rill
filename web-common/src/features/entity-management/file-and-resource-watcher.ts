@@ -129,7 +129,11 @@ export class FileAndResourceWatcher {
     });
 
     this.client.on("reconnect", () => {
-      void this.invalidateAll();
+      void this.invalidateAll().then(() =>
+        this._runtimeClient
+          ? fileArtifacts.init(this._runtimeClient, queryClient)
+          : Promise.resolve(),
+      );
     });
   }
 

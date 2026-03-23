@@ -4,7 +4,9 @@
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import type { AddDataConfig } from "@rilldata/web-common/features/add-data/steps/types.ts";
 
+  export let config: AddDataConfig;
   export let schemaName: string;
   export let connectorName: string | undefined = undefined;
   export let onConnectorChange: (connectorName: string) => void;
@@ -35,7 +37,7 @@
       {connectorInfo.displayName}
     </span>
 
-    {#if connectorName && connectorOptions.length > 1}
+    {#if connectorName && !config.welcomeScreen}
       <Select
         id="connector"
         value={connectorName}
@@ -44,6 +46,7 @@
         onAddNew={onNewConnector}
         addNewLabel="+ {connectorInfo.displayName} connector"
         outline={false}
+        ariaLabel="Select connector"
       />
     {/if}
   </div>
