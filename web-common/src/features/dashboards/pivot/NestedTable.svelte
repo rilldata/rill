@@ -733,6 +733,9 @@
   .cell-selected-col-header .header-cell {
     @apply bg-primary-50;
   }
+  .cell-selected-col-header.col-dim-hover-self .header-cell {
+    @apply bg-primary-100;
+  }
 
   .cell-selected-row-header.cell {
     @apply bg-primary-50;
