@@ -48,14 +48,6 @@ service RuntimeService {
     };
   }
 
-  // EditInstance edits an existing instance
-  rpc EditInstance(EditInstanceRequest) returns (EditInstanceResponse) {
-    option (google.api.http) = {
-      patch: "/v1/instances/{instance_id}",
-      body: "*"
-    };
-  }
-
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
     option (google.api.http) = {
@@ -512,6 +504,7 @@ message CreateInstanceRequest {
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
+  map<string, string> preset_config = 19;
   string frontend_url = 18;
 }
 
@@ -527,23 +520,6 @@ message DeleteInstanceRequest {
 
 // Response message for RuntimeService.DeleteInstance
 message DeleteInstanceResponse {}
-
-// Request message for RuntimeService.EditInstance.
-// See message Instance for field descriptions.
-message EditInstanceRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional string environment = 17;
-  optional string olap_connector = 2;
-  optional string repo_connector = 4;
-  optional string admin_connector = 16;
-  optional string ai_connector = 18;
-  repeated Connector connectors = 9;
-}
-
-// Response message for RuntimeService.EditInstance
-message EditInstanceResponse {
-  Instance instance = 1;
-}
 
 // Request message for RuntimeService.ReloadConfig
 message ReloadConfigRequest {

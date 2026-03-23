@@ -342,49 +342,6 @@ paths:
             title: Request message for RuntimeService.DeleteInstance
       tags:
         - RuntimeService
-    patch:
-      summary: EditInstance edits an existing instance
-      operationId: RuntimeService_EditInstance
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EditInstanceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              environment:
-                type: string
-              olapConnector:
-                type: string
-              repoConnector:
-                type: string
-              adminConnector:
-                type: string
-              aiConnector:
-                type: string
-              connectors:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1Connector'
-            description: |-
-              Request message for RuntimeService.EditInstance.
-              See message Instance for field descriptions.
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/ai/complete:
     post:
       summary: Complete runs a language model completion (LLM chat) using the configured AI connector.
@@ -4977,6 +4934,10 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      presetConfig:
+        type: object
+        additionalProperties:
+          type: string
       frontendUrl:
         type: string
     description: |-
@@ -5029,12 +4990,6 @@ definitions:
         type: string
       isDir:
         type: boolean
-  v1EditInstanceResponse:
-    type: object
-    properties:
-      instance:
-        $ref: '#/definitions/v1Instance'
-    title: Response message for RuntimeService.EditInstance
   v1Example:
     type: object
     properties:
