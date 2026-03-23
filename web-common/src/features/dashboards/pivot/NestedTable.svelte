@@ -84,6 +84,35 @@
     return indices;
   })();
 
+  // Compute which leaf column indices have a cell selected via click-to-filter.
+  // Uses the last header group (leaf columns) to map column IDs to indices.
+  $: cellSelectedColIndices = (() => {
+    if (!clickSelection?.selectedCellColumnIds?.size) return new Set<number>();
+    const leafGroup = headerGroups[headerGroups.length - 1];
+    if (!leafGroup) return new Set<number>();
+    const indices = new Set<number>();
+    let colIdx = 0;
+    for (const header of leafGroup.headers) {
+      if (clickSelection.selectedCellColumnIds.has(header.column.id)) {
+        indices.add(colIdx);
+      }
+      colIdx += header.colSpan;
+    }
+    return indices;
+  })();
+
+  // Check if a header (by its leaf column range) contains any cell-selected columns
+  function isInCellSelectedColRange(
+    colStart: number,
+    colSpan: number,
+  ): boolean {
+    if (cellSelectedColIndices.size === 0) return false;
+    for (let i = colStart; i < colStart + colSpan; i++) {
+      if (cellSelectedColIndices.has(i)) return true;
+    }
+    return false;
+  }
+
   let resizingMeasure = false;
   let initialMeasureIndexOnResize = 0;
   let initLengthOnResize = 0;
@@ -387,6 +416,10 @@
             header.colSpan,
             isSelfSelected,
           )}
+          {@const inCellSelectedCol = isInCellSelectedColRange(
+            colStart,
+            header.colSpan,
+          )}
 
           <th
             colSpan={header.colSpan}
@@ -394,6 +427,7 @@
             class:col-dim-hover-child={inHoverRange && !isTheHoveredHeader}
             class:selected-col-header={isSelfSelected}
             class:in-selected-col-range={inSelectedRange}
+            class:cell-selected-col-header={inCellSelectedCol}
             on:mouseenter={() => {
               if (isColDimHeader) {
                 hoveredColRange = {
@@ -476,6 +510,7 @@
             class:selected-cell={isClicked}
             class:col-dim-hover-body={inHoveredCol}
             class:selected-col-body={inSelectedCol}
+            class:cell-selected-row-header={i === 0 && hasClickedCell}
             class:interactive-cell={canShowDataViewer || enableClickToFilter}
             class:border-r={shouldShowRightBorder(i)}
             data-value={cell.getValue()}
@@ -692,5 +727,20 @@
   .in-selected-col-range .header-cell,
   .selected-col-body.cell {
     @apply bg-primary-50;
+  }
+
+  /* Cross-highlights for cell click-to-filter selections */
+  .cell-selected-col-header .header-cell {
+    @apply bg-primary-50;
+  }
+
+  .cell-selected-row-header.cell {
+    @apply bg-primary-50;
+  }
+  .with-row-dimension tr > td.cell-selected-row-header:first-of-type {
+    @apply bg-primary-50;
+  }
+  .with-row-dimension tr:hover > td.cell-selected-row-header:first-of-type {
+    @apply bg-primary-100;
   }
 </style>

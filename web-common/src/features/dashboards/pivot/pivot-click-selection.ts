@@ -21,6 +21,8 @@ export interface PivotClickSelectionState {
   hasSelectedCellInRow: (rowId: string) => boolean;
   /** Check if a column header was selected via click */
   isColumnHeaderSelected: (dimensionPath: Record<string, string>) => boolean;
+  /** Column IDs that have at least one selected cell (for highlighting column headers) */
+  selectedCellColumnIds: Set<string>;
   /**
    * Returns the dimension column index that was clicked in this row
    * (i.e. the index into rowDimensionNames), or -1 if no dimension cell
@@ -39,6 +41,7 @@ export function createEmptyClickSelectionState(): PivotClickSelectionState {
     isCellSelected: () => false,
     hasSelectedCellInRow: () => false,
     isColumnHeaderSelected: () => false,
+    selectedCellColumnIds: new Set(),
     getClickedDimensionIndex: () => -1,
   };
 }
@@ -62,11 +65,15 @@ export function buildClickSelection(
 ): PivotClickSelectionState {
   const hasAny = rowHeaders.size > 0 || cells.size > 0 || colHeaders.size > 0;
 
-  // Build a set of rowIds that have at least one selected cell
+  // Build sets of rowIds and columnIds that have at least one selected cell
   const rowsWithSelectedCells = new Set<string>();
+  const columnsWithSelectedCells = new Set<string>();
   for (const key of cells) {
     const sep = key.indexOf(":");
-    if (sep !== -1) rowsWithSelectedCells.add(key.slice(0, sep));
+    if (sep !== -1) {
+      rowsWithSelectedCells.add(key.slice(0, sep));
+      columnsWithSelectedCells.add(key.slice(sep + 1));
+    }
   }
 
   return {
@@ -78,6 +85,7 @@ export function buildClickSelection(
     isCellSelected: (rid, cid) => cells.has(cellKey(rid, cid)),
     hasSelectedCellInRow: (rid) => rowsWithSelectedCells.has(rid),
     isColumnHeaderSelected: (path) => colHeaders.has(columnHeaderKey(path)),
+    selectedCellColumnIds: columnsWithSelectedCells,
     getClickedDimensionIndex: (rid) => rowDimClickIndex.get(rid) ?? -1,
   };
 }
