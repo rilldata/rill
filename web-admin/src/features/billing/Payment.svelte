@@ -1,9 +1,12 @@
 <script lang="ts">
   import {
+    createAdminServiceGetBillingSubscription,
     createAdminServiceGetOrganization,
-    type V1Subscription,
   } from "@rilldata/web-admin/client";
-  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+  import {
+    getPaymentIssueErrorText,
+    needsPaymentSetup,
+  } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
@@ -12,30 +15,37 @@
   import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
 
   export let organization: string;
-  export let subscription: V1Subscription;
 
   $: org = createAdminServiceGetOrganization(organization);
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: plan = $subscriptionQuery?.data?.subscription?.plan;
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
-  $: neverSubscribed = $categorisedIssues.data?.neverSubscribed;
+  $: neverSubscribed = !!$categorisedIssues.data?.neverSubscribed;
   $: onTrial = !!$categorisedIssues.data?.trial;
-  $: onEnterprisePlan =
-    subscription?.plan && isEnterprisePlan(subscription.plan.name);
-  $: onManagedPlan =
-    subscription?.plan && isManagedPlan(subscription.plan.name);
-  $: hidePaymentModule =
-    neverSubscribed || onTrial || onEnterprisePlan || onManagedPlan;
+  $: onManagedPlan = plan && isManagedPlan(plan.name);
+  $: onEnterprisePlan = plan && isEnterprisePlan(plan.name);
+  // For enterprise and managed orgs, hide when payment details haven't been
+  // entered yet (setup done via CLI). Once set up, show the Manage button.
+  // neverSubscribed orgs are always hidden since the billing page is not shown.
+  $: pendingSetup =
+    neverSubscribed ||
+    ((onManagedPlan || onEnterprisePlan) &&
+      needsPaymentSetup(paymentIssues ?? []));
 
   async function handleManagePayment() {
+    const setup = paymentIssues?.length
+      ? needsPaymentSetup(paymentIssues)
+      : false;
     window.open(
-      await fetchPaymentsPortalURL(organization, window.location.href),
+      await fetchPaymentsPortalURL(organization, window.location.href, setup),
       "_self",
     );
   }
 </script>
 
 <!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
-{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !hidePaymentModule}
+{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !onTrial && !pendingSetup}
   <SettingsContainer title="Payment Method">
     <div slot="body" class="flex flex-row items-center gap-x-1">
       {#if paymentIssues?.length}

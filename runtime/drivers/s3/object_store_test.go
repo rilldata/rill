@@ -134,6 +134,7 @@ func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectSt
 	path := "listing_glob_test/year=*"
 
 	objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "", "", "")
+
 	require.NoError(t, err)
 	require.Empty(t, nextToken)
 
