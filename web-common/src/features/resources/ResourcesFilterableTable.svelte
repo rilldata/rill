@@ -143,7 +143,9 @@
       cell: ({ row }) =>
         renderComponent(ResourceErrorMessage, {
           message: row.original.meta?.reconcileError ?? "",
-          status: row.original.meta?.reconcileStatus ?? V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED,
+          status:
+            row.original.meta?.reconcileStatus ??
+            V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED,
         }),
       meta: {
         marginLeft: "1",
