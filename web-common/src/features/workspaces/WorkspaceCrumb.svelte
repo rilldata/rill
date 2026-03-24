@@ -144,18 +144,16 @@
                 </DropdownMenu.Trigger>
               </DropdownMenu.Root>
             {:else}
-              <a
+              <span
                 class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 disabled"
                 class:selected={current}
-                href="#"
-                onclick={(e) => e.preventDefault()}
               >
                 <CrumbTrigger
                   {filePath}
                   kind={resourceKind}
                   label={resourceName}
                 />
-              </a>
+              </span>
             {/if}
           </div>
           <TooltipContent slot="tooltip-content">
