@@ -11,13 +11,9 @@
     type AddDataState,
     type ImportAddDataStepConfig,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
-  import {
-    maybeGetConnectorDriver,
-    transitionToNextStep,
-  } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import { pushState } from "$app/navigation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import ConnectorHeader from "@rilldata/web-common/features/add-data/form/ConnectorHeader.svelte";
 
   export let config: AddDataConfig = {};
@@ -37,10 +33,6 @@
 
   $: schema = (stepState as any).schema as string | undefined;
   $: connector = (stepState as any).connector as string | undefined;
-  let connectorDriver: V1ConnectorDriver | null = null;
-  $: void maybeGetConnectorDriver(runtimeClient, schema, connector).then(
-    (d) => (connectorDriver = d),
-  );
 
   $: isImportStep = stepState.step === AddDataStep.Import;
   $: sizeClass = isImportStep ? "h-fit w-[500px]" : "h-[630px] w-[900px]";

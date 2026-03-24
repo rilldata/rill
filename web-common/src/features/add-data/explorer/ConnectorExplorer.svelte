@@ -37,23 +37,27 @@
   }
 </script>
 
-<div class="mb-2 mr-2">
-  <Search bind:value={$searchTextStore} />
+<div class="h-full">
+  <div class="mb-2 mr-2">
+    <Search bind:value={$searchTextStore} />
+  </div>
+  <div class="h-full overflow-auto">
+    {#if allError}
+      <span class="message pl-6">Error: {allError}</span>
+    {:else if loading}
+      <span class="message pl-6">Loading tables...</span>
+    {:else if data}
+      {#each data as node (node.name)}
+        <ExplorerNode
+          {node}
+          forceExpand={!!$searchTextStore}
+          level={0}
+          {selectedEntry}
+          onSelect={handleSelect}
+        />
+      {:else}
+        <span class="message pl-6">No tables found</span>
+      {/each}
+    {/if}
+  </div>
 </div>
-{#if allError}
-  <span class="message pl-6">Error: {allError}</span>
-{:else if loading}
-  <span class="message pl-6">Loading tables...</span>
-{:else if data}
-  {#each data as node (node.name)}
-    <ExplorerNode
-      {node}
-      forceExpand={!!$searchTextStore}
-      level={0}
-      {selectedEntry}
-      onSelect={handleSelect}
-    />
-  {:else}
-    <span class="message pl-6">No tables found</span>
-  {/each}
-{/if}

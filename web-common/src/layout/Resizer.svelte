@@ -79,6 +79,7 @@
 </script>
 
 <button
+  type="button"
   {disabled}
   class:absolute
   class="{direction} {side} justify-{justify}"

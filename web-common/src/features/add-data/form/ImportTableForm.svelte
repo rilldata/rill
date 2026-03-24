@@ -26,6 +26,7 @@
   import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
   import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
+  import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
 
   export let config: AddDataConfig;
   export let step: ExploreConnectorStep;
@@ -175,14 +176,20 @@
   </div>
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
-      <div class="flex flex-row size-full overflow-auto border-t">
-        <div class="flex-grow overflow-auto border-r ml-6 mt-2">
+      <div class="flex flex-row size-full overflow-hidden border-t">
+        <div class="flex-grow border-r ml-6 mt-2">
           <ConnectorExplorer
             connectorName={step.connector}
             onSelect={handleTableChange}
           />
         </div>
-        <div class="bg-surface-subtle w-[40%] p-2">
+        <ResizableSidebar
+          id="table-schema-sidebar"
+          minWidth={100}
+          maxWidth={500}
+          defaultWidth={288}
+          additionalClass="overflow-auto bg-surface-subtle p-2"
+        >
           {#if $form["table"]}
             <TableSchema
               connector={step.connector}
@@ -192,7 +199,7 @@
               addLeftPadding={false}
             />
           {/if}
-        </div>
+        </ResizableSidebar>
       </div>
     {/if}
   {:else if $form["mode"] === "sql"}

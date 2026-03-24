@@ -14,9 +14,7 @@
 </svelte:head>
 
 <div class="flex size-full overflow-hidden">
-  <div
-    class="flex size-full overflow-hidden bg-gray-100/80 dark:bg-gray-100/40"
-  >
+  <div class="flex size-full overflow-hidden bg-surface-subtle">
     {#if data.initialized}
       {#if $generatingSampleData}
         <GeneratingMessage title="Generating your sample data..." />

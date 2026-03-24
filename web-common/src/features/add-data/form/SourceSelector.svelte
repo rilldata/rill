@@ -7,6 +7,7 @@
   import type { AddDataConfig } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
+  import { ChevronRightIcon } from "lucide-svelte";
 
   export let config: AddDataConfig;
   export let onSelect: (name: string) => void;
@@ -35,7 +36,7 @@
   <div class="source-selector-header">
     <div class="source-selector-header-text">Where is your data?</div>
     <div class="grow"></div>
-    <div class="w-80">
+    <div class="w-64">
       <Search bind:value={searchText} />
     </div>
   </div>
@@ -50,7 +51,8 @@
           aria-label={`Connect to ${connector.name}`}
         >
           <svelte:component this={icon} size="24px" class={className} />
-          <span class="text-sm">{connector.displayName}</span>
+          <span class="source-label">{connector.displayName}</span>
+          <ChevronRightIcon size="16px" />
         </button>
       {/each}
     </div>
@@ -82,6 +84,10 @@
 
   .source-selector-grid {
     @apply grid grid-cols-3 p-6 gap-2;
+  }
+
+  .source-label {
+    @apply text-left text-sm grow;
   }
 
   .source-selector-cell {
