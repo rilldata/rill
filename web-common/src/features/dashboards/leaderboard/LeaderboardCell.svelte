@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store.ts";
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config.ts";
   import {
     copyToClipboard,
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard.ts";
-  import { builderActions, getAttrs } from "bits-ui";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config.ts";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click.ts";
-  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store.ts";
-  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
+  import { builderActions, getAttrs } from "bits-ui";
+  import { onDestroy } from "svelte";
 
   export let value: string;
   export let dataType: string;
@@ -50,6 +50,7 @@
   }
 
   function shiftClickHandler(label: string) {
+    console.log(dataType);
     let truncatedLabel = label?.toString();
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
       truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
@@ -98,7 +99,7 @@
         type={dataType}
         {value}
       />
-      <div class="flex flex-row gap-x-6 items-baseline text-fg-muted">
+      <div class="flex flex-row gap-x-6 items-baseline text-fg-disabled">
         <div>
           <StackingWord key="shift">Copy</StackingWord>
           this value to clipboard
