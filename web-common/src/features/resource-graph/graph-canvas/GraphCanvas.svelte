@@ -194,12 +194,16 @@
     closeActiveDropdown();
   }
 
-  // Use action to attach capture-phase wheel listener (SvelteFlow stops propagation)
+  // Use action to attach capture-phase listeners (SvelteFlow stops propagation)
   function captureInteractions(node: HTMLElement) {
     node.addEventListener("wheel", dismissPopups, { capture: true });
+    node.addEventListener("mousedown", dismissPopups, { capture: true });
     return {
       destroy() {
         node.removeEventListener("wheel", dismissPopups, { capture: true });
+        node.removeEventListener("mousedown", dismissPopups, {
+          capture: true,
+        });
       },
     };
   }
