@@ -250,8 +250,8 @@ describe("build-resource-graph", () => {
 
       const { nodes } = buildResourceGraph(resources);
 
-      expect(nodes[0].sourcePosition).toBe("bottom");
-      expect(nodes[0].targetPosition).toBe("top");
+      expect(nodes[0].sourcePosition).toBe("right");
+      expect(nodes[0].targetPosition).toBe("left");
     });
 
     it("should use different positions for different namespaces", () => {

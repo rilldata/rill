@@ -6,7 +6,6 @@
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
-    buildMultiTreeLayout,
     buildResourceGraph,
     type ResourceGraphGrouping,
   } from "../graph-canvas/graph-builder";
@@ -381,23 +380,6 @@
       });
     }
     return result;
-  })();
-
-  $: filteredResourceSections = (function (): ResourceDropdownSection[] {
-    const query = treeSearchQuery.toLowerCase().trim();
-    const hasSearch = query.length > 0;
-    const hasStatus = statusFilter.length > 0;
-    if (!hasSearch && !hasStatus) return allResourceSections;
-    return allResourceSections
-      .map((section) => ({
-        ...section,
-        entries: section.entries.filter((e) => {
-          if (hasSearch && !e.name.toLowerCase().includes(query)) return false;
-          if (hasStatus && !statusFilter.includes(e.status)) return false;
-          return true;
-        }),
-      }))
-      .filter((section) => section.entries.length > 0);
   })();
 
   function handleResourceSelect(entry: ResourceDropdownEntry) {
