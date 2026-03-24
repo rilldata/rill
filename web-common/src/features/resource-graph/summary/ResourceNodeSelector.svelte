@@ -131,7 +131,7 @@
       </button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-96">
-      <DropdownMenu.Item on:click={handleSelectAll}>
+      <DropdownMenu.Item onclick={handleSelectAll}>
         <span class="text-xs">All resources ({totalCount})</span>
       </DropdownMenu.Item>
       {#each sections as section}
@@ -145,7 +145,7 @@
           {@const isActive = activeResourceId === `${entry.kind}:${entry.name}`}
           <DropdownMenu.Item
             class="flex items-center gap-x-2 {isActive ? 'font-semibold' : ''}"
-            on:click={() => handleSelect(entry)}
+            onclick={() => handleSelect(entry)}
           >
             <svelte:component
               this={resourceIconMapping[entry.displayKind]}

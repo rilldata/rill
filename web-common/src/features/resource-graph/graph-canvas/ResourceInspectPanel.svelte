@@ -133,7 +133,7 @@
         {#if kind}<ResourceTypeBadge {kind} />{/if}
         <span class="text-sm font-medium">{resourceName}</span>
       </div>
-      <button class="close-btn" on:click={closeInspect} aria-label="Close">
+      <button class="close-btn" onclick={closeInspect} aria-label="Close">
         <X size="14px" />
       </button>
     </div>
@@ -302,7 +302,7 @@
 
       <!-- File path link -->
       {#if canOpenFile && filePath}
-        <button class="file-link" on:click={navigateToFile}>
+        <button class="file-link" onclick={navigateToFile}>
           <ExternalLink size="12px" />
           <span>{filePath}</span>
         </button>

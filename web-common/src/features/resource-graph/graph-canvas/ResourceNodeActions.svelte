@@ -213,46 +213,46 @@
   }
 </script>
 
-<svelte:window on:click={handleWindowClick} on:keydown={handleWindowKeydown} />
+<svelte:window onclick={handleWindowClick} onkeydown={handleWindowKeydown} />
 
 {#if isOpen}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     use:portal
     class="context-menu"
     style="left: {menuX}px; top: {menuY}px;"
-    on:click|stopPropagation
-    on:mousedown|stopPropagation
+    onclick={(e) => e.stopPropagation()}
+    onmousedown={(e) => e.stopPropagation()}
   >
-    <button class="menu-item" on:click={handleViewSpec}>
+    <button class="menu-item" onclick={handleViewSpec}>
       <Info size="12px" />
       <span>Describe</span>
     </button>
-    <button class="menu-item" on:click={viewNodeTree}>
+    <button class="menu-item" onclick={viewNodeTree}>
       <GitBranch size="12px" />
       <span>View Lineage</span>
     </button>
     {#if canOpenFile}
-      <button class="menu-item" on:click={openFile}>
+      <button class="menu-item" onclick={openFile}>
         <ExternalLink size="12px" />
         <span>Go to Resource</span>
       </button>
     {/if}
     {#if reconcileError}
-      <button class="menu-item" on:click={handleCopyError}>
+      <button class="menu-item" onclick={handleCopyError}>
         <Copy size="12px" />
         <span>Copy Error Message</span>
       </button>
     {/if}
     {#if canRefresh}
       <div class="menu-separator"></div>
-      <button class="menu-item" on:click={handleFullRefreshClick}>
+      <button class="menu-item" onclick={handleFullRefreshClick}>
         <RefreshCw size="12px" />
         <span>Full Refresh</span>
       </button>
       {#if isIncremental}
-        <button class="menu-item" on:click={handleIncrementalRefresh}>
+        <button class="menu-item" onclick={handleIncrementalRefresh}>
           <RefreshCw size="12px" />
           <span>Incremental Refresh</span>
         </button>

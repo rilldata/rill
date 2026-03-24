@@ -26,7 +26,7 @@
       <button
         class="close-btn"
         aria-label="Close legend"
-        on:click={() => (open = false)}
+        onclick={() => (open = false)}
       >
         &times;
       </button>
@@ -53,7 +53,7 @@
   <button
     class="legend-toggle"
     aria-label="Show legend"
-    on:click={() => (open = true)}
+    onclick={() => (open = true)}
   >
     <Info size="14px" />
   </button>

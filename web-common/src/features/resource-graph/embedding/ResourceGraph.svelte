@@ -802,8 +802,8 @@
       <!-- Search combo: input + resource dropdown -->
       <div
         class="search-combo"
-        on:focusin={() => (resourceDropdownOpen = true)}
-        on:focusout={handleSearchComboBlur}
+        onfocusin={() => (resourceDropdownOpen = true)}
+        onfocusout={handleSearchComboBlur}
       >
         <Search
           bind:value={treeSearchQuery}
@@ -821,8 +821,8 @@
                 class="combo-item {selectedGroupIsConnector
                   ? 'font-semibold'
                   : ''}"
-                on:mousedown|preventDefault
-                on:click={() => {
+                onmousedown={(e) => e.preventDefault()}
+                onclick={() => {
                   treeSearchQuery = "";
                   handleSelectAll();
                   resourceDropdownOpen = false;
@@ -844,8 +844,8 @@
                     class="combo-item {effectiveSelectedGroupId === entryId
                       ? 'font-semibold'
                       : ''}"
-                    on:mousedown|preventDefault
-                    on:click={() => {
+                    onmousedown={(e) => e.preventDefault()}
+                    onclick={() => {
                       treeSearchQuery = entry.name;
                       handleResourceSelect(entry);
                       resourceDropdownOpen = false;
@@ -921,7 +921,7 @@
       {#if hasActiveFilters}
         <button
           class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-          on:click={handleClearFilters}
+          onclick={handleClearFilters}
         >
           Clear
         </button>
