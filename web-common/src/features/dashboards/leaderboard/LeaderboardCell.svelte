@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
@@ -14,6 +13,7 @@
   import { onDestroy } from "svelte";
 
   export let value: string;
+  export let tooltipValue: string = value;
   export let dataType: string;
   export let cellType: "dimension" | "measure" | "comparison";
   export let className: string = "";
@@ -76,7 +76,7 @@
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
       on:click={modified({
-        shift: () => shiftClickHandler(value),
+        shift: () => shiftClickHandler(tooltipValue),
       })}
       on:pointerover={() => cellInspectorStore.updateValue(value)}
       on:focus={() => cellInspectorStore.updateValue(value)}
@@ -93,12 +93,7 @@
       class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-fg-inverse"
       sideOffset={16}
     >
-      <FormattedDataType
-        customStyle="font-semibold !text-fg-inverse"
-        isNull={value === null || value === undefined}
-        type={dataType}
-        {value}
-      />
+      <span class="font-semibold !text-fg-inverse">{tooltipValue}</span>
       <div class="flex flex-row gap-x-6 items-baseline text-fg-disabled">
         <div>
           <StackingWord key="shift">Copy</StackingWord>

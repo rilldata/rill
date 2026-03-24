@@ -72,6 +72,10 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+  export let tooltipFormatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let measureLabel: (measureName: string) => string;
   export let toggleDimensionValueSelection: (
@@ -387,6 +391,7 @@
             {toggleDimensionValueSelection}
             {leaderboardSortByMeasureName}
             {formatters}
+            {tooltipFormatters}
             {dimensionColumnWidth}
             {maxValues}
           />
@@ -410,6 +415,7 @@
           {toggleDimensionValueSelection}
           {leaderboardSortByMeasureName}
           {formatters}
+          {tooltipFormatters}
           {dimensionColumnWidth}
           {maxValues}
         />

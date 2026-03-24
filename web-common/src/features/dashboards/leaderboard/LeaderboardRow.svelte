@@ -5,6 +5,7 @@
   import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import {
@@ -39,6 +40,10 @@
     isExclusiveFilter?: boolean | undefined,
   ) => void;
   export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
+  export let tooltipFormatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
@@ -238,6 +243,11 @@
   {#each leaderboardMeasureNames as measureName, i (i)}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
+      tooltipValue={values[measureName] != null
+        ? (tooltipFormatters[measureName]?.(values[measureName]) ??
+          values[measureName]?.toString() ??
+          "")
+        : ""}
       dataType="INTEGER"
       cellType="measure"
       background={leaderboardMeasureNames.length === 1
@@ -261,6 +271,11 @@
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
+        tooltipValue={pctOfTotals[measureName] != null
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(pctOfTotals[measureName]),
+            )
+          : ""}
         dataType="INTEGER"
         cellType="comparison"
       >
@@ -277,6 +292,11 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaAbsMap[measureName]?.toString() || ""}
+        tooltipValue={deltaAbsMap[measureName] != null
+          ? (tooltipFormatters[measureName]?.(deltaAbsMap[measureName]) ??
+            deltaAbsMap[measureName]?.toString() ??
+            "")
+          : ""}
         dataType="INTEGER"
         cellType="comparison"
       >
@@ -298,6 +318,11 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaRels[measureName]?.toString() || ""}
+        tooltipValue={deltaRels[measureName] != null
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(deltaRels[measureName]),
+            )
+          : ""}
         {dataType}
         cellType="comparison"
       >

@@ -98,6 +98,13 @@
     ]),
   );
 
+  $: measureTooltipFormatters = Object.fromEntries(
+    visibleMeasures.map((m) => [
+      m.name,
+      createMeasureValueFormatter<null | undefined>(m, "tooltip"),
+    ]),
+  );
+
   // Reset column widths when the measure changes
   $: if (leaderboardMeasureNames) {
     valueColumn.reset();
@@ -207,6 +214,7 @@
               )}
               isBeingCompared={false}
               formatters={measureFormatters}
+              tooltipFormatters={measureTooltipFormatters}
               {toggleSort}
               toggleDimensionValueSelection={async (
                 name,
