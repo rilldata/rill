@@ -149,7 +149,7 @@ export type JSONSchemaObject = {
    * "tall" = larger form for connectors with more fields
    * "default" = standard form height
    */
-  "x-form-height"?: "default" | "medium" | "tall" | "xtall";
+  "x-form-height"?: "default" | "tall";
   /**
    * Form width for the add data modal.
    * "wide" = wider form for connectors with templates or more content

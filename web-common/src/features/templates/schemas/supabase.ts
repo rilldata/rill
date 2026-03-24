@@ -5,7 +5,7 @@ export const supabaseSchema: MultiStepFormSchema = {
   type: "object",
   title: "Supabase",
   "x-category": "sqlStore",
-  "x-form-height": "medium",
+  "x-form-height": "tall",
   properties: {
     connection_mode: {
       type: "string",
