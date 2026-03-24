@@ -18,9 +18,13 @@ web-common/src/components/editor/line-status/line-number-gutter.svelte.ts: error
 web-common/src/components/editor/line-status/line-status-gutter.ts: error TS2339
 web-common/src/components/editor/line-status/state.ts: error TS2322
 web-common/src/features/dashboards/time-controls/time-control-store.spec.ts: error TS2322
-web-common/src/features/dashboards/url-state/filters/expression.cjs: error TS1286
-web-common/src/features/dashboards/url-state/time-ranges/rill-time.cjs: error TS1286
+web-common/src/features/dashboards/url-state/time-ranges/RillTime.ts: error TS2307
 web-common/src/features/metrics-views/column-selectors.ts: error TS18048
+web-common/src/metrics/service/MetricsService.ts: error TS2322
+web-common/src/metrics/service/MetricsService.ts: error TS2345
+web-common/src/runtime-client/v2/gen/connector-service.ts: error TS2707
+web-common/src/runtime-client/v2/gen/runtime-service.ts: error TS2707
+web-admin/src/client/gen/default/default.ts: error TS2707
 web-common/src/lib/formatters.ts: error TS18046
 web-common/src/lib/number-formatting/utils/format-with-order-of-magnitude.spec.ts: error TS2345
 web-common/src/lib/time/comparisons/index.ts: error TS2322
