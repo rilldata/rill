@@ -51,7 +51,7 @@
     urlParams.resources.length > 0
       ? tokenForSeedString(urlParams.resources[0])
       : null;
-  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "metrics";
+  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "dashboards";
   $: seeds = urlParams.kind
     ? [urlParams.kind]
     : urlParams.resources.length > 0
@@ -88,8 +88,10 @@
     }
   }
 
-  // Status filter state
-  let selectedStatuses: ResourceStatusFilterValue[] = [];
+  // Status filter state — synced to URL ?status= param
+  $: selectedStatuses = (
+    $page.url.searchParams.get("status")?.split(",") ?? []
+  ).filter(Boolean) as ResourceStatusFilterValue[];
 
   const statusOptions: { label: string; value: ResourceStatusFilterValue }[] = [
     { label: "OK", value: "ok" },
@@ -99,20 +101,31 @@
   ];
 
   function toggleStatus(value: ResourceStatusFilterValue) {
-    if (selectedStatuses.includes(value)) {
-      selectedStatuses = selectedStatuses.filter((s) => s !== value);
+    const next = selectedStatuses.includes(value)
+      ? selectedStatuses.filter((s) => s !== value)
+      : [...selectedStatuses, value];
+    const url = new URL($page.url);
+    if (next.length > 0) {
+      url.searchParams.set("status", next.join(","));
     } else {
-      selectedStatuses = [...selectedStatuses, value];
+      url.searchParams.delete("status");
     }
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
-  // True when the URL has any explicit filter params (kind or resource)
-  $: hasUrlFilters = !!urlParams.kind || urlParams.resources.length > 0;
+  // True when the URL has any explicit filter params
+  $: hasUrlFilters =
+    !!urlParams.kind ||
+    urlParams.resources.length > 0 ||
+    selectedStatuses.length > 0;
 
   // Clear all filters
   function handleClearFilters() {
-    selectedStatuses = [];
-    handleKindChange(null);
+    const url = new URL($page.url);
+    url.searchParams.delete("status");
+    url.searchParams.delete("kind");
+    url.searchParams.delete("resource");
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
   // Refresh all

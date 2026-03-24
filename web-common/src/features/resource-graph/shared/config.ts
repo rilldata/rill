@@ -49,6 +49,7 @@ export const DAGRE_CONFIG = {
  */
 export const EDGE_CONFIG = {
   DEFAULT_STYLE: "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;",
+  ERROR_STYLE: "stroke:#ef4444;stroke-width:1.5px;opacity:0.9;",
   HIGHLIGHT_STYLE: "stroke:#3b82f6;stroke-width:2px;opacity:1;",
   DIM_STYLE: "stroke:#b1b1b7;stroke-width:1px;opacity:0.25;",
   DEFAULT_OFFSET: 8,

@@ -30,6 +30,7 @@ const DAGRE_EDGESEP = DAGRE_CONFIG.EDGESEP;
 
 // Edge styling from centralized config
 const DEFAULT_EDGE_STYLE = EDGE_CONFIG.DEFAULT_STYLE;
+const ERROR_EDGE_STYLE = EDGE_CONFIG.ERROR_STYLE;
 
 // Resource kinds that should be displayed in the graph
 const ALLOWED_KINDS = new Set<ResourceKind>([
@@ -507,13 +508,18 @@ export function buildResourceGraph(
       if (edgeIds.has(edgeId)) continue;
       edgeIds.add(edgeId);
       dagreGraph.setEdge(sourceId, dependentId);
+      // Color edge red if the target has a reconcile error
+      const targetResource = resourceMap.get(dependentId);
+      const targetError = targetResource?.meta?.reconcileError ?? "";
+      const hasTargetError = !!targetError;
+
       const edge: Edge = {
         id: edgeId,
         source: sourceId,
         target: dependentId,
         animated: false,
         type: "default",
-        style: DEFAULT_EDGE_STYLE,
+        style: hasTargetError ? ERROR_EDGE_STYLE : DEFAULT_EDGE_STYLE,
       } as Edge;
       edges.push(edge);
     }
@@ -1124,7 +1130,7 @@ export function buildMultiTreeLayout(
   edges: Edge[];
 } {
   const TREE_GAP_X = 100; // horizontal gap between trees
-  const TREE_GAP_Y = 200; // vertical gap between rows
+  const TREE_GAP_Y = 80; // vertical gap between rows
   // Use actual container width so trees wrap into rows that fit the viewport.
   // fitView will scale the result to fill the canvas afterward.
   const MAX_ROW_WIDTH = containerWidth || 2500;

@@ -194,22 +194,31 @@
     closeActiveDropdown();
   }
 
+  function isInsideInspectPanel(e: Event) {
+    return (e.target as HTMLElement)?.closest(".inspect-panel");
+  }
+
   // Use action to attach capture-phase listeners (SvelteFlow stops propagation)
   function handleCaptureMousedown(e: MouseEvent) {
-    // Don't dismiss if clicking inside the inspect panel
-    const target = e.target as HTMLElement;
-    if (target.closest(".inspect-panel")) return;
+    if (isInsideInspectPanel(e)) return;
+    dismissPopups();
+  }
+
+  function handleCaptureWheel(e: WheelEvent) {
+    if (isInsideInspectPanel(e)) return;
     dismissPopups();
   }
 
   function captureInteractions(node: HTMLElement) {
-    node.addEventListener("wheel", dismissPopups, { capture: true });
+    node.addEventListener("wheel", handleCaptureWheel, { capture: true });
     node.addEventListener("mousedown", handleCaptureMousedown, {
       capture: true,
     });
     return {
       destroy() {
-        node.removeEventListener("wheel", dismissPopups, { capture: true });
+        node.removeEventListener("wheel", handleCaptureWheel, {
+          capture: true,
+        });
         node.removeEventListener("mousedown", handleCaptureMousedown, {
           capture: true,
         });

@@ -6,8 +6,8 @@
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
-    partitionResourcesByDashboardTrees,
     buildMultiTreeLayout,
+    buildResourceGraph,
     type ResourceGraphGrouping,
   } from "../graph-canvas/graph-builder";
   import type { Edge, Node } from "@xyflow/svelte";
@@ -200,27 +200,33 @@
   })();
   $: isSprawlMode = !!sprawlSeed;
 
-  // Trees for sprawl mode
+  // Trees for sprawl mode: use seed-based (directed) partitioning so each
+  // metrics view / dashboard gets its own independent tree. This allows
+  // status filtering to hide/show individual trees correctly.
   $: sprawlTreeGroups = (() => {
     if (!isSprawlMode) return [];
-    let groups: ResourceGraphGrouping[];
-    if (sprawlSeed === "dashboards") {
-      groups = partitionResourcesByDashboardTrees(normalizedResources);
-    } else {
-      groups = partitionResourcesByMetrics(normalizedResources);
+    const seedKind =
+      sprawlSeed === "dashboards"
+        ? ResourceKind.Explore
+        : ResourceKind.MetricsView;
+    // Build one seed per anchor resource of the relevant kind
+    const anchorSeeds: { kind: string; name: string }[] = [];
+    for (const r of normalizedResources) {
+      const kind = coerceResourceKind(r);
+      if (sprawlSeed === "dashboards") {
+        if (kind !== ResourceKind.Explore && kind !== ResourceKind.Canvas)
+          continue;
+      } else {
+        if (kind !== seedKind) continue;
+      }
+      if (r.meta?.hidden) continue;
+      const name = r.meta?.name?.name;
+      const rKind = r.meta?.name?.kind;
+      if (!name || !rKind) continue;
+      anchorSeeds.push({ kind: rKind, name });
     }
-    // In sprawl mode, drop connector groups and strip connector nodes
-    // from remaining groups so connectors don't clutter the sprawl view.
-    const connectorKind = ResourceKind.Connector;
-    return groups
-      .filter((g) => !g.id.includes("Connector"))
-      .map((g) => ({
-        ...g,
-        resources: g.resources.filter(
-          (r) => (r.meta?.name?.kind as ResourceKind) !== connectorKind,
-        ),
-      }))
-      .filter((g) => g.resources.length > 0);
+    if (!anchorSeeds.length) return [];
+    return partitionResourcesBySeeds(normalizedResources, anchorSeeds);
   })();
 
   // If seeds were provided (e.g., kind filter like "models"), use seed-based partitioning.
@@ -263,7 +269,7 @@
       );
     }
 
-    // Filter entire trees by status (show tree if any resource matches)
+    // Filter trees by status: show full tree if any resource in it matches
     if (statusFilter.length > 0) {
       groups = groups.filter((group) =>
         group.resources.some((r) =>
@@ -275,13 +281,25 @@
     return groups;
   })();
 
-  // Build combined multi-tree layout for sprawl mode
+  // Build combined layout for sprawl mode: merge all filtered groups'
+  // resources into one graph so shared nodes (metrics views, models) appear
+  // once and naturally connect the trees together.
   $: sprawlLayout = (() => {
     if (!isSprawlMode || !filteredResourceGroups.length) return null;
-    return buildMultiTreeLayout(
-      filteredResourceGroups,
-      sidebarMainWidth || undefined,
-    );
+    const seen = new Set<string>();
+    const merged: V1Resource[] = [];
+    for (const group of filteredResourceGroups) {
+      for (const r of group.resources) {
+        const id = `${r.meta?.name?.kind}:${r.meta?.name?.name}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        merged.push(r);
+      }
+    }
+    return buildResourceGraph(merged, {
+      positionNs: "sprawl",
+      ignoreCache: true,
+    });
   })() as { nodes: Node<ResourceNodeData>[]; edges: Edge[] } | null;
 
   $: visibleResourceGroups =
