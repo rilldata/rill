@@ -407,6 +407,8 @@
   {#if showDropdown && searchResults.length > 0}
     <div
       class="dropdown"
+      role="listbox"
+      tabindex="-1"
       bind:this={dropdownList}
       style="width: {dropdownPosition.width}px; top: {dropdownPosition.top}px; left: {dropdownPosition.left}px;"
       onpointermove={() => {
