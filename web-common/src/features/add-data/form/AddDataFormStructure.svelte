@@ -157,7 +157,9 @@
 
       <div class="flex gap-2">
         {#if onSave}
-          <Button type="secondary" onClick={onSave}>Save</Button>
+          <Button type="secondary" onClick={onSave} label="Save connector">
+            Save
+          </Button>
         {/if}
 
         <Button

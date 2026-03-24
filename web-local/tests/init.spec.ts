@@ -9,7 +9,7 @@ test.describe("Example project initialization", () => {
     test.describe(`Example project: ${example.title}`, () => {
       test.setTimeout(180_000);
       test("should initialize new project", async ({ page }) => {
-        await page.getByRole("link", { name: example.title }).click();
+        await page.getByLabel(example.title).click();
 
         const [, fileName] = splitFolderAndFileName(example.firstFile);
         await page.waitForURL(`**/files${example.firstFile}`);
@@ -26,10 +26,10 @@ test.describe("Example project initialization", () => {
 
   test.describe("Empty project", () => {
     test("should initialize new project", async ({ page }) => {
-      await page.getByRole("link", { name: "Empty Project" }).click();
+      await page.getByLabel("Start with an empty project").click();
 
       await expect(
-        page.getByText("Import data", { exact: true }),
+        page.getByText("Connect your data", { exact: true }),
       ).toBeVisible();
 
       await page.getByRole("link", { name: "rill.yaml" }).click();

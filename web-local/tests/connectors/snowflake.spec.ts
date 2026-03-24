@@ -11,18 +11,19 @@ test.describe("Snowflake connector", () => {
     }
 
     // Open Add Data modal and pick Snowflake
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#snowflake").click();
-    await page.waitForSelector('form[id*="snowflake"]');
+    await page.getByLabel("Connect to snowflake").click();
 
     // Switch to the DSN tab
-    await page.getByRole("button", { name: "Enter connection string" }).click();
+    await page.getByRole("tab", { name: "Connection String" }).click();
 
     // Fill DSN field
-    await page
-      .getByRole("textbox", { name: "Snowflake Connection String" })
-      .fill(dsn!);
+    await page.getByRole("textbox", { name: "Connection String" }).fill(dsn!);
+
+    // Validate connector YAML contents
+    const yamlPreview = page.getByLabel("Yaml preview");
+    await expect(yamlPreview).toContainText("type: connector");
+    await expect(yamlPreview).toContainText("driver: snowflake");
+    await expect(yamlPreview).toContainText('dsn: "{{ .env.SNOWFLAKE_DSN }}"');
 
     // Submit connector form
     const submitButton = page
@@ -31,15 +32,13 @@ test.describe("Snowflake connector", () => {
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
 
-    // Expect navigation to the new connector file
-    await page.waitForURL("**/files/connectors/snowflake.yaml");
+    // Wait for pick a table screen
+    await expect(
+      page.getByText(
+        "Pick a table or input your file SQL to power your first dashboard",
+      ),
+    ).toBeVisible();
 
-    // Validate connector YAML contents
-    const codeEditor = page
-      .getByLabel("codemirror editor")
-      .getByRole("textbox");
-    await expect(codeEditor).toContainText("type: connector");
-    await expect(codeEditor).toContainText("driver: snowflake");
-    await expect(codeEditor).toContainText('dsn: "{{ .env.SNOWFLAKE_DSN }}"');
+    // Skip testing import to avoid putting load on our infrastructure
   });
 });

@@ -716,7 +716,6 @@ export function useCreateMetricsViewWithCanvasUIAction(
  */
 export function useCreateMetricsViewWithCanvasAndExploreUIAction(
   client: RuntimeClient,
-  instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -794,7 +793,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       exploreFilePath = await createExploreWithoutNavigation(
         client,
         queryClient,
-        instanceId,
+        client.instanceId,
         resource,
       );
 

@@ -7,10 +7,8 @@ test.describe("Test Connection", () => {
   test("Azure connector - auth method specific required fields", async ({
     page,
   }) => {
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#azure").click();
-    await page.waitForSelector('form[id*="azure"]');
+    await page.getByLabel("Connect your data").click();
+    await page.getByLabel("Connect to azure").click();
 
     const button = page.getByRole("dialog").getByRole("button", {
       name: /(Test and Connect|Continue)/,
@@ -42,10 +40,7 @@ test.describe("Test Connection", () => {
   test("S3 connector - auth method specific required fields", async ({
     page,
   }) => {
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#s3").click();
-    await page.waitForSelector('form[id*="s3"]');
+    await page.getByLabel("Connect to s3").click();
 
     const button = page.getByRole("dialog").getByRole("button", {
       name: /(Test and Connect|Continue)/,
@@ -88,10 +83,7 @@ test.describe("Test Connection", () => {
     await page.getByRole("menuitem", { name: "Add Data" }).click();
 
     // Select GCS connector
-    await page.locator("#gcs").click();
-
-    // Wait for the form to load
-    await page.waitForSelector('form[id*="gcs"]');
+    await page.getByLabel("Connect to gcs").click();
 
     // Select HMAC keys authentication method
     await page.getByRole("radio", { name: "HMAC keys" }).click();
@@ -111,7 +103,11 @@ test.describe("Test Connection", () => {
       .click();
 
     // Wait for error container to appear
-    await expect(page.locator(".error-container")).toBeVisible();
+    await expect
+      .poll(() => page.locator(".error-container").isVisible(), {
+        timeout: 10_000,
+      })
+      .toBeTruthy();
   });
 
   test("GCS connector - step transition from connector to model", async ({
@@ -133,10 +129,7 @@ test.describe("Test Connection", () => {
     await page.getByRole("menuitem", { name: "Add Data" }).click();
 
     // Select GCS connector
-    await page.locator("#gcs").click();
-
-    // Wait for the form to load
-    await page.waitForSelector('form[id*="gcs"]');
+    await page.getByLabel("Connect to gcs").click();
 
     // Verify we're in step 1 (connector configuration)
     await expect(page.getByText("Connector preview")).toBeVisible();

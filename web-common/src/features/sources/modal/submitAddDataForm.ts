@@ -22,7 +22,6 @@ import {
 } from "../../connectors/code-utils";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
-  waitForProjectParser,
   waitForResourceReconciliation,
 } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -35,14 +34,12 @@ import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { AI_CONNECTORS, OLAP_ENGINES } from "./constants";
 import { sourceIngestionTracker } from "../sources-store";
-import { getConnectorSchema, isMultiStepConnector } from "./connector-schemas";
+import { getConnectorSchema } from "./connector-schemas";
 import {
-  findRadioEnumKey,
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
-import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors

@@ -4,11 +4,10 @@
   export let onClick: () => void;
   export let loading: boolean;
   export let disabled: boolean;
-
-  $: console.log(loading, disabled);
+  export let label: string;
 </script>
 
-<button on:click={onClick} {disabled}>
+<button on:click={onClick} {disabled} aria-label={label}>
   {#if loading}
     <LoadingCircleOutline size="16px" color="var(--color-primary-600)" />
   {:else}

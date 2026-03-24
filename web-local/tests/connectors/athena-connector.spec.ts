@@ -17,10 +17,8 @@ test.describe("Athena connector", () => {
       );
     }
 
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#athena").click();
-    await page.waitForSelector('form[id*="athena"]');
+    await page.getByLabel("Connect your data").click();
+    await page.getByLabel("Connect to athena").click();
 
     await page
       .getByRole("textbox", { name: "AWS access key ID" })
@@ -30,23 +28,29 @@ test.describe("Athena connector", () => {
       .fill(secretKey!);
     await page
       .getByRole("textbox", { name: "S3 output location" })
-      .fill(outputLocation!);
+      .fill(outputLocation);
 
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Test and Connect" })
       .click();
 
-    await expect(page.getByText("Model preview")).toBeVisible({
+    await expect(
+      page.getByText(
+        "Pick a table or input your file SQL to power your first dashboard",
+      ),
+    ).toBeVisible({
       timeout: 120000,
     });
 
-    const sqlField = page.getByRole("textbox", { name: "SQL" });
-    await expect(sqlField).toBeVisible();
-    await expect(sqlField).toHaveValue("");
+    // Aws data catalog is visible in explorer
+    const awsDataCatalogNode = page.getByLabel("Node: awsdatacatalog, level 0");
+    await expect(awsDataCatalogNode).toBeVisible();
+    await awsDataCatalogNode.click();
 
-    const nameField = page.getByRole("textbox", { name: "Model name" });
-    await expect(nameField).toBeVisible();
-    await expect(nameField).toHaveValue("");
+    await expect(page.getByLabel("Node: default, level 1")).toBeVisible();
+    await expect(
+      page.getByLabel("Node: integration_test, level 1"),
+    ).toBeVisible();
   });
 });

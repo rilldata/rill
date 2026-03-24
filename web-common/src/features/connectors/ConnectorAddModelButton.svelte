@@ -2,7 +2,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { addSourceModal } from "@rilldata/web-common/features/sources/modal/add-source-visibility";
   import { SOURCES } from "@rilldata/web-common/features/sources/modal/constants";
   import { getSchemaNameFromDriver } from "@rilldata/web-common/features/sources/modal/connector-schemas";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";

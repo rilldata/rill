@@ -133,7 +133,7 @@ test.describe("ClickHouse connector", () => {
     }) => {
       await enterClickhouseCredentials(page, clickhouseOne);
       // Save without testing connection
-      await page.getByRole("button", { name: "Save" }).click();
+      await page.getByLabel("Save connector").click();
       // Assert that the connector explorer now has a ClickHouse connector
       await expect(
         page
@@ -158,7 +158,7 @@ test.describe("ClickHouse connector", () => {
       // Create another clickhouse connector.
       await enterClickhouseCredentials(page, clickhouseTwo, false);
       // Save without testing connection
-      await page.getByRole("button", { name: "Save" }).click();
+      await page.getByLabel("Save connector").click();
       // Assert that the connector explorer now has a ClickHouse connector
       await expect(
         page

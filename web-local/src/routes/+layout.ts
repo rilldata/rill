@@ -33,14 +33,17 @@ export async function load({ url, depends, untrack, route }) {
   const firstDashboardFile = files.files?.find((file) =>
     file.path?.startsWith("/dashboards/"),
   );
+  const redirectPath = firstDashboardFile
+    ? `/files${firstDashboardFile?.path}`
+    : "/";
 
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
 
-  const redirectPath = untrack(() => {
+  const trackedRedirectPath = untrack(() => {
     return (
       !!url.searchParams.get("redirect") &&
-      url.pathname !== `/files${firstDashboardFile?.path}` &&
-      `/files${firstDashboardFile?.path}`
+      url.pathname !== redirectPath &&
+      redirectPath
     );
   });
 
@@ -48,8 +51,8 @@ export async function load({ url, depends, untrack, route }) {
     initialized = await handleUninitializedProject(client);
     if (!initialized && !route?.id?.startsWith("/(misc)/welcome"))
       throw redirect(303, "/welcome");
-  } else if (redirectPath) {
-    throw redirect(303, redirectPath);
+  } else if (trackedRedirectPath) {
+    throw redirect(303, trackedRedirectPath);
   }
 
   return { initialized };

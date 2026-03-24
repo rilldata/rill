@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
@@ -70,6 +69,7 @@
         onClick={() => unpackProject(example)}
         {loading}
         disabled={!!selectedProjectName}
+        label={example.title}
       >
         <svelte:fragment slot="icon">
           {#if icon}
@@ -84,6 +84,7 @@
       onClick={() => unpackProject()}
       loading={selectedProjectName === EMPTY_PROJECT_TITLE}
       disabled={!!selectedProjectName}
+      label="Start with an empty project"
     >
       <svelte:fragment slot="icon">
         <AddCircleOutline size="16px" />

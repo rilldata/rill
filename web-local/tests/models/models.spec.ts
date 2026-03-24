@@ -7,7 +7,7 @@ import {
   wrapRetryAssertion,
 } from "../utils/commonHelpers";
 import { createModel, modelHasError } from "../utils/modelHelpers";
-import { createSource } from "../utils/sourceHelpers";
+import { createSource, createSourceV2 } from "../utils/sourceHelpers";
 import { fileNotPresent, waitForFileNavEntry } from "../utils/waitHelpers";
 
 test.describe("models", () => {
@@ -15,7 +15,7 @@ test.describe("models", () => {
 
   test("Create and edit model", async ({ page }) => {
     // Add the AdBids source
-    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
 
     // Create a "Hello world" model named AdBids_model.sql
     await createModel(page, "AdBids_model.sql");

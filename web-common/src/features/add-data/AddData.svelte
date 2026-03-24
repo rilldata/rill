@@ -4,17 +4,19 @@
   import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
   import SourceForm from "@rilldata/web-common/features/add-data/form/SourceForm.svelte";
   import ImportTableForm from "@rilldata/web-common/features/add-data/form/ImportTableForm.svelte";
-  import ImportTableStatus from "@rilldata/web-common/features/add-data/ImportTableStatus.svelte";
+  import GenerateDashboardStatus from "@rilldata/web-common/features/add-data/GenerateDashboardStatus.svelte";
   import {
     type AddDataConfig,
     AddDataStep,
     type AddDataState,
     type ImportAddDataStepConfig,
+    ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import { pushState } from "$app/navigation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ConnectorHeader from "@rilldata/web-common/features/add-data/form/ConnectorHeader.svelte";
+  import ImportDataStatus from "@rilldata/web-common/features/add-data/ImportDataStatus.svelte";
 
   export let config: AddDataConfig = {};
   export let onClose: () => void = () => {};
@@ -114,10 +116,17 @@
       <ImportTableForm {config} step={stepState} onSubmit={setAndStartImport} />
     {/key}
   {:else if stepState.step === AddDataStep.Import}
-    <ImportTableStatus
-      importAddDataStep={stepState}
-      onBack={() => window.history.back()}
-      {onClose}
-    />
+    {@const isImportOnlyStep =
+      stepState.config.importSteps.length === 1 &&
+      stepState.config.importSteps[0] === ImportDataStep.CreateModel}
+    {#if isImportOnlyStep}
+      <ImportDataStatus importAddDataStep={stepState} {onClose} />
+    {:else}
+      <GenerateDashboardStatus
+        importAddDataStep={stepState}
+        onBack={() => window.history.back()}
+        {onClose}
+      />
+    {/if}
   {/if}
 </div>

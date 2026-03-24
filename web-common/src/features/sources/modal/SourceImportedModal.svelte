@@ -42,7 +42,6 @@
     sourcePath !== null
       ? useCreateMetricsViewWithCanvasAndExploreUIAction(
           runtimeClient,
-          instanceId,
           sinkConnector as string,
           "",
           "",
