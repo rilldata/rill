@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
   if (mode === "test") {
     alias.push({
       find: "$app/environment",
-      replacement: "/../web-common/.storybook/app-environment.mock.ts",
+      replacement: "/../web-common/src/test/app-environment.mock.ts",
     });
   }
 
