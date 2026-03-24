@@ -1,47 +1,52 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-  import { get } from "svelte/store";
-  import type { TimeSeriesPoint, HoverState } from "./types";
-  import {
-    computeChartConfig,
-    computeYExtent,
-    computeNiceYExtent,
-    computeXTickIndices,
-  } from "./scales";
-  import { EMPTY_HOVER } from "./interactions";
-  import { ScrubController } from "./ScrubController";
-  import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
-  import MeasureChartTooltip from "./MeasureChartTooltip.svelte";
-  import MeasureChartHoverTooltip from "./MeasureChartHoverTooltip.svelte";
-  import MeasureChartScrub from "./MeasureChartScrub.svelte";
-  import MeasurePan from "./MeasurePan.svelte";
-  import ExplainButton from "./ExplainButton.svelte";
-  import MeasureChartPointIndicator from "./MeasureChartPointIndicator.svelte";
+  import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
+  import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import type {
+    MetricsViewSpecMeasure,
+    V1TimeGrain,
+  } from "@rilldata/web-common/runtime-client";
   import { scaleLinear } from "d3-scale";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import type { Interval } from "luxon";
   import { DateTime } from "luxon";
-  import { groupAnnotations } from "./annotation-utils";
-  import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
-  import { AnnotationPopoverController } from "./AnnotationPopoverController";
-  import MeasureChartGrid from "./MeasureChartGrid.svelte";
-  import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";
-  import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
+  import { onDestroy } from "svelte";
+  import { get } from "svelte/store";
   import { measureSelection } from "../measure-selection/measure-selection";
-  import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
-  import { snapIndex, dateToIndex } from "./utils";
-  import { hoverIndex } from "./hover-index";
+  import { groupAnnotations } from "./annotation-utils";
+  import { AnnotationPopoverController } from "./AnnotationPopoverController";
   import {
     buildChartSeries,
-    determineMode,
     computeTooltipDelta,
+    determineMode,
   } from "./chart-series";
-  import { X_PAD } from "./scales";
   import ComparisonTooltip from "./ComparisonTooltip.svelte";
-  import type { DimensionSeriesData } from "./types";
+  import ExplainButton from "./ExplainButton.svelte";
+  import { hoverIndex } from "./hover-index";
+  import { EMPTY_HOVER } from "./interactions";
+  import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";
+  import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
+  import MeasureChartGrid from "./MeasureChartGrid.svelte";
+  import MeasureChartHoverTooltip from "./MeasureChartHoverTooltip.svelte";
+  import MeasureChartPointIndicator from "./MeasureChartPointIndicator.svelte";
+  import MeasureChartScrub from "./MeasureChartScrub.svelte";
+  import MeasureChartTooltip from "./MeasureChartTooltip.svelte";
+  import MeasurePan from "./MeasurePan.svelte";
+  import {
+    computeChartConfig,
+    computeNiceYExtent,
+    computeXTickIndices,
+    computeYExtent,
+    X_PAD,
+  } from "./scales";
+  import { ScrubController } from "./ScrubController";
+  import type {
+    DimensionSeriesData,
+    HoverState,
+    TimeSeriesPoint,
+  } from "./types";
+  import { dateToIndex, snapIndex } from "./utils";
 
   const chartId = Math.random().toString(36).slice(2, 11);
   const CLICK_THRESHOLD_PX = 4;
@@ -73,6 +78,7 @@
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
   export let forceLineChart: boolean = false;
+  export let dynamicYAxis: boolean = false;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
@@ -108,7 +114,11 @@
 
   // Y extent & scales
   $: yRawExtent = computeYExtent(data, dimensionData, showComparison);
-  $: [yMin, yMax] = computeNiceYExtent(yRawExtent[0], yRawExtent[1]);
+  $: [yMin, yMax] = computeNiceYExtent(
+    yRawExtent[0],
+    yRawExtent[1],
+    dynamicYAxis ? { includeZero: false, paddingFactor: 1.2 } : undefined,
+  );
 
   $: dataLastIndex = Math.max(0, data.length - 1);
   $: barSlotWidth = pb.width / Math.max(1, data.length);
@@ -511,7 +521,7 @@
         <MeasureChartPointIndicator
           x={singleSelectX}
           y={scales.y(selPt.value)}
-          zeroY={scales.y(0)}
+          zeroY={Math.max(Math.min(scales.y(0), pb.top + pb.height), pb.top)}
           selected
         />
       {/if}
