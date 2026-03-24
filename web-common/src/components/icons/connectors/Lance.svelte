@@ -15,6 +15,6 @@
     font-family="Arial, Helvetica, sans-serif"
     font-size="700"
     font-weight="bold"
-    fill="currentColor"
-  >Lance</text>
+    fill="currentColor">Lance</text
+  >
 </svg>
