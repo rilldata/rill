@@ -11,7 +11,9 @@
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionSeriesData } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
+  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import type { Theme } from "@rilldata/web-common/features/themes/theme";
   import type {
     MetricsViewSpecMeasure,
     V1Expression,
@@ -20,7 +22,8 @@
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { Interval } from "luxon";
-  import type { Readable } from "svelte/store";
+  import { getContext } from "svelte";
+  import type { Readable, Writable } from "svelte/store";
   import { readable } from "svelte/store";
   import type { View } from "vega-typings";
   import type { TDDChart } from "../types";
@@ -52,6 +55,9 @@
   export let onChartBrushClear: () => void;
 
   const client = useRuntimeClient();
+  const themeStore = getContext<Writable<Theme | undefined>>(
+    THEME_STORE_CONTEXT_KEY,
+  );
 
   let provider: ChartProvider;
   let chartView: View;
@@ -135,7 +141,7 @@
     config: cartesianSpec,
     chartDataQuery,
     metricsView: metricsViewSelectors,
-    themeStore: readable(undefined),
+    themeStore,
     timeAndFilterStore,
     getDomainValues: () => provider.getChartDomainValues($measures),
     isThemeModeDark: themeMode === "dark",

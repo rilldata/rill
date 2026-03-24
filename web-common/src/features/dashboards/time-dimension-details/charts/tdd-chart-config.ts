@@ -67,6 +67,8 @@ export function createTDDCartesianSpec(
       values: filteredValues,
       ...(colorMapping?.length ? { colorMapping } : {}),
     };
+  } else {
+    spec.color = "primary";
   }
 
   return spec;
