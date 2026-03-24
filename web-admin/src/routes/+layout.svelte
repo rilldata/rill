@@ -5,7 +5,7 @@
   import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
-  import RepresentingBanner from "@rilldata/web-admin/features/admin/users/RepresentingBanner.svelte";
+  import RepresentingBanner from "@rilldata/web-admin/features/superuser/users/RepresentingBanner.svelte";
   import {
     isBillingUpgradePage,
     isProjectInvitePage,

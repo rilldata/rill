@@ -31,7 +31,17 @@
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   const user = createAdminServiceGetCurrentUser();
-  const superusers = createAdminServiceListSuperusers();
+  // Fire ListSuperusers once per session to check if the avatar menu should
+  // show the "Superuser Console" link. Non-superusers get a single 403 that
+  // TanStack Query silently caches as an error (retry: false, staleTime: Infinity
+  // ensures no repeated requests across component remounts).
+  const superusers = createAdminServiceListSuperusers({
+    query: {
+      enabled: !!$user.data?.user?.email,
+      retry: false,
+      staleTime: Infinity,
+    },
+  });
   $: isSuperuser =
     $superusers.isSuccess &&
     !!$user.data?.user?.email &&
@@ -137,7 +147,7 @@
     {/if}
 
     {#if isSuperuser}
-      <DropdownMenu.Item href="/-/admin">Admin Console</DropdownMenu.Item>
+      <DropdownMenu.Item href="/-/superuser">Superuser Console</DropdownMenu.Item>
       <DropdownMenu.Separator />
     {/if}
 
