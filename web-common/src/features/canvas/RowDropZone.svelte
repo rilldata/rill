@@ -32,16 +32,16 @@
   class:top={notResizable}
   class:bottom={!notResizable}
   class="absolute z-10 w-full h-12 flex items-center justify-center px-2"
-  on:mouseenter={() => {
+  onmouseenter={() => {
     if (!allowDrop) return;
 
     dropZone.set(dropId);
   }}
-  on:mouseleave={() => {
+  onmouseleave={() => {
     if (!allowDrop || menuOpen) return;
     dropZone.clear();
   }}
-  on:mouseup={() => {
+  onmouseup={() => {
     if (!allowDrop) return;
     onDrop(dropIndex, null);
   }}
@@ -55,7 +55,7 @@
         ? "none"
         : "auto"}
       class="peer size-full flex items-center justify-center px-px"
-      on:mousedown={(e) => {
+      onmousedown={(e) => {
         onRowResizeStart(e);
         activeDivider.set(dividerId);
 

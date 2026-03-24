@@ -536,7 +536,7 @@ test.describe("Embeds", () => {
     // Go to the `Programmatic Ads Auction` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", {
+      .getByRole("menuitemcheckbox", {
         name: "Programmatic Ads Auction",
         exact: true,
       })
@@ -554,7 +554,7 @@ test.describe("Embeds", () => {
     // Go to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
 
@@ -580,7 +580,7 @@ test.describe("Embeds", () => {
     // Go back to the `Programmatic Ads Bids` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", { name: "Programmatic Ads Bids" })
+      .getByRole("menuitemcheckbox", { name: "Programmatic Ads Bids" })
       .click();
 
     await embedPage.waitForTimeout(500);
@@ -595,7 +595,7 @@ test.describe("Embeds", () => {
     // Go back to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
 

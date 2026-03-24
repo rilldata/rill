@@ -93,19 +93,19 @@
 
 {#if hasMenuItems}
   {#if referenceModelName}
-    <NavigationMenuItem on:click={editModel}>
+    <NavigationMenuItem onclick={editModel}>
       <Model slot="icon" />
       Edit underlying model
     </NavigationMenuItem>
   {/if}
-  <NavigationMenuItem on:click={viewGraph}>
+  <NavigationMenuItem onclick={viewGraph}>
     <GitBranch slot="icon" size="14px" />
     View Resource Graph
   </NavigationMenuItem>
   {#if resource}
     <NavigationMenuItem
       disabled={!metricsViewName}
-      on:click={handleCreateCanvasDashboard}
+      onclick={handleCreateCanvasDashboard}
     >
       <CanvasIcon slot="icon" />
       <div class="flex gap-x-2 items-center">
@@ -119,7 +119,7 @@
   {/if}
   {#if resource}
     <NavigationMenuItem
-      on:click={() =>
+      onclick={() =>
         createAndPreviewExplore(
           runtimeClient,
           queryClient,
@@ -138,7 +138,7 @@
     </NavigationMenuItem>
   {/if}
 {:else}
-  <NavigationMenuItem on:click={viewGraph}>
+  <NavigationMenuItem onclick={viewGraph}>
     <GitBranch slot="icon" size="14px" />
     View Resource Graph
   </NavigationMenuItem>

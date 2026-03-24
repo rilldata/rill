@@ -546,7 +546,7 @@
       >
         <p>
           For more options,
-          <button on:click={switchView} class="text-primary-600 font-medium">
+          <button onclick={switchView} class="text-primary-600 font-medium">
             edit in YAML
           </button>
         </p>

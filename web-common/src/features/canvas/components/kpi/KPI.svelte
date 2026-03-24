@@ -19,7 +19,6 @@
     type V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { QueryObserverResult } from "@tanstack/svelte-query";
-  import { builderActions, getAttrs } from "bits-ui";
   import { AlertTriangleIcon } from "lucide-svelte";
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
@@ -167,136 +166,140 @@
 
 <div class="wrapper" class:spark-right={isSparkRight}>
   <Tooltip.Root>
-    <Tooltip.Trigger asChild let:builder>
-      <div
-        {...getAttrs([builder])}
-        use:builderActions={{ builders: [builder] }}
-        class="data-wrapper overflow-hidden cursor-pointer"
-        style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
-        aria-label="{measure?.name ?? ''} KPI data"
-        role="button"
-        tabindex="0"
-        on:click={modified({
-          shift: shiftClickHandler,
-        })}
-        on:keydown={(e) => {
-          if (e.shiftKey && e.key === "Enter") {
-            shiftClickHandler();
-          }
-        }}
-      >
-        <h2 class="measure-name" title={measure?.displayName || measure?.name}>
-          {#if measure?.displayName}
-            {measure.displayName}
-          {:else if measure?.name}
-            {measure.name}
-          {:else}
-            <div class="loading h-[14px] w-24"></div>
-          {/if}
-        </h2>
-
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
         <div
-          class="big-number h-9 grid place-content-center"
-          class:hovered-value={hoveredPoints?.[0]?.value != null}
+          {...props}
+          class="data-wrapper overflow-hidden cursor-pointer"
+          style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
+          aria-label="{measure?.name ?? ''} KPI data"
           role="button"
           tabindex="0"
-          on:mouseover={() => handleHoverOrFocus("primary")}
-          on:mouseleave={handleLeaveOrBlur}
-          on:focus={() => handleHoverOrFocus("primary")}
-          on:blur={handleLeaveOrBlur}
+          onclick={modified({
+            shift: shiftClickHandler,
+          })}
+          onkeydown={(e) => {
+            if (e.shiftKey && e.key === "Enter") {
+              shiftClickHandler();
+            }
+          }}
         >
-          {#if primaryTotalResult.isError}
-            <AlertTriangleIcon class=" text-red-300" size="34px" />
-          {:else if primaryTotalResult.isLoading}
-            <div class="loading h-6 w-16"></div>
-          {:else if primaryTotalResult.data}
-            <span class:opacity-50={primaryTotalResult.isFetching}>
-              {measureValueFormatter(computedValues.primary)}
-            </span>
-          {/if}
-        </div>
+          <h2
+            class="measure-name"
+            title={measure?.displayName || measure?.name}
+          >
+            {#if measure?.displayName}
+              {measure.displayName}
+            {:else if measure?.name}
+              {measure.name}
+            {:else}
+              <div class="loading h-[14px] w-24"></div>
+            {/if}
+          </h2>
 
-        {#if showComparison}
-          <div class="comparison-value-wrapper">
-            {#if comparisonTotalResult.isError}
-              <div class="text-red-400">error loading comparison data</div>
-            {:else if comparisonTotalResult.isLoading}
-              <div class="loading h-[14px] w-6"></div>
-              <div class="loading h-[14px] w-6"></div>
-              <div class="loading h-[14px] w-6"></div>
-            {:else if comparisonTotalResult.data}
-              {#if comparisonOptions?.includes("previous")}
-                <span
-                  class="comparison-value"
-                  role="button"
-                  tabindex="0"
-                  on:mouseover={() => handleHoverOrFocus("comparison")}
-                  on:mouseleave={handleLeaveOrBlur}
-                  on:focus={() => handleHoverOrFocus("comparison")}
-                  on:blur={handleLeaveOrBlur}
-                >
-                  {measureValueFormatter(computedValues.comparison)}
-                </span>
-              {/if}
-
-              {#if comparisonOptions?.includes("delta")}
-                <span
-                  class="comparison-value"
-                  class:ui-copy-disabled-faint={computedValues.delta === null}
-                  class:italic={computedValues.delta === null}
-                  class:text-sm={computedValues.delta === null}
-                  role="button"
-                  tabindex="0"
-                  on:mouseover={() => handleHoverOrFocus("delta")}
-                  on:mouseleave={handleLeaveOrBlur}
-                  on:focus={() => handleHoverOrFocus("delta")}
-                  on:blur={handleLeaveOrBlur}
-                >
-                  {#if computedValues.delta != null}
-                    {getFormattedDiff(computedValues.delta)}
-                  {:else}
-                    no change
-                  {/if}
-                </span>
-              {/if}
-
-              {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
-                <span
-                  class="w-fit font-semibold text-fg-disabled"
-                  class:text-red-500={computedValues.percent < 0}
-                  role="button"
-                  tabindex="0"
-                  on:mouseover={() => handleHoverOrFocus("percent")}
-                  on:mouseleave={handleLeaveOrBlur}
-                  on:focus={() => handleHoverOrFocus("percent")}
-                  on:blur={handleLeaveOrBlur}
-                >
-                  <PercentageChange
-                    color="text-fg-secondary"
-                    showPosSign
-                    tabularNumber={false}
-                    value={formatMeasurePercentageDifference(
-                      computedValues.percent,
-                    )}
-                  />
-                </span>
-              {/if}
+          <div
+            class="big-number h-9 grid place-content-center"
+            class:hovered-value={hoveredPoints?.[0]?.value != null}
+            role="button"
+            tabindex="0"
+            onmouseover={() => handleHoverOrFocus("primary")}
+            onmouseleave={handleLeaveOrBlur}
+            onfocus={() => handleHoverOrFocus("primary")}
+            onblur={handleLeaveOrBlur}
+          >
+            {#if primaryTotalResult.isError}
+              <AlertTriangleIcon class=" text-red-300" size="34px" />
+            {:else if primaryTotalResult.isLoading}
+              <div class="loading h-6 w-16"></div>
+            {:else if primaryTotalResult.data}
+              <span class:opacity-50={primaryTotalResult.isFetching}>
+                {measureValueFormatter(computedValues.primary)}
+              </span>
             {/if}
           </div>
 
-          {#if comparisonLabel}
-            <p class="text-sm text-fg-secondary break-words">
-              vs {comparisonLabel?.toLowerCase()}
-            </p>
-          {/if}
-        {/if}
+          {#if showComparison}
+            <div class="comparison-value-wrapper">
+              {#if comparisonTotalResult.isError}
+                <div class="text-red-400">error loading comparison data</div>
+              {:else if comparisonTotalResult.isLoading}
+                <div class="loading h-[14px] w-6"></div>
+                <div class="loading h-[14px] w-6"></div>
+                <div class="loading h-[14px] w-6"></div>
+              {:else if comparisonTotalResult.data}
+                {#if comparisonOptions?.includes("previous")}
+                  <span
+                    class="comparison-value"
+                    role="button"
+                    tabindex="0"
+                    onmouseover={() => handleHoverOrFocus("comparison")}
+                    onmouseleave={handleLeaveOrBlur}
+                    onfocus={() => handleHoverOrFocus("comparison")}
+                    onblur={handleLeaveOrBlur}
+                  >
+                    {measureValueFormatter(computedValues.comparison)}
+                  </span>
+                {/if}
 
-        {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
-          <span class="text-fg-secondary">
-            <RangeDisplay {interval} {timeGrain} />
-          </span>
-        {/if}
-      </div>
+                {#if comparisonOptions?.includes("delta")}
+                  <span
+                    class="comparison-value"
+                    class:ui-copy-disabled-faint={computedValues.delta === null}
+                    class:italic={computedValues.delta === null}
+                    class:text-sm={computedValues.delta === null}
+                    role="button"
+                    tabindex="0"
+                    onmouseover={() => handleHoverOrFocus("delta")}
+                    onmouseleave={handleLeaveOrBlur}
+                    onfocus={() => handleHoverOrFocus("delta")}
+                    onblur={handleLeaveOrBlur}
+                  >
+                    {#if computedValues.delta != null}
+                      {getFormattedDiff(computedValues.delta)}
+                    {:else}
+                      no change
+                    {/if}
+                  </span>
+                {/if}
+
+                {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
+                  <span
+                    class="w-fit font-semibold text-fg-disabled"
+                    class:text-red-500={computedValues.percent < 0}
+                    role="button"
+                    tabindex="0"
+                    onmouseover={() => handleHoverOrFocus("percent")}
+                    onmouseleave={handleLeaveOrBlur}
+                    onfocus={() => handleHoverOrFocus("percent")}
+                    onblur={handleLeaveOrBlur}
+                  >
+                    <PercentageChange
+                      color="text-fg-secondary"
+                      showPosSign
+                      tabularNumber={false}
+                      value={formatMeasurePercentageDifference(
+                        computedValues.percent,
+                      )}
+                    />
+                  </span>
+                {/if}
+              {/if}
+            </div>
+
+            {#if comparisonLabel}
+              <p class="text-sm text-fg-secondary break-words">
+                vs {comparisonLabel?.toLowerCase()}
+              </p>
+            {/if}
+          {/if}
+
+          {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
+            <span class="text-fg-secondary">
+              <RangeDisplay {interval} {timeGrain} />
+            </span>
+          {/if}
+        </div>
+      {/snippet}
     </Tooltip.Trigger>
 
     {#if measure}

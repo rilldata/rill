@@ -9,12 +9,8 @@
     ResourceKind,
     type UserFacingResourceKinds,
   } from "../entity-management/resource-selectors";
-  import { builderActions } from "bits-ui";
-  import { goto } from "$app/navigation";
-  import { resourceShorthandMapping } from "../entity-management/resource-icon-mapping";
   import { GitBranch } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { ALLOWED_FOR_GRAPH } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
@@ -32,17 +28,8 @@
   export let downstream = false;
   export let upstream = false;
   export let filePath: string = "";
-  $: graphSupported = resourceKind
-    ? ALLOWED_FOR_GRAPH.has(resourceKind)
-    : false;
-
-  function openGraph() {
-    const name = selectedResource?.meta?.name?.name;
-    const kind = selectedResource?.meta?.name?.kind as ResourceKind | undefined;
-    if (!name || !kind) return;
-    const shortKind = resourceShorthandMapping[kind];
-    goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${name}`)}`);
-  }
+  export let graphSupported = false;
+  export let openGraph: (() => void) | null = null;
 
   let open = false;
 
@@ -121,20 +108,12 @@
 {#if !componentsOnly}
   <div class="crumb">
     <div class="crumb__trigger">
-      <DropdownMenu.Root bind:open>
-        <DropdownMenu.Trigger asChild let:builder>
-          <svelte:element
-            this={dropdown ? "button" : "a"}
-            class:open
-            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
-            class:selected={current}
-            href={dropdown
-              ? undefined
-              : exampleResource
-                ? `/files${exampleResource?.meta?.filePaths?.[0]}`
-                : "#"}
-            {...dropdown ? builder : {}}
-            use:builderActions={{ builders: dropdown ? [builder] : [] }}
+      {#if dropdown}
+        <DropdownMenu.Root bind:open>
+          <DropdownMenu.Trigger
+            class="text-fg-muted hover:text-fg-primary px-[5px] py-1 w-full max-w-fit line-clamp-1 {open
+              ? 'bg-surface-active rounded-[2px] text-fg-primary'
+              : ''} {current ? 'selected' : ''}"
           >
             <CrumbTrigger
               {filePath}
@@ -143,10 +122,8 @@
                 ? generateLabel(resources)
                 : resourceName}
             />
-          </svelte:element>
-        </DropdownMenu.Trigger>
+          </DropdownMenu.Trigger>
 
-        {#if dropdown}
           <DropdownMenu.Content align="start">
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
@@ -163,10 +140,20 @@
               </DropdownMenu.Item>
             {/each}
           </DropdownMenu.Content>
-        {/if}
-      </DropdownMenu.Root>
+        </DropdownMenu.Root>
+      {:else}
+        <a
+          class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
+          class:selected={current}
+          href={exampleResource
+            ? `/files${exampleResource?.meta?.filePaths?.[0]}`
+            : "#"}
+        >
+          <CrumbTrigger {filePath} kind={resourceKind} label={resourceName} />
+        </a>
+      {/if}
     </div>
-    {#if current && graphSupported}
+    {#if current && graphSupported && openGraph}
       <Button
         type="tertiary"
         square
@@ -195,38 +182,11 @@
     @apply flex-1 min-w-0;
   }
 
-  a:hover,
-  button:hover {
+  a:hover {
     @apply text-fg-primary;
   }
 
   .selected {
     @apply text-fg-primary;
-  }
-
-  .open {
-    @apply bg-surface-active rounded-[2px] text-fg-primary;
-  }
-
-  .graph-trigger {
-    @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
-
-    min-width: 30px;
-    height: 26px;
-  }
-
-  .graph-trigger:hover {
-    color: var(--foreground, #1f2937);
-    border-color: color-mix(
-      in srgb,
-      var(--border, #e5e7eb) 70%,
-      var(--foreground, #1f2937)
-    );
-  }
-
-  .graph-trigger:focus-visible {
-    @apply outline-none ring ring-offset-1;
-    ring-color: var(--ring, #93c5fd);
-    ring-offset-color: var(--surface-background, #ffffff);
   }
 </style>

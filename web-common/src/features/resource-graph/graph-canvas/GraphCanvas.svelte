@@ -343,7 +343,7 @@
           class="expand-btn"
           aria-label="Expand graph"
           title="Expand"
-          on:click={() => onExpand()}
+          onclick={() => onExpand()}
         >
           ⤢
         </button>

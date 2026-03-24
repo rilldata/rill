@@ -151,7 +151,7 @@
 </script>
 
 <svelte:window
-  on:beforeunload={(event) => {
+  onbeforeunload={(event) => {
     if (hasUnsaved) {
       event.preventDefault();
       return confirm(
@@ -159,9 +159,9 @@
       );
     }
   }}
-  on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
-  on:mouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
-  on:keydown={saveAll}
+  onmousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
+  onmouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
+  onkeydown={saveAll}
 />
 
 <!-- File tree -->

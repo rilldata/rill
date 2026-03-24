@@ -33,7 +33,7 @@ import type {
 } from "../stores/canvas-entity";
 import { TimeState } from "../stores/time-state";
 import type { FilterState } from "../stores/filter-state";
-import type { Readable } from "svelte/motion";
+import type { Readable } from "svelte/store";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;

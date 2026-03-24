@@ -1,10 +1,6 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import type { Selected } from "bits-ui";
-  import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
-  import { onMount } from "svelte";
   import CollapsibleSectionTitle from "../../../layout/CollapsibleSectionTitle.svelte";
   import type { V1Resource } from "../../../runtime-client";
   import PartitionsFilter from "./PartitionsFilter.svelte";
@@ -15,22 +11,10 @@
   let active = true;
 
   let selectedFilter = "all";
-  let dialogOpen = false;
 
-  function onFilterChange(newSelection: Selected<string>) {
-    selectedFilter = newSelection.value;
+  function onFilterChange(newValue: string) {
+    selectedFilter = newValue;
   }
-
-  // Auto-open if navigated with ?partitions=open
-  onMount(() => {
-    if ($page.url.searchParams.get("partitions") === "open") {
-      dialogOpen = true;
-      // Clean up the URL param
-      const url = new URL($page.url);
-      url.searchParams.delete("partitions");
-      goto(url.pathname + url.search, { replaceState: true });
-    }
-  });
 </script>
 
 <section>
@@ -47,7 +31,7 @@
         {resource.model?.state?.partitionsHaveErrors
           ? "Some partitions have errors.  "
           : "All partitions were successful.   "}
-        <Dialog.Root bind:open={dialogOpen}>
+        <Dialog.Root>
           <Dialog.Trigger class="text-primary-500 font-medium">
             View partitions
           </Dialog.Trigger>

@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { scale } from "svelte/transition";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/events";
   import { onMount } from "svelte";
-  import { scale } from "svelte/transition";
   import Button from "../button/Button.svelte";
   import Check from "../icons/Check.svelte";
   import Close from "../icons/Close.svelte";
@@ -46,7 +46,7 @@
 
     {#if link}
       <div class="link-container">
-        <a href={link.href} on:click={onClose} class="text-secondary-400">
+        <a href={link.href} onclick={onClose} class="text-secondary-400">
           {link.text}
         </a>
       </div>

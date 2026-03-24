@@ -38,7 +38,7 @@
 
   $: showActions = data?.showNodeActions !== false;
 
-  let actionsRef: { open: () => void } | undefined;
+  let actionsRef: { open: (e?: MouseEvent) => void } | undefined;
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -74,7 +74,6 @@
   } {
     if (!nodeEl) return { x: 0, y: 0, width: 0, height: 0 };
     const nodeRect = nodeEl.getBoundingClientRect();
-    // Position relative to the graph container (closest .graph-container)
     const container = nodeEl.closest(".graph-container");
     const containerRect = container?.getBoundingClientRect() ?? nodeRect;
     return {
@@ -85,16 +84,9 @@
     };
   }
 
-  function handleClick(e: MouseEvent) {
-    // Let SvelteFlow handle selection; open inspect on plain click
-    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+  function handleClick(e?: MouseEvent) {
+    if (e && (e.metaKey || e.ctrlKey || e.shiftKey)) return;
     openInspect(data, getNodeRect());
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
-      openInspect(data, getNodeRect());
-    }
   }
 
   function handleDoubleClick() {
@@ -115,12 +107,17 @@
   style:width={width ? `${width}px` : undefined}
   style:height={height ? `${height}px` : undefined}
   data-kind={kind}
+  onclick={handleClick}
+  ondblclick={handleDoubleClick}
+  oncontextmenu={handleContextMenu}
   role="button"
   tabindex="0"
-  on:click={handleClick}
-  on:keydown={handleKeydown}
-  on:dblclick={handleDoubleClick}
-  on:contextmenu={handleContextMenu}
+  onkeydown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleClick();
+    }
+  }}
 >
   <Handle
     id="target"

@@ -21,7 +21,7 @@
       class="absolute top-2 right-2 p-1 rounded"
       type="button"
       aria-label="Copy YAML"
-      on:click={copyYaml}
+      onclick={copyYaml}
     >
       {#if copied}
         <Check size="16px" />

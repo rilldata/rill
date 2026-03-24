@@ -1,27 +1,32 @@
 expensive: true
 connectors:
-  - gcs
+  - gcs_s3_compat
 project_files:
-  delta_gcs_with_secrets.yaml:
+  gcs_hmac.yaml:
+    type: connector
+    driver: gcs
+    key_id: '{{.env.connector.gcs_s3_compat.key_id }}'
+    secret: '{{.env.connector.gcs_s3_compat.secret }}'
+  model_delta_to_duckdb_with_gcs_hmac.yaml:
     type: model
     connector: duckdb
-    create_secrets_from_connectors: gcs
+    create_secrets_from_connectors: gcs_hmac
     materialize: true
     sql: |
       SELECT *
       FROM delta_scan('gs://integration-test.rilldata.com/delta/orders_delta')
 tests:
-  - name: test_delta_gcs_row_count
+  - name: test_row_count_for_model_delta_to_duckdb_with_gcs_hmac
     resolver: sql
     properties:
-      sql: "SELECT count(*) as count FROM delta_gcs_with_secrets"
+      sql: "SELECT count(*) as count FROM model_delta_to_duckdb_with_gcs_hmac"
     result_csv: |
       count
       1000
-  - name: test_delta_gcs_schema
+  - name: test_schema_for_model_delta_to_duckdb_with_gcs_hmac
     resolver: sql
     properties:
-      sql: "describe delta_gcs_with_secrets"
+      sql: "describe model_delta_to_duckdb_with_gcs_hmac"
     result_csv: |
       column_name,column_type,null,key,default,extra
       order_id,BIGINT,YES,,,

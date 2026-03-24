@@ -85,11 +85,25 @@
 <div class="container grid">
   <button
     class="upload-button"
-    on:click={() => fileInput.click()}
-    on:dragenter|preventDefault|stopPropagation={() => (dragOver = true)}
-    on:dragleave|preventDefault|stopPropagation={() => (dragOver = false)}
-    on:dragover|preventDefault|stopPropagation
-    on:drop|preventDefault={handleFileDrop}
+    onclick={() => fileInput.click()}
+    ondragenter={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragOver = true;
+    }}
+    ondragleave={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragOver = false;
+    }}
+    ondragover={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondrop={(e) => {
+      e.preventDefault();
+      handleFileDrop(e);
+    }}
     class:bg-neutral-100={!dragOver}
     class:bg-primary-100={dragOver}
   >
@@ -136,7 +150,7 @@
     hidden
     {multiple}
     bind:this={fileInput}
-    on:input={handleInput}
+    oninput={handleInput}
   />
 </div>
 

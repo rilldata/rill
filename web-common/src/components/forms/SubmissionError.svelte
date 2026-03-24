@@ -23,7 +23,7 @@
       {#if details}
         <button
           class="flex items-center mt-2 cursor-pointer select-none"
-          on:click={toggleDetails}
+          onclick={toggleDetails}
         >
           <span class="text-xs font-semibold text-fg-secondary capitalize"
             >Connection error</span
