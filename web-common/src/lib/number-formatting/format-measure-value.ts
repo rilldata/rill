@@ -46,6 +46,21 @@ import {
 } from "./strategies/per-range-tooltip-options";
 
 /**
+ * Coerce a value to a number for formatting.
+ * INT256 and other large integer types from Snowflake arrive as strings;
+ * Number() gives a close-enough approximation for humanization purposes.
+ * Returns the original value if conversion yields NaN.
+ */
+function coerceToNumber<T>(value: number | string | T): number | T {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const n = Number(value);
+    if (!isNaN(n)) return n;
+  }
+  return value;
+}
+
+/**
  * This function provides a compact, potentially lossy, humanized string representation of a number.
  * @param value The number to format
  * @param preset The format preset to use
@@ -59,10 +74,14 @@ export function humanizeDataType(
   locale?: LocaleConfig,
 ): string {
   if (typeof value !== "number") {
-    console.warn(
-      `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${preset}"`,
-    );
-    return JSON.stringify(value);
+    const coerced = coerceToNumber(value);
+    if (typeof coerced !== "number") {
+      console.warn(
+        `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${preset}"`,
+      );
+      return JSON.stringify(value);
+    }
+    value = coerced;
   }
 
   const optionsMap: Record<FormatterContextSurface, ContextOptions> = {
@@ -214,8 +233,10 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   // This may e.g. be the case during the initial render of a dashboard,
   // when a measureSpec has not yet loaded from a metadata query.
   if (measureSpec === undefined) {
-    return (value: number | string | T) =>
-      typeof value === "number" ? "" : value;
+    return (value: number | string | T) => {
+      const coerced = coerceToNumber(value);
+      return typeof coerced === "number" ? "" : (value as T);
+    };
   }
 
   // Use the d3 formatter if it is provided and valid
@@ -238,7 +259,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       const hasCurrencySymbol = includesCurrencySymbol(measureSpec.formatD3);
       const hasPercentSymbol = measureSpec.formatD3.includes("%");
       return (value: number | string | T) => {
-        if (typeof value !== "number") return value;
+        const coerced = coerceToNumber(value);
+        if (typeof coerced !== "number") return value as T;
 
         // For the Big Number, Axis and Tooltips, override the d3formatter
         // with humanized values that respect the locale configuration
@@ -250,24 +272,26 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
                 string,
               ];
               // Use custom currency symbol from locale
-              const humanized = humanizer(value, FormatPreset.HUMANIZE);
+              const humanized = humanizer(coerced, FormatPreset.HUMANIZE);
               return `${currency[0]}${humanized}${currency[1]}`;
             }
-            return humanizer(value, FormatPreset.CURRENCY_USD);
+            return humanizer(coerced, FormatPreset.CURRENCY_USD);
           } else if (hasPercentSymbol) {
-            return humanizer(value, FormatPreset.PERCENTAGE);
+            return humanizer(coerced, FormatPreset.PERCENTAGE);
           } else {
-            return humanizer(value, FormatPreset.HUMANIZE);
+            return humanizer(coerced, FormatPreset.HUMANIZE);
           }
         }
-        return d3formatter(value);
+        return d3formatter(coerced);
       };
     } catch (error) {
       console.warn("Invalid d3 format:", error);
-      return (value: number | string | T) =>
-        typeof value === "number"
-          ? humanizer(value, FormatPreset.HUMANIZE)
-          : value;
+      return (value: number | string | T) => {
+        const coerced = coerceToNumber(value);
+        return typeof coerced === "number"
+          ? humanizer(coerced, FormatPreset.HUMANIZE)
+          : (value as T);
+      };
     }
   }
 
@@ -281,6 +305,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
     formatPreset = FormatPreset.HUMANIZE;
   }
 
-  return (value: number | T) =>
-    typeof value === "number" ? humanizer(value, formatPreset) : value;
+  return (value: number | string | T) => {
+    const coerced = coerceToNumber(value);
+    return typeof coerced === "number" ? humanizer(coerced, formatPreset) : (value as T);
+  };
 }
