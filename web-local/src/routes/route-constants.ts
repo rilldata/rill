@@ -17,6 +17,7 @@ export const PREVIEW_ALLOWED_PREFIXES = [
   "/explore/",
   "/canvas/",
   "/deploy",
+  "/-/",
 ] as const;
 
 /**
@@ -30,6 +31,7 @@ export const DEVELOPER_ALLOWED_PREFIXES = [
   "/deploy",
   "/connector/",
   "/graph",
+  "/-/",
 ] as const;
 
 /**

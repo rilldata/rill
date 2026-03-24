@@ -34,32 +34,37 @@ export async function load({ url, depends, untrack }) {
   const metadata = cachedMetadata;
   const previewMode = metadata.previewMode ?? false;
 
-  // Enforce mode-based route locking
-  if (previewMode) {
-    // Preview mode: only allow preview-related and shared routes
-    const isAllowed = PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
-      url.pathname.startsWith(prefix),
-    );
-    if (!isAllowed) {
-      eventBus.emit("notification", {
-        message: "This page is only available in Developer mode",
-      });
-      throw redirect(303, "/dashboards");
-    }
-  } else {
-    // Developer mode: block preview-exclusive routes
-    const isAllowed =
-      url.pathname === "/" ||
-      DEVELOPER_ALLOWED_PREFIXES.some((prefix) =>
+  // Enforce mode-based route locking.
+  // Wrapped in untrack() so SvelteKit does not register url.pathname as a
+  // dependency; without this, the entire load function re-runs on every
+  // client-side navigation, causing unnecessary data refetches and UI flicker.
+  untrack(() => {
+    if (previewMode) {
+      // Preview mode: only allow preview-related and shared routes
+      const isAllowed = PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
         url.pathname.startsWith(prefix),
       );
-    if (!isAllowed) {
-      eventBus.emit("notification", {
-        message: "This page is only available in Preview mode",
-      });
-      throw redirect(303, "/");
+      if (!isAllowed) {
+        eventBus.emit("notification", {
+          message: "This page is only available in Developer mode",
+        });
+        throw redirect(303, "/dashboards");
+      }
+    } else {
+      // Developer mode: block preview-exclusive routes
+      const isAllowed =
+        url.pathname === "/" ||
+        DEVELOPER_ALLOWED_PREFIXES.some((prefix) =>
+          url.pathname.startsWith(prefix),
+        );
+      if (!isAllowed) {
+        eventBus.emit("notification", {
+          message: "This page is only available in Preview mode",
+        });
+        throw redirect(303, "/");
+      }
     }
-  }
+  });
 
   const client = getLocalRuntimeClient();
 
