@@ -195,13 +195,22 @@
   }
 
   // Use action to attach capture-phase listeners (SvelteFlow stops propagation)
+  function handleCaptureMousedown(e: MouseEvent) {
+    // Don't dismiss if clicking inside the inspect panel
+    const target = e.target as HTMLElement;
+    if (target.closest(".inspect-panel")) return;
+    dismissPopups();
+  }
+
   function captureInteractions(node: HTMLElement) {
     node.addEventListener("wheel", dismissPopups, { capture: true });
-    node.addEventListener("mousedown", dismissPopups, { capture: true });
+    node.addEventListener("mousedown", handleCaptureMousedown, {
+      capture: true,
+    });
     return {
       destroy() {
         node.removeEventListener("wheel", dismissPopups, { capture: true });
-        node.removeEventListener("mousedown", dismissPopups, {
+        node.removeEventListener("mousedown", handleCaptureMousedown, {
           capture: true,
         });
       },
