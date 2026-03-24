@@ -142,8 +142,8 @@
         getStatusPriority(rowA.original.meta?.reconcileStatus),
       cell: ({ row }) =>
         renderComponent(ResourceErrorMessage, {
-          message: row.original.meta?.reconcileError,
-          status: row.original.meta?.reconcileStatus,
+          message: row.original.meta?.reconcileError ?? "",
+          status: row.original.meta?.reconcileStatus ?? V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED,
         }),
       meta: {
         marginLeft: "1",
@@ -176,8 +176,8 @@
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
         const resourceKey = `${row.original.meta?.name?.kind}:${row.original.meta?.name?.name}`;
         return renderComponent(ActionsCell, {
-          resourceKind: row.original.meta?.name?.kind,
-          resourceName: row.original.meta?.name?.name,
+          resourceKind: row.original.meta?.name?.kind ?? "",
+          resourceName: row.original.meta?.name?.name ?? "",
           canRefresh:
             !isRowReconciling &&
             (row.original.meta?.name?.kind === ResourceKind.Model ||

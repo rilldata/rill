@@ -66,7 +66,7 @@
       class="indicator"
       style:width="{indicatorWidth}px"
       style:transform="translateX({indicatorLeft}px)"
-    />
+    ></span>
   {/if}
 </div>
 
