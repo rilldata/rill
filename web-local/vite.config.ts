@@ -43,6 +43,7 @@ const config = defineConfig({
       "d3-array",
       "luxon",
       "vega-lite",
+      "memoize-weak",
     ],
   },
   plugins: [sveltekit()],

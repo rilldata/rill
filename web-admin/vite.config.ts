@@ -35,6 +35,7 @@ export default defineConfig({
       "d3-array",
       "luxon",
       "vega-lite",
+      "memoize-weak",
     ],
     exclude: ["sveltekit-superforms"],
   },
