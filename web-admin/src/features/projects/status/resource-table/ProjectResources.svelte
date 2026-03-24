@@ -248,7 +248,7 @@
     {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>

@@ -75,7 +75,7 @@
     {#if onDescribe && resource}
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => onDescribe?.(resourceName, resourceKind, resource)}
+        onclick={() => onDescribe?.(resourceName, resourceKind, resource)}
       >
         <div class="flex items-center">
           <CodeIcon size="12px" />
@@ -87,7 +87,7 @@
       <DropdownMenu.Item
         class="font-normal flex items-center"
         disabled={isLoading}
-        on:click={() => {
+        onclick={() => {
           handleRefresh("full");
         }}
       >
@@ -102,7 +102,7 @@
         <DropdownMenu.Item
           class="font-normal flex items-center"
           disabled={isLoading}
-          on:click={() => {
+          onclick={() => {
             handleRefresh("incremental");
           }}
         >

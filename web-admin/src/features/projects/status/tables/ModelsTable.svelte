@@ -1,6 +1,6 @@
 <script lang="ts">
   import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import type {
     V1OlapTableInfo,
     V1Resource,
@@ -34,7 +34,7 @@
       accessorFn: (row) => isView.get(row.name ?? ""),
       header: "Type",
       cell: ({ row, getValue }) =>
-        flexRender(MaterializationCell, {
+        renderComponent(MaterializationCell, {
           isView: getValue() as boolean | undefined,
           physicalSizeBytes: row.original.physicalSizeBytes,
         }),
@@ -47,7 +47,7 @@
       },
       header: "Model Name",
       cell: ({ getValue }) =>
-        flexRender(NameCell, {
+        renderComponent(NameCell, {
           name: getValue() as string,
         }),
     },
@@ -56,7 +56,7 @@
       accessorFn: (row) => row.name,
       header: "Table Name",
       cell: ({ getValue }) =>
-        flexRender(NameCell, {
+        renderComponent(NameCell, {
           name: getValue() as string,
         }),
     },
@@ -71,7 +71,7 @@
         const resource = modelResources.get(
           (row.original.name ?? "").toLowerCase(),
         );
-        return flexRender(ResourceErrorMessage, {
+        return renderComponent(ResourceErrorMessage, {
           message: resource?.meta?.reconcileError ?? "",
           status:
             resource?.meta?.reconcileStatus ??
@@ -92,7 +92,7 @@
         return compareSizes(sizeA, sizeB);
       },
       cell: ({ getValue }) =>
-        flexRender(ModelSizeCell, {
+        renderComponent(ModelSizeCell, {
           sizeBytes: getValue() as string | number | undefined,
         }),
     },
@@ -103,7 +103,7 @@
       cell: ({ row }) => {
         const tableName = row.original.name ?? "";
         const resource = modelResources.get(tableName.toLowerCase());
-        return flexRender(ModelActionsCell, {
+        return renderComponent(ModelActionsCell, {
           resource,
           isReconciling: resource ? isResourceReconciling(resource) : false,
           isDropdownOpen: openDropdownTableName === tableName,

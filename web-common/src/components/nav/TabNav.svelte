@@ -16,7 +16,7 @@
 <div class="nav-items" style:min-width={minWidth}>
   {#each items as item (item.value)}
     <button
-      on:click={() => handleSelect(item.value)}
+      onclick={() => handleSelect(item.value)}
       class="nav-item"
       class:selected={selected === item.value}
     >

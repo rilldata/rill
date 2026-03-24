@@ -5,8 +5,8 @@
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
 
   export let alert: string;
 
@@ -23,7 +23,7 @@
     {
       id: "composite",
       cell: (info) =>
-        flexRender(AlertHistoryTableCompositeCell, {
+        renderComponent(AlertHistoryTableCompositeCell, {
           alertTime: info.row.original.executionTime,
           timeZone:
             $alertQuery.data.resource.alert.spec.refreshSchedule.timeZone,

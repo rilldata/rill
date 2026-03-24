@@ -286,7 +286,7 @@
     {#if selectedLevels.length > 0 || searchText}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>
@@ -297,7 +297,7 @@
     {#if hasConnectionError}
       <div class="error-state">
         <span class="text-red-600">Connection failed: {connectionError}</span>
-        <button class="retry-button" on:click={retryConnection}> Retry </button>
+        <button class="retry-button" onclick={retryConnection}> Retry </button>
       </div>
     {:else if logs.length === 0}
       <div class="empty-state">Waiting for logs...</div>

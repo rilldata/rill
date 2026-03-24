@@ -1,47 +1,83 @@
 <script lang="ts">
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
+  import type { Snippet } from "svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
   import type { ButtonType } from "./types";
 
-  export let type: ButtonType = "tertiary";
-  export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
-  export let disabled = false;
-  export let compact = false;
-  export let submitForm = false;
-  export let form = "";
-  export let label: string | undefined | null = null;
-  export let square = false;
-  export let circle = false;
-  export let selected = false;
-  export let large = false;
-  export let small = false;
-  export let wide = false;
-  export let noStroke = false;
-  export let rounded = false;
-  export let href: string | null = null;
-  export let rel: string | undefined = undefined;
-  export let builders: Builder[] = [];
-  export let loading = false;
-  export let target: string | undefined = undefined;
-  export let fit = false;
-  export let noWrap = false;
-  export let gray = false;
-  export let preload = true;
-  export let active = false;
-  export let loadingCopy = "Loading";
-  export let theme = false;
-  // needed to set certain style that could be overridden by the style block in this component
-  export let forcedStyle = "";
-  export let dataAttributes: Record<`data-${string}`, string> = {};
+  // svelte-ignore custom_element_props_identifier
+  let {
+    type = "tertiary" as ButtonType,
+    onClick,
+    disabled = false,
+    compact = false,
+    submitForm = false,
+    form = "",
+    label = null as string | null | undefined,
+    square = false,
+    circle = false,
+    selected = false,
+    large = false,
+    small = false,
+    wide = false,
+    noStroke = false,
+    rounded = false,
+    href = null as string | null,
+    rel = undefined as string | undefined,
+    loading = false,
+    target = undefined as string | undefined,
+    fit = false,
+    noWrap = false,
+    gray = false,
+    preload = true,
+    active = false,
+    loadingCopy = "Loading",
+    theme = false,
+    forcedStyle = "",
+    dataAttributes = {} as Record<`data-${string}`, string>,
+    class: className,
+    children,
+    ...restProps
+  }: {
+    type?: ButtonType;
+    onClick?: (event: MouseEvent) => void;
+    disabled?: boolean;
+    compact?: boolean;
+    submitForm?: boolean;
+    form?: string;
+    label?: string | null;
+    square?: boolean;
+    circle?: boolean;
+    selected?: boolean;
+    large?: boolean;
+    small?: boolean;
+    wide?: boolean;
+    noStroke?: boolean;
+    rounded?: boolean;
+    href?: string | null;
+    rel?: string;
+    loading?: boolean;
+    target?: string;
+    fit?: boolean;
+    noWrap?: boolean;
+    gray?: boolean;
+    preload?: boolean;
+    active?: boolean;
+    loadingCopy?: string;
+    theme?: boolean;
+    forcedStyle?: string;
+    dataAttributes?: Record<`data-${string}`, string>;
+    class?: string;
+    children?: Snippet;
+    [key: string]: unknown;
+  } = $props();
 
-  let className: string | undefined = undefined;
-  export { className as class };
-
-  const handleClick = (event: MouseEvent) => {
+  function handleClick(event: MouseEvent) {
+    if (typeof restProps.onclick === "function") {
+      (restProps.onclick as (e: MouseEvent) => void)(event);
+    }
     if (!disabled && onClick) {
       onClick(event);
     }
-  };
+  }
 </script>
 
 <svelte:element
@@ -49,6 +85,7 @@
   role="button"
   tabindex={disabled ? -1 : 0}
   {href}
+  {...restProps}
   class="{className} {type}"
   {disabled}
   class:square
@@ -72,9 +109,7 @@
   {target}
   aria-disabled={disabled}
   rel={target === "_blank" ? "noopener noreferrer" : rel}
-  {...getAttrs(builders)}
-  use:builderActions={{ builders }}
-  on:click={handleClick}
+  onclick={handleClick}
   style={forcedStyle}
   {...href ? { "data-sveltekit-preload-data": preload ? "hover" : "off" } : {}}
   {...dataAttributes}
@@ -85,7 +120,7 @@
       <span>{loadingCopy}</span>
     {/if}
   {:else}
-    <slot />
+    {@render children?.()}
   {/if}
 </svelte:element>
 

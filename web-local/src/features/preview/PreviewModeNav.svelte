@@ -40,7 +40,7 @@
   }
 </script>
 
-<svelte:window on:resize={updateIndicator} />
+<svelte:window onresize={updateIndicator} />
 
 <div class="nav-bar">
   <nav>

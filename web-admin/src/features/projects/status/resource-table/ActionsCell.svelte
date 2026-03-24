@@ -62,7 +62,7 @@
     <!-- Describe (always available) -->
     <DropdownMenu.Item
       class="font-normal flex items-center"
-      on:click={() => onClickViewSpec(resourceName, resourceKind, resource)}
+      onclick={() => onClickViewSpec(resourceName, resourceKind, resource)}
     >
       <div class="flex items-center">
         <CodeIcon size="12px" />
@@ -73,7 +73,7 @@
     <!-- View Logs (always available) -->
     <DropdownMenu.Item
       class="font-normal flex items-center"
-      on:click={() => onViewLogsClick(resourceName)}
+      onclick={() => onViewLogsClick(resourceName)}
     >
       <div class="flex items-center">
         <ScrollTextIcon size="12px" />
@@ -85,7 +85,7 @@
     {#if isPartitioned && onViewPartitionsClick}
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => onViewPartitionsClick?.(resource)}
+        onclick={() => onViewPartitionsClick?.(resource)}
       >
         <div class="flex items-center">
           <LayoutGridIcon size="12px" />
@@ -104,7 +104,7 @@
           <DropdownMenu.Item
             class="font-normal flex items-center"
             disabled={refreshDisabled}
-            on:click={() => onClickRefreshErroredPartitions(resourceName)}
+            onclick={() => onClickRefreshErroredPartitions(resourceName)}
           >
             <div class="flex items-center">
               <AlertCircleIcon size="12px" />
@@ -122,7 +122,7 @@
         <DropdownMenu.Item
           class="font-normal flex items-center"
           disabled={refreshDisabled}
-          on:click={() =>
+          onclick={() =>
             onClickRefreshDialog(resourceName, resourceKind, "full")}
         >
           <div class="flex items-center">
@@ -139,7 +139,7 @@
           <DropdownMenu.Item
             class="font-normal flex items-center"
             disabled={refreshDisabled}
-            on:click={() =>
+            onclick={() =>
               onClickRefreshDialog(resourceName, resourceKind, "incremental")}
           >
             <div class="flex items-center">

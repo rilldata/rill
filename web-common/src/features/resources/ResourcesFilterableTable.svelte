@@ -27,8 +27,8 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
 
   /** All resources (unfiltered). Filtering is handled internally. */
   export let resources: V1Resource[];
@@ -122,7 +122,7 @@
       header: "Type",
       accessorFn: (row) => row.meta?.name?.kind,
       cell: ({ row }) =>
-        flexRender(ResourceTypeBadge, {
+        renderComponent(ResourceTypeBadge, {
           kind: row.original.meta?.name?.kind as ResourceKind,
         }),
     },
@@ -130,7 +130,7 @@
       accessorFn: (row) => row.meta?.name?.name,
       header: "Name",
       cell: ({ getValue }) =>
-        flexRender(NameCell, {
+        renderComponent(NameCell, {
           name: getValue() as string,
         }),
     },
@@ -141,7 +141,7 @@
         getStatusPriority(rowB.original.meta?.reconcileStatus) -
         getStatusPriority(rowA.original.meta?.reconcileStatus),
       cell: ({ row }) =>
-        flexRender(ResourceErrorMessage, {
+        renderComponent(ResourceErrorMessage, {
           message: row.original.meta?.reconcileError,
           status: row.original.meta?.reconcileStatus,
         }),
@@ -154,7 +154,7 @@
       header: "Last refresh",
       sortDescFirst: true,
       cell: (info) =>
-        flexRender(RefreshCell, {
+        renderComponent(RefreshCell, {
           date: info.getValue() as string,
         }),
     },
@@ -162,7 +162,7 @@
       accessorFn: (row) => row.meta?.reconcileOn,
       header: "Next refresh",
       cell: (info) =>
-        flexRender(RefreshCell, {
+        renderComponent(RefreshCell, {
           date: info.getValue() as string,
         }),
     },
@@ -175,7 +175,7 @@
           status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
         const resourceKey = `${row.original.meta?.name?.kind}:${row.original.meta?.name?.name}`;
-        return flexRender(ActionsCell, {
+        return renderComponent(ActionsCell, {
           resourceKind: row.original.meta?.name?.kind,
           resourceName: row.original.meta?.name?.name,
           canRefresh:
@@ -292,7 +292,7 @@
     {#if hasActiveFilters}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>

@@ -38,7 +38,7 @@
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => onModelInfoClick(resource)}
+        onclick={() => onModelInfoClick(resource)}
       >
         <div class="flex items-center">
           <CodeIcon size="12px" />
@@ -49,7 +49,7 @@
       {#if onViewLogsClick}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onViewLogsClick?.(resource.meta?.name?.name ?? "")}
+          onclick={() => onViewLogsClick?.(resource.meta?.name?.name ?? "")}
         >
           <div class="flex items-center">
             <ScrollTextIcon size="12px" />
@@ -61,7 +61,7 @@
       {#if isPartitioned}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onViewPartitionsClick(resource)}
+          onclick={() => onViewPartitionsClick(resource)}
         >
           <div class="flex items-center">
             <LayoutGridIcon size="12px" />
@@ -73,7 +73,7 @@
       {#if hasErroredPartitions}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onRefreshErroredClick(resource)}
+          onclick={() => onRefreshErroredClick(resource)}
         >
           <div class="flex items-center">
             <AlertCircleIcon size="12px" />
@@ -86,7 +86,7 @@
 
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => onFullRefreshClick(resource)}
+        onclick={() => onFullRefreshClick(resource)}
       >
         <div class="flex items-center">
           <RefreshCcwIcon size="12px" />
@@ -97,7 +97,7 @@
       {#if isIncremental}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onIncrementalRefreshClick(resource)}
+          onclick={() => onIncrementalRefreshClick(resource)}
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />

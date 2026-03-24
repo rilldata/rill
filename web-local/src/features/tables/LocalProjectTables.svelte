@@ -236,7 +236,7 @@
       <DropdownMenu.Content align="start" class="w-32">
         {#each typeOptions as option}
           <DropdownMenu.Item
-            on:click={() => {
+            onclick={() => {
               typeFilter = option.value;
             }}
           >
@@ -249,7 +249,7 @@
     {#if typeFilter !== "all" || searchText}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={() => {
+        onclick={() => {
           typeFilter = "all";
           searchText = "";
         }}

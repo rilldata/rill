@@ -22,34 +22,35 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
-    {#if $selectedMockUserStore === null}
-      <button
-        use:builder.action
-        {...builder}
-        class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-surface-hover items-center"
-      >
-        <EyeIcon size={"16px"} />
-        <div class="flex items-center gap-x-1">
-          <span>View as</span><CaretDownIcon />
-        </div>
-      </button>
-    {:else}
-      <Chip
-        builders={[builder]}
-        removable
-        slideDuration={0}
-        active={viewAsMenuOpen}
-        removeTooltipText="Clear view"
-        onRemove={() => {
-          updateDevJWT(queryClient, client, null);
-        }}
-      >
-        <div slot="body">
-          Viewing as <b>{$selectedMockUserStore.email}</b>
-        </div>
-      </Chip>
-    {/if}
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      {#if $selectedMockUserStore === null}
+        <button
+          {...props}
+          class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-surface-hover items-center"
+        >
+          <EyeIcon size={"16px"} />
+          <div class="flex items-center gap-x-1">
+            <span>View as</span><CaretDownIcon />
+          </div>
+        </button>
+      {:else}
+        <Chip
+          {...props}
+          removable
+          slideDuration={0}
+          active={viewAsMenuOpen}
+          removeTooltipText="Clear view"
+          onRemove={() => {
+            updateDevJWT(queryClient, client, null);
+          }}
+        >
+          <div slot="body">
+            Viewing as <b>{$selectedMockUserStore.email}</b>
+          </div>
+        </Chip>
+      {/if}
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start">
@@ -58,7 +59,7 @@
     {:else if $mockUsers.data?.length > 0}
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
-          on:click={() => {
+          onclick={() => {
             updateDevJWT(queryClient, client, user);
           }}
           class="flex gap-x-2 items-center"

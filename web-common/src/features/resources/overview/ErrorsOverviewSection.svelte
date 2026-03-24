@@ -17,7 +17,7 @@
 {#if totalErrors > 0}
   <button
     class="section section-error section-clickable"
-    on:click={onSectionClick}
+    onclick={onSectionClick}
   >
     <div class="section-header">
       <h3 class="section-title flex items-center gap-2">
@@ -30,7 +30,7 @@
         {#if onParseErrorChipClick}
           <button
             class="error-chip"
-            on:click|stopPropagation={onParseErrorChipClick}
+            onclick={(e) => { e.stopPropagation(); onParseErrorChipClick?.(); }}
           >
             <AlertCircleOutline size="12px" />
             <span class="font-medium">{parseErrorCount}</span>
@@ -48,7 +48,7 @@
         {#if onKindChipClick}
           <button
             class="error-chip"
-            on:click|stopPropagation={() => onKindChipClick?.(kind)}
+            onclick={(e) => { e.stopPropagation(); onKindChipClick?.(kind); }}
           >
             {#if resourceIconMapping[kind]}
               <svelte:component this={resourceIconMapping[kind]} size="12px" />

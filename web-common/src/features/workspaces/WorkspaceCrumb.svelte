@@ -9,7 +9,6 @@
     ResourceKind,
     type UserFacingResourceKinds,
   } from "../entity-management/resource-selectors";
-  import { builderActions } from "bits-ui";
   import { GitBranch } from "lucide-svelte";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -128,19 +127,12 @@
       {#if isDisabledInPreview}
         <Tooltip distance={8}>
           <div>
-            <DropdownMenu.Root bind:open>
-              <DropdownMenu.Trigger asChild let:builder>
-                <svelte:element
-                  this={dropdown ? "button" : "a"}
-                  role={dropdown ? "button" : "link"}
-                  class:open
-                  class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
-                  class:selected={current}
-                  class:disabled={true}
-                  href="#"
-                  on:click={(e) => e.preventDefault()}
-                  {...dropdown ? builder : {}}
-                  use:builderActions={{ builders: dropdown ? [builder] : [] }}
+            {#if dropdown}
+              <DropdownMenu.Root bind:open>
+                <DropdownMenu.Trigger
+                  class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 disabled {open
+                    ? 'bg-surface-active rounded-[2px] text-fg-primary'
+                    : ''} {current ? 'selected' : ''}"
                 >
                   <CrumbTrigger
                     {filePath}
@@ -149,60 +141,70 @@
                       ? generateLabel(resources)
                       : resourceName}
                   />
-                </svelte:element>
-              </DropdownMenu.Trigger>
-            </DropdownMenu.Root>
+                </DropdownMenu.Trigger>
+              </DropdownMenu.Root>
+            {:else}
+              <a
+                class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 disabled"
+                class:selected={current}
+                href="#"
+                onclick={(e) => e.preventDefault()}
+              >
+                <CrumbTrigger
+                  {filePath}
+                  kind={resourceKind}
+                  label={resourceName}
+                />
+              </a>
+            {/if}
           </div>
           <TooltipContent slot="tooltip-content">
             Available in Developer mode
           </TooltipContent>
         </Tooltip>
-      {:else}
+      {:else if dropdown}
         <DropdownMenu.Root bind:open>
-          <DropdownMenu.Trigger asChild let:builder>
-            <svelte:element
-              this={dropdown ? "button" : "a"}
-              role={dropdown ? "button" : "link"}
-              class:open
-              class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
-              class:selected={current}
-              href={dropdown
-                ? undefined
-                : exampleResource
-                  ? getFileHref(exampleResource?.meta?.filePaths)
-                  : "#"}
-              {...dropdown ? builder : {}}
-              use:builderActions={{ builders: dropdown ? [builder] : [] }}
-            >
-              <CrumbTrigger
-                {filePath}
-                kind={resourceKind}
-                label={!selectedResource && dropdown
-                  ? generateLabel(resources)
-                  : resourceName}
-              />
-            </svelte:element>
+          <DropdownMenu.Trigger
+            class="text-fg-muted hover:text-fg-primary px-[5px] py-1 w-full max-w-fit line-clamp-1 {open
+              ? 'bg-surface-active rounded-[2px] text-fg-primary'
+              : ''} {current ? 'selected' : ''}"
+          >
+            <CrumbTrigger
+              {filePath}
+              kind={resourceKind}
+              label={!selectedResource && dropdown
+                ? generateLabel(resources)
+                : resourceName}
+            />
           </DropdownMenu.Trigger>
 
-          {#if dropdown}
-            <DropdownMenu.Content align="start">
-              {#each resources as resource (resource?.meta?.name?.name)}
-                {@const kind = resource?.meta?.name?.kind}
-                <DropdownMenu.Item
-                  href={getFileHref(resource?.meta?.filePaths)}
-                >
-                  {#if kind}
-                    <svelte:component
-                      this={resourceIconMapping[kind]}
-                      size="14px"
-                    />
-                  {/if}
-                  {resource?.meta?.name?.name}
-                </DropdownMenu.Item>
-              {/each}
-            </DropdownMenu.Content>
-          {/if}
+          <DropdownMenu.Content align="start">
+            {#each resources as resource (resource?.meta?.name?.name)}
+              {@const kind = resource?.meta?.name?.kind}
+              <DropdownMenu.Item
+                href={getFileHref(resource?.meta?.filePaths)}
+              >
+                {#if kind}
+                  <svelte:component
+                    this={resourceIconMapping[kind]}
+                    size="14px"
+                  />
+                {/if}
+                {resource?.meta?.name?.name}
+              </DropdownMenu.Item>
+            {/each}
+          </DropdownMenu.Content>
         </DropdownMenu.Root>
+      {:else}
+        <a
+          class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
+          class:selected={current}
+          href={exampleResource
+            ? getFileHref(exampleResource?.meta?.filePaths)
+            : "#"}
+        >
+          <CrumbTrigger {filePath} kind={resourceKind} label={resourceName} />
+        </a>
       {/if}
     </div>
     {#if current && graphSupported && openGraph}
@@ -234,8 +236,7 @@
     @apply flex-1 min-w-0;
   }
 
-  a:hover,
-  button:hover {
+  a:hover {
     @apply text-fg-primary;
   }
 
@@ -249,31 +250,5 @@
 
   .selected {
     @apply text-fg-primary;
-  }
-
-  .open {
-    @apply bg-surface-active rounded-[2px] text-fg-primary;
-  }
-
-  .graph-trigger {
-    @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
-
-    min-width: 30px;
-    height: 26px;
-  }
-
-  .graph-trigger:hover {
-    color: var(--foreground, #1f2937);
-    border-color: color-mix(
-      in srgb,
-      var(--border, #e5e7eb) 70%,
-      var(--foreground, #1f2937)
-    );
-  }
-
-  .graph-trigger:focus-visible {
-    @apply outline-none ring ring-offset-1;
-    ring-color: var(--ring, #93c5fd);
-    ring-offset-color: var(--surface-background, #ffffff);
   }
 </style>

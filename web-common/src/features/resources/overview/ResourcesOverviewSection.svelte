@@ -12,11 +12,11 @@
   <section class="section">
     <div class="section-header">
       <h3 class="section-title">Resources</h3>
-      <button class="view-all" on:click={onViewAll}>View all</button>
+      <button class="view-all" onclick={onViewAll}>View all</button>
     </div>
     <div class="resource-chips">
       {#each resourceCounts as { kind, label, count } (kind)}
-        <button class="resource-chip" on:click={() => onChipClick(kind)}>
+        <button class="resource-chip" onclick={() => onChipClick(kind)}>
           {#if resourceIconMapping[kind]}
             <svelte:component this={resourceIconMapping[kind]} size="12px" />
           {/if}

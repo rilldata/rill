@@ -37,7 +37,7 @@
       <section class="detail-section">
         <button
           class="detail-toggle"
-          on:click={() => (showDetail = !showDetail)}
+          onclick={() => (showDetail = !showDetail)}
         >
           {#if !showDetail}
             Show details

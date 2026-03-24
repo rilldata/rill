@@ -1,6 +1,6 @@
 <script lang="ts">
   import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import type { V1OlapTableInfo } from "@rilldata/web-common/runtime-client";
   import { compareSizes } from "@rilldata/web-common/features/projects/status/tables/utils";
   import ModelSizeCell from "@rilldata/web-common/features/projects/status/tables/ModelSizeCell.svelte";
@@ -16,7 +16,7 @@
       accessorFn: (row) => isView.get(row.name ?? ""),
       header: "Type",
       cell: ({ row, getValue }) =>
-        flexRender(MaterializationCell, {
+        renderComponent(MaterializationCell, {
           isView: getValue() as boolean | undefined,
           physicalSizeBytes: row.original.physicalSizeBytes,
         }),
@@ -25,7 +25,7 @@
       accessorFn: (row) => row.name,
       header: "Name",
       cell: ({ getValue }) =>
-        flexRender(NameCell, {
+        renderComponent(NameCell, {
           name: getValue() as string,
         }),
     },
@@ -41,7 +41,7 @@
         return compareSizes(sizeA, sizeB);
       },
       cell: ({ getValue }) =>
-        flexRender(ModelSizeCell, {
+        renderComponent(ModelSizeCell, {
           sizeBytes: getValue() as string | number | undefined,
         }),
     },

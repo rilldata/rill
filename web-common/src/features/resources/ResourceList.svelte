@@ -4,14 +4,14 @@
     SortingState,
     TableOptions,
     Updater,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createSvelteTable,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getSortedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import ResourceListToolbar from "./ResourceListToolbar.svelte";
