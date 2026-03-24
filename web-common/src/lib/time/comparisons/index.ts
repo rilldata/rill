@@ -13,6 +13,7 @@ import {
   TimeOffsetType,
   TimeRangePreset,
 } from "../types";
+import { isNewRillTimeFormat } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 
 export function getComparisonTransform(
   start: Date,
@@ -316,7 +317,8 @@ export function getComparisonInterval(
   comparisonRange: string | undefined,
   activeTimeZone: string,
 ): Interval<true> | undefined {
-  if (!interval || !comparisonRange) return undefined;
+  if (!interval || !comparisonRange || isNewRillTimeFormat(comparisonRange))
+    return undefined;
 
   let comparisonInterval: Interval | undefined = undefined;
 
@@ -348,7 +350,11 @@ export function getComparisonInterval(
     }
   } else {
     const normalizedRange = comparisonRange.replace(",", "/");
-    comparisonInterval = Interval.fromISO(normalizedRange).mapEndpoints((dt) =>
+    const normalizedInterval = Interval.fromISO(normalizedRange);
+    // Safeguard against unknown comparison range format.
+    if (!normalizedInterval.isValid) return undefined;
+
+    comparisonInterval = normalizedInterval.mapEndpoints((dt) =>
       dt.setZone(activeTimeZone),
     );
   }

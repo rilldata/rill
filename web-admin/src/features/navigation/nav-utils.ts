@@ -39,7 +39,11 @@ export function isMetricsExplorerPage(page: Page): boolean {
 }
 
 export function isCanvasDashboardPage(page: Page): boolean {
-  return page.route.id === "/[organization]/[project]/canvas/[dashboard]";
+  return (
+    page.route.id === "/[organization]/[project]/canvas/[dashboard]" ||
+    page.route.id ===
+      "/[organization]/[project]/-/share/[token]/canvas/[dashboard]"
+  );
 }
 
 /**

@@ -6,7 +6,10 @@
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
-  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+  import {
+    getPaymentIssueErrorText,
+    needsPaymentSetup,
+  } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
     fetchTeamPlan,
@@ -46,6 +49,7 @@
           href: await fetchPaymentsPortalURL(
             organization,
             getBillingUpgradeUrl($page, organization),
+            needsPaymentSetup(paymentIssues),
           ),
         },
         options: {

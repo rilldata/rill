@@ -16,6 +16,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/awsutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
@@ -171,7 +172,7 @@ var _ drivers.Handle = &Connection{}
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
 	if c.config.Endpoint == "" {
-		stsClient, err := getSTSClient(ctx, c.config)
+		stsClient, err := getSTSClient(ctx, c.config, c.logger)
 		if err != nil {
 			return err
 		}
@@ -290,8 +291,8 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // BucketRegion returns the region to use for the given bucket.
-func BucketRegion(ctx context.Context, confProp *ConfigProperties, bucket string) (string, error) {
-	cfg, err := getAWSConfig(ctx, confProp)
+func BucketRegion(ctx context.Context, confProp *ConfigProperties, bucket string, logger *zap.Logger) (string, error) {
+	cfg, err := getAWSConfig(ctx, confProp, logger)
 	if err != nil {
 		return "", fmt.Errorf("failed to load AWS config for bucket region detection (set `region` in s3 connector yaml): %w", err)
 	}
@@ -327,9 +328,10 @@ func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *Confi
 	return region, nil
 }
 
-func getAnonymousS3Client(ctx context.Context, confProp *ConfigProperties, bucket string) (*s3.Client, error) {
+func getAnonymousS3Client(ctx context.Context, confProp *ConfigProperties, bucket string, logger *zap.Logger) (*s3.Client, error) {
 	cfg := aws.Config{
 		Credentials: aws.AnonymousCredentials{},
+		Logger:      awsutil.NewAWSLogger(logger),
 	}
 	region := confProp.Region
 	// If the region is not explicitly provided in the config,
@@ -350,8 +352,8 @@ func getAnonymousS3Client(ctx context.Context, confProp *ConfigProperties, bucke
 	}), nil
 }
 
-func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string) (*s3.Client, error) {
-	cfg, err := getAWSConfig(ctx, confProp)
+func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string, logger *zap.Logger) (*s3.Client, error) {
+	cfg, err := getAWSConfig(ctx, confProp, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -381,8 +383,8 @@ func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string)
 	}), nil
 }
 
-func getSTSClient(ctx context.Context, confProp *ConfigProperties) (*sts.Client, error) {
-	cfg, err := getAWSConfig(ctx, confProp)
+func getSTSClient(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (*sts.Client, error) {
+	cfg, err := getAWSConfig(ctx, confProp, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -397,17 +399,26 @@ func getSTSClient(ctx context.Context, confProp *ConfigProperties) (*sts.Client,
 	}), nil
 }
 
-func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, error) {
-	provider, err := newCredentialsProvider(ctx, confProp)
+func getAWSConfig(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.Config, error) {
+	provider, err := newCredentialsProvider(ctx, confProp, logger)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to get AWS credentials: %w", err)
 	}
 
 	opts := []func(*config.LoadOptions) error{
 		config.WithCredentialsProvider(provider),
+		config.WithLogger(awsutil.NewAWSLogger(logger)),
 	}
 	if confProp.Region != "" {
 		opts = append(opts, config.WithRegion(confProp.Region))
+	}
+
+	// For GCS, we need to set the checksum validation and request calculation to required
+	if confProp.Endpoint != "" && strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
+		opts = append(opts,
+			config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+			config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
+		)
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
@@ -418,10 +429,10 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, 
 }
 
 // newCredentialsProvider returns credentials for connecting to AWS.
-func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties) (aws.CredentialsProvider, error) {
+func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.CredentialsProvider, error) {
 	// 1. If a role ARN is provided, assume it.
 	if confProp.RoleARN != "" {
-		return assumeRole(ctx, confProp)
+		return assumeRole(ctx, confProp, logger)
 	}
 
 	// 1. Explicit static credentials
@@ -435,7 +446,7 @@ func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties) (aw
 
 	// 3. Allow host-based credentials
 	if confProp.AllowHostAccess {
-		cfg, err := config.LoadDefaultConfig(ctx)
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithLogger(awsutil.NewAWSLogger(logger)))
 		if err != nil {
 			return nil, fmt.Errorf("failed to load AWS config: %w", err)
 		}
@@ -455,7 +466,7 @@ func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties) (aw
 
 // assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.
 // It uses stscreds.NewAssumeRoleProvider so credentials are automatically refreshed before expiration.
-func assumeRole(ctx context.Context, confProp *ConfigProperties) (aws.CredentialsProvider, error) {
+func assumeRole(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.CredentialsProvider, error) {
 	// Add session name if specified
 	sessionName := confProp.RoleSessionName
 	if sessionName == "" {
@@ -479,6 +490,7 @@ func assumeRole(ctx context.Context, confProp *ConfigProperties) (aws.Credential
 	} else if confProp.AllowHostAccess {
 		hostCfg, err := config.LoadDefaultConfig(ctx,
 			config.WithRegion(region),
+			config.WithLogger(awsutil.NewAWSLogger(logger)),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load host credentials: %w", err)
@@ -493,6 +505,7 @@ func assumeRole(ctx context.Context, confProp *ConfigProperties) (aws.Credential
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(region),
 		config.WithCredentialsProvider(credsProvider),
+		config.WithLogger(awsutil.NewAWSLogger(logger)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS config: %w", err)

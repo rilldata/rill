@@ -8,10 +8,11 @@
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
@@ -22,10 +23,6 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
   } from "../../client";
-  import {
-    useBreadcrumbOrgPaths,
-    useBreadcrumbProjectPaths,
-  } from "../navigation/breadcrumb-selectors";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
@@ -37,14 +34,18 @@
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
-  import PageTitle from "../public-urls/PageTitle.svelte";
-  import { useReports } from "../scheduled-reports/selectors";
+  import {
+    useBreadcrumbOrgPaths,
+    useBreadcrumbProjectPaths,
+  } from "../navigation/breadcrumb-selectors";
   import {
     isCanvasDashboardPage,
     isMetricsExplorerPage,
     isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
+  import PageTitle from "../public-urls/PageTitle.svelte";
+  import { useReports } from "../scheduled-reports/selectors";
 
   export let organization: string;
   export let project: string;
@@ -191,9 +192,18 @@
   $: isDashboardValid = !!exploreSpec;
   $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;
 
-  $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
-    dashboard;
+  $: canvasQuery = useCanvas(runtimeClient, dashboard, {
+    enabled:
+      !!runtimeClient.instanceId &&
+      !!dashboard &&
+      !!onCanvasDashboardPage &&
+      !!onPublicURLPage,
+  });
+
+  $: publicURLDashboardTitle = onCanvasDashboardPage
+    ? $canvasQuery.data?.canvas?.displayName || dashboard
+    : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+      dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -289,7 +299,9 @@
           <ChatToggle />
         {/if}
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-        <ShareDashboardPopover createMagicAuthTokens={false} />
+        <ShareDashboardPopover
+          createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+        />
       {/if}
     {/if}
 

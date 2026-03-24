@@ -6,6 +6,12 @@ title: rill project rename
 
 Rename project
 
+### Synopsis
+
+Rename project
+
+Warning: Renaming a project will invalidate all dashboard URLs.
+
 ```
 rill project rename [flags]
 ```

@@ -15,13 +15,19 @@ import {
   normalizeInlineContext,
   parseInlineAttr,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import {
+  RUNTIME_CONTEXT_KEY,
+  RuntimeClient,
+} from "@rilldata/web-common/runtime-client/v2";
 
 export function getEditorPlugins({
   placeholder,
   onSubmit,
+  runtimeClient,
 }: {
   placeholder: string;
   onSubmit: () => void;
+  runtimeClient: RuntimeClient;
 }) {
   const sharedEditorStore = new SharedEditorStore();
 
@@ -33,7 +39,7 @@ export function getEditorPlugins({
       placeholder,
     }),
     EditorSubmitExtension.configure({ onSubmit, sharedEditorStore }),
-    configureInlineContextTipTapExtension(sharedEditorStore),
+    configureInlineContextTipTapExtension(sharedEditorStore, runtimeClient),
     UndoRedo,
   ];
 
@@ -96,6 +102,7 @@ const EditorSubmitExtension = Extension.create(() => {
 
 type InlineContextOptions = MentionOptions<never, InlineContext> & {
   sharedEditorStore: SharedEditorStore;
+  runtimeClient: RuntimeClient;
 };
 
 // Add the startMention command to the Commands type.
@@ -119,6 +126,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       // These have to be configured for the extension to work
       manager: {} as ConversationManager,
       sharedEditorStore: {} as SharedEditorStore,
+      runtimeClient: {} as RuntimeClient,
     };
   },
 
@@ -179,7 +187,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       // We need this here to make sure the component is rendered inline.
       target.className = "inline-block";
 
-      const sharedEditorStore = this.options.sharedEditorStore;
+      const { sharedEditorStore, runtimeClient } = this.options;
 
       // Create the inline chat context component. Pass the wrapper as the target.
       const comp = new InlineContextComponent({
@@ -207,6 +215,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
               }
             : { mode: "readonly" },
         },
+        context: new Map([[RUNTIME_CONTEXT_KEY, runtimeClient]]),
       });
       sharedEditorStore.componentAdded(comp);
 
@@ -227,12 +236,14 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
  */
 export function configureInlineContextTipTapExtension(
   sharedEditorStore: SharedEditorStore,
+  runtimeClient: RuntimeClient,
 ) {
   let comp: InlineContextPicker | null = null;
   let selected = false;
 
   return InlineContextExtension.configure({
     sharedEditorStore,
+    runtimeClient,
     suggestion: {
       char: "@",
       allowSpaces: true,
@@ -252,6 +263,7 @@ export function configureInlineContextTipTapExtension(
               },
               focusEditor: () => props.editor.commands.focus(),
             },
+            context: new Map([[RUNTIME_CONTEXT_KEY, runtimeClient]]),
           });
           sharedEditorStore.contextOpen = true;
         },

@@ -47,8 +47,8 @@ docs.generate:
 	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
 	rm -rf docs/docs/reference/cli/*.md docs/docs/reference/project-files/*.md
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
-	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-cli docs/docs/reference/cli/
-	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/reference/project-files/
+	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-cli docs/docs/reference/cli/
+	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: proto.generate
@@ -59,10 +59,10 @@ proto.generate:
 	cd proto && buf generate --template buf.gen.runtime.yaml --path rill/runtime
 	cd proto && buf generate --template buf.gen.local.yaml --path rill/local
 	cd proto && buf generate --template buf.gen.ui.yaml
-	go run -ldflags="-X main.Version=$(shell git describe --tags $(shell git rev-list --tags --max-count=1))" \
+	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" \
 		scripts/convert-openapi-v2-to-v3/convert.go --force \
 		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/openapi.yaml
-	go run -ldflags="-X main.Version=$(shell git describe --tags $(shell git rev-list --tags --max-count=1))" \
+	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" \
 		scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
 		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/public.openapi.yaml
 	npm run generate:runtime-client -w web-common

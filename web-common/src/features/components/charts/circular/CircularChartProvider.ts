@@ -22,6 +22,7 @@ import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -67,7 +68,9 @@ export class CircularChartProvider {
   createChartDataQuery(
     client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
@@ -90,10 +93,11 @@ export class CircularChartProvider {
 
     // Create topN query for color dimension
     const topNColorQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!colorDimensionName &&
           config.color?.type === "nominal" &&
@@ -124,10 +128,11 @@ export class CircularChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const totalQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           !!showTotal &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.measure?.field;
@@ -154,11 +159,12 @@ export class CircularChartProvider {
     const totalQuery = createQuery(totalQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNColorQuery, totalQuery],
-      ([$timeAndFilterStore, $topNColorQuery, $totalQuery]) => {
+      [timeAndFilterStore, topNColorQuery, totalQuery, visibleStore],
+      ([$timeAndFilterStore, $topNColorQuery, $totalQuery, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           (config.color?.type === "nominal" &&

@@ -165,8 +165,9 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			continue
 		}
 		parseErrors = append(parseErrors, map[string]any{
-			"path": pe.FilePath,
-			"msg":  pe.Message,
+			"path":    pe.FilePath,
+			"msg":     pe.Message,
+			"warning": pe.Warning,
 		})
 	}
 

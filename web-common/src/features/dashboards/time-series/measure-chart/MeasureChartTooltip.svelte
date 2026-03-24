@@ -72,7 +72,10 @@
     <MeasureChartPointIndicator
       x={$tweenedX}
       y={currentPointIsNull ? scales.y(0) : $tweenedY}
-      zeroY={scales.y(0)}
+      zeroY={Math.max(
+        Math.min(scales.y(0), config.plotBounds.top + config.plotBounds.height),
+        config.plotBounds.top,
+      )}
     />
   {/if}
 

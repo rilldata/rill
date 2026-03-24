@@ -12,6 +12,7 @@
   import {
     formatEnvironmentName,
     formatConnectorName,
+    getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
@@ -69,6 +70,7 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
+  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
@@ -170,14 +172,7 @@
 
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
-      <span class="info-value">
-        {olapConnector ? formatConnectorName(olapConnector.type) : "DuckDB"}
-        {#if olapConnector && (olapConnector.provision || olapConnector.type !== "duckdb")}
-          <span class="text-fg-tertiary text-xs ml-1">
-            ({olapConnector.provision ? "Rill-managed" : "Self-managed"})
-          </span>
-        {/if}
-      </span>
+      <span class="info-value">{olapEngineLabel}</span>
     </div>
 
     <div class="info-row">

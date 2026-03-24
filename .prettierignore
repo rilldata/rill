@@ -1,5 +1,6 @@
 .github/
 .husky/
+.ranger/
 .svelte-kit/
 .vscode/
 .idea/

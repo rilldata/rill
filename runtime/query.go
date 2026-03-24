@@ -157,7 +157,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 }
 
 func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name string, priority int) ([]byte, bool, error) {
-	cacheKeyResolver, err := r.Resolve(ctx, &ResolveOptions{
+	cacheKeyResolver, _, err := r.Resolve(ctx, &ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           "metrics_cache_key",
 		ResolverProperties: map[string]any{"metrics_view": name},

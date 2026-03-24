@@ -30,6 +30,7 @@ import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -152,7 +153,9 @@ export class CartesianChartProvider {
   createChartDataQuery(
     client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
     const isMultiMeasure = isMultiFieldConfig(config.y);
@@ -199,8 +202,8 @@ export class CartesianChartProvider {
 
     // Create topN query for x dimension
     const topNXQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const {
           timeRange,
           where,
@@ -209,6 +212,7 @@ export class CartesianChartProvider {
           showTimeComparison,
         } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
@@ -277,10 +281,11 @@ export class CartesianChartProvider {
 
     // Create topN query for color dimension
     const topNColorQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           hasColorDimension &&
           !!colorDimensionName &&
@@ -316,8 +321,8 @@ export class CartesianChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNXQuery, topNColorQuery],
-      ([$timeAndFilterStore, $topNXQuery, $topNColorQuery]) => {
+      [timeAndFilterStore, topNXQuery, topNColorQuery, visibleStore],
+      ([$timeAndFilterStore, $topNXQuery, $topNColorQuery, $visible]) => {
         const {
           timeRange,
           where,
@@ -330,6 +335,7 @@ export class CartesianChartProvider {
 
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           !!dimensions?.length &&
