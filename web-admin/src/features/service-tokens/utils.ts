@@ -1,5 +1,14 @@
-export const ORG_ROLES = ["admin", "editor", "viewer"];
+export const ORG_ROLES = ["admin", "editor", "viewer", "guest", ""];
 export const PROJECT_ROLES = ["admin", "editor", "viewer"];
+
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function formatOrgRole(role: string | undefined): string {
+  if (!role) return "None";
+  return capitalize(role);
+}
 
 export const NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
 

@@ -20,7 +20,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CopyIcon, Trash2Icon } from "lucide-svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import { formatServiceDateTime } from "./utils";
+  import { capitalize, formatOrgRole, formatServiceDateTime } from "./utils";
 
   export let open = false;
   export let serviceName: string;
@@ -125,7 +125,7 @@
       <!-- Service info -->
       <div class="grid grid-cols-2 gap-y-2 text-sm">
         <span class="text-fg-tertiary">Organization access</span>
-        <span class="text-fg-primary">{service?.roleName ?? "-"}</span>
+        <span class="text-fg-primary">{formatOrgRole(service?.roleName)}</span>
         <span class="text-fg-tertiary">Created</span>
         <span class="text-fg-primary"
           >{formatServiceDateTime(service?.createdOn)}</span
@@ -141,7 +141,9 @@
             {#each projectMemberships as pm}
               <div class="flex justify-between">
                 <span class="text-fg-primary">{pm.projectName}</span>
-                <span class="text-fg-tertiary">{pm.projectRoleName}</span>
+                <span class="text-fg-tertiary"
+                  >{capitalize(pm.projectRoleName ?? "")}</span
+                >
               </div>
             {/each}
           </div>

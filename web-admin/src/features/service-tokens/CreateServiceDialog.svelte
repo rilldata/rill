@@ -24,15 +24,22 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CopyIcon, Plus, Trash2Icon } from "lucide-svelte";
-  import { ORG_ROLES, PROJECT_ROLES, validateServiceName } from "./utils";
+  import {
+    ORG_ROLES,
+    PROJECT_ROLES,
+    capitalize,
+    formatOrgRole,
+    validateServiceName,
+  } from "./utils";
 
   export let open = false;
 
   let name = "";
-  let orgRole = "viewer";
+  let orgRole = "";
   let projectAssignments: { project: string; role: string }[] = [];
   let attributes: { key: string; value: string }[] = [];
   let issuedToken = "";
+  let tokenCopied = false;
   let step: "form" | "token" = "form";
   let nameError = "";
 
@@ -55,10 +62,11 @@
 
   function handleReset() {
     name = "";
-    orgRole = "viewer";
+    orgRole = "";
     projectAssignments = [];
     attributes = [];
     issuedToken = "";
+    tokenCopied = false;
     step = "form";
     nameError = "";
   }
@@ -89,7 +97,7 @@
         org: organization,
         data: {
           name: name.trim(),
-          orgRoleName: orgRole,
+          ...(orgRole ? { orgRoleName: orgRole } : {}),
           ...(firstProject
             ? {
                 project: firstProject.project,
@@ -177,18 +185,22 @@
           <label for="org-role" class="text-sm font-medium text-fg-primary"
             >Organization role</label
           >
+          <span class="text-xs text-fg-tertiary"
+            >Base level of access across all projects. Use "None" to restrict
+            access to specific projects only.</span
+          >
           <Select.Root
             onSelectedChange={(v) => {
               if (v) orgRole = v.value;
             }}
-            selected={{ value: orgRole, label: orgRole }}
+            selected={{ value: orgRole, label: formatOrgRole(orgRole) }}
           >
             <Select.Trigger>
               <Select.Value placeholder="Select a role" />
             </Select.Trigger>
             <Select.Content>
               {#each ORG_ROLES as role}
-                <Select.Item value={role}>{role}</Select.Item>
+                <Select.Item value={role}>{formatOrgRole(role)}</Select.Item>
               {/each}
             </Select.Content>
           </Select.Root>
@@ -196,9 +208,15 @@
 
         <!-- Project assignments -->
         <div class="flex flex-col gap-y-2">
-          <span class="text-sm font-medium text-fg-primary"
-            >Project access (optional)</span
-          >
+          <div class="flex flex-col gap-y-0.5">
+            <span class="text-sm font-medium text-fg-primary"
+              >Project access (optional)</span
+            >
+            <span class="text-xs text-fg-tertiary"
+              >Grant this service account access to specific projects with a
+              designated role.</span
+            >
+          </div>
           {#each projectAssignments as assignment, index}
             <div class="flex items-center gap-x-2">
               <div class="flex-1">
@@ -235,7 +253,7 @@
                   }}
                   selected={{
                     value: assignment.role,
-                    label: assignment.role,
+                    label: capitalize(assignment.role),
                   }}
                 >
                   <Select.Trigger>
@@ -243,7 +261,7 @@
                   </Select.Trigger>
                   <Select.Content>
                     {#each PROJECT_ROLES as role}
-                      <Select.Item value={role}>{role}</Select.Item>
+                      <Select.Item value={role}>{capitalize(role)}</Select.Item>
                     {/each}
                   </Select.Content>
                 </Select.Root>
@@ -268,9 +286,15 @@
 
         <!-- Custom attributes -->
         <div class="flex flex-col gap-y-2">
-          <span class="text-sm font-medium text-fg-primary"
-            >Attributes (optional)</span
-          >
+          <div class="flex flex-col gap-y-0.5">
+            <span class="text-sm font-medium text-fg-primary"
+              >Attributes (optional)</span
+            >
+            <span class="text-xs text-fg-tertiary"
+              >Key-value pairs passed to security policies for row-level access
+              control.</span
+            >
+          </div>
           {#each attributes as attr, index}
             <div class="flex items-center gap-x-2">
               <Input
@@ -331,7 +355,12 @@
           >
             {issuedToken}
           </code>
-          <IconButton on:click={() => copyToClipboard(issuedToken)}>
+          <IconButton
+            on:click={() => {
+              copyToClipboard(issuedToken);
+              tokenCopied = true;
+            }}
+          >
             <CopyIcon size="14px" />
           </IconButton>
         </div>
@@ -340,7 +369,20 @@
         </p>
       </div>
       <DialogFooter>
-        <Button type="primary" onClick={handleClose}>Done</Button>
+        {#if tokenCopied}
+          <Button type="primary" onClick={handleClose}>Done</Button>
+        {:else}
+          <Button
+            type="primary"
+            onClick={() => {
+              copyToClipboard(issuedToken);
+              tokenCopied = true;
+            }}
+          >
+            <CopyIcon size="14px" />
+            Copy & Close
+          </Button>
+        {/if}
       </DialogFooter>
     {/if}
   </DialogContent>

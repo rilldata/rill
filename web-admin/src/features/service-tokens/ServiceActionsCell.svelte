@@ -2,11 +2,12 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { Pencil, Trash2Icon } from "lucide-svelte";
+  import { KeyRound, Pencil, Trash2Icon } from "lucide-svelte";
   import EditServiceDialog from "./EditServiceDialog.svelte";
   import DeleteServiceDialog from "./DeleteServiceDialog.svelte";
 
   export let name: string;
+  export let onManageTokens: (name: string) => void;
 
   let isDropdownOpen = false;
   let isEditDialogOpen = false;
@@ -20,7 +21,14 @@
         <ThreeDot size="18px" />
       </IconButton>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="min-w-[95px]">
+    <DropdownMenu.Content align="end" class="min-w-[140px]">
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => onManageTokens(name)}
+      >
+        <KeyRound size="12px" />
+        <span class="ml-2">Manage tokens</span>
+      </DropdownMenu.Item>
       <DropdownMenu.Item
         class="font-normal flex items-center"
         on:click={() => {

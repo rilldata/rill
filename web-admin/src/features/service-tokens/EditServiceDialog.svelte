@@ -26,7 +26,13 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Plus, Trash2Icon } from "lucide-svelte";
-  import { ORG_ROLES, PROJECT_ROLES, validateServiceName } from "./utils";
+  import {
+    ORG_ROLES,
+    PROJECT_ROLES,
+    capitalize,
+    formatOrgRole,
+    validateServiceName,
+  } from "./utils";
 
   export let open = false;
   export let name: string;
@@ -252,18 +258,22 @@
         <label for="org-role" class="text-sm font-medium text-fg-primary"
           >Organization role</label
         >
+        <span class="text-xs text-fg-tertiary"
+          >Base level of access across all projects. Use "None" to restrict
+          access to specific projects only.</span
+        >
         <Select.Root
           onSelectedChange={(v) => {
             if (v) orgRole = v.value;
           }}
-          selected={orgRole ? { value: orgRole, label: orgRole } : undefined}
+          selected={{ value: orgRole, label: formatOrgRole(orgRole) }}
         >
           <Select.Trigger>
             <Select.Value placeholder="Select a role" />
           </Select.Trigger>
           <Select.Content>
             {#each ORG_ROLES as role}
-              <Select.Item value={role}>{role}</Select.Item>
+              <Select.Item value={role}>{formatOrgRole(role)}</Select.Item>
             {/each}
           </Select.Content>
         </Select.Root>
@@ -271,7 +281,14 @@
 
       <!-- Project assignments -->
       <div class="flex flex-col gap-y-2">
-        <span class="text-sm font-medium text-fg-primary">Project access</span>
+        <div class="flex flex-col gap-y-0.5">
+          <span class="text-sm font-medium text-fg-primary">Project access</span
+          >
+          <span class="text-xs text-fg-tertiary"
+            >Grant this service account access to specific projects with a
+            designated role.</span
+          >
+        </div>
         {#each projectAssignments as assignment, index}
           <div class="flex items-center gap-x-2">
             <div class="flex-1">
@@ -307,7 +324,7 @@
                 }}
                 selected={{
                   value: assignment.role,
-                  label: assignment.role,
+                  label: capitalize(assignment.role),
                 }}
               >
                 <Select.Trigger>
@@ -315,7 +332,7 @@
                 </Select.Trigger>
                 <Select.Content>
                   {#each PROJECT_ROLES as role}
-                    <Select.Item value={role}>{role}</Select.Item>
+                    <Select.Item value={role}>{capitalize(role)}</Select.Item>
                   {/each}
                 </Select.Content>
               </Select.Root>
@@ -340,7 +357,13 @@
 
       <!-- Custom attributes -->
       <div class="flex flex-col gap-y-2">
-        <span class="text-sm font-medium text-fg-primary">Attributes</span>
+        <div class="flex flex-col gap-y-0.5">
+          <span class="text-sm font-medium text-fg-primary">Attributes</span>
+          <span class="text-xs text-fg-tertiary"
+            >Key-value pairs passed to security policies for row-level access
+            control.</span
+          >
+        </div>
         {#each attributes as attr, index}
           <div class="flex items-center gap-x-2">
             <Input

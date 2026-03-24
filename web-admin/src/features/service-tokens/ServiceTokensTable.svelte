@@ -6,7 +6,7 @@
   import ServiceActionsCell from "./ServiceActionsCell.svelte";
   import ServiceNameCell from "./ServiceNameCell.svelte";
   import ServiceProjectRolesCell from "./ServiceProjectRolesCell.svelte";
-  import { formatServiceDate } from "./utils";
+  import { formatServiceDate, formatOrgRole } from "./utils";
 
   export let data: V1OrganizationMemberService[];
   export let onSelectService: (name: string) => void;
@@ -18,12 +18,12 @@
       cell: ({ row }) =>
         flexRender(ServiceNameCell, {
           name: row.original.name ?? "",
-          onClick: () => onSelectService(row.original.name ?? ""),
         }),
     },
     {
       accessorKey: "roleName",
       header: "Organization access",
+      cell: (info) => formatOrgRole(info.getValue() as string),
     },
     {
       accessorKey: "hasProjectRoles",
@@ -48,6 +48,7 @@
       cell: ({ row }) =>
         flexRender(ServiceActionsCell, {
           name: row.original.name ?? "",
+          onManageTokens: onSelectService,
         }),
     },
   ];

@@ -9,7 +9,12 @@
 
   export let data: PageData;
 
-  $: ({ subscription, neverSubscribed, billingPortalUrl } = data);
+  $: ({
+    subscription,
+    neverSubscribed,
+    billingPortalUrl,
+    organizationPermissions,
+  } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
@@ -17,10 +22,15 @@
     subscription?.plan?.name && isEnterprisePlan(subscription.plan.name);
   $: hideBillingSettings = neverSubscribed;
   $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
+  $: canManageOrg = !!organizationPermissions?.manageOrg;
 
   $: navItems = [
     { label: "General", route: "", hasPermission: true },
-    { label: "Service Accounts", route: "/tokens", hasPermission: true },
+    {
+      label: "Service Accounts",
+      route: "/service-accounts",
+      hasPermission: canManageOrg,
+    },
     {
       label: "Billing",
       route: "/billing",

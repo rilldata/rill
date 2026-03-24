@@ -10,7 +10,7 @@ import { isAxiosError } from "axios";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ parent, params }) => {
-  const { issues } = await parent();
+  const { issues, organizationPermissions } = await parent();
   const neverSubscribed = !!getNeverSubscribedIssue(issues);
 
   const queryKey = getAdminServiceGetBillingSubscriptionQueryKey(
@@ -27,6 +27,7 @@ export const load: PageLoad = async ({ parent, params }) => {
       subscription: billingSubscription.subscription,
       billingPortalUrl: billingSubscription.billingPortalUrl,
       neverSubscribed,
+      organizationPermissions,
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {

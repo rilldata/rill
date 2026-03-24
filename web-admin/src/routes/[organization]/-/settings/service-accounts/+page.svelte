@@ -6,6 +6,8 @@
   import CreateServiceDialog from "@rilldata/web-admin/features/service-tokens/CreateServiceDialog.svelte";
   import ServiceDetailDialog from "@rilldata/web-admin/features/service-tokens/ServiceDetailDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
   let isCreateDialogOpen = false;
   let selectedServiceName = "";
@@ -38,10 +40,22 @@
           Create service
         </Button>
       </div>
-      <ServiceTokensTable
-        data={services}
-        onSelectService={handleSelectService}
-      />
+      {#if $servicesQuery.isLoading}
+        <div class="flex items-center justify-center py-8">
+          <Spinner status={EntityStatus.Running} size="24px" />
+        </div>
+      {:else if $servicesQuery.isError}
+        <div
+          class="text-sm text-red-500 border border-red-200 rounded p-3 bg-red-50"
+        >
+          Failed to load service accounts. Please try again.
+        </div>
+      {:else}
+        <ServiceTokensTable
+          data={services}
+          onSelectService={handleSelectService}
+        />
+      {/if}
     </div>
   </svelte:fragment>
 </SettingsContainer>
