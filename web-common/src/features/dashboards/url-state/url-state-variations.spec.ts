@@ -81,7 +81,7 @@ import {
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
-import { deepClone } from "@vitest/utils";
+import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
