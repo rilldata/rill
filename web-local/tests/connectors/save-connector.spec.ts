@@ -26,6 +26,7 @@ test.describe("Save connector feature", () => {
 
     // Save button should be visible on the connector step
     const saveButton = page.getByRole("button", { name: "Save", exact: true });
+    await saveButton.scrollIntoViewIfNeeded();
     await expect(saveButton).toBeVisible();
 
     // Click "Save" button to save connector without testing connection
