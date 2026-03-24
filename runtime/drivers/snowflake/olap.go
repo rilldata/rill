@@ -81,7 +81,25 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	return nil, drivers.ErrNotImplemented
+	if c.configProperties.LogQueries {
+		c.logger.Info("snowflake query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args), observability.ZapCtx(ctx))
+	}
+
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancelFunc := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
+	defer cancelFunc()
+
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return rowsToSchema(rows)
 }
 
 // WithConnection implements drivers.OLAPStore.
@@ -133,7 +151,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 	rtSchema := &runtimev1.StructType{}
 	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, true)
+		t, err := databaseTypeToPB(typ, 0, 0, true) // TODO : fix precision, scale and nullability if needed
 		if err != nil {
 			return nil, err
 		}
@@ -165,12 +183,13 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 	fields := make([]*runtimev1.StructType_Field, len(cts))
 	for i, ct := range cts {
+		precision, scale, _ := ct.DecimalSize()
 		nullable, ok := ct.Nullable()
 		if !ok {
 			nullable = true
 		}
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), precision, scale, nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +203,8 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func databaseTypeToPB(dbt string, precision, scale int64, nullable bool) (*runtimev1.Type, error) {
+	_ = precision
 	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "NUMBER", "DECIMAL", "NUMERIC":
@@ -196,7 +216,11 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "DOUBLE", "DOUBLE PRECISION", "REAL":
 		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "FIXED":
-		t.Code = runtimev1.Type_CODE_STRING
+		if scale == 0 {
+			t.Code = runtimev1.Type_CODE_INT256
+		} else {
+			t.Code = runtimev1.Type_CODE_FLOAT64
+		}
 	case "VARCHAR", "STRING", "TEXT", "CHAR", "CHARACTER":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "BINARY", "VARBINARY":

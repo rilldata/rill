@@ -101,6 +101,7 @@ var spec = drivers.Spec{
 		},
 	},
 	ImplementsWarehouse: true,
+	ImplementsOLAP:      true,
 }
 
 type driver struct{}
@@ -381,6 +382,7 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 	if c.dbErr != nil {
 		return nil, c.dbErr
 	}
+	c.db.MapperFunc(strings.ToLower)
 	c.db.SetConnMaxIdleTime(time.Minute)
 	return c.db, c.dbErr
 }
