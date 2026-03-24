@@ -35,7 +35,7 @@
     "@floating-ui/dom": "^1.7.4",
     "@replit/codemirror-indentation-markers": "^6.5.3",
     "@sveltejs/kit": "^2.55.0",
-    "@tanstack/svelte-query": "^5.69.0",
+    "@tanstack/svelte-query": "~5.76.0",
     "@tanstack/svelte-virtual": "^3.0.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/svelte": "^5.2.7",

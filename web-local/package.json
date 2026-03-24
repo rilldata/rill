@@ -24,7 +24,7 @@
     "@playwright/test": "^1.50.1",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.55.0",
-    "@tanstack/svelte-query": "^5.69.0",
+    "@tanstack/svelte-query": "~5.76.0",
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.7",
     "playwright": "^1.50.1",
