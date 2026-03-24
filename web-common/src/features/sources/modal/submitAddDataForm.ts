@@ -449,7 +449,7 @@ export async function submitAddSourceForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
-): Promise<string> {
+): Promise<void> {
   await beforeSubmitForm(client, connector);
   const newSourceName = formValues.name as string;
 
@@ -549,5 +549,4 @@ export async function submitAddSourceForm(
   }
 
   await goto(`/files/${newSourceFilePath}`);
-  return newSourceName;
 }

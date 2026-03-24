@@ -53,7 +53,7 @@
           createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
         aria-label="Create blank model"
       >
-        <File size="14px" class="stroke-icon-muted" />
+        <File size="14px" className="stroke-icon-muted" />
         Blank model
       </DropdownMenu.Item>
     </DropdownMenu.SubContent>

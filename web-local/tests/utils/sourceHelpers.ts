@@ -78,6 +78,7 @@ export async function createSourceV2(
   page: Page,
   file: string,
   filePath: string,
+  viewSource = true,
 ) {
   // add asset button
   await page.getByLabel("Add Asset").click();
@@ -94,10 +95,13 @@ export async function createSourceV2(
   await fileChooser.setFiles([path.join(TestDataPath, file)]);
   // Import and wait for source to be created.
   await page.getByRole("button", { name: "Import Data" }).click();
-  await Promise.all([
-    page.getByRole("button", { name: "View this source" }).click(),
-    waitForFileNavEntry(page, filePath, true),
-  ]);
+
+  if (viewSource) {
+    await Promise.all([
+      page.getByRole("button", { name: "View this source" }).click(),
+      waitForFileNavEntry(page, filePath, true),
+    ]);
+  }
 }
 
 export async function waitForSource(

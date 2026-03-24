@@ -20,6 +20,7 @@
 
   export let config: AddDataConfig = {};
   export let onClose: () => void = () => {};
+  export let onStepChange: (step: AddDataStep) => void = () => {};
 
   const runtimeClient = useRuntimeClient();
 
@@ -30,6 +31,7 @@
   // So we need this reactive statement to update the state.
   $: if ("step" in $page.state) {
     stepState = $page.state as AddDataState;
+    onStepChange(stepState.step);
   }
   $: console.log(stepState);
 

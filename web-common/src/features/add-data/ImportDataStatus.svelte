@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     type ImportAddDataStep,
     ImportDataStep,
@@ -61,7 +60,7 @@
 
   async function generateMetrics() {
     onClose();
-    if ($developerChat) {
+    if ($developerChat && $ai) {
       await createCanvasDashboardFromTableWithAgent(
         runtimeClient,
         importAddDataStep.config.connector,

@@ -8,6 +8,7 @@ import {
 import { TestDataPath, createSourceV2 } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
+import { createExploreFromSource } from "./utils/exploreHelpers.ts";
 
 test.describe("sources", () => {
   test.use({ project: "Blank" });
@@ -68,5 +69,15 @@ path: ${TestDataPath}/AdImpressions.tsv`;
     await expect(
       page.getByRole("button").filter({ hasText: "user_id" }).first(),
     ).toBeVisible();
+  });
+
+  test("Autogenerate canvas from source imported modal", async ({ page }) => {
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml", false);
+    await page.getByRole("button", { name: "Generate dashboard" }).click();
+    await waitForFileNavEntry(
+      page,
+      `/dashboards/AdBids_metrics_canvas.yaml`,
+      true,
+    );
   });
 });

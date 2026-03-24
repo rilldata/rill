@@ -7,7 +7,7 @@ import {
   wrapRetryAssertion,
 } from "../utils/commonHelpers";
 import { createModel, modelHasError } from "../utils/modelHelpers";
-import { createSource, createSourceV2 } from "../utils/sourceHelpers";
+import { createSourceV2 } from "../utils/sourceHelpers";
 import { fileNotPresent, waitForFileNavEntry } from "../utils/waitHelpers";
 
 test.describe("models", () => {

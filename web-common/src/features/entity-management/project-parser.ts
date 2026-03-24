@@ -16,7 +16,7 @@ export function getProjectParserVersion(instanceId: string) {
   );
 
   if (!projectParserQuery?.resource?.meta?.version) {
-    // throw new Error("Project parser version not found");
+    // Project parser is not present during the init. So dont throw error here, but assume version 0.
     return 0;
   }
 

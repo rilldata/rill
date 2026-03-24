@@ -86,6 +86,13 @@
       #ddf3ff 100%
     );
   }
+  :global(.dark) .container {
+    background: radial-gradient(
+      302.11% 152.07% at 111.07% 104.65%,
+      #103a5a 0%,
+      #384346 100%
+    );
+  }
 
   .container:hover {
     @apply border-accent-primary-action shadow-lg;

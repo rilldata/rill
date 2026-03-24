@@ -48,7 +48,7 @@
         createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
       aria-label="Blank metrics view"
     >
-      <File size="14px" class="stroke-icon-muted" />
+      <File size="14px" className="stroke-icon-muted" />
       Blank metrics view
     </DropdownMenu.Item>
   </DropdownMenu.SubContent>

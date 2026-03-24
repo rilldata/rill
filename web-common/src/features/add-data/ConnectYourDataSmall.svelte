@@ -90,6 +90,13 @@
       #eaecff 96.63%
     );
   }
+  :global(.dark) .container-welcome {
+    background: radial-gradient(
+      94.8% 95.1% at 23.7% 14.73%,
+      #31497d 22.12%,
+      #3b335f 100%
+    );
+  }
 
   .container-home {
     @apply bg-surface-overlay;

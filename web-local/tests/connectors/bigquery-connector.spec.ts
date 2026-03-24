@@ -3,7 +3,6 @@ import { test } from "../setup/base";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { writeFileSync, unlinkSync, existsSync } from "fs";
-import { updateCodeEditor } from "../utils/commonHelpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

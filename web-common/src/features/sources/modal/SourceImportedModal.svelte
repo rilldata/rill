@@ -30,8 +30,6 @@
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: ({ instanceId } = runtimeClient);
-
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
     sourceQuery = fileArtifact.getResource(queryClient);

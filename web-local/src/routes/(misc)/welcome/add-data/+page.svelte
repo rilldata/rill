@@ -1,11 +1,21 @@
 <script lang="ts">
   import AddData from "@rilldata/web-common/features/add-data/AddData.svelte";
+  import { AddDataStep } from "@rilldata/web-common/features/add-data/steps/types.ts";
+
+  let addDataStep: AddDataStep = AddDataStep.SelectConnector;
+
+  $: isImportStep = addDataStep === AddDataStep.Import;
 </script>
 
-<div>
-  <div class="text-base font-semibold text-fg-secondary">Getting started</div>
-  <div class="text-3xl font-bold text-fg-accent">Connect your data</div>
+<div class:my-auto={isImportStep}>
+  {#if !isImportStep}
+    <div class="text-base font-semibold text-fg-secondary">Getting started</div>
+    <div class="text-3xl font-bold text-fg-accent">Connect your data</div>
+  {/if}
   <div class="w-fit h-fit mt-4">
-    <AddData config={{ welcomeScreen: true }} />
+    <AddData
+      config={{ welcomeScreen: true }}
+      onStepChange={(step) => (addDataStep = step)}
+    />
   </div>
 </div>

@@ -129,6 +129,8 @@ export class FileAndResourceWatcher {
     });
 
     this.client.on("reconnect", () => {
+      // Rerun fileArtifacts init after reconnecting, there can be some events missed.
+      // This is especially important when olap connector is changed.
       void this.invalidateAll().then(() =>
         this._runtimeClient
           ? fileArtifacts.init(this._runtimeClient, queryClient)

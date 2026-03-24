@@ -24,7 +24,7 @@
   const runtimeClient = useRuntimeClient();
 
   let openAddDataDialog = false;
-  let selectedAddDataSchema: string | undefined = undefined;
+  let selectedAddDataSchema: string | null = null;
 
   const unpackExampleProject =
     createRuntimeServiceUnpackExampleMutation(runtimeClient);
@@ -127,7 +127,10 @@
   </div>
 </div>
 
-<AddDataModal bind:open={openAddDataDialog} schema={selectedAddDataSchema} />
+<AddDataModal
+  bind:open={openAddDataDialog}
+  schema={selectedAddDataSchema ?? undefined}
+/>
 
 <style lang="postcss">
   .container {
