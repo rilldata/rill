@@ -102,7 +102,7 @@
             class:active={conversation.id === currentConversationDto?.id}
             data-testid="conversation-item"
             data-conversation-id={conversation.id}
-            on:click={handleConversationItemClick}
+            onclick={handleConversationItemClick}
           >
             <div class="conversation-title" data-testid="conversation-title">
               {conversation.title || "New conversation"}

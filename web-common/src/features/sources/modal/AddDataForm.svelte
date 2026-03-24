@@ -282,7 +282,7 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6 pb-8"
     >
       {#if isStepFlowConnector}
         <MultiStepConnectorFlow
@@ -391,7 +391,7 @@
           Already connected? <button
             type="button"
             class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-            on:click={() => formManager.handleSkip()}
+            onclick={() => formManager.handleSkip()}
           >
             Import your data
           </button>

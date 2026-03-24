@@ -83,37 +83,38 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
-    {#if workspace}
-      <Tooltip distance={8} suppress={open}>
-        <Button {label} {disabled} type="secondary" builders={[builder]} square>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      {#if workspace}
+        <Tooltip distance={8} suppress={open}>
+          <Button {...props} {label} {disabled} type="secondary" square>
+            <Export size="15px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">Export model</TooltipContent>
+        </Tooltip>
+      {:else}
+        <Button {...props} {label} {disabled} type="toolbar">
           <Export size="15px" />
+          Export
+          <CaretDownIcon
+            className="transition-transform {open && '-rotate-180'}"
+            size="10px"
+          />
         </Button>
-        <TooltipContent slot="tooltip-content">Export model</TooltipContent>
-      </Tooltip>
-    {:else}
-      <Button {label} {disabled} type="toolbar" builders={[builder]}>
-        <Export size="15px" />
-        Export
-        <CaretDownIcon
-          className="transition-transform {open && '-rotate-180'}"
-          size="10px"
-        />
-      </Button>
-    {/if}
+      {/if}
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start">
     <DropdownMenu.Item
-      on:click={() =>
-        handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
+      onclick={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
       disabled={!exportQuery}
     >
       Export as CSV
     </DropdownMenu.Item>
     {#if !workspace && $exportHeader}
       <DropdownMenu.Item
-        on:click={() =>
+        onclick={() =>
           handleExport({
             format: V1ExportFormat.EXPORT_FORMAT_CSV,
             includeHeader: true,
@@ -124,7 +125,7 @@
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      on:click={() =>
+      onclick={() =>
         handleExport({ format: V1ExportFormat.EXPORT_FORMAT_PARQUET })}
       disabled={!exportQuery}
     >
@@ -132,7 +133,7 @@
     </DropdownMenu.Item>
 
     <DropdownMenu.Item
-      on:click={() =>
+      onclick={() =>
         handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX })}
       disabled={!exportQuery}
     >
@@ -140,7 +141,7 @@
     </DropdownMenu.Item>
     {#if !workspace && $exportHeader}
       <DropdownMenu.Item
-        on:click={() =>
+        onclick={() =>
           handleExport({
             format: V1ExportFormat.EXPORT_FORMAT_XLSX,
             includeHeader: true,
@@ -152,7 +153,7 @@
     {/if}
     {#if includeScheduledReport && $reports && exploreName}
       <DropdownMenu.Item
-        on:click={() => (showScheduledReportDialog = true)}
+        onclick={() => (showScheduledReportDialog = true)}
         disabled={!scheduledReportQuery}
       >
         Create scheduled report...

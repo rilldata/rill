@@ -38,7 +38,7 @@ const (
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
 
-var ErrNoMatchingProject = fmt.Errorf("no matching project found")
+var ErrInferProjectFailed = fmt.Errorf("could not infer project")
 
 type Helper struct {
 	*printer.Printer
@@ -372,8 +372,8 @@ func (h *Helper) InferProjectName(ctx context.Context, pathToProject, hint strin
 
 	projects, err := h.InferProjects(ctx, h.Org, pathToProject)
 	if err != nil {
-		if errors.Is(err, ErrNoMatchingProject) {
-			return "", errorfWithHint("could not infer project")
+		if errors.Is(err, ErrInferProjectFailed) {
+			return "", errorfWithHint("%w", err)
 		}
 		return "", errorfWithHint("failed to infer project: %w", err)
 	}
@@ -437,7 +437,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 		return nil, err
 	}
 	if len(resp.Projects) == 0 {
-		return nil, ErrNoMatchingProject
+		return nil, ErrInferProjectFailed
 	}
 
 	if org == "" {
@@ -451,7 +451,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 		}
 	}
 	if len(orgFiltered) == 0 {
-		return nil, ErrNoMatchingProject
+		return nil, ErrInferProjectFailed
 	}
 	// cleanup rill managed remote
 	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {

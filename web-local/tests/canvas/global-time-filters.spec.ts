@@ -32,7 +32,7 @@ test.describe("canvas global time filters", () => {
       name: "Select reference time and grain",
     });
     await timeGrainSelector.click();
-    await page.getByRole("menuitem", { name: "day" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "day" }).click();
 
     await page.getByLabel("Toggle time comparison").click();
 
@@ -43,7 +43,7 @@ test.describe("canvas global time filters", () => {
     });
 
     await timeGrainSelector.click();
-    await page.getByRole("menuitem", { name: "hour" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "hour" }).click();
 
     await expect(page.getByText("Total records 1,122")).toBeVisible();
 

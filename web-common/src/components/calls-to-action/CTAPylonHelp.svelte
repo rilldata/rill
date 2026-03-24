@@ -6,7 +6,7 @@
 
 <p class="flex flex-row text-sm text-fg-secondary text-center">
   <span>Need help?</span>
-  <button on:click={onClick} class="text-primary-600 text-sm ml-0.5">
+  <button onclick={onClick} class="text-primary-600 text-sm ml-0.5">
     Contact us
   </button>
 </p>

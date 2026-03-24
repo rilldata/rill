@@ -17,7 +17,7 @@
     <span class="text-fg-secondary pointer-events-none">-</span>
   {/if}
 {:else}
-  <span class="loading-cell" />
+  <span class="loading-cell"></span>
 {/if}
 
 <style lang="postcss">
