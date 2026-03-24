@@ -1123,7 +1123,7 @@
   }
 
   .search-combo {
-    @apply relative flex-1 min-w-0 min-h-9;
+    @apply relative flex-1 min-w-0 flex items-center;
   }
 
   .search-combo-dropdown {

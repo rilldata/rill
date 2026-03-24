@@ -9,6 +9,7 @@
 </script>
 
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { Button } from "@rilldata/web-common/components/button";
@@ -37,7 +38,8 @@
 
   const graphNav = getGraphNavigation();
 
-  function portal(node: HTMLElement) {
+  // Portal the trigger to body so it escapes SvelteFlow transforms
+  function portalToBody(node: HTMLElement) {
     document.body.appendChild(node);
     return {
       destroy() {
@@ -56,6 +58,7 @@
 
   function close() {
     isOpen = false;
+    if (closeActive === close) closeActive = null;
   }
 
   export function open(e?: MouseEvent) {
@@ -68,20 +71,8 @@
     isOpen = true;
   }
 
-  // Keep module-level tracker in sync when dropdown closes
-  $: if (!isOpen && closeActive === close) closeActive = null;
-
-  // Close on outside click
-  function handleWindowClick() {
-    if (isOpen) close();
-  }
-
-  // Close on Escape
-  function handleWindowKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && isOpen) {
-      e.stopPropagation();
-      close();
-    }
+  function handleOpenChange(next: boolean) {
+    if (!next) close();
   }
 
   onDestroy(() => {
@@ -213,53 +204,68 @@
   }
 </script>
 
-<svelte:window onclick={handleWindowClick} onkeydown={handleWindowKeydown} />
-
-{#if isOpen}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    use:portal
-    class="context-menu"
-    style="left: {menuX}px; top: {menuY}px;"
-    onclick={(e) => e.stopPropagation()}
-    onmousedown={(e) => e.stopPropagation()}
-  >
-    <button class="menu-item" onclick={handleViewSpec}>
-      <Info size="12px" />
-      <span>Describe</span>
-    </button>
-    <button class="menu-item" onclick={viewNodeTree}>
-      <GitBranch size="12px" />
-      <span>View Lineage</span>
-    </button>
-    {#if canOpenFile}
-      <button class="menu-item" onclick={openFile}>
-        <ExternalLink size="12px" />
-        <span>Go to Resource</span>
-      </button>
-    {/if}
-    {#if reconcileError}
-      <button class="menu-item" onclick={handleCopyError}>
-        <Copy size="12px" />
-        <span>Copy Error Message</span>
-      </button>
-    {/if}
-    {#if canRefresh}
-      <div class="menu-separator"></div>
-      <button class="menu-item" onclick={handleFullRefreshClick}>
-        <RefreshCw size="12px" />
-        <span>Full Refresh</span>
-      </button>
-      {#if isIncremental}
-        <button class="menu-item" onclick={handleIncrementalRefresh}>
-          <RefreshCw size="12px" />
-          <span>Incremental Refresh</span>
-        </button>
+<!--
+  The trigger+anchor must be portaled to <body> so it escapes SvelteFlow's
+  CSS transform. The DropdownMenu.Content already portals via bits-ui,
+  but it positions relative to the trigger's bounding rect — if the trigger
+  is inside a transformed container, getBoundingClientRect returns wrong coords.
+-->
+<div
+  use:portalToBody
+  class="trigger-anchor"
+  style="left: {menuX}px; top: {menuY}px;"
+>
+  <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
+    <DropdownMenu.Trigger class="trigger-btn" />
+    <DropdownMenu.Content side="bottom" align="start" sideOffset={0}>
+      <DropdownMenu.Item onclick={handleViewSpec}>
+        <div class="flex items-center gap-x-2">
+          <Info size="12px" />
+          <span>Describe</span>
+        </div>
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onclick={viewNodeTree}>
+        <div class="flex items-center gap-x-2">
+          <GitBranch size="12px" />
+          <span>View Lineage</span>
+        </div>
+      </DropdownMenu.Item>
+      {#if canOpenFile}
+        <DropdownMenu.Item onclick={openFile}>
+          <div class="flex items-center gap-x-2">
+            <ExternalLink size="12px" />
+            <span>Go to Resource</span>
+          </div>
+        </DropdownMenu.Item>
       {/if}
-    {/if}
-  </div>
-{/if}
+      {#if reconcileError}
+        <DropdownMenu.Item onclick={handleCopyError}>
+          <div class="flex items-center gap-x-2">
+            <Copy size="12px" />
+            <span>Copy Error Message</span>
+          </div>
+        </DropdownMenu.Item>
+      {/if}
+      {#if canRefresh}
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item onclick={handleFullRefreshClick}>
+          <div class="flex items-center gap-x-2">
+            <RefreshCw size="12px" />
+            <span>Full Refresh</span>
+          </div>
+        </DropdownMenu.Item>
+        {#if isIncremental}
+          <DropdownMenu.Item onclick={handleIncrementalRefresh}>
+            <div class="flex items-center gap-x-2">
+              <RefreshCw size="12px" />
+              <span>Incremental Refresh</span>
+            </div>
+          </DropdownMenu.Item>
+        {/if}
+      {/if}
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+</div>
 
 <AlertDialog.Root bind:open={fullRefreshConfirmOpen}>
   <AlertDialog.Content>
@@ -306,22 +312,23 @@
 </Dialog.Root>
 
 <style lang="postcss">
-  .context-menu {
-    @apply fixed z-50 min-w-[160px] rounded-md border bg-surface-base shadow-lg py-1;
+  .trigger-anchor {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+    z-index: 50;
   }
-
-  .menu-item {
-    @apply flex items-center gap-x-2 w-full px-3 py-1.5 text-xs text-left;
+  .trigger-anchor :global(.trigger-btn) {
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    pointer-events: none;
+    opacity: 0;
   }
-
-  .menu-item:hover {
-    @apply bg-surface-hover;
-  }
-
-  .menu-separator {
-    @apply border-t my-1;
-  }
-
   .spec-container {
     @apply overflow-auto flex-1 min-h-0;
   }

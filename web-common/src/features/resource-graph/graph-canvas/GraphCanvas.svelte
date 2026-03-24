@@ -188,18 +188,20 @@
     );
   }
 
-  // Close inspect panel and dropdown on scroll/zoom
-  function handleMoveStart() {
+  // Close inspect panel and dropdown on any interaction (scroll/zoom/pan)
+  function dismissPopups() {
     closeInspect();
     closeActiveDropdown();
   }
 
-  // Close on middle-click drag (pan)
-  function handleMouseDown(e: MouseEvent) {
-    if (e.button === 1) {
-      closeInspect();
-      closeActiveDropdown();
-    }
+  // Use action to attach capture-phase wheel listener (SvelteFlow stops propagation)
+  function captureInteractions(node: HTMLElement) {
+    node.addEventListener("wheel", dismissPopups, { capture: true });
+    return {
+      destroy() {
+        node.removeEventListener("wheel", dismissPopups, { capture: true });
+      },
+    };
   }
 
   // Reactively compute highlighted edges tracing strictly upstream and downstream
@@ -316,15 +318,13 @@
 
 <section class="graph-instance">
   {#if hasNodes}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="graph-container"
       class:h-full={fillParent}
       class:no-border={fillParent}
       bind:this={containerEl}
       style:height={containerInlineHeight}
-      onwheel={handleMoveStart}
-      onmousedown={handleMouseDown}
+      use:captureInteractions
     >
       {#if titleLabel != null}
         <div class="graph-watermark">
