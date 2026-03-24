@@ -7,8 +7,24 @@
 <h3 align="center">Agent-first, human-friendly business intelligence</h3>
 
 <p align="center">
-  <a href="https://github.com/rilldata/rill/releases"><img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="License"></a>
+    <a href="LICENSE.md" target="_blank">
+        <img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="GitHub license">
+    </a>
+    <a href="https://github.com/rilldata/rill/releases" target="_blank">
+        <img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="GitHub tag (latest SemVer)">
+    </a>
+    <a href="https://github.com/rilldata/rill/commits" target="_blank">
+        <img src="https://img.shields.io/github/commit-activity/y/rilldata/rill.svg" alt="GitHub commit activity">
+    </a>
+    <a href="https://github.com/rilldata/rill/graphs/contributors" target="_blank">
+        <img src="https://img.shields.io/github/contributors-anon/rilldata/rill.svg" alt="GitHub contributors">
+    </a>
+    <a href="https://github.com/rilldata/rill/releases" target="_blank">
+        <img src="https://img.shields.io/github/downloads/rilldata/rill/total.svg" alt="GitHub downloads">
+    </a>
+    <a href="https://github.com/rilldata/rill/actions/workflows/rill-cloud.yml" target="_blank">
+        <img src="https://github.com/rilldata/rill/actions/workflows/rill-cloud.yml/badge.svg" alt="CI/CD">
+    </a>
 </p>
 
 <p align="center">
@@ -134,6 +150,11 @@ rill deploy                      # push to Rill Cloud
 ```
 
 Your metrics view is immediately queryable on Rill Cloud — add YAML files to configure dashboards, alerts, and custom APIs.
+
+## Learn More
+
+[Getting Started with Rill Developer](https://www.youtube.com/watch?v=oQSok8Dy-D0) • [Exploring Data with Rill](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1)
+• [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q) • [Agentic Analytics with Claude Code and Rill](https://www.youtube.com/watch?v=k6Lbu2cVH4g&t=2s)
 
 ## Examples
 
