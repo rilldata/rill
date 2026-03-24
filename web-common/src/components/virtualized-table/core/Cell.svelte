@@ -6,6 +6,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
@@ -15,7 +16,6 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { getContext } from "svelte";
-  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -23,6 +23,9 @@
   export let column;
   export let value;
   export let formattedValue: string | null = null;
+  export let tooltipFormatter:
+    | ((value: number | string) => string)
+    | undefined = undefined;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -102,9 +105,11 @@
       : "ui-measure-bar-included";
 
   $: tooltipValue =
-    value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
-      ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
-      : value;
+    tooltipFormatter && value != null
+      ? tooltipFormatter(value)
+      : value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
+        ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
+        : value;
 
   $: formattedDataTypeStyle = excluded
     ? "font-normal text-fg-muted"
