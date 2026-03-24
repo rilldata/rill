@@ -18,6 +18,9 @@
   } from "../shared/traversal/graph-traversal";
   import ResourceNode from "./ResourceNode.svelte";
   import GraphLegend from "./GraphLegend.svelte";
+  import ResourceInspectPanel from "./ResourceInspectPanel.svelte";
+  import { closeInspect } from "./inspect-store";
+  import { closeActiveDropdown } from "./ResourceNodeActions.svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
 
@@ -98,15 +101,13 @@
   };
 
   const edgeOptions = {
-    type: "smoothstep",
+    type: "default",
     style: EDGE_CONFIG.DEFAULT_STYLE,
-    // Small offset so edges clear nodes slightly
-    pathOptions: { offset: 3, borderRadius: 4 },
   } as const;
 
   /**
-   * Calculate dynamic edge offset based on node positions to create smoother, straighter routes.
-   * Uses smaller offsets for nearly-vertical edges and larger offsets for edges spanning more distance.
+   * Calculate dynamic edge offset based on node positions (LR layout).
+   * Uses smaller offsets for nearly-horizontal edges and larger offsets for edges spanning more vertical distance.
    */
   function calculateEdgeOffset(
     sourceNode: Node<ResourceNodeData> | undefined,
@@ -114,17 +115,11 @@
   ): number {
     if (!sourceNode || !targetNode) return EDGE_CONFIG.DEFAULT_OFFSET;
 
-    // Calculate center x and handle y positions
-    const sx = (sourceNode.position?.x ?? 0) + (sourceNode.width ?? 0) / 2;
-    const sy = (sourceNode.position?.y ?? 0) + (sourceNode.height ?? 0); // bottom handle
-    const tx = (targetNode.position?.x ?? 0) + (targetNode.width ?? 0) / 2;
-    const ty = targetNode.position?.y ?? 0; // top handle
-
-    const dx = Math.abs(tx - sx);
+    const sy = (sourceNode.position?.y ?? 0) + (sourceNode.height ?? 0) / 2;
+    const ty = (targetNode.position?.y ?? 0) + (targetNode.height ?? 0) / 2;
     const dy = Math.abs(ty - sy);
 
-    // For nearly-vertical edges, use minimal offset; otherwise scale with distance
-    if (dx < EDGE_CONFIG.VERTICAL_THRESHOLD_PX) return EDGE_CONFIG.MIN_OFFSET;
+    if (dy < EDGE_CONFIG.VERTICAL_THRESHOLD_PX) return EDGE_CONFIG.MIN_OFFSET;
     return Math.max(
       EDGE_CONFIG.MIN_OFFSET,
       Math.min(
@@ -182,14 +177,29 @@
     });
   }
 
-  // Handle pane click (background) to deselect all nodes
+  // Handle pane click (background) to deselect all nodes and close inspect
   function handlePaneClick() {
+    closeInspect();
     nodesStore.update((nds) =>
       nds.map((n) => ({
         ...n,
         selected: false,
       })),
     );
+  }
+
+  // Close inspect panel and dropdown on scroll/zoom
+  function handleMoveStart() {
+    closeInspect();
+    closeActiveDropdown();
+  }
+
+  // Close on middle-click drag (pan)
+  function handleMouseDown(e: MouseEvent) {
+    if (e.button === 1) {
+      closeInspect();
+      closeActiveDropdown();
+    }
   }
 
   // Reactively compute highlighted edges tracing strictly upstream and downstream
@@ -306,12 +316,15 @@
 
 <section class="graph-instance">
   {#if hasNodes}
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
       class="graph-container"
       class:h-full={fillParent}
       class:no-border={fillParent}
       bind:this={containerEl}
       style:height={containerInlineHeight}
+      on:wheel|capture={handleMoveStart}
+      on:mousedown|capture={handleMouseDown}
     >
       {#if titleLabel != null}
         <div class="graph-watermark">
@@ -369,6 +382,7 @@
         </SvelteFlow>
       {/key}
       <GraphLegend />
+      <ResourceInspectPanel />
     </div>
   {:else if graphError}
     <div class="state error">

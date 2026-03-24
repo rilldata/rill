@@ -46,8 +46,8 @@ function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   return name.kind as ResourceKind;
 }
 
-// Icon-only badge (~20px) + actions trigger (~28px) + node padding (2*10px) + gaps (~12px)
-const CONTENT_PADDING = 70;
+// Icon-only badge (~20px) + node padding (2*8px) + gap (~6px)
+const CONTENT_PADDING = 42;
 
 function estimateNodeWidth(label?: string | null) {
   const text = label?.trim() ?? "";
@@ -449,8 +449,8 @@ export function buildResourceGraph(
       },
       type: "resource-node",
       position: { x: 0, y: 0 },
-      targetPosition: Position.Top,
-      sourcePosition: Position.Bottom,
+      targetPosition: Position.Left,
+      sourcePosition: Position.Right,
     };
     nodeDefinitions.set(id, nodeDef);
   }
@@ -512,7 +512,7 @@ export function buildResourceGraph(
         source: sourceId,
         target: dependentId,
         animated: false,
-        type: "smoothstep",
+        type: "default",
         style: DEFAULT_EDGE_STYLE,
       } as Edge;
       edges.push(edge);
@@ -536,8 +536,8 @@ export function buildResourceGraph(
       ? undefined
       : graphCache.getPosition(posKey);
     node.position = cached ?? computed;
-    node.targetPosition = Position.Top;
-    node.sourcePosition = Position.Bottom;
+    node.targetPosition = Position.Left;
+    node.sourcePosition = Position.Right;
     graphCache.setPosition(posKey, node.position);
   }
 
@@ -972,6 +972,8 @@ export function partitionResourcesByMetrics(
   const assigned = new Set<string>();
 
   for (const m of metricSeeds) {
+    // Skip metrics views already covered by a previous group's connected component
+    if (assigned.has(m.id)) continue;
     const ids = traverseConnected(m.id);
     if (!ids.size) continue;
     const resourcesInGroup = Array.from(ids)

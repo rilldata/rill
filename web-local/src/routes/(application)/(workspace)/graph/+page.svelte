@@ -51,7 +51,7 @@
     urlParams.resources.length > 0
       ? tokenForSeedString(urlParams.resources[0])
       : null;
-  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "dashboards";
+  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "metrics";
   $: seeds = urlParams.kind
     ? [urlParams.kind]
     : urlParams.resources.length > 0

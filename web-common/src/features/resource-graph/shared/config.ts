@@ -15,8 +15,8 @@ export const NODE_CONFIG = {
   MIN_WIDTH: 200,
   /** Maximum node width in pixels before text truncates. */
   MAX_WIDTH: 320,
-  /** Default height for node: title row + 2 content rows. */
-  DEFAULT_HEIGHT: 76,
+  /** Default height for node: single title row only. */
+  DEFAULT_HEIGHT: 36,
   /** Average pixel width per character in node label font. */
   AVERAGE_CHAR_WIDTH: 8.5,
   /** Total horizontal padding within a node (icons, margins, etc.). */
@@ -30,14 +30,14 @@ export const NODE_CONFIG = {
  * Tested with real-world Rill projects containing complex dependency chains.
  */
 export const DAGRE_CONFIG = {
-  /** Horizontal spacing between sibling nodes at the same rank. */
-  NODESEP: 27,
-  /** Vertical spacing between graph layers/ranks. */
-  RANKSEP: 96,
+  /** Spacing between sibling nodes at the same rank (vertical in LR). */
+  NODESEP: 20,
+  /** Spacing between graph layers/ranks (horizontal in LR). */
+  RANKSEP: 80,
   /** Minimum spacing between edge paths. */
   EDGESEP: 4,
   /** Graph direction: TB (top-to-bottom) or LR (left-to-right). */
-  RANKDIR: "TB" as const,
+  RANKDIR: "LR" as const,
   /** Ranker algorithm: "tight-tree" produces more compact layouts. */
   RANKER: "tight-tree" as const,
   /** Acyclicer algorithm: "greedy" is faster than default. */

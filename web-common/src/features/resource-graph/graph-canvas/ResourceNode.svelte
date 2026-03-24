@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Handle, Position, useSvelteFlow } from "@xyflow/svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import type { ResourceNodeData } from "../shared/types";
@@ -9,16 +8,7 @@
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceNodeActions from "./ResourceNodeActions.svelte";
-
-  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import { AlertTriangle, Zap, Layers, Clock } from "lucide-svelte";
-  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
-  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
-  import type { ComponentType, SvelteComponent } from "svelte";
-  import { goto } from "$app/navigation";
-  import { getGraphNavigation } from "../shared/graph-navigation-context";
-
-  const graphNav = getGraphNavigation();
+  import { openInspect } from "./inspect-store";
 
   export let id: string;
   export let type: string;
@@ -52,108 +42,58 @@
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
-    actionsRef?.open();
+    actionsRef?.open(e);
   }
 
   const DEFAULT_COLOR = "#6B7280";
 
   $: kind = data?.kind;
-  $: metadata = data?.metadata;
   $: color =
     kind && resourceShorthandMapping[kind]
       ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
-  $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
   $: reconcileError = data?.resource?.meta?.reconcileError ?? "";
-  // Test failures propagate as "tests failed:..." on the model itself and
-  // "Error in dependency <name>: tests failed:..." on downstream resources.
-  // Treat both as warnings (shown via check indicator), not node errors.
   $: isTestOnlyError =
     !!reconcileError && reconcileError.includes(TEST_FAILURE_MARKER);
   $: hasError = !!reconcileError && !isTestOnlyError;
   $: isPending =
-    reconcileStatus &&
-    reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+    data?.resource?.meta?.reconcileStatus &&
+    data.resource.meta.reconcileStatus !==
+      V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: routeHighlighted = data?.routeHighlighted === true;
-
-  $: isSourceOrModel =
-    kind === ResourceKind.Source || kind === ResourceKind.Model;
-  $: isMetricsView = kind === ResourceKind.MetricsView;
-  $: isExplore = kind === ResourceKind.Explore;
-  $: isCanvas = kind === ResourceKind.Canvas;
-  $: isConnector = kind === ResourceKind.Connector;
-
-  $: measuresCount = metadata?.measures?.length ?? 0;
-  $: dimensionsCount = metadata?.dimensions?.length ?? 0;
-  $: testCount = metadata?.testCount ?? 0;
-  $: testHasErrors = (metadata?.testErrors?.length ?? 0) > 0;
-  $: componentCount = metadata?.componentCount ?? 0;
-  $: hasSecurityRules = metadata?.hasSecurityRules === true;
-  $: isIncremental = metadata?.incremental === true;
-  $: isPartitioned = metadata?.partitioned === true;
-  $: hasSchedule = metadata?.hasSchedule === true;
-  $: connector = metadata?.connector ?? null;
-  $: connectorIcon = (
-    connector &&
-    connectorIconMapping[connector as keyof typeof connectorIconMapping]
-      ? connectorIconMapping[connector as keyof typeof connectorIconMapping]
-      : null
-  ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
-
-  $: rawFilePath = data?.resource?.meta?.filePaths?.[0] ?? null;
-  $: checkTooltip =
-    testCount === 0
-      ? "No checks"
-      : testHasErrors
-        ? `${testCount} check${testCount > 1 ? "s" : ""} failed`
-        : `${testCount} check${testCount > 1 ? "s" : ""} passed`;
-
-  // Connector node metadata
-  $: connectorDriver = metadata?.connectorDriver ?? null;
-  $: driverIcon = (
-    connectorDriver &&
-    connectorIconMapping[connectorDriver as keyof typeof connectorIconMapping]
-      ? connectorIconMapping[
-          connectorDriver as keyof typeof connectorIconMapping
-        ]
-      : null
-  ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
   const { fitView } = useSvelteFlow();
 
-  function navigateToFile() {
-    if (!rawFilePath) return;
-    if (graphNav?.openFile) {
-      graphNav.openFile(rawFilePath);
-      return;
-    }
-    try {
-      const prefs = JSON.parse(localStorage.getItem(rawFilePath) || "{}");
-      localStorage.setItem(
-        rawFilePath,
-        JSON.stringify({ ...prefs, view: "code" }),
-      );
-    } catch {
-      // ignore localStorage errors
-    }
-    goto(`/files${rawFilePath}`);
+  let nodeEl: HTMLDivElement;
+
+  function getNodeRect(): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
+    if (!nodeEl) return { x: 0, y: 0, width: 0, height: 0 };
+    const nodeRect = nodeEl.getBoundingClientRect();
+    // Position relative to the graph container (closest .graph-container)
+    const container = nodeEl.closest(".graph-container");
+    const containerRect = container?.getBoundingClientRect() ?? nodeRect;
+    return {
+      x: nodeRect.left - containerRect.left,
+      y: nodeRect.top - containerRect.top,
+      width: nodeRect.width,
+      height: nodeRect.height,
+    };
   }
 
-  $: canOpenFile = !!rawFilePath && (!!graphNav?.openFile || !graphNav);
-
   function handleClick(e: MouseEvent) {
-    if (!(e.metaKey || e.ctrlKey)) return;
-    if (!canOpenFile) return;
-    e.preventDefault();
-    e.stopPropagation();
-    navigateToFile();
+    // Let SvelteFlow handle selection; open inspect on plain click
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+    openInspect(data, getNodeRect());
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      if (!canOpenFile) return;
-      e.preventDefault();
-      navigateToFile();
+    if (e.key === "Enter") {
+      openInspect(data, getNodeRect());
     }
   }
 
@@ -163,6 +103,7 @@
 </script>
 
 <div
+  bind:this={nodeEl}
   class="node"
   class:selected
   class:route-highlighted={routeHighlighted}
@@ -184,13 +125,13 @@
   <Handle
     id="target"
     type="target"
-    position={Position.Top}
+    position={Position.Left}
     isConnectable={isConnectable ?? true}
   />
   <Handle
     id="source"
     type="source"
-    position={Position.Bottom}
+    position={Position.Right}
     isConnectable={isConnectable ?? true}
   />
 
@@ -200,137 +141,13 @@
     distance={8}
     activeDelay={150}
   >
-    <!-- Title row: kind badge + name + actions -->
     <div class="title-row">
       {#if kind}<ResourceTypeBadge {kind} showLabel={false} />{/if}
       <p class="title" title={data?.label}>{data?.label}</p>
-      {#if showActions}
-        <div class="actions-trigger">
-          <ResourceNodeActions bind:this={actionsRef} {data} />
-        </div>
-      {/if}
     </div>
-
-    <!-- Content row -->
-    <div class="content">
-      {#if isSourceOrModel}
-        {@const allIndicators = [
-          metadata?.isMaterialized
-            ? { type: "table" }
-            : kind === ResourceKind.Model
-              ? { type: "view" }
-              : null,
-          isIncremental ? { type: "incremental" } : null,
-          isPartitioned ? { type: "partitioned" } : null,
-          hasSchedule ? { type: "schedule" } : null,
-          testCount > 0 ? { type: "checks" } : null,
-        ].filter(Boolean)}
-        {@const rightIndicators = allIndicators.slice(0, 3)}
-        {@const hiddenCount = allIndicators.length - rightIndicators.length}
-        <div class="meta-row meta-row-spread">
-          <span class="badge-group">
-            {#if connectorIcon && kind === ResourceKind.Source}
-              <span title={connector}>
-                <svelte:component this={connectorIcon} size="10px" />
-              </span>
-            {/if}
-          </span>
-          <span class="badge-group">
-            {#each rightIndicators as ind}
-              {#if ind?.type === "table"}
-                <span class="badge" title="Table">Table</span>
-              {:else if ind?.type === "view"}
-                <span class="badge" title="View">View</span>
-              {:else if ind?.type === "incremental"}
-                <span class="icon-indicator" title="Incremental">
-                  <Zap size="10px" />
-                </span>
-              {:else if ind?.type === "partitioned"}
-                <span class="icon-indicator" title="Partitioned">
-                  <Layers size="10px" />
-                </span>
-              {:else if ind?.type === "schedule"}
-                <span class="icon-indicator" title="Scheduled">
-                  <Clock size="10px" />
-                </span>
-              {:else if ind?.type === "checks"}
-                <span
-                  class="check-indicator"
-                  class:checks-pass={!testHasErrors}
-                  class:checks-fail={testHasErrors}
-                  title={checkTooltip}
-                >
-                  {#if testHasErrors}
-                    <AlertTriangle size="10px" />
-                  {:else}
-                    <CheckCircle size="10px" color="currentColor" />
-                  {/if}
-                  {testCount}
-                </span>
-              {/if}
-            {/each}
-            {#if hiddenCount > 0}
-              <span class="icon-indicator" title="{hiddenCount} more"> + </span>
-            {/if}
-          </span>
-        </div>
-      {:else if isMetricsView}
-        <div class="meta-row meta-row-spread">
-          <span class="meta-detail">
-            {measuresCount} measures, {dimensionsCount} dimensions
-          </span>
-          {#if hasSecurityRules}
-            <span
-              class="lock-indicator secured"
-              title="Security policy defined"
-            >
-              <Lock size="10px" color="currentColor" />
-            </span>
-          {/if}
-        </div>
-      {:else if isExplore}
-        <div class="meta-row meta-row-spread">
-          <span class="meta-detail">
-            {metadata?.exploreMeasuresAll
-              ? "all"
-              : (metadata?.exploreMeasuresCount ?? 0)} measures,
-            {metadata?.exploreDimensionsAll
-              ? "all"
-              : (metadata?.exploreDimensionsCount ?? 0)} dimensions
-          </span>
-          {#if hasSecurityRules}
-            <span
-              class="lock-indicator secured"
-              title="Security policy defined"
-            >
-              <Lock size="10px" color="currentColor" />
-            </span>
-          {/if}
-        </div>
-      {:else if isCanvas}
-        <div class="meta-row meta-row-spread">
-          <span class="meta-detail">
-            {componentCount} component{componentCount !== 1 ? "s" : ""}
-          </span>
-          {#if hasSecurityRules}
-            <span
-              class="lock-indicator secured"
-              title="Security policy defined"
-            >
-              <Lock size="10px" color="currentColor" />
-            </span>
-          {/if}
-        </div>
-      {:else if isConnector}
-        {#if driverIcon}
-          <div class="meta-row">
-            <span title={connectorDriver}>
-              <svelte:component this={driverIcon} size="12px" />
-            </span>
-          </div>
-        {/if}
-      {/if}
-    </div>
+    {#if showActions}
+      <ResourceNodeActions bind:this={actionsRef} {data} />
+    {/if}
 
     <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
       <div class="error-tooltip-content">
@@ -344,7 +161,7 @@
 
 <style lang="postcss">
   .node {
-    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle px-2.5 py-2 cursor-pointer shadow overflow-hidden;
+    @apply relative border flex items-center rounded-lg bg-surface-subtle px-2 py-1.5 cursor-pointer shadow overflow-hidden;
     border-color: var(--border);
     transition:
       box-shadow 120ms ease,
@@ -385,7 +202,6 @@
     opacity: 0.5;
   }
 
-  /* Title row */
   .title-row {
     @apply flex items-center gap-x-1.5 min-w-0;
   }
@@ -394,59 +210,6 @@
     @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
   }
 
-  .actions-trigger {
-    @apply flex-shrink-0 ml-auto;
-  }
-
-  /* Content section below title */
-  .content {
-    @apply flex flex-col gap-y-0.5;
-  }
-
-  .meta-row {
-    @apply flex items-center gap-x-1.5 text-[11px] text-fg-secondary leading-tight;
-  }
-
-  .meta-row-spread {
-    @apply justify-between;
-  }
-
-  .meta-detail {
-    @apply text-fg-muted truncate;
-  }
-
-  .badge-group {
-    @apply inline-flex items-center gap-x-1.5;
-  }
-
-  .badge {
-    @apply inline-flex items-center px-1 py-px rounded text-[10px] font-medium bg-surface-subtle text-fg-secondary;
-    border: 1px solid var(--border);
-  }
-
-  .icon-indicator {
-    @apply inline-flex items-center text-fg-muted;
-  }
-
-  /* Check indicator with icon */
-  .check-indicator {
-    @apply inline-flex items-center gap-x-0.5 text-[10px] font-medium;
-  }
-
-  .check-indicator.checks-pass {
-    @apply text-green-600;
-  }
-
-  .check-indicator.checks-fail {
-    @apply text-amber-600;
-  }
-
-  /* Lock indicator (only rendered when security rules are present) */
-  .lock-indicator.secured {
-    @apply flex items-center text-amber-600;
-  }
-
-  /* Error tooltip styling */
   .error-tooltip-content {
     @apply flex flex-col gap-y-1;
   }
@@ -459,7 +222,7 @@
     @apply max-h-[200px] overflow-auto whitespace-pre-wrap text-xs;
   }
 
-  /* Hide handle dots — edges connect as plain lines with no anchors */
+  /* Hide handle dots */
   :global(.svelte-flow__node[data-id]) :global(.svelte-flow__handle) {
     width: 1px;
     height: 1px;

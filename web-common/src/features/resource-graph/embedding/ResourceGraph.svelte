@@ -50,6 +50,7 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
+  import { closeInspect } from "../graph-canvas/inspect-store";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -187,25 +188,47 @@
     return null;
   })();
 
-  // Detect sprawl mode: seeds contain only the "dashboards" kind token
+  // Detect sprawl mode: seeds contain only a single kind token ("dashboards" or "metrics")
   // and no specific resource is selected via controlled prop
-  $: isSprawlMode = (() => {
-    if (selectedGroupId) return false; // specific resource selected
+  $: sprawlSeed = (() => {
+    if (selectedGroupId) return null;
     const rawSeeds = seeds ?? [];
-    return rawSeeds.length === 1 && rawSeeds[0]?.toLowerCase() === "dashboards";
+    if (rawSeeds.length !== 1) return null;
+    const s = rawSeeds[0]?.toLowerCase();
+    if (s === "dashboards" || s === "metrics") return s;
+    return null;
   })();
+  $: isSprawlMode = !!sprawlSeed;
 
-  // Dashboard trees for sprawl mode (partitioned by dashboard roots)
-  $: dashboardTreeGroups = isSprawlMode
-    ? partitionResourcesByDashboardTrees(normalizedResources)
-    : [];
+  // Trees for sprawl mode
+  $: sprawlTreeGroups = (() => {
+    if (!isSprawlMode) return [];
+    let groups: ResourceGraphGrouping[];
+    if (sprawlSeed === "dashboards") {
+      groups = partitionResourcesByDashboardTrees(normalizedResources);
+    } else {
+      groups = partitionResourcesByMetrics(normalizedResources);
+    }
+    // In sprawl mode, drop connector groups and strip connector nodes
+    // from remaining groups so connectors don't clutter the sprawl view.
+    const connectorKind = ResourceKind.Connector;
+    return groups
+      .filter((g) => !g.id.includes("Connector"))
+      .map((g) => ({
+        ...g,
+        resources: g.resources.filter(
+          (r) => (r.meta?.name?.kind as ResourceKind) !== connectorKind,
+        ),
+      }))
+      .filter((g) => g.resources.length > 0);
+  })();
 
   // If seeds were provided (e.g., kind filter like "models"), use seed-based partitioning.
   // When the kind has no resources, normalizedSeeds will be empty — return [] instead of
   // falling back to partitionResourcesByMetrics, which would show unrelated metric views.
   $: hasExplicitSeeds = seeds && seeds.length > 0;
   $: resourceGroups = isSprawlMode
-    ? dashboardTreeGroups
+    ? sprawlTreeGroups
     : normalizedSeeds && normalizedSeeds.length
       ? partitionResourcesBySeeds(
           normalizedResources,
@@ -623,6 +646,10 @@
     ? $page.url.searchParams.get("expanded") || null
     : null;
 
+  // Close inspect panel when URL changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  $: $page.url, closeInspect();
+
   // When the page URL actually changes (e.g., navigation), clear any manual override.
   $: if (syncExpandedParam) {
     const currentUrlString = $page.url.toString();
@@ -803,7 +830,7 @@
               >
                 <span class="flex-1 truncate text-xs">All Resources</span>
               </button>
-              {#each filteredResourceSections as section (section.kind)}
+              {#each allResourceSections as section (section.kind)}
                 <div class="combo-separator"></div>
                 <div class="section-header">
                   <ResourceTypeBadge kind={section.kind} />
@@ -835,7 +862,7 @@
                   </button>
                 {/each}
               {/each}
-              {#if filteredResourceSections.length === 0}
+              {#if allResourceSections.length === 0}
                 <div class="px-3 py-2 text-xs text-fg-muted">
                   No resources match.
                 </div>
@@ -1087,7 +1114,7 @@
   }
 
   .graph-toolbar-bar {
-    @apply flex flex-row items-center min-h-[3rem] flex-none gap-x-4;
+    @apply flex flex-row items-center min-h-[3rem] flex-none gap-x-4 px-4;
     transition: padding-left 300ms ease-in-out;
   }
 

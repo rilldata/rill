@@ -2,15 +2,16 @@
   // Track the currently open dropdown so right-clicking another node
   // closes the previous one instead of stacking.
   let closeActive: (() => void) | null = null;
+
+  export function closeActiveDropdown() {
+    closeActive?.();
+  }
 </script>
 
 <script lang="ts">
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { Button } from "@rilldata/web-common/components/button";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import {
     ResourceKind,
     displayResourceKind,
@@ -32,27 +33,60 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { tokenForKind } from "../navigation/seed-parser";
   import { getGraphNavigation } from "../shared/graph-navigation-context";
+  import { onDestroy } from "svelte";
 
   const graphNav = getGraphNavigation();
+
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
+  }
 
   export let data: ResourceNodeData;
 
   let isOpen = false;
   let fullRefreshConfirmOpen = false;
   let specDialogOpen = false;
+  let menuX = 0;
+  let menuY = 0;
 
   function close() {
     isOpen = false;
   }
 
-  export function open() {
+  export function open(e?: MouseEvent) {
     if (closeActive && closeActive !== close) closeActive();
     closeActive = close;
+    if (e) {
+      menuX = e.clientX;
+      menuY = e.clientY;
+    }
     isOpen = true;
   }
 
-  // Keep module-level tracker in sync when dropdown closes via outside click
+  // Keep module-level tracker in sync when dropdown closes
   $: if (!isOpen && closeActive === close) closeActive = null;
+
+  // Close on outside click
+  function handleWindowClick() {
+    if (isOpen) close();
+  }
+
+  // Close on Escape
+  function handleWindowKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape" && isOpen) {
+      e.stopPropagation();
+      close();
+    }
+  }
+
+  onDestroy(() => {
+    if (closeActive === close) closeActive = null;
+  });
 
   const runtimeClient = useRuntimeClient();
   $: resource = data?.resource;
@@ -120,12 +154,12 @@
   }
 
   function handleIncrementalRefresh() {
-    isOpen = false;
+    close();
     refreshModel(false);
   }
 
   function handleFullRefreshClick() {
-    isOpen = false;
+    close();
     fullRefreshConfirmOpen = true;
   }
 
@@ -136,7 +170,7 @@
 
   function openFile() {
     if (!filePath) return;
-    isOpen = false;
+    close();
     if (graphNav?.openFile) {
       graphNav.openFile(filePath);
       return;
@@ -154,19 +188,19 @@
   }
 
   function handleViewSpec() {
-    isOpen = false;
+    close();
     specDialogOpen = true;
   }
 
   function handleCopyError() {
-    isOpen = false;
+    close();
     navigator.clipboard.writeText(reconcileError).catch((err) => {
       console.error("Failed to copy error:", err);
     });
   }
 
   function viewNodeTree() {
-    isOpen = false;
+    close();
     const kindToken = tokenForKind(kind);
     if (graphNav?.viewLineage) {
       graphNav.viewLineage(kindToken, resourceName);
@@ -179,82 +213,53 @@
   }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="actions-root" on:click|stopPropagation on:mousedown|stopPropagation>
-  <DropdownMenu.Root bind:open={isOpen}>
-    <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isOpen} size={28}>
-        <ThreeDot size="16px" />
-      </IconButton>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content side="right" align="start">
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        on:click={handleViewSpec}
-      >
-        <div class="flex items-center gap-x-2">
-          <Info size="12px" />
-          <span>Describe</span>
-        </div>
-      </DropdownMenu.Item>
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        on:click={viewNodeTree}
-      >
-        <div class="flex items-center gap-x-2">
-          <GitBranch size="12px" />
-          <span>View Lineage</span>
-        </div>
-      </DropdownMenu.Item>
-      {#if canOpenFile}
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={openFile}
-        >
-          <div class="flex items-center gap-x-2">
-            <ExternalLink size="12px" />
-            <span>Go to Resource</span>
-          </div>
-        </DropdownMenu.Item>
+<svelte:window on:click={handleWindowClick} on:keydown={handleWindowKeydown} />
+
+{#if isOpen}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+    use:portal
+    class="context-menu"
+    style="left: {menuX}px; top: {menuY}px;"
+    on:click|stopPropagation
+    on:mousedown|stopPropagation
+  >
+    <button class="menu-item" on:click={handleViewSpec}>
+      <Info size="12px" />
+      <span>Describe</span>
+    </button>
+    <button class="menu-item" on:click={viewNodeTree}>
+      <GitBranch size="12px" />
+      <span>View Lineage</span>
+    </button>
+    {#if canOpenFile}
+      <button class="menu-item" on:click={openFile}>
+        <ExternalLink size="12px" />
+        <span>Go to Resource</span>
+      </button>
+    {/if}
+    {#if reconcileError}
+      <button class="menu-item" on:click={handleCopyError}>
+        <Copy size="12px" />
+        <span>Copy Error Message</span>
+      </button>
+    {/if}
+    {#if canRefresh}
+      <div class="menu-separator"></div>
+      <button class="menu-item" on:click={handleFullRefreshClick}>
+        <RefreshCw size="12px" />
+        <span>Full Refresh</span>
+      </button>
+      {#if isIncremental}
+        <button class="menu-item" on:click={handleIncrementalRefresh}>
+          <RefreshCw size="12px" />
+          <span>Incremental Refresh</span>
+        </button>
       {/if}
-      {#if reconcileError}
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={handleCopyError}
-        >
-          <div class="flex items-center gap-x-2">
-            <Copy size="12px" />
-            <span>Copy Error Message</span>
-          </div>
-        </DropdownMenu.Item>
-      {/if}
-      {#if canRefresh}
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={handleFullRefreshClick}
-        >
-          <div class="flex items-center gap-x-2">
-            <RefreshCw size="12px" />
-            <span>Full Refresh</span>
-          </div>
-        </DropdownMenu.Item>
-        {#if isIncremental}
-          <DropdownMenu.Item
-            class="font-normal flex items-center"
-            on:click={handleIncrementalRefresh}
-          >
-            <div class="flex items-center gap-x-2">
-              <RefreshCw size="12px" />
-              <span>Incremental Refresh</span>
-            </div>
-          </DropdownMenu.Item>
-        {/if}
-      {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-</div>
+    {/if}
+  </div>
+{/if}
 
 <AlertDialog.Root bind:open={fullRefreshConfirmOpen}>
   <AlertDialog.Content>
@@ -301,9 +306,22 @@
 </Dialog.Root>
 
 <style lang="postcss">
-  .actions-root {
-    @apply flex items-center;
+  .context-menu {
+    @apply fixed z-50 min-w-[160px] rounded-md border bg-surface-base shadow-lg py-1;
   }
+
+  .menu-item {
+    @apply flex items-center gap-x-2 w-full px-3 py-1.5 text-xs text-left;
+  }
+
+  .menu-item:hover {
+    @apply bg-surface-hover;
+  }
+
+  .menu-separator {
+    @apply border-t my-1;
+  }
+
   .spec-container {
     @apply overflow-auto flex-1 min-h-0;
   }
