@@ -57,6 +57,7 @@
 
   let vegaSpec: VegaSpec | undefined = undefined;
   let prevVlSpec: unknown = undefined;
+  let compileGeneration = 0;
 
   $: ({ data, domainValues, hasComparison, isFetching, error } = $chartData);
 
@@ -90,9 +91,10 @@
       JSON.stringify(spec) !== JSON.stringify(prevVlSpec)
     ) {
       prevVlSpec = spec;
+      const gen = ++compileGeneration;
       void compileToBrushedVegaSpec(spec, isThemeModeDark, theme).then(
         (compiled) => {
-          vegaSpec = compiled;
+          if (gen === compileGeneration) vegaSpec = compiled;
         },
       );
     }

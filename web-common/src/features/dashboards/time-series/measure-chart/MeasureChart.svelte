@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TDDCanvasChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDCanvasChart.svelte";
+  import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -265,6 +265,9 @@
       endDt = endDt.startOf(unit);
     }
 
+    // Guard: if brush was within a single grain, snapping can invert the range
+    if (+endDt <= +startDt) return;
+
     onScrub?.({
       start: startDt,
       end: endDt,
@@ -295,7 +298,7 @@
     </div>
   {:else if tddChartType !== TDDChart.DEFAULT && data.length > 0}
     <div class="w-full" style:height="{height}px">
-      <TDDCanvasChart
+      <TDDMeasureChart
         chartType={tddChartType}
         {metricsViewName}
         {measure}

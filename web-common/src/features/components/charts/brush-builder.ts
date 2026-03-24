@@ -57,28 +57,36 @@ export async function compileToBrushedVegaSpec(
   const compiledSpec = compile(specWithConfig as VegaLiteSpec).spec;
   const originalSignals = compiledSpec.signals || [];
 
+  // Known non-temporal brush signals that should not get the clear handler
+  const knownBrushSignals = new Set(["brush_x", "brush_tuple", "brush"]);
+
   const updatedSignals = originalSignals.map((signal: Signal): Signal => {
-    switch (signal.name) {
-      case "brush_x":
-        return {
-          ...signal,
-          value: [],
-          on: [
-            { events: { signal: "brush_clear" }, update: "[0, 0]" },
-            ...(signal.on || []),
-          ],
-        };
-      case "brush_ts":
-        return {
-          ...signal,
-          on: [
-            { events: { signal: "brush_clear" }, update: "null" },
-            ...(signal.on || []),
-          ],
-        };
-      default:
-        return signal;
+    if (signal.name === "brush_x") {
+      return {
+        ...signal,
+        value: [],
+        on: [
+          { events: { signal: "brush_clear" }, update: "[0, 0]" },
+          ...(signal.on || []),
+        ],
+      };
     }
+
+    // Match any brush_<field> signal (e.g. brush_ts, brush_timestamp, brush_created_on)
+    if (
+      signal.name?.startsWith("brush_") &&
+      !knownBrushSignals.has(signal.name)
+    ) {
+      return {
+        ...signal,
+        on: [
+          { events: { signal: "brush_clear" }, update: "null" },
+          ...(signal.on || []),
+        ],
+      };
+    }
+
+    return signal;
   });
 
   // Signal that fires on pointerup/pointerdown to detect brush drag end
