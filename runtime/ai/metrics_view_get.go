@@ -32,6 +32,12 @@ func (t *GetMetricsView) Spec() *mcp.Tool {
 		Name:        GetMetricsViewName,
 		Title:       "Get Metrics View",
 		Description: "Get the specification for a given metrics view, including available measures and dimensions",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting metrics definition...",
 			"openai/toolInvocation/invoked":  "Found metrics definition",
