@@ -61,6 +61,7 @@
   export let scrubController: ScrubController;
   export let connectNulls: boolean = true;
   export let forceLineChart: boolean = false;
+  export let dynamicYAxis: boolean = false;
 
   const client = useRuntimeClient();
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
@@ -317,6 +318,7 @@
       {metricsViewName}
       {connectNulls}
       {forceLineChart}
+      {dynamicYAxis}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">

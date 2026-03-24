@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
+  import { onMount, onDestroy } from "svelte";
   import { formatInteger } from "../lib/formatters";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";
@@ -159,7 +159,7 @@
         >
         <button
           class="p-1 hover:bg-surface-hover rounded transition-colors"
-          on:click={toggleLock}
+          onclick={toggleLock}
           title={isLocked ? "Unlock value (L)" : "Lock value (L)"}
         >
           {#if isLocked}

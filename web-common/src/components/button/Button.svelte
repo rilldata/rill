@@ -71,9 +71,11 @@
   } = $props();
 
   function handleClick(event: MouseEvent) {
+    // Forward to rest onclick (e.g., bits-ui trigger handler)
     if (typeof restProps.onclick === "function") {
       (restProps.onclick as (e: MouseEvent) => void)(event);
     }
+    // Call component's own handler
     if (!disabled && onClick) {
       onClick(event);
     }

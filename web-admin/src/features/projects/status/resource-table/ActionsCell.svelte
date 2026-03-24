@@ -53,7 +53,7 @@
 </script>
 
 <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
-  <DropdownMenu.Trigger class="flex-none">
+  <DropdownMenu.Trigger class="flex-none" aria-label="Open resource actions">
     <IconButton rounded active={isDropdownOpen} size={20}>
       <ThreeDot size="16px" />
     </IconButton>

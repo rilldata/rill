@@ -77,7 +77,7 @@
         imageUrl={example.image}
         disabled={!!selectedProjectName}
         isLoading={selectedProjectName === example.name}
-        on:click={async () => {
+        onclick={async () => {
           await unpackProject(example);
         }}
       >
@@ -99,7 +99,7 @@
     <Card
       disabled={!!selectedProjectName}
       isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
+      onclick={() => unpackProject()}
     >
       <AddCircleOutline size="2em" className="text-fg-secondary" />
       <CardTitle position="middle">Start with an empty project</CardTitle>

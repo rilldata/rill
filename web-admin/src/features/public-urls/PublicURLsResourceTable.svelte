@@ -98,9 +98,9 @@
       </div>
     </div>
   {:else}
-    <div class="border rounded-lg overflow-x-auto">
+    <div class="border rounded-lg overflow-auto max-h-[60vh]">
       <table class="w-full">
-        <thead>
+        <thead class="sticky top-0 z-10">
           <tr class="bg-surface-background border-b">
             <th class="table-header">Label</th>
             <th class="table-header">Dashboard</th>

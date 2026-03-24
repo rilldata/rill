@@ -35,7 +35,7 @@
         border={false}
         background={false}
       />
-      <button class="text-fg-secondary" on:click={reset}>
+      <button class="text-fg-secondary" onclick={reset}>
         <Cancel size="16px" />
       </button>
     </div>

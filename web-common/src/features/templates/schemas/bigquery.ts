@@ -28,6 +28,13 @@ export const bigquerySchema: MultiStepFormSchema = {
         "If empty, Rill will use the project ID from your credentials when available.",
       "x-step": "connector",
     },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL",
