@@ -37,7 +37,7 @@ import (
 	_ "embed"
 )
 
-//go:embed static/favicon.png
+//go:embed static/favicon.ico
 var favicon []byte
 
 var (
@@ -233,7 +233,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Serve favicon so Google's favicon service can discover it
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Content-Type", "image/x-icon")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		_, _ = w.Write(favicon)
 	})
