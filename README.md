@@ -6,7 +6,7 @@
 
 <br/>
 <p align="center">
-    <a href="LICENSE" target="_blank">
+    <a href="LICENSE.md" target="_blank">
         <img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="GitHub license">
     </a>
     <a href="https://github.com/rilldata/rill/releases" target="_blank">
@@ -134,7 +134,7 @@ For visual learners, take a look at our various playlists that explains what Ril
 <div align="center">
 
 [Getting Started with Rill Developer](https://www.youtube.com/watch?v=oQSok8Dy-D0) • [Exploring Data with Rill](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1)
-• [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q)
+• [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q) • [Agentic Analytics with Claude Code and Rill](https://www.youtube.com/watch?v=k6Lbu2cVH4g&t=2s)
 
 </div>
 
@@ -145,7 +145,7 @@ For visual learners, take a look at our various playlists that explains what Ril
 Bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads">GitHub →</a><br />
-- <a href="/guides/openrtb-analytics">Walkthrough →</a><br />
+- <a href="https://docs.rilldata.com/developers/tutorials/openrtb-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a>
 
 ### Cost Monitoring
@@ -153,7 +153,7 @@ Bidstream data for programmatic advertisers to optimize pricing strategies, look
 Based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring">GitHub →</a><br />
-- <a href="/guides/cost-monitoring-analytics">Walkthrough →</a><br />
+- <a href="https://docs.rilldata.com/developers/tutorials/cost-monitoring-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-cost-monitoring">Live Demo →</a>
 
 ### GitHub Analytics
@@ -161,7 +161,7 @@ Based on Rill's own internal dashboards, cloud infrastructure data (compute, sto
 Analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics">GitHub →</a><br />
-- <a href="/guides/github-analytics">Walkthrough →</a><br />
+- <a href="https://docs.rilldata.com/developers/tutorials/github-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-github-analytics">Live Demo →</a>
 
 ### App Engagement
@@ -176,7 +176,7 @@ A conversion dataset used by marketers, mobile developers, or product teams to a
 A compilation of projects with deep dives into Rill's features using ClickHouse's GitHub commit information.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
-- <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
+- <a href="https://docs.rilldata.com/developers/tutorials/rill-basics/1-launch">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
 
 ## Get in touch!
@@ -191,4 +191,4 @@ Rill is developed and maintained by [Rill Data, Inc.](https://www.rilldata.com/)
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE) - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the [Apache License 2.0](LICENSE.md) - see the [LICENSE](LICENSE.md) file for details.
