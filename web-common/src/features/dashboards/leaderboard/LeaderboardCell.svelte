@@ -50,7 +50,6 @@
   }
 
   function shiftClickHandler(label: string) {
-    console.log(dataType);
     let truncatedLabel = label?.toString();
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
       truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
