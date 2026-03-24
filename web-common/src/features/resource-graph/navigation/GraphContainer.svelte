@@ -23,6 +23,7 @@
   export let selectedGroupId: string | null = null;
   export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
   export let onRefreshAll: (() => void) | null = null;
+  export let compactToolbar = false;
   export let statusFilterOptions: {
     label: string;
     value: ResourceStatusFilterValue;
@@ -105,6 +106,7 @@
   {selectedGroupId}
   {onSelectedGroupChange}
   {onRefreshAll}
+  {compactToolbar}
   {statusFilterOptions}
   {onStatusToggle}
   {onClearFilters}

@@ -155,6 +155,7 @@
     {selectedGroupId}
     onSelectedGroupChange={handleSelectedGroupChange}
     onRefreshAll={handleRefreshAll}
+    compactToolbar
     statusFilterOptions={statusOptions}
     onStatusToggle={toggleStatus}
     onClearFilters={handleClearFilters}

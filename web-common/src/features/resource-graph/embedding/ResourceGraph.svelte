@@ -80,6 +80,7 @@
 
   // Toolbar callbacks (sidebar layout)
   export let onRefreshAll: (() => void) | null = null;
+  export let compactToolbar = false;
   export let statusFilterOptions: {
     label: string;
     value: ResourceStatusFilterValue;
@@ -780,7 +781,7 @@
         <Search
           bind:value={treeSearchQuery}
           placeholder="Search all resources"
-          large
+          large={!compactToolbar}
           autofocus={false}
           showBorderOnFocus={false}
           retainValueOnMount
@@ -847,11 +848,17 @@
       {#if statusFilterOptions.length > 0}
         <DropdownMenu.Root bind:open={statusDropdownOpen}>
           <DropdownMenu.Trigger
-            class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+            class="min-w-fit {compactToolbar
+              ? 'min-h-7'
+              : 'min-h-9'} flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
               ? 'bg-surface-hover'
               : 'hover:bg-surface-hover'} px-2 py-1"
           >
-            <span class="text-fg-secondary font-medium">
+            <span
+              class="text-fg-secondary font-medium {compactToolbar
+                ? 'text-xs'
+                : ''}"
+            >
               {#if statusFilter.length === 0}
                 All statuses
               {:else if statusFilter.length === 1}
@@ -896,7 +903,7 @@
       {#if onRefreshAll}
         <Button
           type="secondary"
-          large
+          large={!compactToolbar}
           class="shrink-0 whitespace-nowrap"
           onClick={onRefreshAll}
         >
