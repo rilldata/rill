@@ -80,14 +80,6 @@
     });
   }
 
-  function handleKindChange(kind: string | null) {
-    if (kind) {
-      goto(`/graph?kind=${kind}`);
-    } else {
-      goto("/graph");
-    }
-  }
-
   // Status filter state — synced to URL ?status= param
   $: selectedStatuses = (
     $page.url.searchParams.get("status")?.split(",") ?? []

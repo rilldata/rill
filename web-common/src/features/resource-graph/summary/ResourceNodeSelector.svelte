@@ -124,11 +124,9 @@
 
 <div class="node-selector">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <button class="selector-trigger" use:builder.action {...builder}>
-        <span class="trigger-label">{activeLabel}</span>
-        <CaretDownIcon size="10px" />
-      </button>
+    <DropdownMenu.Trigger class="selector-trigger">
+      <span class="trigger-label">{activeLabel}</span>
+      <CaretDownIcon size="10px" />
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-96">
       <DropdownMenu.Item onclick={handleSelectAll}>
