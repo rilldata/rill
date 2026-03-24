@@ -46,29 +46,19 @@ function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   return name.kind as ResourceKind;
 }
 
-// Approximate badge text widths (icon 12px + label chars at ~6px + padding 12px)
-const BADGE_WIDTH: Partial<Record<ResourceKind, number>> = {
-  [ResourceKind.Source]: 60,
-  [ResourceKind.Model]: 56,
-  [ResourceKind.Connector]: 78,
-  [ResourceKind.MetricsView]: 96,
-  [ResourceKind.Explore]: 66,
-  [ResourceKind.Canvas]: 62,
-};
-// Actions trigger (~28px) + node horizontal padding (2*10px) + title-row gaps (~12px)
-const BASE_PADDING = 60;
+// Icon-only badge (~20px) + actions trigger (~28px) + node padding (2*10px) + gaps (~12px)
+const CONTENT_PADDING = 70;
 
-function estimateNodeWidth(label?: string | null, kind?: ResourceKind) {
+function estimateNodeWidth(label?: string | null) {
   const text = label?.trim() ?? "";
   if (!text.length) return MIN_NODE_WIDTH;
   const segments = text.split(/\s+/).filter(Boolean);
   const longestSegment = segments.length
     ? Math.max(...segments.map((segment) => segment.length))
     : text.length;
-  const badgeWidth = (kind && BADGE_WIDTH[kind]) || 60;
-  const padding = BASE_PADDING + badgeWidth;
   const estimated =
-    padding + Math.max(text.length, longestSegment) * AVERAGE_CHAR_WIDTH;
+    CONTENT_PADDING +
+    Math.max(text.length, longestSegment) * AVERAGE_CHAR_WIDTH;
   return Math.max(
     MIN_NODE_WIDTH,
     Math.min(MAX_NODE_WIDTH, Math.round(estimated)),
@@ -420,7 +410,7 @@ export function buildResourceGraph(
 
     resourceMap.set(id, resource);
     const label = resource.meta?.name?.name ?? "";
-    const nodeWidth = estimateNodeWidth(label, kind);
+    const nodeWidth = estimateNodeWidth(label);
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
       case ResourceKind.Connector:

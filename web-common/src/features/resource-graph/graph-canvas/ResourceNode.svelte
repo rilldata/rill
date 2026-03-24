@@ -202,7 +202,7 @@
   >
     <!-- Title row: kind badge + name + actions -->
     <div class="title-row">
-      {#if kind}<ResourceTypeBadge {kind} />{/if}
+      {#if kind}<ResourceTypeBadge {kind} showLabel={false} />{/if}
       <p class="title" title={data?.label}>{data?.label}</p>
       {#if showActions}
         <div class="actions-trigger">

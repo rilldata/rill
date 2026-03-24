@@ -14,7 +14,7 @@ export const NODE_CONFIG = {
   /** Minimum node width in pixels. */
   MIN_WIDTH: 200,
   /** Maximum node width in pixels before text truncates. */
-  MAX_WIDTH: 380,
+  MAX_WIDTH: 320,
   /** Default height for node: title row + 2 content rows. */
   DEFAULT_HEIGHT: 76,
   /** Average pixel width per character in node label font. */

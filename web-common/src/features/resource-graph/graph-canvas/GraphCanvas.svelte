@@ -17,6 +17,7 @@
     traverseDownstream,
   } from "../shared/traversal/graph-traversal";
   import ResourceNode from "./ResourceNode.svelte";
+  import GraphLegend from "./GraphLegend.svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
 
@@ -367,6 +368,7 @@
           {/if}
         </SvelteFlow>
       {/key}
+      <GraphLegend />
     </div>
   {:else if graphError}
     <div class="state error">
@@ -412,7 +414,7 @@
   }
 
   .graph-watermark {
-    @apply absolute bottom-3 right-3 z-10 pointer-events-none;
+    @apply absolute bottom-3 left-3 z-10 pointer-events-none;
     @apply text-xs font-semibold leading-tight text-fg-secondary opacity-70;
   }
 
