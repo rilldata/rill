@@ -5,7 +5,7 @@
   export let value: string = "";
   export let debounceMs: number = 300;
 
-  const dispatch = createEventDispatcher<{ search: string }>();
+  const dispatch = createEventDispatcher<{ search: string; keydown: KeyboardEvent }>();
 
   let timeout: ReturnType<typeof setTimeout>;
 
@@ -29,6 +29,9 @@
     {placeholder}
     bind:value
     on:input={handleInput}
-    on:keydown={(e) => e.key === "Enter" && handleSubmit()}
+    on:keydown={(e) => {
+      if (e.key === "Enter") handleSubmit();
+      dispatch("keydown", e);
+    }}
   />
 </div>
