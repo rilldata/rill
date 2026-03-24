@@ -216,6 +216,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 ## Table Formats
 ### Delta Lake
 ### Apache Iceberg
+### Lance
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -230,6 +231,13 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     header="Apache Iceberg"
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/iceberg"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Lance.svg" alt="Lance" />}
+    header="Lance"
+    content="Read Lance datasets from local or cloud storage, optimized for ML and AI workloads."
+    link="/developers/build/connectors/data-source/lance"
     linkLabel="Learn more"
   />
 </div>

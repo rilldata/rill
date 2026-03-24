@@ -87,6 +87,7 @@ export const SOURCES = [
   "delta",
   "gcs",
   "iceberg",
+  "lance",
   "mysql",
   "postgres",
   "redshift",

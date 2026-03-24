@@ -23,6 +23,7 @@ import { duckdbSchema } from "../../templates/schemas/duckdb";
 import { deltaSchema } from "../../templates/schemas/delta";
 import { httpsSchema } from "../../templates/schemas/https";
 import { icebergSchema } from "../../templates/schemas/iceberg";
+import { lanceSchema } from "../../templates/schemas/lance";
 import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
@@ -52,6 +53,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   s3: s3Schema,
   gcs: gcsSchema,
   iceberg: icebergSchema,
+  lance: lanceSchema,
   azure: azureSchema,
   delta: deltaSchema,
   claude: claudeSchema,

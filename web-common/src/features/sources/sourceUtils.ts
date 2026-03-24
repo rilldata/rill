@@ -384,6 +384,33 @@ export function maybeRewriteToDuckDb(
 
       break;
     }
+
+    case "lance": {
+      connectorCopy.name = "duckdb";
+
+      const lancePath = (formValues.gcs_path ||
+        formValues.s3_path ||
+        formValues.azure_path ||
+        formValues.local_path) as string;
+      const lanceStorageType = formValues.storage_type as string;
+
+      if (lanceStorageType && lanceStorageType !== "local") {
+        formValues.create_secrets_from_connectors = lanceStorageType;
+      }
+
+      formValues.sql = `SELECT *\nFROM '${lancePath}'`;
+
+      delete formValues.storage_type;
+      delete formValues.gcs_path;
+      delete formValues.s3_path;
+      delete formValues.azure_path;
+      delete formValues.local_path;
+      delete formValues.gcs_info;
+      delete formValues.s3_info;
+      delete formValues.azure_info;
+
+      break;
+    }
   }
 
   return [connectorCopy, formValues];

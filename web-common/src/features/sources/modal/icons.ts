@@ -9,6 +9,7 @@ import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
 import DeltaLake from "../../../components/icons/connectors/DeltaLake.svelte";
 import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
 import ApacheIceberg from "../../../components/icons/connectors/ApacheIceberg.svelte";
+import Lance from "../../../components/icons/connectors/Lance.svelte";
 import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
 import Https from "../../../components/icons/connectors/HTTPS.svelte";
 import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
@@ -25,6 +26,7 @@ export const ICONS = {
   delta: DeltaLake,
   gcs: GoogleCloudStorage,
   iceberg: ApacheIceberg,
+  lance: Lance,
   s3: AmazonS3,
   azure: MicrosoftAzureBlobStorage,
   bigquery: GoogleBigQuery,
