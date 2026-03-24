@@ -36,6 +36,7 @@ export default defineConfig({
       "luxon",
       "vega-lite",
     ],
+    exclude: ["sveltekit-superforms"],
   },
   plugins: [sveltekit()],
   envDir: "../",
