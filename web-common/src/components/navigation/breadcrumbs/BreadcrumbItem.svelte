@@ -66,7 +66,7 @@
   >
     {#if selected}
       <a
-        on:click={() => {
+        onclick={() => {
           if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
         href={isCurrentPage
@@ -85,15 +85,12 @@
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <button
-            use:builder.action
-            {...builder}
-            class="trigger"
-            aria-label="Breadcrumb dropdown"
-          >
-            <CaretDownIcon size="14px" />
-          </button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <button {...props} class="trigger" aria-label="Breadcrumb dropdown">
+              <CaretDownIcon size="14px" />
+            </button>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
           align="start"
@@ -116,7 +113,7 @@
                 $page.route.id ?? "",
               )}
               preloadData={option.preloadData}
-              on:click={() => {
+              onclick={() => {
                 if (onSelect) {
                   onSelect(id);
                 }
@@ -150,7 +147,7 @@
   }
 
   .trigger:hover,
-  .trigger[data-state="open"] {
+  .trigger:global([data-state="open"]) {
     @apply bg-gray-100;
   }
 </style>

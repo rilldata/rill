@@ -256,7 +256,7 @@
   }
 </script>
 
-<svelte:window on:click={maybeClearMeasureSelection} />
+<svelte:window onclick={maybeClearMeasureSelection} />
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
   <div
@@ -293,33 +293,33 @@
 
       {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
-          <DropdownMenu.Trigger asChild let:builder>
-            <button
-              {...builder}
-              use:builder.action
-              aria-label="Select aggregation grain"
-              class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
-            >
-              by <b>
-                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
-              </b>
-              <span
-                class:-rotate-90={grainDropdownOpen}
-                class="transition-transform"
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                aria-label="Select aggregation grain"
+                class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
               >
-                <CaretDownIcon />
-              </span>
-            </button>
+                by <b>
+                  {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+                </b>
+                <span
+                  class:-rotate-90={grainDropdownOpen}
+                  class="transition-transform"
+                >
+                  <CaretDownIcon />
+                </span>
+              </button>
+            {/snippet}
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Content align="start" class="w-48">
             {#each aggregationOptions ?? [] as option (option)}
               <DropdownMenu.CheckboxItem
                 checkRight
-                role="menuitem"
                 checked={option === activeTimeGrain}
                 class="text-xs cursor-pointer"
-                on:click={() => {
+                onclick={() => {
                   metricsExplorerStore.setTimeGrain(exploreName, option);
                 }}
               >
@@ -337,7 +337,7 @@
       />
 
       {#if !hideStartPivotButton}
-        <div class="grow" />
+        <div class="grow"></div>
         <Button
           type="toolbar"
           onClick={() => {
@@ -360,7 +360,7 @@
         <div
           class="sticky top-0 z-10 bg-surface-background col-span-2 grid grid-cols-subgrid"
         >
-          <div />
+          <div></div>
           <div class="relative">
             <MeasureChartXAxis
               interval={chartInterval}

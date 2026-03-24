@@ -38,7 +38,7 @@
 
 {#if resource}
   <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
-    <DropdownMenu.Trigger class="flex-none">
+    <DropdownMenu.Trigger class="flex-none" aria-label="Open model actions">
       <IconButton rounded active={isDropdownOpen} size={20}>
         <ThreeDot size="16px" />
       </IconButton>
@@ -47,7 +47,7 @@
       <!-- Describe (always available) -->
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => onModelInfoClick(resource)}
+        onclick={() => onModelInfoClick(resource)}
       >
         <div class="flex items-center">
           <CodeIcon size="12px" />
@@ -59,7 +59,7 @@
       {#if onViewLogsClick}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onViewLogsClick?.(resource.meta?.name?.name ?? "")}
+          onclick={() => onViewLogsClick?.(resource.meta?.name?.name ?? "")}
         >
           <div class="flex items-center">
             <ScrollTextIcon size="12px" />
@@ -72,7 +72,7 @@
       {#if isPartitioned}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onViewPartitionsClick(resource)}
+          onclick={() => onViewPartitionsClick(resource)}
         >
           <div class="flex items-center">
             <LayoutGridIcon size="12px" />
@@ -89,7 +89,7 @@
           <DropdownMenu.Item
             class="font-normal flex items-center"
             disabled={refreshDisabled}
-            on:click={() => onRefreshErroredClick(resource)}
+            onclick={() => onRefreshErroredClick(resource)}
           >
             <div class="flex items-center">
               <AlertCircleIcon size="12px" />
@@ -107,7 +107,7 @@
         <DropdownMenu.Item
           class="font-normal flex items-center"
           disabled={refreshDisabled}
-          on:click={() => onFullRefreshClick(resource)}
+          onclick={() => onFullRefreshClick(resource)}
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
@@ -123,7 +123,7 @@
           <DropdownMenu.Item
             class="font-normal flex items-center"
             disabled={refreshDisabled}
-            on:click={() => onIncrementalRefreshClick(resource)}
+            onclick={() => onIncrementalRefreshClick(resource)}
           >
             <div class="flex items-center">
               <RefreshCcwIcon size="12px" />

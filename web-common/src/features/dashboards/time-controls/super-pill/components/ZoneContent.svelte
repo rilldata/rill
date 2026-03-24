@@ -60,7 +60,7 @@
     {#if formatted}
       <button
         class="item"
-        on:click={() => {
+        onclick={() => {
           onSelectTimeZone(activeTimeZone);
         }}
       >
@@ -76,14 +76,14 @@
     {/if}
   </div>
 
-  <div class="separator" />
+  <div class="separator"></div>
 {/if}
 
 <div class="group">
   {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
     <button
       class="item"
-      on:click={() => {
+      onclick={() => {
         onSelectTimeZone(iana);
       }}
     >
@@ -103,14 +103,14 @@
 </div>
 
 {#if !searchValue && recentIANAs.length}
-  <div class="separator" />
+  <div class="separator"></div>
   <div class="group">
     <div class="flex justify-between pr-2 items-center">
       <h3>Recent</h3>
       {#if recentIANAs.length}
         <button
           class="text-[11px] text-fg-secondary hover:bg-surface-hover p-1 rounded-sm h-fit"
-          on:click={() => {
+          onclick={() => {
             recents.set([]);
           }}
         >
@@ -124,7 +124,7 @@
       {#if formatted && !availableTimeZones.includes(iana)}
         <button
           class="item"
-          on:click={() => {
+          onclick={() => {
             onSelectTimeZone(iana);
           }}
         >
@@ -145,7 +145,7 @@
 {/if}
 
 {#if searchValue}
-  <div class="separator" />
+  <div class="separator"></div>
   <div class="group max-h-72 overflow-y-auto">
     <h3
       class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
@@ -156,7 +156,7 @@
     {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
       <button
         class="item"
-        on:click={() => {
+        onclick={() => {
           onSelectTimeZone(iana);
           recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
         }}

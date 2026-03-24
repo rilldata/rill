@@ -146,21 +146,21 @@
               >
               <DropdownMenu.CheckboxItem
                 checked={filterByEnvironment === EnvironmentType.UNDEFINED}
-                on:click={() =>
+                onclick={() =>
                   handleFilterByEnvironment(EnvironmentType.UNDEFINED)}
               >
                 All environments
               </DropdownMenu.CheckboxItem>
               <DropdownMenu.CheckboxItem
                 checked={filterByEnvironment === EnvironmentType.PRODUCTION}
-                on:click={() =>
+                onclick={() =>
                   handleFilterByEnvironment(EnvironmentType.PRODUCTION)}
               >
                 Production
               </DropdownMenu.CheckboxItem>
               <DropdownMenu.CheckboxItem
                 checked={filterByEnvironment === EnvironmentType.DEVELOPMENT}
-                on:click={() =>
+                onclick={() =>
                   handleFilterByEnvironment(EnvironmentType.DEVELOPMENT)}
               >
                 Development

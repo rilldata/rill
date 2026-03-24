@@ -40,7 +40,7 @@
   <div class="flex flex-row gap-x-2">
     <button
       class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-500"
-      on:click={openShowAddSourceModal}
+      onclick={openShowAddSourceModal}
     >
       <div
         class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"

@@ -86,11 +86,11 @@
   class:active={isActive}
   class:empty={isEmpty}
   style:--summary-accent={color}
-  on:click={navigateByKind}
+  onclick={navigateByKind}
   role="button"
   tabindex={isEmpty ? -1 : 0}
   aria-disabled={isEmpty}
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       navigateByKind();

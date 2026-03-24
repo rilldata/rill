@@ -291,7 +291,10 @@
   autocomplete="off"
   class="flex flex-col gap-y-3"
   id={formId}
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
   use:enhance
 >
   <DialogTitle
@@ -324,7 +327,7 @@
     </div>
   </DialogTabs.Root>
   <div class="px-6 py-3 flex items-center gap-x-2">
-    <div class="grow" />
+    <div class="grow"></div>
     {#if currentTabIndex === 0}
       <Button onClick={handleCancel} type="secondary">Cancel</Button>
     {:else}
