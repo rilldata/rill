@@ -121,6 +121,17 @@
         onConfirm={submitTitleChange}
         showIndicator={unsavedFileCount > 0}
       />
+    {/if}
+  {/if}
+
+  <div class="flex gap-x-2 items-center ml-auto">
+    {#if mode === "Preview"}
+      {#if route.id?.includes("explore")}
+        <ExplorePreviewCTAs exploreName={dashboardName} />
+      {:else if route.id?.includes("canvas")}
+        <CanvasPreviewCTAs canvasName={dashboardName} />
+      {/if}
+    {:else if mode === "Developer"}
       <Tooltip distance={8}>
         <Button
           type="tertiary"
@@ -132,18 +143,9 @@
         </Button>
         <TooltipContent slot="tooltip-content">Project graph</TooltipContent>
       </Tooltip>
-    {/if}
-  {/if}
-
-  <div class="flex gap-x-2 items-center ml-auto">
-    {#if mode === "Preview"}
-      {#if route.id?.includes("explore")}
-        <ExplorePreviewCTAs exploreName={dashboardName} />
-      {:else if route.id?.includes("canvas")}
-        <CanvasPreviewCTAs canvasName={dashboardName} />
+      {#if showDeveloperChat}
+        <ChatToggle />
       {/if}
-    {:else if showDeveloperChat}
-      <ChatToggle />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
