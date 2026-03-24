@@ -33,7 +33,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	_ "embed"
 )
+
+//go:embed static/favicon.png
+var favicon []byte
 
 var (
 	_minCliVersion         = version.Must(version.NewVersion("0.20.0"))
@@ -225,6 +230,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
 		transcoder.ServeHTTP(w, r)
 	}))
+
+	// Serve favicon so Google's favicon service can discover it
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		_, _ = w.Write(favicon)
+	})
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
