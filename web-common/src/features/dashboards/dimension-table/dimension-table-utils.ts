@@ -414,12 +414,9 @@ export function addContextColumnNames(
 }
 
 function castUnknownToNumberOrNull(val: unknown): number | null {
-  if (typeof val === "number") return val;
   if (val === null || val === undefined) return null;
-  console.warn(
-    `castUnknownNumberOrNull should only be used to cast unknowns that should be numbers, null, or undefined to numbers or null. Got: ${val}`,
-  );
-  return val as number;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -473,23 +470,23 @@ export function prepareDimensionTableRows(
         allMeasuresForSpec.forEach((measure) => {
           if (!measure.name) return;
 
-          const deltaAbs = row[measure.name + ComparisonDeltaAbsoluteSuffix];
-          if (deltaAbs !== undefined) {
-            rowOut[`${measure.name}_delta`] =
-              castUnknownToNumberOrNull(deltaAbs);
+          const deltaAbsRaw = row[measure.name + ComparisonDeltaAbsoluteSuffix];
+          if (deltaAbsRaw !== undefined) {
+            const deltaAbs = castUnknownToNumberOrNull(deltaAbsRaw);
+            rowOut[`${measure.name}_delta`] = deltaAbs;
             rowOut[`__formatted_${measure.name}_delta`] =
               deltaAbs !== null
-                ? formattersForMeasures[measure.name](deltaAbs as number)
+                ? formattersForMeasures[measure.name](deltaAbs)
                 : PERC_DIFF.PREV_VALUE_NO_DATA;
           }
 
-          const deltaRel = row[measure.name + ComparisonDeltaRelativeSuffix];
-          if (deltaRel !== undefined) {
-            rowOut[`${measure.name}_delta_perc`] =
-              castUnknownToNumberOrNull(deltaRel);
+          const deltaRelRaw = row[measure.name + ComparisonDeltaRelativeSuffix];
+          if (deltaRelRaw !== undefined) {
+            const deltaRel = castUnknownToNumberOrNull(deltaRelRaw);
+            rowOut[`${measure.name}_delta_perc`] = deltaRel;
             rowOut[`__formatted_${measure.name}_delta_perc`] =
               deltaRel !== null
-                ? formatMeasurePercentageDifference(deltaRel as number)
+                ? formatMeasurePercentageDifference(deltaRel)
                 : PERC_DIFF.PREV_VALUE_NO_DATA;
           }
         });
