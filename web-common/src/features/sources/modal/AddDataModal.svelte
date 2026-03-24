@@ -37,6 +37,7 @@
   let connectorInstanceName: string | null = null;
   let requestConnector = false;
   let isSubmittingForm = false;
+  let editMode = false;
 
   // Filter connectors by category from JSON schemas
   $: sourceConnectors = connectors.filter(
@@ -64,6 +65,7 @@
       const stateStep = e.state?.step ?? 0;
       requestConnector = e.state?.requestConnector ?? false;
       connectorInstanceName = e.state?.connectorInstanceName ?? null;
+      editMode = e.state?.editMode ?? false;
 
       // Handle both full connector object and connector name string
       if (e.state?.selectedConnector) {
@@ -170,6 +172,7 @@
     selectedSchemaName = null;
     requestConnector = false;
     isSubmittingForm = false;
+    editMode = false;
     resetConnectorStep();
   }
 
@@ -295,9 +298,9 @@
               {#if displayIcon}
                 <svelte:component this={displayIcon} size="18px" />
               {/if}
-              <span class="text-lg leading-none font-semibold"
-                >{displayName}</span
-              >
+              <span class="text-lg leading-none font-semibold">
+                {editMode ? `Edit ${displayName}` : displayName}
+              </span>
             </div>
           {/if}
         </Dialog.Title>
@@ -314,6 +317,7 @@
             schemaName={selectedSchemaName}
             formType={isConnectorType ? "connector" : "source"}
             {connectorInstanceName}
+            {editMode}
             onClose={resetModal}
             onCloseAfterNavigation={resetModalQuietly}
             onBack={back}

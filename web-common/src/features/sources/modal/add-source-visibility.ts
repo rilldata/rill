@@ -37,6 +37,25 @@ export const addSourceModal = (() => {
       window.history.pushState(state, "", "");
       dispatchEvent(new PopStateEvent("popstate", { state: state }));
     },
+    /**
+     * Open the modal in edit mode for an existing connector.
+     * Shows the connector form on the connector step with pre-filled values.
+     * On save/test, updates the existing connector and closes the modal
+     * instead of navigating to the source/explorer step.
+     */
+    openForEdit: (schemaName: string, connectorInstanceName: string) => {
+      resetConnectorStep();
+
+      const state = {
+        step: 2,
+        connector: schemaName,
+        connectorInstanceName,
+        requestConnector: false,
+        editMode: true,
+      };
+      window.history.pushState(state, "", "");
+      dispatchEvent(new PopStateEvent("popstate", { state: state }));
+    },
     close: () => {
       const state = {
         step: 0,

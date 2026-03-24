@@ -8,6 +8,7 @@ import { inferModelNameFromSQL, inferSourceName } from "../sourceUtils";
 import {
   submitAddConnectorForm,
   submitAddSourceForm,
+  submitEditConnectorForm,
 } from "./submitAddDataForm";
 import { normalizeConnectorError } from "./utils";
 import {
@@ -96,6 +97,10 @@ export class AddDataFormManager {
     return filterSchemaValuesForSubmit(schema, values, { step });
   }
 
+  // Edit mode: when true, updates existing connector instead of creating new
+  readonly editMode: boolean;
+  readonly editConnectorInstanceName: string | undefined;
+
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
@@ -103,6 +108,8 @@ export class AddDataFormManager {
     errorsStore: ErrorsStore;
     getSelectedAuthMethod?: () => string | undefined;
     schemaName?: string; // Override connector.name for schema/validation lookup
+    editMode?: boolean;
+    editConnectorInstanceName?: string;
   }) {
     const {
       connector,
@@ -117,6 +124,8 @@ export class AddDataFormManager {
     this.formStore = formStore;
     this.errorsStore = errorsStore;
     this.getSelectedAuthMethod = getSelectedAuthMethod;
+    this.editMode = args.editMode ?? false;
+    this.editConnectorInstanceName = args.editConnectorInstanceName ?? undefined;
 
     // Use schemaName if provided, otherwise fall back to connector.name
     this.schemaName = schemaName ?? connector.name ?? "";
@@ -236,6 +245,7 @@ export class AddDataFormManager {
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
+    editMode?: boolean;
   }) {
     const {
       onClose,
@@ -243,6 +253,7 @@ export class AddDataFormManager {
       queryClient,
       getSelectedAuthMethod,
       setParamsError,
+      editMode = false,
     } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
@@ -318,7 +329,17 @@ export class AddDataFormManager {
 
       // --- Submission ---
       try {
-        if (isStepFlowConnector && isOnSourceOrExplorerStep) {
+        if (editMode && this.editConnectorInstanceName) {
+          // Edit mode: update the existing connector and close
+          await submitEditConnectorForm(
+            client,
+            queryClient,
+            connector,
+            submitValues,
+            this.editConnectorInstanceName,
+          );
+          onClose();
+        } else if (isStepFlowConnector && isOnSourceOrExplorerStep) {
           // Step 2: submit the source/model and close
           await submitAddSourceForm(
             client,
@@ -621,14 +642,27 @@ export class AddDataFormManager {
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;
     try {
-      await submitAddConnectorForm(
-        client,
-        queryClient,
-        this.connector,
-        processedValues,
-        true,
-        existingEnvBlob,
-      );
+      if (this.editMode && this.editConnectorInstanceName) {
+        // Edit mode: update existing connector without testing
+        await submitEditConnectorForm(
+          client,
+          queryClient,
+          this.connector,
+          processedValues,
+          this.editConnectorInstanceName,
+          true, // saveOnly
+          existingEnvBlob,
+        );
+      } else {
+        await submitAddConnectorForm(
+          client,
+          queryClient,
+          this.connector,
+          processedValues,
+          true,
+          existingEnvBlob,
+        );
+      }
       return { ok: true } as const;
     } catch (e) {
       const { message, details } = this.normalizeError(e);

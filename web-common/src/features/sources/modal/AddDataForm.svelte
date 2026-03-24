@@ -30,6 +30,7 @@
     isVisibleForValues,
   } from "../../templates/schema-utils";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { loadConnectorFormValues } from "./edit-connector-utils";
   import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
@@ -37,6 +38,7 @@
   export let formType: AddDataFormType;
   export let isSubmitting: boolean;
   export let connectorInstanceName: string | null = null;
+  export let editMode: boolean = false;
   export let onBack: () => void;
   export let onClose: () => void;
   export let onCloseAfterNavigation: () => void = onClose;
@@ -79,6 +81,8 @@
     getSelectedAuthMethod: () =>
       get(connectorStepStore).selectedAuthMethod ?? undefined,
     schemaName,
+    editMode,
+    editConnectorInstanceName: editMode && connectorInstanceName ? connectorInstanceName : undefined,
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;
@@ -124,6 +128,44 @@
     } catch {
       // .env doesn't exist yet
       existingEnvBlob = "";
+    }
+
+    // In edit mode, load existing connector values into the form.
+    // Replace (not merge) connector-step fields so that default-seeded
+    // values (e.g. port: "5432") don't leak into the edit form when
+    // they weren't in the original connector.
+    if (editMode && connectorInstanceName) {
+      try {
+        const values = await loadConnectorFormValues(
+          runtimeClient,
+          connectorInstanceName,
+          schemaName,
+          existingEnvBlob ?? "",
+        );
+        if (values && Object.keys(values).length > 0) {
+          const connectorFieldKeys = new Set(
+            connectorSchema
+              ? Object.keys(connectorSchema.properties ?? {})
+              : [],
+          );
+          form.update(
+            ($form) => {
+              const cleaned: Record<string, unknown> = {};
+              // Keep non-connector fields (e.g. source step fields)
+              for (const [k, v] of Object.entries($form)) {
+                if (!connectorFieldKeys.has(k)) {
+                  cleaned[k] = v;
+                }
+              }
+              // Apply only the loaded edit values
+              return { ...cleaned, ...values };
+            },
+            { taint: false },
+          );
+        }
+      } catch (e) {
+        console.error("Failed to load connector values for editing:", e);
+      }
     }
   });
 
@@ -221,10 +263,15 @@
       existingEnvBlob: existingEnvBlob ?? undefined,
     });
     if (result.ok) {
-      // Use quiet close — saveConnector already navigated via goto().
-      // The normal resetModal() fires a synthetic popstate that races with
-      // SvelteKit's router and can revert the navigation.
-      onCloseAfterNavigation();
+      if (editMode) {
+        // Edit mode: close the modal without navigating
+        onClose();
+      } else {
+        // Use quiet close — saveConnector already navigated via goto().
+        // The normal resetModal() fires a synthetic popstate that races with
+        // SvelteKit's router and can revert the navigation.
+        onCloseAfterNavigation();
+      }
     } else {
       paramsError = result.message;
       paramsErrorDetails = result.details;
@@ -258,6 +305,7 @@
       paramsError = message;
       paramsErrorDetails = details;
     },
+    editMode,
   });
 
   async function handleFileUpload(

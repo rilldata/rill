@@ -33,6 +33,8 @@
   import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
+  import ConnectorMenuItems from "../connectors/ConnectorMenuItems.svelte";
+  import AddAiConnectorDialog from "../connectors/ai/AddAiConnectorDialog.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
 
@@ -43,6 +45,7 @@
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
+  let showAiConnectorDialog = false;
   let resourceName: Readable<V1ResourceName | undefined>;
 
   $: id = `${filePath}-nav-link`;
@@ -157,7 +160,12 @@
           Duplicate
         </NavigationMenuItem>
         {#if resourceKind}
-          {#if resourceKind === ResourceKind.Source}
+          {#if resourceKind === ResourceKind.Connector}
+            <ConnectorMenuItems
+              {filePath}
+              on:openAiDialog={() => (showAiConnectorDialog = true)}
+            />
+          {:else if resourceKind === ResourceKind.Source}
             <SourceMenuItems {filePath} />
           {:else if resourceKind === ResourceKind.Model}
             <ModelMenuItems {filePath} />
@@ -178,3 +186,7 @@
     </DropdownMenu.Root>
   {/if}
 </li>
+
+{#if resourceKind === ResourceKind.Connector}
+  <AddAiConnectorDialog bind:open={showAiConnectorDialog} />
+{/if}

@@ -9,13 +9,18 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   type V1ConnectorDriver,
+  getRuntimeServiceGetFileQueryKey,
   runtimeServiceDeleteFile,
+  runtimeServiceGetFile,
+  runtimeServiceGetResource,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
 import {
   compileConnectorYAML,
+  getGenericEnvVarName,
+  replaceOrAddEnvVariable,
   updateDotEnvWithSecrets,
   updateRillYAMLWithAiConnector,
   updateRillYAMLWithOlapConnector,
@@ -441,6 +446,181 @@ export async function submitAddConnectorForm(
   // Wait for the submission to complete
   const resolvedConnectorName = await submissionPromise;
   return resolvedConnectorName;
+}
+
+/**
+ * Update an existing connector: write new YAML and .env values,
+ * then optionally test the connection via reconciliation.
+ *
+ * When saveOnly is true, the connector file is written without waiting
+ * for reconciliation (same as the "Save" button for new connectors).
+ */
+export async function submitEditConnectorForm(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+  connector: V1ConnectorDriver,
+  formValues: AddDataFormValues,
+  connectorInstanceName: string,
+  saveOnly: boolean = false,
+  existingEnvBlob?: string,
+): Promise<void> {
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : [];
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : [];
+
+  const connectorFilePath = getFileAPIPathFromNameAndType(
+    connectorInstanceName,
+    EntityType.Connector,
+  );
+
+  // Fetch the existing resource to extract env var names from YAML template
+  // references (e.g. dsn: "{{ .env.POSTGRES_DSN_1 }}"). This preserves the
+  // original env var names on re-save, avoiding conflicts with other connectors.
+  const resource = await runtimeServiceGetResource(client, {
+    name: { kind: ResourceKind.Connector, name: connectorInstanceName },
+  });
+  const specProperties =
+    resource?.resource?.connector?.spec?.properties ?? {};
+
+  // Build a mapping of property key → existing env var name from the YAML
+  const existingEnvVarNames = new Map<string, string>();
+  for (const key of schemaSecretKeys) {
+    const templateRef = specProperties[key];
+    if (typeof templateRef === "string") {
+      const match = templateRef.match(/\{\{\s*\.env\.(\w+)\s*\}\}/);
+      if (match?.[1]) {
+        existingEnvVarNames.set(key, match[1]);
+      }
+    }
+  }
+
+  // Read the current .env
+  let envBlob: string;
+  if (existingEnvBlob !== undefined) {
+    envBlob = existingEnvBlob;
+  } else {
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+        path: ".env",
+      }),
+    });
+    try {
+      const file = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+          path: ".env",
+        }),
+        queryFn: () => runtimeServiceGetFile(client, { path: ".env" }),
+      });
+      envBlob = file.blob || "";
+    } catch {
+      envBlob = "";
+    }
+  }
+
+  // Update .env: reuse existing env var names for secrets that already have
+  // a template reference; use base names for new secrets.
+  let newEnvBlob = envBlob;
+  // Build a fake env blob for compileConnectorYAML that maps base names to
+  // existing names. We achieve this by passing undefined (no blob) and then
+  // doing a post-hoc replacement of env var references in the YAML.
+  const envVarReplacements = new Map<string, string>();
+  for (const key of schemaSecretKeys) {
+    const value = formValues[key];
+    if (!value) continue;
+    const existingName = existingEnvVarNames.get(key);
+    const baseName = getGenericEnvVarName(
+      connector.name as string,
+      key,
+      schema ?? undefined,
+    );
+    const envVarName = existingName ?? baseName;
+    newEnvBlob = replaceOrAddEnvVariable(
+      newEnvBlob,
+      envVarName,
+      value as string,
+    );
+    // Track if base name differs from existing so we can fix the YAML
+    if (existingName && existingName !== baseName) {
+      envVarReplacements.set(baseName, existingName);
+    }
+  }
+
+  // Generate YAML with base env var names (existingEnvBlob=undefined skips
+  // conflict detection), then replace with actual names where they differ.
+  let connectorYAML = compileConnectorYAML(connector, formValues, {
+    connectorInstanceName,
+    orderedProperties: schemaFields,
+    secretKeys: schemaSecretKeys,
+    stringKeys: schemaStringKeys,
+    schema: schema ?? undefined,
+    existingEnvBlob: undefined,
+    fieldFilter: schemaFields
+      ? (property) => !("internal" in property && property.internal)
+      : undefined,
+  });
+  for (const [baseName, actualName] of envVarReplacements) {
+    connectorYAML = connectorYAML.replace(
+      `{{ .env.${baseName} }}`,
+      `{{ .env.${actualName} }}`,
+    );
+  }
+
+  if (saveOnly) {
+    // Write .env and connector YAML without testing
+    await runtimeServicePutFile(client, {
+      path: ".env",
+      blob: newEnvBlob,
+      create: true,
+      createOnly: false,
+    });
+
+    await runtimeServicePutFile(client, {
+      path: connectorFilePath,
+      blob: connectorYAML,
+      create: true,
+      createOnly: false,
+    });
+    return;
+  }
+
+  // Write .env first (secrets must exist before connector reconciliation)
+  await runtimeServicePutFileAndWaitForReconciliation(client, {
+    path: ".env",
+    blob: newEnvBlob,
+    create: true,
+    createOnly: false,
+  });
+
+  // Write updated connector YAML
+  await runtimeServicePutFile(client, {
+    path: connectorFilePath,
+    blob: connectorYAML,
+    create: true,
+    createOnly: false,
+  });
+
+  // Wait for reconciliation to test the connection
+  await waitForResourceReconciliation(
+    client,
+    connectorInstanceName,
+    ResourceKind.Connector,
+  );
+
+  // Check for file errors after reconciliation
+  const errorMessage = await fileArtifacts.checkFileErrors(
+    queryClient,
+    connectorFilePath,
+  );
+  if (errorMessage) {
+    throw new Error(errorMessage);
+  }
 }
 
 export async function submitAddSourceForm(
