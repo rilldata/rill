@@ -30,7 +30,10 @@
         {#if onParseErrorChipClick}
           <button
             class="error-chip"
-            onclick={(e) => { e.stopPropagation(); onParseErrorChipClick?.(); }}
+            onclick={(e) => {
+              e.stopPropagation();
+              onParseErrorChipClick?.();
+            }}
           >
             <AlertCircleOutline size="12px" />
             <span class="font-medium">{parseErrorCount}</span>
@@ -48,7 +51,10 @@
         {#if onKindChipClick}
           <button
             class="error-chip"
-            onclick={(e) => { e.stopPropagation(); onKindChipClick?.(kind); }}
+            onclick={(e) => {
+              e.stopPropagation();
+              onKindChipClick?.(kind);
+            }}
           >
             {#if resourceIconMapping[kind]}
               <svelte:component this={resourceIconMapping[kind]} size="12px" />

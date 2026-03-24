@@ -181,9 +181,7 @@
           <DropdownMenu.Content align="start">
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
-              <DropdownMenu.Item
-                href={getFileHref(resource?.meta?.filePaths)}
-              >
+              <DropdownMenu.Item href={getFileHref(resource?.meta?.filePaths)}>
                 {#if kind}
                   <svelte:component
                     this={resourceIconMapping[kind]}
