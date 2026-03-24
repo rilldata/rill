@@ -7,5 +7,6 @@ declare module "@tanstack/svelte-table" {
     widthPercent?: number;
     marginLeft?: string;
     icon?: ComponentType<SvelteComponent>;
+    tooltipFormatter?: (value: unknown) => string | null | undefined;
   }
 }

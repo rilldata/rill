@@ -8,6 +8,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
@@ -187,6 +188,7 @@ export type MeasureColumnProps = Array<{
   formatter: (
     value: string | number | null | undefined,
   ) => string | (null | undefined);
+  tooltipFormatter: (value: unknown) => string | null | undefined;
   name: string;
   type: MeasureType;
 }>;
@@ -218,11 +220,24 @@ export function getMeasureColumnProps(
       console.warn(`Measure ${m} not found in config.allMeasures`);
     }
 
+    const tooltipFormatter: (value: unknown) => string | null | undefined =
+      type === "comparison_percent"
+        ? (v) =>
+            v != null
+              ? numberPartsToString(
+                  formatMeasurePercentageDifference(v as number),
+                )
+              : undefined
+        : measure
+          ? createMeasureValueFormatter<null | undefined>(measure, "tooltip")
+          : (v) => (v != null ? String(v) : undefined);
+
     return {
       label: label || measure?.displayName || measureName,
       formatter: measure
         ? createMeasureValueFormatter<null | undefined>(measure)
         : (v: string | number | null | undefined) => v?.toString(),
+      tooltipFormatter,
       name: m,
       type,
       icon,
@@ -315,6 +330,7 @@ function getFlatColumnDef(
       name: m.name,
       meta: {
         icon: m.icon,
+        tooltipFormatter: m.tooltipFormatter,
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
@@ -490,6 +506,7 @@ function getNestedColumnDef(
         name: m.name,
         meta: {
           icon: m.icon,
+          tooltipFormatter: m.tooltipFormatter,
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;

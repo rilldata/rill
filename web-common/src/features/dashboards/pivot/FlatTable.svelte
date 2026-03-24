@@ -13,9 +13,9 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -191,6 +191,9 @@
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
+          {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
+            ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
+            : cell.getValue()}
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
@@ -199,7 +202,7 @@
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
             class:total-label={cell.getValue() === "Total"}
-            data-value={cell.getValue()}
+            data-value={tooltipValue}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
