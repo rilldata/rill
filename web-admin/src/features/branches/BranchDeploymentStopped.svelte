@@ -2,9 +2,10 @@
   import {
     createAdminServiceStartDeployment,
     getAdminServiceGetProjectQueryKey,
-    getAdminServiceListDeploymentsQueryKey,
     V1DeploymentStatus,
+    type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
+  import { invalidateDeployments } from "@rilldata/web-admin/features/edit-session/use-edit-session";
   import { Button } from "@rilldata/web-common/components/button";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -30,21 +31,37 @@
       {
         onSuccess: () => {
           onStarted?.();
-          void Promise.all([
-            queryClient.invalidateQueries({
-              queryKey: getAdminServiceGetProjectQueryKey(
-                organization,
-                project,
-                branch ? { branch } : undefined,
-              ),
-            }),
-            queryClient.invalidateQueries({
-              queryKey: getAdminServiceListDeploymentsQueryKey(
-                organization,
-                project,
-              ),
-            }),
-          ]);
+
+          const projectQueryKey = getAdminServiceGetProjectQueryKey(
+            organization,
+            project,
+            branch ? { branch } : undefined,
+          );
+
+          // Without this, the invalidation refetch may return the old STOPPED
+          // status (race condition), leaving the UI stuck on this page.
+          queryClient.setQueryData<V1GetProjectResponse>(
+            projectQueryKey,
+            (old) => {
+              if (!old?.deployment) return old;
+              return {
+                ...old,
+                deployment: {
+                  ...old.deployment,
+                  status: V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+                },
+              };
+            },
+          );
+
+          // Mark stale without immediate refetch; PENDING triggers polling
+          // (1–2s) which picks up the real server status.
+          void queryClient.invalidateQueries({
+            queryKey: projectQueryKey,
+            refetchType: "none",
+          });
+
+          void invalidateDeployments(organization, project);
         },
       },
     );

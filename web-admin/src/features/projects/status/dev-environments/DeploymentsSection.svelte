@@ -6,7 +6,13 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     createAdminServiceListDeployments,
+    createAdminServiceStartDeployment,
+    createAdminServiceStopDeployment,
+    getAdminServiceGetProjectQueryKey,
+    getAdminServiceListDeploymentsQueryKey,
     type V1Deployment,
+    type V1GetProjectResponse,
+    type V1ListDeploymentsResponse,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
@@ -37,8 +43,9 @@
   import { Progress } from "@rilldata/web-common/components/progress";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { EyeIcon, PlayIcon, Trash2Icon } from "lucide-svelte";
+  import { EyeIcon, PlayIcon, StopCircleIcon, Trash2Icon } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   export let organization: string;
   export let project: string;
@@ -69,6 +76,8 @@
     },
   );
   const deleteMutation = createAdminServiceDeleteDeployment();
+  const startMutation = createAdminServiceStartDeployment();
+  const stopMutation = createAdminServiceStopDeployment();
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
 
@@ -154,8 +163,140 @@
   }
 
   let openDropdownId = "";
+  let startingIds = new Set<string>();
+  let stoppingIds = new Set<string>();
   let deletingIds = new Set<string>();
   let deletedIds = new Set<string>();
+
+  async function handleStart(deploymentId: string, branch: string | undefined) {
+    openDropdownId = "";
+    startingIds.add(deploymentId);
+    startingIds = startingIds;
+    try {
+      await $startMutation.mutateAsync({ deploymentId, data: {} });
+
+      // PENDING is in TRANSIENT_STATUSES, so the 2s polling picks
+      // up the real status.
+      const listKey = getAdminServiceListDeploymentsQueryKey(
+        organization,
+        project,
+        {},
+      );
+      queryClient.setQueryData<V1ListDeploymentsResponse>(listKey, (old) => {
+        if (!old?.deployments) return old;
+        return {
+          ...old,
+          deployments: old.deployments.map((d) =>
+            d.id === deploymentId
+              ? {
+                  ...d,
+                  status: V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+                }
+              : d,
+          ),
+        };
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
+        refetchType: "none",
+      });
+
+      const projectQueryKey = getAdminServiceGetProjectQueryKey(
+        organization,
+        project,
+        branch ? { branch } : undefined,
+      );
+      queryClient.setQueryData<V1GetProjectResponse>(projectQueryKey, (old) => {
+        if (!old?.deployment) return old;
+        return {
+          ...old,
+          deployment: {
+            ...old.deployment,
+            status: V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+          },
+        };
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+        refetchType: "none",
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to start deployment: ${getRpcErrorMessage(err as any)}`,
+      });
+    } finally {
+      startingIds.delete(deploymentId);
+      startingIds = startingIds;
+    }
+  }
+
+  async function handleStop(deploymentId: string, branch: string | undefined) {
+    openDropdownId = "";
+    stoppingIds.add(deploymentId);
+    stoppingIds = stoppingIds;
+    try {
+      await $stopMutation.mutateAsync({ deploymentId, data: {} });
+
+      // Optimistically update ListDeployments. STOPPING is in
+      // TRANSIENT_STATUSES, so the 2s polling picks up the real status.
+      const listKey = getAdminServiceListDeploymentsQueryKey(
+        organization,
+        project,
+        {},
+      );
+      queryClient.setQueryData<V1ListDeploymentsResponse>(listKey, (old) => {
+        if (!old?.deployments) return old;
+        return {
+          ...old,
+          deployments: old.deployments.map((d) =>
+            d.id === deploymentId
+              ? {
+                  ...d,
+                  status: V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
+                }
+              : d,
+          ),
+        };
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
+        refetchType: "none",
+      });
+
+      // Optimistically update GetProject so the parent layout
+      // transitions to the "Deployment is stopping..." screen
+      // instead of waiting for the next poll (which may be minutes
+      // away at the RUNNING poll interval).
+      const projectQueryKey = getAdminServiceGetProjectQueryKey(
+        organization,
+        project,
+        branch ? { branch } : undefined,
+      );
+      queryClient.setQueryData<V1GetProjectResponse>(projectQueryKey, (old) => {
+        if (!old?.deployment) return old;
+        return {
+          ...old,
+          deployment: {
+            ...old.deployment,
+            status: V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
+          },
+        };
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+        refetchType: "none",
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to stop deployment: ${getRpcErrorMessage(err as any)}`,
+      });
+    } finally {
+      stoppingIds.delete(deploymentId);
+      stoppingIds = stoppingIds;
+    }
+  }
 
   // Confirmation dialog state
   let deleteConfirmOpen = false;
@@ -268,9 +409,20 @@
       {#each visibleDeployments as deployment (deployment.id)}
         {@const prod = isProd(deployment)}
         {@const own = isOwnDeployment(deployment.ownerUserId)}
+        {@const starting =
+          startingIds.has(deployment.id ?? "") ||
+          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+        {@const stopping =
+          stoppingIds.has(deployment.id ?? "") ||
+          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
         {@const deleting =
           deletingIds.has(deployment.id ?? "") ||
           deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING}
+        {@const canStart =
+          !prod &&
+          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED &&
+          !starting}
+        {@const canStop = !prod && isActiveDeployment(deployment) && !stopping}
         {@const id = deployment.id ?? ""}
         <div class="data-row">
           <div class="pl-4 flex items-center gap-2 truncate">
@@ -338,6 +490,28 @@
                     <span class="ml-2">{prod ? "View" : "Preview"}</span>
                   </div>
                 </DropdownMenu.Item>
+                {#if canStart}
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    on:click={() => handleStart(id, deployment.branch)}
+                  >
+                    <div class="flex items-center">
+                      <PlayIcon size="12px" />
+                      <span class="ml-2">Start</span>
+                    </div>
+                  </DropdownMenu.Item>
+                {/if}
+                {#if canStop}
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    on:click={() => handleStop(id, deployment.branch)}
+                  >
+                    <div class="flex items-center">
+                      <StopCircleIcon size="12px" />
+                      <span class="ml-2">Stop</span>
+                    </div>
+                  </DropdownMenu.Item>
+                {/if}
                 {#if !prod}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"

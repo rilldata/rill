@@ -12,6 +12,7 @@
       switch (status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
         case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
+        case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
           return PollTimeWhenProjectDeploymentPending;
         case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
           return PollTimeWhenProjectDeploymentError;

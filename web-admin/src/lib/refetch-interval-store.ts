@@ -80,14 +80,28 @@ export function createSmartRefetchInterval(
       readonly unknown[]
     >,
   ): number | false {
-    if (!query.state.data?.resources) {
-      return false;
+    const resources = query.state.data?.resources;
+
+    // No data (query errored or hasn't resolved) or empty resource list
+    // (runtime just started, parser hasn't created resources yet): keep
+    // polling so we pick up resources once the runtime is ready.
+    if (!resources || resources.length === 0) {
+      return MAX_REFETCH_INTERVAL;
     }
 
-    const resources = query.state.data.resources.filter(isRelevant);
+    const relevantResources = resources.filter(isRelevant);
+
+    // When no relevant resources exist, check non-ProjectParser resources
+    // for reconciliation. If any are reconciling (models, sources being
+    // built), relevant resources may still appear as reconciliation
+    // progresses — e.g., after restarting a stopped deployment.
+    const toCheck =
+      relevantResources.length > 0
+        ? relevantResources
+        : resources.filter((r) => !r.projectParser);
 
     const currentState = queryRefetchStateMap.get(query) || {};
-    const updatedState = updateSmartRefetchMeta(resources, currentState);
+    const updatedState = updateSmartRefetchMeta(toCheck, currentState);
     queryRefetchStateMap.set(query, updatedState);
 
     return updatedState.refetchInterval;
