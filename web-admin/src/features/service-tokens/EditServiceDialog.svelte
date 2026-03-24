@@ -259,8 +259,7 @@
           >Organization role</label
         >
         <span class="text-xs text-fg-tertiary"
-          >Base level of access across all projects. Use "None" to restrict
-          access to specific projects only.</span
+          >Applies across all projects. Use "None" for project-only access.</span
         >
         <Select.Root
           onSelectedChange={(v) => {
