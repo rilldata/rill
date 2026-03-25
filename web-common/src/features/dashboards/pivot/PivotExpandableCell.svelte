@@ -2,7 +2,7 @@
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { LOADING_CELL } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
-  import type { Row } from "@tanstack/svelte-table";
+  import type { Row } from "tanstack-table-8-svelte-5";
   import type { PivotDataRow } from "./types";
 
   export let row: Row<PivotDataRow>;
@@ -30,7 +30,7 @@
   style:padding-left="{row.depth * 14}px"
 >
   {#if value === LOADING_CELL}
-    <span class="loading-cell" />
+    <span class="loading-cell"></span>
   {:else if assembledAndCanExpand}
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <div
@@ -38,7 +38,7 @@
       tabindex="-1"
       class="caret opacity-100 shrink-0 cursor-pointer"
       class:expanded
-      on:click={handleExpandClick}
+      onclick={handleExpandClick}
     >
       <ChevronRight size="16px" color="#9CA3AF" />
     </div>
@@ -52,7 +52,7 @@
     {:else if value === ""}
       {"\u00A0"}
     {:else}
-      {value}
+      {value ?? "null"}
     {/if}
   </span>
 </div>

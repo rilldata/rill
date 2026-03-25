@@ -13,8 +13,13 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type {
+    Cell,
+    Column,
+    HeaderGroup,
+    Row,
+  } from "tanstack-table-8-svelte-5";
+  import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { PivotClickSelectionState } from "./pivot-click-selection";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
@@ -132,7 +137,7 @@
             return lengths.set(header.column.id, d);
           })}
       >
-        <div class="resize-bar" />
+        <div class="resize-bar"></div>
       </Resizer>
     </div>
   {/each}
@@ -142,9 +147,9 @@
   role="presentation"
   style:width="{totalLength}px"
   class:with-measure={measures.length > 0}
-  on:click={modified({ shift: onCellCopy, click: onCellClick })}
-  on:mousemove={onMouseMove}
-  on:mouseleave={onTableLeave}
+  onclick={modified({ shift: onCellCopy, click: onCellClick })}
+  onmousemove={onMouseMove}
+  onmouseleave={onTableLeave}
 >
   <colgroup>
     {#each headers as header (header.id)}
@@ -167,7 +172,7 @@
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={!!getMeasureColumn(header.column)}
               class:border-r={hasBorderRight(header.column.id)}
-              on:click={header.column.getToggleSortingHandler()}
+              onclick={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
                 {#if icon}
@@ -193,7 +198,7 @@
     {/each}
   </thead>
   <tbody>
-    <tr style:height="{before}px" />
+    <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       {@const rowId = rows[row.index].id}
@@ -250,8 +255,8 @@
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
-            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
-            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
+            onmouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            onfocus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -270,7 +275,7 @@
         {/each}
       </tr>
     {/each}
-    <tr style:height="{after}px" />
+    <tr style:height="{after}px"></tr>
   </tbody>
 </table>
 

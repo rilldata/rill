@@ -24,13 +24,13 @@
     createSvelteTable,
     getCoreRowModel,
     getExpandedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
   import { onMount } from "svelte";
-  import type { Readable } from "svelte/motion";
+  import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
   import type {
@@ -335,7 +335,7 @@
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
-  on:scroll={() => handleScroll(containerRefElement)}
+  onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
     <FlatTable

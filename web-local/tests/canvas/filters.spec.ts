@@ -100,10 +100,9 @@ test.describe("canvas time filters", () => {
     await page.getByLabel("domain results").getByText("msn.com").click();
 
     // Close the dropdown to apply the selection (Select mode applies on close)
-    await page
-      .getByRole("complementary", { name: "Inspector Panel" })
-      .getByRole("button", { name: "Open domain filter" })
-      .click();
+    // Use Escape instead of clicking the trigger; bits-ui v2's dismiss layer
+    // intercepts pointer events on the underlying trigger button.
+    await page.keyboard.press("Escape");
 
     await expect(page.getByText("375")).toBeVisible();
   });

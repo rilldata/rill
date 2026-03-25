@@ -37,7 +37,7 @@
     min="0"
     max={mode === "hue" ? 360 : 100}
     bind:value
-    on:change={onChange}
+    onchange={onChange}
   />
 
   <input
@@ -46,7 +46,7 @@
     max={mode === "hue" ? 360 : 100}
     class="border rounded-sm pl-1 w-[50px]"
     bind:value
-    on:change={onChange}
+    onchange={onChange}
   />
 </div>
 
