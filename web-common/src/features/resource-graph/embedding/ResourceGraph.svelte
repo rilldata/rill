@@ -978,11 +978,10 @@
       {/if}
 
       <!-- svelte-ignore a11y-label-has-associated-control -->
-      <label class="flex items-center gap-1.5 shrink-0 cursor-pointer select-none">
-        <Switch
-          small
-          bind:checked={showIsolatedResources}
-        />
+      <label
+        class="flex items-center gap-1.5 shrink-0 cursor-pointer select-none"
+      >
+        <Switch small bind:checked={showIsolatedResources} />
         <span class="text-xs text-fg-secondary whitespace-nowrap">
           Show isolated
         </span>
