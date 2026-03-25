@@ -32,8 +32,9 @@
   // Filter out "sql" from resolver properties to show the remaining ones
   $: otherResolverProperties = (() => {
     if (!apiSpec?.resolverProperties) return null;
-    const { sql: _sql, ...rest } = apiSpec.resolverProperties;
-    return Object.keys(rest).length > 0 ? rest : null;
+    const props = { ...apiSpec.resolverProperties };
+    delete props.sql;
+    return Object.keys(props).length > 0 ? props : null;
   })();
 
   // Safely parse JSON schemas

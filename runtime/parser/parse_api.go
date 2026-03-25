@@ -11,8 +11,8 @@ import (
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
-	DisplayName        string              `yaml:"display_name"`
-	Description        string              `yaml:"description"`
+	DisplayName        string `yaml:"display_name"`
+	Description        string `yaml:"description"`
 	DataYAML           `yaml:",inline" mapstructure:",squash"`
 	OpenAPI            *OpenAPIYAML        `yaml:"openapi"`
 	Security           *SecurityPolicyYAML `yaml:"security"`
