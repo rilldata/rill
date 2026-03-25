@@ -19,15 +19,15 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
-  import { filterResources } from "./utils";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import {
     createUrlFilterSync,
     parseArrayParam,
     parseStringParam,
-  } from "../url-filter-sync";
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
   const runtimeClient = useRuntimeClient();
@@ -309,7 +309,7 @@
   </div>
 </section>
 
-<RefreshConfirmDialog
+<RefreshAllSourcesAndModelsConfirmDialog
   bind:open={isConfirmDialogOpen}
   onRefresh={refreshAllSourcesAndModels}
 />

@@ -101,7 +101,7 @@
   }
 </script>
 
-<Header borderBottom={!onDeployPage}>
+<Header borderBottom={!onDeployPage && mode !== "Preview"}>
   {#if !onDeployPage}
     <HeaderLogo href="/" />
 

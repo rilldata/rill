@@ -2,7 +2,10 @@ import { describe, it, expect } from "vitest";
 import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { getResourceStatus, filterResources } from "./utils";
+import {
+  getResourceStatus,
+  filterResources,
+} from "@rilldata/web-common/features/resources/resource-filter-utils";
 
 function makeResource(
   kind: string,
