@@ -60,7 +60,7 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
+<DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger>
     <Tooltip distance={8} suppress={open}>
       <Chip
@@ -87,7 +87,7 @@
         showBorderOnFocus={false}
       />
     </div>
-    <DropdownMenu.Item on:click={disableAllComparisons}>
+    <DropdownMenu.Item onclick={disableAllComparisons}>
       <span
         class:font-bold={!selectedComparisonDimension && !showTimeComparison}
       >
@@ -98,7 +98,7 @@
     <div style:max-height="200px" class="overflow-y-auto">
       {#each menuOptions as option (option.name)}
         <DropdownMenu.Item
-          on:click={() => {
+          onclick={() => {
             enableComparison("dimension", option.name);
           }}
         >

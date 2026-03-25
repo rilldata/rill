@@ -51,7 +51,7 @@ sql: >
     await expect(page.getByText("num: 1")).toBeVisible();
 
     // Filter for the errored partitions
-    await page.getByRole("button", { name: "Filter partitions" }).click();
+    await page.getByLabel("Filter partitions", { exact: true }).click();
     await page.getByRole("option", { name: "errors" }).click();
 
     // Check that the errored partition is displayed

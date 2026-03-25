@@ -20,7 +20,6 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let dataType: string;
   export let borderTop = false;
   export let borderBottom = false;
   export let isBeingCompared: boolean;
@@ -190,9 +189,9 @@
   class:border-b={borderBottom}
   class:border-t={borderTop}
   class="relative"
-  on:pointerover={() => (hovered = true)}
-  on:pointerout={() => (hovered = false)}
-  on:click={(e) => {
+  onpointerover={() => (hovered = true)}
+  onpointerout={() => (hovered = false)}
+  onclick={(e) => {
     if (e.shiftKey) return;
     onDimensionCellClick(e);
   }}
@@ -230,7 +229,9 @@
           rel="noopener noreferrer"
           {href}
           title={href}
-          on:click|stopPropagation
+          onclick={(e) => {
+            e.stopPropagation();
+          }}
           class:hovered
         >
           <ExternalLink className="fill-primary-600" />

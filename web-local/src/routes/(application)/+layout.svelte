@@ -17,11 +17,25 @@
 <main
   role="application"
   class="index-body relative size-full flex flex-col overflow-hidden"
-  on:drag|preventDefault|stopPropagation
-  on:drop|preventDefault|stopPropagation
-  on:dragenter|preventDefault|stopPropagation
-  on:dragleave|preventDefault|stopPropagation
-  on:dragover|preventDefault|stopPropagation={(e) => {
+  ondrag={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondrop={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondragenter={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondragleave={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondragover={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (isEventWithFiles(e)) showDropOverlay = true;
   }}
 >

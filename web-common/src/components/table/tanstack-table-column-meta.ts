@@ -1,7 +1,7 @@
-import type { RowData } from "@tanstack/svelte-table";
+import type { RowData } from "tanstack-table-8-svelte-5";
 import type { ComponentType, SvelteComponent } from "svelte";
 
-declare module "@tanstack/svelte-table" {
+declare module "tanstack-table-8-svelte-5" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     widthPercent?: number;

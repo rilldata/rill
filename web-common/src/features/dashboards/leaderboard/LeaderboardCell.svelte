@@ -9,7 +9,7 @@
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard.ts";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click.ts";
-  import { builderActions, getAttrs } from "bits-ui";
+  import { Tooltip as TooltipPrimitive } from "bits-ui";
   import { onDestroy } from "svelte";
 
   export let value: string;
@@ -64,27 +64,28 @@
 
 <Tooltip.Root
   bind:open={tooltipActive}
-  openDelay={1000}
-  closeOnPointerDown={false}
+  delayDuration={1000}
+  disableCloseOnTriggerClick
 >
-  <Tooltip.Trigger asChild let:builder {disabled}>
-    <td
-      role="button"
-      tabindex="0"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      on:click={modified({
-        shift: () => shiftClickHandler(tooltipValue),
-      })}
-      on:pointerover={() => cellInspectorStore.updateValue(value)}
-      on:focus={() => cellInspectorStore.updateValue(value)}
-      on:mouseleave={() => (tooltipActive = false)}
-      style:background
-      class="{cellType}-cell {className}"
-    >
-      <slot />
-    </td>
-  </Tooltip.Trigger>
+  <TooltipPrimitive.Trigger {disabled}>
+    {#snippet child({ props })}
+      <td
+        {...props}
+        role="button"
+        tabindex="0"
+        onclick={modified({
+          shift: () => shiftClickHandler(value),
+        })}
+        onpointerover={() => cellInspectorStore.updateValue(value)}
+        onfocus={() => cellInspectorStore.updateValue(value)}
+        onmouseleave={() => (tooltipActive = false)}
+        style:background
+        class="{cellType}-cell {className}"
+      >
+        <slot />
+      </td>
+    {/snippet}
+  </TooltipPrimitive.Trigger>
 
   {#if clipboardSupported && !disabled}
     <Tooltip.Content

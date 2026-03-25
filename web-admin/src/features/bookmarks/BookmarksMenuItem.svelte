@@ -67,8 +67,8 @@
 <DropdownMenuItem class="py-2">
   <div
     class="flex justify-between gap-x-2 w-full"
-    on:mouseenter={() => (hovered = true)}
-    on:mouseleave={() => (hovered = false)}
+    onmouseenter={() => (hovered = true)}
+    onmouseleave={() => (hovered = false)}
     role="menuitem"
     tabindex="-1"
     aria-label={`${bookmark.resource.displayName ?? ""} Bookmark Entry`}
@@ -76,7 +76,7 @@
     <a
       href={bookmark.fullUrl}
       class="flex flex-row gap-x-2 w-full min-h-7"
-      on:click={onClick}
+      onclick={onClick}
     >
       <svelte:component this={icon} size="16px" className="text-fg-primary" />
       <div class="flex flex-col gap-y-0.5">
@@ -102,18 +102,20 @@
               <Pencil size="16px" />
             </Button>
           {/if}
-          <Tooltip.Root portal="body">
-            <Tooltip.Trigger asChild let:builder>
-              <Button
-                square
-                type="tertiary"
-                onClick={deleteBookmark}
-                disabled={disableDelete}
-                label="Delete bookmark"
-                builders={[builder]}
-              >
-                <Trash size="16px" />
-              </Button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  square
+                  type="tertiary"
+                  onClick={deleteBookmark}
+                  disabled={disableDelete}
+                  label="Delete bookmark"
+                >
+                  <Trash size="16px" />
+                </Button>
+              {/snippet}
             </Tooltip.Trigger>
             {#if showDeleteTooltip}
               <Tooltip.Content side="bottom">
