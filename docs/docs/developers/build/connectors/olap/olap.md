@@ -64,19 +64,13 @@ Rill provisions and manages these engines for you — no infrastructure to set u
 
 Connect Rill to an existing OLAP engine you manage. Rill pushes queries down to your engine with no data ingestion.
 
-### MotherDuck
 ### Druid
+### MotherDuck
 ### Pinot
+### Snowflake
 ### StarRocks
 
 <div className="connector-icon-grid">
-  <ConnectorIcon
-    icon={<MotherDuckLogo />}
-    content="Cloud-native DuckDB service for scalable analytics and data processing."
-    link="/developers/build/connectors/olap/motherduck"
-    linkLabel="Learn more"
-    referenceLink="motherduck"
-  />
   <ConnectorIcon
     icon={<DruidLogo />}
     content="Real-time analytics database designed for high-performance OLAP queries."
@@ -85,11 +79,25 @@ Connect Rill to an existing OLAP engine you manage. Rill pushes queries down to 
     referenceLink="druid"
   />
   <ConnectorIcon
+    icon={<MotherDuckLogo />}
+    content="Cloud-native DuckDB service for scalable analytics and data processing."
+    link="/developers/build/connectors/olap/motherduck"
+    linkLabel="Learn more"
+    referenceLink="motherduck"
+  />
+  <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Pinot.svg" alt="Pinot" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/developers/build/connectors/olap/pinot"
     linkLabel="Learn more"
     referenceLink="pinot"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Snowflake.svg" alt="Snowflake" />}
+    content="Cloud data platform for warehousing and analytics. Beta support as an OLAP engine."
+    link="/developers/build/connectors/olap/snowflake"
+    linkLabel="Learn more"
+    referenceLink="snowflake"
   />
   <ConnectorIcon
     icon={<StarRocksLogo />}
