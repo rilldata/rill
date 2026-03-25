@@ -509,17 +509,19 @@ dimensions:
       .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.waitForTimeout(500);
-
-    await page.getByRole("cell", { name: "google.com", exact: true }).click();
     await page
-      .getByRole("cell", { name: "instagram.com", exact: true })
+      .getByRole("columnheader", { name: "google.com", exact: true })
       .click();
-    await page.getByRole("cell", { name: "msn.com", exact: true }).click();
+    await page
+      .getByRole("columnheader", { name: "instagram.com", exact: true })
+      .click();
+    await page
+      .getByRole("columnheader", { name: "msn.com", exact: true })
+      .click();
 
     await expect(page.getByText("Total rows 43,749")).toBeVisible();
 
-    await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
+    await page.getByRole("columnheader", { name: "Total rows" }).click();
 
     await page.getByLabel("Open Total rows").click();
     await page.getByRole("menuitemcheckbox", { name: "Avg Bid Price" }).click();
