@@ -31,8 +31,10 @@
 </script>
 
 <Popover.Root bind:open>
-  <Popover.Trigger asChild let:builder>
-    <Button type="secondary" builders={[builder]}>Download Project</Button>
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <Button {...props} type="secondary">Download Project</Button>
+    {/snippet}
   </Popover.Trigger>
 
   <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
@@ -54,7 +56,7 @@
           <button
             class="command-box"
             title={rillStartCommand}
-            on:click={() => onCopy(rillStartCommand)}
+            onclick={() => onCopy(rillStartCommand)}
           >
             <code class="text-xs truncate">{rillStartCommand}</code>
             <span class="text-fg-muted">
@@ -69,7 +71,7 @@
           <button
             class="command-box"
             title={cloneCommand}
-            on:click={() => onCopy(cloneCommand)}
+            onclick={() => onCopy(cloneCommand)}
           >
             <code class="text-xs truncate">{cloneCommand}</code>
             <span class="text-fg-muted">

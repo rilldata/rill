@@ -10,7 +10,7 @@ import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-for
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-import type { ColumnDef } from "@tanstack/svelte-table";
+import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { timeFormat } from "d3-time-format";
 import type { ComponentType, SvelteComponent } from "svelte";
 import PivotDeltaCell from "./PivotDeltaCell.svelte";

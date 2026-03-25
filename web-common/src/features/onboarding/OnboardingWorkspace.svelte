@@ -98,20 +98,22 @@
         Create a metrics view
       </Button>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button
-            type="tertiary"
-            builders={[builder]}
-            large
-            forcedStyle="height: 3rem;"
-          >
-            <PresentationIcon size="16px" />
-            Try demo projects
-          </Button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              type="tertiary"
+              large
+              forcedStyle="height: 3rem;"
+            >
+              <PresentationIcon size="16px" />
+              Try demo projects
+            </Button>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}
-            <DropdownMenu.Item on:click={() => unpackProject(example)}>
+            <DropdownMenu.Item onclick={() => unpackProject(example)}>
               {example.title}
             </DropdownMenu.Item>
           {/each}

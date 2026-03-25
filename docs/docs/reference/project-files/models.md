@@ -157,7 +157,11 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
-  - **option 6** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+  - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+
+    - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
+
+  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
@@ -236,7 +240,11 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
-  - **option 6** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+  - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+
+    - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
+
+  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
@@ -672,20 +680,6 @@ _[object]_ - Settings related to glob file matching.
 ### `batch_size`
 
 _[string]_ - Size of a batch (e.g., '100MB') 
-
-## Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
-
-### `soql`
-
-_[string]_ - SOQL query to execute against the Salesforce instance. 
-
-### `sobject`
-
-_[string]_ - Salesforce object (e.g., Account, Contact) targeted by the query. 
-
-### `queryAll`
-
-_[boolean]_ - Whether to include deleted and archived records in the query (uses queryAll API). 
 
 ## Examples
 

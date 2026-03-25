@@ -39,11 +39,46 @@ project_files:
         expression: count(*)
       - name: sum
         expression: sum(val)
+  clickhouse_metrics_with_schema.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    dimensions:
+      - name: country
+        column: country_code
+        lookup_table: default.clickhouse_country_dict
+        lookup_key_column: code
+        lookup_value_column: name
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
 tests:
   - name: lookup_dimension_clickhouse
     resolver: metrics
     properties:
       metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: country
+            - val: 'Denmark'
+    result:
+      - sum: 6
+        country: Denmark
+  - name: lookup_dimension_clickhouse_with_schema
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_with_schema
       dimensions:
         - name: country
       measures:

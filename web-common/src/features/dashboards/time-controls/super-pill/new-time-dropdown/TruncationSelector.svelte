@@ -9,7 +9,8 @@
   } from "@rilldata/web-common/lib/time/new-grains";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { builderActions, getAttrs, Tooltip } from "bits-ui";
+  import { Tooltip as TooltipPrimitive } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import { onDestroy, onMount } from "svelte";
@@ -34,9 +35,25 @@
   ) => void;
 
   let open = false;
+  let hoveredOption: string | null = null;
+  let hoverTimer: ReturnType<typeof setTimeout> | undefined;
   let now = DateTime.now().setZone(zone);
+
+  function startHoverTimer(id: string) {
+    clearHoverTimer();
+    hoverTimer = setTimeout(() => {
+      hoveredOption = id;
+    }, 800);
+  }
+
+  function clearHoverTimer() {
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+    }
+    hoveredOption = null;
+  }
   let interval: ReturnType<typeof setInterval> | undefined = undefined;
-  let disableTooltip = false;
 
   onMount(() => {
     interval = setInterval(() => {
@@ -47,6 +64,9 @@
   onDestroy(() => {
     if (interval) {
       clearInterval(interval);
+    }
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
     }
   });
 
@@ -140,73 +160,55 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open disableFocusFirstItem>
-  <DropdownMenu.Trigger asChild let:builder id="truncation-selector-trigger">
-    <button
-      type="button"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      class="flex gap-x-1 items-center flex-none truncate"
-      aria-label="Select reference time and grain"
-      data-state={open ? "open" : "closed"}
-      on:mouseenter={() => {
-        if (!open) disableTooltip = false;
-      }}
-      on:mouseleave={() => {
-        disableTooltip = true;
-      }}
-    >
-      <Tooltip.Root openDelay={800}>
-        <Tooltip.Trigger asChild id="truncation-selector-trigger" let:builder>
-          <div
-            class:pointer-events-none={disableTooltip}
-            class="flex gap-x-1 items-center flex-none truncate"
-            use:builderActions={{ builders: [builder] }}
-            {...getAttrs([builder])}
-          >
-            <p>
-              as of
-              <b>
-                {humanizedRef}
-                {#if dateTimeUnit}
-                  {dateTimeUnit}
-                {/if}
-              </b>
-              {#if grain}
-                {#if snapToEnd || ref === RillTimeLabel.Watermark}
-                  end
-                {:else}
-                  start
-                {/if}
+<DropdownMenu.Root bind:open>
+  <Tooltip.Root delayDuration={800}>
+    <TooltipPrimitive.Trigger>
+      {#snippet child({ props: tooltipProps })}
+        <DropdownMenu.Trigger
+          {...tooltipProps}
+          id="truncation-selector-trigger"
+          type="button"
+          class="flex gap-x-1 items-center flex-none truncate"
+          aria-label="Select reference time and grain"
+          data-state={open ? "open" : "closed"}
+        >
+          <p>
+            as of
+            <b>
+              {humanizedRef}
+              {#if dateTimeUnit}
+                {dateTimeUnit}
               {/if}
-            </p>
+            </b>
+            {#if grain}
+              {#if snapToEnd || ref === RillTimeLabel.Watermark}
+                end
+              {:else}
+                start
+              {/if}
+            {/if}
+          </p>
 
-            <span
-              class="flex-none transition-transform"
-              class:-rotate-180={open}
-            >
-              <CaretDownIcon />
-            </span>
-          </div>
-        </Tooltip.Trigger>
+          <span class="flex-none transition-transform" class:-rotate-180={open}>
+            <CaretDownIcon />
+          </span>
+        </DropdownMenu.Trigger>
+      {/snippet}
+    </TooltipPrimitive.Trigger>
 
-        <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-          <TooltipContent>
-            <TooltipTitle>
-              <svelte:fragment slot="name">
-                {derivedAnchor.toLocaleString(
-                  DateTime.DATETIME_MED_WITH_SECONDS,
-                )}
-              </svelte:fragment>
-            </TooltipTitle>
-            <TooltipDescription>
-              {getColloquialOffset(derivedAnchor)}
-            </TooltipDescription>
-          </TooltipContent>
-        </Tooltip.Content>
-      </Tooltip.Root>
-    </button>
-  </DropdownMenu.Trigger>
+    <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
+      <TooltipContent>
+        <TooltipTitle>
+          <svelte:fragment slot="name">
+            {derivedAnchor.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+          </svelte:fragment>
+        </TooltipTitle>
+        <TooltipDescription>
+          {getColloquialOffset(derivedAnchor)}
+        </TooltipDescription>
+      </TooltipContent>
+    </Tooltip.Content>
+  </Tooltip.Root>
 
   <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
     <DropdownMenu.Group class="p-1">
@@ -215,60 +217,55 @@
       </h3>
       {#each options as { id, label, description, timestamp } (id)}
         {#if id !== RillTimeLabel.Watermark || (id === RillTimeLabel.Watermark && !!timestamp)}
-          <DropdownMenu.CheckboxItem
-            checkRight
-            checked={ref === id}
-            preloadData={false}
-            on:click={() => {
-              onSelectAsOfOption(id);
-            }}
-          >
-            <Tooltip.Root openDelay={800}>
-              <Tooltip.Trigger
-                asChild
-                class="size-full flex justify-between"
-                id="{label}-tooltip-trigger"
-                let:builder
-              >
-                <div
-                  class="w-full"
-                  {...getAttrs([builder])}
-                  use:builderActions={{ builders: [builder] }}
+          <Tooltip.Root open={hoveredOption === id}>
+            <TooltipPrimitive.Trigger>
+              {#snippet child({ props: tooltipProps })}
+                <DropdownMenu.CheckboxItem
+                  {...tooltipProps}
+                  checkRight
+                  closeOnSelect
+                  checked={ref === id}
+                  preloadData={false}
+                  onSelect={() => {
+                    onSelectAsOfOption(id);
+                  }}
+                  onpointerenter={() => startHoverTimer(id)}
+                  onpointerleave={clearHoverTimer}
                 >
                   {label}
-                </div>
-              </Tooltip.Trigger>
+                </DropdownMenu.CheckboxItem>
+              {/snippet}
+            </TooltipPrimitive.Trigger>
 
-              {#if timestamp}
-                <Tooltip.Content
-                  side="right"
-                  sideOffset={40}
-                  class="w-65 z-50"
-                  id="{label}-tooltip-content"
-                >
-                  <TooltipContent class="w-60">
-                    <div class="flex items-center justify-between">
-                      <span class="font-bold truncate text-fg-inverse">
-                        {timestamp.toLocaleString(
-                          DateTime.DATETIME_MED_WITH_SECONDS,
-                        )}
-                      </span>
-                      <SyntaxElement dark range={id} />
+            {#if timestamp}
+              <Tooltip.Content
+                side="right"
+                sideOffset={40}
+                class="w-65 z-50"
+                id="{label}-tooltip-content"
+              >
+                <TooltipContent class="w-60">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold truncate text-fg-inverse">
+                      {timestamp.toLocaleString(
+                        DateTime.DATETIME_MED_WITH_SECONDS,
+                      )}
+                    </span>
+                    <SyntaxElement dark range={id} />
+                  </div>
+
+                  {#if id !== RillTimeLabel.Now}
+                    <div>
+                      {getColloquialOffset(timestamp)}
                     </div>
-
-                    {#if id !== RillTimeLabel.Now}
-                      <div>
-                        {getColloquialOffset(timestamp)}
-                      </div>
-                    {/if}
-                    <TooltipDescription>
-                      {description}
-                    </TooltipDescription>
-                  </TooltipContent>
-                </Tooltip.Content>
-              {/if}
-            </Tooltip.Root>
-          </DropdownMenu.CheckboxItem>
+                  {/if}
+                  <TooltipDescription>
+                    {description}
+                  </TooltipDescription>
+                </TooltipContent>
+              </Tooltip.Content>
+            {/if}
+          </Tooltip.Root>
         {/if}
       {/each}
     </DropdownMenu.Group>
@@ -280,8 +277,9 @@
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
           checkRight
+          closeOnSelect
           checked={option === grain}
-          on:click={() => {
+          onSelect={() => {
             onSelectEnding(option);
           }}
         >
@@ -303,7 +301,7 @@
             disabled={ref === RillTimeLabel.Watermark}
             small
             checked={snapToEnd || ref === RillTimeLabel.Watermark}
-            on:click={() => {
+            onclick={() => {
               onToggleAlignment(!snapToEnd);
             }}
           />

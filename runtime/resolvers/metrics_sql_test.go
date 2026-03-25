@@ -17,7 +17,7 @@ func TestSimpleMetricsSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "simple_mv_sql_api")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
@@ -44,7 +44,7 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
@@ -71,7 +71,7 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api_2")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
@@ -96,7 +96,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
 
-	_, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	_, _, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
@@ -108,7 +108,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	api, err = rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
@@ -133,7 +133,7 @@ func TestMetricsSQLWithAdditionalWhere(t *testing.T) {
 
 	testruntime.RequireParseErrors(t, rt, instanceID, nil)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{
@@ -163,7 +163,7 @@ func TestMetricsSQLWithAdditionalWhere(t *testing.T) {
 		require.Equal(t, "msn.com", row["dom"], "All rows should have dom = msn.com due to additional_where filter")
 	}
 
-	resNoFilter, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	resNoFilter, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{
@@ -200,7 +200,7 @@ func TestMetricsSQLWithAdditionalTimeRange(t *testing.T) {
 	}
 
 	testruntime.RequireParseErrors(t, rt, instanceID, nil)
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{
@@ -219,7 +219,7 @@ func TestMetricsSQLWithAdditionalTimeRange(t *testing.T) {
 	require.Greater(t, len(rows), 0, "Should return filtered results for the additional time range")
 
 	// Use additional_time_range and additional_where to filter results
-	resWithFilter, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	resWithFilter, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{
@@ -250,7 +250,7 @@ func TestMetricsSQLWithAdditionalTimeZone(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	// Use a timezone and check that the query does not error and returns data
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{
@@ -268,7 +268,7 @@ func TestMetricsSQLWithAdditionalTimeZone(t *testing.T) {
 	require.Greater(t, len(rows), 0, "Should return rows for valid timezone filter")
 
 	// Use an invalid timezone and expect an error
-	_, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	_, _, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{

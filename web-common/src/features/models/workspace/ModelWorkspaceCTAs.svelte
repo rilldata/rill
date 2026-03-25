@@ -69,15 +69,17 @@
   <CreateDashboardButton {collapse} {hasResultTable} {modelName} />
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <NavigateOrDropdown resources={availableMetricsViews} {builder} />
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <NavigateOrDropdown {...props} resources={availableMetricsViews} />
+      {/snippet}
     </DropdownMenu.Trigger>
 
     {#if availableMetricsViews.length}
       <DropdownMenu.Content align="end">
         {#each availableMetricsViews as resource (resource?.meta?.name?.name)}
           <DropdownMenu.Item
-            on:click={async () => {
+            onclick={async () => {
               if (resource?.meta?.filePaths?.[0]) {
                 await goto(
                   `/files/${removeLeadingSlash(resource.meta.filePaths[0])}`,
@@ -91,7 +93,7 @@
         {/each}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (!hasResultTable) return;
             await createMetricsViewFromTable();
           }}

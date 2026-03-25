@@ -36,10 +36,10 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					return fmt.Errorf("the --local flag cannot be used with <project-name> positional argument")
 				}
 			} else {
-				if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-					name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+				if name == "" {
+					name, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name or --local to target a local Rill process")
 					if err != nil {
-						return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+						return err
 					}
 				}
 				// Project info and deployment info not available --local mode
@@ -131,20 +131,28 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				if parser.Meta.ReconcileError != "" {
 					table = append(table, &parseErrorTableRow{
 						Path:  "<meta>",
+						Level: "error",
 						Error: parser.Meta.ReconcileError,
 					})
 				}
 				if state != nil {
 					for _, e := range state.ParseErrors {
+						var lvl string
+						if e.Warning {
+							lvl = "warning"
+						} else {
+							lvl = "error"
+						}
 						table = append(table, &parseErrorTableRow{
 							Path:  e.FilePath,
+							Level: lvl,
 							Error: e.Message,
 						})
 					}
 				}
 
 				if len(table) > 0 {
-					ch.PrintfSuccess("\nParse errors\n\n")
+					ch.PrintfSuccess("\nParse issues\n\n")
 					ch.PrintData(table)
 				}
 			}
@@ -184,5 +192,6 @@ func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 
 type parseErrorTableRow struct {
 	Path  string `header:"path"`
+	Level string `header:"level"`
 	Error string `header:"error"`
 }

@@ -260,4 +260,4 @@
   </div>
 {/if}
 
-<svelte:window on:keydown={handleKeyDown} />
+<svelte:window onkeydown={handleKeyDown} />

@@ -69,6 +69,7 @@ General rules for writing Go code:
 - Avoid short utility functions that are only used once; it is usually more readable to inline these in their parent function.
 - Avoid variables that only serve as aliases unless there's a large readability improvement (i.e. the expression is very long and used several times); for example, instead of `db := table.Database`, just reference `table.Database` directly.
 - Use the standard library `errors` (not `github.com/pkg/errors`).
+- Prefer `require.NoError(...)` instead of `panic` in tests.
 
 Rules for contributing backend features in Rill:
 
