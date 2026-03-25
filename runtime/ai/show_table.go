@@ -42,6 +42,12 @@ func (t *ShowTable) Spec() *mcp.Tool {
 		Name:        ShowTableName,
 		Title:       "Show Table",
 		Description: "Show schema and column information for a table in an OLAP connector. Note: Table, schema and database names passed to this tool are case sensitive; if you get an error and you're working with a database that folds unquoted identifiers (e.g Snowflake folds to uppercase), you may need to retry with the casing adjusted accordingly.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting table schema...",
 			"openai/toolInvocation/invoked":  "Got table schema",

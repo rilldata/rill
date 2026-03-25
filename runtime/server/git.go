@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -44,7 +43,7 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 	defer release()
 
 	deployments, err := admin.ListDeployments(ctx)
-	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}
 

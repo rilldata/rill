@@ -84,11 +84,11 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 
 	// check if specified project already exists
 	if o.Name != "" && ch.Org != "" {
-		p, err := getProject(ctx, ch, ch.Org, o.Name)
-		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		p, exists, err := getProject(ctx, ch, ch.Org, o.Name)
+		if err != nil {
 			return err
 		}
-		if p != nil {
+		if exists {
 			if ch.Interactive {
 				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), true); err != nil {
 					return err
@@ -594,11 +594,10 @@ func orgNamePrompt(ctx context.Context, ch *cmdutil.Helper) (string, error) {
 
 				exists, err := orgExists(ctx, ch, name)
 				if err != nil {
-					return fmt.Errorf("org name %q is already taken", name)
+					return fmt.Errorf("failed to check org name: %w", err)
 				}
 
 				if exists {
-					// this should always be true but adding this check from completeness POV
 					return fmt.Errorf("org with name %q already exists", name)
 				}
 				return nil
@@ -632,33 +631,22 @@ func orgExists(ctx context.Context, ch *cmdutil.Helper, name string) (bool, erro
 	return true, nil
 }
 
-func projectExists(ctx context.Context, ch *cmdutil.Helper, org, project string) (bool, error) {
-	_, err := getProject(ctx, ch, org, project)
-	if err != nil {
-		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func getProject(ctx context.Context, ch *cmdutil.Helper, org, project string) (*adminv1.Project, error) {
+func getProject(ctx context.Context, ch *cmdutil.Helper, org, project string) (*adminv1.Project, bool, error) {
 	c, err := ch.Client()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	p, err := c.GetProject(ctx, &adminv1.GetProjectRequest{Org: org, Project: project})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
-				return nil, cmdutil.ErrNoMatchingProject
+				return nil, false, nil
 			}
 		}
-		return nil, err
+		return nil, false, err
 	}
-	return p.Project, nil
+	return p.Project, true, nil
 }
 
 func errMsgContains(err error, msg string) bool {
