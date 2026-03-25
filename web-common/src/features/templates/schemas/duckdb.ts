@@ -38,7 +38,6 @@ export const duckdbSchema: MultiStepFormSchema = {
         "This option uses DuckDB as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your DuckDB instance.",
       default: false,
       "x-informational": true,
-      "x-ui-only": true,
       "x-visible-if": {
         connector_type: "rill-managed",
       },

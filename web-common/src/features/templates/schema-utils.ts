@@ -254,6 +254,11 @@ export function getSchemaInitialValues(
       initial[key] = prop.default;
       continue;
     }
+    // Boolean fields must be initialized to avoid bind:checked={undefined} errors
+    if (prop.type === "boolean") {
+      initial[key] = false;
+      continue;
+    }
     if (prop["x-display"] === "key-value") {
       initial[key] = [];
       continue;

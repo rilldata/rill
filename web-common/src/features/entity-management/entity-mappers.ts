@@ -129,6 +129,7 @@ export const FolderNameToResourceKind: Record<string, ResourceKind> = {
   // explores: ResourceKind.Explore, // This does not happen on backend
   charts: ResourceKind.Component,
   canvas: ResourceKind.Canvas,
+  connectors: ResourceKind.Connector,
 };
 
 export const ResourceShortNameToResourceKind: Record<string, ResourceKind> = {

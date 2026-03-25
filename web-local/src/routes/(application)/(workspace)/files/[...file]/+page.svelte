@@ -13,6 +13,7 @@
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
+  import ConnectorWorkspace from "@rilldata/web-common/features/workspaces/ConnectorWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
@@ -21,6 +22,7 @@
   import type { PageData } from "./$types";
 
   const workspaces = new Map([
+    [ResourceKind.Connector, ConnectorWorkspace],
     [ResourceKind.Source, ModelWorkspace],
     [ResourceKind.Model, ModelWorkspace],
     [ResourceKind.MetricsView, MetricsWorkspace],

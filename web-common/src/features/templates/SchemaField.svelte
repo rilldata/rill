@@ -44,6 +44,7 @@
     bind:value
     uploadFile={(file) => handleFileUpload(file, id)}
     accept={getFileAccept(prop)}
+    configuredLabel={prop["x-env-var-name"] ?? undefined}
   />
 {:else if prop["x-display"] === "toggle" && prop.type === "boolean"}
   <div class="flex items-center justify-between gap-3">

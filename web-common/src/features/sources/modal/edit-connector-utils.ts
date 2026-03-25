@@ -104,6 +104,50 @@ function inferUiOnlyTabValues(
       }
     }
   }
+
+  // Pass 3: refine x-grouped-fields using allOf const-value matching.
+  // This disambiguates cases like ClickHouse Playground where the grouped
+  // child field (playground_info) is x-ui-only and never in the YAML, but
+  // the allOf conditionals define unique const values (host, port, etc.)
+  // that can identify the correct group.
+  if (schema.allOf) {
+    for (const [key, field] of groupedFields) {
+      const groups = field["x-grouped-fields"] as Record<string, string[]>;
+      const enumValues = new Set(Object.keys(groups));
+
+      let bestValue = formValues[key] as string | undefined;
+      let bestScore = 0;
+
+      for (const rule of schema.allOf as any[]) {
+        const ifConst = rule.if?.properties?.[key]?.const;
+        if (!ifConst || !enumValues.has(ifConst)) continue;
+
+        const thenProps = rule.then?.properties ?? {};
+        let score = 0;
+        for (const [propKey, propDef] of Object.entries(thenProps) as [
+          string,
+          any,
+        ][]) {
+          if (
+            propDef.const !== undefined &&
+            String(specProperties[propKey]) === String(propDef.const)
+          ) {
+            score++;
+          }
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestValue = ifConst;
+        }
+      }
+
+      // Only override if allOf matching found strong evidence (≥3 const matches)
+      if (bestScore >= 3 && bestValue) {
+        formValues[key] = bestValue;
+      }
+    }
+  }
 }
 
 /**

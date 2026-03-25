@@ -16,6 +16,7 @@
   export let hideContent: boolean = false;
   export let hidden: boolean = false;
   export let filename: string | string[] | undefined = undefined;
+  export let configuredLabel: string | undefined = undefined;
 
   let fileInput: HTMLInputElement;
 
@@ -176,12 +177,14 @@
             Uploading...
           {:else if selectedFileName && !hideContent}
             {selectedFileName}
+          {:else if value && !hideContent}
+            Configured via {#if configuredLabel}<i>{configuredLabel}</i>{:else}.env{/if}
           {:else}
             No file chosen
           {/if}
         </span>
       </button>
-      {#if selectedFileName && !hideContent && !Object.values(uploading).some((u) => u)}
+      {#if (selectedFileName || value) && !hideContent && !Object.values(uploading).some((u) => u)}
         <div class="trash-icon-button">
           <IconButton size={24} ariaLabel="Remove file" onclick={clearFile}>
             <Trash size="16px" />
