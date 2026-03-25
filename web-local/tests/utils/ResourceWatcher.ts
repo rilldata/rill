@@ -22,7 +22,7 @@ export class ResourceWatcher {
   ) {
     return waitUntil(
       () => this.statuses.get(`${type}__${name}`) === "RECONCILE_STATUS_IDLE",
-      15_000,
+      10_000,
     );
   }
 
