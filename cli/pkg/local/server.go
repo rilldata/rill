@@ -662,7 +662,7 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 
 	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 				LocalProjectName: localProjectName,
 			}), nil
@@ -743,7 +743,7 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 
 	projects, err := s.app.ch.InferProjects(ctx, "", s.app.ProjectPath)
 	if err != nil {
-		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
 				Projects: nil,
 			}), nil

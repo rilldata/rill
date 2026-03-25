@@ -97,7 +97,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Always attempt to pull env for any valid Rill project (after projectPath is set)
 	if opts.PullEnv && opts.Ch.IsAuthenticated() && IsProjectInit(opts.ProjectPath) {
 		err := env.PullVars(ctx, opts.Ch, opts.ProjectPath, "", opts.Environment, false)
-		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if err != nil && !errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			opts.Ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
 		}
 	}
