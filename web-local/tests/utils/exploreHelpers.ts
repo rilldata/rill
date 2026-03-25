@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Page } from "playwright";
 import {
   clickMenuButton,
@@ -28,7 +29,10 @@ export async function createExploreFromModel(
   await page.getByText("Generate Explore Dashboard").click();
 
   if (navigateToPreview) {
-    await page.getByRole("button", { name: "Preview" }).click();
+    const previewButton = page.getByRole("button", { name: "Preview" });
+    await previewButton.waitFor({ state: "visible" });
+    await expect(previewButton).toBeEnabled({ timeout: 10_000 });
+    await previewButton.click();
   }
 
   await page.waitForTimeout(1000);
