@@ -34,6 +34,7 @@
   export let onClearFilters: (() => void) | null = null;
   export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
+  export let flushToolbar = false;
 
   onMount(() => {
     graphCache.initialize();
@@ -112,4 +113,5 @@
   {onClearFilters}
   {onSelectAll}
   {hasUrlFilters}
+  {flushToolbar}
 />

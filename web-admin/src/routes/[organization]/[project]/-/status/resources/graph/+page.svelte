@@ -161,6 +161,7 @@
     onClearFilters={handleClearFilters}
     onSelectAll={() => goto(graphBasePath)}
     {hasUrlFilters}
+    flushToolbar
   />
 </div>
 

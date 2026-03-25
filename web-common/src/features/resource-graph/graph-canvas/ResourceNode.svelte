@@ -5,8 +5,6 @@
   import type { ResourceNodeData } from "../shared/types";
   import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceNodeActions from "./ResourceNodeActions.svelte";
   import { openInspect } from "./inspect-store";
 
@@ -132,28 +130,13 @@
     isConnectable={isConnectable ?? true}
   />
 
-  <ConditionalTooltip
-    showTooltip={hasError}
-    location="top"
-    distance={8}
-    activeDelay={150}
-  >
-    <div class="title-row">
-      {#if kind}<ResourceTypeBadge {kind} showLabel={false} />{/if}
-      <p class="title" title={data?.label}>{data?.label}</p>
-    </div>
-    {#if showActions}
-      <ResourceNodeActions bind:this={actionsRef} {data} />
-    {/if}
-
-    <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
-      <div class="error-tooltip-content">
-        <span class="error-tooltip-title">Error</span>
-        <pre class="error-tooltip-message">{data?.resource?.meta
-            ?.reconcileError}</pre>
-      </div>
-    </TooltipContent>
-  </ConditionalTooltip>
+  <div class="title-row">
+    {#if kind}<ResourceTypeBadge {kind} showLabel={false} />{/if}
+    <p class="title" title={data?.label}>{data?.label}</p>
+  </div>
+  {#if showActions}
+    <ResourceNodeActions bind:this={actionsRef} {data} />
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -205,18 +188,6 @@
 
   .title {
     @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
-  }
-
-  .error-tooltip-content {
-    @apply flex flex-col gap-y-1;
-  }
-
-  .error-tooltip-title {
-    @apply text-xs font-semibold uppercase tracking-wide text-red-500;
-  }
-
-  .error-tooltip-message {
-    @apply max-h-[200px] overflow-auto whitespace-pre-wrap text-xs;
   }
 
   /* Hide handle dots */

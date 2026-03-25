@@ -4,7 +4,7 @@
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import type { ComponentType, SvelteComponent } from "svelte";
   import {
-    AlertTriangle,
+    AlertTriangleIcon,
     Zap,
     Layers,
     Clock,
@@ -12,7 +12,9 @@
     ExternalLink,
     X,
   } from "lucide-svelte";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { inspectedNode, closeInspect } from "./inspect-store";
   import { goto } from "$app/navigation";
   import { getGraphNavigation } from "../shared/graph-navigation-context";
@@ -132,6 +134,13 @@
       <div class="flex items-center gap-x-2">
         {#if kind}<ResourceTypeBadge {kind} />{/if}
         <span class="text-sm font-medium">{resourceName}</span>
+        {#if isPending}
+          <LoadingSpinner size="14px" />
+        {:else if hasError}
+          <CancelCircle size="14px" className="text-red-500 flex-none" />
+        {:else if isTestOnlyError}
+          <AlertTriangleIcon size="14px" class="text-yellow-500 flex-none" />
+        {/if}
       </div>
       <button class="close-btn" onclick={closeInspect} aria-label="Close">
         <X size="14px" />
@@ -140,22 +149,15 @@
 
     <!-- Body -->
     <div class="panel-body">
-      <!-- Status -->
       {#if hasError}
-        <div class="status-banner error">
-          <AlertTriangle size="14px" />
-          <span>Error</span>
+        <div class="error-banner">
+          <CancelCircle size="14px" className="text-destructive flex-none" />
+          <pre class="error-message">{reconcileError}</pre>
         </div>
-        <pre class="error-message">{reconcileError}</pre>
       {:else if isTestOnlyError}
-        <div class="status-banner warning">
-          <AlertTriangle size="14px" />
-          <span>Tests failed</span>
-        </div>
-      {:else if isPending}
-        <div class="status-banner pending">
-          <Clock size="14px" />
-          <span>Reconciling...</span>
+        <div class="warning-banner">
+          <AlertTriangleIcon size="14px" class="text-yellow-500 flex-none" />
+          <pre class="error-message">{reconcileError}</pre>
         </div>
       {/if}
 
@@ -212,7 +214,7 @@
               class:text-amber-600={testHasErrors}
             >
               {#if testHasErrors}
-                <AlertTriangle size="12px" />
+                <AlertTriangleIcon size="12px" />
               {:else}
                 <CheckCircle size="12px" color="currentColor" />
               {/if}
@@ -348,24 +350,16 @@
     @apply text-xs text-fg-primary;
   }
 
-  .status-banner {
-    @apply flex items-center gap-x-1.5 text-xs font-medium px-2 py-1.5 rounded;
+  .error-banner {
+    @apply flex gap-x-2 items-start border border-destructive bg-destructive/15 text-fg-primary border-l-4 px-2 py-2 rounded;
   }
 
-  .status-banner.error {
-    @apply bg-red-50 text-red-600;
-  }
-
-  .status-banner.warning {
-    @apply bg-amber-50 text-amber-600;
-  }
-
-  .status-banner.pending {
-    @apply bg-blue-50 text-blue-600;
+  .warning-banner {
+    @apply flex gap-x-2 items-start border border-yellow-400 bg-yellow-500/15 text-fg-primary border-l-4 px-2 py-2 rounded;
   }
 
   .error-message {
-    @apply text-xs font-mono whitespace-pre-wrap bg-surface-subtle rounded p-2 max-h-[80px] overflow-auto;
+    @apply text-xs font-mono whitespace-pre-wrap max-h-[80px] overflow-auto;
   }
 
   .file-link {

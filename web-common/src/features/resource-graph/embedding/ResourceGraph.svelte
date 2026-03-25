@@ -91,6 +91,7 @@
   export let onClearFilters: (() => void) | null = null;
   export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
+  export let flushToolbar = false;
 
   type SummaryMemo = {
     connector: number;
@@ -798,7 +799,7 @@
 >
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
-    <div class="graph-toolbar-bar" class:nav-collapsed={!$navigationOpen}>
+    <div class="graph-toolbar-bar" class:nav-collapsed={!$navigationOpen} class:flush-toolbar={flushToolbar}>
       <!-- Search combo: input + resource dropdown -->
       <div
         class="search-combo"
@@ -1120,6 +1121,10 @@
 
   .graph-toolbar-bar.nav-collapsed {
     padding-left: 44px;
+  }
+
+  .graph-toolbar-bar.flush-toolbar {
+    @apply px-0;
   }
 
   .search-combo {

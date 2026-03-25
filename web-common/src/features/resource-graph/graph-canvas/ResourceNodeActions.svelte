@@ -26,9 +26,11 @@
   } from "lucide-svelte";
   import {
     createRuntimeServiceCreateTriggerMutation,
+    getRuntimeServiceListResourcesQueryKey,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { goto } from "$app/navigation";
   import type { ResourceNodeData } from "../shared/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -80,6 +82,7 @@
   });
 
   const runtimeClient = useRuntimeClient();
+  const queryClient = useQueryClient();
   $: resource = data?.resource;
   $: kind = data?.kind;
   $: resourceName = resource?.meta?.name?.name ?? "";
@@ -133,6 +136,14 @@
         models: [{ model: resourceName, full }],
       },
       {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({
+            queryKey: getRuntimeServiceListResourcesQueryKey(
+              runtimeClient.instanceId,
+              undefined,
+            ),
+          });
+        },
         onError: (err) => {
           console.error(`Failed to refresh ${resourceName}:`, err);
           eventBus.emit("notification", {
