@@ -125,7 +125,8 @@ export class AddDataFormManager {
     this.errorsStore = errorsStore;
     this.getSelectedAuthMethod = getSelectedAuthMethod;
     this.editMode = args.editMode ?? false;
-    this.editConnectorInstanceName = args.editConnectorInstanceName ?? undefined;
+    this.editConnectorInstanceName =
+      args.editConnectorInstanceName ?? undefined;
 
     // Use schemaName if provided, otherwise fall back to connector.name
     this.schemaName = schemaName ?? connector.name ?? "";

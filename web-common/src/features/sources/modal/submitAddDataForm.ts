@@ -486,8 +486,7 @@ export async function submitEditConnectorForm(
   const resource = await runtimeServiceGetResource(client, {
     name: { kind: ResourceKind.Connector, name: connectorInstanceName },
   });
-  const specProperties =
-    resource?.resource?.connector?.spec?.properties ?? {};
+  const specProperties = resource?.resource?.connector?.spec?.properties ?? {};
 
   // Build a mapping of property key → existing env var name from the YAML
   const existingEnvVarNames = new Map<string, string>();

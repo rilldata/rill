@@ -178,7 +178,8 @@
           {:else if selectedFileName && !hideContent}
             {selectedFileName}
           {:else if value && !hideContent}
-            Configured via {#if configuredLabel}<i>{configuredLabel}</i>{:else}.env{/if}
+            Configured via {#if configuredLabel}<i>{configuredLabel}</i
+              >{:else}.env{/if}
           {:else}
             No file chosen
           {/if}

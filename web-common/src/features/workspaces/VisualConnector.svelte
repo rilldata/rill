@@ -216,9 +216,7 @@
         // Extract values from file (e.g. project_id from GCP JSON)
         if (Object.keys(result.extractedValues).length > 0) {
           formStoreWrapper.update(($form) => {
-            for (const [key, value] of Object.entries(
-              result.extractedValues,
-            )) {
+            for (const [key, value] of Object.entries(result.extractedValues)) {
               $form[key] = value;
             }
             return $form;
@@ -356,10 +354,7 @@
           schema ?? undefined,
         );
         if (base !== actual) {
-          yaml = yaml.replace(
-            `{{ .env.${base} }}`,
-            `{{ .env.${actual} }}`,
-          );
+          yaml = yaml.replace(`{{ .env.${base} }}`, `{{ .env.${actual} }}`);
         }
       }
 
@@ -449,11 +444,7 @@
         Save
       </Button>
 
-      <Button
-        type="text"
-        disabled={!formDirty || saving}
-        onClick={revert}
-      >
+      <Button type="text" disabled={!formDirty || saving} onClick={revert}>
         <UndoIcon size="14px" />
         Revert changes
       </Button>

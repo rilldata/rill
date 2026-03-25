@@ -82,7 +82,8 @@
       get(connectorStepStore).selectedAuthMethod ?? undefined,
     schemaName,
     editMode,
-    editConnectorInstanceName: editMode && connectorInstanceName ? connectorInstanceName : undefined,
+    editConnectorInstanceName:
+      editMode && connectorInstanceName ? connectorInstanceName : undefined,
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;

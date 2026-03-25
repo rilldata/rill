@@ -20,12 +20,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({
-    hasUnsavedChanges,
-    autoSave,
-    path: filePath,
-    fileName,
-  } = fileArtifact);
+  $: ({ hasUnsavedChanges, autoSave, path: filePath, fileName } = fileArtifact);
 
   $: workspace = workspaces.get(filePath);
   $: selectedView = workspace.view;
