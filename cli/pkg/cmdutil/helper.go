@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -647,6 +648,19 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	default:
 		return fmt.Errorf("aborting deploy")
 	}
+}
+
+// IsLocalRillRunning checks whether rill start is listening on the default HTTP port (9009).
+// This is a best-effort check that assumes the default port.
+func IsLocalRillRunning(ctx context.Context) bool {
+	d := net.Dialer{Timeout: time.Second}
+	conn, err := d.DialContext(ctx, "tcp", "localhost:9009")
+	if err != nil {
+		// This could be another error than unix.ECONNREFUSED, but not checking that as it's a best-efforts check.
+		return false
+	}
+	conn.Close()
+	return true
 }
 
 func removeRemote(path, remoteName string) error {
