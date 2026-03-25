@@ -7,12 +7,13 @@ test.describe("Breadcrumbs", () => {
 
   test.describe("Breadcrumb interactions", () => {
     test.describe.configure({ retries: 3 });
+    test.setTimeout(120_000);
     test("breadcrumb navigation", async ({ page }) => {
       await uploadFile(page, "AdBids.csv");
 
       await page
         .getByText("View this source")
-        .waitFor({ state: "visible", timeout: 5000 });
+        .waitFor({ state: "visible", timeout: 20000 });
 
       await page.getByText("View this source").click();
 

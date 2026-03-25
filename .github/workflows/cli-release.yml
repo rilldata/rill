@@ -66,10 +66,10 @@ jobs:
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             git fetch --prune --unshallow
-            VERSION="$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')-nightly"
+            VERSION="$(scripts/versiontag.sh --next)-nightly"
           else
             VERSION='${{ github.ref_name }}'
-          fi   
+          fi
           
           go build -o rill \
             -mod=readonly \
@@ -125,7 +125,7 @@ jobs:
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             BUCKET_DIR=nightly
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
+            LATEST_TAG=$(scripts/versiontag.sh)
             echo "NIGHTLY=--nightly" >> $GITHUB_ENV
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
           else

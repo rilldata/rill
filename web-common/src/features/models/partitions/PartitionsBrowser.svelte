@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import type { Selected } from "bits-ui";
   import CollapsibleSectionTitle from "../../../layout/CollapsibleSectionTitle.svelte";
   import type { V1Resource } from "../../../runtime-client";
   import PartitionsFilter from "./PartitionsFilter.svelte";
@@ -13,8 +12,8 @@
 
   let selectedFilter = "all";
 
-  function onFilterChange(newSelection: Selected<string>) {
-    selectedFilter = newSelection.value;
+  function onFilterChange(newValue: string) {
+    selectedFilter = newValue;
   }
 </script>
 

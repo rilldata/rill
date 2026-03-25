@@ -26,6 +26,7 @@
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { LayoutData } from "./$types";
   import "@rilldata/web-common/app.css";
 
@@ -75,46 +76,48 @@
   $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
 </script>
 
-<QueryClientProvider client={queryClient}>
-  <RuntimeProvider {host} {instanceId}>
-    <FileAndResourceWatcher {host} {instanceId}>
-      <div
-        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
-      >
-        {#if data.initialized}
-          <BannerCenter />
-          <RepresentingUserBanner />
-          <ApplicationHeader {mode} />
-          {#if $deploy}
-            <RemoteProjectManager />
+<Tooltip.Provider>
+  <QueryClientProvider client={queryClient}>
+    <RuntimeProvider {host} {instanceId}>
+      <FileAndResourceWatcher {host} {instanceId}>
+        <div
+          class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+        >
+          {#if data.initialized}
+            <BannerCenter />
+            <RepresentingUserBanner />
+            <ApplicationHeader {mode} />
+            {#if $deploy}
+              <RemoteProjectManager />
+            {/if}
           {/if}
-        {/if}
 
-        <slot />
+          <slot />
+        </div>
+      </FileAndResourceWatcher>
+    </RuntimeProvider>
+  </QueryClientProvider>
+
+  {#if $overlay !== null}
+    <BlockingOverlayContainer
+      bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+    >
+      <div slot="title" class="font-bold">
+        {$overlay?.title}
       </div>
-    </FileAndResourceWatcher>
-  </RuntimeProvider>
-</QueryClientProvider>
+      <svelte:fragment slot="detail">
+        {#if $overlay?.detail}
+          <svelte:component
+            this={$overlay.detail.component}
+            {...$overlay.detail.props}
+          />
+        {/if}
+      </svelte:fragment>
+    </BlockingOverlayContainer>
+  {/if}
 
-{#if $overlay !== null}
-  <BlockingOverlayContainer
-    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
-  >
-    <div slot="title" class="font-bold">
-      {$overlay?.title}
-    </div>
-    <svelte:fragment slot="detail">
-      {#if $overlay?.detail}
-        <svelte:component
-          this={$overlay.detail.component}
-          {...$overlay.detail.props}
-        />
-      {/if}
-    </svelte:fragment>
-  </BlockingOverlayContainer>
-{/if}
-
-<NotificationCenter />
+  <NotificationCenter />
+</Tooltip.Provider>
 
 <style>
   /* Prevent trackpad navigation (like other code editors, like vscode.dev). */

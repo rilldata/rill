@@ -39,12 +39,15 @@
   <Command.Input placeholder="Search for users" />
   <Command.List>
     <Command.Empty>No results found.</Command.Empty>
-    <Command.Group heading="Users">
-      {#each clientSideUsers as user}
-        <Command.Item onSelect={() => handleViewAsUser(user)}>
-          {user.email}
-        </Command.Item>
-      {/each}
+    <Command.Group>
+      <Command.GroupHeading>Users</Command.GroupHeading>
+      <Command.GroupItems>
+        {#each clientSideUsers as user}
+          <Command.Item onSelect={() => handleViewAsUser(user)}>
+            {user.email}
+          </Command.Item>
+        {/each}
+      </Command.GroupItems>
     </Command.Group>
   </Command.List>
 </Command.Root>

@@ -36,7 +36,7 @@
 
 <div class="truncate flex flex-col">
   <Tooltip distance={6} location="top">
-    <button on:click={onCopy} class="truncate text-start" title={name}>
+    <button onclick={onCopy} class="truncate text-start" title={name}>
       <span class="source-code text-sm text-fg-primary font-medium truncate">
         {name}
       </span>

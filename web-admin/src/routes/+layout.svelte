@@ -27,6 +27,7 @@
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import OrgHeader from "../features/organizations/OrgHeader.svelte";
   import "@rilldata/web-common/app.css";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import type { V1Organization } from "@rilldata/web-admin/client";
@@ -136,32 +137,38 @@
   {/if}
 </svelte:head>
 
-<QueryClientProvider client={queryClient}>
-  <main
-    class="flex flex-col bg-surface-base dark:bg-surface-background"
-    class:min-h-screen={!$dynamicHeight}
-    class:h-screen={!$dynamicHeight}
-    use:pageContentSizeHandler
-  >
-    <BannerCenter />
-    {#if !hideBillingManager}
-      <BillingBannerManager {organization} {organizationPermissions} />
-    {/if}
-    {#if !isEmbed && !hideTopBar && !withinProject($page)}
-      <OrgHeader
-        readProjects={organizationPermissions?.readProjects}
-        {planDisplayName}
-        {organizationLogoUrl}
-      />
-
-      {#if withinOnlyOrg}
-        <OrganizationTabs {organization} {organizationPermissions} {pathname} />
+<Tooltip.Provider>
+  <QueryClientProvider client={queryClient}>
+    <main
+      class="flex flex-col bg-surface-base dark:bg-surface-background"
+      class:min-h-screen={!$dynamicHeight}
+      class:h-screen={!$dynamicHeight}
+      use:pageContentSizeHandler
+    >
+      <BannerCenter />
+      {#if !hideBillingManager}
+        <BillingBannerManager {organization} {organizationPermissions} />
       {/if}
-    {/if}
-    <ErrorBoundary>
-      <slot />
-    </ErrorBoundary>
-  </main>
-</QueryClientProvider>
+      {#if !isEmbed && !hideTopBar && !withinProject($page)}
+        <OrgHeader
+          readProjects={organizationPermissions?.readProjects}
+          {planDisplayName}
+          {organizationLogoUrl}
+        />
 
-<NotificationCenter />
+        {#if withinOnlyOrg}
+          <OrganizationTabs
+            {organization}
+            {organizationPermissions}
+            {pathname}
+          />
+        {/if}
+      {/if}
+      <ErrorBoundary>
+        <slot />
+      </ErrorBoundary>
+    </main>
+  </QueryClientProvider>
+
+  <NotificationCenter />
+</Tooltip.Provider>

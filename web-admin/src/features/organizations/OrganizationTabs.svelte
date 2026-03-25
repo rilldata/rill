@@ -54,7 +54,7 @@
       <span
         style:width="{$width}px"
         style:transform="translateX({$position}px) "
-      />
+      ></span>
     {/if}
   {/if}
 </div>
