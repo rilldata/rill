@@ -463,7 +463,7 @@ describe("compileSourceYAML", () => {
       { originalDriverName: "s3" },
     );
     expect(result).toContain(
-      "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
+      "https://docs.rilldata.com/developers/build/connectors/data-source/duckdb/s3",
     );
   });
 

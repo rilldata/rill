@@ -19,8 +19,8 @@ Delta tables can be read from any of the following storage backends:
 
 | Backend | URI format | Authentication |
 |---|---|---|
-| Amazon S3 | `s3://bucket/path/to/table` | Requires an [S3 connector](/developers/build/connectors/data-source/s3) |
-| Azure Blob Storage | `azure://container/path/to/table` | Requires an [Azure connector](/developers/build/connectors/data-source/azure) |
+| Amazon S3 | `s3://bucket/path/to/table` | Requires an [S3 connector](/developers/build/connectors/data-source/duckdb/s3) |
+| Azure Blob Storage | `azure://container/path/to/table` | Requires an [Azure connector](/developers/build/connectors/data-source/duckdb/azure) |
 | Local filesystem | `/path/to/table` | No authentication needed |
 
 :::info GCS not yet supported
@@ -87,8 +87,8 @@ sql: |
 
 Since Delta tables are read through DuckDB using your existing storage connector credentials, deploying to Rill Cloud follows the same process as the underlying storage connector:
 
-- **S3**: Follow the [S3 deployment guide](/developers/build/connectors/data-source/s3#deploy-to-rill-cloud)
-- **Azure**: Follow the [Azure deployment guide](/developers/build/connectors/data-source/azure#deploy-to-rill-cloud)
+- **S3**: Follow the [S3 deployment guide](/developers/build/connectors/data-source/duckdb/s3#deploy-to-rill-cloud)
+- **Azure**: Follow the [Azure deployment guide](/developers/build/connectors/data-source/duckdb/azure#deploy-to-rill-cloud)
 
 Ensure your storage connector credentials are configured in your Rill Cloud project before deploying.
 

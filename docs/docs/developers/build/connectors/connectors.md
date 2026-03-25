@@ -56,10 +56,34 @@ Rill offers flexible connection strategies to fit different data architectures a
   
   For large-scale datasets (100GB+) or existing [OLAP infrastructure](/developers/build/connectors/olap#what-is-olap), connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
 
-## OLAP Engines
 
+## Rill Managed OLAP Engines
 ### ClickHouse
 ### DuckDB
+
+Rill provisions and manages these engines for you — no infrastructure to set up.
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<ClickHouseLogo />}
+    content="Rill's recommended engine for production. Managed ClickHouse handles large-scale datasets with high concurrency."
+    link="/developers/build/connectors/olap/clickhouse"
+    linkLabel="Learn more"
+    referenceLink="clickhouse"
+  />
+  <ConnectorIcon
+    icon={<DuckDBLogo />}
+    content="The default engine for Rill Developer. Embedded and zero-config for local development."
+    link="/developers/build/connectors/olap/duckdb"
+    linkLabel="Learn more"
+    referenceLink="duckdb"
+  />
+</div>
+
+## Bring Your Own OLAP
+
+Connect Rill to an existing OLAP engine you manage. Rill pushes queries down to your engine with no data ingestion.
+
 ### MotherDuck
 ### Druid
 ### Pinot
@@ -67,27 +91,12 @@ Rill offers flexible connection strategies to fit different data architectures a
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<ClickHouseLogo />}
-    content="High-performance columnar database for real-time analytics and data warehousing."
-    link="/developers/build/connectors/olap/clickhouse"
-    linkLabel="Learn more"
-    referenceLink="clickhouse"
-  />
-  <ConnectorIcon
-    icon={<DuckDBLogo />}
-    content="DuckDB is the default engine for Rill Developer."
-    link="/developers/build/connectors/olap/duckdb"
-    linkLabel="Learn more"
-    referenceLink="duckdb"
-  />
-  <ConnectorIcon
     icon={<MotherDuckLogo />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."
     link="/developers/build/connectors/olap/motherduck"
     linkLabel="Learn more"
     referenceLink="motherduck"
   />
-
   <ConnectorIcon
     icon={<DruidLogo />}
     content="Real-time analytics database designed for high-performance OLAP queries."
@@ -95,7 +104,6 @@ Rill offers flexible connection strategies to fit different data architectures a
     linkLabel="Learn more"
     referenceLink="druid"
   />
-
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Pinot.svg" alt="Pinot" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
@@ -103,7 +111,6 @@ Rill offers flexible connection strategies to fit different data architectures a
     linkLabel="Learn more"
     referenceLink="pinot"
   />
-
   <ConnectorIcon
     icon={<StarRocksLogo />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
@@ -251,7 +258,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     icon={<img src="/img/build/connectors/icons/Logo-Delta.svg" alt="Delta Lake" />}
     header="Delta Lake"
     content="Read Delta tables directly from object storage through compatible query engines."
-    link="/developers/build/connectors/data-source/delta"
+    link="/developers/build/connectors/data-source/duckdb/delta"
     linkLabel="Learn more"
   />
   <ConnectorIcon

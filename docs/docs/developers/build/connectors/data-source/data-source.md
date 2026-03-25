@@ -53,10 +53,6 @@ import KafkaLogo from '@site/static/img/build/connectors/icons/Logo-Kafka.svg';
 
 In order to connect and browse through your data, you'll need to create a connector file. Browse through the options below for our supported connectors. Each connector is designed to handle the specific authentication and configuration requirements of your data source.
 
-:::warning OLAP Engine Limitations
-Rill supports connecting your data to both [DuckDB](/developers/build/connectors/olap/duckdb) and [ClickHouse](/developers/build/connectors/olap/clickhouse). However, there are still some features in development for managed ClickHouse. For more information see our [managed ClickHouse docs](/developers/build/connectors/olap/clickhouse#rill-managed-clickhouse). If you've still got questions, [contact our team](/contact) for more information and scheduled feature releases!
-:::
-
 <OLAPToggle>
 <OLAPToggle.DuckDB>
 
@@ -189,7 +185,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     icon={<img src="/img/build/connectors/icons/Logo-Delta.svg" alt="Delta Lake" />}
     header="Delta Lake"
     content="Read Delta tables directly from object storage through compatible query engines."
-    link="/developers/build/connectors/data-source/delta"
+    link="/developers/build/connectors/data-source/duckdb/delta"
     linkLabel="Learn more"
   />
   <ConnectorIcon
