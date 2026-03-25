@@ -252,6 +252,8 @@ light:
 
   # Note: The theme system also auto-generates fg-secondary, fg-tertiary, fg-muted, and fg-disabled from fg-primary using opacity percentages if not explicitly set
   fg-primary: "#000000"          # Black text
+  kpi-positive: "#374151"        # Delta/comparison values for positive changes (default: gray)
+  kpi-negative: "#ef4444"        # Delta/comparison values for negative changes (default: red)
 
   # Qualitative palette (for categorical data - all 24 colors)
   color-qualitative-1: "#6366f1"   # Indigo
@@ -316,6 +318,8 @@ dark:
 
   # Note: The theme system also auto-generates fg-secondary, fg-tertiary, fg-muted, and fg-disabled from fg-primary using opacity percentages if not explicitly set
   fg-primary: "#ffffff"   # White text
+  kpi-positive: "#d1d5db" # Delta/comparison values for positive changes (default: gray)
+  kpi-negative: "#ef4444" # Delta/comparison values for negative changes (default: red)
   
   # Qualitative palette (adjusted for dark mode visibility - all 24 colors)
   color-qualitative-1: "#818cf8"   # Indigo
