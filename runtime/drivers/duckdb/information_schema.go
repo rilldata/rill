@@ -230,7 +230,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 	}
 	defer func() { _ = release() }()
 
-	rows, nextToken, err := db.Schema(ctx, ilike, "", pageSize, pageToken)
+	rows, nextToken, err := db.Schema(ctx, "", "", "", ilike, pageSize, pageToken)
 	if err != nil {
 		return nil, "", c.checkErr(err)
 	}
@@ -243,7 +243,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 	return tables, nextToken, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -251,7 +251,7 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ol
 	}
 	defer func() { _ = release() }()
 
-	rows, _, err := db.Schema(ctx, "", name, 0, "")
+	rows, _, err := db.Schema(ctx, database, databaseSchema, name, "", 0, "")
 	if err != nil {
 		return nil, c.checkErr(err)
 	}

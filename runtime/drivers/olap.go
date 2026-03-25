@@ -345,9 +345,6 @@ func (d Dialect) GetRegexMatchFunction() string {
 
 // EscapeTable returns an escaped table name with database, schema and table.
 func (d Dialect) EscapeTable(db, schema, table string) string {
-	if d == DialectDuckDB {
-		return d.EscapeIdentifier(table)
-	}
 	var sb strings.Builder
 	if db != "" {
 		sb.WriteString(d.EscapeIdentifier(db))
