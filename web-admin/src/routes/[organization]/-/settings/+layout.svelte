@@ -8,7 +8,7 @@
 
   export let data: PageData;
 
-  $: ({ subscription, neverSubscribed } = data);
+  $: ({ neverSubscribed } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;

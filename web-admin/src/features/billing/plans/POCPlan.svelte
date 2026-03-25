@@ -18,12 +18,14 @@
   <div slot="body">
     <div>You're currently on a custom contract.</div>
     {#if billingPortalUrl}
-      <a
-        href={billingPortalUrl}
-        target="_blank"
-        rel="noreferrer noopener"
-        class="invoice-link">View Invoice</a
-      >
+      <div>
+        <a
+          href={billingPortalUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          class="invoice-link">View Invoice</a
+        >
+      </div>
     {/if}
     <PlanQuotas {organization} />
   </div>

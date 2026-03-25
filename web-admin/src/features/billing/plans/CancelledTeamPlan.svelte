@@ -42,12 +42,14 @@
         {/if}
       </div>
       {#if billingPortalUrl}
-        <a
-          href={billingPortalUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-          class="invoice-link">View Invoice</a
-        >
+        <div>
+          <a
+            href={billingPortalUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            class="invoice-link">View Invoice</a
+          >
+        </div>
       {/if}
       {#if plan}
         <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
