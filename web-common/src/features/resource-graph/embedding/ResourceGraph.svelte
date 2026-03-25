@@ -799,7 +799,11 @@
 >
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
-    <div class="graph-toolbar-bar" class:nav-collapsed={!$navigationOpen} class:flush-toolbar={flushToolbar}>
+    <div
+      class="graph-toolbar-bar"
+      class:nav-collapsed={!$navigationOpen}
+      class:flush-toolbar={flushToolbar}
+    >
       <!-- Search combo: input + resource dropdown -->
       <div
         class="search-combo"
