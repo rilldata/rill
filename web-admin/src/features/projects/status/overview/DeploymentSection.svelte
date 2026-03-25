@@ -27,7 +27,6 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "./OverviewCard.svelte";
-  import { page } from "$app/stores";
 
   export let organization: string;
   export let project: string;
@@ -64,10 +63,8 @@
   $: instance = $instanceQuery.data?.instance;
   $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
 
-  // Plan-based storage cap (from root layout data)
+  // Plan-based storage cap
   const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
-  $: planName = $page.data?.organization?.billingPlanName ?? "";
-  $: storageCap = isTeamPlan(planName) ? TEAM_STORAGE_CAP : 0;
 
   // Fill percentage for the usage pill (0–100)
   $: usagePercent = (() => {
@@ -106,7 +103,15 @@
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
   $: isFree = isFreePlan(planName);
+  $: isTeam = isTeamPlan(planName);
   $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
+  $: storageCap = isTeam ? TEAM_STORAGE_CAP : 0;
+
+  // Rill-managed: provisioned connector, DuckDB (default OLAP), or hibernated (no connector info)
+  $: isRillManaged =
+    !olapConnector ||
+    !!olapConnector.provision ||
+    olapConnector.type === "duckdb";
 </script>
 
 <OverviewCard title="Deployment">
@@ -223,7 +228,7 @@
       </div>
     {/if}
 
-    {#if !olapConnector || olapConnector.provision}
+    {#if isRillManaged}
       <div class="info-row">
         <span class="info-label">Data usage</span>
         <span class="info-value flex items-center gap-2">

@@ -56,54 +56,56 @@
   $: rillMonthlyCost = Math.round(currentSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH);
 </script>
 
-<div class="page">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="flex items-center gap-3">
-      <h2 class="page-title">Deployments</h2>
-      <span class="status-badge {getStatusDotClass(deploymentStatus)}">
-        {getStatusLabel(deploymentStatus)}
-      </span>
-    </div>
-    {#if canManage && !isTrial && !isTeam && !isEnterprise && !$subscriptionQuery?.isLoading}
-      <button
-        class="manage-btn"
-        on:click={() => (slotsModalOpen = true)}
-      >
-        Manage Slots
-      </button>
-    {/if}
-  </div>
-
-  <!-- Summary cards -->
-  <div class="slot-cards">
-    <div class="slot-card">
-      <span class="slot-card-label">Rill Slots</span>
-      <span class="slot-card-value">{currentSlots}</span>
-      <span class="slot-card-sub">
-        @ ${SLOT_RATE_PER_HR}/slot/hr
-        (~${rillMonthlyCost.toLocaleString()}/mo)
-      </span>
-      <a
-        href="/{organization}/-/settings/usage"
-        class="pricing-link"
-      >
-        See price breakdown
-      </a>
+{#if !isEnterprise}
+  <div class="page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="flex items-center gap-3">
+        <h2 class="page-title">Deployments</h2>
+        <span class="status-badge {getStatusDotClass(deploymentStatus)}">
+          {getStatusLabel(deploymentStatus)}
+        </span>
+      </div>
+      {#if canManage && !$subscriptionQuery?.isLoading}
+        <button
+          class="manage-btn"
+          on:click={() => (slotsModalOpen = true)}
+        >
+          Manage Slots
+        </button>
+      {/if}
     </div>
 
+    <!-- Summary cards -->
+    <div class="slot-cards">
+      <div class="slot-card">
+        <span class="slot-card-label">Rill Slots</span>
+        <span class="slot-card-value">{currentSlots}</span>
+        <span class="slot-card-sub">
+          @ ${SLOT_RATE_PER_HR}/slot/hr
+          (~${rillMonthlyCost.toLocaleString()}/mo)
+        </span>
+        <a
+          href="/{organization}/-/settings/usage"
+          class="pricing-link"
+        >
+          See price breakdown
+        </a>
+      </div>
+
+    </div>
+
   </div>
 
-</div>
-
-<ManageSlotsModal
-  bind:open={slotsModalOpen}
-  {organization}
-  {project}
-  {currentSlots}
-  {isRillManaged}
-  viewOnly={isTrial}
-/>
+  <ManageSlotsModal
+    bind:open={slotsModalOpen}
+    {organization}
+    {project}
+    {currentSlots}
+    {isRillManaged}
+    {isTrial}
+  />
+{/if}
 
 <style lang="postcss">
   .page {
