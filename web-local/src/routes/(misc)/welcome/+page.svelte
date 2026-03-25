@@ -3,7 +3,7 @@
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import OnboardingGenerateSampleData from "@rilldata/web-common/features/add-data/OnboardingGenerateSampleData.svelte";
-  import ConnectYourDataSmall from "@rilldata/web-common/features/add-data/ConnectYourDataSmall.svelte";
+  import ConnectYourDataWidget from "@rilldata/web-common/features/add-data/ConnectYourDataWidget.svelte";
 
   import { AddDataStep } from "@rilldata/web-common/features/add-data/steps/types.ts";
 </script>
@@ -11,7 +11,7 @@
 <TitleContent />
 
 <div class="flex flex-row gap-x-12">
-  <ConnectYourDataSmall
+  <ConnectYourDataWidget
     startConnectorSelection={(name) =>
       void goto("/welcome/add-data", {
         state: {

@@ -11,12 +11,12 @@
     getAnalyzedConnectors,
   } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import { inferModelNameFromSQL } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import {
     type AddDataConfig,
     type ExploreConnectorStep,
-    type ImportAddDataStepConfig,
+    type ImportStepConfig,
     ImportDataStep,
+    type ImportFromConfig,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
@@ -27,10 +27,11 @@
   import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
+  import { generateImportToConfig } from "@rilldata/web-common/features/add-data/steps/import.ts";
 
   export let config: AddDataConfig;
   export let step: ExploreConnectorStep;
-  export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
+  export let onSubmit: (importConfig: ImportStepConfig) => void;
 
   const FormId = "import-table-form";
 
@@ -97,28 +98,26 @@
       SPA: true,
       validators: schema,
       resetForm: false,
-      async onUpdate({ form }) {
+      onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
-        const sql =
-          values.mode === "table"
-            ? `SELECT * FROM ${values.schema ? values.schema + "." : ""}${values.table ?? ""}`
-            : values.sql;
-        const source =
-          values.mode === "table"
-            ? values.table
-            : inferModelNameFromSQL(values.sql ?? "");
-        if (!source) return; // TODO: error
 
+        const importFrom: ImportFromConfig =
+          values.mode === "table"
+            ? {
+                from: "table",
+                table: values.table!,
+                schema: values.schema!,
+                database: values.database!,
+              }
+            : { from: "sql", sql: values.sql! };
         onSubmit({
           importSteps,
-          source,
-          sourceSchema: values.schema ?? "",
-          sourceDatabase: values.database ?? "",
           connector: step.connector,
-          sql,
+          importFrom,
+          importTo: generateImportToConfig(importFrom),
           envBlob: null,
-        } satisfies ImportAddDataStepConfig);
+        } satisfies ImportStepConfig);
       },
       validationMethod: "onsubmit",
     },
@@ -156,7 +155,10 @@
 
 <form
   use:enhance
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
   id={FormId}
   class="flex flex-col gap-1 h-full overflow-y-auto"
 >
@@ -210,7 +212,7 @@
 
   <div class="flex flex-row px-6 py-4 gap-2 border-t">
     <Button onClick={() => window.history.back()} type="secondary">Back</Button>
-    <div class="grow" />
+    <div class="grow"></div>
     <Button
       disabled={$submitting || isSubmitDisabled}
       loading={$submitting}

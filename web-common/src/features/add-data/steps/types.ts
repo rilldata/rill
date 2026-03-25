@@ -15,7 +15,7 @@ export type AddDataConfig = {
 export type AddDataTransitionArgs = {
   schema?: string;
   connector?: string;
-  importConfig?: ImportAddDataStepConfig;
+  importConfig?: ImportStepConfig;
   connectorFormValues?: Record<string, unknown>;
 };
 
@@ -23,6 +23,7 @@ export enum ImportDataStep {
   Init,
   CreateModel,
   CreateMetricsView,
+  CreateExplore,
   CreateCanvas,
   Done,
 }
@@ -68,57 +69,45 @@ type DoneAddDataStep = {
 
 // Import data step and types
 
-export type ImportAddDataStepConfig = {
+export type ImportStepConfig = {
   importSteps: ImportDataStep[];
-  source: string;
-  sourceSchema: string;
-  sourceDatabase: string;
   connector: string;
-  yaml?: string;
-  sql?: string;
+  importFrom: ImportFromConfig;
+  importTo: ImportToConfig;
   envBlob: string | null;
+};
+
+export type ImportFromConfig =
+  | {
+      from: "table";
+      table: string;
+      schema: string;
+      database: string;
+    }
+  | {
+      from: "sql";
+      sql: string;
+    }
+  | {
+      from: "yaml";
+      yaml: string;
+    };
+
+// Generated names for consistency across retries
+export type ImportToConfig = {
+  modelName?: string;
+  modelPath?: string;
+  metricsViewName?: string;
+  metricsViewPath?: string;
+  exploreName?: string;
+  explorePath?: string;
+  canvasName?: string;
+  canvasPath?: string;
 };
 
 export type ImportAddDataStep = {
   step: AddDataStep.Import;
-  importStep: ImportStep;
-  currentFilePath: string;
-  config: ImportAddDataStepConfig;
-};
-
-type ImportStep =
-  | InitImportStep
-  | CreateModelImportStep
-  | CreateMetricsViewImportStep
-  | CreateCanvasImportStep
-  | DoneImportStep;
-
-type InitImportStep = {
-  step: ImportDataStep.Init;
-};
-
-type CreateModelImportStep = {
-  step: ImportDataStep.CreateModel;
-  source: string;
-  connector: string;
-  yaml?: string;
-  sql?: string;
-  envBlob: string | null;
-};
-
-type CreateMetricsViewImportStep = {
-  step: ImportDataStep.CreateMetricsView;
-  source: string;
-  sourceSchema: string;
-  sourceDatabase: string;
-  connector: string;
-};
-
-type CreateCanvasImportStep = {
-  step: ImportDataStep.CreateCanvas;
-  metricsViewFilePath: string;
-};
-
-type DoneImportStep = {
-  step: ImportDataStep.Done;
+  importStep: ImportDataStep;
+  currentFilePath?: string;
+  config: ImportStepConfig;
 };

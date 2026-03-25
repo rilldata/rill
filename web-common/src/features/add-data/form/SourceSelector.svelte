@@ -47,7 +47,7 @@
         {@const className = connectorClassMapping[connector.name] ?? ""}
         <button
           class="source-selector-cell"
-          on:click={() => onSelect(connector.name)}
+          onclick={() => onSelect(connector.name)}
           aria-label={`Connect to ${connector.name}`}
         >
           <svelte:component this={icon} size="24px" class={className} />

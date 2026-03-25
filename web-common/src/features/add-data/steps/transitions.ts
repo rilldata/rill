@@ -38,7 +38,6 @@ export async function transitionToNextStep(
     driver = getConnectorDriverForSchema(selectedSchema);
   }
 
-  console.log("[Transition] from", AddDataStep[current.step]);
   switch (current.step) {
     case AddDataStep.SelectConnector:
       if (selectedConnector) {
@@ -74,8 +73,7 @@ export async function transitionToNextStep(
 
       return {
         step: AddDataStep.Import,
-        currentFilePath: "",
-        importStep: { step: ImportDataStep.Init },
+        importStep: ImportDataStep.Init,
         config: args.importConfig,
       };
     }
@@ -102,30 +100,25 @@ export async function maybeGetConnectorDriver(
   return null;
 }
 
+const NonModelSteps = [
+  ImportDataStep.CreateMetricsView,
+  ImportDataStep.CreateExplore,
+  ImportDataStep.CreateCanvas,
+];
+const FullListOfSteps = [ImportDataStep.CreateModel, ...NonModelSteps];
+
 export function getImportStepsForConnector(
   config: AddDataConfig,
   driver: V1ConnectorDriver,
 ) {
   // Live connectors cannot create models as of now.
   // They will create metrics views directly.
-  const steps = isLiveConnectorType(driver)
-    ? [ImportDataStep.CreateMetricsView, ImportDataStep.CreateCanvas]
-    : [
-        ImportDataStep.CreateModel,
-        ImportDataStep.CreateMetricsView,
-        ImportDataStep.CreateCanvas,
-      ];
+  const steps = isLiveConnectorType(driver) ? NonModelSteps : FullListOfSteps;
   return config.importOnly ? [steps[0]] : steps;
 }
 
 export function getImportStepsForSource(config: AddDataConfig) {
-  return config.importOnly
-    ? [ImportDataStep.CreateModel]
-    : [
-        ImportDataStep.CreateModel,
-        ImportDataStep.CreateMetricsView,
-        ImportDataStep.CreateCanvas,
-      ];
+  return config.importOnly ? [ImportDataStep.CreateModel] : FullListOfSteps;
 }
 
 function transitionFromSchema(
@@ -134,13 +127,11 @@ function transitionFromSchema(
   args: AddDataTransitionArgs,
 ): AddDataState {
   if (isConnectorType(driver)) {
-    console.log("[Transition] To CreateConnector", schema);
     return {
       step: AddDataStep.CreateConnector,
       schema,
     };
   } else {
-    console.log("[Transition] To CreateModel", schema);
     return {
       step: AddDataStep.CreateModel,
       schema,
@@ -157,14 +148,12 @@ function transitionFromConnector(
   args: AddDataTransitionArgs,
 ): AddDataState {
   if (isExplorerType(driver)) {
-    console.log("[Transition] To ExploreConnector", connector);
     return {
       step: AddDataStep.ExploreConnector,
       schema,
       connector,
     };
   } else {
-    console.log("[Transition] To CreateModel", schema);
     return {
       step: AddDataStep.CreateModel,
       schema,

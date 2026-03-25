@@ -157,13 +157,13 @@ test.describe("Test Connection", () => {
     // Wait for step 2 (model configuration) to appear
     await expect(page.getByText("Model preview")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Test and Add data" }),
+      page.getByRole("button", { name: "Import Data" }),
     ).toBeVisible();
 
     // Verify step 2 form fields are present
-    await expect(page.getByRole("textbox", { name: "GS URI" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "GCS URI" })).toBeVisible();
     await expect(
-      page.getByRole("textbox", { name: "Source name" }),
+      page.getByRole("textbox", { name: "Model Name" }),
     ).toBeVisible();
 
     // Test back button functionality

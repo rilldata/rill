@@ -20,6 +20,7 @@
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 
   export let importAddDataStep: ImportAddDataStep;
   export let onClose: () => void;
@@ -28,17 +29,19 @@
 
   const runtimeClient = useRuntimeClient();
 
-  let currentFileRoute: string = "/";
-  $: sourceName = importAddDataStep.config.source;
-  $: isDone = importAddDataStep.importStep.step === ImportDataStep.Done;
+  $: currentFileRoute = importAddDataStep.currentFilePath
+    ? `/files/${addLeadingSlash(importAddDataStep.currentFilePath)}`
+    : "/";
+  $: sourceName = importAddDataStep.config.importTo.modelName ?? "";
+  $: isDone = importAddDataStep.importStep === ImportDataStep.Done;
   let error: string | null = null;
 
   $: createDashboardFromTable =
     useCreateMetricsViewWithCanvasAndExploreUIAction(
       runtimeClient,
       importAddDataStep.config.connector,
-      importAddDataStep.config.sourceDatabase,
-      importAddDataStep.config.sourceSchema,
+      "",
+      "",
       sourceName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Modal,
@@ -46,11 +49,10 @@
 
   async function runImport() {
     try {
-      while (importAddDataStep.importStep.step !== ImportDataStep.Done) {
+      while (importAddDataStep.importStep !== ImportDataStep.Done) {
         importAddDataStep = await runImportStep(
           runtimeClient,
           importAddDataStep,
-          (newRoute) => (currentFileRoute = newRoute),
         );
       }
     } catch (e) {
@@ -64,8 +66,8 @@
       await createCanvasDashboardFromTableWithAgent(
         runtimeClient,
         importAddDataStep.config.connector,
-        importAddDataStep.config.sourceDatabase,
-        importAddDataStep.config.sourceSchema,
+        "",
+        "",
         sourceName,
       );
     } else {

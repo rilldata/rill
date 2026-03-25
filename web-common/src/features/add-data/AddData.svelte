@@ -9,7 +9,7 @@
     type AddDataConfig,
     AddDataStep,
     type AddDataState,
-    type ImportAddDataStepConfig,
+    type ImportStepConfig,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
@@ -33,7 +33,6 @@
     stepState = $page.state as AddDataState;
     onStepChange(stepState.step);
   }
-  $: console.log(stepState);
 
   $: schema = (stepState as any).schema as string | undefined;
   $: connector = (stepState as any).connector as string | undefined;
@@ -69,7 +68,7 @@
     pushState("", newState);
   }
 
-  async function setAndStartImport(importConfig: ImportAddDataStepConfig) {
+  async function setAndStartImport(importConfig: ImportStepConfig) {
     const newState = await transitionToNextStep(runtimeClient, stepState, {
       importConfig,
     });

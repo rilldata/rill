@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { builderActions, getAttrs } from "bits-ui";
   import * as Collapsible from "@rilldata/web-common/components/collapsible";
   import {
     type ConnectorExplorerEntry,
@@ -46,7 +45,7 @@
       type="button"
       class="entry {leftPadClass}"
       class:bg-gray-100={selected}
-      on:click={() => onSelect(node.entry)}
+      onclick={() => onSelect(node.entry)}
       aria-label="Node: {node.name}, level {level}"
     >
       <TableIcon size="14px" className="shrink-0 text-fg-secondary" />
@@ -54,30 +53,31 @@
     </button>
   {:else}
     <Collapsible.Root bind:open={expanded}>
-      <Collapsible.Trigger asChild let:builder>
-        <button
-          type="button"
-          class="entry {leftPadClass}"
-          class:bg-gray-100={selected}
-          {...getAttrs([builder])}
-          use:builderActions={{ builders: [builder] }}
-          aria-label="Node: {node.name}, level {level}"
-        >
-          <CaretDownIcon
-            className="transform transition-transform text-fg-secondary {expanded
-              ? 'rotate-0'
-              : '-rotate-90'}"
-            size="14px"
-          />
-          {#if node.type === ConnectorExplorerNodeType.Database}
-            <Database size="14px" class="shrink-0 text-fg-secondary" />
-          {:else if node.type === ConnectorExplorerNodeType.Schema}
-            <Folder size="14px" class="shrink-0 text-fg-secondary" />
-          {/if}
-          <span class="truncate text-fg-primary">
-            {node.name}
-          </span>
-        </button>
+      <Collapsible.Trigger>
+        {#snippet child({ props })}
+          <button
+            type="button"
+            class="entry {leftPadClass}"
+            class:bg-gray-100={selected}
+            {...props}
+            aria-label="Node: {node.name}, level {level}"
+          >
+            <CaretDownIcon
+              className="transform transition-transform text-fg-secondary {expanded
+                ? 'rotate-0'
+                : '-rotate-90'}"
+              size="14px"
+            />
+            {#if node.type === ConnectorExplorerNodeType.Database}
+              <Database size="14px" class="shrink-0 text-fg-secondary" />
+            {:else if node.type === ConnectorExplorerNodeType.Schema}
+              <Folder size="14px" class="shrink-0 text-fg-secondary" />
+            {/if}
+            <span class="truncate text-fg-primary">
+              {node.name}
+            </span>
+          </button>
+        {/snippet}
       </Collapsible.Trigger>
       <Collapsible.Content>
         <ol>

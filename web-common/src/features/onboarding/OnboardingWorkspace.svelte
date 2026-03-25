@@ -17,7 +17,7 @@
   import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-  import ConnectYourDataSmall from "@rilldata/web-common/features/add-data/ConnectYourDataSmall.svelte";
+  import ConnectYourDataWidget from "@rilldata/web-common/features/add-data/ConnectYourDataWidget.svelte";
   import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
 
   const runtimeClient = useRuntimeClient();
@@ -54,7 +54,7 @@
 
 <div class="container">
   <div class="cta-container">
-    <ConnectYourDataSmall
+    <ConnectYourDataWidget
       startConnectorSelection={(newSchemaName) => {
         selectedAddDataSchema = newSchemaName;
         openAddDataDialog = true;

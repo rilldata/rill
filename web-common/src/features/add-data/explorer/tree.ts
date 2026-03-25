@@ -106,7 +106,9 @@ export function getConnectorExplorerTree(
     if (databaseSchemas.isPending || databaseSchemas.error || !connectorName) {
       set({
         loading: databaseSchemas.isPending,
-        error: extractErrorMessage(databaseSchemas.error),
+        error: databaseSchemas.error
+          ? extractErrorMessage(databaseSchemas.error)
+          : undefined,
       });
       return;
     }

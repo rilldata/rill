@@ -20,6 +20,9 @@
   } from "@rilldata/web-common/features/templates/schema-utils.ts";
   import { isEmpty } from "@rilldata/web-common/features/sources/modal/utils.ts";
   import NeedHelpText from "@rilldata/web-common/features/sources/modal/NeedHelpText.svelte";
+  import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
   export let connectorDriver: V1ConnectorDriver;
   export let schema: MultiStepFormSchema | null;
@@ -78,7 +81,10 @@
 
     form.update(
       ($form) => {
-        $form.name = inferredName;
+        $form.name = getName(
+          inferredName,
+          fileArtifacts.getNamesForKind(ResourceKind.Model),
+        );
         return $form;
       },
       { taint: false },
@@ -135,7 +141,10 @@
         id={$formId}
         class="pb-5"
         use:enhance
-        on:submit|preventDefault={submit}
+        onsubmit={(e) => {
+          e.preventDefault();
+          submit(e);
+        }}
       >
         <JSONSchemaFormRenderer
           {schema}

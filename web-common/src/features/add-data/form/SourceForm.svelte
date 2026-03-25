@@ -12,7 +12,8 @@
   import {
     type AddDataConfig,
     type CreateModelStep,
-    type ImportAddDataStepConfig,
+    type ImportFromConfig,
+    type ImportStepConfig,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
@@ -26,10 +27,11 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { getAnalyzedConnectorByName } from "@rilldata/web-common/features/connectors/selectors.ts";
+  import { generateImportToConfig } from "@rilldata/web-common/features/add-data/steps/import.ts";
 
   export let config: AddDataConfig;
   export let step: CreateModelStep;
-  export let onSubmit: (importConfig: ImportAddDataStepConfig) => void;
+  export let onSubmit: (importConfig: ImportStepConfig) => void;
   export let onBack: () => void;
 
   const runtimeClient = useRuntimeClient();
@@ -131,15 +133,18 @@
       existingEnvBlob,
     });
 
+    const importFrom: ImportFromConfig = {
+      from: "yaml",
+      yaml,
+    };
+
     const importConfig = {
       importSteps,
-      source: formValues.name,
-      sourceSchema: "",
-      sourceDatabase: "",
       connector: rewrittenConnector.name!,
-      yaml,
+      importFrom,
+      importTo: generateImportToConfig(importFrom, formValues.name),
       envBlob: newBlob,
-    } satisfies ImportAddDataStepConfig;
+    } satisfies ImportStepConfig;
 
     onSubmit(importConfig);
   }

@@ -39,7 +39,7 @@
         {@const icon = connectorIconMapping[schema]}
         {@const className = connectorClassMapping[schema] ?? ""}
         <DropdownMenu.Item
-          on:click={() => onSelect(connector)}
+          onclick={() => onSelect(connector)}
           class="flex gap-x-2"
           aria-label="Create model for {displayName}"
         >
@@ -49,7 +49,7 @@
       {/each}
       <DropdownMenu.Item
         class="flex gap-x-2"
-        on:click={() =>
+        onclick={() =>
           createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
         aria-label="Create blank model"
       >

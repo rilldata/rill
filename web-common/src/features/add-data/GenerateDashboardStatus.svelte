@@ -13,12 +13,14 @@
   import { runImportStep } from "@rilldata/web-common/features/add-data/steps/import.ts";
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
   export let onClose: () => void;
 
   const runtimeClient = useRuntimeClient();
+  const initialAddDataStep = { ...importAddDataStep };
 
   $: ({ importStep } = importAddDataStep);
 
@@ -36,34 +38,50 @@
       failedLabel: "Creating Metrics View failed.",
     },
     {
+      step: ImportDataStep.CreateExplore,
+      pendingLabel: "Generating explore dashboard...",
+      doneLabel: "Generated explore dashboard",
+      failedLabel: "Generating explore dashboard failed.",
+    },
+    {
       step: ImportDataStep.CreateCanvas,
-      pendingLabel: "Generating dashboard...",
-      doneLabel: "Generated dashboard",
-      failedLabel: "Generating dashboard failed.",
+      pendingLabel: "Generating canvas dashboard...",
+      doneLabel: "Generated canvas dashboard",
+      failedLabel: "Generating canvas dashboard failed.",
     },
   ];
   const steps = importAddDataStep.config.importSteps.map(
     (s) => StepLabels.find((label) => label.step === s)!,
   );
 
-  let currentFileRoute: string = "/";
+  $: currentFileRoute = importAddDataStep.currentFilePath
+    ? `/files/${addLeadingSlash(importAddDataStep.currentFilePath)}`
+    : "/";
   let error: string | null = null;
   $: hasErrored = !!error;
 
   async function runImport() {
     try {
-      while (importAddDataStep.importStep.step !== ImportDataStep.Done) {
+      while (importAddDataStep.importStep !== ImportDataStep.Done) {
         importAddDataStep = await runImportStep(
           runtimeClient,
           importAddDataStep,
-          (newRoute) => (currentFileRoute = newRoute),
         );
       }
       onClose();
-      return goto(currentFileRoute);
+      if (!importAddDataStep.currentFilePath) return goto("/");
+      return goto(
+        `/files/${addLeadingSlash(importAddDataStep.currentFilePath)}`,
+      );
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
     }
+  }
+
+  function rerunImport() {
+    importAddDataStep = { ...initialAddDataStep };
+    error = null;
+    return runImport();
   }
 
   onMount(runImport);
@@ -80,11 +98,11 @@
   <div class="text-center">Creating your dashboard</div>
   {#each steps as s (s.step)}
     <div class="flex flex-row items-center gap-4 text-fg-tertiary">
-      {#if importStep.step > s.step}
+      {#if importStep > s.step}
         <CheckIcon size="14px" />
         <div>{s.doneLabel}</div>
       {:else if hasErrored}
-        {#if importStep.step > s.step}
+        {#if importStep > s.step}
           <AlertCircleOutline size="14px" className="text-destructive" />
           <div>{s.failedLabel}</div>
         {:else}
@@ -111,6 +129,6 @@
     Skip and view project
   </Button>
   {#if hasErrored}
-    <Button type="primary">Retry (TODO)</Button>
+    <Button type="primary" onClick={rerunImport}>Retry</Button>
   {/if}
 </div>

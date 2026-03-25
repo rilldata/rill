@@ -26,7 +26,7 @@
     SPA: true,
     validators: schema,
     dataType: "json",
-    async onUpdate({ form }) {
+    onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
       void generateSampleData(runtimeClient, true, values.prompt);
@@ -53,7 +53,10 @@
   <div>
     <form
       id={FORM_ID}
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
       class="relative"
     >
@@ -62,8 +65,8 @@
         bind:value={$form.prompt}
         class:empty={$form.prompt.length === 0}
         placeholder={`E.g. "e-commerce transactions"`}
-        on:keydown={handleKeydown}
-      />
+        onkeydown={handleKeydown}
+      ></textarea>
       <div class="absolute right-3 bottom-8">
         <IconButton ariaLabel="Send message" on:click={submit}>
           <SendIcon size="1.3em" />

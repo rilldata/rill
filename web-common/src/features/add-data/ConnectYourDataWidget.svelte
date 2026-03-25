@@ -35,7 +35,7 @@
 
 <button
   class="container {onWelcomeScreen ? 'container-welcome' : 'container-home'}"
-  on:click={() => startConnectorSelection(null)}
+  onclick={() => startConnectorSelection(null)}
   class:jitter-suppress={suppressJitter}
   aria-label="Connect your data"
 >
@@ -46,21 +46,29 @@
 
   <div
     class="primary-connectors"
-    on:mouseleave={clearSuppressJitter}
+    onmouseleave={clearSuppressJitter}
     role="group"
   >
     {#each PrimaryConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
       {@const label = connectorLabelMapping[connector] ?? connector}
-      <button
+      <div
         class="primary-connector-entry"
-        on:click={(e) => selectConnector(e, connector)}
-        on:mouseleave={handleSuppressJitter}
+        onclick={(e) => selectConnector(e, connector)}
+        onkeydown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            startConnectorSelection(connector);
+          }
+        }}
+        onmouseleave={handleSuppressJitter}
         aria-label={`Connect to ${connector}`}
+        role="button"
+        tabindex="-1"
       >
         <svelte:component this={icon} />
         <span>{label}</span>
-      </button>
+      </div>
     {/each}
   </div>
 
