@@ -24,7 +24,7 @@
   export let value;
   export let formattedValue: string | null = null;
   export let tooltipFormatter:
-    | ((value: number | string) => string)
+    | ((value: number | string | null | undefined) => string | null | undefined)
     | undefined = undefined;
   export let type;
   export let barValue = 0;

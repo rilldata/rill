@@ -206,7 +206,6 @@
   </td>
   <LeaderboardCell
     value={dimensionValue}
-    {dataType}
     cellType="dimension"
     className={dimensionCellClass}
     background={dimensionGradients}
@@ -248,7 +247,6 @@
           values[measureName]?.toString() ??
           "")
         : ""}
-      dataType="INTEGER"
       cellType="measure"
       background={leaderboardMeasureNames.length === 1
         ? measureGradients
@@ -276,7 +274,6 @@
               formatMeasurePercentageDifference(pctOfTotals[measureName]),
             )
           : ""}
-        dataType="INTEGER"
         cellType="comparison"
       >
         <PercentageChange
@@ -297,7 +294,6 @@
             deltaAbsMap[measureName]?.toString() ??
             "")
           : ""}
-        dataType="INTEGER"
         cellType="comparison"
       >
         <FormattedDataType
@@ -323,7 +319,6 @@
               formatMeasurePercentageDifference(deltaRels[measureName]),
             )
           : ""}
-        {dataType}
         cellType="comparison"
       >
         <PercentageChange

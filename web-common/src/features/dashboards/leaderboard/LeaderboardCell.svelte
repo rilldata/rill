@@ -14,7 +14,6 @@
 
   export let value: string;
   export let tooltipValue: string = value;
-  export let dataType: string;
   export let cellType: "dimension" | "measure" | "comparison";
   export let className: string = "";
   export let background: string = "";
