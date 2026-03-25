@@ -124,16 +124,6 @@ export enum BillingPlanType {
    * @generated from enum value: BILLING_PLAN_TYPE_ENTERPRISE = 4;
    */
   ENTERPRISE = 4,
-
-  /**
-   * @generated from enum value: BILLING_PLAN_TYPE_FREE = 5;
-   */
-  FREE = 5,
-
-  /**
-   * @generated from enum value: BILLING_PLAN_TYPE_GROWTH = 6;
-   */
-  GROWTH = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingPlanType)
 proto3.util.setEnumType(BillingPlanType, "rill.admin.v1.BillingPlanType", [
@@ -142,8 +132,6 @@ proto3.util.setEnumType(BillingPlanType, "rill.admin.v1.BillingPlanType", [
   { no: 2, name: "BILLING_PLAN_TYPE_TEAM" },
   { no: 3, name: "BILLING_PLAN_TYPE_MANAGED" },
   { no: 4, name: "BILLING_PLAN_TYPE_ENTERPRISE" },
-  { no: 5, name: "BILLING_PLAN_TYPE_FREE" },
-  { no: 6, name: "BILLING_PLAN_TYPE_GROWTH" },
 ]);
 
 /**
@@ -189,21 +177,6 @@ export enum BillingIssueType {
    * @generated from enum value: BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
    */
   NEVER_SUBSCRIBED = 7,
-
-  /**
-   * @generated from enum value: BILLING_ISSUE_TYPE_CREDIT_LOW = 8;
-   */
-  CREDIT_LOW = 8,
-
-  /**
-   * @generated from enum value: BILLING_ISSUE_TYPE_CREDIT_CRITICAL = 9;
-   */
-  CREDIT_CRITICAL = 9,
-
-  /**
-   * @generated from enum value: BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED = 10;
-   */
-  CREDIT_EXHAUSTED = 10,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingIssueType)
 proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
@@ -215,9 +188,6 @@ proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
   { no: 5, name: "BILLING_ISSUE_TYPE_PAYMENT_FAILED" },
   { no: 6, name: "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED" },
   { no: 7, name: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED" },
-  { no: 8, name: "BILLING_ISSUE_TYPE_CREDIT_LOW" },
-  { no: 9, name: "BILLING_ISSUE_TYPE_CREDIT_CRITICAL" },
-  { no: 10, name: "BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED" },
 ]);
 
 /**
@@ -4014,22 +3984,6 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   superuserForceAccess = false;
 
-  /**
-   * InfraSlots overrides the Rill infrastructure overhead slot allocation for this project.
-   * Adjustable by Rill staff. Defaults to 4 for Live Connect, 0 for Rill Managed.
-   *
-   * @generated from field: optional int64 infra_slots = 16;
-   */
-  infraSlots?: bigint;
-
-  /**
-   * ClusterSlots overrides the cluster slot allocation.
-   * Adjustable by Rill staff. Derived from the OLAP cluster size.
-   *
-   * @generated from field: optional int64 cluster_slots = 17;
-   */
-  clusterSlots?: bigint;
-
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4053,8 +4007,6 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 16, name: "infra_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 17, name: "cluster_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -6353,100 +6305,6 @@ export class SudoExtendTrialResponse extends Message<SudoExtendTrialResponse> {
 
   static equals(a: SudoExtendTrialResponse | PlainMessage<SudoExtendTrialResponse> | undefined, b: SudoExtendTrialResponse | PlainMessage<SudoExtendTrialResponse> | undefined): boolean {
     return proto3.util.equals(SudoExtendTrialResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.SudoAddCreditsRequest
- */
-export class SudoAddCreditsRequest extends Message<SudoAddCreditsRequest> {
-  /**
-   * @generated from field: string org = 1;
-   */
-  org = "";
-
-  /**
-   * @generated from field: double amount = 2;
-   */
-  amount = 0;
-
-  /**
-   * Number of days until credits expire; defaults to 365
-   *
-   * @generated from field: int32 expiry_days = 3;
-   */
-  expiryDays = 0;
-
-  /**
-   * @generated from field: string description = 4;
-   */
-  description = "";
-
-  constructor(data?: PartialMessage<SudoAddCreditsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SudoAddCreditsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 3, name: "expiry_days", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoAddCreditsRequest {
-    return new SudoAddCreditsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoAddCreditsRequest {
-    return new SudoAddCreditsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoAddCreditsRequest {
-    return new SudoAddCreditsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SudoAddCreditsRequest | PlainMessage<SudoAddCreditsRequest> | undefined, b: SudoAddCreditsRequest | PlainMessage<SudoAddCreditsRequest> | undefined): boolean {
-    return proto3.util.equals(SudoAddCreditsRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.SudoAddCreditsResponse
- */
-export class SudoAddCreditsResponse extends Message<SudoAddCreditsResponse> {
-  /**
-   * @generated from field: rill.admin.v1.BillingCreditInfo credit_info = 1;
-   */
-  creditInfo?: BillingCreditInfo;
-
-  constructor(data?: PartialMessage<SudoAddCreditsResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SudoAddCreditsResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "credit_info", kind: "message", T: BillingCreditInfo },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoAddCreditsResponse {
-    return new SudoAddCreditsResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoAddCreditsResponse {
-    return new SudoAddCreditsResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoAddCreditsResponse {
-    return new SudoAddCreditsResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SudoAddCreditsResponse | PlainMessage<SudoAddCreditsResponse> | undefined, b: SudoAddCreditsResponse | PlainMessage<SudoAddCreditsResponse> | undefined): boolean {
-    return proto3.util.equals(SudoAddCreditsResponse, a, b);
   }
 }
 
@@ -14036,11 +13894,6 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
    */
   billingPortalUrl = "";
 
-  /**
-   * @generated from field: rill.admin.v1.BillingCreditInfo credit_info = 4;
-   */
-  creditInfo?: BillingCreditInfo;
-
   constructor(data?: PartialMessage<GetBillingSubscriptionResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -14052,7 +13905,6 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
     { no: 1, name: "organization", kind: "message", T: Organization },
     { no: 2, name: "subscription", kind: "message", T: Subscription },
     { no: 3, name: "billing_portal_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "credit_info", kind: "message", T: BillingCreditInfo },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingSubscriptionResponse {
@@ -14069,69 +13921,6 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
 
   static equals(a: GetBillingSubscriptionResponse | PlainMessage<GetBillingSubscriptionResponse> | undefined, b: GetBillingSubscriptionResponse | PlainMessage<GetBillingSubscriptionResponse> | undefined): boolean {
     return proto3.util.equals(GetBillingSubscriptionResponse, a, b);
-  }
-}
-
-/**
- * BillingCreditInfo contains credit balance information for free-tier organizations.
- *
- * @generated from message rill.admin.v1.BillingCreditInfo
- */
-export class BillingCreditInfo extends Message<BillingCreditInfo> {
-  /**
-   * @generated from field: double total_credit = 1;
-   */
-  totalCredit = 0;
-
-  /**
-   * @generated from field: double used_credit = 2;
-   */
-  usedCredit = 0;
-
-  /**
-   * @generated from field: double remaining_credit = 3;
-   */
-  remainingCredit = 0;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp credit_expiry = 4;
-   */
-  creditExpiry?: Timestamp;
-
-  /**
-   * @generated from field: double burn_rate_per_day = 5;
-   */
-  burnRatePerDay = 0;
-
-  constructor(data?: PartialMessage<BillingCreditInfo>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingCreditInfo";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "total_credit", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 2, name: "used_credit", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 3, name: "remaining_credit", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 4, name: "credit_expiry", kind: "message", T: Timestamp },
-    { no: 5, name: "burn_rate_per_day", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingCreditInfo {
-    return new BillingCreditInfo().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingCreditInfo {
-    return new BillingCreditInfo().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingCreditInfo {
-    return new BillingCreditInfo().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BillingCreditInfo | PlainMessage<BillingCreditInfo> | undefined, b: BillingCreditInfo | PlainMessage<BillingCreditInfo> | undefined): boolean {
-    return proto3.util.equals(BillingCreditInfo, a, b);
   }
 }
 
@@ -14644,94 +14433,6 @@ export class GetBillingProjectCredentialsResponse extends Message<GetBillingProj
 
   static equals(a: GetBillingProjectCredentialsResponse | PlainMessage<GetBillingProjectCredentialsResponse> | undefined, b: GetBillingProjectCredentialsResponse | PlainMessage<GetBillingProjectCredentialsResponse> | undefined): boolean {
     return proto3.util.equals(GetBillingProjectCredentialsResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetEmbeddedAnalyticsRequest
- */
-export class GetEmbeddedAnalyticsRequest extends Message<GetEmbeddedAnalyticsRequest> {
-  /**
-   * @generated from field: string org = 1;
-   */
-  org = "";
-
-  /**
-   * Name of the canvas resource to embed (e.g. "embedded_usage", "project_slots")
-   *
-   * @generated from field: string resource = 2;
-   */
-  resource = "";
-
-  constructor(data?: PartialMessage<GetEmbeddedAnalyticsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetEmbeddedAnalyticsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsRequest {
-    return new GetEmbeddedAnalyticsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsRequest {
-    return new GetEmbeddedAnalyticsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsRequest {
-    return new GetEmbeddedAnalyticsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetEmbeddedAnalyticsRequest | PlainMessage<GetEmbeddedAnalyticsRequest> | undefined, b: GetEmbeddedAnalyticsRequest | PlainMessage<GetEmbeddedAnalyticsRequest> | undefined): boolean {
-    return proto3.util.equals(GetEmbeddedAnalyticsRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetEmbeddedAnalyticsResponse
- */
-export class GetEmbeddedAnalyticsResponse extends Message<GetEmbeddedAnalyticsResponse> {
-  /**
-   * @generated from field: string iframe_src = 1;
-   */
-  iframeSrc = "";
-
-  /**
-   * @generated from field: uint32 ttl_seconds = 2;
-   */
-  ttlSeconds = 0;
-
-  constructor(data?: PartialMessage<GetEmbeddedAnalyticsResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetEmbeddedAnalyticsResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "iframe_src", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsResponse {
-    return new GetEmbeddedAnalyticsResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsResponse {
-    return new GetEmbeddedAnalyticsResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsResponse {
-    return new GetEmbeddedAnalyticsResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetEmbeddedAnalyticsResponse | PlainMessage<GetEmbeddedAnalyticsResponse> | undefined, b: GetEmbeddedAnalyticsResponse | PlainMessage<GetEmbeddedAnalyticsResponse> | undefined): boolean {
-    return proto3.util.equals(GetEmbeddedAnalyticsResponse, a, b);
   }
 }
 
@@ -15982,37 +15683,6 @@ export class Project extends Message<Project> {
    */
   updatedOn?: Timestamp;
 
-  /**
-   * ChcClusterSize is the detected ClickHouse Cloud cluster memory in GB (per replica).
-   *
-   * @generated from field: optional double chc_cluster_size = 27;
-   */
-  chcClusterSize?: number;
-
-  /**
-   * ClusterSlots is the cluster slot allocation, derived from the OLAP cluster size.
-   * For Live Connect projects, this represents the base slots from the BYOLAP cluster.
-   *
-   * @generated from field: optional int64 cluster_slots = 28;
-   */
-  clusterSlots?: bigint;
-
-  /**
-   * InfraSlots is the Rill infrastructure overhead slot allocation for the project.
-   * Adjustable by Rill staff; NULL defaults to 4 for Live Connect, 0 for Rill Managed.
-   *
-   * @generated from field: optional int64 infra_slots = 29;
-   */
-  infraSlots?: bigint;
-
-  /**
-   * OlapConnector is the cached OLAP connector driver name (e.g. "clickhouse", "duckdb").
-   * Persisted so the frontend can show the correct engine label even when the project is hibernated.
-   *
-   * @generated from field: string olap_connector = 30;
-   */
-  olapConnector = "";
-
   constructor(data?: PartialMessage<Project>) {
     super();
     proto3.util.initPartial(data, this);
@@ -16044,10 +15714,6 @@ export class Project extends Message<Project> {
     { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
-    { no: 27, name: "chc_cluster_size", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
-    { no: 28, name: "cluster_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 29, name: "infra_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 30, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {
@@ -18179,24 +17845,6 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
      */
     value: BillingIssueMetadataNeverSubscribed;
     case: "neverSubscribed";
-  } | {
-    /**
-     * @generated from field: rill.admin.v1.BillingIssueMetadataCreditLow credit_low = 8;
-     */
-    value: BillingIssueMetadataCreditLow;
-    case: "creditLow";
-  } | {
-    /**
-     * @generated from field: rill.admin.v1.BillingIssueMetadataCreditCritical credit_critical = 9;
-     */
-    value: BillingIssueMetadataCreditCritical;
-    case: "creditCritical";
-  } | {
-    /**
-     * @generated from field: rill.admin.v1.BillingIssueMetadataCreditExhausted credit_exhausted = 10;
-     */
-    value: BillingIssueMetadataCreditExhausted;
-    case: "creditExhausted";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<BillingIssueMetadata>) {
@@ -18214,9 +17862,6 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
     { no: 5, name: "payment_failed", kind: "message", T: BillingIssueMetadataPaymentFailed, oneof: "metadata" },
     { no: 6, name: "subscription_cancelled", kind: "message", T: BillingIssueMetadataSubscriptionCancelled, oneof: "metadata" },
     { no: 7, name: "never_subscribed", kind: "message", T: BillingIssueMetadataNeverSubscribed, oneof: "metadata" },
-    { no: 8, name: "credit_low", kind: "message", T: BillingIssueMetadataCreditLow, oneof: "metadata" },
-    { no: 9, name: "credit_critical", kind: "message", T: BillingIssueMetadataCreditCritical, oneof: "metadata" },
-    { no: 10, name: "credit_exhausted", kind: "message", T: BillingIssueMetadataCreditExhausted, oneof: "metadata" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadata {
@@ -18569,149 +18214,76 @@ export class BillingIssueMetadataNeverSubscribed extends Message<BillingIssueMet
 }
 
 /**
- * @generated from message rill.admin.v1.BillingIssueMetadataCreditLow
+ * @generated from message rill.admin.v1.GetEmbeddedAnalyticsRequest
  */
-export class BillingIssueMetadataCreditLow extends Message<BillingIssueMetadataCreditLow> {
+export class GetEmbeddedAnalyticsRequest extends Message<GetEmbeddedAnalyticsRequest> {
   /**
-   * @generated from field: double credit_remaining = 1;
+   * @generated from field: string org = 1;
    */
-  creditRemaining = 0;
+  org = "";
 
-  /**
-   * @generated from field: double credit_total = 2;
-   */
-  creditTotal = 0;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp credit_expiry = 3;
-   */
-  creditExpiry?: Timestamp;
-
-  constructor(data?: PartialMessage<BillingIssueMetadataCreditLow>) {
+  constructor(data?: PartialMessage<GetEmbeddedAnalyticsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingIssueMetadataCreditLow";
+  static readonly typeName = "rill.admin.v1.GetEmbeddedAnalyticsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "credit_remaining", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 2, name: "credit_total", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 3, name: "credit_expiry", kind: "message", T: Timestamp },
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataCreditLow {
-    return new BillingIssueMetadataCreditLow().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsRequest {
+    return new GetEmbeddedAnalyticsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataCreditLow {
-    return new BillingIssueMetadataCreditLow().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsRequest {
+    return new GetEmbeddedAnalyticsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataCreditLow {
-    return new BillingIssueMetadataCreditLow().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsRequest {
+    return new GetEmbeddedAnalyticsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: BillingIssueMetadataCreditLow | PlainMessage<BillingIssueMetadataCreditLow> | undefined, b: BillingIssueMetadataCreditLow | PlainMessage<BillingIssueMetadataCreditLow> | undefined): boolean {
-    return proto3.util.equals(BillingIssueMetadataCreditLow, a, b);
+  static equals(a: GetEmbeddedAnalyticsRequest | PlainMessage<GetEmbeddedAnalyticsRequest> | undefined, b: GetEmbeddedAnalyticsRequest | PlainMessage<GetEmbeddedAnalyticsRequest> | undefined): boolean {
+    return proto3.util.equals(GetEmbeddedAnalyticsRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.BillingIssueMetadataCreditCritical
+ * @generated from message rill.admin.v1.GetEmbeddedAnalyticsResponse
  */
-export class BillingIssueMetadataCreditCritical extends Message<BillingIssueMetadataCreditCritical> {
+export class GetEmbeddedAnalyticsResponse extends Message<GetEmbeddedAnalyticsResponse> {
   /**
-   * @generated from field: double credit_remaining = 1;
+   * @generated from field: string iframe_url = 1;
    */
-  creditRemaining = 0;
+  iframeUrl = "";
 
-  /**
-   * @generated from field: double credit_total = 2;
-   */
-  creditTotal = 0;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp credit_expiry = 3;
-   */
-  creditExpiry?: Timestamp;
-
-  constructor(data?: PartialMessage<BillingIssueMetadataCreditCritical>) {
+  constructor(data?: PartialMessage<GetEmbeddedAnalyticsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingIssueMetadataCreditCritical";
+  static readonly typeName = "rill.admin.v1.GetEmbeddedAnalyticsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "credit_remaining", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 2, name: "credit_total", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 3, name: "credit_expiry", kind: "message", T: Timestamp },
+    { no: 1, name: "iframe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataCreditCritical {
-    return new BillingIssueMetadataCreditCritical().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsResponse {
+    return new GetEmbeddedAnalyticsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataCreditCritical {
-    return new BillingIssueMetadataCreditCritical().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsResponse {
+    return new GetEmbeddedAnalyticsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataCreditCritical {
-    return new BillingIssueMetadataCreditCritical().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsResponse {
+    return new GetEmbeddedAnalyticsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: BillingIssueMetadataCreditCritical | PlainMessage<BillingIssueMetadataCreditCritical> | undefined, b: BillingIssueMetadataCreditCritical | PlainMessage<BillingIssueMetadataCreditCritical> | undefined): boolean {
-    return proto3.util.equals(BillingIssueMetadataCreditCritical, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.BillingIssueMetadataCreditExhausted
- */
-export class BillingIssueMetadataCreditExhausted extends Message<BillingIssueMetadataCreditExhausted> {
-  /**
-   * @generated from field: double credit_total = 1;
-   */
-  creditTotal = 0;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp credit_expiry = 2;
-   */
-  creditExpiry?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp exhausted_on = 3;
-   */
-  exhaustedOn?: Timestamp;
-
-  constructor(data?: PartialMessage<BillingIssueMetadataCreditExhausted>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingIssueMetadataCreditExhausted";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "credit_total", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 2, name: "credit_expiry", kind: "message", T: Timestamp },
-    { no: 3, name: "exhausted_on", kind: "message", T: Timestamp },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataCreditExhausted {
-    return new BillingIssueMetadataCreditExhausted().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataCreditExhausted {
-    return new BillingIssueMetadataCreditExhausted().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataCreditExhausted {
-    return new BillingIssueMetadataCreditExhausted().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BillingIssueMetadataCreditExhausted | PlainMessage<BillingIssueMetadataCreditExhausted> | undefined, b: BillingIssueMetadataCreditExhausted | PlainMessage<BillingIssueMetadataCreditExhausted> | undefined): boolean {
-    return proto3.util.equals(BillingIssueMetadataCreditExhausted, a, b);
+  static equals(a: GetEmbeddedAnalyticsResponse | PlainMessage<GetEmbeddedAnalyticsResponse> | undefined, b: GetEmbeddedAnalyticsResponse | PlainMessage<GetEmbeddedAnalyticsResponse> | undefined): boolean {
+    return proto3.util.equals(GetEmbeddedAnalyticsResponse, a, b);
   }
 }
 

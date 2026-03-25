@@ -176,6 +176,7 @@ const (
 	AdminService_ApproveProjectAccess_FullMethodName                   = "/rill.admin.v1.AdminService/ApproveProjectAccess"
 	AdminService_DenyProjectAccess_FullMethodName                      = "/rill.admin.v1.AdminService/DenyProjectAccess"
 	AdminService_ListOrganizationBillingIssues_FullMethodName          = "/rill.admin.v1.AdminService/ListOrganizationBillingIssues"
+	AdminService_GetEmbeddedAnalytics_FullMethodName                   = "/rill.admin.v1.AdminService/GetEmbeddedAnalytics"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -515,6 +516,8 @@ type AdminServiceClient interface {
 	DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error)
 	// ListOrganizationBillingIssues lists all the billing issues for the organization
 	ListOrganizationBillingIssues(ctx context.Context, in *ListOrganizationBillingIssuesRequest, opts ...grpc.CallOption) (*ListOrganizationBillingIssuesResponse, error)
+	// GetEmbeddedAnalytics returns an iframe URL for the embedded analytics dashboard
+	GetEmbeddedAnalytics(ctx context.Context, in *GetEmbeddedAnalyticsRequest, opts ...grpc.CallOption) (*GetEmbeddedAnalyticsResponse, error)
 }
 
 type adminServiceClient struct {
@@ -2095,6 +2098,16 @@ func (c *adminServiceClient) ListOrganizationBillingIssues(ctx context.Context, 
 	return out, nil
 }
 
+func (c *adminServiceClient) GetEmbeddedAnalytics(ctx context.Context, in *GetEmbeddedAnalyticsRequest, opts ...grpc.CallOption) (*GetEmbeddedAnalyticsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEmbeddedAnalyticsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetEmbeddedAnalytics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -2432,6 +2445,8 @@ type AdminServiceServer interface {
 	DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error)
 	// ListOrganizationBillingIssues lists all the billing issues for the organization
 	ListOrganizationBillingIssues(context.Context, *ListOrganizationBillingIssuesRequest) (*ListOrganizationBillingIssuesResponse, error)
+	// GetEmbeddedAnalytics returns an iframe URL for the embedded analytics dashboard
+	GetEmbeddedAnalytics(context.Context, *GetEmbeddedAnalyticsRequest) (*GetEmbeddedAnalyticsResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -2912,6 +2927,9 @@ func (UnimplementedAdminServiceServer) DenyProjectAccess(context.Context, *DenyP
 }
 func (UnimplementedAdminServiceServer) ListOrganizationBillingIssues(context.Context, *ListOrganizationBillingIssuesRequest) (*ListOrganizationBillingIssuesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationBillingIssues not implemented")
+}
+func (UnimplementedAdminServiceServer) GetEmbeddedAnalytics(context.Context, *GetEmbeddedAnalyticsRequest) (*GetEmbeddedAnalyticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEmbeddedAnalytics not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -5760,6 +5778,24 @@ func _AdminService_ListOrganizationBillingIssues_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetEmbeddedAnalytics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEmbeddedAnalyticsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetEmbeddedAnalytics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetEmbeddedAnalytics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetEmbeddedAnalytics(ctx, req.(*GetEmbeddedAnalyticsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -6394,6 +6430,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListOrganizationBillingIssues",
 			Handler:    _AdminService_ListOrganizationBillingIssues_Handler,
+		},
+		{
+			MethodName: "GetEmbeddedAnalytics",
+			Handler:    _AdminService_GetEmbeddedAnalytics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

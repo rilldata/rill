@@ -711,6 +711,24 @@ paths:
               estimatedSizeBytes:
                 type: string
                 format: int64
+  /v1/orgs/{org}/embedded-analytics:
+    get:
+      summary: GetEmbeddedAnalytics returns an iframe URL for the embedded analytics dashboard
+      operationId: AdminService_GetEmbeddedAnalytics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetEmbeddedAnalyticsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -5239,6 +5257,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetEmbeddedAnalyticsResponse:
+    type: object
+    properties:
+      iframeUrl:
+        type: string
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
