@@ -102,11 +102,11 @@ Dashboards, conversational BI, alerts, and APIs are live — no extra config.
 
 ## Production Examples
 
-| Example | Description | Links |
-|---|---|---|
+| Example              | Description                                         | Links                                                                                                                                            |
+| -------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Programmatic Ads** | Bidstream data for pricing and campaign performance | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) · [Demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads) |
-| **Cost Monitoring** | Cloud infra merged with customer data | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring) |
-| **GitHub Analytics** | Contributor activity and commit patterns | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics) |
+| **Cost Monitoring**  | Cloud infra merged with customer data               | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring)   |
+| **GitHub Analytics** | Contributor activity and commit patterns            | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics) |
 
 Or explore a [live embedded dashboard](https://rill-embedding-example.netlify.app/).
 
