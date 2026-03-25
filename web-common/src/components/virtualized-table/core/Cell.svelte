@@ -6,7 +6,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
+  import {
+    cellInspectorStore,
+    toFormattedString,
+  } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
@@ -52,7 +55,7 @@
   function onFocus() {
     onInspect(row.index);
     cellActive = true;
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, toFormattedString(tooltipValue));
   }
 
   function onSelect(e: MouseEvent) {

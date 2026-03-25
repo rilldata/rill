@@ -76,8 +76,9 @@
         onclick={modified({
           shift: () => shiftClickHandler(value),
         })}
-        onpointerover={() => cellInspectorStore.updateValue(value)}
-        onfocus={() => cellInspectorStore.updateValue(value)}
+        onpointerover={() =>
+          cellInspectorStore.updateValue(value, tooltipValue)}
+        onfocus={() => cellInspectorStore.updateValue(value, tooltipValue)}
         onmouseleave={() => (tooltipActive = false)}
         style:background
         class="{cellType}-cell {className}"

@@ -9,7 +9,10 @@
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import type { Cell, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import {
+    cellInspectorStore,
+    toFormattedString,
+  } from "../stores/cell-inspector-store";
   import {
     getRowNestedLabel,
     type DimensionColumnProps,
@@ -349,8 +352,16 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            onmouseover={() => cellInspectorStore.updateValue(cell.getValue())}
-            onfocus={() => cellInspectorStore.updateValue(cell.getValue())}
+            onmouseover={() =>
+              cellInspectorStore.updateValue(
+                cell.getValue(),
+                toFormattedString(tooltipValue),
+              )}
+            onfocus={() =>
+              cellInspectorStore.updateValue(
+                cell.getValue(),
+                toFormattedString(tooltipValue),
+              )}
           >
             {#if result?.component && result?.props}
               <svelte:component
