@@ -1,6 +1,20 @@
 expensive: true
 connectors:
   - motherduck
+project_files:
+  retail_sales_metrics_view.yaml:
+    type: metrics_view
+    connector: motherduck
+    database_schema: main
+    model: retail_sales
+    dimensions:
+      - column: country
+      - column: category
+    measures:
+      - name: total_sales
+        expression: SUM(sales)
+      - name: total_quantity
+        expression: SUM(quantity)
 tests:
   # Note: Test queries Motherduck directly as an OLAP engine.
   - name: query_data_motherduck
@@ -64,3 +78,17 @@ tests:
       map_date_col,"MAP(VARCHAR, DATE)",YES,,,
       map_timestamp_col,"MAP(VARCHAR, TIMESTAMP)",YES,,,
       struct_col,"STRUCT(field_int INTEGER, field_float FLOAT, field_str VARCHAR, field_bool BOOLEAN, field_date DATE, field_timestamp TIMESTAMP)",YES,,,
+  - name: query_diffrent_database_schema_metrics_view
+    resolver: metrics
+    properties:
+      metrics_view: retail_sales_metrics_view
+      measures:
+        - name: total_sales
+      where:
+        cond:
+          op: eq
+          exprs:
+            - name: category
+            - val: Electronics
+    result:
+      - total_sales: 52000
