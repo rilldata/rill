@@ -4,6 +4,7 @@
     CHART_CONFIG,
     VISIBLE_CHART_TYPES,
   } from "@rilldata/web-common/features/components/charts/config";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "../components/charts/types";
@@ -38,6 +39,8 @@
   export let onItemClick: (type: CanvasComponentType) => void;
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
+
+  const { customCharts } = featureFlags;
 
   const ADD_DROPDOWN_CHART_TYPES = VISIBLE_CHART_TYPES.filter((type) => {
     return type !== "stacked_bar" && type !== "stacked_bar_normalized";
@@ -118,14 +121,16 @@
                   {CHART_CONFIG[chartType].title}
                 </DropdownMenu.Item>
               {/each}
-              <DropdownMenu.Separator />
-              <DropdownMenu.Item
-                class="flex flex-row gap-x-2 text-fg-primary"
-                onclick={() => onItemClick("custom_chart")}
-              >
-                <ChartIcon />
-                Custom Chart
-              </DropdownMenu.Item>
+              {#if $customCharts}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item
+                  class="flex flex-row gap-x-2 text-fg-primary"
+                  onclick={() => onItemClick("custom_chart")}
+                >
+                  <ChartIcon />
+                  Custom Chart
+                </DropdownMenu.Item>
+              {/if}
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         {:else}
@@ -133,7 +138,7 @@
             class="flex flex-row gap-x-2 text-fg-primary"
             onclick={() => onItemClick(id)}
           >
-            <svelte:component this={icon} color="var(--fg-muted)" />
+            <svelte:component this={icon} />
             {label}
           </DropdownMenu.Item>
         {/if}
