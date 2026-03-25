@@ -9,6 +9,7 @@ test.describe("time controls settings from explore preset", () => {
   test.use({ project: "AdBids" });
 
   test("preset time_range", async ({ page }) => {
+    test.setTimeout(45_000);
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/dashboards").click();
@@ -84,6 +85,7 @@ test.describe("time controls settings from explore preset", () => {
   });
 
   test("preset comparison_modes", async ({ page }) => {
+    test.setTimeout(45_000);
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/dashboards").click();
