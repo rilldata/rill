@@ -35,7 +35,6 @@ const config = defineConfig({
   optimizeDeps: {
     include: [
       "@tanstack/svelte-query",
-      "@tanstack/svelte-table",
       "@codemirror/view",
       "@codemirror/state",
       "@codemirror/language",
@@ -43,7 +42,6 @@ const config = defineConfig({
       "d3-format",
       "d3-array",
       "luxon",
-      "bits-ui",
       "vega-lite",
     ],
   },

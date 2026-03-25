@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
   import DashboardLink from "./DashboardLink.svelte";
   import type {
@@ -35,7 +35,7 @@
       accessorKey: "title",
       header: "Label",
       cell: ({ row }) =>
-        flexRender(DashboardLink, {
+        renderComponent(DashboardLink, {
           href: row.original.url,
           title: row.original.displayName,
         }),
@@ -72,7 +72,7 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(PublicURLsActionsRow, {
+        renderComponent(PublicURLsActionsRow, {
           id: row.original.id,
           url: row.original.url,
           onDelete,

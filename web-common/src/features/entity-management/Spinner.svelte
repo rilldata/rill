@@ -14,7 +14,7 @@
   style:--status-transition="{duration}ms"
   style:width={size}
   style:height={size}
-/>
+></div>
 
 <style>
   div {

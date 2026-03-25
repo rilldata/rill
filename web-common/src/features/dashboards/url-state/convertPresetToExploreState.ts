@@ -43,7 +43,7 @@ import {
   V1ExploreWebView,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import type { SortingState } from "@tanstack/svelte-table";
+import type { SortingState } from "tanstack-table-8-svelte-5";
 
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.

@@ -226,7 +226,7 @@
               <span
                 class="size-[6.5px] rounded-full"
                 style:background-color={getColor(i)}
-              />
+              ></span>
               <span>{formatterFunction(point.value)}</span>
               {#if hasComparison}
                 <span class="text-fg-muted">
@@ -245,8 +245,8 @@
       class="cursor-default size-full overflow-visible"
       preserveAspectRatio="none"
       viewBox="0 0 10000 100"
-      on:mousemove={handleThrottledMouseMove}
-      on:mouseleave={handleMouseLeave}
+      onmousemove={handleThrottledMouseMove}
+      onmouseleave={handleMouseLeave}
     >
       <defs>
         {#if bridgeResults[0]}

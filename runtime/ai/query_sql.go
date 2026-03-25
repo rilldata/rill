@@ -34,6 +34,12 @@ func (t *QuerySQL) Spec() *mcp.Tool {
 		Name:        QuerySQLName,
 		Title:       "Query SQL",
 		Description: "Execute a raw SQL query against an OLAP connector to introspect data.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Executing SQL query...",
 			"openai/toolInvocation/invoked":  "Executed SQL query",

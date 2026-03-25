@@ -27,7 +27,6 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       "@tanstack/svelte-query",
-      "@tanstack/svelte-table",
       "@codemirror/view",
       "@codemirror/state",
       "@codemirror/language",
@@ -35,7 +34,6 @@ export default defineConfig({
       "d3-format",
       "d3-array",
       "luxon",
-      "bits-ui",
       "vega-lite",
     ],
   },

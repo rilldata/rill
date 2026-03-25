@@ -40,10 +40,12 @@
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <button use:builder.action {...builder} class="trigger">
-            <CaretDownIcon size="14px" />
-          </button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <button {...props} class="trigger">
+              <CaretDownIcon size="14px" />
+            </button>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="start" class="min-w-44">
           {#each Array.from(groupedData.entries()) as [group, subItems]}
@@ -59,7 +61,7 @@
                     <DropdownMenu.Item
                       class="cursor-pointer"
                       href={subItem.href}
-                      preloadData={false}
+                      data-sveltekit-preload-data="false"
                     >
                       <span class="text-xs text-fg-primary flex-grow">
                         {subItem.label}
@@ -73,7 +75,7 @@
               <DropdownMenu.Item
                 class="cursor-pointer"
                 href={subItems.href}
-                preloadData={false}
+                data-sveltekit-preload-data="false"
               >
                 <span class="text-xs text-fg-primary flex-grow">
                   {subItems.label}
@@ -98,8 +100,11 @@
     @apply px-0.5 py-1 rounded;
   }
 
-  .trigger:hover,
-  .trigger[data-state="open"] {
+  .trigger:hover {
+    @apply bg-gray-100;
+  }
+
+  .trigger:global([data-state="open"]) {
     @apply bg-gray-100;
   }
 </style>
