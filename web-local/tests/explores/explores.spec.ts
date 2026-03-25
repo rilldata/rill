@@ -9,6 +9,7 @@ import {
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
 import {
+  clickPreviewButton,
   createExploreFromModel,
   createExploreFromSource,
 } from "../utils/exploreHelpers";
@@ -101,9 +102,7 @@ time_ranges:
 
     await watcher.updateAndWaitForExplore(addAllTime);
 
-    await page.getByRole("button", { name: "Preview" }).click();
-
-    await page.waitForTimeout(1000);
+    await clickPreviewButton(page);
 
     // Check the total records are 100k
     await page
@@ -299,7 +298,7 @@ time_ranges:
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Assert that name changed
     await expect(
@@ -350,7 +349,7 @@ time_ranges:
       .click();
 
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("as of latest week end");
@@ -426,9 +425,7 @@ dimensions:
     await expect(page.getByRole("button", { name: "Preview" })).toBeEnabled();
 
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
-
-    await page.waitForTimeout(500);
+    await clickPreviewButton(page);
 
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
