@@ -908,12 +908,44 @@ func (s *Server) GetEmbeddedAnalytics(ctx context.Context, req *adminv1.GetEmbed
 		return nil, status.Error(codes.Unavailable, "embedded analytics is not configured")
 	}
 
-	iframeURL, err := s.fetchEmbeddedAnalyticsIframeURL(ctx)
+	iframeURL, err := s.fetchEmbeddedAnalyticsIframeURL(ctx, "")
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to fetch embedded analytics: %v", err))
 	}
 
 	return &adminv1.GetEmbeddedAnalyticsResponse{
+		IframeUrl: iframeURL,
+	}, nil
+}
+
+func (s *Server) GetProjectEmbeddedAnalytics(ctx context.Context, req *adminv1.GetProjectEmbeddedAnalyticsRequest) (*adminv1.GetProjectEmbeddedAnalyticsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org), attribute.String("args.project", req.Project))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	_, err = s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to view project analytics")
+	}
+
+	if s.admin.EmbeddedAnalyticsServiceToken == "" {
+		return nil, status.Error(codes.Unavailable, "embedded analytics is not configured")
+	}
+
+	iframeURL, err := s.fetchEmbeddedAnalyticsIframeURL(ctx, "d337de05-8fba-4cc0-a62d-bc6f3eb36db2")
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to fetch embedded analytics: %v", err))
+	}
+
+	return &adminv1.GetProjectEmbeddedAnalyticsResponse{
 		IframeUrl: iframeURL,
 	}, nil
 }
@@ -1367,7 +1399,7 @@ func biggerOfInt64(ptr *int64, def int64) int64 {
 	return def
 }
 
-func (s *Server) fetchEmbeddedAnalyticsIframeURL(ctx context.Context) (string, error) {
+func (s *Server) fetchEmbeddedAnalyticsIframeURL(ctx context.Context, projectID string) (string, error) {
 	type iframeRequest struct {
 		Resource   string         `json:"resource"`
 		Type       string         `json:"type"`
@@ -1383,7 +1415,7 @@ func (s *Server) fetchEmbeddedAnalyticsIframeURL(ctx context.Context) (string, e
 		Type:     "canvas",
 		Attributes: map[string]any{
 			"organization_id": "654b91fa-d39a-46d2-8d6f-33d2fb55cbde",
-			"project_id":      "",
+			"project_id":      projectID,
 		},
 	}
 

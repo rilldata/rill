@@ -805,6 +805,11 @@ components:
                 project:
                     $ref: '#/components/schemas/v1Project'
             type: object
+        v1GetProjectEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
+            type: object
         v1GetProjectMemberUserResponse:
             properties:
                 member:
@@ -2904,6 +2909,7 @@ paths:
     /v1/orgs/{org}/projects/{project}/connect-to-github: {}
     /v1/orgs/{org}/projects/{project}/credentials: {}
     /v1/orgs/{org}/projects/{project}/deployments: {}
+    /v1/orgs/{org}/projects/{project}/embedded-analytics: {}
     /v1/orgs/{org}/projects/{project}/hibernate: {}
     /v1/orgs/{org}/projects/{project}/iframe: {}
     /v1/orgs/{org}/projects/{project}/invites:

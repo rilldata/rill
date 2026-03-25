@@ -1567,6 +1567,28 @@ paths:
                 description: |-
                   Whether the deployment is editable and the edited changes are persisted back to the git repo.
                   Can't be set for `prod` deployments.
+  /v1/orgs/{org}/projects/{project}/embedded-analytics:
+    get:
+      summary: GetProjectEmbeddedAnalytics returns an iframe URL for the project-level embedded analytics dashboard
+      operationId: AdminService_GetProjectEmbeddedAnalytics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectEmbeddedAnalyticsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -5339,6 +5361,11 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1GetProjectEmbeddedAnalyticsResponse:
+    type: object
+    properties:
+      iframeUrl:
+        type: string
   v1GetProjectMemberUserResponse:
     type: object
     properties:

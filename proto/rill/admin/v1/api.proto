@@ -1322,6 +1322,11 @@ service AdminService {
   rpc GetEmbeddedAnalytics(GetEmbeddedAnalyticsRequest) returns (GetEmbeddedAnalyticsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/embedded-analytics"};
   }
+
+  // GetProjectEmbeddedAnalytics returns an iframe URL for the project-level embedded analytics dashboard
+  rpc GetProjectEmbeddedAnalytics(GetProjectEmbeddedAnalyticsRequest) returns (GetProjectEmbeddedAnalyticsResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/embedded-analytics"};
+  }
 }
 
 message PingRequest {}
@@ -3703,5 +3708,14 @@ message GetEmbeddedAnalyticsRequest {
 }
 
 message GetEmbeddedAnalyticsResponse {
+  string iframe_url = 1;
+}
+
+message GetProjectEmbeddedAnalyticsRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message GetProjectEmbeddedAnalyticsResponse {
   string iframe_url = 1;
 }

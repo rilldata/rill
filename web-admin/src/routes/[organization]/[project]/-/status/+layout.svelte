@@ -36,7 +36,7 @@
     {
       label: "Analytics",
       route: "/analytics",
-      hasPermission: false,
+      hasPermission: true,
     },
   ];
 </script>
