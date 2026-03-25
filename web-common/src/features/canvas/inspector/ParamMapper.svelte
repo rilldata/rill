@@ -208,9 +208,6 @@
           </button>
           {#if !collapsedSections[key]}
             <VegaSpecInput
-              {key}
-              label={undefined}
-              description={config?.description}
               value={localParamValues[key]}
               onChange={(updatedSpec) => {
                 localParamValues[key] = updatedSpec;

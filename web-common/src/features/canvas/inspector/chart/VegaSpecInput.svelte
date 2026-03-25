@@ -3,12 +3,8 @@
   import { EditorState } from "@codemirror/state";
   import { EditorView, placeholder } from "@codemirror/view";
   import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
-  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { onDestroy, onMount } from "svelte";
 
-  export let key: string;
-  export let label: string | undefined;
-  export let description: string | undefined;
   export let value: string;
   export let onChange: (updatedSpec: string) => void;
 
@@ -80,8 +76,7 @@
 </script>
 
 <div>
-  <InputLabel hint={description} small label={label ?? key} id={key} />
-  <div bind:this={editorContainer} class="spec-editor-container" />
+  <div bind:this={editorContainer} class="spec-editor-container"></div>
 
   {#if error}
     <div class="text-red-500 text-sm px-3">{error}</div>
