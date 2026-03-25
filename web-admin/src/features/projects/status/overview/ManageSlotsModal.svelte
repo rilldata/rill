@@ -23,12 +23,14 @@
   export let project: string;
   export let currentSlots: number;
   export let isRillManaged = true;
-  export let viewOnly = false;
+  export let isTrial = false;
 
-  // Minimum slots: 2 for Rill-managed, 4 for self-managed
-  $: minSlots = isRillManaged
-    ? DEFAULT_MANAGED_SLOTS
-    : DEFAULT_SELF_MANAGED_SLOTS;
+  // Free trials have no minimum; Growth+: 2 for Rill-managed, 4 for self-managed
+  $: minSlots = isTrial && isRillManaged
+    ? 1
+    : isRillManaged
+      ? DEFAULT_MANAGED_SLOTS
+      : DEFAULT_SELF_MANAGED_SLOTS;
 
   let selectedSlots = currentSlots;
   $: if (open) {
@@ -96,15 +98,9 @@
     <Dialog.Header>
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
-        {#if viewOnly}
-          Based on your current plan, we recommend the following slot
-          configuration. <a
-            href="/{organization}/-/settings/billing"
-            class="text-primary-500 hover:underline">Upgrade to Growth</a
-          > to customize your slot allocation.
-        {:else}
-          All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr. Monthly
-          estimates assume ~{HOURS_PER_MONTH} hours/month.
+        All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr. Monthly
+        estimates assume ~{HOURS_PER_MONTH} hours/month.
+        {#if !isTrial}
           {#if isRillManaged}
             Minimum {DEFAULT_MANAGED_SLOTS} slots for Rill-managed deployments.
           {:else}
@@ -125,15 +121,11 @@
         {#each visibleTiers as tier}
           <button
             class="tier-row"
-            class:tier-active={tier.slots === currentSlots ||
-              (viewOnly && tier.slots === selectedSlots)}
-            class:tier-selected={!viewOnly &&
-              tier.slots === selectedSlots &&
+            class:tier-active={tier.slots === currentSlots}
+            class:tier-selected={tier.slots === selectedSlots &&
               tier.slots !== currentSlots}
-            class:tier-disabled={viewOnly && tier.slots !== selectedSlots}
-            disabled={viewOnly && tier.slots !== selectedSlots}
             on:click={() => {
-              if (!viewOnly) selectedSlots = tier.slots;
+              selectedSlots = tier.slots;
             }}
           >
             <span class="tier-cell tier-cell-wide">
@@ -153,14 +145,12 @@
         {/each}
       </div>
     </div>
-    {#if !viewOnly}
-      <button
-        class="show-all-btn"
-        on:click={() => (showAllSizes = !showAllSizes)}
-      >
-        {showAllSizes ? "Show popular sizes" : "Show all sizes"}
-      </button>
-    {/if}
+    <button
+      class="show-all-btn"
+      on:click={() => (showAllSizes = !showAllSizes)}
+    >
+      {showAllSizes ? "Show popular sizes" : "Show all sizes"}
+    </button>
 
     <!-- Hibernate CTA -->
     <p class="hibernate-note">
@@ -181,7 +171,7 @@
       </button>
       <button
         class="apply-btn"
-        disabled={(viewOnly ? false : !hasChanged) || $updateProject.isPending}
+        disabled={!hasChanged || $updateProject.isPending}
         on:click={applySlotChange}
       >
         {#if $updateProject.isPending}
@@ -210,7 +200,7 @@
   .tier-row {
     @apply flex text-sm border-t border-border w-full text-left bg-transparent cursor-pointer;
   }
-  .tier-row:hover:not(:disabled):not(.tier-active):not(.tier-selected) {
+  .tier-row:hover:not(.tier-active):not(.tier-selected) {
     @apply bg-surface-subtle;
   }
   .tier-row .tier-cell {
@@ -221,9 +211,6 @@
   }
   .tier-selected {
     @apply bg-primary-100;
-  }
-  .tier-disabled {
-    @apply opacity-40 cursor-not-allowed;
   }
   .tier-cell {
     @apply flex-1 flex items-center gap-1.5;

@@ -2,16 +2,28 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
+  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
+  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
-  $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
+  $: organization = $page.params.organization;
+  $: basePage = `/${organization}/${$page.params.project}/-/status`;
 
-  const navItems = [
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
+  $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
+
+  $: navItems = [
     {
       label: "Overview",
       route: "",
       hasPermission: true,
+    },
+    {
+      label: "Deployments",
+      route: "/deployments",
+      hasPermission: !isEnterprise,
     },
     {
       label: "Resources",

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
     createAdminServiceGetBillingSubscription,
@@ -6,13 +7,13 @@
   } from "@rilldata/web-admin/client";
   import {
     isTrialPlan,
-    // isGrowthPlan,
     isEnterprisePlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
     formatEnvironmentName,
@@ -58,6 +59,7 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -68,9 +70,13 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
+  // When hibernated the runtime is unreachable; fall back to the cached connector type from the admin DB.
+  $: cachedOlapType = (projectData as any)?.olapConnector as string | undefined;
   $: olapEngineLabel = olapConnector
     ? getOlapEngineLabel(olapConnector)
-    : "Rill Managed";
+    : cachedOlapType
+      ? formatConnectorName(cachedOlapType)
+      : "DuckDB";
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
@@ -90,7 +96,7 @@
   <div slot="header-right" class="flex items-center gap-3">
     {#if canManage && isFree && !$subscriptionQuery?.isLoading}
       <a class="upgrade-link" href="/{organization}/-/settings/billing">
-        Upgrade to Teams
+        Upgrade to Growth
       </a>
     {/if}
     <ProjectClone
@@ -127,7 +133,7 @@
             rel="noopener noreferrer"
             class="repo-link"
           >
-            {githubUrl.replace("https://github.com/", "")}
+            {githubUrl?.replace("https://github.com/", "")}
           </a>
         </span>
       </div>
@@ -166,6 +172,11 @@
       <span class="info-label">OLAP Engine</span>
       <span class="info-value">
         {olapEngineLabel}
+        {#if olapConnector}
+          <span class="text-fg-tertiary text-xs ml-1">({olapConnector.name})</span>
+        {:else}
+          <span class="text-fg-tertiary text-xs ml-1">(Rill Managed)</span>
+        {/if}
       </span>
     </div>
 
@@ -174,8 +185,7 @@
       <span class="info-value">
         {#if aiConnector}
           {formatConnectorName(aiConnector.type)}
-          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
-          >
+          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span>
         {:else}
           Rill Managed
         {/if}
@@ -185,9 +195,18 @@
     {#if !$subscriptionQuery?.isLoading && !isEnterprise}
       <div class="info-row">
         <span class="info-label">Rill Slots</span>
-        <span class="slots-count">{currentSlots}</span>
+        <span class="info-value flex items-center gap-3">
+          <a
+            href="/{organization}/{project}/-/status/deployments"
+            class="slots-link"
+          >
+            <span class="slots-count">{currentSlots}</span>
+            <span class="slots-detail">View details</span>
+          </a>
+        </span>
       </div>
     {/if}
+
   </div>
 </OverviewCard>
 
