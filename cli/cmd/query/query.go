@@ -97,12 +97,11 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to execute query: %w", err)
 			}
 
-			// Print warning for implicit limits
+			// Print rows with warning if the default limit was reached.
+			ch.PrintQueryResponse(res)
 			if !cmd.Flags().Changed("limit") && len(res.Data) == limit {
 				ch.PrintfWarn("Warning: The result was truncated to %d rows (use --limit to override)\n", limit)
 			}
-
-			ch.PrintQueryResponse(res)
 			return nil
 		},
 	}
