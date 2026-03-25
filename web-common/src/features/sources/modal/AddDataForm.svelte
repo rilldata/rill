@@ -279,13 +279,15 @@
     saving = false;
   }
 
-  // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
+  // Re-compute preview when existingEnvBlob is loaded (changes from null to string).
+  // In edit mode, don't pass existingEnvBlob so env var names in the preview match the
+  // existing connector's variables (avoids incorrect _1 suffix from conflict detection).
   $: yamlPreview = formManager.computeYamlPreview({
     stepState,
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     formValues: $form,
-    existingEnvBlob: existingEnvBlob ?? "",
+    existingEnvBlob: editMode ? "" : (existingEnvBlob ?? ""),
   });
   // Show Save button for connector forms on the connector step (not for public auth which skips connection test).
   // Intentionally not disabled when fields are empty: Save persists whatever the user has entered so far,
