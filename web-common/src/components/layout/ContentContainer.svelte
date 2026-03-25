@@ -13,7 +13,7 @@
 >
   <section
     class="w-full flex flex-col gap-y-3"
-    style:max-width={flush ? 'none' : `${maxWidth}px`}
+    style:max-width={flush ? "none" : `${maxWidth}px`}
   >
     {#if title && showTitle}
       <h1
