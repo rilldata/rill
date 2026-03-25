@@ -266,13 +266,13 @@ func (s *Server) GenerateChart(ctx context.Context, req *runtimev1.GenerateChart
 	}
 
 	// Parse the structured response
-	metricsSql, vegaSpec, err := parseGenerateChartResponse(responseText)
+	metricsSQL, vegaSpec, err := parseGenerateChartResponse(responseText)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse AI response: %w", err)
 	}
 
 	return &runtimev1.GenerateChartResponse{
-		MetricsSql: metricsSql,
+		MetricsSql: metricsSQL,
 		VegaSpec:   vegaSpec,
 	}, nil
 }
@@ -433,17 +433,17 @@ func parseGenerateChartResponse(responseText string) ([]string, string, error) {
 	}
 
 	// Parse metrics_sql: could be a single string or array of strings
-	var metricsSql []string
-	if err := json.Unmarshal(result.MetricsSQL, &metricsSql); err != nil {
+	var metricsSQL []string
+	if err := json.Unmarshal(result.MetricsSQL, &metricsSQL); err != nil {
 		// Try single string
 		var single string
 		if err2 := json.Unmarshal(result.MetricsSQL, &single); err2 != nil {
 			return nil, "", fmt.Errorf("metrics_sql must be a string or array of strings: %w", err)
 		}
-		metricsSql = []string{single}
+		metricsSQL = []string{single}
 	}
 
-	if len(metricsSql) == 0 {
+	if len(metricsSQL) == 0 {
 		return nil, "", fmt.Errorf("AI returned empty metrics_sql")
 	}
 
@@ -462,5 +462,5 @@ func parseGenerateChartResponse(responseText string) ([]string, string, error) {
 		return nil, "", err
 	}
 
-	return metricsSql, string(vegaSpecBytes), nil
+	return metricsSQL, string(vegaSpecBytes), nil
 }

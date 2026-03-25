@@ -107,7 +107,7 @@
             </button>
           </div>
         {/if}
-        <div class="editor-wrapper" use:initEditor={idx} />
+        <div class="editor-wrapper" use:initEditor={idx}></div>
       </div>
     {/each}
   </div>
