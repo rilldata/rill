@@ -63,7 +63,9 @@ test.describe("canvas time filters", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page
-      .getByText("Total records 1,122 -5 ~0% vs previous period")
+      .locator("#AdBids_metrics_canvas--component-0-0 div")
+      .filter({ hasText: "Total records 1,122 -5 ~0% vs previous period" })
+      .first()
       .click();
 
     await page.getByRole("button", { name: "Options" }).click();
