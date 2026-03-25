@@ -99,15 +99,15 @@
     </div>
   {:else}
     <div class="border rounded-lg overflow-x-auto">
-      <table class="w-full">
+      <table class="w-full table-fixed">
         <thead>
           <tr class="bg-surface-background border-b">
             <th class="table-header">Label</th>
             <th class="table-header">Dashboard</th>
             <th class="table-header">Filters</th>
-            <th class="table-header">Expires on</th>
-            <th class="table-header">Created by</th>
-            <th class="table-header">Last accessed</th>
+            <th class="table-header w-[108px]">Expires on</th>
+            <th class="table-header w-[108px]">Created by</th>
+            <th class="table-header w-[112px]">Last accessed</th>
             <th class="table-header w-12"></th>
           </tr>
         </thead>
@@ -115,7 +115,7 @@
           {#each filteredData as row (row.id)}
             {@const filters = getFilters(row.metricsViewFilters)}
             <tr class="table-row">
-              <td class="table-cell font-medium">
+              <td class="table-cell overflow-hidden font-medium">
                 <a
                   href={row.url}
                   target="_blank"
@@ -128,38 +128,40 @@
                   </span>
                 </a>
               </td>
-              <td class="table-cell">
+              <td class="table-cell overflow-hidden">
                 <span class="truncate block">
                   {row.dashboardTitle || row.resourceName || "—"}
                 </span>
               </td>
-              <td class="table-cell">
+              <td class="table-cell overflow-hidden">
                 {#if filters.length > 0}
                   <div class="flex gap-1 flex-wrap">
                     {#each filters as filter (filter.name)}
-                      <Chip
-                        type="dimension"
-                        readOnly
-                        exclude={!filter.isInclude}
-                        compact
-                        slideDuration={0}
-                      >
-                        <span slot="body" class="text-xs truncate">
-                          <span class="font-bold"
-                            >{filter.isInclude
-                              ? ""
-                              : "Exclude "}{filter.name}</span
-                          >
-                          {#if filter.values.length === 1}
-                            {filter.values[0]}
-                          {:else if filter.values.length > 1}
-                            <span class="italic"
-                              >{filter.values[0]} +{filter.values.length -
-                                1}</span
+                      <div class="max-w-full min-w-0">
+                        <Chip
+                          type="dimension"
+                          readOnly
+                          exclude={!filter.isInclude}
+                          compact
+                          slideDuration={0}
+                        >
+                          <span slot="body" class="text-xs truncate">
+                            <span class="font-bold"
+                              >{filter.isInclude
+                                ? ""
+                                : "Exclude "}{filter.name}</span
                             >
-                          {/if}
-                        </span>
-                      </Chip>
+                            {#if filter.values.length === 1}
+                              {filter.values[0]}
+                            {:else if filter.values.length > 1}
+                              <span class="italic"
+                                >{filter.values[0]} +{filter.values.length -
+                                  1}</span
+                              >
+                            {/if}
+                          </span>
+                        </Chip>
+                      </div>
                     {/each}
                   </div>
                 {:else}
@@ -169,8 +171,10 @@
               <td class="table-cell whitespace-nowrap">
                 {formatDate(row.expiresOn)}
               </td>
-              <td class="table-cell">
-                {row.attributes?.name || "—"}
+              <td class="table-cell overflow-hidden">
+                <span class="truncate block">
+                  {row.attributes?.name || "—"}
+                </span>
               </td>
               <td class="table-cell whitespace-nowrap">
                 {formatDate(row.usedOn)}
