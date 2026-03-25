@@ -13,10 +13,7 @@ import {
 } from "../templates/schema-utils";
 
 // Helper text that we put at the top of every Model YAML file
-function sourceModelFileTop(
-  driverName: string,
-  connectorName?: string,
-) {
+function sourceModelFileTop(driverName: string, connectorName?: string) {
   const docsPath = connectorName
     ? `${connectorName}/${driverName}`
     : driverName;
