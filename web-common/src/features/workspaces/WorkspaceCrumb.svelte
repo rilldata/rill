@@ -9,12 +9,15 @@
     ResourceKind,
     type UserFacingResourceKinds,
   } from "../entity-management/resource-selectors";
-  import { builderActions } from "bits-ui";
   import { GitBranch } from "lucide-svelte";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
+    [ResourceKind.Explore, new Set([ResourceKind.MetricsView])],
     [ResourceKind.Source, new Set([ResourceKind.Model])],
     [
       ResourceKind.Model,
@@ -46,6 +49,18 @@
   $: withoutComponents = resources?.filter((r) => !r?.component);
 
   $: componentsOnly = !withoutComponents.length && resources.length;
+
+  // Whether this crumb is disabled in preview mode (models and upstream non-dashboard resources)
+  $: isDisabledInPreview =
+    $previewModeStore &&
+    (resourceKind === ResourceKind.Model ||
+      (upstream &&
+        resourceKind !== ResourceKind.MetricsView &&
+        resourceKind !== ResourceKind.Explore));
+
+  function getFileHref(filePaths: string[] | undefined): string {
+    return `/files${filePaths?.[0] ?? filePath}`;
+  }
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
@@ -109,20 +124,48 @@
 {#if !componentsOnly}
   <div class="crumb">
     <div class="crumb__trigger">
-      <DropdownMenu.Root bind:open>
-        <DropdownMenu.Trigger asChild let:builder>
-          <svelte:element
-            this={dropdown ? "button" : "a"}
-            class:open
-            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
-            class:selected={current}
-            href={dropdown
-              ? undefined
-              : exampleResource
-                ? `/files${exampleResource?.meta?.filePaths?.[0]}`
-                : "#"}
-            {...dropdown ? builder : {}}
-            use:builderActions={{ builders: dropdown ? [builder] : [] }}
+      {#if isDisabledInPreview}
+        <Tooltip distance={8}>
+          <div>
+            {#if dropdown}
+              <DropdownMenu.Root bind:open>
+                <DropdownMenu.Trigger
+                  class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 disabled {open
+                    ? 'bg-surface-active rounded-[2px] text-fg-primary'
+                    : ''} {current ? 'selected' : ''}"
+                >
+                  <CrumbTrigger
+                    {filePath}
+                    kind={resourceKind}
+                    label={!selectedResource && dropdown
+                      ? generateLabel(resources)
+                      : resourceName}
+                  />
+                </DropdownMenu.Trigger>
+              </DropdownMenu.Root>
+            {:else}
+              <span
+                class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 disabled"
+                class:selected={current}
+              >
+                <CrumbTrigger
+                  {filePath}
+                  kind={resourceKind}
+                  label={resourceName}
+                />
+              </span>
+            {/if}
+          </div>
+          <TooltipContent slot="tooltip-content">
+            Available in Developer mode
+          </TooltipContent>
+        </Tooltip>
+      {:else if dropdown}
+        <DropdownMenu.Root bind:open>
+          <DropdownMenu.Trigger
+            class="text-fg-muted hover:text-fg-primary px-[5px] py-1 w-full max-w-fit line-clamp-1 {open
+              ? 'bg-surface-active rounded-[2px] text-fg-primary'
+              : ''} {current ? 'selected' : ''}"
           >
             <CrumbTrigger
               {filePath}
@@ -131,16 +174,12 @@
                 ? generateLabel(resources)
                 : resourceName}
             />
-          </svelte:element>
-        </DropdownMenu.Trigger>
+          </DropdownMenu.Trigger>
 
-        {#if dropdown}
           <DropdownMenu.Content align="start">
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
-              <DropdownMenu.Item
-                href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
-              >
+              <DropdownMenu.Item href={getFileHref(resource?.meta?.filePaths)}>
                 {#if kind}
                   <svelte:component
                     this={resourceIconMapping[kind]}
@@ -151,8 +190,18 @@
               </DropdownMenu.Item>
             {/each}
           </DropdownMenu.Content>
-        {/if}
-      </DropdownMenu.Root>
+        </DropdownMenu.Root>
+      {:else}
+        <a
+          class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
+          class:selected={current}
+          href={exampleResource
+            ? getFileHref(exampleResource?.meta?.filePaths)
+            : "#"}
+        >
+          <CrumbTrigger {filePath} kind={resourceKind} label={resourceName} />
+        </a>
+      {/if}
     </div>
     {#if current && graphSupported && openGraph}
       <Button
@@ -183,38 +232,19 @@
     @apply flex-1 min-w-0;
   }
 
-  a:hover,
-  button:hover {
+  a:hover {
     @apply text-fg-primary;
+  }
+
+  .disabled {
+    @apply text-fg-disabled;
+  }
+
+  .disabled:hover {
+    @apply text-fg-disabled;
   }
 
   .selected {
     @apply text-fg-primary;
-  }
-
-  .open {
-    @apply bg-surface-active rounded-[2px] text-fg-primary;
-  }
-
-  .graph-trigger {
-    @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
-
-    min-width: 30px;
-    height: 26px;
-  }
-
-  .graph-trigger:hover {
-    color: var(--foreground, #1f2937);
-    border-color: color-mix(
-      in srgb,
-      var(--border, #e5e7eb) 70%,
-      var(--foreground, #1f2937)
-    );
-  }
-
-  .graph-trigger:focus-visible {
-    @apply outline-none ring ring-offset-1;
-    ring-color: var(--ring, #93c5fd);
-    ring-offset-color: var(--surface-background, #ffffff);
   }
 </style>

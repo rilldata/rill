@@ -63,7 +63,7 @@
   <button
     type="button"
     class="flex absolute inset-y-0 items-center pl-2 text-fg-secondary"
-    on:click={() => {
+    onclick={() => {
       ref?.focus();
     }}
   >
@@ -86,8 +86,8 @@
     class:h-full={large}
     {disabled}
     {placeholder}
-    on:input={handleInput}
-    on:keydown={handleKeyDown}
+    oninput={handleInput}
+    onkeydown={handleKeyDown}
     aria-label={label}
     role="textbox"
     tabindex="-1"

@@ -94,7 +94,11 @@ _[oneOf]_ - Data source for the alert _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
-  - **option 6** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+  - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+
+    - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
+
+  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 

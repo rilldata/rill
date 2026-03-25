@@ -204,7 +204,7 @@
     class="group big-number outline-border"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
-    on:click={modified({
+    onclick={modified({
       shift: () => shiftClickHandler(copyValue),
       click: () => {
         suppressTooltip = true;
@@ -227,8 +227,8 @@
       class="text-fg-secondary relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
-      on:mouseover={handleMouseOver}
-      on:focus={handleFocus}
+      onmouseover={handleMouseOver}
+      onfocus={handleFocus}
       tabindex="0"
     >
       {#if value !== null && value !== undefined && status === EntityStatus.Idle}
@@ -242,13 +242,13 @@
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
                 class:font-semibold={isComparisonPositive}
-                on:mouseenter={() => {
+                onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
                   copyValue =
                     measureValueFormatterUnabridged(diff) ?? "no data";
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(value) ?? "no data";
                   copyValue =
@@ -267,7 +267,7 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() => {
+                onmouseenter={() => {
                   tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
@@ -277,7 +277,7 @@
                     measureValueFormatterUnabridged(comparisonPercChange) ??
                     "no data";
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                   copyValue =

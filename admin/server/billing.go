@@ -468,6 +468,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.return_url", req.ReturnUrl))
+	observability.AddRequestAttributes(ctx, attribute.Bool("args.setup", req.Setup))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
@@ -489,7 +490,7 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 		req.ReturnUrl = s.admin.URLs.Frontend()
 	}
 
-	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
+	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl, req.Setup)
 	if err != nil {
 		return nil, err
 	}

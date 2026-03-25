@@ -24,7 +24,11 @@
   let anchorDay: DateTime<true> | undefined = undefined;
 
   $: startDate = inputInterval?.start;
-  $: endDate = inputInterval.end.minus({ millisecond: 1 });
+  // Do not deduct 1ms if the interval is of zero length to avoid having end before start.
+  $: isZeroInterval = inputInterval?.start.equals(inputInterval.end);
+  $: endDate = isZeroInterval
+    ? inputInterval?.end
+    : inputInterval?.end.minus({ millisecond: 1 });
 
   $: adjustedMinDate = minDate?.startOf("day");
   $: adjustedMaxDate = maxDate

@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -58,6 +59,10 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 
 	projects, err := l.ch.InferProjects(ctx, l.ch.Org, l.root)
 	if err != nil {
+		if errors.Is(err, cmdutil.ErrInferProjectFailed) {
+			// Succeed with an empty list
+			return nil, nil
+		}
 		return nil, err
 	}
 	project := projects[0] // InferProjects always returns at least one project in case of no error

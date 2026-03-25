@@ -1,3 +1,4 @@
+import type { ConnectError } from "@connectrpc/connect";
 import {
   createAndExpression,
   createInExpression,
@@ -11,9 +12,8 @@ import {
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
+  createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
-import type { ConnectError } from "@connectrpc/connect";
-import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 import {
   type CreateQueryResult,
   keepPreviousData,
@@ -71,39 +71,41 @@ export function createPivotAggregationRowQuery(
     hasComparison = true;
   }
 
-  return derived([ctx.metricsViewName], ([metricsViewName], set) =>
-    createQueryServiceMetricsViewAggregation(
-      ctx.runtimeClient,
-      {
-        metricsView: metricsViewName,
-        measures: prepareMeasureForComparison(measures),
-        dimensions,
-        where: sanitiseExpression(whereFilter, undefined),
-        timeRange: {
-          start: timeRange?.start ? timeRange.start : config.time.timeStart,
-          end: timeRange?.end ? timeRange.end : config.time.timeEnd,
-          timeDimension: config.time.timeDimension,
+  return derived(
+    [ctx.metricsViewName, ctx.enabled],
+    ([metricsViewName, enabled], set) =>
+      createQueryServiceMetricsViewAggregation(
+        ctx.runtimeClient,
+        {
+          metricsView: metricsViewName,
+          measures: prepareMeasureForComparison(measures),
+          dimensions,
+          where: sanitiseExpression(whereFilter, undefined),
+          timeRange: {
+            start: timeRange?.start ? timeRange.start : config.time.timeStart,
+            end: timeRange?.end ? timeRange.end : config.time.timeEnd,
+            timeDimension: config.time.timeDimension,
+          },
+          comparisonTimeRange:
+            hasComparison && comparisonTime
+              ? {
+                  start: comparisonTime.start,
+                  end: comparisonTime.end,
+                  timeDimension: config.time.timeDimension,
+                }
+              : undefined,
+          sort,
+          limit,
+          offset,
         },
-        comparisonTimeRange:
-          hasComparison && comparisonTime
-            ? {
-                start: comparisonTime.start,
-                end: comparisonTime.end,
-                timeDimension: config.time.timeDimension,
-              }
-            : undefined,
-        sort,
-        limit,
-        offset,
-      },
-      {
-        query: {
-          enabled: ctx.enabled,
-          placeholderData: keepPreviousData,
+        {
+          query: {
+            enabled,
+            placeholderData: keepPreviousData,
+          },
         },
-      },
-      ctx.queryClient,
-    ).subscribe(set),
+        ctx.queryClient,
+      ).subscribe(set),
   );
 }
 

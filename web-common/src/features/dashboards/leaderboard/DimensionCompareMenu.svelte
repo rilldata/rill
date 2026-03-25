@@ -11,7 +11,7 @@
 
 <IconButton
   ariaLabel="Toggle breakdown for {dimensionName} dimension"
-  on:click={(e) => {
+  onclick={(e) => {
     e.stopPropagation();
     if (dimensionName) toggleComparisonDimension(dimensionName);
   }}

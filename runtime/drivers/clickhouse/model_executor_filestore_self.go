@@ -13,6 +13,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 type fileStoreInputProps struct {
@@ -52,8 +53,16 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if err := mapstructure.WeakDecode(opts.InputHandle.Config(), inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	inputPropsMap := map[string]any{}
@@ -62,8 +71,15 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	// Require materialization for fileStore
@@ -73,7 +89,7 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	outputProps.Materialize = boolptr(true)
 
 	// Validate the output properties
-	err := e.c.validateAndApplyDefaults(opts, nil, outputProps)
+	err = e.c.validateAndApplyDefaults(opts, nil, outputProps)
 	if err != nil {
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
@@ -176,6 +192,7 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Connector:  opts.OutputConnector,
 		Properties: resultPropsMap,
 		Table:      tableName,
+		Warnings:   warnings,
 	}, nil
 }
 

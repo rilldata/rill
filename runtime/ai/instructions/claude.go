@@ -11,9 +11,9 @@ import (
 )
 
 // InitClaudeCode generates Claude Code instruction files from Rill instruction files.
-// The main instructions are written to .claude/CLAUDE.md.
-// Resource-specific instructions are written as skills to .claude/skills/<name>/SKILL.md.
-// Skills are loaded on-demand when invoked, keeping the context lean.
+// The entry point is written to .claude/CLAUDE.md.
+// All other instructions (including development.md) are written as skills to .claude/skills/<name>/SKILL.md.
+// MCP server config is written to /.mcp.json.
 // If force is false, it skips files that already exist.
 // If force is true, it overwrites any existing files.
 func InitClaudeCode(ctx context.Context, repo drivers.RepoStore, force bool) error {
@@ -60,11 +60,11 @@ type skillFrontMatter struct {
 }
 
 // convertToClaudeFile transforms a Rill instruction to Claude Code format.
-// development.md becomes the main .claude/CLAUDE.md file.
-// Resource files become skills at .claude/skills/<name>/SKILL.md.
+// AGENTS.md becomes the main .claude/CLAUDE.md file.
+// Other files become skills at .claude/skills/<name>/SKILL.md.
 func convertToClaudeFile(path string, inst *Instruction) (outputPath, content string) {
-	// development.md becomes the main CLAUDE.md file (no front matter needed)
-	if path == "development.md" {
+	// AGENTS.md becomes the main CLAUDE.md file (no front matter needed)
+	if path == "AGENTS.md" {
 		return "/.claude/CLAUDE.md", inst.Body
 	}
 

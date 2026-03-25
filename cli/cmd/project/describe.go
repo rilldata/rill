@@ -29,10 +29,10 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) == 3 {
 				project = args[0]
 			}
-			if !cmd.Flags().Changed("project") && len(args) == 2 && ch.Interactive {
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+			if project == "" {
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 
