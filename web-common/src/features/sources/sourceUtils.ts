@@ -13,9 +13,15 @@ import {
 } from "../templates/schema-utils";
 
 // Helper text that we put at the top of every Model YAML file
-function sourceModelFileTop(driverName: string) {
+function sourceModelFileTop(
+  driverName: string,
+  connectorName?: string,
+) {
+  const docsPath = connectorName
+    ? `${connectorName}/${driverName}`
+    : driverName;
   return `# Model YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${docsPath}
 
 type: model
 materialize: true`;
@@ -105,15 +111,18 @@ export function compileSourceYAML(
   const connectorName = opts?.connectorInstanceName || connector.name;
 
   const driverName = opts?.originalDriverName || connector.name || "duckdb";
+  const docsConnectorName = opts?.originalDriverName
+    ? connector.name || undefined
+    : undefined;
   return (
-    `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
+    `${sourceModelFileTop(driverName, docsConnectorName)}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +
     devSection
   );
 }
 
 export function compileLocalFileSourceYAML(path: string) {
-  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+  return `${sourceModelFileTop("local_file", "duckdb")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
 export function buildDuckDbQuery(
