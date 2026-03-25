@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { builderActions, getAttrs } from "bits-ui";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
@@ -52,24 +51,25 @@
 
 {#if $developerChat}
   <Dialog.Root bind:open>
-    <Dialog.Trigger asChild let:builder>
-      {#if type === "home"}
-        <button
-          class="button-home"
-          {...getAttrs([builder])}
-          use:builderActions={{ builders: [builder] }}
-        >
-          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-          <span>Generate sample data</span>
-        </button>
-      {:else}
-        <div class="hidden"></div>
-      {/if}
+    <Dialog.Trigger>
+      {#snippet child({ props })}
+        {#if type === "home"}
+          <button class="button-home" {...props}>
+            <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
+            <span>Generate sample data</span>
+          </button>
+        {:else}
+          <div class="hidden"></div>
+        {/if}
+      {/snippet}
     </Dialog.Trigger>
     <Dialog.Content>
       <form
         id={FORM_ID}
-        on:submit|preventDefault={submit}
+        onsubmit={(e) => {
+          e.preventDefault();
+          submit(e);
+        }}
         use:enhance
         class="relative"
       >
@@ -91,10 +91,10 @@
           class="prompt-input"
           bind:value={$form.prompt}
           class:empty={$form.prompt.length === 0}
-          on:keydown={handleKeydown}
-        />
+          onkeydown={handleKeydown}
+        ></textarea>
         <div class="absolute right-3 bottom-8">
-          <IconButton ariaLabel="Send message" on:click={submit}>
+          <IconButton ariaLabel="Send message" onclick={submit}>
             <SendIcon size="1.3em" />
           </IconButton>
         </div>

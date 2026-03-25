@@ -86,13 +86,20 @@
   class:hang
   class:minned={dimension === min}
   class:maxed={dimension === max}
-  on:mousedown|stopPropagation|preventDefault={handleMousedown}
-  on:dblclick|stopPropagation={handleDoubleClick}
-  on:mouseenter={() => {
+  onmousedown={(e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    handleMousedown(e);
+  }}
+  ondblclick={(e) => {
+    e.stopPropagation();
+    handleDoubleClick();
+  }}
+  onmouseenter={() => {
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => (hover = true), 150);
   }}
-  on:mouseleave={() => {
+  onmouseleave={() => {
     if (timeout) clearTimeout(timeout);
     timeout = null;
     hover = false;
@@ -108,7 +115,6 @@
     @apply z-50 flex-none;
     @apply pointer-events-auto;
     @apply flex items-center;
-    /* @apply bg-red-500 opacity-50; */
   }
 
   button:disabled {

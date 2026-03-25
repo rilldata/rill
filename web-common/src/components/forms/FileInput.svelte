@@ -35,7 +35,7 @@
       <button
         type="button"
         class="file-input-button"
-        on:click={() => fileInput.click()}
+        onclick={() => fileInput.click()}
         aria-label="Choose file"
       >
         <span class="choose-file-text">Choose file</span>

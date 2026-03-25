@@ -56,8 +56,8 @@
     class="section section-error section-clickable"
     role="button"
     tabindex="0"
-    on:click={handleSectionClick}
-    on:keydown={(e) => {
+    onclick={handleSectionClick}
+    onkeydown={(e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         handleSectionClick(e);

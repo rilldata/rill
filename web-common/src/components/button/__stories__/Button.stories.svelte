@@ -37,22 +37,26 @@
 
 <Template>
   <table>
-    <tr>
-      <td />
-      <td>type</td>
-      <td>status</td>
-      <td>disabled</td>
-      <td>compact</td>
-    </tr>
-    {#each buttonProps as props}
+    <thead>
       <tr>
-        <td><Button {...props}>Button</Button></td>
-        <td>{props.type}</td>
-        <td>{props.status}</td>
-        <td>{props.disabled}</td>
-        <td>{props.compact}</td>
+        <td></td>
+        <td>type</td>
+        <td>status</td>
+        <td>disabled</td>
+        <td>compact</td>
       </tr>
-    {/each}
+    </thead>
+    <tbody>
+      {#each buttonProps as props}
+        <tr>
+          <td><Button {...props}>Button</Button></td>
+          <td>{props.type}</td>
+          <td>{props.status}</td>
+          <td>{props.disabled}</td>
+          <td>{props.compact}</td>
+        </tr>
+      {/each}
+    </tbody>
   </table>
 </Template>
 

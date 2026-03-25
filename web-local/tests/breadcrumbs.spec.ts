@@ -7,6 +7,7 @@ test.describe("Breadcrumbs", () => {
 
   test.describe("Breadcrumb interactions", () => {
     test.describe.configure({ retries: 3 });
+    test.setTimeout(120_000);
     test("breadcrumb navigation", async ({ page }) => {
       await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
 

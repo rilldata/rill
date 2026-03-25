@@ -66,7 +66,9 @@
       {@const icon = connectorIconMapping[example.connector]}
       {@const loading = selectedProjectName === example.name}
       <ProjectCard
-        onClick={() => unpackProject(example)}
+        onclick={async () => {
+          await unpackProject(example);
+        }}
         {loading}
         disabled={!!selectedProjectName}
         label={example.title}
@@ -81,7 +83,7 @@
     {/each}
 
     <ProjectCard
-      onClick={() => unpackProject()}
+      onclick={() => unpackProject()}
       loading={selectedProjectName === EMPTY_PROJECT_TITLE}
       disabled={!!selectedProjectName}
       label="Start with an empty project"

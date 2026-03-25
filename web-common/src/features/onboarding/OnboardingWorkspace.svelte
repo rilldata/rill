@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { builderActions, getAttrs } from "bits-ui";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createRuntimeServiceUnpackExampleMutation } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
@@ -89,19 +88,17 @@
         Create a metrics view
       </button>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <button
-            class="onboarding-cta"
-            {...getAttrs([builder])}
-            use:builderActions={{ builders: [builder] }}
-          >
-            <PresentationIcon size="16px" />
-            Try demo projects
-          </button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <button class="onboarding-cta" {...props}>
+              <PresentationIcon size="16px" />
+              Try demo projects
+            </button>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}
-            <DropdownMenu.Item on:click={() => unpackProject(example)}>
+            <DropdownMenu.Item onclick={() => unpackProject(example)}>
               {example.title}
             </DropdownMenu.Item>
           {/each}

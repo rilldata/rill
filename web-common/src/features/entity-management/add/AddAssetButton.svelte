@@ -145,22 +145,24 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Button
-      builders={[builder]}
-      label="Add Asset"
-      class="w-full"
-      type="secondary"
-      selected={active}
-    >
-      <PlusCircleIcon size="14px" />
-      <div class="flex gap-x-1 items-center">
-        Add
-        <span class="transition-transform" class:-rotate-180={active}>
-          <CaretDownIcon size="10px" />
-        </span>
-      </div>
-    </Button>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        label="Add Asset"
+        class="w-full"
+        type="secondary"
+        selected={active}
+      >
+        <PlusCircleIcon size="14px" />
+        <div class="flex gap-x-1 items-center">
+          Add
+          <span class="transition-transform" class:-rotate-180={active}>
+            <CaretDownIcon size="10px" />
+          </span>
+        </div>
+      </Button>
+    {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"
@@ -171,7 +173,7 @@
     <DropdownMenu.Item
       aria-label="Add Data"
       class="flex gap-x-2"
-      on:click={handleAddData}
+      onclick={handleAddData}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
@@ -193,7 +195,7 @@
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
       disabled={metricsViews.length === 0}
-      on:click={() => {
+      onclick={() => {
         if (metricsViews.length === 1) {
           void createResourceAndNavigate(
             runtimeClient,
@@ -223,7 +225,7 @@
 
     <DropdownMenu.Item
       class="flex items-center justify-between gap-x-2"
-      on:click={() =>
+      onclick={() =>
         createResourceAndNavigate(runtimeClient, ResourceKind.Canvas)}
       disabled={metricsViews.length === 0}
     >
@@ -246,16 +248,16 @@
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddFolder}>
           <Folder size="14px" class="stroke-icon-muted" /> Folder
         </DropdownMenu.Item>
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddBlankFile}>
           <File size="14px" class="stroke-icon-muted" /> Blank file
         </DropdownMenu.Item>
         {#if $developerChat}
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={() => (generateDataDialog = true)}
+            onclick={() => (generateDataDialog = true)}
           >
             <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
             using AI
@@ -264,7 +266,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() =>
+          onclick={() =>
             createResourceAndNavigate(runtimeClient, ResourceKind.API)}
         >
           <svelte:component
@@ -276,7 +278,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => {
+          onclick={() => {
             showAiConnectorDialog = true;
           }}
         >
@@ -286,7 +288,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() =>
+          onclick={() =>
             createResourceAndNavigate(runtimeClient, ResourceKind.Theme)}
         >
           <svelte:component
@@ -296,7 +298,7 @@
           Theme
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
-        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
+        <!-- <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-fg-primary"
@@ -304,7 +306,7 @@
             />
             Report
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
+          <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
               className="text-fg-primary"

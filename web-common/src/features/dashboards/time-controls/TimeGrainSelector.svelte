@@ -48,42 +48,49 @@
 
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
   <DropdownMenu.Root bind:open>
-    <DropdownMenu.Trigger asChild let:builder>
-      <button
-        class:tdd
-        use:builder.action
-        {...builder}
-        aria-label="Select a time grain"
-        class="flex items-center gap-x-1"
-      >
-        <div class="items-center flex gap-x-1">
-          <span>
-            <svelte:element this={tdd ? "b" : "span"}>
-              {tdd ? "Time" : "by"}
-            </svelte:element>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <button
+          {...props}
+          class:tdd
+          aria-label="Select a time grain"
+          class="flex items-center gap-x-1"
+        >
+          <div class="items-center flex gap-x-1">
+            <span>
+              <svelte:element this={tdd ? "b" : "span"}>
+                {tdd ? "Time" : "by"}
+              </svelte:element>
 
-            <svelte:element this={tdd ? "span" : "b"}>
-              {capitalizedLabel}
-            </svelte:element>
+              <svelte:element this={tdd ? "span" : "b"}>
+                {capitalizedLabel}
+              </svelte:element>
 
-            {#if complete}
-              <i class="ml-0.5">complete</i>
-            {/if}
-          </span>
-          <span class="flex-none transition-transform" class:-rotate-180={open}>
-            <CaretDownIcon />
-          </span>
-        </div>
-      </button>
+              {#if complete}
+                <i class="ml-0.5">complete</i>
+              {/if}
+            </span>
+            <span
+              class="flex-none transition-transform"
+              class:-rotate-180={open}
+            >
+              <CaretDownIcon />
+            </span>
+          </div>
+        </button>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-52" align="start" {side}>
       {#each timeGrains as option (option.key)}
         <DropdownMenu.CheckboxItem
           checkRight
-          role="menuitem"
+          closeOnSelect
           checked={option.key === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
-          on:click={() => onTimeGrainSelect(option.key)}
+          onSelect={() => {
+            onTimeGrainSelect(option.key);
+            open = false;
+          }}
         >
           {option.main}
         </DropdownMenu.CheckboxItem>
@@ -101,7 +108,7 @@
     @apply bg-surface-background;
   }
 
-  .tdd[data-state="open"] {
+  .tdd:global([data-state="open"]) {
     @apply bg-surface-background border-gray-400;
   }
 </style>

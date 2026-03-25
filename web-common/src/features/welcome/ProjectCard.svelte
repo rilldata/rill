@@ -1,13 +1,13 @@
 <script lang="ts">
   import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
 
-  export let onClick: () => void;
+  export let onclick: () => void;
   export let loading: boolean;
   export let disabled: boolean;
   export let label: string;
 </script>
 
-<button on:click={onClick} {disabled} aria-label={label}>
+<button {onclick} {disabled} aria-label={label}>
   {#if loading}
     <LoadingCircleOutline size="16px" color="var(--color-primary-600)" />
   {:else}

@@ -53,11 +53,13 @@
   </StateManagersProvider>
   {#if !$readOnly}
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button type="secondary" builders={[builder]}>
-          Edit
-          <CaretDownIcon />
-        </Button>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <Button {...props} type="secondary">
+            Edit
+            <CaretDownIcon />
+          </Button>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">
         <DropdownMenu.Item href={`/files${exploreFilePath}`}>

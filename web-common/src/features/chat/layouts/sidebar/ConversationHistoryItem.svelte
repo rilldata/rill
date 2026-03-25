@@ -19,7 +19,7 @@
 
 <DropdownMenu.Item
   class="flex items-center gap-2 p-1 cursor-pointer"
-  on:click={handleClick}
+  onclick={handleClick}
 >
   <div class="min-w-0">
     <div class="text-xs text-fg-primary truncate">

@@ -67,7 +67,7 @@
     {#if allowShowSchema}
       <button
         type="button"
-        on:click={() => {
+        onclick={() => {
           store.toggleItem(connector, database, databaseSchema, table);
         }}
       >
@@ -85,7 +85,7 @@
       {...allowNavigateToTable && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
-      on:click={() => {
+      onclick={() => {
         store.toggleItem(connector, database, databaseSchema, table);
       }}
     >
@@ -97,17 +97,18 @@
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <ContextButton
-            id="more-actions-{tableId}"
-            testId="more-actions-context-button"
-            tooltipText="More actions"
-            label="{tableId} actions menu trigger"
-            builders={[builder]}
-            suppressTooltip={contextMenuOpen}
-          >
-            <MoreHorizontal />
-          </ContextButton>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <ContextButton
+              {...props}
+              data-testid="more-actions-context-button"
+              tooltipText="More actions"
+              label="{tableId} actions menu trigger"
+              suppressTooltip={contextMenuOpen}
+            >
+              <MoreHorizontal />
+            </ContextButton>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
           class="min-w-60"

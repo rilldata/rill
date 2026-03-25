@@ -334,6 +334,32 @@ export function maybeRewriteToDuckDb(
         scanParams.push(`version = '${icebergVersion.trim()}'`);
       }
 
+      const versionNameFormat = formValues.version_name_format as string;
+      if (versionNameFormat?.trim()) {
+        scanParams.push(`version_name_format = '${versionNameFormat.trim()}'`);
+      }
+
+      const metadataCompression =
+        formValues.metadata_compression_codec as string;
+      if (metadataCompression?.trim()) {
+        scanParams.push(
+          `metadata_compression_codec = '${metadataCompression.trim()}'`,
+        );
+      }
+
+      const snapshotFromId = formValues.snapshot_from_id as string;
+      if (snapshotFromId?.trim()) {
+        scanParams.push(`snapshot_from_id = ${snapshotFromId.trim()}`);
+      }
+
+      const snapshotFromTimestamp =
+        formValues.snapshot_from_timestamp as string;
+      if (snapshotFromTimestamp?.trim()) {
+        scanParams.push(
+          `snapshot_from_timestamp = '${snapshotFromTimestamp.trim()}'`,
+        );
+      }
+
       const paramsStr = scanParams.length
         ? `,\n  ${scanParams.join(",\n  ")}`
         : "";
@@ -352,6 +378,10 @@ export function maybeRewriteToDuckDb(
       delete formValues.azure_info;
       delete formValues.allow_moved_paths;
       delete formValues.version;
+      delete formValues.version_name_format;
+      delete formValues.metadata_compression_codec;
+      delete formValues.snapshot_from_id;
+      delete formValues.snapshot_from_timestamp;
 
       break;
     }

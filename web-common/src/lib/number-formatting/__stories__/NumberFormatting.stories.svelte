@@ -72,50 +72,58 @@
 
 <Story name="Intervals (compact)">
   <table>
-    <tr style="border-bottom: solid 1px #ddd;">
-      <td> input formula</td>
-      <td> milliseconds</td>
-      <td> formatted interval (compact)</td>
-    </tr>
-    {#each ms_values as t}
-      <tr>
-        <td> <pre>{t.string}</pre></td>
-        <td> <pre>{t.num}</pre></td>
-        <td>
-          {formatMsInterval(t.num)}
-        </td>
+    <thead>
+      <tr style="border-bottom: solid 1px #ddd;">
+        <td> input formula</td>
+        <td> milliseconds</td>
+        <td> formatted interval (compact)</td>
       </tr>
-    {/each}
+    </thead>
+    <tbody>
+      {#each ms_values as t}
+        <tr>
+          <td> <pre>{t.string}</pre></td>
+          <td> <pre>{t.num}</pre></td>
+          <td>
+            {formatMsInterval(t.num)}
+          </td>
+        </tr>
+      {/each}
+    </tbody>
   </table>
 </Story>
 
 <Story name="Intervals (extended)">
   <table>
-    <tr style="border-bottom: solid 1px #ddd;">
-      <!-- <td> input formula</td> -->
-      <!-- <td> milliseconds</td> -->
-      <td> formatted time (shortest)</td>
-      <td> formatted time (units)</td>
-      <td> formatted time (colon)</td>
-      <td> (same formatting)</td>
-    </tr>
-    {#each ms_values as t}
-      <tr>
-        <!-- <td> <pre>{t.string}</pre></td> -->
-        <!-- <td> <pre>{t.num}</pre></td> -->
-        <td>
-          {formatMsToDuckDbIntervalString(t.num)}
-        </td>
-        <td>{formatMsToDuckDbIntervalString(t.num, "units")} </td>
-        <td>{formatMsToDuckDbIntervalString(t.num, "colon")} </td>
-        <td
-          >{formatMsToDuckDbIntervalString(t.num, "units") ==
-          formatMsToDuckDbIntervalString(t.num, "colon")
-            ? "==="
-            : ""}
-        </td>
+    <thead>
+      <tr style="border-bottom: solid 1px #ddd;">
+        <!-- <td> input formula</td> -->
+        <!-- <td> milliseconds</td> -->
+        <td> formatted time (shortest)</td>
+        <td> formatted time (units)</td>
+        <td> formatted time (colon)</td>
+        <td> (same formatting)</td>
       </tr>
-    {/each}
+    </thead>
+    <tbody>
+      {#each ms_values as t}
+        <tr>
+          <!-- <td> <pre>{t.string}</pre></td> -->
+          <!-- <td> <pre>{t.num}</pre></td> -->
+          <td>
+            {formatMsToDuckDbIntervalString(t.num)}
+          </td>
+          <td>{formatMsToDuckDbIntervalString(t.num, "units")} </td>
+          <td>{formatMsToDuckDbIntervalString(t.num, "colon")} </td>
+          <td
+            >{formatMsToDuckDbIntervalString(t.num, "units") ==
+            formatMsToDuckDbIntervalString(t.num, "colon")
+              ? "==="
+              : ""}
+          </td>
+        </tr>
+      {/each}
+    </tbody>
   </table>
 </Story>
 

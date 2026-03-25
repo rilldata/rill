@@ -62,8 +62,10 @@
 </Button>
 
 <Dialog.Root bind:open={isNewOrgDialogOpen}>
-  <Dialog.Trigger asChild>
-    <div class="hidden"></div>
+  <Dialog.Trigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </Dialog.Trigger>
   <Dialog.Content noClose>
     <Dialog.Title>Create a new organization</Dialog.Title>
