@@ -199,6 +199,7 @@
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableTypes as type}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedTypes.includes(type)}
             onCheckedChange={() => toggleType(type)}
           >
@@ -236,6 +237,7 @@
       <DropdownMenu.Content align="start" class="w-48">
         {#each statusFilters as status}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedStatuses.includes(status.value)}
             onCheckedChange={() => toggleStatus(status.value)}
           >
@@ -248,7 +250,7 @@
     {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>

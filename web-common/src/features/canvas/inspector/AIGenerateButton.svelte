@@ -1,12 +1,12 @@
 <script lang="ts">
   import AnimatedDots from "@rilldata/web-common/features/chat/core/messages/AnimatedDots.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { CustomChartComponent } from "../components/charts/custom-chart/index";
-  import {
-    sendToDevAgent,
-    getAgentStreamingStore,
-  } from "../components/charts/custom-chart/chart-ai-agent";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import {
+    getAgentStreamingStore,
+    sendToDevAgent,
+  } from "../components/charts/custom-chart/chart-ai-agent";
+  import { CustomChartComponent } from "../components/charts/custom-chart/index";
 
   export let component: BaseCanvasComponent;
 
@@ -47,11 +47,12 @@
           rows="2"
           placeholder="Describe chart changes..."
           bind:value={prompt}
-          on:keydown={handleKeydown}
-        />
+          onkeydown={handleKeydown}
+        >
+        </textarea>
         <button
           class="generate-btn"
-          on:click={handleGenerate}
+          onclick={handleGenerate}
           disabled={!prompt.trim()}
           aria-label="Edit with AI"
         >

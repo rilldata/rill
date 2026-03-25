@@ -77,7 +77,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	var createSecretSQLs, dropSecretSQLs []string
 	for _, connector := range connectorsForSecrets {
 		// We need to pass the bucket we are using because of S3 region detection
-		createSecretSQL, dropSecretSQL, _, err := generateSecretSQL(ctx, opts, connector, bucket, nil)
+		createSecretSQL, dropSecretSQL, _, err := generateSecretSQL(ctx, opts, connector, bucket, nil, e.c.logger)
 		if err != nil {
 			// Silently ignore when auto detected connector or when using native GCS credentials (since it's not supported by DuckDB)
 			if autoDetected || errors.Is(err, errGCSUsesNativeCreds) {

@@ -10,8 +10,6 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover/index.js";
   import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
-  import { builderActions, getAttrs } from "bits-ui";
-
   export let imageUrl: string;
   export let accept: string;
   export let label: string;
@@ -75,33 +73,29 @@
     if (!o) onCancel();
   }}
 >
-  <PopoverTrigger asChild let:builder>
-    <button
-      class:dark
-      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      class:w-24={!imageUrl}
-      class:w-20={!!imageUrl}
-    >
-      <div class="m-auto px-4 w-fit h-10">
-        {#if imageUrl}
-          <img src={imageUrl} alt={label} class="h-10" />
-        {:else}
-          <slot />
-        {/if}
-      </div>
-      {#if !open}
-        <div
-          class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-subtle group-hover:bg-surface-hover w-6 h-6 px-1.5 py-[5px]"
-        >
-          <EditIcon
-            size="16px"
-            className="text-fg-secondary group-hover:text-fg-secondary"
-          />
-        </div>
+  <PopoverTrigger
+    class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit {!imageUrl
+      ? 'w-24'
+      : 'w-20'}"
+    style={dark ? "background-color: var(--color-rill-gray-dark-50)" : ""}
+  >
+    <div class="m-auto px-4 w-fit h-10">
+      {#if imageUrl}
+        <img src={imageUrl} alt={label} class="h-10" />
+      {:else}
+        <slot />
       {/if}
-    </button>
+    </div>
+    {#if !open}
+      <div
+        class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-subtle group-hover:bg-surface-hover w-6 h-6 px-1.5 py-[5px]"
+      >
+        <EditIcon
+          size="16px"
+          className="text-fg-secondary group-hover:text-fg-secondary"
+        />
+      </div>
+    {/if}
   </PopoverTrigger>
   <PopoverContent
     align="start"
@@ -138,9 +132,3 @@
     </div>
   </PopoverContent>
 </Popover>
-
-<style lang="postcss">
-  .dark {
-    background-color: var(--color-rill-gray-dark-50);
-  }
-</style>

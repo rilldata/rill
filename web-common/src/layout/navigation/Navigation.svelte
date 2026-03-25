@@ -61,8 +61,8 @@
 </script>
 
 <svelte:window
-  on:resize={handleResize}
-  on:keydown={(e) => {
+  onresize={handleResize}
+  onkeydown={(e) => {
     const isMac = window.navigator.userAgent.includes("Macintosh");
 
     if (e[isMac ? "metaKey" : "ctrlkey"] && e.key === "b") {
@@ -116,7 +116,7 @@
             {/if}
 
             <button
-              on:click={() => {
+              onclick={() => {
                 const open = showConnectors;
 
                 if (!open) showConnectors = true;

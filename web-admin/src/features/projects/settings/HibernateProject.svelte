@@ -67,14 +67,16 @@
 
   <svelte:fragment slot="action">
     <AlertDialog bind:open={dialogOpen}>
-      <AlertDialogTrigger asChild let:builder>
-        <Button
-          builders={[builder]}
-          type="secondary-destructive"
-          disabled={isHibernated}
-        >
-          Hibernate project
-        </Button>
+      <AlertDialogTrigger>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            type="secondary-destructive"
+            disabled={isHibernated}
+          >
+            Hibernate project
+          </Button>
+        {/snippet}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

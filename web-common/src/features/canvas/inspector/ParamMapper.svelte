@@ -3,6 +3,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
@@ -21,7 +22,6 @@
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
-  import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import type { AllKeys, ComponentInputParam } from "./types";
 
   export let component: BaseCanvasComponent;
@@ -145,7 +145,7 @@
               checked={config.meta?.invertBoolean
                 ? !$specStore[key]
                 : $specStore[key]}
-              on:click={() => {
+              onclick={() => {
                 component.updateProperty(key, !localParamValues[key]);
               }}
               small
@@ -165,19 +165,16 @@
               class="w-full p-2 border border-gray-300 rounded-sm"
               rows="8"
               bind:value={$specStore[key]}
-              on:blur={() => {
+              onblur={() => {
                 component.updateProperty(key, localParamValues[key]);
               }}
               placeholder={config.label ?? key}
-            />
+            ></textarea>
           </div>
 
           <!-- METRICS SQL -->
         {:else if config.type === "metrics_sql"}
-          <button
-            class="collapsible-header"
-            on:click={() => toggleSection(key)}
-          >
+          <button class="collapsible-header" onclick={() => toggleSection(key)}>
             <span class="chevron" class:expanded={!collapsedSections[key]}>
               <ChevronRight size="12px" />
             </span>
@@ -203,10 +200,7 @@
 
           <!-- VEGA SPEC -->
         {:else if config.type === "vega_spec"}
-          <button
-            class="collapsible-header"
-            on:click={() => toggleSection(key)}
-          >
+          <button class="collapsible-header" onclick={() => toggleSection(key)}>
             <span class="chevron" class:expanded={!collapsedSections[key]}>
               <ChevronRight size="12px" />
             </span>

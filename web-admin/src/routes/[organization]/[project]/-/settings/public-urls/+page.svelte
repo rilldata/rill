@@ -16,7 +16,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 50;
 
   $: magicAuthTokensInfiniteQuery =
     createAdminServiceListMagicAuthTokensInfinite(
@@ -34,6 +34,14 @@
         },
       },
     );
+
+  // Auto-fetch all remaining pages
+  $: if (
+    $magicAuthTokensInfiniteQuery.hasNextPage &&
+    !$magicAuthTokensInfiniteQuery.isFetchingNextPage
+  ) {
+    void $magicAuthTokensInfiniteQuery.fetchNextPage();
+  }
 
   $: allRows =
     $magicAuthTokensInfiniteQuery.data?.pages.flatMap(

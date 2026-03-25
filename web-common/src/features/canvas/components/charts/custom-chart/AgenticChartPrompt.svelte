@@ -1,7 +1,7 @@
 <script lang="ts">
   import AnimatedDots from "@rilldata/web-common/features/chat/core/messages/AnimatedDots.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { sendToDevAgent, getAgentStreamingStore } from "./chart-ai-agent";
+  import { getAgentStreamingStore, sendToDevAgent } from "./chart-ai-agent";
   import type { CustomChartComponent } from "./index";
 
   export let component: CustomChartComponent;
@@ -51,20 +51,21 @@
         rows="3"
         placeholder="Describe the chart you want to see..."
         bind:value={prompt}
-        on:keydown={handleKeydown}
-      />
+        onkeydown={handleKeydown}
+      >
+      </textarea>
 
       <div class="flex items-center justify-between">
         <button
           class="text-xs text-gray-400 hover:text-gray-600 underline"
-          on:click={switchToManual}
+          onclick={switchToManual}
         >
           Write SQL & Vega-Lite manually
         </button>
 
         <button
           class="px-3 py-1.5 text-xs font-medium text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          on:click={handleGenerate}
+          onclick={handleGenerate}
           disabled={!prompt.trim()}
         >
           Generate
