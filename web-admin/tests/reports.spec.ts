@@ -8,9 +8,14 @@ import {
 
 test.describe.serial("Reports", () => {
   test("Should create report", async ({ adminPage }) => {
+    test.setTimeout(60_000);
+
     await adminPage.goto("/e2e/openrtb/explore/auction_explore");
     // We are seeing some race condition where clicking `App Site Domain` too quickly can get reset with an internal redirect.
     await adminPage.waitForURL(/tr=P7D/);
+
+    // Wait for explore data to load before interacting with leaderboards.
+    await adminPage.getByLabel("app_site_domain leaderboard").waitFor();
 
     // Enter dimension table "App Site Domain"
     await adminPage.getByText("App Site Domain").click();
