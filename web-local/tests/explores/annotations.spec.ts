@@ -1,10 +1,10 @@
 import { expect, type Page } from "@playwright/test";
+import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { DateTime } from "luxon";
 import { test } from "../setup/base";
 import { waitForReconciliation } from "../utils/wait-for-reconciliation";
-import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
-import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
-import { DateTime } from "luxon";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
 // Annotation timestamps as they'll be serialized from DuckDB (UTC).
 // All annotations that may be visible at day grain in "Last 7 days":
@@ -71,10 +71,6 @@ async function selectGrain(page: Page, grain: string) {
   await expect(grainSelector).toContainText(grain, { timeout: 5000 });
 }
 
-/**
- * For each diamond marker on the chart, hover at its x-position to trigger
- * the date readout, then verify the displayed date is in the expected set.
- */
 // Normalize Unicode whitespace (e.g. narrow no-break space U+202F that
 // toLocaleString() may insert before AM/PM) to regular spaces so that
 // strings from Node.js and Chromium compare equal.
@@ -82,6 +78,10 @@ function normalizeSpaces(s: string): string {
   return s.replace(/[\s\u202F\u00A0]/g, " ");
 }
 
+/**
+ * For each diamond marker on the chart, hover at its x-position to trigger
+ * the date readout, then verify the displayed date is in the expected set.
+ */
 async function verifyDiamondDates(
   page: Page,
   chart: ReturnType<Page["getByLabel"]>,

@@ -26,14 +26,9 @@
   onMount(async () => {
     const mod = await import("prismjs");
     Prism = mod.default;
-    if (typeof window !== "undefined") {
-      (window as unknown as Record<string, unknown>).Prism = Prism;
-    }
+    (window as any).Prism = Prism; // eslint-disable-line @typescript-eslint/no-explicit-any
     await import("prismjs/components/prism-json");
     ready = true;
-    if (codeElement) {
-      Prism.highlightElement(codeElement);
-    }
   });
 
   $: if (ready && codeElement && code !== undefined && language !== undefined) {
