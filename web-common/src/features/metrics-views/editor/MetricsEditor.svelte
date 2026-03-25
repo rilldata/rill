@@ -14,7 +14,7 @@
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import type { JSONSchema7 } from "json-schema";
-  import { createPlaceholder } from "./create-placeholder";
+  import { createPlaceholder } from "./create-placeholder.svelte";
   import metricsSchema from "./metrics-schema.json";
 
   export let filePath: string;

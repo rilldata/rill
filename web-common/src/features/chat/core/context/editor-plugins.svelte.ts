@@ -8,6 +8,7 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
+import { mount, unmount } from "svelte";
 import {
   convertContextToInlinePrompt,
   INLINE_CHAT_CONTEXT_TAG,
@@ -190,7 +191,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       const { sharedEditorStore, runtimeClient } = this.options;
 
       // Create the inline chat context component. Pass the wrapper as the target.
-      const comp = new InlineContextComponent({
+      const comp = mount(InlineContextComponent, {
         target,
         props: {
           selectedChatContext: normalizeInlineContext(
@@ -199,7 +200,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
           props: editor.options.editable
             ? {
                 mode: "editable",
-                onSelect: (selectedChatContext) => {
+                onSelect: (selectedChatContext: InlineContext) => {
                   const pos = getPos();
                   if (!pos) return;
 
@@ -209,21 +210,21 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
                   );
                   editor.commands.focus();
                 },
-                onDropdownToggle: (isOpen) =>
+                onDropdownToggle: (isOpen: boolean) =>
                   sharedEditorStore.dropdownToggled(comp, isOpen),
                 focusEditor: () => editor.commands.focus(),
               }
             : { mode: "readonly" },
         },
         context: new Map([[RUNTIME_CONTEXT_KEY, runtimeClient]]),
-      });
+      }) as InlineContextExports;
       sharedEditorStore.componentAdded(comp);
 
       return {
         dom: target,
         destroy() {
           sharedEditorStore.componentsRemoved(comp);
-          comp.$destroy();
+          unmount(comp);
         },
       };
     };
@@ -238,7 +239,8 @@ export function configureInlineContextTipTapExtension(
   sharedEditorStore: SharedEditorStore,
   runtimeClient: RuntimeClient,
 ) {
-  let comp: InlineContextPicker | null = null;
+  let comp: Record<string, unknown> | null = null;
+  const pickerProps: Record<string, unknown> = $state({});
   let selected = false;
 
   return InlineContextExtension.configure({
@@ -253,16 +255,15 @@ export function configureInlineContextTipTapExtension(
           if (!(props.decorationNode instanceof HTMLElement)) return; // type safety, non-html will be in non-dom environment
           selected = false;
 
-          comp = new InlineContextPicker({
+          pickerProps.refNode = props.decorationNode;
+          pickerProps.onSelect = (item: InlineContext) => {
+            selected = true;
+            props.command(item);
+          };
+          pickerProps.focusEditor = () => props.editor.commands.focus();
+          comp = mount(InlineContextPicker, {
             target: document.body,
-            props: {
-              refNode: props.decorationNode,
-              onSelect: (item) => {
-                selected = true;
-                props.command(item);
-              },
-              focusEditor: () => props.editor.commands.focus(),
-            },
+            props: pickerProps,
             context: new Map([[RUNTIME_CONTEXT_KEY, runtimeClient]]),
           });
           sharedEditorStore.contextOpen = true;
@@ -270,15 +271,13 @@ export function configureInlineContextTipTapExtension(
 
         onUpdate(props) {
           if (!(props.decorationNode instanceof HTMLElement)) return; // type safety, non-html will be in non-dom environment
-          comp?.$set({
-            searchText: props.query,
-            refNode: props.decorationNode,
-          });
+          pickerProps.searchText = props.query;
+          pickerProps.refNode = props.decorationNode;
         },
 
         onExit: ({ editor, range }) => {
           if (!comp) return;
-          comp.$destroy();
+          unmount(comp);
           comp = null;
           sharedEditorStore.contextOpen = false;
 
@@ -298,6 +297,8 @@ export function configureInlineContextTipTapExtension(
   });
 }
 
+type InlineContextExports = { closeDropdown: () => void };
+
 /**
  * Used to share data across plugins of editor.
  * It is used to keep track of the state of the context picker dropdowns.
@@ -305,18 +306,18 @@ export function configureInlineContextTipTapExtension(
  */
 class SharedEditorStore {
   public contextOpen: boolean = false;
-  private components: InlineContextComponent[] = [];
+  private components: InlineContextExports[] = [];
 
-  public componentAdded(comp: InlineContextComponent) {
+  public componentAdded(comp: InlineContextExports) {
     this.components.push(comp);
   }
 
-  public componentsRemoved(comp: InlineContextComponent) {
+  public componentsRemoved(comp: InlineContextExports) {
     this.components = this.components.filter((c) => c !== comp);
     this.contextOpen = false;
   }
 
-  public dropdownToggled(comp: InlineContextComponent, isOpen: boolean) {
+  public dropdownToggled(comp: InlineContextExports, isOpen: boolean) {
     this.contextOpen = isOpen;
     if (!isOpen) return;
 

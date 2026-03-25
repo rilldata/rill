@@ -35,7 +35,7 @@
       <div class="flex flex-col gap-y-4">
         {#if isLoadingDisplayName}
           <DelayedContent visible={isLoadingDisplayName}>
-            <div class="h-11 w-96 animate-pulse rounded bg-gray-200" />
+            <div class="h-11 w-96 animate-pulse rounded bg-gray-200"></div>
           </DelayedContent>
         {:else if isErrorDisplayName}
           <h1

@@ -34,6 +34,12 @@ func (t *QueryMetricsViewSummary) Spec() *mcp.Tool {
 			- Sample values and data types for each dimension
 			Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
 		`,
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Summarizing metrics...",
 			"openai/toolInvocation/invoked":  "Summarized metrics",

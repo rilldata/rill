@@ -20,6 +20,91 @@ import { act, fireEvent, screen, waitFor } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { beforeAll, describe, expect, it } from "vitest";
 
+// bits-ui 2.x Select uses PointerEvent APIs that jsdom doesn't support.
+// Polyfill the missing types and methods so pointer-based interactions work in tests.
+if (typeof globalThis.PointerEvent === "undefined") {
+  (globalThis as Record<string, unknown>).PointerEvent =
+    class PointerEvent extends MouseEvent {
+      readonly pointerId: number;
+      readonly pointerType: string;
+      constructor(
+        type: string,
+        init?: PointerEventInit & Record<string, unknown>,
+      ) {
+        super(type, init);
+        this.pointerId = (init?.pointerId as number) ?? 0;
+        this.pointerType = (init?.pointerType as string) ?? "mouse";
+      }
+    };
+}
+if (!HTMLElement.prototype.hasPointerCapture) {
+  HTMLElement.prototype.hasPointerCapture = () => false;
+}
+if (!HTMLElement.prototype.releasePointerCapture) {
+  HTMLElement.prototype.releasePointerCapture = () => {};
+}
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = () => {};
+}
+
+/**
+ * bits-ui 2.x Select: open via keyboard (Space) on the trigger, then navigate
+ * with ArrowDown and select with Enter. Pointer events don't work reliably
+ * in jsdom because bits-ui's item ref tracking requires real layout.
+ */
+async function selectMode(name: RegExp) {
+  const trigger = document.getElementById("dimension-filter-mode-selector")!;
+  trigger.focus();
+  // Open the select dropdown
+  await act(() => {
+    fireEvent.keyDown(trigger, { key: " " });
+  });
+  // Wait for options to appear
+  await waitFor(() =>
+    expect(screen.getByRole("option", { name })).toBeVisible(),
+  );
+  // bits-ui auto-highlights the current value on open. Navigate ArrowDown
+  // until the target option is highlighted, then press Enter to select.
+  const options = screen.getAllByRole("option");
+  const targetIndex = options.findIndex((opt) => name.test(opt.textContent!));
+  const highlightedOpt = options.findIndex((opt) =>
+    opt.hasAttribute("data-highlighted"),
+  );
+  const startIndex = highlightedOpt >= 0 ? highlightedOpt : -1;
+  const steps =
+    targetIndex >= startIndex
+      ? targetIndex - startIndex
+      : options.length - startIndex + targetIndex;
+  for (let i = 0; i < steps; i++) {
+    await act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+  }
+  await act(() => {
+    fireEvent.keyDown(trigger, { key: "Enter" });
+  });
+}
+
+/**
+ * Returns the text content of the mode selector trigger button.
+ */
+function getModeSelectorText() {
+  return document.getElementById("dimension-filter-mode-selector")!.textContent;
+}
+
+/**
+ * Returns the text of each item inside a DropdownMenu group, as an array.
+ * bits-ui 2.x renders items as adjacent elements without whitespace, so
+ * checking individual items is more reliable than toHaveTextContent.
+ */
+function getGroupItemTexts(groupLabel: string): string[] {
+  const group = screen.getByLabelText(groupLabel);
+  const items = group.querySelectorAll(
+    "[data-dropdown-menu-item], [data-dropdown-menu-checkbox-item]",
+  );
+  return Array.from(items).map((el) => el.textContent?.trim() ?? "");
+}
+
 describe("DimensionFilter", () => {
   mockAnimationsForComponentTesting();
   const mocks = useDashboardFetchMocksForComponentTests();
@@ -41,10 +126,8 @@ describe("DimensionFilter", () => {
 
     // Once the pill is added and dropdown is open, select "Facebook" and "Google"
     await waitFor(() => expect(screen.getByText("Facebook")).toBeVisible());
-    await act(() => {
-      screen.getByText("Facebook").click();
-      screen.getByText("Google").click();
-    });
+    await act(() => screen.getByText("Facebook").click());
+    await act(() => screen.getByText("Google").click());
 
     // Close the dropdown to apply the selections (Select mode applies on close)
     await act(() => screen.getByLabelText("Open publisher filter").click());
@@ -60,8 +143,7 @@ describe("DimensionFilter", () => {
     await act(() => screen.getByLabelText("Open publisher filter").click());
 
     // Change the mode to "Contains" and enter a search term "oo"
-    await act(() => screen.getByRole("combobox").click());
-    await act(() => screen.getByRole("option", { name: /Contains/ }).click());
+    await selectMode(/Contains/);
     await act(() =>
       fireEvent.input(screen.getByLabelText("publisher search list"), {
         target: { value: "oo" },
@@ -89,8 +171,7 @@ describe("DimensionFilter", () => {
     // Open the dropdown again
     await act(() => screen.getByLabelText("Open publisher filter").click());
     // Switch to "In List" mode and enter a value "Facebook,Google,Apple"
-    await act(() => screen.getByRole("combobox").click());
-    await act(() => screen.getByRole("option", { name: /In List/ }).click());
+    await selectMode(/In List/);
     await act(() =>
       fireEvent.input(screen.getByLabelText("publisher search list"), {
         target: { value: "Facebook,Google,Apple" },
@@ -101,9 +182,11 @@ describe("DimensionFilter", () => {
         "2 of 3 matched",
       ),
     );
-    expect(screen.getByLabelText("publisher results")).toHaveTextContent(
-      "Facebook Google",
-    );
+    expect(getGroupItemTexts("publisher results")).toEqual([
+      "Facebook",
+      "Google",
+      "Apple",
+    ]);
     // Pill changes to reflect the current state of the dropdown
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
       "publisher In list (2 of 3)",
@@ -126,8 +209,7 @@ describe("DimensionFilter", () => {
     await addFilter("publisher");
 
     // Change the mode to "Contains"
-    await act(() => screen.getByRole("combobox").click());
-    await act(() => screen.getByRole("option", { name: /Contains/ }).click());
+    await selectMode(/Contains/);
     // No results yet.
     await waitFor(() =>
       expect(screen.getByLabelText("publisher result count")).toHaveTextContent(
@@ -150,9 +232,11 @@ describe("DimensionFilter", () => {
         "3 results",
       ),
     );
-    expect(screen.getByLabelText("publisher results")).toHaveTextContent(
-      "Facebook Google Yahoo",
-    );
+    expect(getGroupItemTexts("publisher results")).toEqual([
+      "Facebook",
+      "Google",
+      "Yahoo",
+    ]);
     // Pill is updated as well.
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
       "publisher Contains oo (3)",
@@ -180,8 +264,7 @@ describe("DimensionFilter", () => {
     await addFilter("publisher");
 
     // Change the mode to "In List"
-    await act(() => screen.getByRole("combobox").click());
-    await act(() => screen.getByRole("option", { name: /In List/ }).click());
+    await selectMode(/In List/);
     // No results yet.
     await waitFor(() =>
       expect(screen.getByLabelText("publisher result count")).toHaveTextContent(
@@ -204,9 +287,11 @@ describe("DimensionFilter", () => {
         "2 of 3 matched",
       ),
     );
-    expect(screen.getByLabelText("publisher results")).toHaveTextContent(
-      "Facebook Google",
-    );
+    expect(getGroupItemTexts("publisher results")).toEqual([
+      "Facebook",
+      "Google",
+      "Apple",
+    ]);
     // Pill is updated as well.
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
       "publisher In list (2 of 3)",
@@ -224,9 +309,11 @@ describe("DimensionFilter", () => {
         "2 of 3 matched",
       ),
     );
-    expect(screen.getByLabelText("publisher results")).toHaveTextContent(
-      "Facebook Google",
-    );
+    expect(getGroupItemTexts("publisher results")).toEqual([
+      "Facebook",
+      "Google",
+      "Apple",
+    ]);
 
     // Apply to get the filter to take effect.
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
@@ -263,16 +350,18 @@ describe("DimensionFilter", () => {
       }),
     );
     // Mode is automatically changed to In-List
-    expect(screen.getByRole("combobox")).toHaveTextContent("In List");
+    expect(getModeSelectorText()).toContain("In List");
     // 2 of 3 results matched based on mocked response.
     await waitFor(() =>
       expect(screen.getByLabelText("publisher result count")).toHaveTextContent(
         "2 of 3 matched",
       ),
     );
-    expect(screen.getByLabelText("publisher results")).toHaveTextContent(
-      "Facebook Google",
-    );
+    expect(getGroupItemTexts("publisher results")).toEqual([
+      "Facebook",
+      "Google",
+      "Apple",
+    ]);
     // Pill is updated as well.
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
       "publisher In list (2 of 3)",

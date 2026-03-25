@@ -2,7 +2,7 @@
   import { Avatar } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
-  export let loadingStatus: Avatar.Props["loadingStatus"] = undefined;
+  let loadingStatus: Avatar.RootProps["loadingStatus"] = undefined;
   export let src: string | null = null;
   export let alt: string | null = null;
   export let avatarSize: string = "h-12 w-12";
@@ -15,7 +15,9 @@
 </script>
 
 <Avatar.Root
-  bind:loadingStatus
+  onLoadingStatusChange={(status) => {
+    loadingStatus = status;
+  }}
   class={cn(
     avatarSize,
     "rounded-full",

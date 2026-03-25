@@ -196,6 +196,12 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		Name:        QueryMetricsViewName,
 		Title:       "Query Metrics View",
 		Description: description,
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Querying metrics...",
 			"openai/toolInvocation/invoked":  "Queried metrics",

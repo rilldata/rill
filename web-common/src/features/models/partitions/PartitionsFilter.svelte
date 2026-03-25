@@ -1,10 +1,9 @@
 <script lang="ts">
   import * as Select from "@rilldata/web-common/components/select";
-  import type { Selected } from "bits-ui";
   import Button from "../../../components/button/Button.svelte";
 
   export let selectedFilter: string;
-  export let onChange: (selected: Selected<string>) => void;
+  export let onChange: (value: string) => void;
 
   let openFilterMenu = false;
 
@@ -16,8 +15,12 @@
 </script>
 
 <Select.Root
+  type="single"
   items={options}
-  onSelectedChange={onChange}
+  value={selectedFilter}
+  onValueChange={(val) => {
+    if (val) onChange(val);
+  }}
   bind:open={openFilterMenu}
 >
   <Select.Trigger class="outline-none border-none w-fit px-0 gap-x-0.5">

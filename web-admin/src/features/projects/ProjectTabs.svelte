@@ -88,10 +88,8 @@
   </nav>
 
   {#if $width && $position}
-    <span
-      style:width="{$width}px"
-      style:transform="translateX({$position}px) "
-    />
+    <span style:width="{$width}px" style:transform="translateX({$position}px) "
+    ></span>
   {/if}
 </div>
 
