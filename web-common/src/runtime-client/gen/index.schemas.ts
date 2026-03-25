@@ -1118,6 +1118,7 @@ export interface V1GetFileResponse {
 
 export interface V1GetInstanceResponse {
   instance?: V1Instance;
+  dataSizeBytes?: string;
 }
 
 export interface V1GetLogsResponse {

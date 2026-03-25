@@ -85,9 +85,19 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		s.enrichConnectorWithRuntimeMetadata(ctx, req.InstanceId, pb)
 	}
 
-	return &runtimev1.GetInstanceResponse{
+	resp := &runtimev1.GetInstanceResponse{
 		Instance: pb,
-	}, nil
+	}
+
+	// Compute data dir size (best-effort; don't fail the request if it errors)
+	if sensitiveAccess {
+		size, err := s.runtime.DataDirSize(req.InstanceId)
+		if err == nil {
+			resp.DataSizeBytes = size
+		}
+	}
+
+	return resp, nil
 }
 
 // CreateInstance implements RuntimeService.
