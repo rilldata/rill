@@ -94,14 +94,14 @@
   $: totalCount = sections.reduce((sum, s) => sum + s.entries.length, 0);
 
   $: activeLabel = (function () {
-    if (!activeResourceId) return `All resources (${totalCount})`;
+    if (!activeResourceId) return `All Resource Trees (${totalCount})`;
     for (const section of sections) {
       for (const entry of section.entries) {
         const id = `${entry.kind}:${entry.name}`;
         if (id === activeResourceId) return entry.name;
       }
     }
-    return `All resources (${totalCount})`;
+    return `All Resource Trees (${totalCount})`;
   })();
 
   function handleSelect(entry: ResourceEntry) {
@@ -130,7 +130,7 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-96">
       <DropdownMenu.Item onclick={handleSelectAll}>
-        <span class="text-xs">All resources ({totalCount})</span>
+        <span class="text-xs">All Resource Trees ({totalCount})</span>
       </DropdownMenu.Item>
       {#each sections as section}
         <DropdownMenu.Separator />

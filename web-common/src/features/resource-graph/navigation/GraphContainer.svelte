@@ -35,6 +35,8 @@
   export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
   export let flushToolbar = false;
+  export let showIsolatedResources = false;
+  export let onShowIsolatedChange: ((value: boolean) => void) | null = null;
 
   onMount(() => {
     graphCache.initialize();
@@ -114,4 +116,6 @@
   {onSelectAll}
   {hasUrlFilters}
   {flushToolbar}
+  {showIsolatedResources}
+  {onShowIsolatedChange}
 />

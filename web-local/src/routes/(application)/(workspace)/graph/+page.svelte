@@ -22,6 +22,24 @@
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
+  const ISOLATED_STORAGE_KEY = "rill:graph:showIsolated";
+  let showIsolatedResources = (() => {
+    try {
+      return localStorage.getItem(ISOLATED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  })();
+
+  function handleIsolatedChange(value: boolean) {
+    showIsolatedResources = value;
+    try {
+      localStorage.setItem(ISOLATED_STORAGE_KEY, String(value));
+    } catch {
+      // ignore
+    }
+  }
+
   setGraphNavigation({
     viewLineage(kindToken, resourceName) {
       const params = new URLSearchParams();
@@ -166,6 +184,8 @@
     onClearFilters={handleClearFilters}
     onSelectAll={() => goto("/graph")}
     {hasUrlFilters}
+    {showIsolatedResources}
+    onShowIsolatedChange={handleIsolatedChange}
   />
 </div>
 

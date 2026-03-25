@@ -50,6 +50,7 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { closeInspect } from "../graph-canvas/inspect-store";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -64,6 +65,9 @@
   export let searchQuery = "";
   export let statusFilter: ResourceStatusFilter = [];
   export let showNodeActions = true;
+  export let showIsolatedResources = false;
+  export let onShowIsolatedChange: ((value: boolean) => void) | null = null;
+  $: onShowIsolatedChange?.(showIsolatedResources);
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
@@ -245,6 +249,43 @@
         ? []
         : partitionResourcesByMetrics(normalizedResources);
 
+  // Compute IDs of all resources reachable upstream from dashboard anchors.
+  // Only follows refs (dependencies), not reverse refs, so orphaned resources
+  // sharing a connector with a dashboard tree are correctly excluded.
+  $: dashboardConnectedIds = (() => {
+    const idToResource = new Map<string, V1Resource>();
+    for (const r of normalizedResources) {
+      const id = `${r.meta?.name?.kind}:${r.meta?.name?.name}`;
+      idToResource.set(id, r);
+    }
+
+    const connected = new Set<string>();
+    const queue: string[] = [];
+    for (const r of normalizedResources) {
+      const kind = coerceResourceKind(r);
+      if (
+        kind === ResourceKind.Explore ||
+        kind === ResourceKind.Canvas ||
+        kind === ResourceKind.MetricsView
+      ) {
+        queue.push(`${r.meta?.name?.kind}:${r.meta?.name?.name}`);
+      }
+    }
+
+    while (queue.length) {
+      const id = queue.pop()!;
+      if (connected.has(id)) continue;
+      connected.add(id);
+      const r = idToResource.get(id);
+      for (const ref of r?.meta?.refs ?? []) {
+        const refId = `${ref.kind}:${ref.name}`;
+        if (!connected.has(refId)) queue.push(refId);
+      }
+    }
+
+    return connected;
+  })();
+
   // Filter groups by search query and status
   $: filteredResourceGroups = (() => {
     let groups = resourceGroups;
@@ -276,6 +317,19 @@
           statusFilter.includes(getResourceStatus(r)),
         ),
       );
+    }
+
+    // Hide isolated resources (not reachable from any Explore/Canvas/MetricsView)
+    if (!showIsolatedResources) {
+      groups = groups
+        .map((group) => ({
+          ...group,
+          resources: group.resources.filter((r) => {
+            const id = `${r.meta?.name?.kind}:${r.meta?.name?.name}`;
+            return dashboardConnectedIds.has(id);
+          }),
+        }))
+        .filter((group) => group.resources.length > 0);
     }
 
     return groups;
@@ -833,7 +887,7 @@
                   resourceDropdownOpen = false;
                 }}
               >
-                <span class="flex-1 truncate text-xs">All Resources</span>
+                <span class="flex-1 truncate text-xs">All Resource Trees</span>
               </button>
               {#each allResourceSections as section (section.kind)}
                 <div class="combo-separator"></div>
@@ -922,6 +976,17 @@
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       {/if}
+
+      <!-- svelte-ignore a11y-label-has-associated-control -->
+      <label class="flex items-center gap-1.5 shrink-0 cursor-pointer select-none">
+        <Switch
+          small
+          bind:checked={showIsolatedResources}
+        />
+        <span class="text-xs text-fg-secondary whitespace-nowrap">
+          Show isolated
+        </span>
+      </label>
 
       {#if hasActiveFilters}
         <button

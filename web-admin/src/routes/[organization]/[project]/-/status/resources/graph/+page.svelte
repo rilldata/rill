@@ -27,6 +27,24 @@
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
+  const ISOLATED_STORAGE_KEY = "rill:graph:showIsolated";
+  let showIsolatedResources = (() => {
+    try {
+      return localStorage.getItem(ISOLATED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  })();
+
+  function handleIsolatedChange(value: boolean) {
+    showIsolatedResources = value;
+    try {
+      localStorage.setItem(ISOLATED_STORAGE_KEY, String(value));
+    } catch {
+      // ignore
+    }
+  }
+
   $: graphBasePath = `/${$page.params.organization}/${$page.params.project}/-/status/resources/graph`;
 
   setGraphNavigation({
@@ -162,6 +180,8 @@
     onSelectAll={() => goto(graphBasePath)}
     {hasUrlFilters}
     flushToolbar
+    {showIsolatedResources}
+    onShowIsolatedChange={handleIsolatedChange}
   />
 </div>
 
