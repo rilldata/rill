@@ -14,7 +14,8 @@
   // Prism's language plugins reference bare `Prism` as a global. Rolldown may
   // bundle them into a separate chunk that evaluates before the main module
   // has set window.Prism. Dynamic imports in onMount guarantee correct ordering.
-  let Prism: typeof import("prismjs").default;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let Prism: any;
 
   function copyCode() {
     navigator.clipboard.writeText(code);
