@@ -9,6 +9,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/hubspot"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/admin/provisioner"
@@ -56,9 +57,10 @@ type Service struct {
 	ScaleDownConstraint       int
 	Biller                    billing.Biller
 	PaymentProvider           payment.Provider
+	HubSpot                   hubspot.Client
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiService drivers.AIService, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiService drivers.AIService, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider, hs hubspot.Client) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN, opts.DatabaseEncryptionKeyring)
 	if err != nil {
@@ -140,6 +142,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		ScaleDownConstraint:       opts.ScaleDownConstraint,
 		Biller:                    biller,
 		PaymentProvider:           p,
+		HubSpot:                   hs,
 	}, nil
 }
 

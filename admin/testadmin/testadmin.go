@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/hubspot"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs/river"
@@ -155,7 +156,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 		AutoscalerCron:            "",
 		ScaleDownConstraint:       0,
 	}
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), mockAI, nil, billing.NewNoop(), payment.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), mockAI, nil, billing.NewNoop(), payment.NewNoop(), hubspot.NewNoop())
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		// cleanup any managed repos created during testing since the repos are cleaned in a river job not executed in tests

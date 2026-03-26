@@ -302,6 +302,16 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		zap.String("user_email", userEmail),
 	)
 
+	// Sync trial dates to HubSpot (non-blocking)
+	if userEmail != "" {
+		s.HubSpot.UpsertContact(userEmail, map[string]string{
+			"company":          org.Name,
+			"rill_trial_start": sub.StartDate.Format("2006-01-02"),
+			"rill_trial_end":   sub.TrialEndDate.Format("2006-01-02"),
+			"rill_plan":        plan.Name,
+		})
+	}
+
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,

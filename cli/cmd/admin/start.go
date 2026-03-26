@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/hubspot"
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -109,6 +110,7 @@ type Config struct {
 	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
+	HubSpotAPIKey                     string `split_words:"true"`
 	PylonIdentitySecret               string `split_words:"true"`
 }
 
@@ -316,6 +318,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				p = payment.NewNoop()
 			}
 
+			var hs hubspot.Client
+			if conf.HubSpotAPIKey != "" {
+				hs = hubspot.New(logger, conf.HubSpotAPIKey)
+			} else {
+				hs = hubspot.NewNoop()
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:            conf.DatabaseDriver,
@@ -332,7 +341,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AutoscalerCron:            conf.AutoscalerCron,
 				ScaleDownConstraint:       conf.ScaleDownConstraint,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p, hs)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
