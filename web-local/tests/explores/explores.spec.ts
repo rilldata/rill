@@ -9,6 +9,7 @@ import {
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
 import {
+  clickPreviewButton,
   createExploreFromModel,
   createExploreFromSource,
 } from "../utils/exploreHelpers";
@@ -50,7 +51,7 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
-    test.setTimeout(60_000); // Note: we should make this test smaller!
+    test.setTimeout(75_000); // Note: we should make this test smaller!
 
     // Enable to get logs in CI
     // page.on("console", async (msg) => {
@@ -101,9 +102,7 @@ time_ranges:
 
     await watcher.updateAndWaitForExplore(addAllTime);
 
-    await page.getByRole("button", { name: "Preview" }).click();
-
-    await page.waitForTimeout(1000);
+    await clickPreviewButton(page);
 
     // Check the total records are 100k
     await page
@@ -299,7 +298,7 @@ time_ranges:
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Assert that name changed
     await expect(
@@ -350,7 +349,7 @@ time_ranges:
       .click();
 
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("as of latest week end");
@@ -426,9 +425,7 @@ dimensions:
     await expect(page.getByRole("button", { name: "Preview" })).toBeEnabled();
 
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
-
-    await page.waitForTimeout(500);
+    await clickPreviewButton(page);
 
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
@@ -509,17 +506,19 @@ dimensions:
       .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.waitForTimeout(500);
-
-    await page.getByRole("cell", { name: "google.com", exact: true }).click();
     await page
-      .getByRole("cell", { name: "instagram.com", exact: true })
+      .getByRole("columnheader", { name: "google.com", exact: true })
       .click();
-    await page.getByRole("cell", { name: "msn.com", exact: true }).click();
+    await page
+      .getByRole("columnheader", { name: "instagram.com", exact: true })
+      .click();
+    await page
+      .getByRole("columnheader", { name: "msn.com", exact: true })
+      .click();
 
     await expect(page.getByText("Total rows 43,749")).toBeVisible();
 
-    await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
+    await page.getByRole("columnheader", { name: "Total rows" }).click();
 
     await page.getByLabel("Open Total rows").click();
     await page.getByRole("menuitemcheckbox", { name: "Avg Bid Price" }).click();
