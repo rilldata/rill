@@ -101,7 +101,7 @@
       'admin'
         ? 'bg-surface-active'
         : ''}"
-      on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Admin)}
+      onclick={() => handleSetRole(group.groupName, ProjectUserRoles.Admin)}
     >
       <span class="font-medium">Admin</span>
       <span class="text-xs text-fg-secondary"
@@ -113,7 +113,7 @@
       'editor'
         ? 'bg-surface-active'
         : ''}"
-      on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Editor)}
+      onclick={() => handleSetRole(group.groupName, ProjectUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-fg-secondary"
@@ -125,7 +125,7 @@
       'viewer'
         ? 'bg-surface-active'
         : ''}"
-      on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Viewer)}
+      onclick={() => handleSetRole(group.groupName, ProjectUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-fg-secondary"
@@ -135,7 +135,7 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Item
       class="font-normal flex items-center hover:bg-surface-hover"
-      on:click={() => handleRemove(group.groupName)}
+      onclick={() => handleRemove(group.groupName)}
     >
       <span class="text-red-600">Remove</span>
     </DropdownMenu.Item>

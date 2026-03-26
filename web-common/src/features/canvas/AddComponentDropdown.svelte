@@ -59,57 +59,56 @@
 </script>
 
 <DropdownMenu.Root bind:open {onOpenChange}>
-  <DropdownMenu.Trigger asChild let:builder>
-    {#if componentForm}
-      <button
-        {...builder}
-        use:builder.action
-        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
-      >
-        <PlusCircle class="w-6 h-6 text-fg-secondary" />
-        <span class="text-sm font-medium text-fg-secondary">Add widget</span>
-      </button>
-    {:else if floatingForm}
-      <button
-        {...builder}
-        use:builder.action
-        class:pr-3.5={open}
-        aria-label="Add widget"
-        class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
-      >
-        <Plus size="20px" />
-
-        <span
-          class:not-sr-only={open}
-          class="sr-only group-hover:not-sr-only font-semibold w-fit"
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      {#if componentForm}
+        <button
+          {...props}
+          class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
         >
-          Add widget
-        </span>
-      </button>
-    {:else}
-      <button
-        {disabled}
-        use:builder.action
-        {...builder}
-        aria-label={getAriaLabel(rowIndex, columnIndex)}
-        title="Insert widget"
-        class:bg-surface-background={open}
-        class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
-        on:mouseenter={onMouseEnter}
-      >
-        <PlusCircle size="15px" />
-      </button>
-    {/if}
+          <PlusCircle class="w-6 h-6 text-fg-secondary" />
+          <span class="text-sm font-medium text-fg-secondary">Add widget</span>
+        </button>
+      {:else if floatingForm}
+        <button
+          {...props}
+          class:pr-3.5={open}
+          aria-label="Add widget"
+          class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
+        >
+          <Plus size="20px" />
+
+          <span
+            class:not-sr-only={open}
+            class="sr-only group-hover:not-sr-only font-semibold w-fit"
+          >
+            Add widget
+          </span>
+        </button>
+      {:else}
+        <button
+          {...props}
+          {disabled}
+          aria-label={getAriaLabel(rowIndex, columnIndex)}
+          title="Insert widget"
+          class:bg-surface-background={open}
+          class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
+          onmouseenter={onMouseEnter}
+        >
+          <PlusCircle size="15px" />
+        </button>
+      {/if}
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content
     align={componentForm || floatingForm ? "center" : "start"}
   >
-    <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
+    <div class="flex flex-col" role="presentation" onmouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
         <DropdownMenu.Item
           class="flex flex-row gap-x-2 text-fg-primary"
-          on:click={() => {
+          onclick={() => {
             if (id === "bar_chart") {
               handleChartItemClick();
             } else {

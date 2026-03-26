@@ -107,7 +107,10 @@
   <form
     slot="body"
     id="org-update-form"
-    on:submit|preventDefault={submit}
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
     class="update-org-form"
     use:enhance
   >

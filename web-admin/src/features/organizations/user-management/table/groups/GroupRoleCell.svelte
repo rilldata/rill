@@ -128,7 +128,7 @@
         class="font-normal flex flex-col items-start py-2 {role === 'admin'
           ? 'bg-gray-100'
           : ''}"
-        on:click={() => handleRoleSelect(OrgUserRoles.Admin)}
+        onclick={() => handleRoleSelect(OrgUserRoles.Admin)}
       >
         <span class="font-medium">Admin</span>
         <span class="text-xs text-fg-secondary"
@@ -140,7 +140,7 @@
       class="font-normal flex flex-col items-start py-2 {role === 'editor'
         ? 'bg-gray-100'
         : ''}"
-      on:click={() => handleRoleSelect(OrgUserRoles.Editor)}
+      onclick={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-fg-secondary"
@@ -151,7 +151,7 @@
       class="font-normal flex flex-col items-start py-2 {role === 'viewer'
         ? 'bg-gray-100'
         : ''}"
-      on:click={() => handleRoleSelect(OrgUserRoles.Viewer)}
+      onclick={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-fg-secondary"
@@ -162,7 +162,7 @@
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={handleRevokeRole}
+        onclick={handleRevokeRole}
       >
         <span>Remove</span>
       </DropdownMenu.Item>

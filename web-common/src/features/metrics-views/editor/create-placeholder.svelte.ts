@@ -5,6 +5,7 @@ import {
   ViewPlugin,
   WidgetType,
 } from "@codemirror/view";
+import { mount, unmount } from "svelte";
 import Placeholder from "./Placeholder.svelte";
 
 class PlaceholderWidget extends WidgetType {
@@ -76,21 +77,23 @@ export function createPlaceholderElement(
 ) {
   const DOMElement = document.createElement("span");
   // create placeholder text and attach it to the DOM element.
-  const component = new Placeholder({
+  const props: Record<string, unknown> = $state({
+    metricsName,
+    filePath,
+    view: undefined,
+  });
+  const component = mount(Placeholder, {
     target: DOMElement,
-    props: {
-      metricsName,
-      filePath,
-      view: undefined,
-    },
+    props,
   });
   return {
     DOMElement,
     setEditorView(view: EditorView) {
-      component.$set({ metricsName, view });
+      props.metricsName = metricsName;
+      props.view = view;
     },
-    on(event, callback) {
-      component.$on(event, callback);
+    destroy() {
+      unmount(component);
     },
   };
 }

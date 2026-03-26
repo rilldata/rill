@@ -64,7 +64,7 @@ measures:
 	// Analyst agent question
 	var res *ai.RouterAgentResult
 	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
-		Prompt: "What country has the highest revenue? Answer with a single country name and nothing else.",
+		Prompt: "What country has the highest revenue? Answer must be single country name",
 	})
 	require.NoError(t, err)
 	require.Equal(t, ai.AnalystAgentName, res.Agent)

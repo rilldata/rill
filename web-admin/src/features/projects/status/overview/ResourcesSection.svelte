@@ -3,8 +3,11 @@
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useResources } from "../selectors";
-  import { countByKind, pluralizeKind } from "./overview-utils";
-  import OverviewCard from "./OverviewCard.svelte";
+  import {
+    countByKind,
+    pluralizeKind,
+  } from "@rilldata/web-common/features/resources/overview-utils";
+  import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
 
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;

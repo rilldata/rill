@@ -1,9 +1,8 @@
 <script lang="ts">
   import AvatarListItem from "../avatar/AvatarListItem.svelte";
   import { Combobox } from "bits-ui";
-  import type { Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
-  import { onMount, afterUpdate } from "svelte";
+  import { afterUpdate } from "svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
   type Option = {
@@ -25,24 +24,13 @@
   export let hasMore: boolean = false;
   export let isLoadingMore: boolean = false;
   export let loadMore: (() => void | Promise<void>) | undefined = undefined;
-  export let onSelectedChange: (
-    value: Selected<string>[] | undefined,
-  ) => void = () => {};
+  export let onSelectedChange: (value: string[]) => void = () => {};
 
   const LOAD_MORE_THRESHOLD_PX = 24;
 
-  let initialSelectedItems: Selected<string>[] = [];
   let contentEl: HTMLElement | null = null;
   let isRequestInFlight = false;
   let lastSearchValue = "";
-
-  onMount(() => {
-    // Initialize the selected state for bits-ui combobox
-    initialSelectedItems = selectedValues.map((value) => ({
-      value,
-      label: options.find((opt) => opt.value === value)?.label || value,
-    }));
-  });
 
   $: if (!Array.isArray(options)) {
     console.error("Combobox: options must be an array");
@@ -60,15 +48,9 @@
         })
       : options;
 
-  // Update initialSelectedItems when selectedValues changes
-  $: initialSelectedItems = selectedValues.map((value) => ({
-    value,
-    label: options.find((opt) => opt.value === value)?.label || value,
-  }));
-
-  function handleSelectedChange(selected: Selected<string>[] | undefined) {
+  function handleSelectedChange(values: string[]) {
     if (disabled) return;
-    onSelectedChange(selected);
+    onSelectedChange(values);
   }
 
   function getValidMetadata(value: string) {
@@ -114,13 +96,11 @@
 </script>
 
 <Combobox.Root
-  items={filteredItems}
-  onSelectedChange={handleSelectedChange}
-  multiple={true}
-  bind:inputValue={searchValue}
-  selected={initialSelectedItems}
+  type="multiple"
+  value={selectedValues}
+  onValueChange={handleSelectedChange}
+  inputValue={searchValue}
   {disabled}
-  {required}
 >
   <Combobox.Input
     class="flex justify-center items-center pl-2 w-full border border-gray-300 rounded-[2px] cursor-pointer min-h-8 h-fit focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-100 focus:outline-none"
@@ -130,6 +110,9 @@
     aria-describedby={error ? "combobox-error" : undefined}
     {disabled}
     {required}
+    oninput={(e) => {
+      searchValue = e.currentTarget.value;
+    }}
   />
 
   {#if error}
@@ -146,7 +129,7 @@
     <div
       class="max-h-[208px] overflow-y-auto"
       bind:this={contentEl}
-      on:scroll={maybeLoadMoreOnScroll}
+      onscroll={maybeLoadMoreOnScroll}
     >
       {#if filteredItems.length === 0}
         <div class="px-4 py-2 text-xs text-fg-secondary">No results found</div>
@@ -165,9 +148,9 @@
               leftSpacing={false}
             />
             <div class="grow"></div>
-            <Combobox.ItemIndicator>
+            {#if selectedValues.includes(item.value)}
               <Check size="16px" />
-            </Combobox.ItemIndicator>
+            {/if}
           </Combobox.Item>
         {/each}
         {#if hasMore && isLoadingMore}

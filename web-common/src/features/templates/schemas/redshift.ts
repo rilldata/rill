@@ -38,7 +38,7 @@ export const redshiftSchema: MultiStepFormSchema = {
       type: "string",
       title: "Workgroup",
       description: "Redshift Serverless workgroup name",
-      "x-placeholder": "default",
+      "x-placeholder": "default-workgroup",
     },
     cluster_identifier: {
       type: "string",
@@ -46,6 +46,12 @@ export const redshiftSchema: MultiStepFormSchema = {
       description:
         "Redshift cluster identifier (use when not using serverless)",
       "x-placeholder": "redshift-cluster-1",
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
     },
     sql: {
       type: "string",

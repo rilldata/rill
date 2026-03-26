@@ -15,10 +15,13 @@ test.describe.serial("Reports", () => {
     // Enter dimension table "App Site Domain"
     await adminPage.getByText("App Site Domain").click();
 
-    // Now and then clicking "App Site Domain" results in a tooltip being shown for a column in the dimension table.
-    // This tooltip blocks the export button causing the test to fail.
-    // So hover over "select all" to get rid of this tooltip.
-    await adminPage.getByText("Select all").hover();
+    // Wait for the dimension table to fully render before interacting.
+    await adminPage.getByLabel("Dimension Display").waitFor();
+
+    // Clicking "App Site Domain" can trigger a tooltip that overlays the export
+    // button. Move the mouse away to dismiss it (Tooltip uses hoverIntent which
+    // only dismisses on mouse leave).
+    await adminPage.mouse.move(0, 0);
 
     // Open scheduled report dialog
     await adminPage.getByLabel("Export dimension table data").click();
@@ -40,7 +43,8 @@ test.describe.serial("Reports", () => {
 
     // Select "Last 14 Days" as time range
     await interactWithTimeRangeMenu(reportForm, async () => {
-      await reportForm.getByRole("menuitem", { name: "Last 14 days" }).click();
+      // Menu content is portaled to document.body, so use page-level scope
+      await adminPage.getByRole("menuitem", { name: "Last 14 days" }).click();
     });
     // Enable time comparison
     await reportForm.getByLabel("Toggle time comparison").click();
@@ -53,8 +57,8 @@ test.describe.serial("Reports", () => {
       .click();
     // Add "App Site Name" column
     await reportForm.getByLabel("Add Columns fields").click();
+    // Menu content is portaled to document.body, so use page-level scope
     await adminPage
-      .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "App Site Name" })
       .click({ force: true });
     // Assert columns
@@ -63,10 +67,8 @@ test.describe.serial("Reports", () => {
     );
     // Add "Pub Name" row
     await reportForm.getByLabel("Add Rows fields").click();
-    await adminPage
-      .getByLabel("Rows field list")
-      .getByRole("menuitem", { name: "Pub Name" })
-      .click();
+    // Menu content is portaled to document.body, so use page-level scope
+    await adminPage.getByRole("menuitem", { name: "Pub Name" }).click();
     // Assert rows and columns
     await expect(reportForm.getByLabel("Rows field list")).toHaveText(
       /Pub Name/,
@@ -162,7 +164,8 @@ test.describe.serial("Reports", () => {
 
     // Select "Last 4 Weeks" as time range
     await interactWithTimeRangeMenu(reportForm, async () => {
-      await reportForm.getByRole("menuitem", { name: "Last 4 weeks" }).click();
+      // Menu content is portaled to document.body, so use page-level scope
+      await adminPage.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
     // Change rows/columns
@@ -182,14 +185,14 @@ test.describe.serial("Reports", () => {
       .click();
     // Add "App Site Domain" row
     await reportForm.getByLabel("Add Rows fields").click({ force: true });
+    // Menu content is portaled to document.body, so use page-level scope
     await adminPage
-      .getByLabel("Rows field list")
       .getByRole("menuitem", { name: "App Site Domain" })
       .click({ force: true });
     // Add "Time month" column
     await reportForm.getByLabel("Add Columns fields").click();
+    // Menu content is portaled to document.body, so use page-level scope
     await adminPage
-      .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "Time month" })
       .click({ force: true });
     // Assert rows and columns
@@ -203,11 +206,12 @@ test.describe.serial("Reports", () => {
     const filtersForm = reportForm.getByLabel("Filters form");
     // Add "Ad Size" filter
     await filtersForm.getByLabel("Add filter button").click();
-    await filtersForm.getByRole("menuitem", { name: "Ad Size" }).click();
-    // Add filters for 1024x768, 120x600, 160x600
-    await filtersForm.getByRole("menuitem", { name: "1024x768" }).click();
-    await filtersForm.getByRole("menuitem", { name: "120x600" }).click();
-    await filtersForm.getByRole("menuitem", { name: "160x600" }).click();
+    // Menu content is portaled to document.body, so use page-level scope
+    await adminPage.getByRole("menuitem", { name: "Ad Size" }).click();
+    // DimensionFilter values are also portaled
+    await adminPage.getByRole("menuitemcheckbox", { name: "1024x768" }).click();
+    await adminPage.getByRole("menuitemcheckbox", { name: "120x600" }).click();
+    await adminPage.getByRole("menuitemcheckbox", { name: "160x600" }).click();
     await filtersForm.getByLabel("Open ad_size filter").click();
 
     // Save the report

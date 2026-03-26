@@ -40,31 +40,35 @@
 
 <Template>
   <table>
-    <tr>
-      <td />
-      <td>disabled</td>
-      <td>rounded</td>
-      <td>size</td>
-      <td>bgGray</td>
-      <td>active</td>
-    </tr>
-    {#each buttonProps as props}
+    <thead>
       <tr>
-        <td
-          ><IconButton {...props}
-            ><SummaryStatistics />
-            <svelte:fragment slot="tooltip-content">
-              Show basic summary statistics
-            </svelte:fragment></IconButton
-          ></td
-        >
-        <td>{props.disabled}</td>
-        <td>{props.rounded}</td>
-        <td>{props.size}</td>
-        <td>{props.bgGray}</td>
-        <td>{props.active}</td>
+        <td></td>
+        <td>disabled</td>
+        <td>rounded</td>
+        <td>size</td>
+        <td>bgGray</td>
+        <td>active</td>
       </tr>
-    {/each}
+    </thead>
+    <tbody>
+      {#each buttonProps as props}
+        <tr>
+          <td
+            ><IconButton {...props}
+              ><SummaryStatistics />
+              <svelte:fragment slot="tooltip-content">
+                Show basic summary statistics
+              </svelte:fragment></IconButton
+            ></td
+          >
+          <td>{props.disabled}</td>
+          <td>{props.rounded}</td>
+          <td>{props.size}</td>
+          <td>{props.bgGray}</td>
+          <td>{props.active}</td>
+        </tr>
+      {/each}
+    </tbody>
   </table>
 </Template>
 

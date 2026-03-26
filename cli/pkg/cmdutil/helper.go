@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,7 +39,7 @@ const (
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
 
-var ErrNoMatchingProject = fmt.Errorf("no matching project found")
+var ErrInferProjectFailed = fmt.Errorf("could not infer project")
 
 type Helper struct {
 	*printer.Printer
@@ -372,8 +373,8 @@ func (h *Helper) InferProjectName(ctx context.Context, pathToProject, hint strin
 
 	projects, err := h.InferProjects(ctx, h.Org, pathToProject)
 	if err != nil {
-		if errors.Is(err, ErrNoMatchingProject) {
-			return "", errorfWithHint("could not infer project")
+		if errors.Is(err, ErrInferProjectFailed) {
+			return "", errorfWithHint("%w", err)
 		}
 		return "", errorfWithHint("failed to infer project: %w", err)
 	}
@@ -437,7 +438,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 		return nil, err
 	}
 	if len(resp.Projects) == 0 {
-		return nil, ErrNoMatchingProject
+		return nil, ErrInferProjectFailed
 	}
 
 	if org == "" {
@@ -451,7 +452,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 		}
 	}
 	if len(orgFiltered) == 0 {
-		return nil, ErrNoMatchingProject
+		return nil, ErrInferProjectFailed
 	}
 	// cleanup rill managed remote
 	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
@@ -647,6 +648,19 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	default:
 		return fmt.Errorf("aborting deploy")
 	}
+}
+
+// IsLocalRillRunning checks whether rill start is listening on the default HTTP port (9009).
+// This is a best-effort check that assumes the default port.
+func IsLocalRillRunning(ctx context.Context) bool {
+	d := net.Dialer{Timeout: time.Second}
+	conn, err := d.DialContext(ctx, "tcp", "localhost:9009")
+	if err != nil {
+		// This could be another error than unix.ECONNREFUSED, but not checking that as it's a best-efforts check.
+		return false
+	}
+	conn.Close()
+	return true
 }
 
 func removeRemote(path, remoteName string) error {

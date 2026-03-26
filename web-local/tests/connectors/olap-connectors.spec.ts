@@ -6,7 +6,7 @@ test.describe("ClickHouse connector", () => {
   /*
    * NOTE: These tests are flaky due to a race condition:
    * 1. When navigation to the new connector file is in progress
-   * 2. An edit to `rill.yaml` triggers `invalidate("init")`
+   * 2. An edit to `rill.yaml` triggers `invalidate("app:init")`
    * 3. This re-runs the root load function with its own navigation logic
    *
    * Note: This issue occurs during automated test runs (both CI and local),

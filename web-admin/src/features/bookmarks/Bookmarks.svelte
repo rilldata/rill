@@ -165,21 +165,23 @@
   {manageProject}
 />
 
-<DropdownMenu bind:open typeahead={false}>
-  <DropdownMenuTrigger asChild let:builder>
-    <Button
-      builders={[builder]}
-      compact
-      square
-      type="secondary"
-      label="Other bookmark dropdown"
-      active={open}
-    >
-      <BookmarkIcon class="flex-none" size="16px" />
-    </Button>
+<DropdownMenu bind:open>
+  <DropdownMenuTrigger>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        compact
+        square
+        type="secondary"
+        label="Other bookmark dropdown"
+        active={open}
+      >
+        <BookmarkIcon class="flex-none" size="16px" />
+      </Button>
+    {/snippet}
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[450px]">
-    <DropdownMenuItem on:click={() => (showDialog = true)}>
+    <DropdownMenuItem onclick={() => (showDialog = true)}>
       <div class="flex flex-row gap-x-2 items-center">
         <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
         <div class="text-xs">Bookmark current view</div>
@@ -206,7 +208,6 @@
                 {bookmark}
                 {onEdit}
                 onDelete={deleteBookmark}
-                on:select
               />
             {/key}
           {/each}

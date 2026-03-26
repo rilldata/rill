@@ -92,41 +92,40 @@
 
 <DropdownMenu.Root
   bind:open
-  closeOnItemClick={false}
   onOpenChange={() => {
     showSelector = !!(
       comparisonOption === TimeComparisonOption.CUSTOM && showComparison
     );
   }}
-  typeahead={!showSelector}
 >
-  <DropdownMenu.Trigger asChild let:builder {disabled}>
-    <button
-      {disabled}
-      aria-disabled={disabled}
-      use:builder.action
-      {...builder}
-      aria-label="Select time comparison option"
-      type="button"
-    >
-      <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
-        {#if !timeComparisonOptionsState.length && !showComparison}
-          <p>no comparison period</p>
-        {:else}
-          <b class="line-clamp-1">{label}</b>
-          {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} {timeGrain} />
-          {/if}
-        {/if}
-      </div>
-      <span
-        class="flex-none transition-transform"
-        class:-rotate-180={open}
-        class:opacity-50={!showComparison}
+  <DropdownMenu.Trigger {disabled}>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        {disabled}
+        aria-disabled={disabled}
+        aria-label="Select time comparison option"
+        type="button"
       >
-        <CaretDownIcon />
-      </span>
-    </button>
+        <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
+          {#if !timeComparisonOptionsState.length && !showComparison}
+            <p>no comparison period</p>
+          {:else}
+            <b class="line-clamp-1">{label}</b>
+            {#if interval?.isValid && showFullRange}
+              <RangeDisplay {interval} {timeGrain} />
+            {/if}
+          {/if}
+        </div>
+        <span
+          class="flex-none transition-transform"
+          class:-rotate-180={open}
+          class:opacity-50={!showComparison}
+        >
+          <CaretDownIcon />
+        </span>
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
@@ -137,7 +136,7 @@
           {@const selected = selectedLabel === option.name}
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={() => {
+            onclick={() => {
               onCompareRangeSelect(option.name);
               open = false;
             }}
@@ -157,7 +156,7 @@
 
           <DropdownMenu.Item
             data-range="custom"
-            on:click={() => {
+            onclick={() => {
               showSelector = !showSelector;
             }}
           >
@@ -194,9 +193,5 @@
 <style lang="postcss">
   button {
     @apply gap-x-1;
-  }
-
-  .inactive {
-    @apply opacity-50;
   }
 </style>

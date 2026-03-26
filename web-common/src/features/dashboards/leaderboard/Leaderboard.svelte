@@ -314,8 +314,8 @@
   aria-label="{dimensionName} leaderboard"
   role="table"
   bind:this={container}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
 >
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
@@ -421,7 +421,7 @@
     <Tooltip location="right">
       <button
         class="transition-color text-fg-muted table-message"
-        on:click={() => setPrimaryDimension(dimensionName)}
+        onclick={() => setPrimaryDimension(dimensionName)}
       >
         <div class="pl-8 text-fg-muted">(Expand Table)</div>
       </button>

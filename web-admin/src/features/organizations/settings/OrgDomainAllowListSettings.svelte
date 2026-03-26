@@ -72,7 +72,7 @@
           <Switch
             checked={domainAllowed}
             id="allow-domain"
-            on:click={updateAllowedDomain}
+            onclick={updateAllowedDomain}
           />
         </DelayedCircleOutlineSpinner>
       {:else}
