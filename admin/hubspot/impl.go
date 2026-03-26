@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -155,6 +156,6 @@ func (e *conflictError) Error() string {
 }
 
 func isConflictError(err error) bool {
-	_, ok := err.(*conflictError)
-	return ok
+	var ce *conflictError
+	return errors.As(err, &ce)
 }
