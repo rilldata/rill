@@ -25,10 +25,6 @@
   $: workspace = workspaces.get(filePath);
   $: selectedView = workspace.view;
 
-  // Default connectors to code view on first visit
-  $: if (!localStorage.getItem(filePath)) {
-    selectedView.set("code");
-  }
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient);
   $: allErrors = $allErrorsStore;
