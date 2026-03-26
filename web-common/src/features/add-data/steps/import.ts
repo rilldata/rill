@@ -5,6 +5,7 @@ import {
   type ImportToConfig,
 } from "@rilldata/web-common/features/add-data/steps/types.ts";
 import {
+  runtimeServiceCreateTrigger,
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServicePutFile,
@@ -62,17 +63,10 @@ export async function runImportStep(
           currentFilePath: step.config.importTo.metricsViewPath,
         };
 
-      case ImportDataStep.CreateExplore:
+      case ImportDataStep.CreateDashboard:
         return {
           ...step,
-          importStep: ImportDataStep.CreateExplore,
-          currentFilePath: step.config.importTo.explorePath,
-        };
-
-      case ImportDataStep.CreateCanvas:
-        return {
-          ...step,
-          importStep: ImportDataStep.CreateCanvas,
+          importStep: ImportDataStep.CreateDashboard,
           currentFilePath: step.config.importTo.canvasPath,
         };
 
@@ -101,11 +95,8 @@ export async function runImportStep(
       await runCreateMetricsViewStep(runtimeClient, step);
       break;
 
-    case ImportDataStep.CreateExplore:
+    case ImportDataStep.CreateDashboard:
       await runCreateExploreStep(runtimeClient, step);
-      break;
-
-    case ImportDataStep.CreateCanvas:
       await runCreateCanvasStep(runtimeClient, step);
       break;
   }
@@ -224,14 +215,6 @@ async function runCreateModelStep(
     }
   }
 
-  // Create the model file with the generated YAML
-  await runtimeServicePutFile(runtimeClient, {
-    path: importToConfig.modelPath,
-    blob: yaml,
-    create: true,
-    createOnly: false,
-  });
-
   if (step.config.envBlob) {
     // Make sure the file has reconciled before testing the connection
     await runtimeServicePutFileAndWaitForReconciliation(runtimeClient, {
@@ -239,6 +222,29 @@ async function runCreateModelStep(
       blob: step.config.envBlob,
       create: true,
       createOnly: false,
+    });
+  }
+
+  let putFile = true;
+  if (fileArtifacts.hasFileArtifact(importToConfig.modelPath)) {
+    const fileArtifact = fileArtifacts.getFileArtifact(
+      importToConfig.modelPath,
+    );
+    const existingYaml = await fileArtifact.fetchContent();
+    putFile = existingYaml !== yaml;
+  }
+  if (putFile) {
+    // Create the model file with the generated YAML
+    await runtimeServicePutFile(runtimeClient, {
+      path: importToConfig.modelPath,
+      blob: yaml,
+      create: true,
+      createOnly: false,
+    });
+  } else {
+    // Trigger model refresh to reconcile the model file
+    await runtimeServiceCreateTrigger(runtimeClient, {
+      models: [{ model: importToConfig.modelName, full: true }],
     });
   }
 

@@ -102,8 +102,7 @@ export async function maybeGetConnectorDriver(
 
 const NonModelSteps = [
   ImportDataStep.CreateMetricsView,
-  ImportDataStep.CreateExplore,
-  ImportDataStep.CreateCanvas,
+  ImportDataStep.CreateDashboard,
 ];
 const FullListOfSteps = [ImportDataStep.CreateModel, ...NonModelSteps];
 

@@ -1,3 +1,5 @@
+import { WelcomeStatus } from "@rilldata/web-common/features/welcome/status.ts";
+
 export const ssr = false;
 
 import { redirect } from "@sveltejs/kit";
@@ -101,8 +103,10 @@ export async function load({ url, depends, untrack, route }) {
 
   if (!initialized) {
     initialized = await handleUninitializedProject(client);
-    if (!initialized && !route?.id?.startsWith("/(misc)/welcome"))
+    if (!initialized && !route?.id?.startsWith("/(misc)/welcome")) {
+      WelcomeStatus.set(true);
       throw redirect(303, "/welcome");
+    }
   } else if (trackedRedirectPath) {
     throw redirect(303, trackedRedirectPath);
   }

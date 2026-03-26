@@ -23,8 +23,7 @@ export enum ImportDataStep {
   Init,
   CreateModel,
   CreateMetricsView,
-  CreateExplore,
-  CreateCanvas,
+  CreateDashboard,
   Done,
 }
 

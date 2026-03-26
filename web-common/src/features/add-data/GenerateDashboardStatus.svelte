@@ -14,6 +14,8 @@
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { maybeDeleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions.ts";
 
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
@@ -38,16 +40,10 @@
       failedLabel: "Creating Metrics View failed.",
     },
     {
-      step: ImportDataStep.CreateExplore,
-      pendingLabel: "Generating explore dashboard...",
-      doneLabel: "Generated explore dashboard",
-      failedLabel: "Generating explore dashboard failed.",
-    },
-    {
-      step: ImportDataStep.CreateCanvas,
-      pendingLabel: "Generating canvas dashboard...",
-      doneLabel: "Generated canvas dashboard",
-      failedLabel: "Generating canvas dashboard failed.",
+      step: ImportDataStep.CreateDashboard,
+      pendingLabel: "Generating dashboard...",
+      doneLabel: "Generated dashboard",
+      failedLabel: "Generating dashboard failed.",
     },
   ];
   const steps = importAddDataStep.config.importSteps.map(
@@ -55,7 +51,7 @@
   );
 
   $: currentFileRoute = importAddDataStep.currentFilePath
-    ? `/files/${addLeadingSlash(importAddDataStep.currentFilePath)}`
+    ? `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`
     : "/";
   let error: string | null = null;
   $: hasErrored = !!error;
@@ -71,7 +67,7 @@
       onClose();
       if (!importAddDataStep.currentFilePath) return goto("/");
       return goto(
-        `/files/${addLeadingSlash(importAddDataStep.currentFilePath)}`,
+        `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`,
       );
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
@@ -80,8 +76,26 @@
 
   function rerunImport() {
     importAddDataStep = { ...initialAddDataStep };
+    console.log({ ...initialAddDataStep }, { ...importAddDataStep });
     error = null;
     return runImport();
+  }
+
+  async function cleanupAndBack() {
+    // Cleanup any generated files.
+    await Promise.all(
+      [
+        importAddDataStep.config.importTo.modelPath,
+        importAddDataStep.config.importTo.metricsViewPath,
+        importAddDataStep.config.importTo.explorePath,
+        importAddDataStep.config.importTo.canvasPath,
+      ].map((path) => {
+        if (!path) return Promise.resolve();
+        return maybeDeleteFileArtifact(runtimeClient, path);
+      }),
+    );
+
+    onBack();
   }
 
   onMount(runImport);
@@ -123,7 +137,7 @@
 {/if}
 <div class="flex flex-row items-center gap-2 mb-4 mx-auto">
   {#if hasErrored}
-    <Button type="secondary" noStroke onClick={onBack}>Back</Button>
+    <Button type="secondary" noStroke onClick={cleanupAndBack}>Back</Button>
   {/if}
   <Button type="secondary" href={currentFileRoute} onClick={onClose}>
     Skip and view project

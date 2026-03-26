@@ -1,6 +1,7 @@
 <script lang="ts">
   import AddData from "@rilldata/web-common/features/add-data/AddData.svelte";
   import { AddDataStep } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import { WelcomeStatus } from "@rilldata/web-common/features/welcome/status.ts";
 
   let addDataStep: AddDataStep = AddDataStep.SelectConnector;
 
@@ -16,6 +17,7 @@
     <AddData
       config={{ welcomeScreen: true }}
       onStepChange={(step) => (addDataStep = step)}
+      onClose={() => WelcomeStatus.set(false)}
     />
   </div>
 </div>

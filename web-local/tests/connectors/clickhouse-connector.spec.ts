@@ -36,6 +36,13 @@ test.describe("ClickHouse connector", () => {
             exact: true,
           }),
       ).toBeVisible();
+
+      // Go to the `.env` file and verify the CLICKHOUSE_PASSWORD is set
+      await page.getByRole("link", { name: ".env" }).click();
+      const envEditor = page
+        .getByLabel("codemirror editor")
+        .getByRole("textbox");
+      await expect(envEditor).toContainText(`CLICKHOUSE_PASSWORD=password`);
     });
 
     test("Create connector using DSN", async ({ page }) => {

@@ -234,6 +234,15 @@ export async function deleteFileArtifact(
   }
 }
 
+export async function maybeDeleteFileArtifact(
+  client: RuntimeClient,
+  filePath: string,
+  force = false,
+) {
+  if (!fileArtifacts.hasFileArtifact(filePath)) return;
+  return deleteFileArtifact(client, filePath, force);
+}
+
 function extractMessage(msg: string) {
   if (msg.endsWith("directory not empty")) return "directory not empty";
   return msg;

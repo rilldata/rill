@@ -26,6 +26,7 @@ export const PREVIEW_ALLOWED_PREFIXES = [
  */
 export const DEVELOPER_ALLOWED_PREFIXES = [
   ...DEVELOPER_ROUTE_PREFIXES,
+  "/welcome",
   "/explore/",
   "/canvas/",
   "/deploy",

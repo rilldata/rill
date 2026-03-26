@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     type ImportAddDataStep,
     ImportDataStep,
@@ -30,7 +31,7 @@
   const runtimeClient = useRuntimeClient();
 
   $: currentFileRoute = importAddDataStep.currentFilePath
-    ? `/files/${addLeadingSlash(importAddDataStep.currentFilePath)}`
+    ? `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`
     : "/";
   $: sourceName = importAddDataStep.config.importTo.modelName ?? "";
   $: isDone = importAddDataStep.importStep === ImportDataStep.Done;
@@ -55,6 +56,10 @@
           importAddDataStep,
         );
       }
+      if (!importAddDataStep.currentFilePath) return goto("/");
+      return goto(
+        `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`,
+      );
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
     }
