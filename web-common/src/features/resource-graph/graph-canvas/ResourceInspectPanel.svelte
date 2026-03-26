@@ -15,7 +15,7 @@
   } from "lucide-svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { inspectedNode, closeInspect } from "./inspect-store";
+  import { getInspectStore, closeInspect } from "./inspect-store";
   import { goto } from "$app/navigation";
   import { getGraphNavigation } from "../shared/graph-navigation-context";
   import { tokenForKind } from "../navigation/seed-parser";
@@ -31,8 +31,9 @@
   import ResourceSpecDialog from "../shared/ResourceSpecDialog.svelte";
 
   const graphNav = getGraphNavigation();
+  const inspectStore = getInspectStore();
 
-  $: state = $inspectedNode;
+  $: state = $inspectStore;
   $: data = state?.data ?? null;
   $: kind = data?.kind;
   $: resource = data?.resource;
@@ -136,6 +137,9 @@
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
+  // coerceResourceKind classifies root models as ResourceKind.Source,
+  // but the trigger API expects the "models" mutation key because the
+  // underlying runtime resource is always a Model. Do not change this to "sources".
   function refreshModel(full: boolean) {
     if (!resourceName) return;
     $triggerMutation.mutate(
@@ -194,7 +198,7 @@
   }
 
   function viewNodeTree() {
-    closeInspect();
+    closeInspect(inspectStore);
     const kindToken = tokenForKind(kind);
     if (graphNav?.viewLineage) {
       graphNav.viewLineage(kindToken, resourceName);
@@ -212,7 +216,7 @@
 
   function navigateToFile() {
     if (!filePath) return;
-    closeInspect();
+    closeInspect(inspectStore);
     if (graphNav?.openFile) {
       graphNav.openFile(filePath);
       return;
@@ -289,7 +293,7 @@
         >
           <Info size="14px" />
         </button>
-        <button class="close-btn" onclick={closeInspect} aria-label="Close">
+        <button class="close-btn" onclick={() => closeInspect(inspectStore)} aria-label="Close">
           <X size="14px" />
         </button>
       </div>

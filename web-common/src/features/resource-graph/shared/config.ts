@@ -149,7 +149,7 @@ export function debugLog(
 ): void {
   if (
     typeof window === "undefined" ||
-    !(window as Record<string, unknown>).__DEBUG_RESOURCE_GRAPH
+    !(window as unknown as Record<string, unknown>).__DEBUG_RESOURCE_GRAPH
   ) {
     return;
   }

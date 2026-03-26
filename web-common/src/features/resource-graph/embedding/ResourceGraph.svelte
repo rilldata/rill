@@ -49,7 +49,6 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { closeInspect } from "../graph-canvas/inspect-store";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
 
   export let resources: V1Resource[] | undefined;
@@ -701,9 +700,8 @@
     ? $page.url.searchParams.get("expanded") || null
     : null;
 
-  // Close inspect panel when URL changes
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  $: $page.url, closeInspect();
+  // Inspect panel state is scoped per GraphCanvas instance via Svelte context.
+  // URL changes cause the graph to re-render, which naturally resets the panel.
 
   // When the page URL actually changes (e.g., navigation), clear any manual override.
   $: if (syncExpandedParam) {

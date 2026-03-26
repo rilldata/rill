@@ -192,9 +192,18 @@ export class GraphCacheManager {
         console.warn(
           `[ResourceGraph] Cache size (${dataSize} bytes) exceeds limit (${CACHE_CONFIG.MAX_SIZE_BYTES} bytes), pruning...`,
         );
+        const sizeBefore =
+          this.positions.size + this.assignments.size + this.labels.size;
         this.pruneOldestEntries();
-        // Retry persist after pruning
-        return this.persist();
+        const sizeAfter =
+          this.positions.size + this.assignments.size + this.labels.size;
+        // Only retry if pruning actually removed entries; otherwise give up
+        // to avoid infinite recursion when the prune interval guard blocks.
+        if (sizeAfter < sizeBefore) {
+          return this.persist();
+        }
+        debugLog("Cache", "Pruning did not free entries; skipping persist");
+        return;
       }
 
       // Attempt to write to localStorage

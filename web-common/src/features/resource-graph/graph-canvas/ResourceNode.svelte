@@ -6,7 +6,7 @@
   import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
-  import { openInspect } from "./inspect-store";
+  import { getInspectStore, openInspect } from "./inspect-store";
 
   export let id: string;
   export let type: string;
@@ -34,6 +34,7 @@
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   $: [type, height, sourcePosition, targetPosition, dragHandle, parentId, dragging, zIndex, selectable, deletable, draggable, positionAbsoluteX, positionAbsoluteY];
 
+  const inspectStore = getInspectStore();
   const DEFAULT_COLOR = "#6B7280";
 
   $: kind = data?.kind;
@@ -75,7 +76,7 @@
 
   function handleClick(e?: MouseEvent) {
     if (e && (e.metaKey || e.ctrlKey || e.shiftKey)) return;
-    openInspect(data, getNodeRect());
+    openInspect(inspectStore, data, getNodeRect());
   }
 
   function handleDoubleClick() {

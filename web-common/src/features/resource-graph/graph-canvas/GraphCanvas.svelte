@@ -19,10 +19,14 @@
   import ResourceNode from "./ResourceNode.svelte";
   import GraphLegend from "./GraphLegend.svelte";
   import ResourceInspectPanel from "./ResourceInspectPanel.svelte";
-  import { closeInspect } from "./inspect-store";
+  import { initInspectStore, closeInspect } from "./inspect-store";
 
   import type { ResourceNodeData } from "../shared/types";
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
+
+  // Each GraphCanvas gets its own inspect store via Svelte context,
+  // preventing phantom panels when multiple canvases are rendered.
+  const inspectStore = initInspectStore();
 
   export let resources: V1Resource[] = [];
   // Pre-computed layout: when provided, skip internal buildResourceGraph
@@ -180,7 +184,7 @@
 
   // Handle pane click (background) to deselect all nodes and close inspect
   function handlePaneClick() {
-    closeInspect();
+    closeInspect(inspectStore);
     nodesStore.update((nds) =>
       nds.map((n) => ({
         ...n,
@@ -191,7 +195,7 @@
 
   // Close inspect panel on any interaction (scroll/zoom/pan)
   function dismissPopups() {
-    closeInspect();
+    closeInspect(inspectStore);
   }
 
   function isInsideInspectPanel(e: Event) {

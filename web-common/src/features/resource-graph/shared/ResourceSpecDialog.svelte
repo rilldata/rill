@@ -1,12 +1,15 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    displayResourceKind,
+    type ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { getResourceSpec } from "./resource-actions";
 
   export let open = false;
   export let resourceName: string;
-  export let kind: string | undefined;
+  export let kind: ResourceKind | undefined;
   export let resource: V1Resource | undefined;
 
   $: specContent = getResourceSpec(resource);
