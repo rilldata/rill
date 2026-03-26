@@ -85,11 +85,9 @@ test.describe.serial("Reports", () => {
     // Create the report
     await adminPage.getByLabel("Create report").click();
 
-    // Notification is shown (report creation can take a long time because the
-    // API polls the runtime until the parser processes the new report resource)
+    // Notification is shown
     await expect(adminPage.getByLabel("Notification")).toHaveText(
       "Report created Go to scheduled reports",
-      { timeout: 10_000 },
     );
     // Clicking "Go to scheduled reports" takes us to the reports page
     await adminPage
@@ -224,11 +222,9 @@ test.describe.serial("Reports", () => {
     // Save the report
     await adminPage.getByLabel("Save report").click();
 
-    // Notification is shown (report edit can take a long time because the
-    // API polls the runtime until the parser processes the updated report resource)
+    // Notification is shown
     await expect(adminPage.getByLabel("Notification")).toHaveText(
       "Report edited",
-      { timeout: 10_000 },
     );
 
     // Assert that report is updated with correct schedule
@@ -250,10 +246,9 @@ test.describe.serial("Reports", () => {
     await adminPage.getByLabel("Report context menu").click();
     await adminPage.getByRole("menuitem", { name: "Delete Report" }).click();
 
-    // Back to listing page without any reports (delete can take a long time
-    // because the API polls the runtime until the parser removes the resource)
+    // Back to listing page without any reports
     await expect(
       adminPage.getByText("You don't have any reports yet"),
-    ).toBeVisible({ timeout: 10_000 });
+    ).toBeVisible();
   });
 });

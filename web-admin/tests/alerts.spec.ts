@@ -95,11 +95,9 @@ test.describe.serial("Alerts", () => {
       // Create the alert
       await alertForm.getByRole("button", { name: "Create" }).click();
 
-      // Notification is shown (alert creation can take a long time because the
-      // API polls the runtime until the parser processes the new alert resource)
+      // Notification is shown
       await expect(adminPage.getByLabel("Notification")).toHaveText(
         " Alert created Go to alerts  ",
-        { timeout: 10_000 },
       );
       // Clicking "Go to alerts" takes us to the alerts page
       await adminPage.getByRole("link", { name: "Go to alerts" }).click();
@@ -243,11 +241,9 @@ test.describe.serial("Alerts", () => {
       // Update the alert
       await alertForm.getByRole("button", { name: "Update" }).click();
 
-      // Notification is shown (alert edit can take a long time because the
-      // API polls the runtime until the parser processes the updated alert resource)
+      // Notification is shown
       await expect(adminPage.getByLabel("Notification")).toHaveText(
         "Alert edited",
-        { timeout: 10_000 },
       );
 
       // Assert that alert is updated with correct fields
@@ -282,11 +278,10 @@ test.describe.serial("Alerts", () => {
       await adminPage.getByLabel("Alert context menu").click();
       await adminPage.getByRole("menuitem", { name: "Delete Alert" }).click();
 
-      // Back to listing page without any alerts (delete can take a long time
-      // because the API polls the runtime until the parser removes the resource)
+      // Back to listing page without any alerts
       await expect(
         adminPage.getByText("You don't have any alerts yet"),
-      ).toBeVisible({ timeout: 10_000 });
+      ).toBeVisible();
     });
   });
 
@@ -320,11 +315,9 @@ test.describe.serial("Alerts", () => {
       // Create the alert
       await alertForm.getByRole("button", { name: "Create" }).click();
 
-      // Notification is shown (alert creation can take a long time because the
-      // API polls the runtime until the parser processes the new alert resource)
+      // Notification is shown
       await expect(adminPage.getByLabel("Notification")).toHaveText(
         " Alert created Go to alerts  ",
-        { timeout: 10_000 },
       );
       // Clicking "Go to alerts" takes us to the alerts page
       await adminPage.getByRole("link", { name: "Go to alerts" }).click();
@@ -377,11 +370,9 @@ test.describe.serial("Alerts", () => {
       // Update the alert
       await alertForm.getByRole("button", { name: "Update" }).click();
 
-      // Notification is shown (alert edit can take a long time because the
-      // API polls the runtime until the parser processes the updated alert resource)
+      // Notification is shown
       await expect(adminPage.getByLabel("Notification")).toHaveText(
         "Alert edited",
-        { timeout: 10_000 },
       );
 
       // Assert that alert is updated with correct schedule
@@ -403,11 +394,10 @@ test.describe.serial("Alerts", () => {
       await adminPage.getByLabel("Alert context menu").click();
       await adminPage.getByRole("menuitem", { name: "Delete Alert" }).click();
 
-      // Back to listing page without any alerts (delete can take a long time
-      // because the API polls the runtime until the parser removes the resource)
+      // Back to listing page without any alerts
       await expect(
         adminPage.getByText("You don't have any alerts yet"),
-      ).toBeVisible({ timeout: 10_000 });
+      ).toBeVisible();
     });
   });
 });
