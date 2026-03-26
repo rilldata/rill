@@ -143,7 +143,7 @@ sql: select * from m1
 			},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -186,7 +186,7 @@ openapi:
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	require.Len(t, p.Errors, 0)
 	require.Len(t, p.Resources, 2)

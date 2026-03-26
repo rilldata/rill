@@ -19,7 +19,7 @@
       checked={excludeMode}
       id="include-exclude"
       small
-      on:click={onToggleExcludeMode}
+      onclick={onToggleExcludeMode}
       label="Include exclude toggle"
     />
     <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
@@ -53,10 +53,5 @@
     @apply bg-popover-footer;
     @apply flex flex-row flex-none items-center justify-between;
     @apply gap-x-2 p-2 px-3.5;
-  }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
   }
 </style>

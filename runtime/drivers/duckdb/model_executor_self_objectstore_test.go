@@ -107,7 +107,7 @@ func testExportedObjectExists(t *testing.T, driver string, rt *runtime.Runtime, 
 
 	ctx := context.Background()
 	handle, _, err := rt.AcquireHandle(ctx, id, driver)
-	conn, err := drivers.Open(driver, "default", handle.Config(), storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(driver, "", "default", handle.Config(), storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

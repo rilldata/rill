@@ -7,16 +7,16 @@
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
-  } from "@tanstack/svelte-table";
+    renderComponent,
+  } from "tanstack-table-8-svelte-5";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
   import {
     type V1ModelPartition,
     type V1Resource,
-    createRuntimeServiceGetModelPartitionsInfinite,
   } from "../../../runtime-client";
-
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { createRuntimeServiceGetModelPartitionsInfinite } from "../../../runtime-client";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
   import TriggerPartition from "./TriggerPartition.svelte";
@@ -25,8 +25,9 @@
   export let whereErrored: boolean;
   export let wherePending: boolean;
 
+  const runtimeClient = useRuntimeClient();
+
   $: modelName = resource?.meta?.name?.name as string;
-  $: ({ instanceId } = $runtime);
 
   // ==========================
   // Infinite Query
@@ -36,19 +37,10 @@
     ...(wherePending ? { pending: true } : {}),
   };
   $: query = createRuntimeServiceGetModelPartitionsInfinite(
-    instanceId,
-    modelName,
-    {
-      ...baseParams,
-    },
+    runtimeClient,
+    { model: modelName, ...baseParams },
     {
       query: {
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
-        },
         enabled: !!modelName,
         refetchOnMount: true,
       },
@@ -65,7 +57,7 @@
     {
       accessorKey: "data",
       header: "Data",
-      cell: ({ row }) => flexRender(DataCell, { data: row.original.data }),
+      cell: ({ row }) => renderComponent(DataCell, { data: row.original.data }),
       meta: {
         widthPercent: 30,
       },
@@ -117,7 +109,8 @@
     {
       accessorKey: "error",
       header: "Error",
-      cell: ({ row }) => flexRender(ErrorCell, { error: row.original.error }),
+      cell: ({ row }) =>
+        renderComponent(ErrorCell, { error: row.original.error }),
       meta: {
         widthPercent: 25,
       },
@@ -132,7 +125,7 @@
               widthPercent: 10,
             },
             cell: ({ row }) =>
-              flexRender(TriggerPartition, {
+              renderComponent(TriggerPartition, {
                 partitionKey: (row as Row<V1ModelPartition>).original
                   .key as string,
                 resource,
@@ -195,7 +188,7 @@
     setOptions({
       count: $query.hasNextPage ? allRows.length + 1 : allRows.length,
     });
-    const [lastItem] = [...virtualRows].reverse();
+    const lastItem = virtualRows[virtualRows.length - 1];
     if (
       lastItem &&
       lastItem.index > allRows.length - 1 &&
@@ -249,7 +242,7 @@
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
               <span class="text-red-500 font-semibold"
-                >Error: {error.response.data.message}</span
+                >Error: {error.message}</span
               >
             </td>
           </tr>
@@ -260,8 +253,8 @@
             </td>
           </tr>
         {:else}
-          <tr style:height="{paddingTop}px" />
-          {#each getVirtualItems() as virtualRow (virtualRow.index)}
+          <tr style:height="{paddingTop}px"></tr>
+          {#each virtualRows as virtualRow (virtualRow.index)}
             <tr>
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
                 <td data-label={cell.column.columnDef.header}>
@@ -275,7 +268,7 @@
               {/each}
             </tr>
           {/each}
-          <tr style:height="{paddingBottom}px" />
+          <tr style:height="{paddingBottom}px"></tr>
         {/if}
       </tbody>
     </table>

@@ -13,7 +13,7 @@ func ParseDotenv(ctx context.Context, projectPath string) (map[string]string, er
 	if err != nil {
 		return nil, err
 	}
-	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb", true)
 	if err != nil {
 		return nil, err
 	}

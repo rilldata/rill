@@ -1,5 +1,6 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
     type SignalListeners,
@@ -11,6 +12,8 @@
   import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
   import "./vega.css";
+
+  const runtimeClient = useRuntimeClient();
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -66,6 +69,7 @@
   }
 
   $: options = createEmbedOptions({
+    client: runtimeClient,
     canvasDashboard,
     width,
     height,
@@ -107,7 +111,7 @@
   class:px-4={canvasDashboard}
   class:pb-2={canvasDashboard}
   class="rill-vega-container overflow-hidden size-full flex flex-col items-center justify-center"
-  on:mouseleave={handleMouseLeave}
+  onmouseleave={handleMouseLeave}
 >
   {#if error}
     <div

@@ -1,11 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { File } from "lucide-svelte";
+  import {
+    Bot,
+    Database,
+    File,
+    Folder,
+    PlusCircleIcon,
+    Wand,
+  } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
@@ -14,14 +22,15 @@
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceCreateDirectory,
-    createRuntimeServicePutFile,
+    createRuntimeServiceCreateDirectoryMutation,
+    createRuntimeServicePutFileMutation,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceAndNavigate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import AddAiConnectorDialog from "../connectors/ai/AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -31,18 +40,17 @@
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
-  import { Wand } from "lucide-svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
   let active = false;
   let showExploreDialog = false;
   let generateDataDialog = false;
+  let showAiConnectorDialog = false;
 
-  const createFile = createRuntimeServicePutFile();
-  const createFolder = createRuntimeServiceCreateDirectory();
+  const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = $runtime);
+  const createFile = createRuntimeServicePutFileMutation(runtimeClient);
+  const createFolder =
+    createRuntimeServiceCreateDirectoryMutation(runtimeClient);
   const { developerChat } = featureFlags;
 
   $: currentFile = $page.params.file;
@@ -51,20 +59,20 @@
     : "";
 
   $: currentDirectoryFileNamesQuery = useFileNamesInDirectory(
-    instanceId,
+    runtimeClient,
     currentDirectory,
   );
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
-    instanceId,
+    runtimeClient,
     currentDirectory,
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   $: metricsViewQuery = useFilteredResources(
-    instanceId,
+    runtimeClient,
     ResourceKind.MetricsView,
   );
 
@@ -98,10 +106,7 @@
         : nextFolderName;
 
     await $createFolder.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path: path,
-      },
+      path: path,
     });
 
     // Expand the directory to show the new folder
@@ -124,13 +129,10 @@
         : nextFileName;
 
     await $createFile.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path,
-        blob: undefined,
-        create: true,
-        createOnly: true,
-      },
+      path,
+      blob: undefined,
+      create: true,
+      createOnly: true,
     });
 
     await goto(`/files/${path}`);
@@ -138,22 +140,24 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Button
-      builders={[builder]}
-      label="Add Asset"
-      class="w-full"
-      type="secondary"
-      selected={active}
-    >
-      <PlusCircleIcon size="14px" />
-      <div class="flex gap-x-1 items-center">
-        Add
-        <span class="transition-transform" class:-rotate-180={active}>
-          <CaretDownIcon size="10px" />
-        </span>
-      </div>
-    </Button>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        label="Add Asset"
+        class="w-full"
+        type="secondary"
+        selected={active}
+      >
+        <PlusCircleIcon size="14px" />
+        <div class="flex gap-x-1 items-center">
+          Add
+          <span class="transition-transform" class:-rotate-180={active}>
+            <CaretDownIcon size="10px" />
+          </span>
+        </div>
+      </Button>
+    {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"
@@ -164,7 +168,7 @@
     <DropdownMenu.Item
       aria-label="Add Data"
       class="flex gap-x-2"
-      on:click={handleAddData}
+      onclick={handleAddData}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
@@ -173,7 +177,8 @@
       aria-label="Add Model"
       class="flex gap-x-2"
       disabled={!isModelingSupported}
-      on:click={() => createResourceAndNavigate(ResourceKind.Model)}
+      onclick={() =>
+        createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Model]}
@@ -191,7 +196,8 @@
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
-      on:click={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+      onclick={() =>
+        createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
@@ -204,9 +210,10 @@
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
       disabled={metricsViews.length === 0}
-      on:click={() => {
+      onclick={() => {
         if (metricsViews.length === 1) {
           void createResourceAndNavigate(
+            runtimeClient,
             ResourceKind.Explore,
             metricsViews.pop(),
           );
@@ -233,7 +240,8 @@
 
     <DropdownMenu.Item
       class="flex items-center justify-between gap-x-2"
-      on:click={() => createResourceAndNavigate(ResourceKind.Canvas)}
+      onclick={() =>
+        createResourceAndNavigate(runtimeClient, ResourceKind.Canvas)}
       disabled={metricsViews.length === 0}
     >
       <div class="flex gap-x-2 items-center">
@@ -255,16 +263,16 @@
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddFolder}>
           <Folder size="14px" class="stroke-icon-muted" /> Folder
         </DropdownMenu.Item>
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddBlankFile}>
           <File size="14px" class="stroke-icon-muted" /> Blank file
         </DropdownMenu.Item>
         {#if $developerChat}
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={() => (generateDataDialog = true)}
+            onclick={() => (generateDataDialog = true)}
           >
             <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
             using AI
@@ -273,19 +281,30 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => createResourceAndNavigate(ResourceKind.API)}
+          onclick={() =>
+            createResourceAndNavigate(runtimeClient, ResourceKind.API)}
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
             size="16px"
           />
           API
-          <DropdownMenu.Separator />
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => createResourceAndNavigate(ResourceKind.Theme)}
+          onclick={() => {
+            showAiConnectorDialog = true;
+          }}
+        >
+          <Bot size="14px" class="stroke-icon-muted" />
+          AI Connector
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          onclick={() =>
+            createResourceAndNavigate(runtimeClient, ResourceKind.Theme)}
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
@@ -294,7 +313,7 @@
           Theme
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
-        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Report)}>
+        <!-- <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-fg-primary"
@@ -302,7 +321,7 @@
             />
             Report
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Alert)}>
+          <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
               className="text-fg-primary"
@@ -316,5 +335,7 @@
 </DropdownMenu.Root>
 
 <CreateExploreDialog bind:open={showExploreDialog} {metricsViews} />
+
+<AddAiConnectorDialog bind:open={showAiConnectorDialog} />
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />

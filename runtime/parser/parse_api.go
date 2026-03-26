@@ -94,7 +94,7 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Parse the resolver and its properties from the DataYAML
-	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML, node.Connector)
+	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(node.Paths, &tmp.DataYAML, node.Connector)
 	if err != nil {
 		return err
 	}

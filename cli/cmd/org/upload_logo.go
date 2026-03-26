@@ -55,8 +55,10 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				if dark {
 					label = "dark-mode logo"
 				}
-				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
-					return err
+				if ch.Interactive {
+					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom %s for %q. Continue?", label, ch.Org), false); err != nil {
+						return err
+					}
 				}
 
 				empty := ""
@@ -109,8 +111,10 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			if dark {
 				label = "dark-mode logo"
 			}
-			if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
-				return err
+			if ch.Interactive {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom %s for %q. Continue?", label, ch.Org), false); err != nil {
+					return err
+				}
 			}
 
 			// Generate the asset upload URL

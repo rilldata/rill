@@ -71,7 +71,8 @@ type globProps struct {
 	RollupFiles bool `mapstructure:"rollup_files"`
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
-	TransformSQL string `mapstructure:"transform_sql"`
+	TransformSQL string         `mapstructure:"transform_sql"`
+	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
 // globArgs declares the arguments for a "glob" resolver.
@@ -169,6 +170,12 @@ func (r *globResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *globResolver) Validate(ctx context.Context) error {
+	if len(r.props.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
+			Name:   "glob",
+			Fields: maps.Keys(r.props.UnusedFields),
+		}
+	}
 	return nil
 }
 
@@ -233,19 +240,21 @@ func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, 
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
 	rows := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
+		p := entry.Path
 		if entry.IsDir {
-			continue
+			// removing the tralling '/'
+			p = path.Clean(entry.Path)
 		}
 
 		uri := &globutil.URL{
 			Scheme: r.bucketURI.Scheme,
 			Host:   r.bucketURI.Host,
-			Path:   entry.Path,
+			Path:   p,
 		}
 
 		rows = append(rows, map[string]any{
 			"uri":        uri.String(),
-			"path":       entry.Path,
+			"path":       uri.Path,
 			"updated_on": entry.UpdatedOn,
 		})
 	}

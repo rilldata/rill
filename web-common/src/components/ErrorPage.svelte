@@ -12,6 +12,7 @@
   export let body: string = "";
   export let detail: string | undefined = undefined;
   export let fatal = false;
+  export let href: string = "/";
 
   let showDetail = false;
 
@@ -28,13 +29,15 @@
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>
     {#if !fatal && !onEmbedPage}
-      <CtaButton variant="secondary" href="/">Back to home</CtaButton>
+      <a {href} class="back-link">
+        <CtaButton variant="secondary">Back to home</CtaButton>
+      </a>
     {/if}
     {#if detail}
       <section class="detail-section">
         <button
           class="detail-toggle"
-          on:click={() => (showDetail = !showDetail)}
+          onclick={() => (showDetail = !showDetail)}
         >
           {#if !showDetail}
             Show details
@@ -60,6 +63,10 @@
 
   .header {
     @apply text-lg font-semibold;
+  }
+
+  .back-link {
+    @apply no-underline;
   }
 
   .detail-section {

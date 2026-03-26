@@ -88,6 +88,7 @@ _[boolean]_ - Flag to control security inheritance
 - [Custom API Call](#custom-api-call)
 - [File Glob Query](#file-glob-query)
 - [Resource Status Check](#resource-status-check)
+- [Union](#union)
 
 ## SQL Query
 
@@ -174,4 +175,21 @@ _[object]_ - Based on resource status _(required)_
 type: api
 resource_status:
     where_error: true
+```
+
+## Union
+
+Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+
+### `union`
+
+_[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
+
+```yaml
+type: api
+union:
+    - connector: duckdb
+      sql: SELECT 1
+    - connector: clickhouse
+      sql: SELECT 2
 ```

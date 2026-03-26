@@ -20,34 +20,55 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
-  import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
   import { onMount } from "svelte";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { LayoutData } from "./$types";
+  import PreviewModeNav from "../features/preview/PreviewModeNav.svelte";
+  import {
+    isPreviewRoute,
+    isDeveloperRoute,
+    showPreviewNav,
+  } from "./route-constants";
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
 
   const { deploy } = featureFlags;
 
-  queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
-    query: Query,
-  ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
+    errorEventHandler?.requestErrorEventHandler(error, query);
   initPylonWidget();
+
+  // Preview mode store sync:
+  // 1. Backend lock: if --preview flag is set, always true
+  // 2. URL-derived: preview routes (/dashboards, /ai, /status) → true,
+  //    developer routes (/, /files) → false
+  // 3. Preserved: shared routes (/explore, /canvas, /deploy) keep previous value
+  $: {
+    if (data.previewMode) {
+      previewModeStore.set(true);
+    } else if (isPreviewRoute($page.url.pathname)) {
+      previewModeStore.set(true);
+    } else if (isDeveloperRoute($page.url.pathname)) {
+      previewModeStore.set(false);
+    }
+  }
 
   let removeJavascriptListeners: () => void;
   onMount(async () => {
-    const config = await localServiceGetMetadata();
+    const config = data.metadata;
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
 
     if (shouldSendAnalytics) {
-      await initMetrics(config); // Proxies events through the Rill "intake" service
+      await initMetrics(config, host); // Proxies events through the Rill "intake" service
       initPosthog(config.version);
       posthogIdentify(config.userId, {
         installId: config.installId,
@@ -58,7 +79,7 @@
     }
 
     featureFlags.set(false, "adminServer");
-    featureFlags.set(config.readonly, "readOnly");
+    featureFlags.set(config.readonly || data.previewMode, "readOnly");
   });
 
   /**
@@ -69,49 +90,66 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: ({ host, instanceId } = $runtime);
+  const host = LOCAL_HOST;
+  const instanceId = LOCAL_INSTANCE_ID;
 
   $: ({ route } = $page);
+  $: onDeployPage = isDeployPage($page);
+  $: isPreviewMode = $previewModeStore;
 
-  $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
+  // Preview mode from store OR (viz) route group
+  $: mode =
+    isPreviewMode || route.id?.includes("(viz)") ? "Preview" : "Developer";
+
+  $: shouldShowPreviewNav =
+    isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
 </script>
 
-<QueryClientProvider client={queryClient}>
-  <FileAndResourceWatcher {host} {instanceId}>
-    <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
-      {#if data.initialized}
-        <BannerCenter />
-        <RepresentingUserBanner />
-        <ApplicationHeader {mode} />
-        {#if $deploy}
-          <RemoteProjectManager />
+<Tooltip.Provider>
+  <QueryClientProvider client={queryClient}>
+    <RuntimeProvider {host} {instanceId}>
+      <FileAndResourceWatcher {host} {instanceId}>
+        <div
+          class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+        >
+          {#if data.initialized}
+            <BannerCenter />
+            <RepresentingUserBanner />
+            <ApplicationHeader {mode} />
+            {#if shouldShowPreviewNav}
+              <PreviewModeNav />
+            {/if}
+            {#if $deploy}
+              <RemoteProjectManager />
+            {/if}
+          {/if}
+
+          <slot />
+        </div>
+      </FileAndResourceWatcher>
+    </RuntimeProvider>
+  </QueryClientProvider>
+
+  {#if $overlay !== null}
+    <BlockingOverlayContainer
+      bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+    >
+      <div slot="title" class="font-bold">
+        {$overlay?.title}
+      </div>
+      <svelte:fragment slot="detail">
+        {#if $overlay?.detail}
+          <svelte:component
+            this={$overlay.detail.component}
+            {...$overlay.detail.props}
+          />
         {/if}
-      {/if}
+      </svelte:fragment>
+    </BlockingOverlayContainer>
+  {/if}
 
-      <slot />
-    </div>
-  </FileAndResourceWatcher>
-</QueryClientProvider>
-
-{#if $overlay !== null}
-  <BlockingOverlayContainer
-    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
-  >
-    <div slot="title" class="font-bold">
-      {$overlay?.title}
-    </div>
-    <svelte:fragment slot="detail">
-      {#if $overlay?.detail}
-        <svelte:component
-          this={$overlay.detail.component}
-          {...$overlay.detail.props}
-        />
-      {/if}
-    </svelte:fragment>
-  </BlockingOverlayContainer>
-{/if}
-
-<NotificationCenter />
+  <NotificationCenter />
+</Tooltip.Provider>
 
 <style>
   /* Prevent trackpad navigation (like other code editors, like vscode.dev). */

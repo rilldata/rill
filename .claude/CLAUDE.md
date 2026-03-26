@@ -69,6 +69,7 @@ General rules for writing Go code:
 - Avoid short utility functions that are only used once; it is usually more readable to inline these in their parent function.
 - Avoid variables that only serve as aliases unless there's a large readability improvement (i.e. the expression is very long and used several times); for example, instead of `db := table.Database`, just reference `table.Database` directly.
 - Use the standard library `errors` (not `github.com/pkg/errors`).
+- Prefer `require.NoError(...)` instead of `panic` in tests.
 
 Rules for contributing backend features in Rill:
 
@@ -82,6 +83,10 @@ Rules for contributing backend features in Rill:
 **Tech stack**: Svelte 4 (migrating to Svelte 5), TypeScript, TanStack Query, Tailwind CSS, Orval (API client generation)
 
 Frontend conventions are being formalized in `.claude/rules/frontend.md` (coming soon).
+
+## Tool Usage
+
+- **WebFetch and WebSearch lose information.** Both tools use small models to summarize content, and they regularly drop items from long lists, tables, or dense pages. When researching reference documentation (e.g. finding all config settings, API parameters, or CLI flags matching a pattern), download the raw page and search it directly: `curl -sL 'https://...' | sed 's/<[^>]*>//g' | grep -i 'pattern'`. This ensures completeness that summarization cannot guarantee.
 
 ## Tips
 

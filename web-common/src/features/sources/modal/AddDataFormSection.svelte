@@ -6,9 +6,12 @@
 
 <form
   {id}
-  class="pb-5 flex-grow overflow-y-auto"
+  class="pb-5 pr-2 flex-grow overflow-y-auto"
   use:enhance
-  on:submit|preventDefault={onSubmit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    onSubmit(e);
+  }}
 >
   <slot />
 </form>
