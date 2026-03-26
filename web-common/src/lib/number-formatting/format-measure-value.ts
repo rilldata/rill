@@ -51,7 +51,7 @@ import {
  * Number() gives a close-enough approximation for humanization purposes.
  * Returns the original value if conversion yields NaN.
  */
-function coerceToNumber<T>(value: number | string | T): number | T {
+function coerceToNumber<T>(value: number | string | T): number | string | T {
   if (typeof value === "number") return value;
   if (typeof value === "string") {
     const n = Number(value);
@@ -226,7 +226,12 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
     humanizer = memoizedHumanizeDataTypeUnabridged;
   } else {
     humanizer = (value, preset) =>
-      memoizedHumanizeDataType(value, preset, type, localeConfig);
+      memoizedHumanizeDataType(
+        value,
+        preset,
+        type as FormatterContextSurface,
+        localeConfig,
+      );
   }
 
   // Return and empty string if measureSpec is not provided.
