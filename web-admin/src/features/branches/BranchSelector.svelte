@@ -111,17 +111,22 @@
 {#if hasBranchDeployments || isOnBranch}
   <li class="branch-selector">
     <DropdownMenu.Root bind:open>
-      <DropdownMenu.Trigger asChild let:builder>
-        <button use:builder.action {...builder} class="chip">
-          <span class="status-dot {statusDot(currentDeployment?.status)}" />
-          <span>{triggerLabel}</span>
-          <span class="caret" class:open>
-            <CaretDownIcon size="10px" />
-          </span>
-        </button>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <button {...props} class="chip">
+            <span class="status-dot {statusDot(currentDeployment?.status)}"
+            ></span>
+            <span>{triggerLabel}</span>
+            <span class="caret" class:open>
+              <CaretDownIcon size="10px" />
+            </span>
+          </button>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="min-w-[200px] max-w-[300px]">
-        <DropdownMenu.Label>All branches</DropdownMenu.Label>
+        <DropdownMenu.Group>
+          <DropdownMenu.Label>All branches</DropdownMenu.Label>
+        </DropdownMenu.Group>
         {#each sortedDeployments as deployment (deployment.id)}
           {@const prod = isProd(deployment)}
           {@const isSelected = prod
@@ -130,7 +135,7 @@
           <DropdownMenu.CheckboxItem
             checked={isSelected}
             href={getDeploymentHref(deployment)}
-            on:click={() => handleClick(deployment)}
+            onclick={() => handleClick(deployment)}
             class="flex items-center gap-x-2"
           >
             <div class="flex items-center gap-x-2 truncate">
@@ -138,7 +143,7 @@
                 class="inline-block size-1.5 rounded-full flex-none {statusDot(
                   deployment.status,
                 )}"
-              />
+              ></span>
               <span class="truncate">
                 {deployment.branch ?? primaryBranch ?? ""}
               </span>

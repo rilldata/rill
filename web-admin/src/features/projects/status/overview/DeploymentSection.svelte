@@ -154,7 +154,7 @@
           })}
           <button
             class="sync-button"
-            on:click={handleSync}
+            onclick={handleSync}
             disabled={$redeployMutation.isPending}
           >
             {$redeployMutation.isPending ? "Syncing..." : "Sync now"}

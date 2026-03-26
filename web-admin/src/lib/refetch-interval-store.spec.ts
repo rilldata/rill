@@ -182,11 +182,25 @@ describe("createSmartRefetchInterval", () => {
     expect(refetchInterval(q)).toBe(false);
   });
 
-  it("stops polling when all non-parser resources are idle and no relevant resources", () => {
+  it("keeps polling when non-parser resources are idle but parser is still reconciling", () => {
+    // During wake-up the parser creates resources incrementally;
+    // early resources (sources, models) may finish before explores
+    // are created. Keep polling so we pick them up.
     const q = makeQuery([
       makeResource({
         projectParser: {},
         reconcileStatus: "RECONCILE_STATUS_RUNNING",
+      } as any),
+      makeResource(), // idle model
+    ]);
+    expect(refetchInterval(q)).not.toBe(false);
+  });
+
+  it("stops polling when all resources including parser are idle and no relevant resources", () => {
+    const q = makeQuery([
+      makeResource({
+        projectParser: {},
+        reconcileStatus: "RECONCILE_STATUS_IDLE",
       } as any),
       makeResource(), // idle model
     ]);

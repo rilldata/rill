@@ -91,14 +91,28 @@ export function createSmartRefetchInterval(
 
     const relevantResources = resources.filter(isRelevant);
 
-    // When no relevant resources exist, check non-ProjectParser resources
-    // for reconciliation. If any are reconciling (models, sources being
-    // built), relevant resources may still appear as reconciliation
-    // progresses — e.g., after restarting a stopped deployment.
-    const toCheck =
-      relevantResources.length > 0
-        ? relevantResources
-        : resources.filter((r) => !r.projectParser);
+    // When no relevant resources exist, fall back to non-ProjectParser
+    // resources. If any are reconciling (models, sources being built),
+    // relevant resources may still appear as reconciliation progresses.
+    //
+    // Additionally, if non-parser resources are all idle but the parser
+    // is still reconciling, include it: during wake-up the parser creates
+    // resources incrementally, so explores/canvases may not exist yet
+    // even though earlier resources (sources, models) have finished.
+    let toCheck: V1Resource[];
+    if (relevantResources.length > 0) {
+      toCheck = relevantResources;
+    } else {
+      const nonParser = resources.filter((r) => !r.projectParser);
+      const parserReconciling = resources.some(
+        (r) => !!r.projectParser && isResourceReconciling(r),
+      );
+      if (nonParser.length > 0 && parserReconciling) {
+        toCheck = resources;
+      } else {
+        toCheck = nonParser;
+      }
+    }
 
     const currentState = queryRefetchStateMap.get(query) || {};
     const updatedState = updateSmartRefetchMeta(toCheck, currentState);
