@@ -11315,6 +11315,10 @@ func (m *APISpec) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
 	// no validation rules for Resolver
 
 	if all {

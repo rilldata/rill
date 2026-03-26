@@ -47,6 +47,13 @@ skip_nested_security: true
 security:
   access: '{{ .user.admin }}'
 `,
+		// api a6 with display_name and description
+		`apis/a6.yaml`: `
+type: api
+display_name: My Custom API
+description: Returns top commits by user
+sql: select * from m1
+`,
 	})
 
 	resources := []*Resource{
@@ -65,6 +72,7 @@ security:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
+				DisplayName:        "A1",
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
 			},
@@ -73,6 +81,7 @@ security:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
 			Paths: []string{"/apis/a2.yaml"},
 			APISpec: &runtimev1.APISpec{
+				DisplayName:        "A2",
 				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
@@ -81,6 +90,7 @@ security:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a3"},
 			Paths: []string{"/apis/a3.yaml"},
 			APISpec: &runtimev1.APISpec{
+				DisplayName:        "A3",
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -95,6 +105,7 @@ security:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a4"},
 			Paths: []string{"/apis/a4.yaml"},
 			APISpec: &runtimev1.APISpec{
+				DisplayName:        "A4",
 				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -109,6 +120,7 @@ security:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a5"},
 			Paths: []string{"/apis/a5.yaml"},
 			APISpec: &runtimev1.APISpec{
+				DisplayName:        "A5",
 				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -118,6 +130,16 @@ security:
 					}}},
 				},
 				SkipNestedSecurity: true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a6"},
+			Paths: []string{"/apis/a6.yaml"},
+			APISpec: &runtimev1.APISpec{
+				DisplayName:        "My Custom API",
+				Description:        "Returns top commits by user",
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
 			},
 		},
 	}
