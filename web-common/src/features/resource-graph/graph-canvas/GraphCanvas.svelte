@@ -20,7 +20,7 @@
   import GraphLegend from "./GraphLegend.svelte";
   import ResourceInspectPanel from "./ResourceInspectPanel.svelte";
   import { closeInspect } from "./inspect-store";
-  import { closeActiveDropdown } from "./ResourceNodeActions.svelte";
+
   import type { ResourceNodeData } from "../shared/types";
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
 
@@ -188,10 +188,9 @@
     );
   }
 
-  // Close inspect panel and dropdown on any interaction (scroll/zoom/pan)
+  // Close inspect panel on any interaction (scroll/zoom/pan)
   function dismissPopups() {
     closeInspect();
-    closeActiveDropdown();
   }
 
   function isInsideInspectPanel(e: Event) {

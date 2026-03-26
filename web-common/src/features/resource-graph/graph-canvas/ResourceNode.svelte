@@ -5,7 +5,6 @@
   import type { ResourceNodeData } from "../shared/types";
   import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import ResourceNodeActions from "./ResourceNodeActions.svelte";
   import { openInspect } from "./inspect-store";
 
   export let id: string;
@@ -33,15 +32,6 @@
   // prettier-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   $: [type, height, sourcePosition, targetPosition, dragHandle, parentId, dragging, zIndex, selectable, deletable, draggable, positionAbsoluteX, positionAbsoluteY];
-
-  $: showActions = data?.showNodeActions !== false;
-
-  let actionsRef: { open: (e?: MouseEvent) => void } | undefined;
-
-  function handleContextMenu(e: MouseEvent) {
-    e.preventDefault();
-    actionsRef?.open(e);
-  }
 
   const DEFAULT_COLOR = "#6B7280";
 
@@ -107,7 +97,6 @@
   data-kind={kind}
   onclick={handleClick}
   ondblclick={handleDoubleClick}
-  oncontextmenu={handleContextMenu}
   role="button"
   tabindex="0"
   onkeydown={(e) => {
@@ -134,14 +123,12 @@
     {#if kind}<ResourceTypeBadge {kind} showLabel={false} />{/if}
     <p class="title" title={data?.label}>{data?.label}</p>
   </div>
-  {#if showActions}
-    <ResourceNodeActions bind:this={actionsRef} {data} />
-  {/if}
 </div>
 
 <style lang="postcss">
   .node {
     @apply relative border flex items-center rounded-lg bg-surface-subtle px-2 py-1.5 cursor-pointer shadow overflow-hidden;
+    max-width: 320px;
     border-color: var(--border);
     transition:
       box-shadow 120ms ease,

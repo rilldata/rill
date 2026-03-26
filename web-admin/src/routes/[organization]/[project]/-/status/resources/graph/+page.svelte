@@ -180,6 +180,7 @@
     onSelectAll={() => goto(graphBasePath)}
     {hasUrlFilters}
     flushToolbar
+    showTitle={false}
     {showIsolatedResources}
     onShowIsolatedChange={handleIsolatedChange}
   />

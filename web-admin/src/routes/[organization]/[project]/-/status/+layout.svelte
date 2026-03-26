@@ -6,8 +6,6 @@
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
-  $: isGraphView = $page.route.id?.endsWith("/graph") ?? false;
-
   const navItems = [
     {
       label: "Overview",
@@ -38,7 +36,7 @@
   ];
 </script>
 
-<ContentContainer title="Project Status" maxWidth={1100} flush={isGraphView}>
+<ContentContainer title="Project Status" maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav
       {basePage}

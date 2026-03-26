@@ -23,7 +23,6 @@
   export let selectedGroupId: string | null = null;
   export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
   export let onRefreshAll: (() => void) | null = null;
-  export let compactToolbar = false;
   export let statusFilterOptions: {
     label: string;
     value: ResourceStatusFilterValue;
@@ -35,6 +34,7 @@
   export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
   export let flushToolbar = false;
+  export let showTitle = true;
   export let showIsolatedResources = false;
   export let onShowIsolatedChange: ((value: boolean) => void) | null = null;
 
@@ -109,13 +109,13 @@
   {selectedGroupId}
   {onSelectedGroupChange}
   {onRefreshAll}
-  {compactToolbar}
   {statusFilterOptions}
   {onStatusToggle}
   {onClearFilters}
   {onSelectAll}
   {hasUrlFilters}
   {flushToolbar}
+  {showTitle}
   {showIsolatedResources}
   {onShowIsolatedChange}
 />

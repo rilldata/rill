@@ -84,7 +84,6 @@
 
   // Toolbar callbacks (sidebar layout)
   export let onRefreshAll: (() => void) | null = null;
-  export let compactToolbar = false;
   export let statusFilterOptions: {
     label: string;
     value: ResourceStatusFilterValue;
@@ -96,6 +95,7 @@
   export let onSelectAll: (() => void) | null = null;
   export let hasUrlFilters = false;
   export let flushToolbar = false;
+  export let showTitle = true;
 
   type SummaryMemo = {
     connector: number;
@@ -853,6 +853,15 @@
 >
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
+    {#if showTitle}
+      <h2
+        class="graph-title"
+        class:nav-collapsed={!$navigationOpen}
+        class:flush-toolbar={flushToolbar}
+      >
+        Resource Graph (DAG)
+      </h2>
+    {/if}
     <div
       class="graph-toolbar-bar"
       class:nav-collapsed={!$navigationOpen}
@@ -867,7 +876,7 @@
         <Search
           bind:value={treeSearchQuery}
           placeholder="Search all resources"
-          large={!compactToolbar}
+          large
           autofocus={false}
           showBorderOnFocus={false}
           retainValueOnMount
@@ -934,17 +943,11 @@
       {#if statusFilterOptions.length > 0}
         <DropdownMenu.Root bind:open={statusDropdownOpen}>
           <DropdownMenu.Trigger
-            class="min-w-fit {compactToolbar
-              ? 'min-h-7'
-              : 'min-h-9'} flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+            class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
               ? 'bg-surface-hover'
               : 'hover:bg-surface-hover'} px-2 py-1"
           >
-            <span
-              class="text-fg-secondary font-medium {compactToolbar
-                ? 'text-xs'
-                : ''}"
-            >
+            <span class="text-fg-secondary font-medium">
               {#if statusFilter.length === 0}
                 All statuses
               {:else if statusFilter.length === 1}
@@ -999,7 +1002,7 @@
       {#if onRefreshAll}
         <Button
           type="secondary"
-          large={!compactToolbar}
+          large
           class="shrink-0 whitespace-nowrap"
           onClick={onRefreshAll}
         >
@@ -1192,6 +1195,19 @@
   }
 
   .graph-toolbar-bar.flush-toolbar {
+    @apply px-0;
+  }
+
+  .graph-title {
+    @apply text-sm font-semibold text-fg-primary flex-none px-4 pt-3 pb-1;
+    transition: padding-left 300ms ease-in-out;
+  }
+
+  .graph-title.nav-collapsed {
+    padding-left: 44px;
+  }
+
+  .graph-title.flush-toolbar {
     @apply px-0;
   }
 
