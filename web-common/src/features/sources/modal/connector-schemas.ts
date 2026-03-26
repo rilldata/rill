@@ -149,7 +149,9 @@ export function isMultiStepConnector(
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   if (!schema?.properties) return false;
-  return Object.values(schema.properties).some((p) => p["x-step"] === "explorer");
+  return Object.values(schema.properties).some(
+    (p) => p["x-step"] === "explorer",
+  );
 }
 
 /**
