@@ -91,7 +91,7 @@
           >GET / POST</span
         >
         <code
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md px-3 py-1.5 overflow-x-auto"
+          class="text-fg-primary text-xs font-mono bg-surface-subtle border border-border rounded-md px-3 py-1.5 overflow-x-auto"
           >{endpointUrl}</code
         >
         <button
@@ -115,11 +115,7 @@
       <div class="flex flex-col gap-y-3" aria-label="API resolver">
         <MetadataLabel>Resolver</MetadataLabel>
         {#if apiSpec.resolver}
-          <span
-            class="w-fit text-xs font-medium px-2 py-0.5 rounded-full bg-surface-secondary text-fg-secondary border border-border"
-          >
-            {apiSpec.resolver}
-          </span>
+          <MetadataValue>{apiSpec.resolver}</MetadataValue>
         {:else}
           <MetadataValue>—</MetadataValue>
         {/if}
@@ -129,11 +125,7 @@
       {#if connector}
         <div class="flex flex-col gap-y-3" aria-label="API connector">
           <MetadataLabel>Connector</MetadataLabel>
-          <span
-            class="w-fit text-xs font-medium px-2 py-0.5 rounded-full bg-surface-secondary text-fg-secondary border border-border"
-          >
-            {connector}
-          </span>
+          <MetadataValue>{connector}</MetadataValue>
         </div>
       {/if}
 
@@ -190,7 +182,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>SQL</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{sql.trim()}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-subtle border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{sql.trim()}</pre>
       </div>
     {/if}
 

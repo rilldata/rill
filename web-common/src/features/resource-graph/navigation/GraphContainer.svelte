@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { keepPreviousData } from "@tanstack/svelte-query";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
@@ -17,6 +18,7 @@
         refetchOnMount: true,
         refetchOnWindowFocus: false,
         enabled: !!instanceId,
+        placeholderData: keepPreviousData,
       },
     },
   );

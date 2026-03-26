@@ -1,24 +1,24 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { isHTTPError } from "@rilldata/web-common/lib/errors";
-import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client/query-options";
+import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
+import { ConnectError } from "@connectrpc/connect";
+import { getCloudRuntimeClient } from "@rilldata/web-admin/lib/runtime-client";
 
 export async function load({ params, parent }) {
   const { runtime } = await parent();
+  const client = getCloudRuntimeClient(runtime);
 
   const apiData = await queryClient
     .fetchQuery(
-      getRuntimeServiceGetResourceQueryOptions(runtime, {
-        "name.kind": ResourceKind.API,
-        "name.name": params.api,
+      getRuntimeServiceGetResourceQueryOptions(client, {
+        name: { kind: ResourceKind.API, name: params.api },
       }),
     )
     .catch((e) => {
-      if (!isHTTPError(e)) {
-        throw error(500, "Error fetching API");
-      }
-      throw error(e.response.status, e.response.data.message);
+      const ce = ConnectError.from(e);
+      throw error(connectCodeToHTTPStatus(ce.code), ce.rawMessage);
     });
 
   return {
