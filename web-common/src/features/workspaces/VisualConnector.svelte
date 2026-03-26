@@ -96,7 +96,6 @@
   const RESERVED_KEYS = new Set(["type", "driver", "managed"]);
 
   // Load form values from resource + .env (resolves secret template refs)
-  let formLoaded = false;
   $: if (schema && connectorName && schemaName) {
     loadFormFromResource(connectorName, schemaName);
   }
@@ -136,7 +135,6 @@
       ? getSchemaInitialValues(schema, { step: "connector" })
       : {};
     formStore.set({ ...defaults, ...loaded });
-    formLoaded = true;
     formDirty = false;
     await tick();
     suppressSync = false;
@@ -337,7 +335,7 @@
       let yaml = compileConnectorYAML(connectorDriver, values, {
         connectorInstanceName: connectorName,
         orderedProperties: schemaFields,
-        fieldFilter: (p) => !p.internal,
+        fieldFilter: (p) => !("internal" in p && p.internal),
         secretKeys: secretKeysList,
         stringKeys: stringKeysList,
         schema: schema ?? undefined,
