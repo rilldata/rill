@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import GraphCanvas from "../graph-canvas/GraphCanvas.svelte";
   import GraphOverlay from "./GraphOverlay.svelte";
@@ -1019,7 +1019,7 @@
       {:else if isLoading || seedTransitionLoading}
         <div class="state">
           <div class="loading-state">
-            <DelayedSpinner isLoading={true} size="1.5rem" />
+            <LoadingSpinner size="1.5rem" />
             <p>
               {isLoading ? "Loading project graph..." : "Updating graphs..."}
             </p>
@@ -1075,7 +1075,7 @@
   {:else if isLoading || seedTransitionLoading}
     <div class="state">
       <div class="loading-state">
-        <DelayedSpinner isLoading={true} size="1.5rem" />
+        <LoadingSpinner size="1.5rem" />
         <p>{isLoading ? "Loading project graph..." : "Updating graphs..."}</p>
       </div>
     </div>

@@ -5,8 +5,7 @@
   import type { ResourceNodeData } from "../shared/types";
   import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { openInspect } from "./inspect-store";
 
   export let id: string;
@@ -125,7 +124,7 @@
     {#if kind}<ResourceTypeBadge {kind} showLabel={false} />{/if}
     <p class="title" title={data?.label}>{data?.label}</p>
     {#if isPending}
-      <Spinner size="0.7em" status={EntityStatus.Running} />
+      <LoadingSpinner size="0.7em" />
     {/if}
   </div>
 </div>

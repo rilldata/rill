@@ -14,7 +14,6 @@
     Check,
   } from "lucide-svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -28,7 +27,6 @@
   import {
     createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -65,9 +63,6 @@
   $: isTestOnlyError =
     !!reconcileError && reconcileError.includes(TEST_FAILURE_MARKER);
   $: hasError = !!reconcileError && !isTestOnlyError;
-  $: isPending =
-    resource?.meta?.reconcileStatus &&
-    resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   // Model/Source metadata
   $: isSourceOrModel =
@@ -276,9 +271,7 @@
       <div class="flex items-center gap-x-2">
         {#if kind}<ResourceTypeBadge {kind} />{/if}
         <span class="text-sm font-medium">{resourceName}</span>
-        {#if isPending}
-          <LoadingSpinner size="14px" />
-        {:else if hasError}
+        {#if hasError}
           <CancelCircle size="14px" className="text-red-500 flex-none" />
         {:else if isTestOnlyError}
           <AlertTriangleIcon size="14px" class="text-yellow-500 flex-none" />

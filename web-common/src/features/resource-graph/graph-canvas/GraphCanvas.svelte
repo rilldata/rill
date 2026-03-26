@@ -330,19 +330,19 @@
       } catch {
         flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
       }
-    // Debug: log refs to diagnose edge disappearance during refresh
-    if (import.meta.env.DEV) {
-      console.log("ResourceGraph debug", {
-        flowId,
-        edgeCount: filteredEdges.length,
-        nodeCount: nodesWithRoots.length,
-        refs: (resources ?? []).map((r) => ({
-          name: r.meta?.name?.name,
-          refs: r.meta?.refs,
-          reconcileStatus: r.meta?.reconcileStatus,
-        })),
-      });
-    }
+      // Debug: log refs to diagnose edge disappearance during refresh
+      if (import.meta.env.DEV) {
+        console.log("ResourceGraph debug", {
+          flowId,
+          edgeCount: filteredEdges.length,
+          nodeCount: nodesWithRoots.length,
+          refs: (resources ?? []).map((r) => ({
+            name: r.meta?.name?.name,
+            refs: r.meta?.refs,
+            reconcileStatus: r.meta?.reconcileStatus,
+          })),
+        });
+      }
     } catch (err) {
       console.error("Failed to build resource graph:", err);
       graphError =

@@ -168,7 +168,7 @@
   .node-selector {
     @apply flex items-center;
   }
-  
+
   .trigger-label {
     @apply truncate max-w-[200px];
   }
