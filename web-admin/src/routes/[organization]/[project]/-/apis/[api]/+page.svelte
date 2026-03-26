@@ -9,7 +9,7 @@
 </script>
 
 <ContentContainer maxWidth={1100}>
-  <div class=" flex flex-col items-start gap-y-9">
+  <div class="flex flex-col items-start gap-y-9">
     <APIMetadata {api} {organization} {project} />
   </div>
 </ContentContainer>

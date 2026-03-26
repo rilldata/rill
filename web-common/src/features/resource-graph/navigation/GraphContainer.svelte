@@ -2,10 +2,11 @@
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ResourceGraph from "../embedding/ResourceGraph.svelte";
+
+  export let seeds: string[] | undefined;
 
   const runtimeClient = useRuntimeClient();
-  import ResourceGraph from "../embedding/ResourceGraph.svelte";
-  export let seeds: string[] | undefined;
 
   $: ({ instanceId } = runtimeClient);
 

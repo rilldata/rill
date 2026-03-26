@@ -219,7 +219,6 @@ measures: '*'
 
 type: api
 display_name: "My API"
-description: ""
 
 metrics_sql: |
   select measure, dimension from metrics_view

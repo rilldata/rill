@@ -71,12 +71,9 @@
           <span>{apiSpec.openapiSummary}</span>
         </div>
       {/if}
-      <div class="flex gap-x-2 items-center">
-        <h1 class="text-fg-primary text-lg font-bold" aria-label="API name">
-          {apiSpec.displayName || api}
-        </h1>
-        <div class="grow"></div>
-      </div>
+      <h1 class="text-fg-primary text-lg font-bold" aria-label="API name">
+        {apiSpec.displayName || api}
+      </h1>
       {#if apiSpec.description}
         <p class="text-fg-secondary text-sm">{apiSpec.description}</p>
       {/if}
@@ -232,6 +229,5 @@
       </div>
     {/if}
 
-    <!-- TODO: add a "Try it" section to test the API endpoint inline -->
   </div>
 {/if}
