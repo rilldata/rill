@@ -56,6 +56,7 @@
   const edgesViewStore = writable<Edge[]>([]);
   let flowKey = "";
   let containerKey = "";
+  let graphVersion = 0;
   let containerEl: HTMLDivElement | null = null;
   let ro: ResizeObserver | null = null;
 
@@ -322,16 +323,10 @@
                 .map((e) => e.id || `${e.source}->${e.target}`)
                 .sort()
                 .join(",");
-        // Include reconcile status so SvelteFlow remounts after resource state transitions;
+        // Monotonic version ensures SvelteFlow always remounts with fresh state;
         // without this, edges can vanish because SvelteFlow misses store-only updates.
-        const reconcileSig = (resources ?? [])
-          .map(
-            (r) =>
-              `${r.meta?.name?.name ?? ""}:${r.meta?.reconcileStatus ?? ""}`,
-          )
-          .sort()
-          .join(",");
-        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|r:${reconcileSig}|c:${containerKey}`;
+        graphVersion++;
+        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|v:${graphVersion}|c:${containerKey}`;
       } catch {
         flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
       }
