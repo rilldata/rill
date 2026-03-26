@@ -293,7 +293,11 @@
         >
           <Info size="14px" />
         </button>
-        <button class="close-btn" onclick={() => closeInspect(inspectStore)} aria-label="Close">
+        <button
+          class="close-btn"
+          onclick={() => closeInspect(inspectStore)}
+          aria-label="Close"
+        >
           <X size="14px" />
         </button>
       </div>
@@ -561,5 +565,4 @@
   .panel-actions {
     @apply flex flex-wrap gap-1 px-3 py-2 border-t;
   }
-
 </style>
