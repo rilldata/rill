@@ -6,6 +6,7 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     createAdminServiceListDeployments,
+    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceStartDeployment,
     createAdminServiceStopDeployment,
     getAdminServiceGetProjectQueryKey,
@@ -40,7 +41,6 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { Progress } from "@rilldata/web-common/components/progress";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EyeIcon, PlayIcon, StopCircleIcon, Trash2Icon } from "lucide-svelte";
@@ -58,6 +58,10 @@
   ]);
 
   const user = createAdminServiceGetCurrentUser();
+  const orgMembers = createAdminServiceListOrganizationMemberUsers(
+    organization,
+    { pageSize: 1000 },
+  );
   // Uses empty params `{}` so the cache key matches BranchSelector's query.
   const allDeployments = createAdminServiceListDeployments(
     organization,
@@ -83,11 +87,23 @@
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
   $: currentUserId = $user.data?.user?.id;
+  $: userNameMap = new Map(
+    ($orgMembers.data?.members ?? []).map((m) => [
+      m.userId,
+      m.userName || m.userEmail || "Unknown",
+    ]),
+  );
   $: rawDeployments = $allDeployments.data?.deployments ?? [];
 
-  // Slot quotas (project-level)
-  $: prodSlots = parseInt($projectQuery.data?.project?.prodSlots ?? "0") || 0;
-  $: devSlots = parseInt($projectQuery.data?.project?.devSlots ?? "0") || 0;
+  // Slot quotas (project-level); null means the API didn't return a value
+  $: prodSlots =
+    $projectQuery.data?.project?.prodSlots != null
+      ? parseInt($projectQuery.data.project.prodSlots)
+      : null;
+  $: devSlots =
+    $projectQuery.data?.project?.devSlots != null
+      ? parseInt($projectQuery.data.project.devSlots)
+      : null;
 
   // Deduplicate by branch: keep only the most recently updated deployment per branch.
   // This mirrors BranchSelector logic and hides stale/historical deployments.
@@ -118,26 +134,19 @@
   });
 
   // Slot usage per environment type
-  $: activeProd = visibleDeployments.filter(
-    (d) => d.environment === "prod" && isActiveDeployment(d),
-  );
-  $: activeDev = visibleDeployments.filter(
-    (d) => d.environment !== "prod" && isActiveDeployment(d),
-  );
-  $: prodSlotsUsed = activeProd.length * prodSlots;
-  $: devSlotsUsed = activeDev.length * devSlots;
 
   function isProd(d: V1Deployment): boolean {
     return d.environment === "prod";
   }
 
-  function isOwnDeployment(ownerUserId: string | undefined): boolean {
-    return !!currentUserId && ownerUserId === currentUserId;
+  function ownerName(d: V1Deployment): string {
+    return userNameMap.get(d.ownerUserId ?? "") ?? "—";
   }
 
   function deploymentSlots(d: V1Deployment): string {
     if (!isActiveDeployment(d)) return "—";
-    return String(isProd(d) ? prodSlots : devSlots);
+    const slots = isProd(d) ? prodSlots : devSlots;
+    return slots != null ? String(slots) : "—";
   }
 
   function formatDate(dateStr: string | undefined): string {
@@ -341,39 +350,6 @@
 <section class="flex flex-col gap-y-5">
   <h2 class="text-lg font-medium">Deployments</h2>
 
-  <div class="slot-cards">
-    <div class="slot-card">
-      <div class="slot-card-header">
-        <span class="slot-card-label">Production</span>
-        <span class="slot-card-value">{prodSlotsUsed} / {prodSlots}</span>
-      </div>
-      <Progress
-        value={prodSlotsUsed}
-        max={Math.max(prodSlots, 1)}
-        class="h-1.5"
-      />
-      <span class="slot-card-sub">slots</span>
-    </div>
-    <div class="slot-card">
-      <div class="slot-card-header">
-        <span class="slot-card-label">Dev branches</span>
-        <span class="slot-card-value">
-          {devSlotsUsed} / {devSlots * Math.max(activeDev.length, 1)}
-        </span>
-      </div>
-      <Progress
-        value={devSlotsUsed}
-        max={Math.max(devSlots * Math.max(activeDev.length, 1), 1)}
-        class="h-1.5"
-      />
-      <span class="slot-card-sub">
-        slots ({activeDev.length}
-        {activeDev.length === 1 ? "branch" : "branches"} &times; {devSlots} slots
-        each)
-      </span>
-    </div>
-  </div>
-
   {#if $allDeployments.isLoading}
     <div class="empty-container">
       <DelayedSpinner isLoading={true} size="20px" />
@@ -396,6 +372,9 @@
           Branch
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
+          Author
+        </div>
+        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
           Status
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
@@ -408,7 +387,6 @@
       </div>
       {#each visibleDeployments as deployment (deployment.id)}
         {@const prod = isProd(deployment)}
-        {@const own = isOwnDeployment(deployment.ownerUserId)}
         {@const starting =
           startingIds.has(deployment.id ?? "") ||
           deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
@@ -430,10 +408,16 @@
               {deployment.branch || "main"}
             </span>
             {#if prod}
-              <span class="prod-badge">production</span>
-            {:else if own}
-              <span class="own-badge">You</span>
+              <span class="prod-badge">Production</span>
             {/if}
+            {#if (deployment.branch ?? "main") === (activeBranch ?? "main")}
+              <span class="current-badge">Current</span>
+            {/if}
+          </div>
+          <div
+            class="pl-4 flex items-center text-sm text-fg-secondary truncate"
+          >
+            {ownerName(deployment)}
           </div>
           <div class="pl-4 flex items-center gap-2 text-sm">
             <span
@@ -466,11 +450,11 @@
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start">
-                {#if !prod && own}
+                {#if !prod && !!currentUserId && deployment.ownerUserId === currentUserId}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
                     href={editUrl(deployment.branch)}
-                    on:click={handleNavClick}
+                    onclick={handleNavClick}
                   >
                     <div class="flex items-center">
                       <PlayIcon size="12px" />
@@ -483,7 +467,7 @@
                   href={prod
                     ? `/${organization}/${project}`
                     : previewUrl(deployment.branch)}
-                  on:click={handleNavClick}
+                  onclick={handleNavClick}
                 >
                   <div class="flex items-center">
                     <EyeIcon size="12px" />
@@ -493,7 +477,7 @@
                 {#if canStart}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    on:click={() => handleStart(id, deployment.branch)}
+                    onclick={() => handleStart(id, deployment.branch)}
                   >
                     <div class="flex items-center">
                       <PlayIcon size="12px" />
@@ -504,7 +488,7 @@
                 {#if canStop}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    on:click={() => handleStop(id, deployment.branch)}
+                    onclick={() => handleStop(id, deployment.branch)}
                   >
                     <div class="flex items-center">
                       <StopCircleIcon size="12px" />
@@ -516,7 +500,7 @@
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
                     disabled={deleting}
-                    on:click={() => requestDelete(id, deployment.branch)}
+                    onclick={() => requestDelete(id, deployment.branch)}
                   >
                     <div class="flex items-center">
                       <Trash2Icon size="12px" />
@@ -536,9 +520,7 @@
 </section>
 
 <AlertDialog bind:open={deleteConfirmOpen}>
-  <AlertDialogTrigger asChild>
-    <div class="hidden"></div>
-  </AlertDialogTrigger>
+  <AlertDialogTrigger class="hidden" />
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>Delete this deployment?</AlertDialogTitle>
@@ -569,56 +551,33 @@
     @apply border border-border rounded-sm py-10 flex flex-col items-center gap-y-2;
   }
 
-  .slot-cards {
-    @apply grid grid-cols-2 gap-4;
-  }
-
-  .slot-card {
-    @apply flex flex-col gap-y-1.5 border border-border rounded-sm p-4;
-  }
-
-  .slot-card-header {
-    @apply flex items-center justify-between;
-  }
-
-  .slot-card-label {
-    @apply text-sm font-semibold text-fg-primary;
-  }
-
-  .slot-card-value {
-    @apply text-sm font-medium text-fg-primary;
-  }
-
-  .slot-card-sub {
-    @apply text-xs text-fg-muted;
-  }
-
   .table-wrapper {
-    @apply flex flex-col border rounded-sm overflow-hidden;
+    @apply flex flex-col border rounded-sm overflow-x-auto;
+  }
+
+  .header-row,
+  .data-row {
+    display: grid;
+    grid-template-columns:
+      minmax(150px, 3fr) minmax(100px, 2fr) minmax(100px, 2fr)
+      minmax(60px, 1fr) minmax(120px, 2fr) 56px;
+    min-width: 686px;
   }
 
   .header-row {
     @apply w-full bg-surface-subtle;
-    display: grid;
-    grid-template-columns:
-      minmax(150px, 3fr) minmax(100px, 2fr) minmax(60px, 1fr)
-      minmax(120px, 2fr) 56px;
   }
 
   .data-row {
     @apply w-full py-3 border-t border-gray-200;
-    display: grid;
-    grid-template-columns:
-      minmax(150px, 3fr) minmax(100px, 2fr) minmax(60px, 1fr)
-      minmax(120px, 2fr) 56px;
   }
 
   .prod-badge {
-    @apply shrink-0 text-[10px] text-fg-muted;
+    @apply shrink-0 text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded;
   }
 
-  .own-badge {
-    @apply shrink-0 text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded;
+  .current-badge {
+    @apply shrink-0 text-xs bg-gray-100 text-fg-muted px-1.5 py-0.5 rounded;
   }
 
   .status-dot {
