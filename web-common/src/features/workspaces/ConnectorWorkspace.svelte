@@ -25,7 +25,6 @@
   $: workspace = workspaces.get(filePath);
   $: selectedView = workspace.view;
 
-
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient);
   $: allErrors = $allErrorsStore;
 
