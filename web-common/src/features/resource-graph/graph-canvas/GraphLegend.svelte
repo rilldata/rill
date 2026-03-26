@@ -32,7 +32,7 @@
       </button>
     </div>
     <div class="legend-items">
-      {#each kinds as kind}
+      {#each kinds as kind (kind)}
         {@const icon = resourceIconMapping[kind]}
         {@const label = resourceLabelMapping[kind]}
         {@const styleName = resourceKindStyleName(kind)}

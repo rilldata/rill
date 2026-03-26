@@ -14,24 +14,21 @@
     Check,
   } from "lucide-svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
-  import * as Dialog from "@rilldata/web-common/components/dialog";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { Button } from "@rilldata/web-common/components/button";
   import { inspectedNode, closeInspect } from "./inspect-store";
   import { goto } from "$app/navigation";
   import { getGraphNavigation } from "../shared/graph-navigation-context";
   import { tokenForKind } from "../navigation/seed-parser";
-  import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import {
     createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import FullRefreshConfirmDialog from "../shared/FullRefreshConfirmDialog.svelte";
+  import ResourceSpecDialog from "../shared/ResourceSpecDialog.svelte";
 
   const graphNav = getGraphNavigation();
 
@@ -212,34 +209,6 @@
   function handleViewSpec() {
     specDialogOpen = true;
   }
-
-  function getResourceSpec(res: V1Resource | undefined): string {
-    if (!res) return "";
-    const kindKeys = [
-      "source",
-      "model",
-      "metricsView",
-      "explore",
-      "theme",
-      "component",
-      "canvas",
-      "api",
-      "connector",
-      "report",
-      "alert",
-    ] as const;
-    for (const key of kindKeys) {
-      if (res[key]) {
-        return JSON.stringify(res[key], null, 2);
-      }
-    }
-    const rest = Object.fromEntries(
-      Object.entries(res).filter(([k]) => k !== "meta"),
-    );
-    return JSON.stringify(rest, null, 2);
-  }
-
-  $: specContent = getResourceSpec(resource);
 
   function navigateToFile() {
     if (!filePath) return;
@@ -500,49 +469,18 @@
   </div>
 {/if}
 
-<AlertDialog.Root bind:open={fullRefreshConfirmOpen}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Full Refresh {resourceName}?</AlertDialog.Title>
-      <AlertDialog.Description>
-        <div class="mt-1">
-          A full refresh will re-ingest ALL data from scratch. This operation
-          can take a significant amount of time and will update all dependent
-          resources. Only proceed if you're certain this is necessary.
-        </div>
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <Button
-        type="secondary"
-        onClick={() => {
-          fullRefreshConfirmOpen = false;
-        }}>Cancel</Button
-      >
-      <Button type="primary" onClick={confirmFullRefresh}>Yes, refresh</Button>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
+<FullRefreshConfirmDialog
+  bind:open={fullRefreshConfirmOpen}
+  {resourceName}
+  onConfirm={confirmFullRefresh}
+/>
 
-<Dialog.Root bind:open={specDialogOpen}>
-  <Dialog.Content class="max-w-2xl max-h-[80vh] flex flex-col">
-    <Dialog.Header>
-      <Dialog.Title>
-        {resourceName}
-        <span class="text-fg-tertiary font-normal text-sm ml-2"
-          >{kind ? displayResourceKind(kind) : ""}</span
-        >
-      </Dialog.Title>
-    </Dialog.Header>
-    <div class="spec-container">
-      {#if !resource}
-        <p class="text-sm text-fg-secondary">No resource data available</p>
-      {:else}
-        <pre class="spec-content">{specContent}</pre>
-      {/if}
-    </div>
-  </Dialog.Content>
-</Dialog.Root>
+<ResourceSpecDialog
+  bind:open={specDialogOpen}
+  {resourceName}
+  {kind}
+  {resource}
+/>
 
 <style lang="postcss">
   .inspect-panel {
@@ -620,11 +558,4 @@
     @apply flex flex-wrap gap-1 px-3 py-2 border-t;
   }
 
-  .spec-container {
-    @apply overflow-auto flex-1 min-h-0;
-  }
-
-  .spec-content {
-    @apply text-xs font-mono whitespace-pre-wrap bg-surface-subtle rounded-md p-4;
-  }
 </style>

@@ -127,6 +127,10 @@ function hasModelDependencies(res: V1Resource): boolean {
  * 2. Models with definedAsSource: true (legacy converted sources)
  * 3. Models with no model dependencies (root models in the DAG)
  *
+ * NOTE: This function is primarily consumed by the resource graph feature.
+ * Rule (3) reclassifies root models as Sources for graph visualization;
+ * if you need the raw resource kind elsewhere, use `res.meta?.name?.kind` directly.
+ *
  * @param res - The resource to check
  * @returns The coerced ResourceKind, or undefined if the resource has no kind
  *

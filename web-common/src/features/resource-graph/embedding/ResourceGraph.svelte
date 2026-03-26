@@ -968,7 +968,7 @@
             {/if}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content align="end" class="w-48">
-            {#each statusFilterOptions as opt}
+            {#each statusFilterOptions as opt (opt.value)}
               <DropdownMenu.CheckboxItem
                 checked={statusFilter.includes(opt.value)}
                 onCheckedChange={() => onStatusToggle?.(opt.value)}

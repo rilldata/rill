@@ -132,14 +132,14 @@
       <DropdownMenu.Item onclick={handleSelectAll}>
         <span class="text-xs">All Resource Trees ({totalCount})</span>
       </DropdownMenu.Item>
-      {#each sections as section}
+      {#each sections as section (section.kind)}
         <DropdownMenu.Separator />
         <div class="section-header">
           <ResourceTypeBadge kind={section.kind} />
           <span class="text-[10px] text-fg-muted">{section.entries.length}</span
           >
         </div>
-        {#each section.entries as entry}
+        {#each section.entries as entry (entry.name)}
           {@const isActive = activeResourceId === `${entry.kind}:${entry.name}`}
           <DropdownMenu.Item
             class="flex items-center gap-x-2 {isActive ? 'font-semibold' : ''}"

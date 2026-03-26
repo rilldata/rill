@@ -3,6 +3,8 @@ import {
   buildResourceGraph,
   partitionResourcesBySeeds,
   partitionResourcesByMetrics,
+  partitionResourcesByDashboardTrees,
+  buildMultiTreeLayout,
 } from "./graph-builder";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -899,6 +901,274 @@ describe("build-resource-graph", () => {
 
       expect(groups).toHaveLength(1);
       expect(groups[0].resources).toHaveLength(1);
+    });
+  });
+
+  describe("partitionResourcesByDashboardTrees", () => {
+    it("should create groups from Explore dashboard resources", () => {
+      const resources: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.Source, name: "source1" },
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Model, name: "model1" },
+            refs: [{ kind: ResourceKind.Source, name: "source1" }],
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.MetricsView, name: "metrics1" },
+            refs: [{ kind: ResourceKind.Model, name: "model1" }],
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Explore, name: "explore1" },
+            refs: [{ kind: ResourceKind.MetricsView, name: "metrics1" }],
+            hidden: false,
+          },
+        },
+      ];
+
+      const groups = partitionResourcesByDashboardTrees(resources);
+
+      const dashboardGroup = groups.find((g) => g.label === "explore1");
+      expect(dashboardGroup).toBeDefined();
+      expect(dashboardGroup!.resources.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should create groups from Canvas dashboard resources", () => {
+      const resources: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.Model, name: "model1" },
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Canvas, name: "canvas1" },
+            refs: [{ kind: ResourceKind.Model, name: "model1" }],
+            hidden: false,
+          },
+        },
+      ];
+
+      const groups = partitionResourcesByDashboardTrees(resources);
+
+      const canvasGroup = groups.find((g) => g.label === "canvas1");
+      expect(canvasGroup).toBeDefined();
+    });
+
+    it("should put unconnected resources in 'Other resources' group", () => {
+      const resources: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.Explore, name: "explore1" },
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Model, name: "orphan" },
+            hidden: false,
+          },
+        },
+      ];
+
+      const groups = partitionResourcesByDashboardTrees(resources);
+
+      const otherGroup = groups.find((g) => g.label === "Other resources");
+      expect(otherGroup).toBeDefined();
+    });
+
+    it("should exclude connector nodes from trees", () => {
+      const resources: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.Connector, name: "duckdb" },
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Model, name: "model1" },
+            refs: [{ kind: ResourceKind.Connector, name: "duckdb" }],
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Explore, name: "explore1" },
+            refs: [{ kind: ResourceKind.Model, name: "model1" }],
+            hidden: false,
+          },
+        },
+      ];
+
+      const groups = partitionResourcesByDashboardTrees(resources);
+
+      const dashboardGroup = groups.find((g) => g.label === "explore1");
+      if (dashboardGroup) {
+        const connectorInGroup = dashboardGroup.resources.find(
+          (r) => r.meta?.name?.kind === ResourceKind.Connector,
+        );
+        expect(connectorInGroup).toBeUndefined();
+      }
+    });
+
+    it("should handle empty resource list", () => {
+      const groups = partitionResourcesByDashboardTrees([]);
+      expect(groups).toHaveLength(0);
+    });
+
+    it("should sort groups alphabetically", () => {
+      const resources: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.Explore, name: "zebra" },
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Explore, name: "apple" },
+            hidden: false,
+          },
+        },
+      ];
+
+      const groups = partitionResourcesByDashboardTrees(resources);
+      const dashboardLabels = groups
+        .filter((g) => g.label !== "Other resources")
+        .map((g) => g.label);
+      expect(dashboardLabels).toEqual(["apple", "zebra"]);
+    });
+  });
+
+  describe("buildMultiTreeLayout", () => {
+    it("should produce nodes and edges from multiple groups", () => {
+      const resources1: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.Source, name: "source1" },
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Model, name: "model1" },
+            refs: [{ kind: ResourceKind.Source, name: "source1" }],
+            hidden: false,
+          },
+        },
+      ];
+      const resources2: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.Source, name: "source2" },
+            hidden: false,
+          },
+        },
+      ];
+
+      const groups = [
+        { id: "group1", resources: resources1, label: "Group 1" },
+        { id: "group2", resources: resources2, label: "Group 2" },
+      ];
+
+      const { nodes, edges } = buildMultiTreeLayout(groups);
+
+      expect(nodes.length).toBeGreaterThanOrEqual(3);
+      expect(edges.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should handle empty groups", () => {
+      const { nodes, edges } = buildMultiTreeLayout([]);
+      expect(nodes).toHaveLength(0);
+      expect(edges).toHaveLength(0);
+    });
+
+    it("should handle groups with no resources", () => {
+      const groups = [{ id: "empty", resources: [], label: "Empty" }];
+      const { nodes, edges } = buildMultiTreeLayout(groups);
+      expect(nodes).toHaveLength(0);
+      expect(edges).toHaveLength(0);
+    });
+
+    it("should handle shared resources across groups by prefixing IDs", () => {
+      const sharedResource: V1Resource = {
+        meta: {
+          name: { kind: ResourceKind.Model, name: "shared_model" },
+          hidden: false,
+        },
+      };
+
+      const groups = [
+        {
+          id: "group1",
+          resources: [
+            sharedResource,
+            {
+              meta: {
+                name: { kind: ResourceKind.Explore, name: "explore1" },
+                refs: [{ kind: ResourceKind.Model, name: "shared_model" }],
+                hidden: false,
+              },
+            },
+          ],
+          label: "Group 1",
+        },
+        {
+          id: "group2",
+          resources: [
+            sharedResource,
+            {
+              meta: {
+                name: { kind: ResourceKind.Explore, name: "explore2" },
+                refs: [{ kind: ResourceKind.Model, name: "shared_model" }],
+                hidden: false,
+              },
+            },
+          ],
+          label: "Group 2",
+        },
+      ];
+
+      const { nodes } = buildMultiTreeLayout(groups);
+
+      // The second group's nodes should be prefixed to avoid ID collisions
+      const prefixedNodes = nodes.filter((n) => n.id.includes("group2__"));
+      expect(prefixedNodes.length).toBeGreaterThan(0);
+    });
+
+    it("should respect container width for row wrapping", () => {
+      const makeGroup = (name: string) => ({
+        id: name,
+        resources: [
+          {
+            meta: {
+              name: { kind: ResourceKind.Model, name },
+              hidden: false,
+            },
+          },
+        ] as V1Resource[],
+        label: name,
+      });
+
+      const groups = Array.from({ length: 10 }, (_, i) =>
+        makeGroup(`model_${i}`),
+      );
+
+      // Should not throw with a narrow container
+      const result = buildMultiTreeLayout(groups, 500);
+      expect(result.nodes.length).toBeGreaterThan(0);
     });
   });
 

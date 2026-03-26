@@ -48,10 +48,14 @@ export const DAGRE_CONFIG = {
  * Edge styling and routing configuration
  */
 export const EDGE_CONFIG = {
-  DEFAULT_STYLE: "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;",
-  ERROR_STYLE: "stroke:#ef4444;stroke-width:1.5px;opacity:0.9;",
-  HIGHLIGHT_STYLE: "stroke:#3b82f6;stroke-width:2px;opacity:1;",
-  DIM_STYLE: "stroke:#b1b1b7;stroke-width:1px;opacity:0.25;",
+  DEFAULT_STYLE:
+    "stroke:var(--graph-edge-default, #b1b1b7);stroke-width:1px;opacity:0.85;",
+  ERROR_STYLE:
+    "stroke:var(--graph-edge-error, #ef4444);stroke-width:1.5px;opacity:0.9;",
+  HIGHLIGHT_STYLE:
+    "stroke:var(--graph-edge-highlight, #3b82f6);stroke-width:2px;opacity:1;",
+  DIM_STYLE:
+    "stroke:var(--graph-edge-default, #b1b1b7);stroke-width:1px;opacity:0.25;",
   DEFAULT_OFFSET: 8,
   MIN_OFFSET: 4,
   MAX_OFFSET: 18,
@@ -138,10 +142,14 @@ export const CACHE_KEY_PATTERN = /^rill[.:]resource[-.]?[Gg]raph(\.v\d+)?$/;
  * Helper to log debug messages when debug mode is enabled.
  * Enable via: window.__DEBUG_RESOURCE_GRAPH = true
  */
-export function debugLog(category: string, message: string, data?: any): void {
+export function debugLog(
+  category: string,
+  message: string,
+  data?: unknown,
+): void {
   if (
     typeof window === "undefined" ||
-    !(window as any).__DEBUG_RESOURCE_GRAPH
+    !(window as Record<string, unknown>).__DEBUG_RESOURCE_GRAPH
   ) {
     return;
   }

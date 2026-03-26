@@ -2,14 +2,16 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
-  import {
-    parseGraphUrlParams,
-    tokenForKind,
-    tokenForSeedString,
-  } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
   import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
   import { setGraphNavigation } from "@rilldata/web-common/features/resource-graph/shared/graph-navigation-context";
   import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
+  import {
+    deriveGraphState,
+    readIsolatedPreference,
+    writeIsolatedPreference,
+    buildGroupChangeParams,
+    STATUS_FILTER_OPTIONS,
+  } from "@rilldata/web-common/features/resource-graph/shared/graph-page-utils";
   import {
     createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
@@ -22,22 +24,11 @@
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  const ISOLATED_STORAGE_KEY = "rill:graph:showIsolated";
-  let showIsolatedResources = (() => {
-    try {
-      return localStorage.getItem(ISOLATED_STORAGE_KEY) === "true";
-    } catch {
-      return false;
-    }
-  })();
+  let showIsolatedResources = readIsolatedPreference();
 
   function handleIsolatedChange(value: boolean) {
     showIsolatedResources = value;
-    try {
-      localStorage.setItem(ISOLATED_STORAGE_KEY, String(value));
-    } catch {
-      // ignore
-    }
+    writeIsolatedPreference(value);
   }
 
   setGraphNavigation({
@@ -63,35 +54,12 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  // Parse URL parameters
-  $: urlParams = parseGraphUrlParams($page.url);
-  $: derivedKindFromResource =
-    urlParams.resources.length > 0
-      ? tokenForSeedString(urlParams.resources[0])
-      : null;
-  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "dashboards";
-  $: seeds = urlParams.kind
-    ? [urlParams.kind]
-    : urlParams.resources.length > 0
-      ? urlParams.resources
-      : [activeKind];
-
-  // Sidebar selection from URL ?resource= param.
-  // Only use controlled mode when the URL explicitly names a resource;
-  // otherwise let the sidebar auto-select internally without touching the URL.
-  $: hasResourceParam = urlParams.resources.length > 0;
-  $: selectedGroupId = hasResourceParam ? urlParams.resources[0] : null;
+  $: graphState = deriveGraphState($page.url);
+  $: ({ activeKind, seeds, selectedGroupId } = graphState);
 
   function handleSelectedGroupChange(groupId: string | null) {
     if (!groupId) return;
-    const name = groupId.includes(":") ? groupId.split(":").pop() : groupId;
-    const kindPart = groupId.includes(":")
-      ? groupId.split(":").slice(0, -1).join(":")
-      : null;
-    const derivedKind = kindPart ? tokenForKind(kindPart) : null;
-    const params = new URLSearchParams();
-    params.set("kind", derivedKind ?? activeKind);
-    if (name) params.set("resource", name);
+    const params = buildGroupChangeParams(groupId, activeKind);
     goto(`/graph?${params.toString()}`, {
       replaceState: true,
       noScroll: true,
@@ -102,13 +70,6 @@
   $: selectedStatuses = (
     $page.url.searchParams.get("status")?.split(",") ?? []
   ).filter(Boolean) as ResourceStatusFilterValue[];
-
-  const statusOptions: { label: string; value: ResourceStatusFilterValue }[] = [
-    { label: "OK", value: "ok" },
-    { label: "Pending", value: "pending" },
-    { label: "Warning", value: "warning" },
-    { label: "Errored", value: "errored" },
-  ];
 
   function toggleStatus(value: ResourceStatusFilterValue) {
     const next = selectedStatuses.includes(value)
@@ -123,13 +84,11 @@
     goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
-  // True when the URL has any explicit filter params
   $: hasUrlFilters =
-    !!urlParams.kind ||
-    urlParams.resources.length > 0 ||
+    !!graphState.urlParams.kind ||
+    graphState.urlParams.resources.length > 0 ||
     selectedStatuses.length > 0;
 
-  // Clear all filters
   function handleClearFilters() {
     const url = new URL($page.url);
     url.searchParams.delete("status");
@@ -138,7 +97,6 @@
     goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
-  // Refresh all
   let isConfirmDialogOpen = false;
 
   function handleRefreshAll() {
@@ -178,7 +136,7 @@
     {selectedGroupId}
     onSelectedGroupChange={handleSelectedGroupChange}
     onRefreshAll={handleRefreshAll}
-    statusFilterOptions={statusOptions}
+    statusFilterOptions={STATUS_FILTER_OPTIONS}
     onStatusToggle={toggleStatus}
     onClearFilters={handleClearFilters}
     onSelectAll={() => goto("/graph")}
