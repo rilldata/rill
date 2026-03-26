@@ -307,6 +307,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
 
   return (value: number | string | T) => {
     const coerced = coerceToNumber(value);
-    return typeof coerced === "number" ? humanizer(coerced, formatPreset) : (value as T);
+    return typeof coerced === "number"
+      ? humanizer(coerced, formatPreset)
+      : (value as T);
   };
 }
