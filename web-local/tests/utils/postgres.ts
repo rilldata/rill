@@ -2,6 +2,7 @@ import path from "path";
 import { GenericContainer, type StartedTestContainer } from "testcontainers";
 import { fileURLToPath } from "url";
 import { Client } from "pg";
+import { expect } from "@playwright/test";
 
 export class PostgresTestContainer {
   private httpPort = 5432;
@@ -56,7 +57,20 @@ export class PostgresTestContainer {
         password: this.password,
         database: "postgres",
       });
-      await this.client.connect();
+      // Wait for postgres server to be ready.
+      await expect
+        .poll(
+          async () => {
+            try {
+              await this.client.connect();
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { timeout: 10_000 },
+        )
+        .toBeTruthy();
     }
     return this.client;
   }

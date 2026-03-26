@@ -8,7 +8,6 @@ import {
 import { TestDataPath, createSourceV2 } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
-import { createExploreFromSource } from "./utils/exploreHelpers.ts";
 
 test.describe("sources", () => {
   test.use({ project: "Blank" });

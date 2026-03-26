@@ -270,7 +270,10 @@ async function runCreateMetricsViewStep(
   let table = "";
   let database = "";
   let databaseSchema = "";
-  if (importToConfig.modelPath) {
+  if (
+    step.config.importSteps.includes(ImportDataStep.CreateModel) &&
+    importToConfig.modelPath
+  ) {
     // Get the model and use it's sink table/connector
     const modelFileArtifact = fileArtifacts.getFileArtifact(
       importToConfig.modelPath,

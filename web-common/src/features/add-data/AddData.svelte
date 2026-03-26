@@ -38,7 +38,7 @@
   $: connector = (stepState as any).connector as string | undefined;
 
   $: isImportStep = stepState.step === AddDataStep.Import;
-  $: sizeClass = isImportStep ? "h-fit w-[500px]" : "h-[630px] w-[900px]";
+  $: sizeClass = isImportStep ? "h-fit w-[550px]" : "h-[630px] w-[900px]";
   $: shouldShowHeader =
     stepState.step === AddDataStep.CreateConnector ||
     stepState.step === AddDataStep.CreateModel ||

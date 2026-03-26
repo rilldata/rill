@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 import {
   deleteFile,
@@ -16,6 +17,11 @@ test.describe("models", () => {
   test("Create and edit model", async ({ page }) => {
     // Add the AdBids source
     await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await expect
+      .poll(() => page.getByLabel("Column profile for AdBids").isVisible(), {
+        timeout: 30_000,
+      })
+      .toBeTruthy();
 
     // Create a "Hello world" model named AdBids_model.sql
     await createModel(page, "AdBids_model.sql");
