@@ -24,7 +24,6 @@ export function useAPIs(client: RuntimeClient, enabled = true) {
 
 export function useAPI(client: RuntimeClient, name: string) {
   return createRuntimeServiceGetResource(client, {
-    "name.name": name,
-    "name.kind": ResourceKind.API,
+    name: { name, kind: ResourceKind.API },
   });
 }

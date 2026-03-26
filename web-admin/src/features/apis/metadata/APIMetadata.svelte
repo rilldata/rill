@@ -6,7 +6,8 @@
   import { CANONICAL_ADMIN_API_URL } from "@rilldata/web-admin/client/http-client";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { Copy, Check } from "lucide-svelte";
+  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   export let organization: string;
   export let project: string;
@@ -29,11 +30,15 @@
   // Extract SQL from resolver properties (used by "sql" and "metrics_sql" resolvers)
   $: sql = apiSpec?.resolverProperties?.sql as string | undefined;
 
-  // Filter out "sql" from resolver properties to show the remaining ones
+  // Extract connector from resolver properties
+  $: connector = apiSpec?.resolverProperties?.connector as string | undefined;
+
+  // Filter out "sql" and "connector" from resolver properties to show the remaining ones
   $: otherResolverProperties = (() => {
     if (!apiSpec?.resolverProperties) return null;
     const props = { ...apiSpec.resolverProperties };
     delete props.sql;
+    delete props.connector;
     return Object.keys(props).length > 0 ? props : null;
   })();
 
@@ -98,7 +103,7 @@
           {#if copied}
             <Check size="14px" />
           {:else}
-            <Copy size="14px" />
+            <CopyIcon size="14px" />
           {/if}
         </button>
       </div>
@@ -119,6 +124,18 @@
           <MetadataValue>—</MetadataValue>
         {/if}
       </div>
+
+      <!-- Connector -->
+      {#if connector}
+        <div class="flex flex-col gap-y-3" aria-label="API connector">
+          <MetadataLabel>Connector</MetadataLabel>
+          <span
+            class="w-fit text-xs font-medium px-2 py-0.5 rounded-full bg-surface-secondary text-fg-secondary border border-border"
+          >
+            {connector}
+          </span>
+        </div>
+      {/if}
 
       <!-- Security rules -->
       <div class="flex flex-col gap-y-3" aria-label="API security rules">
