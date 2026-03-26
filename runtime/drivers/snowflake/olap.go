@@ -151,7 +151,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 	rtSchema := &runtimev1.StructType{}
 	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, 0, 0, true) // TODO : fix precision, scale and nullability if needed
+		t, err := databaseTypeToPB(typ, 0, true) // add scale and nullability if needed
 		if err != nil {
 			return nil, err
 		}
@@ -183,13 +183,13 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 	fields := make([]*runtimev1.StructType_Field, len(cts))
 	for i, ct := range cts {
-		precision, scale, _ := ct.DecimalSize()
+		_, scale, _ := ct.DecimalSize()
 		nullable, ok := ct.Nullable()
 		if !ok {
 			nullable = true
 		}
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), precision, scale, nullable)
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), scale, nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -203,8 +203,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-func databaseTypeToPB(dbt string, precision, scale int64, nullable bool) (*runtimev1.Type, error) {
-	_ = precision
+func databaseTypeToPB(dbt string, scale int64, nullable bool) (*runtimev1.Type, error) {
 	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "NUMBER", "DECIMAL", "NUMERIC":

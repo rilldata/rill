@@ -26,6 +26,10 @@ var (
 	DefaultQuerySchemaTimeout = 30 * time.Second
 
 	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
+
+	// snowflakeSpecialCharsRegex matches any character that requires quoting in Snowflake identifiers.
+	// NOTE: it does not handle cases when identifier is a reserved keyword
+	snowflakeSpecialCharsRegex = regexp.MustCompile(`[^A-Za-z0-9_]|^\d`)
 )
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
@@ -263,10 +267,14 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 		// Replace any backticks inside the identifier with double backticks.
 		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 	case DialectSnowflake:
-		if strings.Contains(ident, `"`) {
+		// Snowflake stores unquoted identifiers as uppercase. They must always be queried using the exact same casing if quoting.
+		// If a user creates a table `CREAT TABLE test` then it can not be queried using `SELECT * FROM "test"`
+		// It must be queried as `SELECT * FROM "TEST"` or `SELECT * FROM test`.
+		// So only quote identifiers if necessary and not otherwise.
+		if snowflakeSpecialCharsRegex.MatchString(ident) {
 			return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
 		}
-		return ident // Snowflake treats unquoted identifiers as case-insensitive and converts them to uppercase, so we only quote if there are special characters.
+		return ident
 	default:
 		// Most other dialects follow ANSI SQL: use double quotes.
 		// Replace any internal double quotes with escaped double quotes.
@@ -275,8 +283,8 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 }
 
 func (d Dialect) EscapeAlias(alias string) string {
-	// In most dialects, aliases follow the same escaping rules as identifiers
-	// except in snowflake where identifiers if quoted must be uppercase (or should be same as how there were created)
+	// Snowflake converts non quoted aliases to uppercase while storing and querying.
+	// The query `SELECT count(*) AS cnt ...` then returns CNT as the column name breaking clients expecting cnt so we always quote aliases.
 	if d == DialectSnowflake {
 		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(alias, `"`, `""`)) // nolint:gocritic
 	}
@@ -383,7 +391,6 @@ func (d Dialect) EscapeMember(tbl, name string) string {
 }
 
 // EscapeMemberAlias is like EscapeMember but uses EscapeAlias for the column name.
-// Use this when referencing a column produced by a subquery, where the column was aliased using EscapeAlias.
 func (d Dialect) EscapeMemberAlias(tbl, alias string) string {
 	if tbl == "" {
 		return d.EscapeAlias(alias)
@@ -558,7 +565,6 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 }
 
 // OrderByAliasExpression is like OrderByExpression but uses EscapeAlias for the name.
-// Use this when the ORDER BY field references a SELECT alias rather than a raw column name.
 func (d Dialect) OrderByAliasExpression(name string, desc bool) string {
 	res := d.EscapeAlias(name)
 	if desc {
