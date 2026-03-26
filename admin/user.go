@@ -314,9 +314,14 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	)
 
 	// Sync new user to HubSpot (non-blocking)
-	s.HubSpot.UpsertContact(user.Email, map[string]string{
+	hsProps := map[string]string{
 		"firstname": user.DisplayName,
-	})
+	}
+	if len(addedToOrgNames) > 0 {
+		hsProps["company"] = strings.Join(addedToOrgNames, ", ")
+		hsProps["rill_org"] = strings.Join(addedToOrgNames, ", ")
+	}
+	s.HubSpot.UpsertContact(user.Email, hsProps)
 
 	return user, nil
 }
@@ -374,7 +379,8 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 
 	// Sync org creation to HubSpot (non-blocking)
 	s.HubSpot.UpsertContact(email, map[string]string{
-		"company": orgName,
+		"company":  orgName,
+		"rill_org": orgName,
 	})
 
 	// raise never subscribed billing issue in sync to prevent race condition where first project is deployed before issue is raised and thus start trial job not submitted

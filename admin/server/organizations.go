@@ -518,6 +518,12 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Sync org membership to HubSpot (non-blocking)
+	s.admin.HubSpot.UpsertContact(req.Email, map[string]string{
+		"rill_org": org.Name,
+		"company":  org.Name,
+	})
+
 	return &adminv1.AddOrganizationMemberUserResponse{
 		PendingSignup: false,
 	}, nil
