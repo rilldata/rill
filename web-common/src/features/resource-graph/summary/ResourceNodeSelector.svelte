@@ -168,15 +168,7 @@
   .node-selector {
     @apply flex items-center;
   }
-
-  .selector-trigger {
-    @apply flex items-center gap-x-1.5 text-xs font-medium text-fg-secondary px-2 py-1 rounded transition-colors cursor-pointer;
-  }
-
-  .selector-trigger:hover {
-    @apply text-fg-primary bg-surface-hover;
-  }
-
+  
   .trigger-label {
     @apply truncate max-w-[200px];
   }

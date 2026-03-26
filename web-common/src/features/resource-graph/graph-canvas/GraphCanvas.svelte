@@ -322,10 +322,32 @@
                 .map((e) => e.id || `${e.source}->${e.target}`)
                 .sort()
                 .join(",");
-        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
+        // Include reconcile status so SvelteFlow remounts after resource state transitions;
+        // without this, edges can vanish because SvelteFlow misses store-only updates.
+        const reconcileSig = (resources ?? [])
+          .map(
+            (r) =>
+              `${r.meta?.name?.name ?? ""}:${r.meta?.reconcileStatus ?? ""}`,
+          )
+          .sort()
+          .join(",");
+        flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|r:${reconcileSig}|c:${containerKey}`;
       } catch {
         flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
       }
+    // Debug: log refs to diagnose edge disappearance during refresh
+    if (import.meta.env.DEV) {
+      console.log("ResourceGraph debug", {
+        flowId,
+        edgeCount: filteredEdges.length,
+        nodeCount: nodesWithRoots.length,
+        refs: (resources ?? []).map((r) => ({
+          name: r.meta?.name?.name,
+          refs: r.meta?.refs,
+          reconcileStatus: r.meta?.reconcileStatus,
+        })),
+      });
+    }
     } catch (err) {
       console.error("Failed to build resource graph:", err);
       graphError =

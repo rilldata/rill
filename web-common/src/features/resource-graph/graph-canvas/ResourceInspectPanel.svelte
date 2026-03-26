@@ -23,9 +23,7 @@
   import { goto } from "$app/navigation";
   import { getGraphNavigation } from "../shared/graph-navigation-context";
   import { tokenForKind } from "../navigation/seed-parser";
-  import {
-    displayResourceKind,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import {
     createRuntimeServiceCreateTriggerMutation,
@@ -269,7 +267,10 @@
 </script>
 
 {#if data}
-  <div class="inspect-panel" style="top: {panelTop}px; left: {panelLeft}px; width: {panelWidth}px;">
+  <div
+    class="inspect-panel"
+    style="top: {panelTop}px; left: {panelLeft}px; width: {panelWidth}px;"
+  >
     <!-- Header -->
     <div class="panel-header">
       <div class="flex items-center gap-x-2">
@@ -312,10 +313,18 @@
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {/if}
-        <button class="header-action-btn" onclick={viewNodeTree} title="View Lineage">
+        <button
+          class="header-action-btn"
+          onclick={viewNodeTree}
+          title="View Lineage"
+        >
           <GitBranch size="14px" />
         </button>
-        <button class="header-action-btn" onclick={handleViewSpec} title="Describe">
+        <button
+          class="header-action-btn"
+          onclick={handleViewSpec}
+          title="Describe"
+        >
           <Info size="14px" />
         </button>
         <button class="close-btn" onclick={closeInspect} aria-label="Close">
@@ -330,7 +339,11 @@
         <div class="error-banner">
           <CancelCircle size="14px" className="text-destructive flex-none" />
           <pre class="error-message">{reconcileError}</pre>
-          <button class="copy-error-btn" onclick={handleCopyError} title="Copy error">
+          <button
+            class="copy-error-btn"
+            onclick={handleCopyError}
+            title="Copy error"
+          >
             {#if copiedError}
               <Check size="12px" class="text-green-500" />
             {:else}
@@ -342,7 +355,11 @@
         <div class="warning-banner">
           <CancelCircle size="14px" className="text-destructive flex-none" />
           <pre class="error-message">{reconcileError}</pre>
-          <button class="copy-error-btn" onclick={handleCopyError} title="Copy error">
+          <button
+            class="copy-error-btn"
+            onclick={handleCopyError}
+            title="Copy error"
+          >
             {#if copiedError}
               <Check size="12px" class="text-green-500" />
             {:else}
@@ -376,7 +393,9 @@
           {/if}
           {#if hasSchedule}
             <span class="detail-label">Schedule</span>
-            <span class="detail-value">{metadata?.scheduleDescription ?? "Enabled"}</span>
+            <span class="detail-value"
+              >{metadata?.scheduleDescription ?? "Enabled"}</span
+            >
           {/if}
           {#if metadata?.lastRefreshedOn}
             <span class="detail-label">Last refreshed</span>
@@ -474,7 +493,6 @@
           {/if}
         </div>
       {/if}
-
     </div>
 
     <!-- File link (dev only) -->
@@ -608,7 +626,6 @@
   .panel-actions {
     @apply flex flex-wrap gap-1 px-3 py-2 border-t;
   }
-
 
   .spec-container {
     @apply overflow-auto flex-1 min-h-0;
