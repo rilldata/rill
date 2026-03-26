@@ -202,7 +202,7 @@ export class FileAndResourceWatcher {
               queryKey: getRuntimeServiceIssueDevJWTQueryKey(this.instanceId),
             });
 
-            await invalidate("init");
+            await invalidate("app:init");
 
             eventBus.emit("rill-yaml-updated");
           }
@@ -219,7 +219,7 @@ export class FileAndResourceWatcher {
           this.seenFiles.delete(res.path);
 
           if (res.path === "/rill.yaml") {
-            await invalidate("init");
+            await invalidate("app:init");
           }
 
           break;
