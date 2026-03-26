@@ -1,10 +1,15 @@
 <script lang="ts">
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
+  import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
+  import {
+    useExploreWithPolling,
+    isExploreReconcilingForFirstTime,
+    isExploreErrored,
+  } from "@rilldata/web-common/features/explores/selectors";
   import { derived } from "svelte/store";
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
-  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { errorStore } from "../../components/errors/error-store";
   import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
@@ -17,18 +22,11 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: explore = createRuntimeServiceGetExplore(runtimeClient, {
-    name: exploreName,
-  });
-  $: ({ isSuccess, isError, error, data } = $explore);
-  $: isExploreNotFound = isError && isNotFoundError(error);
+  $: explore = useExploreWithPolling(runtimeClient, exploreName);
+  $: isExploreNotFound =
+    !$explore.data && $explore.isError && isNotFoundError($explore.error);
 
-  // We check for explore.state.validSpec instead of meta.reconcileError. validSpec persists
-  // from previous valid explores, allowing display even when the current explore spec is invalid
-  // and a meta.reconcileError exists.
-  $: isExploreErrored = !data?.explore?.explore?.state?.validSpec;
-
-  $: metricsViewName = data?.metricsView?.meta?.name?.name;
+  $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
 
   const embedThemeStore = getEmbedThemeStoreInstance();
   const embedResolvedTheme = derived([embedThemeStore], () =>
@@ -45,10 +43,12 @@
   }
 </script>
 
-{#if isSuccess}
-  {#if isExploreErrored}
+{#if $explore.isSuccess}
+  {#if isExploreReconcilingForFirstTime($explore.data)}
+    <DashboardBuilding />
+  {:else if isExploreErrored($explore.data)}
     <br /> Explore Error <br />
-  {:else if data}
+  {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>
         <DashboardStateManager
