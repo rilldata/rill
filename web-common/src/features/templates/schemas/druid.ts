@@ -5,6 +5,7 @@ export const druidSchema: MultiStepFormSchema = {
   type: "object",
   title: "Apache Druid",
   "x-category": "olap",
+  "x-form-width": "wide",
   properties: {
     connection_mode: {
       type: "string",
@@ -62,6 +63,32 @@ export const druidSchema: MultiStepFormSchema = {
       title: "SSL",
       description: "Use SSL for the connection",
       default: true,
+    },
+    max_open_conns: {
+      type: "number",
+      title: "Max open connections",
+      description:
+        "Maximum number of open database connections (0 for default)",
+      "x-placeholder": "20",
+      "x-advanced": true,
+    },
+    skip_version_check: {
+      type: "boolean",
+      title: "Skip version check",
+      description: "Skip the Druid version compatibility check",
+      "x-advanced": true,
+    },
+    skip_query_priority: {
+      type: "boolean",
+      title: "Skip query priority",
+      description: "Skip passing query priority to Druid",
+      "x-advanced": true,
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
     },
   },
   required: [],

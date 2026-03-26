@@ -7,7 +7,7 @@ dns.setDefaultResultOrder("verbatim");
 
 const config = defineConfig({
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       // This ensures that the web-admin package is not bundled into the web-local package.
       // This is necessary because the Scheduled Reports dialog lives in `web-common` and imports the admin-client.
       external: (id) => id.startsWith("@rilldata/web-admin/"),
@@ -35,7 +35,6 @@ const config = defineConfig({
   optimizeDeps: {
     include: [
       "@tanstack/svelte-query",
-      "@tanstack/svelte-table",
       "@codemirror/view",
       "@codemirror/state",
       "@codemirror/language",
@@ -43,8 +42,8 @@ const config = defineConfig({
       "d3-format",
       "d3-array",
       "luxon",
-      "bits-ui",
       "vega-lite",
+      "memoize-weak",
     ],
   },
   plugins: [sveltekit()],

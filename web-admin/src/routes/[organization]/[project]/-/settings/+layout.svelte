@@ -3,7 +3,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import Callout from "@rilldata/web-common/components/callout/Callout.svelte";
 

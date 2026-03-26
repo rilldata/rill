@@ -22,14 +22,10 @@
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
   import { posthogIdentify } from "@rilldata/web-common/lib/analytics/posthog";
-  import {
-    createAdminServiceGetCurrentUser,
-    type V1ProjectPermissions,
-  } from "../../client";
+  import { createAdminServiceGetCurrentUser } from "../../client";
+  import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
-
-  export let projectPermissions: V1ProjectPermissions | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -58,7 +54,9 @@
     };
   });
 
-  // Keep src in sync if the user query resolves or changes after mount
+  // Keep src in sync if the user query resolves or changes after mount.
+  // sharedImg is module-level (shared singleton); reactivity is driven by $user.data.
+  // svelte-ignore reactive_declaration_module_script_dependency
   $: if (
     sharedImg &&
     $user.data?.user?.photoUrl &&
@@ -84,33 +82,38 @@
 
 <DropdownMenu.Root bind:open={primaryMenuOpen}>
   <DropdownMenu.Trigger class="flex-none">
-    <div bind:this={imgContainer} class="h-7 w-7" />
+    <div bind:this={imgContainer} class="h-7 w-7"></div>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
-    {#if params.organization && params.project && projectPermissions}
-      {#if projectPermissions.manageProject}
-        <DropdownMenu.Sub bind:open={subMenuOpen}>
-          <DropdownMenu.SubTrigger
-            on:click={() => {
-              subMenuOpen = !subMenuOpen;
-            }}
-          >
-            View as
-          </DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent
-            class="flex flex-col min-w-[150px] max-w-[300px]"
-          >
-            <ViewAsUserPopover
-              organization={params.organization}
-              project={params.project}
-              onSelectUser={() => {
-                subMenuOpen = false;
-                primaryMenuOpen = false;
+    {#if params.organization && params.project}
+      <ProjectAccessControls
+        organization={params.organization}
+        project={params.project}
+      >
+        <svelte:fragment slot="manage-project">
+          <DropdownMenu.Sub bind:open={subMenuOpen}>
+            <DropdownMenu.SubTrigger
+              onclick={() => {
+                subMenuOpen = !subMenuOpen;
               }}
-            />
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
-      {/if}
+            >
+              View as
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent
+              class="flex flex-col min-w-[150px] max-w-[300px]"
+            >
+              <ViewAsUserPopover
+                organization={params.organization}
+                project={params.project}
+                onSelectUser={() => {
+                  subMenuOpen = false;
+                  primaryMenuOpen = false;
+                }}
+              />
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+        </svelte:fragment>
+      </ProjectAccessControls>
       {#if params.dashboard}
         <DropdownMenu.Item
           href={`/${params.organization}/${params.project}/-/alerts`}
@@ -142,9 +145,9 @@
     >
       Join us on Discord
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={handlePylon}>
+    <DropdownMenu.Item onclick={handlePylon}>
       Contact Rill support
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={redirectToLogout}>Logout</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={redirectToLogout}>Logout</DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

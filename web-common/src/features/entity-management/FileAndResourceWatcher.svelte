@@ -58,13 +58,13 @@
 </script>
 
 <svelte:window
-  on:visibilitychange={handleVisibilityChange}
-  on:blur={() => {
+  onvisibilitychange={handleVisibilityChange}
+  onblur={() => {
     if (!keepAlive) scheduleAutoClose();
   }}
-  on:click={heartbeat}
-  on:keydown={heartbeat}
-  on:focus={heartbeat}
+  onclick={heartbeat}
+  onkeydown={heartbeat}
+  onfocus={heartbeat}
 />
 
 {#if status === ConnectionStatus.CLOSED}

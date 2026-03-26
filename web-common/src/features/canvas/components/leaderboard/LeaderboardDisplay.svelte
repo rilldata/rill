@@ -160,7 +160,7 @@
     class="h-fit p-0 grow relative"
     class:!p-0={visibleDimensions.length === 1}
   >
-    <span class="border-overlay" />
+    <span class="border-overlay"></span>
     <div
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +

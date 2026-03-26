@@ -26,6 +26,8 @@
   import Dashboard from "../dashboards/workspace/Dashboard.svelte";
 
   export let fileArtifact: FileArtifact;
+  export let hideCodeToggle = false;
+  export let inPreviewMode = false;
 
   const runtimeClient = useRuntimeClient();
 
@@ -100,15 +102,19 @@
         slot="header"
         titleInput={fileName}
         {filePath}
-        codeToggle
+        codeToggle={!hideCodeToggle}
         resourceKind={ResourceKind.Explore}
       >
         <div class="flex gap-x-2" slot="cta">
-          <PreviewButton
-            href={workspaceRoute(`/explore/${exploreName}`)}
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
+          {#if !inPreviewMode}
+            <PreviewButton
+              href={workspaceRoute(`/explore/${exploreName}`)}
+              disabled={!!parseError ||
+                !!reconcileError ||
+                resourceIsReconciling}
+              reconciling={resourceIsReconciling}
+            />
+          {/if}
         </div>
       </WorkspaceHeader>
 
