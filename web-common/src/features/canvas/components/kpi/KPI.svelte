@@ -252,11 +252,10 @@
 
                 {#if comparisonOptions?.includes("delta")}
                   <span
-                    class="comparison-value"
+                    class="comparison-value {comparisonDeltaColorClass}"
                     class:ui-copy-disabled-faint={computedValues.delta === null}
                     class:italic={computedValues.delta === null}
                     class:text-sm={computedValues.delta === null}
-                  class={comparisonDeltaColorClass}
                     role="button"
                     tabindex="0"
                     onmouseover={() => handleHoverOrFocus("delta")}
@@ -265,9 +264,9 @@
                     onblur={handleLeaveOrBlur}
                   >
                     {#if computedValues.delta != null}
-                    <span class={comparisonDeltaColorClass}
-                      >{getFormattedDiff(computedValues.delta)}</span
-                    >
+                      <span class={comparisonDeltaColorClass}
+                        >{getFormattedDiff(computedValues.delta)}</span
+                      >
                     {:else}
                       no change
                     {/if}
