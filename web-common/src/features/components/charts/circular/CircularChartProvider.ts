@@ -235,7 +235,7 @@ export class CircularChartProvider {
           },
         );
 
-        if (showTotal && config.measure?.field) {
+        if (needsTotal && config.measure?.field) {
           this.totalsValue = $totalQuery?.data?.data?.[0]?.[
             config.measure?.field
           ] as number;
