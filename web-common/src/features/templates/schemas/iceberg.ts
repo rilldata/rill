@@ -124,16 +124,54 @@ export const icebergSchema: MultiStepFormSchema = {
       title: "Allow moved paths",
       description:
         "Allow reading tables where data files have been moved from their original location",
-      default: true,
+      default: false,
       "x-step": "source",
+      "x-advanced": true,
+    },
+    metadata_compression_codec: {
+      type: "string",
+      title: "Metadata compression codec",
+      description:
+        "Compression codec for metadata files (e.g. 'gzip'). Leave empty for uncompressed.",
+      "x-placeholder": "gzip",
+      "x-step": "source",
+      "x-advanced": true,
     },
     version: {
       type: "string",
-      title: "Snapshot version",
+      title: "Version",
       description:
-        "Specific Iceberg snapshot version to read (leave empty for latest)",
-      "x-placeholder": "1",
+        "Explicit version string, hint file, or guessing pattern (leave empty for latest)",
+      "x-placeholder": "2",
       "x-step": "source",
+      "x-advanced": true,
+    },
+    version_name_format: {
+      type: "string",
+      title: "Version name format",
+      description:
+        "Controls how versions are converted to metadata file names (uses printf-style %s placeholders)",
+      "x-placeholder": "v%s%s.metadata.json,%s%s.metadata.json",
+      "x-step": "source",
+      "x-advanced": true,
+    },
+    snapshot_from_id: {
+      type: "string",
+      title: "Snapshot ID",
+      description:
+        "Access a specific snapshot by its ID (leave empty for latest)",
+      "x-placeholder": "3776207205136740581",
+      "x-step": "source",
+      "x-advanced": true,
+    },
+    snapshot_from_timestamp: {
+      type: "string",
+      title: "Snapshot timestamp",
+      description:
+        "Access the snapshot at a specific timestamp (leave empty for latest)",
+      "x-placeholder": "2023-01-01 00:00:00",
+      "x-step": "source",
+      "x-advanced": true,
     },
     name: {
       type: "string",

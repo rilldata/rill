@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import {
     COLUMN_PROFILE_CONFIG,
     LIST_SLIDE_DURATION,
   } from "@rilldata/web-common/layout/config";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { slide } from "svelte/transition";
 
   export let active = false;
   export let emphasize = false;
@@ -44,7 +44,7 @@
         justify-between w-full"
     class:text-fg-muted={isFetching}
     class:bg-surface-background={active}
-    on:click={modified({
+    onclick={modified({
       shift: onShiftClick,
       click: onSelect,
     })}

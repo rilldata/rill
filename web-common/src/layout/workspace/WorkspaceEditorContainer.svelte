@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import { slide } from "svelte/transition";
 
   export let error: string | undefined = undefined;
   export let showError = true;

@@ -7,7 +7,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { flexRender } from "@tanstack/svelte-table";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards } from "./selectors";
 
@@ -64,7 +64,7 @@
           ? resource.explore?.state?.dataRefreshedOn
           : resource.canvas?.state?.dataRefreshedOn;
 
-        return flexRender(DashboardsTableCompositeCell, {
+        return renderComponent(DashboardsTableCompositeCell, {
           name,
           title,
           lastRefreshed: refreshedOn,
@@ -72,6 +72,8 @@
           error: resource.meta.reconcileError,
           isMetricsExplorer,
           isEmbedded,
+          organization,
+          project,
         });
       },
     },

@@ -68,7 +68,7 @@
   <button
     class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
     class:open={expanded}
-    on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
+    onclick={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
       className="transform transition-transform text-fg-secondary {expanded

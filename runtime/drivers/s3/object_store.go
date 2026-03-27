@@ -29,7 +29,7 @@ func (c *Connection) ListBuckets(ctx context.Context, pageSize uint32, pageToken
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
-	client, err := getS3Client(ctx, c.config, "")
+	client, err := getS3Client(ctx, c.config, "", c.logger)
 	if err != nil {
 		return nil, "", err
 	}
@@ -121,13 +121,13 @@ func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bo
 	var s3client *s3.Client
 	var err error
 	if anonymous {
-		s3client, err = getAnonymousS3Client(ctx, c.config, bucket)
+		s3client, err = getAnonymousS3Client(ctx, c.config, bucket, c.logger)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		var err error
-		s3client, err = getS3Client(ctx, c.config, bucket)
+		s3client, err = getS3Client(ctx, c.config, bucket, c.logger)
 		if err != nil {
 			return nil, err
 		}

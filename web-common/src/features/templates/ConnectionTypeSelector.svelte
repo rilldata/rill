@@ -121,8 +121,9 @@
   {/if}
 
   <SelectPrimitive.Root
-    selected={{ value }}
-    onSelectedChange={(s) => handleChange(s?.value)}
+    type="single"
+    {value}
+    onValueChange={(val) => handleChange(val)}
   >
     <SelectPrimitive.Trigger
       class="flex h-auto w-full items-center justify-between rounded-[2px] border bg-transparent px-2 py-1.5 text-sm ring-offset-background focus:outline-none focus:border-primary-400"

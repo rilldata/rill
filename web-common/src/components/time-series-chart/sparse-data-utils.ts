@@ -15,9 +15,6 @@
  *    Secondary series have no area fill, so they rely on the line
  *    generator's `defined` callback and only use `scrub-clip`.
  *
- * 3. Singletons: When `connectNulls` is off, isolated points (no adjacent
- *    non-null neighbors) are drawn as circles since there's no line
- *    segment to render.
  */
 
 /**
