@@ -145,6 +145,7 @@ interface NominalFieldConfig {
   sort?: ChartSortDirection;
   limit?: number;
   showNull?: boolean;
+  showOther?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;

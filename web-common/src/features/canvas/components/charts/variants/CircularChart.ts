@@ -140,6 +140,7 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
         field: randomDimension,
         limit: DEFAULT_COLOR_LIMIT,
         sort: DEFAULT_SORT,
+        showOther: true,
       },
       measure: {
         type: "quantitative",

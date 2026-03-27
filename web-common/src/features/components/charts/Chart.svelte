@@ -28,7 +28,14 @@
     compileToBrushedVegaSpec,
     createAdaptiveScrubHandler,
   } from "./brush-builder";
-  import type { ChartDataResult, ChartType } from "./types";
+  import {
+    computeVisibleSlices,
+    OTHER_LABEL,
+    type OtherGroupingResult,
+  } from "./circular/other-grouping";
+  import { createPieTooltipFormatter } from "./circular/pie-tooltip-formatter";
+  import type { VLTooltipFormatter } from "@rilldata/web-common/components/vega/types";
+  import type { ColorMapping, ChartDataResult, ChartType } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
 
   export let chartType: ChartType;
@@ -78,7 +85,27 @@
       }
     : $chartData;
 
-  $: spec = generateSpec(chartType, chartSpec, chartDataWithTheme);
+  // For pie/donut charts: apply "Other" grouping before spec generation
+  $: isPieOrDonut = chartType === "pie_chart" || chartType === "donut_chart";
+
+  $: otherGrouping = isPieOrDonut
+    ? applyPieGrouping(chartSpec, chartDataWithTheme.data)
+    : null;
+
+  // Inject grouped data + "Other" domain value into chartData for spec generation
+  $: chartDataForSpec = otherGrouping
+    ? {
+        ...chartDataWithTheme,
+        data: otherGrouping.visibleData,
+        domainValues: injectOtherIntoDomain(
+          chartDataWithTheme.domainValues,
+          chartSpec,
+          otherGrouping,
+        ),
+      }
+    : chartDataWithTheme;
+
+  $: spec = generateSpec(chartType, chartSpec, chartDataForSpec);
 
   // Compile VL spec to Vega spec when brush is enabled.
   // Memoize with deep equality to avoid recompilation on store re-emissions
@@ -136,6 +163,17 @@
     isThemeModeDark,
   );
 
+  $: pieTooltipFormatter =
+    isPieOrDonut && otherGrouping
+      ? buildPieTooltipFormatter(
+          chartSpec,
+          otherGrouping,
+          colorMapping,
+          measureFormatters,
+          isThemeModeDark,
+        )
+      : undefined;
+
   const scrubHandler = createAdaptiveScrubHandler((interval) =>
     onBrush?.(interval),
   );
@@ -188,6 +226,90 @@
 
     return listeners;
   }
+
+  function applyPieGrouping(
+    spec: CanvasChartSpec,
+    rawData: Record<string, unknown>[],
+  ): OtherGroupingResult | null {
+    const colorField =
+      "color" in spec ? (spec.color?.field as string | undefined) : undefined;
+    const measureField =
+      "measure" in spec
+        ? (spec.measure?.field as string | undefined)
+        : undefined;
+    if (!colorField || !measureField) return null;
+
+    const showOther =
+      "color" in spec ? spec.color?.showOther !== false : true;
+    const explicitLimit =
+      "color" in spec ? spec.color?.limit : undefined;
+
+    return computeVisibleSlices(rawData, colorField, measureField, {
+      explicitLimit,
+      showOther,
+    });
+  }
+
+  function injectOtherIntoDomain(
+    domainValues: Record<string, string[] | number[] | undefined> | undefined,
+    spec: CanvasChartSpec,
+    grouping: OtherGroupingResult,
+  ): Record<string, string[] | number[] | undefined> | undefined {
+    if (!domainValues || !grouping.otherItems) return domainValues;
+    const colorField =
+      "color" in spec ? (spec.color?.field as string | undefined) : undefined;
+    if (!colorField || !domainValues[colorField]) return domainValues;
+
+    const existing = domainValues[colorField] as string[];
+    const visibleLabels = new Set(
+      grouping.visibleData
+        .filter((d) => !d.__isOther)
+        .map((d) => String(d[colorField])),
+    );
+    const filtered = existing.filter((v) => visibleLabels.has(v));
+    filtered.push(OTHER_LABEL);
+
+    return {
+      ...domainValues,
+      [colorField]: filtered,
+    };
+  }
+
+  function buildPieTooltipFormatter(
+    spec: CanvasChartSpec,
+    grouping: OtherGroupingResult,
+    colorMappingArr: ColorMapping,
+    formatters: Record<string, (value: number | null | undefined) => string>,
+    isDark: boolean,
+  ): VLTooltipFormatter | undefined {
+    const colorField =
+      "color" in spec ? (spec.color?.field as string | undefined) : undefined;
+    const measureField =
+      "measure" in spec
+        ? (spec.measure?.field as string | undefined)
+        : undefined;
+    if (!colorField || !measureField) return undefined;
+
+    const colorMap = new Map<string, string>(
+      (colorMappingArr ?? []).map((m) => [m.value, m.color]),
+    );
+
+    const measureFormatter = formatters[sanitizeFieldName(measureField)];
+    const formatValue = (v: number) =>
+      measureFormatter ? measureFormatter(v) : String(v);
+
+    const mutedColor = isDark ? "#374151" : "#e5e7eb";
+
+    return createPieTooltipFormatter({
+      colorField,
+      measureField,
+      total: grouping.total,
+      otherItems: grouping.otherItems,
+      colorMap,
+      formatValue,
+      mutedColor,
+    });
+  }
 </script>
 
 {#if isFetching || measures.length === 0}
@@ -205,7 +327,7 @@
 {:else if useBrush && vegaSpec}
   <VegaRenderer
     bind:view
-    data={{ "metrics-view": data }}
+    data={{ "metrics-view": chartDataForSpec.data }}
     {isScrubbing}
     spec={vegaSpec}
     {colorMapping}
@@ -219,7 +341,7 @@
   <VegaLiteRenderer
     bind:viewVL={view}
     canvasDashboard={isCanvas}
-    data={{ "metrics-view": data }}
+    data={{ "metrics-view": chartDataForSpec.data }}
     {themeMode}
     {spec}
     {colorMapping}
@@ -227,6 +349,7 @@
     renderer="canvas"
     {expressionFunctions}
     {hasComparison}
+    tooltipFormatter={pieTooltipFormatter}
     config={getRillTheme(isThemeModeDark, theme)}
   />
 {/if}

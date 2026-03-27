@@ -8,12 +8,12 @@ import type { ExprRef, SignalRef } from "vega-typings";
 import {
   createColorEncoding,
   createConfigWithLegend,
-  createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createOrderEncoding,
   createPositionEncoding,
   createSingleLayerBaseSpec,
 } from "../builder";
+import { OTHER_FLAG_FIELD, OTHER_LABEL } from "./other-grouping";
 import type { ChartDataResult } from "../types";
 import type { CircularChartSpec } from "./CircularChartProvider";
 
@@ -76,24 +76,51 @@ export function generateVLPieChartSpec(
   const color = createColorEncoding(config.color, data);
   const order = createOrderEncoding(config.measure);
 
-  const tooltip = createDefaultTooltipEncoding(
-    [config.color, config.measure],
-    data,
+  // Override "Other" slice color to use muted fill
+  const hasOther = data.data?.some(
+    (d) => d[OTHER_FLAG_FIELD] === true,
   );
+  if (hasOther && "scale" in color && color.scale) {
+    const scale = color.scale as {
+      domain?: unknown[];
+      range?: unknown[];
+      [key: string]: unknown;
+    };
+    const mutedColor = data.isDarkMode ? "#374151" : "#e5e7eb";
+    if (Array.isArray(scale.domain) && !scale.domain.includes(OTHER_LABEL)) {
+      scale.domain.push(OTHER_LABEL);
+    }
+    if (Array.isArray(scale.range) && !scale.range.includes(mutedColor)) {
+      scale.range.push(mutedColor);
+    }
+  }
 
-  const arcLayer: LayerSpec<Field> | UnitSpec<Field> = {
-    mark: {
-      type: "arc",
-      padAngle: 0.01,
-      innerRadius: getInnerRadius(config.innerRadius),
+  const resolvedBorderColor = data.isDarkMode ? "#374151" : "#e5e7eb";
+
+  const arcMark = {
+    type: "arc" as const,
+    padAngle: 0.01,
+    innerRadius: getInnerRadius(config.innerRadius),
+    stroke: {
+      expr: `datum.${OTHER_FLAG_FIELD} ? '${resolvedBorderColor}' : null`,
     },
-    encoding: {
-      theta,
-      color,
-      order,
-      tooltip,
+    strokeWidth: { expr: `datum.${OTHER_FLAG_FIELD} ? 1 : 0` },
+    strokeDash: {
+      expr: `datum.${OTHER_FLAG_FIELD} ? [4, 3] : [0, 0]`,
     },
   };
+
+  const arcEncoding = {
+    theta,
+    color,
+    order,
+    tooltip: { value: null },
+  };
+
+  const arcLayer: LayerSpec<Field> | UnitSpec<Field> = {
+    mark: arcMark,
+    encoding: arcEncoding,
+  } as LayerSpec<Field> | UnitSpec<Field>;
 
   if (shouldShowTotal && totalValue !== undefined) {
     const spec = createMultiLayerBaseSpec();
@@ -134,8 +161,8 @@ export function generateVLPieChartSpec(
     };
   } else {
     const spec = createSingleLayerBaseSpec("arc");
-    spec.mark = arcLayer.mark;
-    spec.encoding = arcLayer.encoding;
+    spec.mark = arcMark;
+    spec.encoding = arcEncoding;
 
     return {
       ...spec,
