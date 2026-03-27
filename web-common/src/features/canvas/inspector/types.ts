@@ -18,7 +18,6 @@ type CustomInputTypes =
   | "comparison_options"
   | "vega_spec"
   | "switcher_tab"
-  | "ai_prompt"
   | "ai_generate";
 type PositionalInputTypes = "alignment";
 

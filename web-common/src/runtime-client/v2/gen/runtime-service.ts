@@ -26,10 +26,7 @@ import {
   DeleteFileRequest,
   ForkConversationRequest,
   GenerateCanvasFileRequest,
-  GenerateChartRequest,
-  GenerateChartResponse,
   GenerateMetricsViewFileRequest,
-  GenerateRendererRequest,
   GenerateResolverRequest,
   GetAIMessageRequest,
   GetConversationRequest,
@@ -78,7 +75,6 @@ import type {
   V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
-  V1GenerateRendererResponse,
   V1GenerateResolverResponse,
   V1GetAIMessageResponse,
   V1GetConversationResponse,
@@ -2957,70 +2953,6 @@ export function createRuntimeServiceGenerateResolverMutation(
 }
 
 /**
- * Raw RPC call: RuntimeService.GenerateRenderer
- */
-export async function runtimeServiceGenerateRenderer(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GenerateRendererRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1GenerateRendererResponse> {
-  const r = await client.runtimeService.generateRenderer(
-    GenerateRendererRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GenerateRendererResponse;
-}
-
-export function getRuntimeServiceGenerateRendererMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateRendererResponse,
-      unknown,
-      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1GenerateRendererResponse,
-  unknown,
-  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceGenerateRenderer(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceGenerateRendererMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateRendererResponse,
-      unknown,
-      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1GenerateRendererResponse,
-  unknown,
-  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceGenerateRendererMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
  * Raw RPC call: RuntimeService.CreateTrigger
  */
 export async function runtimeServiceCreateTrigger(
@@ -3268,70 +3200,6 @@ export function createRuntimeServiceCompleteMutation(
   Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call: RuntimeService.GenerateChart
- */
-export async function runtimeServiceGenerateChart(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GenerateChartRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<PartialMessage<GenerateChartResponse>> {
-  const r = await client.runtimeService.generateChart(
-    GenerateChartRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as PartialMessage<GenerateChartResponse>;
-}
-
-export function getRuntimeServiceGenerateChartMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      PartialMessage<GenerateChartResponse>,
-      unknown,
-      Omit<PartialMessage<GenerateChartRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  PartialMessage<GenerateChartResponse>,
-  unknown,
-  Omit<PartialMessage<GenerateChartRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceGenerateChart(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceGenerateChartMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      PartialMessage<GenerateChartResponse>,
-      unknown,
-      Omit<PartialMessage<GenerateChartRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  PartialMessage<GenerateChartResponse>,
-  unknown,
-  Omit<PartialMessage<GenerateChartRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceGenerateChartMutationOptions(
     client,
     options,
   );

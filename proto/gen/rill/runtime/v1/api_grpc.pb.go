@@ -41,7 +41,6 @@ const (
 	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
 	RuntimeService_GenerateCanvasFile_FullMethodName      = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
 	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
-	RuntimeService_GenerateRenderer_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
 	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
 	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
 	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
@@ -61,7 +60,6 @@ const (
 	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
-	RuntimeService_GenerateChart_FullMethodName           = "/rill.runtime.v1.RuntimeService/GenerateChart"
 	RuntimeService_GetAIMessage_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetAIMessage"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
@@ -129,8 +127,6 @@ type RuntimeServiceClient interface {
 	GenerateCanvasFile(ctx context.Context, in *GenerateCanvasFileRequest, opts ...grpc.CallOption) (*GenerateCanvasFileResponse, error)
 	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
-	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-	GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -174,8 +170,6 @@ type RuntimeServiceClient interface {
 	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
 	CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error)
-	// GenerateChart generates metrics_sql queries and a Vega-Lite spec for a canvas custom chart from a natural language prompt.
-	GenerateChart(ctx context.Context, in *GenerateChartRequest, opts ...grpc.CallOption) (*GenerateChartResponse, error)
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -442,16 +436,6 @@ func (c *runtimeServiceClient) GenerateResolver(ctx context.Context, in *Generat
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateRendererResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateRenderer_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryResolverResponse)
@@ -669,16 +653,6 @@ func (c *runtimeServiceClient) CompleteStreaming(ctx context.Context, in *Comple
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RuntimeService_CompleteStreamingClient = grpc.ServerStreamingClient[CompleteStreamingResponse]
 
-func (c *runtimeServiceClient) GenerateChart(ctx context.Context, in *GenerateChartRequest, opts ...grpc.CallOption) (*GenerateChartResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateChartResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateChart_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAIMessageResponse)
@@ -852,8 +826,6 @@ type RuntimeServiceServer interface {
 	GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error)
 	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
-	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-	GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -897,8 +869,6 @@ type RuntimeServiceServer interface {
 	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
 	CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error
-	// GenerateChart generates metrics_sql queries and a Vega-Lite spec for a canvas custom chart from a natural language prompt.
-	GenerateChart(context.Context, *GenerateChartRequest) (*GenerateChartResponse, error)
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -1002,9 +972,6 @@ func (UnimplementedRuntimeServiceServer) GenerateCanvasFile(context.Context, *Ge
 func (UnimplementedRuntimeServiceServer) GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateResolver not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateRenderer not implemented")
-}
 func (UnimplementedRuntimeServiceServer) QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryResolver not implemented")
 }
@@ -1061,9 +1028,6 @@ func (UnimplementedRuntimeServiceServer) Complete(context.Context, *CompleteRequ
 }
 func (UnimplementedRuntimeServiceServer) CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method CompleteStreaming not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GenerateChart(context.Context, *GenerateChartRequest) (*GenerateChartResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateChart not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAIMessage not implemented")
@@ -1511,24 +1475,6 @@ func _RuntimeService_GenerateResolver_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_GenerateRenderer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateRendererRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateRenderer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GenerateRenderer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateRenderer(ctx, req.(*GenerateRendererRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_QueryResolver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryResolverRequest)
 	if err := dec(in); err != nil {
@@ -1850,24 +1796,6 @@ func _RuntimeService_CompleteStreaming_Handler(srv interface{}, stream grpc.Serv
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RuntimeService_CompleteStreamingServer = grpc.ServerStreamingServer[CompleteStreamingResponse]
 
-func _RuntimeService_GenerateChart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateChartRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateChart(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GenerateChart_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateChart(ctx, req.(*GenerateChartRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_GetAIMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAIMessageRequest)
 	if err := dec(in); err != nil {
@@ -2176,10 +2104,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GenerateResolver_Handler,
 		},
 		{
-			MethodName: "GenerateRenderer",
-			Handler:    _RuntimeService_GenerateRenderer_Handler,
-		},
-		{
 			MethodName: "QueryResolver",
 			Handler:    _RuntimeService_QueryResolver_Handler,
 		},
@@ -2242,10 +2166,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Complete",
 			Handler:    _RuntimeService_Complete_Handler,
-		},
-		{
-			MethodName: "GenerateChart",
-			Handler:    _RuntimeService_GenerateChart_Handler,
 		},
 		{
 			MethodName: "GetAIMessage",

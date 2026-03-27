@@ -8,24 +8,16 @@
 
   $: ({ specStore, timeAndFilterStore } = component);
 
-  $: ({ metrics_sql, vega_spec } = $specStore);
-
-  // Show the prompt UI when there's no valid spec yet
-  $: hasValidSpec =
-    Array.isArray(metrics_sql) &&
-    metrics_sql.length > 0 &&
-    metrics_sql.every((q) => q.trim().length > 0) &&
-    typeof vega_spec === "string" &&
-    vega_spec.trim().length > 0;
+  $: hasValidSpec = component.isValid($specStore);
 </script>
 
 {#if hasValidSpec}
   <CustomChartRenderer
     name={component.id}
-    spec={vega_spec}
+    spec={$specStore.vega_spec}
     whereFilter={$timeAndFilterStore?.where}
     timeRange={$timeAndFilterStore?.timeRange}
-    metricsSQL={metrics_sql}
+    metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
   />
 {:else}

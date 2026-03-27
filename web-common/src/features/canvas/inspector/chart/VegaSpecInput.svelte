@@ -3,7 +3,7 @@
   import { EditorState } from "@codemirror/state";
   import { EditorView, placeholder } from "@codemirror/view";
   import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
 
   export let value: string;
   export let onChange: (updatedSpec: string) => void;
@@ -71,8 +71,6 @@
       specEditor.destroy();
     };
   });
-
-  onDestroy(() => specEditor?.destroy());
 </script>
 
 <div>

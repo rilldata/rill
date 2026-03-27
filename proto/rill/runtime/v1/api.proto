@@ -165,14 +165,6 @@ service RuntimeService {
     };
   }
 
-  // GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-  rpc GenerateRenderer(GenerateRendererRequest) returns (GenerateRendererResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate/renderer",
-      body: "*"
-    };
-  }
-
   // QueryResolver queries a resolver with the given properties and arguments
   rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
     option (google.api.http) = {
@@ -293,14 +285,6 @@ service RuntimeService {
   rpc CompleteStreaming(CompleteStreamingRequest) returns (stream CompleteStreamingResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/ai/complete/stream",
-      body: "*"
-    };
-  }
-
-  // GenerateChart generates metrics_sql queries and a Vega-Lite spec for a canvas custom chart from a natural language prompt.
-  rpc GenerateChart(GenerateChartRequest) returns (GenerateChartResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/ai/generate-chart",
       body: "*"
     };
   }
@@ -759,18 +743,6 @@ message GenerateResolverRequest {
 message GenerateResolverResponse {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
-}
-
-message GenerateRendererRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string prompt = 2;
-  string resolver = 3;
-  google.protobuf.Struct resolver_properties = 4;
-}
-
-message GenerateRendererResponse {
-  string renderer = 1;
-  google.protobuf.Struct renderer_properties = 2;
 }
 
 message QueryResolverRequest {
@@ -1401,24 +1373,3 @@ message GitPushRequest {
 }
 
 message GitPushResponse {}
-
-// Request message for RuntimeService.GenerateChart
-message GenerateChartRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Reserved: was single metrics_view field, now loads all metrics views automatically.
-  reserved 2;
-  // Natural language description of the desired chart.
-  string prompt = 3 [(validate.rules).string.min_len = 1];
-  // Previous metrics_sql queries (for iterative refinement).
-  repeated string previous_sql = 4;
-  // Previous Vega-Lite spec JSON (for iterative refinement).
-  string previous_spec = 5;
-}
-
-// Response message for RuntimeService.GenerateChart
-message GenerateChartResponse {
-  // Generated metrics_sql queries.
-  repeated string metrics_sql = 1;
-  // Generated Vega-Lite specification as a JSON string.
-  string vega_spec = 2;
-}

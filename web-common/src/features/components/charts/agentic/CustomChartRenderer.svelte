@@ -76,10 +76,13 @@
     })),
   );
 
-  $: vegaData = $combinedResults.reduce((acc, result, idx) => {
-    acc[`query${idx + 1}`] = result.data;
-    return acc;
-  }, {});
+  $: vegaData = $combinedResults.reduce<Record<string, unknown>>(
+    (acc, result, idx) => {
+      acc[`query${idx + 1}`] = result.data;
+      return acc;
+    },
+    {},
+  );
 
   $: try {
     if (typeof spec === "string" && spec !== "") {
