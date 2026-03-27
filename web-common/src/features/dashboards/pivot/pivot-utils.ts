@@ -20,7 +20,7 @@ import type {
 import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import type { Row } from "@tanstack/svelte-table";
+import type { Row } from "tanstack-table-8-svelte-5";
 import { SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";

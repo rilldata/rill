@@ -5,7 +5,7 @@
   import DeltaPercentage from "@rilldata/web-common/components/icons/DeltaPercentage.svelte";
   import { type ComponentComparisonOptions } from "@rilldata/web-common/features/canvas/components/types";
   import type { ComponentType, SvelteComponent } from "svelte";
-  import CounterClockWiseClock from "svelte-radix/CounterClockwiseClock.svelte";
+  import { RotateCcw } from "lucide-svelte";
 
   export let key: string;
   export let label: string;
@@ -29,7 +29,7 @@
     },
     {
       id: "previous",
-      Icon: CounterClockWiseClock,
+      Icon: RotateCcw,
       tooltip: "Show previous value",
     },
   ];

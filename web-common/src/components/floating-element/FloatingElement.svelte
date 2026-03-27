@@ -7,8 +7,8 @@ display:contents. This is useful when nesting a floating element within a toolti
 - a mouse click location through "mouse". This is an {x,y} coordinate that matches where the pointer is.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
   import { fade } from "svelte/transition";
+  import { onMount } from "svelte";
   import {
     mouseLocationToBoundingRect,
     placeElement,

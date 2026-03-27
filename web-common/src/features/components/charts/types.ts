@@ -148,6 +148,8 @@ interface NominalFieldConfig {
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;
+  /** Explicit dimension values to use (skips topN query) */
+  values?: string[];
 }
 
 interface MarkFieldConfig {
@@ -170,6 +172,7 @@ interface BaseFieldConfig {
   field: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
+  axisOrient?: "top" | "bottom" | "left" | "right";
   fields?: string[]; // To support multi metric chart variants
 }
 

@@ -83,7 +83,7 @@
       >Vega-Lite config
     </a>below
   </div>
-  <div bind:this={editorContainer} class="config-editor-container" />
+  <div bind:this={editorContainer} class="config-editor-container"></div>
 
   {#if error}
     <div class="text-red-500 text-sm px-3">{error}</div>

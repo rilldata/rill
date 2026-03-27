@@ -50,11 +50,21 @@
   {/each}
 </g>
 
-<!-- Zero line -->
-<line
-  class="stroke-gray-300"
-  x1={plotLeft}
-  x2={plotLeft + plotWidth}
-  y1={yScale(0)}
-  y2={yScale(0)}
-/>
+<!-- Zero line or bottom border -->
+{#if yScale.domain()[0] <= 0 && yScale.domain()[1] >= 0}
+  <line
+    class="stroke-gray-300"
+    x1={plotLeft}
+    x2={plotLeft + plotWidth}
+    y1={yScale(0)}
+    y2={yScale(0)}
+  />
+{:else}
+  <line
+    class="stroke-gray-300"
+    x1={plotLeft}
+    x2={plotLeft + plotWidth}
+    y1={plotTop + plotHeight}
+    y2={plotTop + plotHeight}
+  />
+{/if}

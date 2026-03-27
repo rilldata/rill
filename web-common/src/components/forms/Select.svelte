@@ -34,7 +34,7 @@
   export let minWidth: number | null = null;
   export let dropdownWidth: string | null = null;
   export let disabled = false;
-  export let selectElement: HTMLButtonElement | undefined = undefined;
+  export let selectElement: HTMLButtonElement | null = null;
   export let full = false;
   export let fontSize = 12;
   export let sameWidth = false;
@@ -85,7 +85,7 @@
         <span class="text-fg-secondary">(optional)</span>
       {/if}
       {#if tooltip}
-        <Tooltip.Root portal="body">
+        <Tooltip.Root>
           <Tooltip.Trigger>
             <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
           </Tooltip.Trigger>
@@ -101,13 +101,14 @@
 
   {#key selectKey}
     <Select.Root
+      type="single"
       bind:open
       {disabled}
-      {selected}
-      onSelectedChange={(newSelection) => {
-        if (!newSelection) return;
-        value = newSelection.value;
-        onChange(newSelection.value);
+      {value}
+      onValueChange={(newValue) => {
+        if (!newValue) return;
+        value = newValue;
+        onChange(newValue);
       }}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
@@ -121,7 +122,7 @@
         {disabled}
         {lockable}
         {lockTooltip}
-        bind:el={selectElement}
+        bind:ref={selectElement}
         class="bg-input flex px-3 gap-x-2 max-w-full {HeightBySize[
           size
         ]} {width && `w-[${width}px]`} {minWidth &&
@@ -131,16 +132,18 @@
           : ''} {forcedTriggerStyle}"
         aria-label={label || ariaLabel}
       >
-        <Select.Value
-          {placeholder}
+        <span
           class="text-[{fontSize}px] {!selected
             ? 'text-fg-secondary'
-            : 'text-fg-primary'} w-full  text-left"
-        />
+            : 'text-fg-primary'} w-full text-left"
+          >{selected?.label ?? placeholder}</span
+        >
         {#if clearable && value}
           <button
             class="flex items-center justify-center size-4 rounded-full text-fg-tertiary hover:text-fg-primary hover:bg-surface-hover transition-colors shrink-0"
-            on:click|stopPropagation|preventDefault={() => {
+            onclick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
               value = "";
               onChange("");
               selectKey++;
@@ -179,7 +182,7 @@
               class="text-[{fontSize}px] gap-x-2 items-start"
             >
               {#if tooltip}
-                <Tooltip.Root portal="body">
+                <Tooltip.Root>
                   <Tooltip.Trigger class="select-tooltip cursor-default">
                     {#if icon}
                       <svelte:component this={icon} size="16px" />
@@ -208,7 +211,7 @@
             <SelectSeparator />
             <Select.Item
               value="__rill_add_option__"
-              on:click={(e) => {
+              onclick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 open = false;

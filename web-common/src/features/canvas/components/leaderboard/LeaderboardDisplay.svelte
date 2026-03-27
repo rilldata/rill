@@ -98,6 +98,13 @@
     ]),
   );
 
+  $: measureTooltipFormatters = Object.fromEntries(
+    visibleMeasures.map((m) => [
+      m.name,
+      createMeasureValueFormatter<null | undefined>(m, "tooltip"),
+    ]),
+  );
+
   // Reset column widths when the measure changes
   $: if (leaderboardMeasureNames) {
     valueColumn.reset();
@@ -160,7 +167,7 @@
     class="h-fit p-0 grow relative"
     class:!p-0={visibleDimensions.length === 1}
   >
-    <span class="border-overlay" />
+    <span class="border-overlay"></span>
     <div
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
@@ -207,6 +214,7 @@
               )}
               isBeingCompared={false}
               formatters={measureFormatters}
+              tooltipFormatters={measureTooltipFormatters}
               {toggleSort}
               toggleDimensionValueSelection={async (
                 name,
