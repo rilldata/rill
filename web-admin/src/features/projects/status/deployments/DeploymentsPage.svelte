@@ -40,7 +40,6 @@
   $: olapType = (projectData as any)?.olapConnector ?? "";
   $: isRillManaged = olapType === "" || olapType === "duckdb";
   let prodModalOpen = false;
-  let devModalOpen = false;
 
   // Billing
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
