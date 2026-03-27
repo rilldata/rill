@@ -39,7 +39,7 @@
 {#if title || description}
   <div
     bind:this={container}
-    class="component-header-container w-full h-fit flex flex-col bg-surface-card items-start {wide
+    class="component-header-container w-full h-fit flex flex-col gap-y-1 bg-surface-card pt-2 pb-1 items-start {wide
       ? 'wide'
       : ''}"
   >
@@ -105,7 +105,7 @@
 
   .title {
     font-size: 16px;
-    @apply flex-shrink-0 leading-none;
+    @apply flex-shrink-0 leading-tight;
     @apply font-semibold text-fg-primary truncate;
   }
 

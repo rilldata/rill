@@ -46,40 +46,41 @@
   $: ({ title, description, show_description_as_tooltip } = kpiGridProperties);
 </script>
 
-<ComponentHeader
-  {component}
-  {title}
-  {description}
-  showDescriptionAsTooltip={show_description_as_tooltip}
-  {filters}
-/>
+<div class="size-full flex flex-col overflow-hidden gap-y-4">
+  <ComponentHeader
+    {component}
+    {title}
+    {description}
+    showDescriptionAsTooltip={show_description_as_tooltip}
+    {filters}
+  />
 
-{#if schema.isValid}
-  <div
-    class="h-fit p-0 grow relative"
-    class:!p-0={kpis.length === 1}
-    bind:clientWidth={containerWidth}
-  >
-    <span class="border-overlay"></span>
+  {#if schema.isValid}
     <div
-      style:grid-template-columns="repeat({optimalColumns}, minmax(0, 1fr))"
-      class="grid-wrapper gap-px overflow-hidden size-full"
+      class="h-fit p-0 grow relative"
+      class:!p-0={kpis.length === 1}
+      bind:clientWidth={containerWidth}
     >
-      {#each kpis as kpi, i (i)}
-        <div class="min-h-32 kpi-wrapper">
-          <KPIProvider
-            spec={kpi}
-            {timeAndFilterStore}
-            {canvasName}
-            visible={$visible}
-          />
-        </div>
-      {/each}
+      <div
+        style:grid-template-columns="repeat({optimalColumns}, minmax(0, 1fr))"
+        class="grid-wrapper gap-px overflow-hidden size-full"
+      >
+        {#each kpis as kpi, i (i)}
+          <div class="min-h-32 kpi-wrapper">
+            <KPIProvider
+              spec={kpi}
+              {timeAndFilterStore}
+              {canvasName}
+              visible={$visible}
+            />
+          </div>
+        {/each}
+      </div>
     </div>
-  </div>
-{:else}
-  <ComponentError error={schema.error} />
-{/if}
+  {:else}
+    <ComponentError error={schema.error} />
+  {/if}
+</div>
 
 <style lang="postcss">
   .grid-wrapper {
@@ -88,12 +89,7 @@
   }
 
   .kpi-wrapper {
-    @apply relative p-4 grid outline outline-1 outline-border;
-  }
-
-  .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-surface-card size-full;
-    z-index: 50;
+    @apply relative p-3 grid outline outline-1 outline-border;
   }
 
   @container component-container (inline-size < 440px) {
