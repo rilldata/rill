@@ -296,7 +296,6 @@
                   let:output
                 >
                   <PercentageChange
-                    useKpiColors
                     tabularNumber={false}
                     value={formatMeasurePercentageDifference(output)}
                   />

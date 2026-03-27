@@ -285,7 +285,6 @@
                   >
                     <PercentageChange
                       color="text-fg-secondary"
-                      useKpiColors
                       showPosSign
                       tabularNumber={false}
                       value={formatMeasurePercentageDifference(
