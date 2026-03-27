@@ -148,6 +148,11 @@
   $: noChange = !comparisonValue;
   $: isComparisonPositive = diff > 0;
   $: isComparisonNegative = diff < 0;
+  $: comparisonDeltaColorClass = isComparisonPositive
+    ? "text-kpi-positive"
+    : isComparisonNegative
+      ? "text-kpi-negative"
+      : "text-fg-secondary";
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
     diff,
@@ -240,9 +245,9 @@
             {#if comparisonValue != null}
               <div
                 role="complementary"
-                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
+                class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
                 class:font-semibold={isComparisonPositive}
-                onmouseenter={() => {
+                on:mouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
                   copyValue =
@@ -283,9 +288,7 @@
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit text-fg-secondary"
-                class:text-kpi-negative={isComparisonNegative}
-                class:text-kpi-positive={isComparisonPositive}
+                class="w-fit {comparisonDeltaColorClass}"
               >
                 <WithTween
                   value={comparisonPercChange}

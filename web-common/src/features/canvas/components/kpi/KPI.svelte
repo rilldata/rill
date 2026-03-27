@@ -105,6 +105,15 @@
         : null,
     percent: comparisonPercChange,
   } as const;
+  $: isDeltaPositive =
+    computedValues.delta !== null && computedValues.delta > 0;
+  $: isDeltaNegative =
+    computedValues.delta !== null && computedValues.delta < 0;
+  $: comparisonDeltaColorClass = isDeltaPositive
+    ? "text-kpi-positive"
+    : isDeltaNegative
+      ? "text-kpi-negative"
+      : "text-fg-secondary";
 
   // Get value based on hover type
   function getValueForType(type: typeof hoveredValue) {
@@ -247,6 +256,7 @@
                     class:ui-copy-disabled-faint={computedValues.delta === null}
                     class:italic={computedValues.delta === null}
                     class:text-sm={computedValues.delta === null}
+                  class={comparisonDeltaColorClass}
                     role="button"
                     tabindex="0"
                     onmouseover={() => handleHoverOrFocus("delta")}
@@ -255,7 +265,9 @@
                     onblur={handleLeaveOrBlur}
                   >
                     {#if computedValues.delta != null}
-                      {getFormattedDiff(computedValues.delta)}
+                    <span class={comparisonDeltaColorClass}
+                      >{getFormattedDiff(computedValues.delta)}</span
+                    >
                     {:else}
                       no change
                     {/if}
@@ -264,9 +276,7 @@
 
                 {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
                   <span
-                    class="w-fit font-semibold text-fg-disabled"
-                    class:text-kpi-negative={computedValues.percent < 0}
-                    class:text-kpi-positive={computedValues.percent > 0}
+                    class="w-fit font-semibold {comparisonDeltaColorClass}"
                     role="button"
                     tabindex="0"
                     onmouseover={() => handleHoverOrFocus("percent")}
@@ -276,6 +286,7 @@
                   >
                     <PercentageChange
                       color="text-fg-secondary"
+                      useKpiColors
                       showPosSign
                       tabularNumber={false}
                       value={formatMeasurePercentageDifference(
