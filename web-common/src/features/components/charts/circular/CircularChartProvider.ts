@@ -14,6 +14,7 @@ import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
@@ -28,12 +29,18 @@ import {
   type Writable,
 } from "svelte/store";
 import { getFilterWithNullHandling } from "../query-util";
+import {
+  computeOtherGrouping,
+  OTHER_SLICE_LABEL,
+  type OtherGroupResult,
+} from "./other-grouping";
 
 export type CircularChartSpec = {
   metrics_view: string;
   measure?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal">;
   innerRadius?: number;
+  showOther?: boolean;
 };
 
 export type CircularChartDefaultOptions = {
@@ -51,6 +58,7 @@ export class CircularChartProvider {
 
   customColorValues: string[] = [];
   totalsValue: number | undefined = undefined;
+  otherGroupResult: OtherGroupResult | undefined = undefined;
 
   combinedWhere: Writable<V1Expression | undefined> = writable(undefined);
 
@@ -127,13 +135,16 @@ export class CircularChartProvider {
 
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
+    const showOther = config.showOther !== false;
+    const needsTotal = showTotal || showOther;
+
     const totalQueryOptionsStore = derived(
       [timeAndFilterStore, visibleStore],
       ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          !!showTotal &&
+          !!needsTotal &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.measure?.field;
 
@@ -265,6 +276,46 @@ export class CircularChartProvider {
     };
   }
 
+  /**
+   * Transforms raw query data to apply "Other" grouping for pie/donut charts.
+   * Called by the data provider pipeline before data reaches the chart spec.
+   */
+  transformData(
+    data: V1MetricsViewAggregationResponseDataItem[],
+  ): V1MetricsViewAggregationResponseDataItem[] {
+    const config = get(this.spec);
+    const measureField = config.measure?.field;
+    const colorField = config.color?.field;
+
+    if (!measureField || !colorField) {
+      this.otherGroupResult = undefined;
+      return data;
+    }
+
+    const showOther = config.showOther !== false;
+    const explicitLimit = config.color?.limit;
+
+    const result = computeOtherGrouping(data, measureField, colorField, {
+      limit: explicitLimit,
+      showOther,
+    });
+
+    this.otherGroupResult = result;
+
+    if (result.hasOther) {
+      this.customColorValues = result.visibleData
+        .map((d) => String(d[colorField] ?? ""))
+        .filter((v) => v !== OTHER_SLICE_LABEL);
+      this.customColorValues.push(OTHER_SLICE_LABEL);
+    }
+
+    if (this.totalsValue === undefined && result.total > 0) {
+      this.totalsValue = result.total;
+    }
+
+    return result.visibleData;
+  }
+
   getChartDomainValues(): ChartDomainValues {
     const config = get(this.spec);
     const result: Record<string, string[] | number[] | undefined> = {};
@@ -278,6 +329,10 @@ export class CircularChartProvider {
 
     if (config.measure?.showTotal && this.totalsValue) {
       result["total"] = [this.totalsValue];
+    }
+
+    if (this.otherGroupResult) {
+      result["__otherTotal"] = [this.otherGroupResult.total];
     }
 
     return result;

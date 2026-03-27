@@ -14,8 +14,13 @@ import {
   createPositionEncoding,
   createSingleLayerBaseSpec,
 } from "../builder";
-import type { ChartDataResult } from "../types";
+import type { ChartDataResult, TooltipValue } from "../types";
 import type { CircularChartSpec } from "./CircularChartProvider";
+import {
+  OTHER_SLICE_COLOR_DARK,
+  OTHER_SLICE_COLOR_LIGHT,
+  OTHER_SLICE_LABEL,
+} from "./other-grouping";
 
 function getInnerRadius(innerRadiusPercentage: number | undefined) {
   if (!innerRadiusPercentage) return 0;
@@ -40,6 +45,43 @@ function getTotalFontSize(innerRadiusPercentage: number | undefined) {
 
   const decimal = innerRadiusPercentage / 100;
   return { expr: `max(11, min(32, ${decimal}*min(width,height)/4))` };
+}
+
+function createPieTooltipEncoding(
+  config: CircularChartSpec,
+  data: ChartDataResult,
+): TooltipValue[] {
+  const tooltip: TooltipValue[] = [];
+
+  if (config.color) {
+    const colorMeta = data.fields[config.color.field];
+    tooltip.push({
+      field: config.color.field,
+      title: colorMeta?.displayName || config.color.field,
+      type: config.color.type as "nominal",
+    });
+  }
+
+  if (config.measure) {
+    const measureMeta = data.fields[config.measure.field];
+    tooltip.push({
+      field: config.measure.field,
+      title: measureMeta?.displayName || config.measure.field,
+      type: "quantitative",
+      ...(config.measure.type === "quantitative" && {
+        formatType: sanitizeFieldName(config.measure.field),
+      }),
+    });
+  }
+
+  tooltip.push({
+    field: "__percentage",
+    title: "% of Total",
+    type: "quantitative",
+    format: ".1f",
+  });
+
+  return tooltip;
 }
 
 export function generateVLPieChartSpec(
@@ -76,17 +118,58 @@ export function generateVLPieChartSpec(
   const color = createColorEncoding(config.color, data);
   const order = createOrderEncoding(config.measure);
 
-  const tooltip = createDefaultTooltipEncoding(
-    [config.color, config.measure],
-    data,
-  );
+  const hasOther =
+    config.showOther !== false &&
+    data.data?.some(
+      (d) =>
+        config.color?.field &&
+        d[config.color.field] === OTHER_SLICE_LABEL,
+    );
 
-  const arcLayer: LayerSpec<Field> | UnitSpec<Field> = {
-    mark: {
-      type: "arc",
-      padAngle: 0.01,
-      innerRadius: getInnerRadius(config.innerRadius),
-    },
+  if (hasOther) {
+    const colorAny = color as Record<string, unknown>;
+    const scale = colorAny.scale as
+      | { domain?: string[]; range?: string[] }
+      | undefined;
+    if (scale?.domain && scale?.range) {
+      const otherIdx = scale.domain.indexOf(OTHER_SLICE_LABEL);
+      if (otherIdx >= 0) {
+        scale.range[otherIdx] = data.isDarkMode
+          ? OTHER_SLICE_COLOR_DARK
+          : OTHER_SLICE_COLOR_LIGHT;
+      }
+    }
+  }
+
+  const grandTotal = data.domainValues?.["__otherTotal"]?.[0] as
+    | number
+    | undefined;
+  const hasPercentage = !!config.measure?.field && (grandTotal ?? 0) > 0;
+
+  const transforms = hasPercentage
+    ? [
+        {
+          calculate: `datum['${config.measure!.field}'] / ${grandTotal} * 100`,
+          as: "__percentage",
+        },
+      ]
+    : [];
+
+  const tooltip = hasPercentage
+    ? createPieTooltipEncoding(config, data)
+    : createDefaultTooltipEncoding([config.color, config.measure], data);
+
+  const arcMark = {
+    type: "arc" as const,
+    padAngle: 0.01,
+    innerRadius: getInnerRadius(config.innerRadius),
+  };
+
+  const arcLayer: UnitSpec<Field> = {
+    ...(transforms.length > 0
+      ? { transform: transforms as UnitSpec<Field>["transform"] }
+      : {}),
+    mark: arcMark,
     encoding: {
       theta,
       color,
@@ -134,8 +217,11 @@ export function generateVLPieChartSpec(
     };
   } else {
     const spec = createSingleLayerBaseSpec("arc");
-    spec.mark = arcLayer.mark;
+    spec.mark = arcMark;
     spec.encoding = arcLayer.encoding;
+    if (transforms.length > 0) {
+      (spec as unknown as Record<string, unknown>).transform = transforms;
+    }
 
     return {
       ...spec,

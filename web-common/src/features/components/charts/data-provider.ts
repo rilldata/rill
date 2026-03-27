@@ -5,6 +5,7 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
+  type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
@@ -31,6 +32,10 @@ export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   /** Static theme mode flag - used in standalone chart context */
   isThemeModeDark?: boolean;
   getDomainValues: () => ChartDomainValues;
+  /** Optional transformer applied to query data before it reaches the chart */
+  dataTransformer?: (
+    data: V1MetricsViewAggregationResponseDataItem[],
+  ) => V1MetricsViewAggregationResponseDataItem[];
 }
 
 /**
@@ -49,6 +54,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
     timeAndFilterStore,
     themeModeStore,
     isThemeModeDark: staticThemeModeDark,
+    dataTransformer,
   } = deps;
 
   const { measures, dimensions, timeDimensions } = getFieldsByType(config);
@@ -111,6 +117,10 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
           timeDimensions,
           $timeAndFilterStore.timeRange.timeZone || "UTC",
         );
+      }
+
+      if (dataTransformer && data) {
+        data = dataTransformer(data);
       }
 
       const domainValues = getDomainValues();

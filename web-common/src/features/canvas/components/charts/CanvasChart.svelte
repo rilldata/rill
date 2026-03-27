@@ -108,6 +108,7 @@
         bind:view={viewVL}
         themeMode={$isThemeModeDark ? "dark" : "light"}
         theme={currentTheme}
+        otherGroupResult={component.getOtherGroupResult()}
       />
     {/if}
   {:else}

@@ -28,7 +28,18 @@
     compileToBrushedVegaSpec,
     createAdaptiveScrubHandler,
   } from "./brush-builder";
-  import type { ChartDataResult, ChartType } from "./types";
+  import type { VLTooltipFormatter } from "@rilldata/web-common/components/vega/types";
+  import {
+    OTHER_SLICE_COLOR_DARK,
+    OTHER_SLICE_COLOR_LIGHT,
+    OTHER_SLICE_LABEL,
+  } from "./circular/other-grouping";
+  import type { OtherGroupResult } from "./circular/other-grouping";
+  import {
+    createPieTooltipFormatter,
+    type PieTooltipConfig,
+  } from "./circular/pie-tooltip";
+  import type { ChartDataResult, ChartType, ColorMapping } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
 
   export let chartType: ChartType;
@@ -42,6 +53,7 @@
    */
   export let theme: Record<string, string> | undefined = undefined;
   export let isCanvas: boolean;
+  export let otherGroupResult: OtherGroupResult | undefined = undefined;
 
   export let isScrubbing: boolean = false;
   export let temporalField: string | undefined = undefined;
@@ -130,11 +142,71 @@
   // Color mapping needs to be reactive to theme mode changes (light/dark)
   // because colors are resolved differently for each mode
   $: isThemeModeDark = themeMode === "dark";
-  $: colorMapping = getColorMappingForChart(
-    chartSpec,
-    domainValues,
+  $: colorMapping = applyOtherColor(
+    getColorMappingForChart(chartSpec, domainValues, isThemeModeDark),
     isThemeModeDark,
   );
+
+  $: isCircularChart = chartType === "donut_chart" || chartType === "pie_chart";
+
+  $: pieTooltipFormatter = buildPieTooltipFormatter(
+    isCircularChart,
+    chartSpec,
+    otherGroupResult,
+    colorMapping,
+    isThemeModeDark,
+    measureFormatters,
+    chartDataWithTheme,
+  );
+
+  function buildPieTooltipFormatter(
+    isCircular: boolean,
+    spec: CanvasChartSpec,
+    otherResult: OtherGroupResult | undefined,
+    mapping: ColorMapping | undefined,
+    isDark: boolean,
+    formatters: Record<string, (val: number | null | undefined) => string>,
+    chartDataResult: ChartDataResult,
+  ): VLTooltipFormatter | undefined {
+    if (!isCircular || !("measure" in spec) || !("color" in spec)) return undefined;
+    const measureField = (spec.measure as { field?: string })?.field;
+    const colorField = (spec.color as { field?: string })?.field;
+    if (!measureField || !colorField) return undefined;
+
+    const grandTotal = otherResult?.total ??
+      (chartDataResult.domainValues?.["__otherTotal"]?.[0] as number | undefined) ?? 0;
+    if (grandTotal <= 0) return undefined;
+
+    const measureMeta = chartDataResult.fields[measureField];
+    const colorMeta = chartDataResult.fields[colorField];
+    const formatter = formatters[sanitizeFieldName(measureField)];
+
+    const cfg: PieTooltipConfig = {
+      colorField,
+      measureField,
+      colorFieldLabel: colorMeta?.displayName || colorField,
+      measureFieldLabel: measureMeta?.displayName || measureField,
+      otherItems: otherResult?.otherItems ?? [],
+      grandTotal,
+      colorMapping: mapping ?? [],
+      isDarkMode: isDark,
+      formatValue: (val) => (formatter ? formatter(val) : String(val)),
+    };
+
+    return createPieTooltipFormatter(cfg);
+  }
+
+  function applyOtherColor(
+    mapping: ColorMapping | undefined,
+    isDark: boolean,
+  ): ColorMapping | undefined {
+    if (!mapping) return mapping;
+    return mapping.map((m) =>
+      m.value === OTHER_SLICE_LABEL
+        ? { ...m, color: isDark ? OTHER_SLICE_COLOR_DARK : OTHER_SLICE_COLOR_LIGHT }
+        : m,
+    );
+  }
 
   const scrubHandler = createAdaptiveScrubHandler((interval) =>
     onBrush?.(interval),
@@ -227,6 +299,7 @@
     renderer="canvas"
     {expressionFunctions}
     {hasComparison}
+    tooltipFormatter={pieTooltipFormatter}
     config={getRillTheme(isThemeModeDark, theme)}
   />
 {/if}

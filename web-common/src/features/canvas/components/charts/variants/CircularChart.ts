@@ -4,6 +4,7 @@ import {
   CircularChartProvider,
   type CircularChartSpec as CircularChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/circular/CircularChartProvider";
+import type { OtherGroupResult } from "@rilldata/web-common/features/components/charts/circular/other-grouping";
 import {
   ChartSortType,
   type ChartFieldsMap,
@@ -11,6 +12,7 @@ import {
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   MetricsViewSpecDimensionType,
+  type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -110,6 +112,16 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
 
   getChartDomainValues() {
     return this.provider.getChartDomainValues();
+  }
+
+  getDataTransformer(): ((
+    data: V1MetricsViewAggregationResponseDataItem[],
+  ) => V1MetricsViewAggregationResponseDataItem[]) | undefined {
+    return (data) => this.provider.transformData(data);
+  }
+
+  getOtherGroupResult(): OtherGroupResult | undefined {
+    return this.provider.otherGroupResult;
   }
 
   chartTitle(fields: ChartFieldsMap) {

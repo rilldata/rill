@@ -32,5 +32,6 @@ export function getChartDataForCanvas(
     themeStore: ctx.canvasEntity.theme,
     timeAndFilterStore,
     themeModeStore,
+    dataTransformer: component.getDataTransformer(),
   });
 }

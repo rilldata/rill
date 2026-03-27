@@ -26,6 +26,8 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable, type Writable } from "svelte/store";
+import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import type { OtherGroupResult } from "../../../components/charts/circular/other-grouping";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -104,9 +106,17 @@ export abstract class BaseChart<
   abstract chartTitle(fields: ChartFieldsMap): string;
 
   getChartDomainValues(): ChartDomainValues {
-    // Default implementation returns empty metadata
-    // Subclasses can override to provide specific metadata
     return {};
+  }
+
+  getDataTransformer(): ((
+    data: V1MetricsViewAggregationResponseDataItem[],
+  ) => V1MetricsViewAggregationResponseDataItem[]) | undefined {
+    return undefined;
+  }
+
+  getOtherGroupResult(): OtherGroupResult | undefined {
+    return undefined;
   }
 
   protected getDefaultFieldConfig(): Partial<FieldConfig> {
