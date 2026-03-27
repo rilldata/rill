@@ -16,7 +16,12 @@
     HOURS_PER_MONTH,
     DEFAULT_MANAGED_SLOTS,
     DEFAULT_SELF_MANAGED_SLOTS,
+    type SlotTier,
   } from "./slots-utils";
+
+  function tierForSlots(slots: number): SlotTier | undefined {
+    return SLOT_TIERS.find((t) => t.slots === slots);
+  }
 
   export let open = false;
   export let organization: string;
@@ -74,8 +79,11 @@
       await queryClient.refetchQueries({
         queryKey: getAdminServiceGetProjectQueryKey(organization, project),
       });
+      const newTier = tierForSlots(selectedSlots);
       eventBus.emit("notification", {
-        message: `Slots updated to ${selectedSlots}`,
+        message: newTier
+          ? `Cluster size updated to ${newTier.instance}`
+          : `Cluster size updated to ${selectedSlots} slots`,
       });
       open = false;
     } catch (err) {
@@ -96,15 +104,15 @@
 >
   <Dialog.Content class="max-w-2xl">
     <Dialog.Header>
-      <Dialog.Title>Manage Slots</Dialog.Title>
+      <Dialog.Title>Manage Cluster Size</Dialog.Title>
       <Dialog.Description>
-        All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr. Monthly
-        estimates assume ~{HOURS_PER_MONTH} hours/month.
+        Choose the vCPU and memory allocation for your deployment.
+        Monthly estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/slot/hr.
         {#if !isTrial}
           {#if isRillManaged}
-            Minimum {DEFAULT_MANAGED_SLOTS} slots for Rill-managed deployments.
+            Minimum {DEFAULT_MANAGED_SLOTS * 4}GiB / {DEFAULT_MANAGED_SLOTS}vCPU for Rill-managed deployments.
           {:else}
-            Minimum {DEFAULT_SELF_MANAGED_SLOTS} slots for self-managed OLAP deployments.
+            Minimum {DEFAULT_SELF_MANAGED_SLOTS * 4}GiB / {DEFAULT_SELF_MANAGED_SLOTS}vCPU for self-managed OLAP deployments.
           {/if}
         {/if}
       </Dialog.Description>
@@ -114,7 +122,6 @@
     <div class="tier-table">
       <div class="tier-header">
         <span class="tier-cell tier-cell-wide">Cluster Size</span>
-        <span class="tier-cell">Slots</span>
         <span class="tier-cell">Est. $/mo</span>
       </div>
       <div class="tier-list">
@@ -130,9 +137,7 @@
           >
             <span class="tier-cell tier-cell-wide">
               {tier.instance}
-            </span>
-            <span class="tier-cell">
-              {tier.slots}
+              <span class="slot-label">({tier.slots} {tier.slots === 1 ? "slot" : "slots"})</span>
               {#if tier.slots === currentSlots}
                 <span class="current-badge">current</span>
               {/if}
@@ -217,6 +222,9 @@
   }
   .tier-cell-wide {
     @apply flex-[2];
+  }
+  .slot-label {
+    @apply text-xs text-fg-tertiary font-normal;
   }
   .current-badge {
     @apply text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
