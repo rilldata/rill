@@ -18,15 +18,6 @@ function normalizeValue(value: unknown): string | null {
   return String(value);
 }
 
-/**
- * Coerces a value to a string or null; useful for passing
- * tooltip-formatted values into the cell inspector store.
- */
-export function toFormattedString(value: unknown): string | null {
-  if (value === null || value === undefined) return null;
-  return String(value);
-}
-
 function createCellInspectorStore() {
   const { subscribe, update } = writable<CellInspectorState>({
     isOpen: false,
@@ -55,12 +46,12 @@ function createCellInspectorStore() {
      * Accepts any value type and normalizes it internally.
      * Optionally accepts a pre-formatted value (e.g. from a tooltip formatter).
      */
-    updateValue: (value: unknown, formattedValue?: string | null) =>
+    updateValue: (value: unknown, formattedValue?: unknown) =>
       update((state) => ({
         ...state,
         hasValue: true,
         value: normalizeValue(value),
-        formattedValue: formattedValue ?? null,
+        formattedValue: normalizeValue(formattedValue ?? null),
       })),
     toggle: (value: string | null, formattedValue?: string | null) =>
       update((state) => ({

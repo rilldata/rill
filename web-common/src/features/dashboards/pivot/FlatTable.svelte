@@ -20,10 +20,7 @@
     Row,
   } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
-  import {
-    cellInspectorStore,
-    toFormattedString,
-  } from "../stores/cell-inspector-store";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -214,15 +211,9 @@
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             onmouseover={() =>
-              cellInspectorStore.updateValue(
-                cell.getValue(),
-                toFormattedString(tooltipValue),
-              )}
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
             onfocus={() =>
-              cellInspectorStore.updateValue(
-                cell.getValue(),
-                toFormattedString(tooltipValue),
-              )}
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
           >
             {#if result?.component && result?.props}
               <svelte:component

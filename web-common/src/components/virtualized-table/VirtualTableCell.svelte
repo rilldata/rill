@@ -1,9 +1,6 @@
 <script lang="ts">
   import FormattedDataType from "../../components/data-types/FormattedDataType.svelte";
-  import {
-    cellInspectorStore,
-    toFormattedString,
-  } from "../../features/dashboards/stores/cell-inspector-store";
+  import { cellInspectorStore } from "../../features/dashboards/stores/cell-inspector-store";
 
   export let value: unknown;
   export let type: string | undefined;
@@ -19,11 +16,11 @@
     | undefined;
 
   function handleMouseOver() {
-    cellInspectorStore.updateValue(value, toFormattedString(formattedValue));
+    cellInspectorStore.updateValue(value, formattedValue);
   }
 
   function handleFocus() {
-    cellInspectorStore.updateValue(value, toFormattedString(formattedValue));
+    cellInspectorStore.updateValue(value, formattedValue);
   }
 </script>
 
