@@ -129,7 +129,13 @@
 
     const value = getValueForType(type);
     if (value !== undefined && value !== null) {
-      cellInspectorStore.updateValue(value.toString());
+      const formatted =
+        type === "percent" && computedValues.percent !== null
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(computedValues.percent),
+            )
+          : (measureValueFormatterTooltip(value) ?? null);
+      cellInspectorStore.updateValue(value.toString(), formatted);
     }
   }
 

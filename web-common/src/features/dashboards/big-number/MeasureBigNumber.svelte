@@ -176,11 +176,11 @@
   $: useDiv = isMeasureExpanded || !withTimeseries;
 
   function handleMouseOver() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 
   function handleFocus() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 </script>
 

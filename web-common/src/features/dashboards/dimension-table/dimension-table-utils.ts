@@ -28,10 +28,11 @@ import type { VirtualizedTableColumns } from "@rilldata/web-common/components/vi
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import type { SvelteComponent } from "svelte";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import { SortType } from "../proto-state/derived-types";
 import { getFiltersForOtherDimensions } from "../selectors";
-import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
 
@@ -336,6 +337,9 @@ export function prepareVirtualizedDimTableColumns(
           max: maxValues[measure?.name ?? ""] || 0,
           enableResize: false,
           format: measure?.formatPreset,
+          tooltipFormatter: measure
+            ? createMeasureValueFormatter(measure, "tooltip")
+            : undefined,
           highlight,
           sorted,
         };
@@ -352,6 +356,15 @@ export function prepareVirtualizedDimTableColumns(
       } else if (selectedMeasure !== undefined) {
         // Handle delta, delta_perc, and percent_of_total columns
         const comparison = getComparisonProperties(name, selectedMeasure);
+        const tooltipFormatter =
+          name.includes("_delta_perc") || name.includes("_percent_of_total")
+            ? (v: number | string) =>
+                numberPartsToString(
+                  formatMeasurePercentageDifference(v as number),
+                )
+            : name.includes("_delta")
+              ? createMeasureValueFormatter(selectedMeasure, "tooltip")
+              : undefined;
         columnOut = {
           name,
           type: comparison.type,
@@ -359,6 +372,7 @@ export function prepareVirtualizedDimTableColumns(
           description: comparison.description,
           enableResize: false,
           format: comparison.format,
+          tooltipFormatter,
           highlight,
           sorted,
         };
