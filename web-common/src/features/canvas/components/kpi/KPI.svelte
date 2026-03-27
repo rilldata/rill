@@ -259,7 +259,19 @@
                   on:blur={handleLeaveOrBlur}
                 >
                   {#if computedValues.delta != null}
-                    {getFormattedDiff(computedValues.delta)}
+                    {#if isDeltaPositive}
+                      <span class="text-kpi-positive"
+                        >{getFormattedDiff(computedValues.delta)}</span
+                      >
+                    {:else if isDeltaNegative}
+                      <span class="text-kpi-negative"
+                        >{getFormattedDiff(computedValues.delta)}</span
+                      >
+                    {:else}
+                      <span class="text-fg-secondary"
+                        >{getFormattedDiff(computedValues.delta)}</span
+                      >
+                    {/if}
                   {:else}
                     no change
                   {/if}
