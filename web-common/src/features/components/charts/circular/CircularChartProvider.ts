@@ -89,12 +89,21 @@ export class CircularChartProvider {
     }
 
     let colorSort: V1MetricsViewAggregationSort | undefined;
-    let limit: number;
+    let queryLimit: number = this.defaultColorLimit;
     const colorDimensionName = config.color?.field;
     const showTotal = config.measure?.showTotal;
+    const userLimit = config.color?.limit;
 
     if (colorDimensionName) {
-      limit = config.color?.limit || this.defaultColorLimit;
+      const showOtherEnabled = config.showOther !== false;
+      if (showOtherEnabled) {
+        queryLimit = Math.max(
+          userLimit ?? this.defaultColorLimit,
+          this.defaultColorLimit,
+        );
+      } else {
+        queryLimit = userLimit || this.defaultColorLimit;
+      }
       dimensions = [{ name: colorDimensionName }];
       colorSort = this.getColorSort(config);
     }
@@ -122,7 +131,7 @@ export class CircularChartProvider {
             sort: colorSort ? [colorSort] : undefined,
             where: topNWhere,
             timeRange,
-            limit: limit?.toString(),
+            limit: queryLimit?.toString(),
           },
           {
             query: {
@@ -216,7 +225,7 @@ export class CircularChartProvider {
             where: combinedWhere,
             sort: colorSort ? [colorSort] : undefined,
             timeRange,
-            limit: limit?.toString(),
+            limit: queryLimit?.toString(),
           },
           {
             query: {
@@ -293,11 +302,14 @@ export class CircularChartProvider {
     }
 
     const showOther = config.showOther !== false;
-    const explicitLimit = config.color?.limit;
+    const userLimit = config.color?.limit;
+    const isExplicitLimit =
+      userLimit !== undefined && userLimit !== this.defaultColorLimit;
 
     const result = computeOtherGrouping(data, measureField, colorField, {
-      limit: explicitLimit,
+      limit: isExplicitLimit ? userLimit : undefined,
       showOther,
+      grandTotal: this.totalsValue,
     });
 
     this.otherGroupResult = result;

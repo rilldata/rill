@@ -31,12 +31,13 @@ export function computeOtherGrouping(
   data: V1MetricsViewAggregationResponseDataItem[],
   measureField: string,
   colorField: string,
-  options: { limit?: number; showOther?: boolean },
+  options: { limit?: number; showOther?: boolean; grandTotal?: number },
 ): OtherGroupResult {
-  const total = data.reduce(
+  const dataTotal = data.reduce(
     (sum, d) => sum + (Number(d[measureField]) || 0),
     0,
   );
+  const total = options.grandTotal ?? dataTotal;
 
   if (options.showOther === false || data.length <= 1) {
     return { visibleData: data, otherItems: [], total, hasOther: false };
@@ -51,7 +52,7 @@ export function computeOtherGrouping(
   if (options.limit !== undefined) {
     cutoff = Math.max(1, Math.min(options.limit, sorted.length));
   } else {
-    cutoff = computeDynamicCutoff(sorted, measureField, total);
+    cutoff = computeDynamicCutoff(sorted, measureField, dataTotal);
   }
 
   if (cutoff >= sorted.length || sorted.length - cutoff <= 1) {
@@ -61,10 +62,11 @@ export function computeOtherGrouping(
   const visible = sorted.slice(0, cutoff);
   const others = sorted.slice(cutoff);
 
-  const otherValue = others.reduce(
+  const visibleSum = visible.reduce(
     (sum, d) => sum + (Number(d[measureField]) || 0),
     0,
   );
+  const otherValue = total - visibleSum;
 
   const otherRow: V1MetricsViewAggregationResponseDataItem = {
     [colorField]: OTHER_SLICE_LABEL,
