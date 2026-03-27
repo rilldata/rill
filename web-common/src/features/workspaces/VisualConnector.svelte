@@ -92,6 +92,7 @@
   let suppressSync = false;
   // Track whether the form has been modified since load
   let formDirty = false;
+  let formLoading = true;
 
   const RESERVED_KEYS = new Set(["type", "driver", "managed"]);
 
@@ -123,9 +124,12 @@
         envBlob,
       );
     } catch {
-      // Resource may be in error state (e.g. non-standard keys);
-      // fall back to parsing YAML directly for non-secret fields
-      // and resolving secret template refs from .env
+      // Resource may be in error state (e.g. non-standard keys)
+    }
+
+    // If the resource returned no values (e.g. not yet reconciled after a Save),
+    // fall back to parsing the YAML directly so the correct saved values are shown.
+    if (Object.keys(loaded).length === 0) {
       loaded = parseYamlWithEnv($remoteContent ?? "", envBlob);
     }
 
@@ -136,6 +140,7 @@
       : {};
     formStore.set({ ...defaults, ...loaded });
     formDirty = false;
+    formLoading = false;
     await tick();
     suppressSync = false;
   }
@@ -384,7 +389,9 @@
 
 <div class="visual-connector">
   <div class="form-area">
-    {#if schema}
+    {#if formLoading}
+      <!-- wait for values to load before rendering to avoid a flash of defaults -->
+    {:else if schema}
       <div class="form-fields">
         <JSONSchemaFormRenderer
           {schema}

@@ -204,8 +204,9 @@ async function saveConnectorWithoutTest(
     createOnly: false,
   });
 
-  // Always create/overwrite to ensure the connector file is created immediately
-  await runtimeServicePutFile(client, {
+  // Write the connector file and wait for the parser to process it so that
+  // spec.properties is populated before we navigate to the workspace.
+  await runtimeServicePutFileAndWaitForReconciliation(client, {
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
