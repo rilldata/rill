@@ -12,6 +12,7 @@ import {
   compileConnectorYAML,
   formatHeadersAsYamlMap,
   updateDotEnvWithSecrets,
+  getEnvVarsFromConnectorYAML,
 } from "./code-utils";
 
 // Import the template for testing
@@ -840,6 +841,19 @@ describe("compileConnectorYAML", () => {
     expect(result).toContain("type: connector");
     expect(result).toContain("driver: clickhouse");
     expect(result).not.toContain("host:");
+  });
+});
+
+describe("getEnvVarsFromConnectorYAML", () => {
+  it("should extract env vars from connector YAML", () => {
+    const yaml = `
+type: connector
+driver: clickhouse
+host: {{ .env.CLICKHOUSE_HOST }}
+password: {{ .env.CLICKHOUSE_PASSWORD }}
+`;
+    const result = getEnvVarsFromConnectorYAML(yaml);
+    expect(result).toEqual(["CLICKHOUSE_HOST", "CLICKHOUSE_PASSWORD"]);
   });
 });
 

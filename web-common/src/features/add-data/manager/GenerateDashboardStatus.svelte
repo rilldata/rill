@@ -10,12 +10,15 @@
     type ImportAddDataStep,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
-  import { runImportStep } from "@rilldata/web-common/features/add-data/steps/import.ts";
+  import {
+    cleanupImportStep,
+    runImportStep,
+  } from "@rilldata/web-common/features/add-data/steps/import.ts";
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { maybeDeleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
@@ -76,24 +79,12 @@
 
   function rerunImport() {
     importAddDataStep = { ...initialAddDataStep };
-    console.log({ ...initialAddDataStep }, { ...importAddDataStep });
     error = null;
     return runImport();
   }
 
   async function cleanupAndBack() {
-    // Cleanup any generated files.
-    await Promise.all(
-      [
-        importAddDataStep.config.importTo.modelPath,
-        importAddDataStep.config.importTo.metricsViewPath,
-        importAddDataStep.config.importTo.explorePath,
-        importAddDataStep.config.importTo.canvasPath,
-      ].map((path) => {
-        if (!path) return Promise.resolve();
-        return maybeDeleteFileArtifact(runtimeClient, path);
-      }),
-    );
+    await cleanupImportStep(runtimeClient, queryClient, importAddDataStep);
 
     onBack();
   }
@@ -116,7 +107,7 @@
         <CheckIcon size="14px" />
         <div>{s.doneLabel}</div>
       {:else if hasErrored}
-        {#if importStep > s.step}
+        {#if importStep === s.step}
           <AlertCircleOutline size="14px" className="text-destructive" />
           <div>{s.failedLabel}</div>
         {:else}

@@ -4,12 +4,14 @@
     connectorIconMapping,
     connectorLabelMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getSupportedTopConnectors } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
 
   export let startConnectorSelection: (name: string | null) => void;
   export let onWelcomeScreen = false;
 
-  const PrimaryConnectors = ["clickhouse", "motherduck", "s3", "snowflake"];
-  const SecondaryConnectors = ["bigquery", "redshift", "azure"];
+  const runtimeClient = useRuntimeClient();
+  const topConnectors = getSupportedTopConnectors(runtimeClient);
 
   let suppressJitter = false;
   let suppressJitterTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -49,7 +51,7 @@
     onmouseleave={clearSuppressJitter}
     role="group"
   >
-    {#each PrimaryConnectors as connector (connector)}
+    {#each $topConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
       {@const label = connectorLabelMapping[connector] ?? connector}
       <div
@@ -72,16 +74,7 @@
     {/each}
   </div>
 
-  <div class="secondary-connectors">
-    {#each SecondaryConnectors as connector (connector)}
-      {@const icon = connectorIconMapping[connector]}
-      <!-- Note that these are not clickable as per design. It is meant to be a preview only -->
-      <div class="secondary-connector-entry">
-        <svelte:component this={icon} size="24px" />
-      </div>
-    {/each}
-    <span>more</span>
-  </div>
+  <div class="see-all">See all</div>
 </button>
 
 <style lang="postcss">
@@ -142,10 +135,7 @@
     @apply bg-surface-hover;
   }
 
-  .secondary-connectors {
-    @apply flex flex-row items-center justify-center gap-3;
-  }
-
-  .secondary-connector-entry {
+  .see-all {
+    @apply text-xs text-fg-secondary hover:text-primary;
   }
 </style>

@@ -61,6 +61,8 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
 
 /**
  * Connector information derived from JSON schemas.
+ * TODO: Consolidate with V1ConnectorDriver since this is an intermediate representation.
+ *       We use V1ConnectorDriver to show connector form and transitions.
  */
 export interface ConnectorInfo {
   name: string;

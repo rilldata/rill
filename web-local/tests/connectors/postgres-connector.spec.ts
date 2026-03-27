@@ -71,7 +71,7 @@ test.describe("Postgres connector", () => {
       // Wait for pick a table screen
       await expect(
         page.getByText(
-          "Pick a table or input your file SQL to power your first dashboard",
+          "Pick a table or input your SQL to power your first dashboard",
         ),
       ).toBeVisible();
 
@@ -269,7 +269,7 @@ async function selectAdBidsAndSubmit(page: Page, modelOnly: boolean) {
   // Wait for pick a table screen
   await expect(
     page.getByText(
-      "Pick a table or input your file SQL to power your first dashboard",
+      "Pick a table or input your SQL to power your first dashboard",
     ),
   ).toBeVisible();
 

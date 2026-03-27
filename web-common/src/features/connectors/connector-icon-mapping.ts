@@ -63,5 +63,8 @@ export const connectorLabelMapping = {
   clickhouse: "ClickHouse",
   motherduck: "MotherDuck",
   s3: "S3",
+  gcs: "GCS",
   snowflake: "Snowflake",
+  druid: "Druid",
+  starrocks: "StarRocks",
 };

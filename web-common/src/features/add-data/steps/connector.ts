@@ -1,5 +1,8 @@
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
+  getRuntimeServiceGetFileQueryKey,
+  runtimeServiceDeleteFile,
+  runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
@@ -25,6 +28,10 @@ import type { MultiStepFormSchema } from "@rilldata/web-common/features/template
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
+  deleteEnvVariable,
+  getEnvVarsFromConnectorYAML,
+  replaceOlapConnectorInYAML,
+  unsetResourceEnvVars,
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "@rilldata/web-common/features/connectors/code-utils.ts";
@@ -152,6 +159,44 @@ export async function createConnector({
   }
 }
 
+export async function maybeDeleteConnector(
+  runtimeClient: RuntimeClient,
+  queryClient: QueryClient,
+  connectorName: string,
+) {
+  const connectorFilePath = getFileAPIPathFromNameAndType(
+    connectorName,
+    EntityType.Connector,
+  );
+  if (!fileArtifacts.hasFileArtifact(connectorFilePath)) return;
+
+  const connectorFileArtifact =
+    fileArtifacts.getFileArtifact(connectorFilePath);
+  const connectorYaml = await connectorFileArtifact.fetchContent();
+  if (!connectorYaml) return;
+
+  // Get the existing env and remove the connector's env vars
+  const envBlob = await unsetResourceEnvVars(
+    runtimeClient,
+    queryClient,
+    connectorYaml,
+  );
+
+  // Delete the connector file
+  await runtimeServiceDeleteFile(runtimeClient, {
+    path: connectorFilePath,
+  });
+
+  // Update the .env file with the removed env vars
+  await runtimeServicePutFile(runtimeClient, {
+    path: ".env",
+    blob: envBlob,
+  });
+
+  // Update the rill.yaml file to remove the connector as the OLAP connector.
+  await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
+}
+
 async function maybeInitProject(
   client: RuntimeClient,
   connector: V1ConnectorDriver,
@@ -193,6 +238,29 @@ async function setOlapConnectorInRillYAML(
     ),
     create: true,
     createOnly: false,
+  });
+}
+
+async function unsetOlapConnectorInRillYAML(
+  runtimeClient: RuntimeClient,
+  queryClient: QueryClient,
+  connectorName: string,
+) {
+  // Get the existing rill.yaml file
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(runtimeClient, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+
+  const [ok, newBlob] = replaceOlapConnectorInYAML(blob, connectorName);
+  if (!ok) return;
+
+  await runtimeServicePutFile(runtimeClient, {
+    path: "rill.yaml",
+    blob: newBlob,
   });
 }
 

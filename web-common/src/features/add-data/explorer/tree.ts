@@ -88,6 +88,7 @@ export function getConnectorExplorerTree(
   loading?: boolean;
   error?: string;
 }> {
+  // Top level query to get all database schemas and tables.
   const databaseSchemasQuery = createQuery(
     getConnectorServiceListDatabaseSchemasQueryOptions(
       runtimeClient,
@@ -103,6 +104,7 @@ export function getConnectorExplorerTree(
 
   return derived(databaseSchemasQuery, (databaseSchemas, set) => {
     const connectorName = connector?.name;
+    // Early return if the query is still pending or has an error.
     if (databaseSchemas.isPending || databaseSchemas.error || !connectorName) {
       set({
         loading: databaseSchemas.isPending,
@@ -113,85 +115,91 @@ export function getConnectorExplorerTree(
       return;
     }
 
-    const nodesByDatabase: Record<string, ConnectorExplorerNode[]> = {};
-    const directSchemaNodes: ConnectorExplorerNode[] = [];
-
-    const tableQueryOptions: ReturnType<
-      typeof getConnectorServiceListTablesInfiniteQueryOptions
-    >[] = [];
-    const tableQueryParentNode: ConnectorExplorerNode[] = [];
-
-    databaseSchemas?.data?.databaseSchemas?.forEach(
-      ({ database, databaseSchema }) => {
-        const node = {
-          name: databaseSchema ?? "",
-          type: !database
-            ? ConnectorExplorerNodeType.Database
-            : ConnectorExplorerNodeType.Schema,
-          entry: {
-            connector: connectorName,
-            database,
-            databaseSchema,
-          },
-        } satisfies ConnectorExplorerNode;
-
-        if (!database) {
-          directSchemaNodes.push(node);
-        } else {
-          nodesByDatabase[database] ??= [];
-          nodesByDatabase[database].push(node);
-        }
-
-        tableQueryOptions.push(
-          getConnectorServiceListTablesInfiniteQueryOptions(runtimeClient, {
-            connector: connectorName,
-            database,
-            databaseSchema,
-            pageSize: TablesPageSize,
-          }),
-        );
-        tableQueryParentNode.push(node);
-      },
-    );
-
-    const nodesForDatabases = Object.entries(nodesByDatabase).map(
-      ([database, nodes]) =>
-        ({
-          name: database,
-          type: ConnectorExplorerNodeType.Database,
-          children: nodes,
-          entry: {
-            connector: connectorName,
-            database,
-          },
-        }) satisfies ConnectorExplorerNode,
-    );
-    const allNodes = [...directSchemaNodes, ...nodesForDatabases];
+    // Collect schema entries and corresponding table query options in parallel
+    // arrays so the index links each query back to its schema entry.
+    type SchemaEntry = {
+      name: string;
+      nodeType: ConnectorExplorerNodeType;
+      entry: ConnectorExplorerEntry;
+      tableQueryOption: ReturnType<
+        typeof getConnectorServiceListTablesInfiniteQueryOptions
+      >;
+    };
+    const schemaEntries: SchemaEntry[] =
+      databaseSchemas?.data?.databaseSchemas?.map(
+        ({ database, databaseSchema }) => {
+          const tableQueryOption =
+            getConnectorServiceListTablesInfiniteQueryOptions(runtimeClient, {
+              connector: connectorName,
+              database,
+              databaseSchema,
+              pageSize: TablesPageSize,
+            });
+          return {
+            name: databaseSchema ?? "",
+            nodeType: !database
+              ? ConnectorExplorerNodeType.Database
+              : ConnectorExplorerNodeType.Schema,
+            entry: { connector: connectorName, database, databaseSchema },
+            tableQueryOption,
+          };
+        },
+      ) ?? [];
 
     const tableQueriesStore = derived(
-      tableQueryOptions.map((o) => createInfiniteQuery(o, queryClient)),
+      schemaEntries.map((e) =>
+        createInfiniteQuery(e.tableQueryOption, queryClient),
+      ),
       (tableQueries) => {
-        tableQueries.forEach((q, i) => {
-          const tablesInfo =
-            (
-              q.data as InfiniteData<V1ListTablesResponse, string | undefined>
-            )?.pages.flatMap((p) => p.tables ?? []) ?? [];
-          tableQueryParentNode[i].children = tablesInfo.map(
-            (t) =>
-              ({
-                name: t.name ?? "",
-                type: ConnectorExplorerNodeType.Table,
-                entry: {
-                  ...tableQueryParentNode[i].entry,
-                  table: t.name,
-                },
-                loading: q.isPending,
-                error: q.error ? extractErrorMessage(q.error) : undefined,
-              }) satisfies ConnectorExplorerNode,
-          );
+        // Build schema nodes with their children from query results
+        const schemaNodes = schemaEntries.map(
+          ({ name, nodeType, entry }, i) => {
+            const q = tableQueries[i];
+            const tablesInfo =
+              (
+                q.data as InfiniteData<V1ListTablesResponse, string | undefined>
+              )?.pages.flatMap((p) => p.tables ?? []) ?? [];
+            return {
+              name,
+              type: nodeType,
+              entry,
+              children: tablesInfo.map(
+                (t) =>
+                  ({
+                    name: t.name ?? "",
+                    type: ConnectorExplorerNodeType.Table,
+                    entry: { ...entry, table: t.name },
+                    loading: q.isPending,
+                    error: q.error ? extractErrorMessage(q.error) : undefined,
+                  }) satisfies ConnectorExplorerNode,
+              ),
+            } satisfies ConnectorExplorerNode;
+          },
+        );
+
+        // Group schema nodes under their parent database nodes.
+        const nodesByDatabase: Record<string, ConnectorExplorerNode[]> = {};
+        const directSchemaNodes: ConnectorExplorerNode[] = [];
+        schemaNodes.forEach((node) => {
+          if (!node.entry.database) {
+            directSchemaNodes.push(node);
+          } else {
+            nodesByDatabase[node.entry.database] ??= [];
+            nodesByDatabase[node.entry.database].push(node);
+          }
         });
 
-        return allNodes;
+        const databaseNodes = Object.entries(nodesByDatabase).map(
+          ([database, nodes]) =>
+            ({
+              name: database,
+              type: ConnectorExplorerNodeType.Database,
+              children: nodes,
+              entry: { connector: connectorName, database },
+            }) satisfies ConnectorExplorerNode,
+        );
+
+        return [...directSchemaNodes, ...databaseNodes];
       },
     );
 

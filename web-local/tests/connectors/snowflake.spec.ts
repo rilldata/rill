@@ -35,7 +35,7 @@ test.describe("Snowflake connector", () => {
     // Wait for pick a table screen
     await expect(
       page.getByText(
-        "Pick a table or input your file SQL to power your first dashboard",
+        "Pick a table or input your SQL to power your first dashboard",
       ),
     ).toBeVisible();
 

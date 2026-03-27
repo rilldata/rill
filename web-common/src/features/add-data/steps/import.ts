@@ -11,6 +11,7 @@ import {
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
+  maybeDeleteFileArtifact,
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
 } from "@rilldata/web-common/features/entity-management/actions.ts";
@@ -27,65 +28,19 @@ import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
+import type { QueryClient } from "@tanstack/svelte-query";
+import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/code-utils.ts";
 
 export async function runImportStep(
   runtimeClient: RuntimeClient,
   step: ImportAddDataStep,
 ): Promise<ImportAddDataStep> {
-  const advanceToNextStep = (
-    importStep?: ImportDataStep,
-  ): ImportAddDataStep => {
-    if (!importStep) {
-      const curStepIndex = step.config.importSteps.findIndex(
-        (is) => is === step.importStep,
-      );
-      if (curStepIndex === -1) {
-        throw new Error("Invalid import step");
-      } else if (curStepIndex === step.config.importSteps.length - 1) {
-        importStep = ImportDataStep.Done;
-      } else {
-        importStep = step.config.importSteps[curStepIndex + 1];
-      }
-    }
-
-    switch (importStep) {
-      case ImportDataStep.CreateModel:
-        return {
-          ...step,
-          importStep: ImportDataStep.CreateModel,
-          currentFilePath: step.config.importTo.modelPath,
-        };
-
-      case ImportDataStep.CreateMetricsView:
-        return {
-          ...step,
-          importStep: ImportDataStep.CreateMetricsView,
-          currentFilePath: step.config.importTo.metricsViewPath,
-        };
-
-      case ImportDataStep.CreateDashboard:
-        return {
-          ...step,
-          importStep: ImportDataStep.CreateDashboard,
-          currentFilePath: step.config.importTo.canvasPath,
-        };
-
-      case ImportDataStep.Done:
-        return {
-          ...step,
-          importStep: ImportDataStep.Done,
-        };
-    }
-
-    return step;
-  };
-
   switch (step.importStep) {
     case ImportDataStep.Init:
       if (step.config.importSteps.length === 0) {
         throw new Error("Must specify at least one import step");
       }
-      return advanceToNextStep(step.config.importSteps[0]);
+      return advanceToNextImportStep(step, step.config.importSteps[0]);
 
     case ImportDataStep.CreateModel:
       await runCreateModelStep(runtimeClient, step);
@@ -96,12 +51,15 @@ export async function runImportStep(
       break;
 
     case ImportDataStep.CreateDashboard:
+      // We create both explore and canvas in the same step.
       await runCreateExploreStep(runtimeClient, step);
       await runCreateCanvasStep(runtimeClient, step);
       break;
+
+    // ImportDataStep.Done is handled in the caller by ending the import flow.
   }
 
-  return advanceToNextStep();
+  return advanceToNextImportStep(step);
 }
 
 export function generateImportToConfig(
@@ -147,6 +105,91 @@ export function generateImportToConfig(
   importToConfig.canvasPath = `/dashboards/${importToConfig.canvasName}.yaml`;
 
   return importToConfig;
+}
+
+export async function cleanupImportStep(
+  runtimeClient: RuntimeClient,
+  queryClient: QueryClient,
+  step: ImportAddDataStep,
+) {
+  const importToConfig = step.config.importTo;
+
+  let envBlob: string | null = null;
+  if (
+    importToConfig.modelPath &&
+    fileArtifacts.hasFileArtifact(importToConfig.modelPath)
+  ) {
+    const modelArtifact = fileArtifacts.getFileArtifact(
+      importToConfig.modelPath,
+    );
+    const modelYaml = await modelArtifact.fetchContent();
+
+    // Get the existing env and remove the connector's env vars
+    envBlob = await unsetResourceEnvVars(
+      runtimeClient,
+      queryClient,
+      modelYaml ?? "",
+    );
+  }
+
+  // Cleanup any generated files.
+  await Promise.all(
+    [
+      importToConfig.metricsViewPath,
+      importToConfig.explorePath,
+      importToConfig.canvasPath,
+    ].map((path) => {
+      if (!path) return Promise.resolve();
+      return maybeDeleteFileArtifact(runtimeClient, path);
+    }),
+  );
+
+  if (envBlob) {
+    // Update the .env file with the removed env vars
+    await runtimeServicePutFile(runtimeClient, {
+      path: ".env",
+      blob: envBlob,
+    });
+  }
+}
+
+function getNextImportStep(step: ImportAddDataStep) {
+  const curStepIndex = step.config.importSteps.findIndex(
+    (is) => is === step.importStep,
+  );
+  if (curStepIndex === -1) {
+    throw new Error("Invalid import step");
+  } else if (curStepIndex === step.config.importSteps.length - 1) {
+    return ImportDataStep.Done;
+  } else {
+    return step.config.importSteps[curStepIndex + 1];
+  }
+}
+
+function advanceToNextImportStep(
+  step: ImportAddDataStep,
+  nextImportStep: ImportDataStep = getNextImportStep(step),
+) {
+  let currentFilePath: string | undefined = undefined;
+  switch (nextImportStep) {
+    case ImportDataStep.CreateModel:
+      currentFilePath = step.config.importTo.modelPath;
+      break;
+
+    case ImportDataStep.CreateMetricsView:
+      currentFilePath = step.config.importTo.metricsViewPath;
+      break;
+
+    case ImportDataStep.CreateDashboard:
+      currentFilePath = step.config.importTo.canvasPath;
+      break;
+  }
+
+  return {
+    ...step,
+    importStep: nextImportStep,
+    currentFilePath,
+  };
 }
 
 async function runCreateModelStep(
@@ -226,6 +269,8 @@ async function runCreateModelStep(
   }
 
   let putFile = true;
+  // Determine if the model file already exists and has the same content as the generated YAML.
+  // We trigger a refresh if the file exists and has same content, backend doesnt do this automatically for optimization.
   if (fileArtifacts.hasFileArtifact(importToConfig.modelPath)) {
     const fileArtifact = fileArtifacts.getFileArtifact(
       importToConfig.modelPath,

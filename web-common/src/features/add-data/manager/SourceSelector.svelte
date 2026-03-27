@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { connectors } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import {
     connectorClassMapping,
     connectorIconMapping,
@@ -8,24 +7,19 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
   import { ChevronRightIcon } from "lucide-svelte";
+  import { getSupportedConnectorInfos } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let config: AddDataConfig;
   export let onSelect: (name: string) => void;
   export let onBack: () => void;
 
-  const sortedConnectors = connectors
-    .filter(
-      (c) =>
-        (config.importOnly ? true : c.name !== "duckdb") && c.category !== "ai",
-    )
-    .sort((a, b) => {
-      if (a.name === "https" || a.name === "local_file") return 1;
-      if (b.name === "https" || b.name === "local_file") return -1;
-      return a.displayName.localeCompare(b.displayName);
-    });
+  const runtimeClient = useRuntimeClient();
+
+  const supportedConnectors = getSupportedConnectorInfos(runtimeClient, config);
 
   let searchText = "";
-  $: filteredConnectors = sortedConnectors.filter(
+  $: filteredConnectors = $supportedConnectors.filter(
     (connector) =>
       connector.name.includes(searchText) ||
       connector.displayName.includes(searchText),
@@ -57,16 +51,16 @@
       {/each}
     </div>
   </div>
-  <div class="source-selector-footer">
-    {#if config.welcomeScreen}
+  {#if config.welcomeScreen}
+    <div class="source-selector-footer">
       <Button type="secondary" onClick={onBack}>Back</Button>
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style lang="postcss">
   .source-selector {
-    @apply flex h-full flex-col;
+    @apply flex flex-col;
   }
 
   .source-selector-content {

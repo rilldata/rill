@@ -18,11 +18,9 @@
     AddDataState,
     CreateConnectorStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
-  import {
-    getConnectorDriverForSchema,
-    transitionToNextStep,
-  } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/steps/utils.ts";
 
   export let step: CreateConnectorStep;
   export let onSubmit: (newState: AddDataState) => void;

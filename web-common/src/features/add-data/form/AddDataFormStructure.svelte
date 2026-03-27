@@ -166,8 +166,13 @@
 
       <div class="flex gap-2">
         {#if onSave}
-          <Button type="secondary" onClick={onSave} label="Save connector">
-            Save
+          <Button
+            disabled={$submitting || isSubmitDisabled}
+            type="secondary"
+            onClick={onSave}
+            label="Save connector"
+          >
+            Save and exit
           </Button>
         {/if}
 

@@ -19,19 +19,18 @@
     type ImportFromConfig,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import {
-    getConnectorDriverForSchema,
-    getImportStepsForConnector,
-  } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
   import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import { generateImportToConfig } from "@rilldata/web-common/features/add-data/steps/import.ts";
+  import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/steps/utils.ts";
 
   export let config: AddDataConfig;
   export let step: ExploreConnectorStep;
   export let onSubmit: (importConfig: ImportStepConfig) => void;
+  export let onBack: () => void;
 
   const FormId = "import-table-form";
 
@@ -164,9 +163,7 @@
 >
   <div class="flex flex-col gap-2 px-6 pt-2">
     {#if supportsModeling}
-      <div>
-        Pick a table or input your file SQL to power your first dashboard
-      </div>
+      <div>Pick a table or input your SQL to power your first dashboard</div>
       <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
         {#each modeOptions as option (option.value)}
           <TabsContent value={option.value} />
@@ -198,7 +195,7 @@
               database={$form["database"]}
               databaseSchema={$form["schema"]}
               table={$form["table"]}
-              addLeftPadding={false}
+              forcedLeftPadding="pl-4"
             />
           {/if}
         </ResizableSidebar>
@@ -211,7 +208,7 @@
   {/if}
 
   <div class="flex flex-row px-6 py-4 gap-2 border-t">
-    <Button onClick={() => window.history.back()} type="secondary">Back</Button>
+    <Button onClick={onBack} type="secondary">Back</Button>
     <div class="grow"></div>
     <Button
       disabled={$submitting || isSubmitDisabled}

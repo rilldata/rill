@@ -9,7 +9,7 @@
   export let database: string = ""; // The backend interprets an empty string as the default database
   export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let addLeftPadding = true;
+  export let forcedLeftPadding: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -33,7 +33,7 @@
   $: isError = !!$newTableQuery?.error;
   $: isLoading = $newTableQuery?.isLoading;
 
-  $: leftPadding = addLeftPadding ? (database ? "pl-[78px]" : "pl-[60px]") : "";
+  $: leftPadding = forcedLeftPadding ?? (database ? "pl-[78px]" : "pl-[60px]");
 
   function prettyPrintType(type: string) {
     // Remove CODE_ prefix and normalize unsupported types to just "UNKNOWN"
@@ -44,9 +44,7 @@
 
 <ul class="table-schema-list">
   {#if isError}
-    <div
-      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
-    >
+    <div class="{leftPadding} py-1.5 text-fg-secondary">
       Error loading schema: {extractErrorMessage(error)}
     </div>
   {:else if isLoading}

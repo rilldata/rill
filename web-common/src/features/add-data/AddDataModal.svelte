@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { pushState, replaceState } from "$app/navigation";
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import AddData from "@rilldata/web-common/features/add-data/AddData.svelte";
+  import AddDataManager from "@rilldata/web-common/features/add-data/manager/AddDataManager.svelte";
   import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
   import {
     type AddDataConfig,
+    type AddDataState,
     AddDataStep,
   } from "@rilldata/web-common/features/add-data/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -16,31 +16,39 @@
   const runtimeClient = useRuntimeClient();
 
   const config: AddDataConfig = { importOnly: true };
+  // Use a boolean to mount remount when the modal is re-opened.
+  // It is used to reset any state
+  let showForm = false;
+  let initStepState: AddDataState | undefined = undefined;
 
   $: if (open) void transitionToInit();
 
   async function transitionToInit() {
-    pushState(
-      "",
-      await transitionToNextStep(
-        runtimeClient,
-        { step: AddDataStep.SelectConnector },
-        { schema, connector },
-      ),
+    initStepState = await transitionToNextStep(
+      runtimeClient,
+      { step: AddDataStep.SelectConnector },
+      { schema, connector },
     );
-  }
-
-  function maybeReplaceState(newOpen: boolean) {
-    if (!newOpen) {
-      replaceState("", {});
-    }
+    showForm = true;
   }
 </script>
 
-<Dialog.Root bind:open onOpenChange={maybeReplaceState}>
+<Dialog.Root
+  bind:open
+  onOpenChange={(newOpen) => {
+    if (!newOpen) showForm = false;
+  }}
+>
   <Dialog.Content class="p-0 w-fit max-w-fit h-fit" noClose>
-    {#if open}
-      <AddData {config} onClose={() => (open = false)} />
+    {#if showForm}
+      <AddDataManager
+        {config}
+        {initStepState}
+        onClose={() => {
+          open = false;
+          showForm = false;
+        }}
+      />
     {/if}
   </Dialog.Content>
 </Dialog.Root>

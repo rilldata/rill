@@ -6,14 +6,14 @@ import {
   ImportDataStep,
 } from "@rilldata/web-common/features/add-data/steps/types.ts";
 import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import {
-  connectorInfoMap,
-  getBackendConnectorName,
-  getConnectorSchema,
-  getDocsCategory,
-} from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
+import {
+  getConnectorDriverForConnector,
+  getConnectorDriverForSchema,
+  isConnectorType,
+  isExplorerType,
+  isLiveConnectorType,
+} from "@rilldata/web-common/features/add-data/steps/utils.ts";
 
 export async function transitionToNextStep(
   runtimeClient: RuntimeClient,
@@ -29,10 +29,11 @@ export async function transitionToNextStep(
       runtimeClient,
       selectedConnector,
     );
-    if (analyzedConnector) {
-      driver = analyzedConnector.driver!;
-      selectedSchema = driver.name!;
+    if (!analyzedConnector?.driver) {
+      throw new Error("Connector driver not found");
     }
+    driver = analyzedConnector.driver;
+    selectedSchema = driver.name;
   }
   if (!driver && selectedSchema) {
     driver = getConnectorDriverForSchema(selectedSchema);
@@ -40,15 +41,15 @@ export async function transitionToNextStep(
 
   switch (current.step) {
     case AddDataStep.SelectConnector:
-      if (selectedConnector) {
+      if (driver && selectedConnector && selectedSchema) {
         return transitionFromConnector(
-          driver!,
+          driver,
           selectedConnector,
-          selectedSchema!,
+          selectedSchema,
           args,
         );
-      } else if (selectedSchema) {
-        return transitionFromSchema(driver!, selectedSchema, args);
+      } else if (driver && selectedSchema) {
+        return transitionFromSchema(driver, selectedSchema, args);
       } else {
         return current;
       }
@@ -57,11 +58,21 @@ export async function transitionToNextStep(
       if (!selectedConnector) {
         throw new Error("Connector must be specified");
       }
+      if (!selectedSchema) {
+        throw new Error(
+          "Schema is missing for connector: " + selectedConnector,
+        );
+      }
+      if (!driver) {
+        throw new Error(
+          "Connector driver not found for schema: " + selectedSchema,
+        );
+      }
 
       return transitionFromConnector(
-        driver!,
+        driver,
         selectedConnector,
-        selectedSchema!,
+        selectedSchema,
         args,
       );
 
@@ -77,6 +88,9 @@ export async function transitionToNextStep(
         config: args.importConfig,
       };
     }
+
+    // AddDataStep.Import is handled by `runImportStep`
+    // AddDataStep.Done is handled by the parent component by ending the flow.
   }
 
   return current;
@@ -160,56 +174,4 @@ function transitionFromConnector(
       connectorFormValues: args.connectorFormValues ?? {},
     };
   }
-}
-
-export function getConnectorDriverForSchema(
-  schemaName: string,
-): V1ConnectorDriver | null {
-  const connectorInfo = connectorInfoMap.get(schemaName);
-  if (!connectorInfo) return null;
-  const schema = getConnectorSchema(connectorInfo.name);
-  const category = schema?.["x-category"];
-  const backendName = getBackendConnectorName(connectorInfo.name);
-
-  return {
-    name: backendName,
-    displayName: schema?.title ?? connectorInfo.displayName ?? schemaName,
-    docsUrl: `https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${backendName}`,
-    implementsObjectStore: category === "objectStore",
-    implementsOlap: category === "olap",
-    implementsSqlStore: category === "sqlStore",
-    implementsWarehouse: category === "warehouse",
-    implementsFileStore: category === "fileStore",
-    implementsAi: category === "ai",
-  };
-}
-
-async function getConnectorDriverForConnector(
-  runtimeClient: RuntimeClient,
-  connectorName: string,
-) {
-  const connectors = await fetchAnalyzeConnectors(runtimeClient);
-  return connectors.find((r) => r.name === connectorName);
-}
-
-function isConnectorType(connectorDriver: V1ConnectorDriver) {
-  return (
-    connectorDriver?.implementsObjectStore ||
-    connectorDriver?.implementsOlap ||
-    connectorDriver?.implementsSqlStore ||
-    connectorDriver?.implementsWarehouse ||
-    connectorDriver?.name === "https"
-  );
-}
-
-function isExplorerType(connectorDriver: V1ConnectorDriver) {
-  return (
-    connectorDriver?.implementsOlap ||
-    connectorDriver?.implementsSqlStore ||
-    connectorDriver?.implementsWarehouse
-  );
-}
-
-export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {
-  return !!connectorDriver?.implementsOlap;
 }

@@ -93,8 +93,6 @@
 
   .file-input-button:focus {
     outline: none;
-    ring: 2px;
-    ring-color: #3b82f6;
     border-color: #3b82f6;
   }
 
