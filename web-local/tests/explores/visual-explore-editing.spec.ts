@@ -13,6 +13,14 @@ test.describe("visual explore editing", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
+    // Wait for the metrics view spec to fully load before clicking "Subset".
+    // MeasureDimensionSelector derives items from metricsViewSpec via the runtime
+    // API; if we click Subset before it populates, we get empty arrays.
+    await expect(
+      page.getByRole("textbox", { name: "codemirror editor" }),
+    ).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(2000);
+
     await page.getByRole("button", { name: "Subset" }).first().click();
     await page.getByRole("button", { name: "Subset" }).nth(1).click();
 
