@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";

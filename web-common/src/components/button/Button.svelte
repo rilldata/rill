@@ -26,6 +26,7 @@
     target = undefined as string | undefined,
     fit = false,
     noWrap = false,
+    gray = false,
     preload = true,
     active = false,
     loadingCopy = "Loading",
@@ -57,6 +58,7 @@
     target?: string;
     fit?: boolean;
     noWrap?: boolean;
+    gray?: boolean;
     preload?: boolean;
     active?: boolean;
     loadingCopy?: string;
@@ -99,6 +101,7 @@
   class:compact
   class:rounded
   class:active
+  class:gray
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
   class:no-stroke={noStroke}

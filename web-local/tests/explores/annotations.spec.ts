@@ -1,10 +1,10 @@
 import { expect, type Page } from "@playwright/test";
+import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { DateTime } from "luxon";
 import { test } from "../setup/base";
 import { waitForReconciliation } from "../utils/wait-for-reconciliation";
-import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
-import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
-import { DateTime } from "luxon";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
 // Annotation timestamps as they'll be serialized from DuckDB (UTC).
 // All annotations that may be visible at day grain in "Last 7 days":
@@ -71,6 +71,13 @@ async function selectGrain(page: Page, grain: string) {
   await expect(grainSelector).toContainText(grain, { timeout: 5000 });
 }
 
+// Normalize Unicode whitespace (e.g. narrow no-break space U+202F that
+// toLocaleString() may insert before AM/PM) to regular spaces so that
+// strings from Node.js and Chromium compare equal.
+function normalizeSpaces(s: string): string {
+  return s.replace(/[\s\u202F\u00A0]/g, " ");
+}
+
 /**
  * For each diamond marker on the chart, hover at its x-position to trigger
  * the date readout, then verify the displayed date is in the expected set.
@@ -85,6 +92,8 @@ async function verifyDiamondDates(
     .getByLabel("total_records primary time label")
     .first();
 
+  const normalizedExpected = [...expected].map(normalizeSpaces);
+
   // Wait for the chart to settle by retrying until the first diamond's
   // date is in the expected set (handles time-range / grain re-render).
   await expect(async () => {
@@ -96,9 +105,11 @@ async function verifyDiamondDates(
     expect(dBox).toBeTruthy();
     await page.mouse.move(dBox!.x + dBox!.width / 2, centerY);
     await expect(dateReadout).toBeVisible();
-    const text = (await dateReadout.textContent())?.trim();
+    const text = normalizeSpaces(
+      (await dateReadout.textContent())?.trim() ?? "",
+    );
     expect(text).toBeTruthy();
-    expect([...expected]).toContain(text!);
+    expect(normalizedExpected).toContain(text);
   }).toPass({ timeout: 10_000 });
 
   // Chart is now in the correct state — verify all diamonds.
@@ -118,14 +129,15 @@ async function verifyDiamondDates(
     await page.mouse.move(dBox.x + dBox.width / 2, centerY);
     await expect(dateReadout).toBeVisible({ timeout: 2000 });
 
-    const dateText = (await dateReadout.textContent())?.trim();
+    const dateText = normalizeSpaces(
+      (await dateReadout.textContent())?.trim() ?? "",
+    );
     expect(dateText).toBeTruthy();
     expect(
-      [...expected],
-
+      normalizedExpected,
       `Diamond ${i} date "${dateText}" not in expected set`,
-    ).toContain(dateText!);
-    matchedDates.push(dateText!);
+    ).toContain(dateText);
+    matchedDates.push(dateText);
   }
 
   expect(matchedDates.length).toBeGreaterThanOrEqual(1);

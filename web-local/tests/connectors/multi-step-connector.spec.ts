@@ -67,8 +67,8 @@ test.describe("Multi-step connector wrapper", () => {
 
     // Source step should now render with source schema fields and CTA.
     await expect(page.getByText("Model preview")).toBeVisible();
-    const sourceCta = page.getByRole("button", {
-      name: /Test and Add data|Importing data|Add data/i,
+    const sourceCta = page.getByRole("dialog").getByRole("button", {
+      name: /Import(ing)? data/i,
     });
     await expect(sourceCta).toBeVisible();
 
@@ -181,7 +181,9 @@ test.describe("Multi-step connector wrapper", () => {
     // Should land on source step without needing connector fields.
     await expect(page.getByText("Model preview")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Test and Add data|Add data/i }),
+      page
+        .getByRole("dialog")
+        .getByRole("button", { name: /Import(ing)? data/i }),
     ).toBeVisible();
   });
 
