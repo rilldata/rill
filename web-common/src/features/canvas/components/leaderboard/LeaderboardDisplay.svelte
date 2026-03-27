@@ -165,76 +165,76 @@
     />
 
     <div class="p-0 grow relative">
-    <div
-      class="grid-wrapper gap-px overflow-x-auto"
-      style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
-        LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
-    >
-      {#each visibleDimensions as dimension (dimension.name)}
-        {#if dimension.name}
-          <div
-            class="leaderboard-wrapper"
-            bind:clientWidth={leaderboardWrapperWidth}
-          >
-            <Leaderboard
-              leaderboardShowContextForAllMeasures
-              timeControlsReady
-              slice={numRows}
-              visible={$visible}
-              {isValidPercentOfTotal}
-              {metricsViewName}
-              leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
-                leaderboardMeasureNames?.[0]}
-              leaderboardMeasures={visibleMeasures}
-              {whereFilter}
-              {dimensionThresholdFilters}
-              tableWidth={dimensionColumnWidth + totalContextWidth}
-              {dimensionColumnWidth}
-              sortedAscending={sortDirection === SortDirection.ASCENDING}
-              {sortType}
-              filterExcludeMode={$parsed?.dimensionFilters.get(dimension.name)
-                ?.isInclude === false}
-              {timeRange}
-              comparisonTimeRange={showTimeComparison
-                ? comparisonTimeRange
-                : undefined}
-              {dimension}
-              allowExpandTable={false}
-              allowDimensionComparison={false}
-              selectedValues={selectedDimensionValues(
-                runtimeClient,
-                [metricsViewName],
-                whereFilter,
-                dimension.name,
-                timeRange.start,
-                timeRange.end,
-              )}
-              isBeingCompared={false}
-              formatters={measureFormatters}
-              tooltipFormatters={measureTooltipFormatters}
-              {toggleSort}
-              toggleDimensionValueSelection={async (
-                name,
-                value,
-                keepPillVisible,
-                isExclusiveFilter,
-              ) => {
-                await toggleDimensionValueSelections(
-                  name,
-                  [value],
+      <div
+        class="grid-wrapper gap-px overflow-x-auto"
+        style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
+          LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
+      >
+        {#each visibleDimensions as dimension (dimension.name)}
+          {#if dimension.name}
+            <div
+              class="leaderboard-wrapper"
+              bind:clientWidth={leaderboardWrapperWidth}
+            >
+              <Leaderboard
+                leaderboardShowContextForAllMeasures
+                timeControlsReady
+                slice={numRows}
+                visible={$visible}
+                {isValidPercentOfTotal}
+                {metricsViewName}
+                leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
+                  leaderboardMeasureNames?.[0]}
+                leaderboardMeasures={visibleMeasures}
+                {whereFilter}
+                {dimensionThresholdFilters}
+                tableWidth={dimensionColumnWidth + totalContextWidth}
+                {dimensionColumnWidth}
+                sortedAscending={sortDirection === SortDirection.ASCENDING}
+                {sortType}
+                filterExcludeMode={$parsed?.dimensionFilters.get(dimension.name)
+                  ?.isInclude === false}
+                {timeRange}
+                comparisonTimeRange={showTimeComparison
+                  ? comparisonTimeRange
+                  : undefined}
+                {dimension}
+                allowExpandTable={false}
+                allowDimensionComparison={false}
+                selectedValues={selectedDimensionValues(
+                  runtimeClient,
                   [metricsViewName],
+                  whereFilter,
+                  dimension.name,
+                  timeRange.start,
+                  timeRange.end,
+                )}
+                isBeingCompared={false}
+                formatters={measureFormatters}
+                tooltipFormatters={measureTooltipFormatters}
+                {toggleSort}
+                toggleDimensionValueSelection={async (
+                  name,
+                  value,
                   keepPillVisible,
                   isExclusiveFilter,
-                );
-              }}
-              measureLabel={(measureName) =>
-                visibleMeasures.find((m) => m.name === measureName)
-                  ?.displayName || measureName}
-            />
-          </div>
-        {/if}
-      {/each}
-    </div>
+                ) => {
+                  await toggleDimensionValueSelections(
+                    name,
+                    [value],
+                    [metricsViewName],
+                    keepPillVisible,
+                    isExclusiveFilter,
+                  );
+                }}
+                measureLabel={(measureName) =>
+                  visibleMeasures.find((m) => m.name === measureName)
+                    ?.displayName || measureName}
+              />
+            </div>
+          {/if}
+        {/each}
+      </div>
     </div>
   {:else}
     <ComponentError error={schema.error} />

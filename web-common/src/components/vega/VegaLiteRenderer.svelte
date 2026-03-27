@@ -22,7 +22,6 @@
   export let signalListeners: SignalListeners = {};
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
-  export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
   export let themeMode: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
