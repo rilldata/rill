@@ -19,6 +19,7 @@
           props.onclick?.(e);
         }}
         class="appearance-none border-0 bg-transparent p-0"
+      >
         <Chip
           removable
           {active}
