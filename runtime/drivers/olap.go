@@ -268,7 +268,7 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 	case DialectSnowflake:
 		// Snowflake stores unquoted identifiers as uppercase. They must always be queried using the exact same casing if quoting.
-		// If a user creates a table `CREAT TABLE test` then it can not be queried using `SELECT * FROM "test"`
+		// If a user creates a table `CREATE TABLE test` then it can not be queried using `SELECT * FROM "test"`
 		// It must be queried as `SELECT * FROM "TEST"` or `SELECT * FROM test`.
 		// So only quote identifiers if necessary and not otherwise.
 		if snowflakeSpecialCharsRegex.MatchString(ident) {
