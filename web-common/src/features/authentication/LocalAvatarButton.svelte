@@ -70,6 +70,8 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="p-1">
+      <DropdownMenu.Item href="/settings">Settings</DropdownMenu.Item>
+      <DropdownMenu.Separator />
       <ThemeToggle />
       <DropdownMenu.Separator />
 
