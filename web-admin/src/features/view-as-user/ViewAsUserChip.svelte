@@ -10,23 +10,30 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger
-    onclick={(e) => e.stopPropagation()}
-    class="appearance-none border-0 bg-transparent p-0"
-  >
-    <Chip
-      removable
-      {active}
-      removeTooltipText="Clear view"
-      onRemove={() => {
-        viewAsUserStore.set(null);
-        errorStore.reset();
-      }}
-    >
-      <div slot="body">
-        Viewing as <b>{$viewAsUserStore.email}</b>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <div
+        {...props}
+        onclick={(e) => {
+          e.stopPropagation();
+          props.onclick?.(e);
+        }}
+        class="appearance-none border-0 bg-transparent p-0"
+        <Chip
+          removable
+          {active}
+          removeTooltipText="Clear view"
+          onRemove={() => {
+            viewAsUserStore.set(null);
+            errorStore.reset();
+          }}
+        >
+          <div slot="body">
+            Viewing as <b>{$viewAsUserStore.email}</b>
+          </div>
+        </Chip>
       </div>
-    </Chip>
+    {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"
