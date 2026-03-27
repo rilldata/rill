@@ -231,16 +231,20 @@
     spec: CanvasChartSpec,
     rawData: Record<string, unknown>[],
   ): OtherGroupingResult | null {
-    const colorField =
-      "color" in spec ? (spec.color?.field as string | undefined) : undefined;
-    const measureField =
-      "measure" in spec
-        ? (spec.measure?.field as string | undefined)
+    const colorObj =
+      "color" in spec && spec.color && typeof spec.color === "object"
+        ? spec.color
         : undefined;
+    const measureObj =
+      "measure" in spec && spec.measure && typeof spec.measure === "object"
+        ? spec.measure
+        : undefined;
+    const colorField = colorObj?.field as string | undefined;
+    const measureField = measureObj?.field as string | undefined;
     if (!colorField || !measureField) return null;
 
-    const showOther = "color" in spec ? spec.color?.showOther !== false : true;
-    const explicitLimit = "color" in spec ? spec.color?.limit : undefined;
+    const showOther = colorObj?.showOther !== false;
+    const explicitLimit = colorObj?.limit;
 
     return computeVisibleSlices(rawData, colorField, measureField, {
       explicitLimit,
@@ -254,8 +258,11 @@
     grouping: OtherGroupingResult,
   ): Record<string, string[] | number[] | undefined> | undefined {
     if (!domainValues || !grouping.otherItems) return domainValues;
-    const colorField =
-      "color" in spec ? (spec.color?.field as string | undefined) : undefined;
+    const colorObj =
+      "color" in spec && spec.color && typeof spec.color === "object"
+        ? spec.color
+        : undefined;
+    const colorField = colorObj?.field as string | undefined;
     if (!colorField || !domainValues[colorField]) return domainValues;
 
     const existing = domainValues[colorField] as string[];
@@ -280,12 +287,16 @@
     formatters: Record<string, (value: number | null | undefined) => string>,
     isDark: boolean,
   ): VLTooltipFormatter | undefined {
-    const colorField =
-      "color" in spec ? (spec.color?.field as string | undefined) : undefined;
-    const measureField =
-      "measure" in spec
-        ? (spec.measure?.field as string | undefined)
+    const colorObj =
+      "color" in spec && spec.color && typeof spec.color === "object"
+        ? spec.color
         : undefined;
+    const measureObj =
+      "measure" in spec && spec.measure && typeof spec.measure === "object"
+        ? spec.measure
+        : undefined;
+    const colorField = colorObj?.field as string | undefined;
+    const measureField = measureObj?.field as string | undefined;
     if (!colorField || !measureField) return undefined;
 
     const colorMap = new Map<string, string>(
