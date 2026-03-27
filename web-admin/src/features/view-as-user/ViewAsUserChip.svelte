@@ -12,20 +12,21 @@
 <DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger>
     {#snippet child({ props })}
-      <Chip
-        {...props}
-        removable
-        {active}
-        removeTooltipText="Clear view"
-        onRemove={() => {
-          viewAsUserStore.set(null);
-          errorStore.reset();
-        }}
-      >
-        <div slot="body">
-          Viewing as <b>{$viewAsUserStore.email}</b>
-        </div>
-      </Chip>
+      <button {...props} class="appearance-none border-0 bg-transparent p-0">
+        <Chip
+          removable
+          {active}
+          removeTooltipText="Clear view"
+          onRemove={() => {
+            viewAsUserStore.set(null);
+            errorStore.reset();
+          }}
+        >
+          <div slot="body">
+            Viewing as <b>{$viewAsUserStore.email}</b>
+          </div>
+        </Chip>
+      </button>
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
