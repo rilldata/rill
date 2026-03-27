@@ -1,4 +1,7 @@
-import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
+import {
+  sanitizeFieldName,
+  sanitizeValueForVega,
+} from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
 import type { Field } from "vega-lite/build/src/channeldef";
@@ -108,11 +111,37 @@ export function generateVLPieChartSpec(
     },
   };
 
+  // Build tooltip encoding so the custom tooltip handler receives slice data.
+  // Setting `tooltip: { value: null }` would suppress tooltip events entirely,
+  // preventing the custom formatter from working. We include the color (dimension)
+  // field, the measure field, and the __isOther flag using Vega-Lite field refs
+  // (which use sanitizeValueForVega for the data column reference).
+  const tooltipFields: Array<{
+    field: string;
+    type: "nominal" | "quantitative";
+  }> = [];
+  if (config.color?.field) {
+    tooltipFields.push({
+      field: sanitizeValueForVega(config.color.field),
+      type: "nominal",
+    });
+  }
+  if (config.measure?.field) {
+    tooltipFields.push({
+      field: sanitizeValueForVega(config.measure.field),
+      type: "quantitative",
+    });
+  }
+  tooltipFields.push({
+    field: OTHER_FLAG_FIELD,
+    type: "nominal",
+  });
+
   const arcEncoding = {
     theta,
     color,
     order,
-    tooltip: { value: null },
+    tooltip: tooltipFields.length > 0 ? tooltipFields : { value: null },
   };
 
   const arcLayer: LayerSpec<Field> | UnitSpec<Field> = {
