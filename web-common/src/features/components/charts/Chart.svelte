@@ -239,10 +239,8 @@
         : undefined;
     if (!colorField || !measureField) return null;
 
-    const showOther =
-      "color" in spec ? spec.color?.showOther !== false : true;
-    const explicitLimit =
-      "color" in spec ? spec.color?.limit : undefined;
+    const showOther = "color" in spec ? spec.color?.showOther !== false : true;
+    const explicitLimit = "color" in spec ? spec.color?.limit : undefined;
 
     return computeVisibleSlices(rawData, colorField, measureField, {
       explicitLimit,

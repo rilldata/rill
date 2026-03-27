@@ -77,9 +77,7 @@ export function generateVLPieChartSpec(
   const order = createOrderEncoding(config.measure);
 
   // Override "Other" slice color to use muted fill
-  const hasOther = data.data?.some(
-    (d) => d[OTHER_FLAG_FIELD] === true,
-  );
+  const hasOther = data.data?.some((d) => d[OTHER_FLAG_FIELD] === true);
   if (hasOther && "scale" in color && color.scale) {
     const scale = color.scale as {
       domain?: unknown[];
