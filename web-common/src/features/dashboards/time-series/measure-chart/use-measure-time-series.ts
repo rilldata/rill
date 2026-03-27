@@ -28,14 +28,19 @@ export function transformTimeSeriesData(
       return { ts: DateTime.invalid("Invalid timestamp"), value: null };
     }
 
-    const value = (originalPt.records?.[measureName] as number | null) ?? null;
+    const rawValue = originalPt.records?.[measureName];
+    const value =
+      rawValue !== null && rawValue !== undefined ? Number(rawValue) : null;
 
     let comparisonValue: number | null | undefined = undefined;
     let comparisonTs: DateTime | undefined = undefined;
 
     if (comparisonPt?.ts) {
+      const rawCompValue = comparisonPt.records?.[measureName];
       comparisonValue =
-        (comparisonPt.records?.[measureName] as number | null) ?? null;
+        rawCompValue !== null && rawCompValue !== undefined
+          ? Number(rawCompValue)
+          : null;
       comparisonTs = DateTime.fromISO(comparisonPt.ts, { zone: timezone });
     }
 
