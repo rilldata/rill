@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -47,7 +48,11 @@
   {#if isExploreReconcilingForFirstTime($explore.data)}
     <DashboardBuilding />
   {:else if isExploreErrored($explore.data)}
-    <br /> Explore Error <br />
+    <ErrorPage
+      header="Dashboard error"
+      body={$explore.data?.explore?.meta?.reconcileError ??
+        "An error occurred while building this dashboard."}
+    />
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>
