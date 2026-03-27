@@ -218,7 +218,6 @@
 {:else}
   <VegaLiteRenderer
     bind:viewVL={view}
-    canvasDashboard={isCanvas}
     data={{ "metrics-view": data }}
     {themeMode}
     {spec}
@@ -227,6 +226,6 @@
     renderer="canvas"
     {expressionFunctions}
     {hasComparison}
-    config={getRillTheme(isThemeModeDark, theme)}
+    config={getRillTheme(isThemeModeDark, theme, isCanvas)}
   />
 {/if}
