@@ -12,28 +12,20 @@
 <DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger>
     {#snippet child({ props })}
-      <div
+      <Chip
         {...props}
-        onclick={(e) => {
-          e.stopPropagation();
-          props.onclick?.(e);
+        removable
+        {active}
+        removeTooltipText="Clear view"
+        onRemove={() => {
+          viewAsUserStore.set(null);
+          errorStore.reset();
         }}
-        class="appearance-none border-0 bg-transparent p-0"
       >
-        <Chip
-          removable
-          {active}
-          removeTooltipText="Clear view"
-          onRemove={() => {
-            viewAsUserStore.set(null);
-            errorStore.reset();
-          }}
-        >
-          <div slot="body">
-            Viewing as <b>{$viewAsUserStore.email}</b>
-          </div>
-        </Chip>
-      </div>
+        <div slot="body">
+          Viewing as <b>{$viewAsUserStore.email}</b>
+        </div>
+      </Chip>
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
