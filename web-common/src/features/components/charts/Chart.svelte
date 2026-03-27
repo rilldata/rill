@@ -252,10 +252,12 @@
     if (!colorField || !measureField) return null;
 
     const showOther = colorObj?.showOther !== false;
-    const explicitLimit = colorObj?.limit;
 
+    // Don't pass spec.color.limit as explicitLimit here. The spec's `limit`
+    // controls how many rows the query fetches (default 20); the dynamic
+    // grouping algorithm should independently decide how many slices to show
+    // vs. group into "Other" (based on hardCap and maxOtherPercent).
     return computeVisibleSlices(rawData, colorField, measureField, {
-      explicitLimit,
       showOther,
     });
   }
