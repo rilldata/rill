@@ -35,7 +35,7 @@
   } from "./circular/other-grouping";
   import { createPieTooltipFormatter } from "./circular/pie-tooltip-formatter";
   import type { VLTooltipFormatter } from "@rilldata/web-common/components/vega/types";
-  import type { ColorMapping, ChartDataResult, ChartType } from "./types";
+  import type { ColorMapping, ChartDataResult, ChartType, FieldConfig } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
 
   export let chartType: ChartType;
@@ -168,8 +168,8 @@
       ? buildPieTooltipFormatter(
           chartSpec,
           otherGrouping,
-          colorMapping,
-          measureFormatters,
+          colorMapping ?? [],
+          measureFormatters as Record<string, (value: number | null | undefined) => string>,
           isThemeModeDark,
         )
       : undefined;
@@ -233,7 +233,7 @@
   ): OtherGroupingResult | null {
     const colorObj =
       "color" in spec && spec.color && typeof spec.color === "object"
-        ? spec.color
+        ? (spec.color as FieldConfig<"nominal">)
         : undefined;
     const measureObj =
       "measure" in spec && spec.measure && typeof spec.measure === "object"
