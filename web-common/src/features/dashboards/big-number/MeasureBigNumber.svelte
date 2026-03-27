@@ -247,7 +247,7 @@
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
                 class:font-semibold={isComparisonPositive}
-                on:mouseenter={() => {
+                onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
                   copyValue =
@@ -296,6 +296,7 @@
                   let:output
                 >
                   <PercentageChange
+                    useKpiColors
                     tabularNumber={false}
                     value={formatMeasurePercentageDifference(output)}
                   />
