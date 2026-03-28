@@ -3,8 +3,8 @@
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { createRuntimeServiceUnpackEmptyMutation } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileLocalFileSourceYAML } from "../sourceUtils";
@@ -13,9 +13,10 @@
 
   export let showDropOverlay: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const unpackEmptyProject =
+    createRuntimeServiceUnpackEmptyMutation(runtimeClient);
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -25,29 +26,26 @@
     // no-op if no files are dropped
     if (files === undefined) return;
 
-    const uploadedFiles = uploadTableFiles(Array.from(files), instanceId);
+    const uploadedFiles = uploadTableFiles(Array.from(files), runtimeClient);
 
-    const initialized = await isProjectInitialized(instanceId);
+    const initialized = await isProjectInitialized(runtimeClient);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
         if (!initialized) {
           $unpackEmptyProject.mutate({
-            instanceId,
-            data: {
-              displayName: EMPTY_PROJECT_TITLE,
-              olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
-            },
+            displayName: EMPTY_PROJECT_TITLE,
+            olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
           });
 
-          // Race condition: invalidate("init") must be called before we navigate to
-          // `/files/${newFilePath}`. invalidate("init") is also called in the
+          // Race condition: invalidate("app:init") must be called before we navigate to
+          // `/files/${newFilePath}`. invalidate("app:init") is also called in the
           // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-          await invalidate("init");
+          await invalidate("app:init");
         }
 
         const yaml = compileLocalFileSourceYAML(filePath);
-        await createSource(instanceId, tableName, yaml);
+        await createSource(runtimeClient, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,
           EntityType.Table,
@@ -63,12 +61,30 @@
 <Overlay bg="rgba(0,0,0,.6)">
   <div
     class="w-screen h-screen grid place-content-center"
-    on:dragenter|preventDefault|stopPropagation
-    on:dragleave|preventDefault|stopPropagation
-    on:dragover|preventDefault|stopPropagation
-    on:drag|preventDefault|stopPropagation
-    on:drop|preventDefault|stopPropagation={handleSourceDrop}
-    on:mouseup|preventDefault|stopPropagation={() => {
+    ondragenter={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondragleave={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondragover={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondrag={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondrop={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSourceDrop(e);
+    }}
+    onmouseup={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
       showDropOverlay = false;
     }}
     role="presentation"

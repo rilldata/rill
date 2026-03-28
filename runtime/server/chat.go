@@ -358,6 +358,14 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	subCh := session.Subscribe()
 	defer session.Unsubscribe(subCh)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreaming subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
+		// Read messages until the context is done or the tool call finished.
 		for {
 			select {
 			case <-ctx.Done():
@@ -478,6 +486,13 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Start goroutine that calls CompleteStreaming and publishes responses to a channel
 	events := make(chan *sseEvent)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreamingHandler subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
 		// We must close the events channel when done to make sure the SSE handler returns
 		defer close(events)
 
@@ -515,6 +530,37 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Serve the SSE stream.
 	// This will only return when the background goroutine calls close(events).
 	serveSSEUntilClose(w, events)
+}
+
+func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRequest) (*runtimev1.GetAIMessageResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
+	}
+
+	msg, ok := session.Message(ai.FilterByID(req.MessageId))
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.MessageId)
+	}
+
+	pbMsg, err := messageToPB(session, msg)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
+	}
+
+	return &runtimev1.GetAIMessageResponse{
+		Message: pbMsg,
+	}, nil
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.

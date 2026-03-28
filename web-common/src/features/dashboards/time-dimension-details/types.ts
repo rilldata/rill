@@ -5,9 +5,6 @@ export enum TDDChart {
   STACKED_AREA = "stacked_area",
 }
 
-export type TDDAlternateCharts = Exclude<TDDChart, TDDChart.DEFAULT>;
-export type TDDBarCharts = Exclude<TDDAlternateCharts, TDDChart.STACKED_AREA>;
-
 export interface TDDState {
   /***
    * The name of the measure that is currently being expanded
@@ -43,13 +40,6 @@ export interface TableData {
 export interface HighlightedCell {
   dimensionValue: string | undefined | null;
   time: Date | undefined;
-}
-
-export interface ChartInteractionColumns {
-  xHover: number | undefined;
-  yHover: string | undefined | null;
-  scrubStart: number | undefined;
-  scrubEnd: number | undefined;
 }
 
 export type TDDComparison = "time" | "none" | "dimension";

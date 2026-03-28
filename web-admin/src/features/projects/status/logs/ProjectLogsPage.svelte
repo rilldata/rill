@@ -1,16 +1,23 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { onMount, onDestroy } from "svelte";
   import {
     SSEConnectionManager,
     ConnectionStatus,
   } from "@rilldata/web-common/runtime-client/sse-connection-manager";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { V1LogLevel, type V1Log } from "@rilldata/web-common/runtime-client";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
+
+  const runtimeClient = useRuntimeClient();
 
   const MAX_LOGS = 500;
   const REPLAY_LIMIT = 100;
@@ -28,8 +35,27 @@
   let logsContainer: HTMLDivElement;
   let connectionError: string | null = null;
   let filterDropdownOpen = false;
-  let searchText = "";
-  let selectedLevels: string[] = [];
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
+  let mounted = false;
+
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "level", type: "array" },
+  ]);
+  filterSync.init($page.url);
+
+  // Sync URL → local state on external navigation (back/forward)
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    searchText = parseStringParam($page.url.searchParams.get("q"));
+    selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
+  }
+
+  // Sync filter state → URL
+  $: if (mounted) {
+    filterSync.syncToUrl({ q: searchText, level: selectedLevels });
+  }
 
   const logsConnection = new SSEConnectionManager({
     maxRetryAttempts: 5,
@@ -72,7 +98,8 @@
   let unsubs: (() => void)[] = [];
 
   onMount(() => {
-    const { host, instanceId } = $runtime;
+    mounted = true;
+    const { host, instanceId } = runtimeClient;
     if (!host || !instanceId) return;
 
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
@@ -83,7 +110,9 @@
       logsConnection.on("open", handleOpen),
     ];
 
-    logsConnection.start(url);
+    logsConnection.start(url, {
+      getJwt: () => runtimeClient.getJwt(),
+    });
   });
 
   onDestroy(() => {
@@ -127,12 +156,14 @@
   }
 
   function retryConnection() {
-    const { host, instanceId } = $runtime;
+    const { host, instanceId } = runtimeClient;
     if (!host || !instanceId) return;
 
     connectionError = null;
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
-    logsConnection.start(url);
+    logsConnection.start(url, {
+      getJwt: () => runtimeClient.getJwt(),
+    });
   }
 
   function getLevelClass(level: V1LogLevel | undefined): string {
@@ -199,7 +230,7 @@
         class:status-connecting={isConnecting}
         class:status-error={hasConnectionError}
       >
-        <span class="status-dot" />
+        <span class="status-dot"></span>
         {#if isConnected}
           Live
         {:else if isConnecting}
@@ -213,23 +244,37 @@
     </div>
   </div>
 
-  <div class="flex items-center gap-x-3">
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
+
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {selectedLevelLabel}
-            {#if filterDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {selectedLevelLabel}
+        </span>
+        {#if filterDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableLevels as level}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedLevels.includes(level.value)}
             onCheckedChange={() => toggleLevel(level.value)}
           >
@@ -241,29 +286,19 @@
 
     {#if selectedLevels.length > 0 || searchText}
       <button
-        class="text-sm text-primary-500 hover:text-primary-600"
-        on:click={clearFilters}
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
+        onclick={clearFilters}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
-
-    <div class="flex-1" />
-
-    <div class="w-64">
-      <Search
-        bind:value={searchText}
-        placeholder="Search logs..."
-        autofocus={false}
-      />
-    </div>
   </div>
 
   <div class="logs-container" bind:this={logsContainer}>
     {#if hasConnectionError}
       <div class="error-state">
         <span class="text-red-600">Connection failed: {connectionError}</span>
-        <button class="retry-button" on:click={retryConnection}> Retry </button>
+        <button class="retry-button" onclick={retryConnection}> Retry </button>
       </div>
     {:else if logs.length === 0}
       <div class="empty-state">Waiting for logs...</div>

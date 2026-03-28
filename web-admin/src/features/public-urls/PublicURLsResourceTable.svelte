@@ -5,7 +5,7 @@
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
   import type { V1Expression } from "@rilldata/web-admin/client";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
-  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
 
   interface PublicURLRow extends V1MagicAuthToken {
     dashboardTitle: string;
@@ -69,14 +69,14 @@
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
-  <div class="w-64">
-    <Search
-      placeholder="Search"
-      autofocus={false}
-      bind:value={searchText}
-      rounded="lg"
-    />
-  </div>
+  <Search
+    placeholder="Search"
+    bind:value={searchText}
+    large
+    autofocus={false}
+    showBorderOnFocus={false}
+    disabled={data.length === 0}
+  />
 
   {#if filteredData.length === 0 && data.length === 0}
     <div class="border rounded-lg bg-surface-background">
@@ -98,9 +98,9 @@
       </div>
     </div>
   {:else}
-    <div class="border rounded-lg overflow-hidden">
+    <div class="border rounded-lg overflow-auto max-h-[60vh]">
       <table class="w-full">
-        <thead>
+        <thead class="sticky top-0 z-10">
           <tr class="bg-surface-background border-b">
             <th class="table-header">Label</th>
             <th class="table-header">Dashboard</th>
@@ -166,13 +166,13 @@
                   <span class="text-fg-secondary">—</span>
                 {/if}
               </td>
-              <td class="table-cell">
+              <td class="table-cell whitespace-nowrap">
                 {formatDate(row.expiresOn)}
               </td>
               <td class="table-cell">
                 {row.attributes?.name || "—"}
               </td>
-              <td class="table-cell">
+              <td class="table-cell whitespace-nowrap">
                 {formatDate(row.usedOn)}
               </td>
               <td class="table-cell w-12">

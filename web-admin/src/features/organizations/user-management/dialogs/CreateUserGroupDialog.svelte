@@ -343,26 +343,28 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-  }}
   onOpenChange={(open) => {
     if (!open) {
       handleClose();
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>
       <DialogTitle>Create a group</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-4 w-full">
@@ -389,10 +391,7 @@
           {:else if projects.length === 0}
             <div class="text-sm text-fg-secondary">No projects available</div>
           {:else}
-            <Dropdown.Root
-              bind:open={projectDropdownOpen}
-              closeOnItemClick={false}
-            >
+            <Dropdown.Root bind:open={projectDropdownOpen}>
               <Dropdown.Trigger
                 class="min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
                   ? 'bg-gray-200'
@@ -454,7 +453,7 @@
                   option.value
                     ? 'bg-surface-active'
                     : ''}"
-                  on:click={() => (selectedRole = option.value)}
+                  onclick={() => (selectedRole = option.value)}
                 >
                   <span class="font-medium">{option.label}</span>
                   <span class="text-xs text-fg-secondary"
@@ -494,7 +493,7 @@
             onSelectedChange={(values) => {
               if (!values) return;
 
-              const newEmails = values.map((v) => v.value);
+              const newEmails = values;
               const currentEmails = selectedUsers.map((u) => u.userEmail);
 
               // Find emails to add (in new but not in current)

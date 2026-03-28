@@ -9,7 +9,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FieldConfig } from "@rilldata/web-common/features/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
   import MarkTypeToggle from "./field-config/MarkTypeToggle.svelte";
 
@@ -21,13 +21,14 @@
 
   export let onChange: (updatedConfig: FieldConfig | undefined) => void;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+
   $: ({
     canvasEntity: {
       selectedComponent,
       metricsView: { getTimeDimensionForMetricView },
     },
-  } = getCanvasStore(canvasName, instanceId));
+  } = getCanvasStore(canvasName, client.instanceId));
 
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: multiMetricSelector = chartFieldInput?.multiFieldSelector;

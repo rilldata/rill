@@ -1,14 +1,14 @@
 import { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 import {
   type V1ConnectorDriver,
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";
-import { runtime } from "../../runtime-client/runtime-store";
+import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   getName,
@@ -25,6 +25,7 @@ import {
   getDriverNameForConnector,
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
+import { getDocsCategory } from "../sources/modal/connector-schemas";
 
 function yamlModelTemplate(driverName: string) {
   return `# Model YAML
@@ -103,7 +104,7 @@ function splitAuthSchemePrefix(
  * `{{ .env.connector.<name>.<header_key> }}` references so that secrets are
  * stored in `.env` rather than in the connector YAML file.
  */
-function formatHeadersAsYamlMap(
+export function formatHeadersAsYamlMap(
   value: Array<{ key: string; value: string }> | string,
   driverName?: string,
   connectorInstanceName?: string,
@@ -166,19 +167,35 @@ export function compileConnectorYAML(
     ) => boolean;
     orderedProperties?: Array<
       | ConnectorDriverProperty
-      | { key?: string; type?: string; secret?: boolean }
+      | { key?: string; type?: string; secret?: boolean; internal?: boolean }
     >;
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
-    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    schema?: {
+      properties?: Record<
+        string,
+        {
+          "x-env-var-name"?: string;
+          default?: string | number | boolean;
+          type?: string;
+          "x-yaml-value"?: string | number | boolean;
+          "x-advanced"?: boolean;
+        }
+      >;
+    };
     existingEnvBlob?: string;
   },
 ) {
   // Add instructions to the top of the file
   const driverName = getDriverNameForConnector(connector.name as string);
+  const category = connector.implementsAi
+    ? "ai"
+    : connector.implementsOlap
+      ? "olap"
+      : undefined;
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${driverName}
 
 type: connector
 
@@ -216,11 +233,27 @@ driver: ${driverName}`;
         value === false
       )
         return false;
+      // For advanced fields, skip values that match the field's effective default.
+      const schemaProp = options?.schema?.properties?.[property.key as string];
+      if (schemaProp?.["x-advanced"]) {
+        const typeDefault =
+          schemaProp.type === "boolean"
+            ? false
+            : schemaProp.type === "number" || schemaProp.type === "integer"
+              ? 0
+              : schemaProp.type === "string"
+                ? ""
+                : undefined;
+        const effectiveDefault =
+          schemaProp.default !== undefined ? schemaProp.default : typeDefault;
+        if (effectiveDefault !== undefined && value === effectiveDefault)
+          return false;
+      }
       return true;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       if (key === "headers") {
         return formatHeadersAsYamlMap(
@@ -241,6 +274,12 @@ driver: ${driverName}`;
         return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
       }
 
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false
+      const schemaPropForMap = options?.schema?.properties?.[key];
+      if (schemaPropForMap?.["x-yaml-value"] !== undefined && value === true) {
+        return `${key}: ${schemaPropForMap["x-yaml-value"]}`;
+      }
+
       const isStringProperty = stringPropertyKeys.includes(key);
       if (isStringProperty) {
         return `${key}: "${value}"`;
@@ -256,39 +295,53 @@ driver: ${driverName}`;
 }
 
 export async function updateDotEnvWithSecrets(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   opts?: {
     secretKeys?: string[];
     schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    // Existing .env blob to use instead of reading from disk.
+    // Use this when a concurrent operation (e.g. Test and Connect) may have
+    // already modified .env; passing the original blob avoids generating
+    // duplicate suffixed env var names.
+    existingEnvBlob?: string;
   },
 ): Promise<{ newBlob: string; originalBlob: string }> {
-  const instanceId = get(runtime).instanceId;
-
-  // Invalidate the cache to ensure we get fresh .env content
-  // This prevents overwriting credentials added by a previous step
-  await queryClient.invalidateQueries({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-  });
-
-  // Get the existing .env file with fresh data
   let blob: string;
   let originalBlob: string;
-  try {
-    const file = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+
+  if (opts?.existingEnvBlob !== undefined) {
+    blob = opts.existingEnvBlob;
+    originalBlob = opts.existingEnvBlob;
+  } else {
+    // Invalidate the cache to ensure we get fresh .env content
+    // This prevents overwriting credentials added by a previous step
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+        path: ".env",
+      }),
     });
-    blob = file.blob || "";
-    originalBlob = blob; // Keep original for conflict detection
-  } catch (error) {
-    // Handle the case where the .env file does not exist
-    if (error?.response?.data?.message?.includes("no such file")) {
-      blob = "";
-      originalBlob = "";
-    } else {
-      throw error;
+
+    // Get the existing .env file with fresh data
+    try {
+      const file = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+          path: ".env",
+        }),
+        queryFn: () => runtimeServiceGetFile(client, { path: ".env" }),
+      });
+      blob = file.blob || "";
+      originalBlob = blob; // Keep original for conflict detection
+    } catch (error) {
+      // Handle the case where the .env file does not exist
+      if (extractErrorMessage(error).includes("no such file")) {
+        blob = "";
+        originalBlob = "";
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -495,16 +548,16 @@ export function makeEnvVarKey(
 }
 
 export async function updateRillYAMLWithOlapConnector(
+  client: RuntimeClient,
   queryClient: QueryClient,
   newConnector: string,
 ): Promise<string> {
   // Get the existing rill.yaml file
-  const instanceId = get(runtime).instanceId;
   const file = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
       path: "rill.yaml",
     }),
-    queryFn: () => runtimeServiceGetFile(instanceId, { path: "rill.yaml" }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
   });
   const blob = file.blob || "";
 
@@ -529,20 +582,53 @@ export function replaceOlapConnectorInYAML(
   }
 }
 
+export async function updateRillYAMLWithAiConnector(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+  newConnector: string,
+): Promise<string> {
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+  return replaceAiConnectorInYAML(blob, newConnector);
+}
+
+/**
+ * Update the `ai_connector` key in a YAML file.
+ * This function uses a regex approach to preserve comments and formatting.
+ */
+export function replaceAiConnectorInYAML(
+  blob: string,
+  newConnector: string,
+): string {
+  const aiConnectorRegex = /^ai_connector: .+$/m;
+
+  if (aiConnectorRegex.test(blob)) {
+    return blob.replace(aiConnectorRegex, `ai_connector: ${newConnector}`);
+  } else {
+    return `${blob}${blob !== "" ? "\n" : ""}ai_connector: ${newConnector}\n`;
+  }
+}
+
 export async function createYamlModelFromTable(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name for makeSufficientlyQualifiedTableName
-  const analyzeConnectorsQueryKey =
-    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const analyzeConnectorsQueryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+    {},
+  );
   const analyzeConnectorsQueryFn = async () =>
-    runtimeServiceAnalyzeConnectors(instanceId);
+    runtimeServiceAnalyzeConnectors(client, {});
   const connectors = await queryClient.fetchQuery({
     queryKey: analyzeConnectorsQueryKey,
     queryFn: analyzeConnectorsQueryFn,
@@ -586,7 +672,7 @@ export async function createYamlModelFromTable(
     .replace("{{ dev_section }}", devSection);
 
   // Write the YAML file
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newModelPath,
     blob: yamlContent,
     createOnly: true,
@@ -594,13 +680,14 @@ export async function createYamlModelFromTable(
 
   // Invalidate relevant queries
   await queryClient.invalidateQueries({
-    queryKey: ["runtimeServiceListFiles", instanceId],
+    queryKey: ["runtimeServiceListFiles", client.instanceId],
   });
 
   return ["/" + newModelPath, newModelName];
 }
 
 export async function createSqlModelFromTable(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: string,
   database: string,
@@ -608,13 +695,13 @@ export async function createSqlModelFromTable(
   table: string,
   addDevLimit: boolean = true,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name
-  const analyzeConnectorsQueryKey =
-    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const analyzeConnectorsQueryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+    {},
+  );
   const analyzeConnectorsQueryFn = async () =>
-    runtimeServiceAnalyzeConnectors(instanceId);
+    runtimeServiceAnalyzeConnectors(client, {});
   const connectors = await queryClient.fetchQuery({
     queryKey: analyzeConnectorsQueryKey,
     queryFn: analyzeConnectorsQueryFn,
@@ -628,16 +715,18 @@ export async function createSqlModelFromTable(
   const driverName = analyzedConnector.driver?.name as string;
 
   // Determine whether the connector is the default OLAP connector
-  const runtimeInstanceQueryKey =
-    getRuntimeServiceGetInstanceQueryKey(instanceId);
+  const runtimeInstanceQueryKey = getRuntimeServiceGetInstanceQueryKey(
+    client.instanceId,
+    {},
+  );
   const runtimeInstanceQueryFn = async () =>
-    runtimeServiceGetInstance(instanceId, { sensitive: true });
+    runtimeServiceGetInstance(client, { sensitive: true });
   const runtimeInstance = await queryClient.fetchQuery({
     queryKey: runtimeInstanceQueryKey,
     queryFn: runtimeInstanceQueryFn,
   });
   if (!runtimeInstance) {
-    throw new Error(`Could not find runtime instance ${instanceId}`);
+    throw new Error(`Could not find runtime instance ${client.instanceId}`);
   }
   const isDefaultOLAPConnector =
     runtimeInstance?.instance?.olapConnector === connector;
@@ -680,7 +769,7 @@ export async function createSqlModelFromTable(
     modelSQL += `\n${devLimit}`;
   }
 
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newModelPath,
     blob: modelSQL,
     createOnly: true,

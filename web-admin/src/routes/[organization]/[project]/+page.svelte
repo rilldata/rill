@@ -1,23 +1,23 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import InlineChat from "@rilldata/web-common/features/chat/layouts/inline/InlineChat.svelte";
   import DelayedContent from "@rilldata/web-common/features/entity-management/DelayedContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const { chat } = featureFlags;
+
+  const runtimeClient = useRuntimeClient();
 
   $: ({
     params: { project },
   } = $page);
 
-  $: ({ instanceId } = $runtime);
-
   // Query the instance to get the project display name
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId);
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
   $: projectDisplayName =
     $instanceQuery.data?.instance?.projectDisplayName || project;
   $: isLoadingDisplayName = $instanceQuery.isLoading;
@@ -35,7 +35,7 @@
       <div class="flex flex-col gap-y-4">
         {#if isLoadingDisplayName}
           <DelayedContent visible={isLoadingDisplayName}>
-            <div class="h-11 w-96 animate-pulse rounded bg-gray-200" />
+            <div class="h-11 w-96 animate-pulse rounded bg-gray-200"></div>
           </DelayedContent>
         {:else if isErrorDisplayName}
           <h1

@@ -5,7 +5,6 @@
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1Conversation } from "../../../../runtime-client";
-  import { runtime } from "../../../../runtime-client/runtime-store";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
@@ -16,7 +15,6 @@
 
   const { adminServer } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
@@ -25,7 +23,9 @@
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
-  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+  $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
+    (c) => c.userAgent !== "rill/report",
+  );
 
   function handleNewConversation() {
     conversationManager.enterNewConversationMode();
@@ -43,7 +43,7 @@
     <IconButton
       ariaLabel="New conversation"
       bgGray
-      on:click={handleNewConversation}
+      onclick={handleNewConversation}
     >
       <PlusIcon className="text-fg-muted" />
       <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
@@ -52,7 +52,6 @@
     {#if $adminServer}
       <ShareChatPopover
         conversationId={currentConversationDto?.id}
-        {instanceId}
         {organization}
         {project}
         disabled={!currentConversationDto?.id}
@@ -65,7 +64,7 @@
       onSelect={handleSelectConversation}
     />
 
-    <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
+    <IconButton ariaLabel="Close chat" bgGray onclick={onClose}>
       <Close className="text-fg-muted" />
       <svelte:fragment slot="tooltip-content">Close</svelte:fragment>
     </IconButton>

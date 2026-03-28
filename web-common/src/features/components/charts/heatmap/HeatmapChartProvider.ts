@@ -1,24 +1,26 @@
-import type {
-  ChartDataQuery,
-  ChartDomainValues,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataQuery,
+  type ChartDomainValues,
+  type ChartFieldsMap,
+  type ChartSortDirection,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
+import type {
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -42,7 +44,7 @@ export type HeatmapChartDefaultOptions = {
 };
 
 const DEFAULT_NOMINAL_LIMIT = 40;
-const DEFAULT_SORT = "-color" as ChartSortDirection;
+const DEFAULT_SORT = ChartSortType.COLOR_DESC as ChartSortDirection;
 
 export class HeatmapChartProvider {
   private spec: Readable<HeatmapChartSpec>;
@@ -67,9 +69,11 @@ export class HeatmapChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
@@ -80,11 +84,11 @@ export class HeatmapChartProvider {
 
     // Create top level options store for X axis
     const xAxisQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.x?.field &&
           config?.x?.type !== "temporal" &&
@@ -104,9 +108,9 @@ export class HeatmapChartProvider {
         );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: config.x?.field }],
             sort: xAxisSort ? [xAxisSort] : undefined,
@@ -125,10 +129,11 @@ export class HeatmapChartProvider {
 
     // Create top level options store for Y axis
     const yAxisQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.y?.field &&
           config?.y?.type !== "temporal" &&
@@ -148,9 +153,9 @@ export class HeatmapChartProvider {
         );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: config.y?.field }],
             sort: yAxisSort ? [yAxisSort] : undefined,
@@ -171,14 +176,15 @@ export class HeatmapChartProvider {
     const yAxisQuery = createQuery(yAxisQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, xAxisQuery, yAxisQuery],
-      ([$runtime, $timeAndFilterStore, $xAxisQuery, $yAxisQuery]) => {
+      [timeAndFilterStore, xAxisQuery, yAxisQuery, visibleStore],
+      ([$timeAndFilterStore, $xAxisQuery, $yAxisQuery, $visible]) => {
         const { timeRange, where, timeGrain, hasTimeSeries } =
           $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
         const yTopNData = $yAxisQuery?.data?.data;
 
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined
@@ -252,9 +258,9 @@ export class HeatmapChartProvider {
         }
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions,
             sort:

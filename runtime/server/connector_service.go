@@ -42,10 +42,20 @@ func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequ
 	if !ok {
 		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
 	}
-	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Path, req.Delimiter, req.PageSize, req.PageToken)
-	if err != nil {
-		return nil, err
+	var objects []drivers.ObjectStoreEntry
+	var nextToken string
+	if req.Glob != "" {
+		objects, nextToken, err = os.ListObjectsForGlob(ctx, req.Bucket, req.Glob, req.PageSize, req.PageToken)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		objects, nextToken, err = os.ListObjects(ctx, req.Bucket, req.Path, req.Delimiter, req.PageSize, req.PageToken)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	pbObjects := make([]*runtimev1.Object, len(objects))
 	for i, obj := range objects {
 		pbObjects[i] = &runtimev1.Object{

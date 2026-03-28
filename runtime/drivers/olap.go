@@ -26,6 +26,10 @@ var (
 	DefaultQuerySchemaTimeout = 30 * time.Second
 
 	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
+
+	// snowflakeSpecialCharsRegex matches any character that requires quoting in Snowflake identifiers.
+	// NOTE: it does not handle cases when identifier is a reserved keyword
+	snowflakeSpecialCharsRegex = regexp.MustCompile(`[^A-Za-z0-9_]|^\d`)
 )
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
@@ -262,12 +266,43 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 		// MySQL and StarRocks use backticks for quoting identifiers
 		// Replace any backticks inside the identifier with double backticks.
 		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
-
+	case DialectSnowflake:
+		// Snowflake stores unquoted identifiers as uppercase. They must always be queried using the exact same casing if quoting.
+		// If a user creates a table `CREATE TABLE test` then it can not be queried using `SELECT * FROM "test"`
+		// It must be queried as `SELECT * FROM "TEST"` or `SELECT * FROM test`.
+		// So only quote identifiers if necessary and not otherwise.
+		if snowflakeSpecialCharsRegex.MatchString(ident) {
+			return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
+		}
+		return ident
 	default:
 		// Most other dialects follow ANSI SQL: use double quotes.
 		// Replace any internal double quotes with escaped double quotes.
 		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
 	}
+}
+
+func (d Dialect) EscapeAlias(alias string) string {
+	// Snowflake converts non quoted aliases to uppercase while storing and querying.
+	// The query `SELECT count(*) AS cnt ...` then returns CNT as the column name breaking clients expecting cnt so we always quote aliases.
+	if d == DialectSnowflake {
+		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(alias, `"`, `""`)) // nolint:gocritic
+	}
+	return d.EscapeIdentifier(alias)
+}
+
+// EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.
+// Use this instead of EscapeIdentifier when the input may contain dots that represent schema/table separators.
+// WARNING: Only use it for edge features where it is an acceptable trade-off to NOT support tables with a dot in their name (which we occasionally see in real-world use cases).
+func (d Dialect) EscapeQualifiedIdentifier(name string) string {
+	if name == "" {
+		return name
+	}
+	parts := strings.Split(name, ".")
+	for i, part := range parts {
+		parts[i] = d.EscapeIdentifier(part)
+	}
+	return strings.Join(parts, ".")
 }
 
 func (d Dialect) EscapeStringValue(s string) string {
@@ -355,26 +390,35 @@ func (d Dialect) EscapeMember(tbl, name string) string {
 	return fmt.Sprintf("%s.%s", d.EscapeIdentifier(tbl), d.EscapeIdentifier(name))
 }
 
+// EscapeMemberAlias is like EscapeMember but uses EscapeAlias for the column name.
+func (d Dialect) EscapeMemberAlias(tbl, alias string) string {
+	if tbl == "" {
+		return d.EscapeAlias(alias)
+	}
+	return fmt.Sprintf("%s.%s", d.EscapeIdentifier(tbl), d.EscapeAlias(alias))
+}
+
 func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
 	colName := d.EscapeIdentifier(dim.Name)
+	alias := d.EscapeAlias(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
 		expr, err := d.MetricsViewDimensionExpression(dim)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
 		}
-		return fmt.Sprintf(`(%s) as %s`, expr, colName), "", nil
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
 	}
 	if dim.Unnest && d == DialectClickHouse {
 		expr, err := d.MetricsViewDimensionExpression(dim)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
 		}
-		return fmt.Sprintf(`arrayJoin(%s) as %s`, expr, colName), "", nil
+		return fmt.Sprintf(`arrayJoin(%s) AS %s`, expr, alias), "", nil
 	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 	unnestTableName := tempName("tbl")
-	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
+	sel := fmt.Sprintf(`%s AS %s`, unnestColName, alias)
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
 		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName), nil
@@ -384,23 +428,23 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 }
 
 func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string, err error) {
-	colName := d.EscapeIdentifier(dim.Name)
+	colAlias := d.EscapeAlias(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
 		ex, err := d.MetricsViewDimensionExpression(dim)
 		if err != nil {
 			return "", "", "", fmt.Errorf("failed to get dimension expression: %w", err)
 		}
-		return ex, colName, "", nil
+		return ex, colAlias, "", nil
 	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 	unnestTableName := tempName("tbl")
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
-		return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName), nil
+		return unnestColName, colAlias, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colAlias, unnestTableName, unnestColName), nil
 	}
 
-	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
+	return unnestColName, colAlias, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
 func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
@@ -409,7 +453,7 @@ func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tu
 	}
 	if d == DialectClickHouse {
 		// using `LEFT ARRAY JOIN` instead of just `ARRAY JOIN` as it includes empty arrays in the result set with zero values
-		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, d.EscapeIdentifier(colName)), false, false, nil
+		return fmt.Sprintf("LEFT ARRAY JOIN %s AS %s", expr, d.EscapeIdentifier(colName)), false, false, nil
 	}
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
 }
@@ -422,6 +466,20 @@ func (d Dialect) UnnestSQLSuffix(tbl string) string {
 		return fmt.Sprintf(" %s", tbl)
 	}
 	return fmt.Sprintf(", %s", tbl)
+}
+
+func (d Dialect) RequiresArrayContainsForInOperator() bool {
+	return d == DialectDuckDB || d == DialectClickHouse
+}
+
+func (d Dialect) GetArrayContainsFunction() string {
+	if d == DialectDuckDB {
+		return "list_has_any"
+	}
+	if d == DialectClickHouse {
+		return "hasAny"
+	}
+	panic(fmt.Sprintf("unsupported dialect %q for array contains function", d))
 }
 
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
@@ -497,6 +555,18 @@ func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 
 func (d Dialect) OrderByExpression(name string, desc bool) string {
 	res := d.EscapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	if d == DialectDuckDB || d == DialectStarRocks {
+		res += " NULLS LAST"
+	}
+	return res
+}
+
+// OrderByAliasExpression is like OrderByExpression but uses EscapeAlias for the name.
+func (d Dialect) OrderByAliasExpression(name string, desc bool) string {
+	res := d.EscapeAlias(name)
 	if desc {
 		res += " DESC"
 	}
@@ -632,6 +702,28 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 		}
 		// Convert to target timezone, truncate, then convert back to UTC
 		return fmt.Sprintf("CONVERT_TZ(date_trunc('%s', CONVERT_TZ(%s, 'UTC', '%s')), '%s', 'UTC')", specifier, expr, tz, tz), nil
+	case DialectSnowflake:
+		var shift string
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
+			offset := 8 - firstDayOfWeek
+			shift = fmt.Sprintf("%d DAY", offset)
+		} else if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
+			offset := 13 - firstMonthOfYear
+			shift = fmt.Sprintf("%d MONTH", offset)
+		}
+
+		if tz == "" {
+			if shift == "" {
+				return fmt.Sprintf("date_trunc('%s', %s::TIMESTAMP)", specifier, expr), nil
+			}
+			return fmt.Sprintf("date_trunc('%s', %s::TIMESTAMP + INTERVAL '%s') - INTERVAL '%s'", specifier, expr, shift, shift), nil
+		}
+
+		// CONVERT_TIMEZONE('source_tz', 'target_tz', ts) converts from source to target
+		if shift == "" {
+			return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', date_trunc('%s', CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP)))", tz, specifier, tz, expr), nil
+		}
+		return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', date_trunc('%s', CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP) + INTERVAL '%s') - INTERVAL '%s')", tz, specifier, tz, expr, shift, shift), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -648,6 +740,8 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
 		return fmt.Sprintf("DATEDIFF('%s', %d, %d)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
+	case DialectSnowflake:
+		return fmt.Sprintf("DATEDIFF('%s', CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -659,6 +753,8 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 		return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	case DialectPinot:
 		return fmt.Sprintf("CAST((dateAdd('%s', -1 * %s, %s)) AS TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+	case DialectSnowflake:
+		return fmt.Sprintf("DATEADD('%s', -1 * (%s), %s::TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -672,11 +768,11 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 	case DialectDuckDB:
 		// first convert start and end to the target timezone as the application sends UTC representation of the time, so it will send `2024-03-12T18:30:00Z` for the 13th day of March in Asia/Kolkata timezone (`2024-03-13T00:00:00Z`)
 		// then let duckdb range over it and then convert back to the target timezone
-		return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range('%s'::TIMESTAMPTZ AT TIME ZONE '%s', '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '1 %s')", tz.String(), d.EscapeIdentifier(alias), start.Format(time.RFC3339), tz.String(), end.Format(time.RFC3339), tz.String(), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+		return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range('%s'::TIMESTAMPTZ AT TIME ZONE '%s', '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '1 %s')", tz.String(), d.EscapeAlias(alias), start.Format(time.RFC3339), tz.String(), end.Format(time.RFC3339), tz.String(), d.ConvertToDateTruncSpecifier(grain)), nil, nil
 	case DialectClickHouse:
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
+		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeAlias(alias)))
 		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
@@ -701,7 +797,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 			sb.WriteString("(CAST(? AS TIMESTAMP))")
 			args = append(args, t)
 		}
-		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
+		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeAlias(alias)))
 		return sb.String(), args, nil
 	case DialectStarRocks:
 		// StarRocks uses UNION ALL for generating time series
@@ -711,7 +807,19 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 			if !first {
 				sb.WriteString(" UNION ALL ")
 			}
-			sb.WriteString(fmt.Sprintf("SELECT CAST('%s' AS DATETIME) AS %s", t.Format(time.DateTime), d.EscapeIdentifier(alias)))
+			sb.WriteString(fmt.Sprintf("SELECT CAST('%s' AS DATETIME) AS %s", t.Format(time.DateTime), d.EscapeAlias(alias)))
+			first = false
+		}
+		return sb.String(), nil, nil
+	case DialectSnowflake:
+		// Snowflake uses UNION ALL for generating time series
+		var sb strings.Builder
+		first := true
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
+			if !first {
+				sb.WriteString(" UNION ALL ")
+			}
+			fmt.Fprintf(&sb, "SELECT CAST('%s' AS TIMESTAMP) AS %s", t.Format(time.RFC3339), d.EscapeAlias(alias))
 			first = false
 		}
 		return sb.String(), nil, nil
@@ -979,7 +1087,7 @@ func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, looku
 func (d Dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
 	switch d {
 	case DialectClickHouse:
-		return fmt.Sprintf("SELECT %s FROM dictionary(%s)", d.EscapeIdentifier(lookupKeyColumn), d.EscapeIdentifier(lookupTable)), nil
+		return fmt.Sprintf("SELECT %s FROM %s", d.EscapeIdentifier(lookupKeyColumn), d.EscapeQualifiedIdentifier(lookupTable)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}

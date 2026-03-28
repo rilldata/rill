@@ -10,10 +10,11 @@
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { renameFileArtifact } from "./actions";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -26,7 +27,7 @@
   export let filePath: string;
   export let isDir: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   let error: string;
 
@@ -87,7 +88,7 @@
       }
       try {
         const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-        await renameFileArtifact(instanceId, filePath, newPath);
+        await renameFileArtifact(runtimeClient, filePath, newPath);
         if (isDir) {
           if (
             $page.url.pathname.startsWith(
@@ -109,13 +110,16 @@
         }
         closeModal();
       } catch (err) {
-        error = err.response.data?.message;
+        error = extractErrorMessage(err);
       }
     },
   });
 
-  $: existingDirectories = useDirectoryNamesInDirectory(instanceId, folderName);
-  $: fileNamesInDirectory = useFileNamesInDirectory(instanceId, folderName);
+  $: existingDirectories = useDirectoryNamesInDirectory(
+    runtimeClient,
+    folderName,
+  );
+  $: fileNamesInDirectory = useFileNamesInDirectory(runtimeClient, folderName);
 </script>
 
 <Dialog.Root
@@ -125,7 +129,6 @@
       closeModal();
     }
   }}
-  portal="#rill-portal"
 >
   <Dialog.Content>
     <Dialog.Title>Rename</Dialog.Title>
@@ -137,7 +140,10 @@
       id="rename-asset-form"
       class="flex flex-col gap-y-4"
       autocomplete="off"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <Input

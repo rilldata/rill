@@ -29,7 +29,7 @@ func (c *Connection) ListBuckets(ctx context.Context, pageSize uint32, pageToken
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
-	client, err := getS3Client(ctx, c.config, "")
+	client, err := getS3Client(ctx, c.config, "", c.logger)
 	if err != nil {
 		return nil, "", err
 	}
@@ -71,14 +71,14 @@ func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter st
 }
 
 // ListObjectsForGlob implements drivers.ObjectStore.
-func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]drivers.ObjectStoreEntry, error) {
+func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	blobBucket, err := c.openBucket(ctx, bucket, false)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer blobBucket.Close()
 
-	return blobBucket.ListObjectsForGlob(ctx, glob)
+	return blobBucket.ListObjectsForGlob(ctx, glob, pageSize, pageToken)
 }
 
 // DownloadFiles implements drivers.ObjectStore.
@@ -121,13 +121,13 @@ func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bo
 	var s3client *s3.Client
 	var err error
 	if anonymous {
-		s3client, err = getAnonymousS3Client(ctx, c.config, bucket)
+		s3client, err = getAnonymousS3Client(ctx, c.config, bucket, c.logger)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		var err error
-		s3client, err = getS3Client(ctx, c.config, bucket)
+		s3client, err = getS3Client(ctx, c.config, bucket, c.logger)
 		if err != nil {
 			return nil, err
 		}

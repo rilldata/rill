@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
   import type { BannerMessage } from "../../lib/event-bus/events";
   import AlertCircleIcon from "../icons/AlertCircleOutline.svelte";
   import CheckCircleOutline from "../icons/CheckCircleOutline.svelte";
@@ -29,7 +30,7 @@
       <svelte:component this={IconMap[banner.iconType]} size="14px" />
     {/if}
     {#if banner.includesHtml}
-      <p class="banner-message">{@html banner.message}</p>
+      <p class="banner-message">{@html DOMPurify.sanitize(banner.message)}</p>
     {:else}
       <p class="banner-message">{banner.message}</p>
     {/if}
@@ -38,13 +39,13 @@
         <a
           href={banner.cta.url}
           target={banner.cta.target}
-          on:click={clickHandler}
+          onclick={clickHandler}
           class="banner-cta"
         >
           {banner.cta.text}
         </a>
       {:else if banner.cta.type === "button"}
-        <button on:click={clickHandler} class="banner-cta" disabled={loading}>
+        <button onclick={clickHandler} class="banner-cta" disabled={loading}>
           {banner.cta.text}
         </button>
       {/if}

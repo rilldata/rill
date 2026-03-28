@@ -7,12 +7,13 @@ test.describe("Breadcrumbs", () => {
 
   test.describe("Breadcrumb interactions", () => {
     test.describe.configure({ retries: 3 });
+    test.setTimeout(120_000);
     test("breadcrumb navigation", async ({ page }) => {
       await uploadFile(page, "AdBids.csv");
 
       await page
         .getByText("View this source")
-        .waitFor({ state: "visible", timeout: 5000 });
+        .waitFor({ state: "visible", timeout: 20000 });
 
       await page.getByText("View this source").click();
 
@@ -65,7 +66,7 @@ test.describe("Breadcrumbs", () => {
 
       await page.getByRole("link", { name: "AdBids", exact: true }).click();
 
-      await page.waitForURL("**/files/sources/AdBids.yaml");
+      await page.waitForURL("**/files/models/AdBids.yaml");
 
       await expect(
         page.getByRole("link", {

@@ -85,7 +85,7 @@
       {#if role === OrgUserRoles.Guest && !pendingAcceptance}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={onConvertToMember}
+          onclick={onConvertToMember}
         >
           Convert to member
         </DropdownMenu.Item>
@@ -93,7 +93,7 @@
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={onRemoveClick}
+        onclick={onRemoveClick}
       >
         Remove
       </DropdownMenu.Item>

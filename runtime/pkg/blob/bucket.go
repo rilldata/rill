@@ -2,12 +2,13 @@ package blob
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -45,13 +46,22 @@ func (b *Bucket) Underlying() *blob.Bucket {
 // ListObjectsForGlob lists objects in the bucket that match the given glob pattern.
 // The glob pattern should be a valid path *without* scheme or bucket name.
 // E.g. to list gs://my-bucket/path/to/files/*, the glob pattern should be "path/to/files/*".
-func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string) ([]drivers.ObjectStoreEntry, error) {
+func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSizeForObjects)
+	var driverStartAfter string
+	driverPageToken := blob.FirstPageToken
+	if pageToken != "" {
+		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken, &driverStartAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
 	// If it's not a glob, we're pulling a single file.
 	// TODO: Should we add support for listing out directories without ** at the end?
 	if !fileutil.IsGlob(glob) {
 		attrs, err := b.bucket.Attributes(ctx, glob)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		return []drivers.ObjectStoreEntry{{
@@ -59,65 +69,179 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string) ([]drivers
 			IsDir:     false,
 			Size:      attrs.Size,
 			UpdatedOn: attrs.ModTime,
-		}}, nil
+		}}, "", nil
 	}
 
-	// Extract the prefix (if any) that we can push down to the storage provider.
-	prefix, _ := doublestar.SplitPattern(glob)
-	if prefix == "." {
-		prefix = ""
-	}
+	prefix := fileutil.GlobPrefix(glob)
 
-	// Build iterator
-	it := b.bucket.List(&blob.ListOptions{
-		Prefix: prefix,
-		BeforeList: func(as func(interface{}) bool) error {
-			var q *storage.Query
-			if as(&q) {
-				// Only fetch the fields we need.
-				_ = q.SetAttrSelection([]string{"Name", "Size", "Created", "Updated"})
-			}
-			return nil
-		},
-	})
+	delimiter := byte('/')
+	globLevel := fileutil.PathLevel(glob, delimiter)
 
-	// Build output
+	hasDoubleStar := fileutil.IsDoubleStarGlob(glob)
+
 	var entries []drivers.ObjectStoreEntry
-	for {
-		obj, err := it.Next(ctx)
+	var currentDir *drivers.ObjectStoreEntry // Track current directory being accumulated
+
+	// Fetch pages until we have enough matching results (accounting for glob filtering)
+	for len(entries) < validPageSize && driverPageToken != nil {
+		retval, nextDriverPageToken, err := b.bucket.ListPage(ctx, driverPageToken, validPageSize, &blob.ListOptions{
+			Prefix: prefix,
+			BeforeList: func(as func(interface{}) bool) error {
+				// Handle GCS
+				var q *storage.Query
+				if as(&q) {
+					// Only fetch the fields we need.
+					_ = q.SetAttrSelection([]string{"Name", "Size", "Updated"})
+					if driverStartAfter != "" {
+						q.StartOffset = driverStartAfter
+					}
+				}
+				// Handle S3
+				var s3Input *s3.ListObjectsV2Input
+				if as(&s3Input) {
+					if driverStartAfter != "" {
+						s3Input.StartAfter = aws.String(driverStartAfter)
+					}
+				}
+
+				// Handle Azure Blob Storage
+				var azOpts *container.ListBlobsHierarchyOptions
+				if as(&azOpts) {
+					if driverStartAfter != "" {
+						azOpts.StartFrom = &driverStartAfter
+					}
+				}
+				return nil
+			},
+		})
 		if err != nil {
-			if errors.Is(err, io.EOF) {
+			return nil, "", err
+		}
+
+		// Filter by glob pattern and skip startAfter entries
+		lastProcessedIdx := -1
+		for i, obj := range retval {
+			// Skip entries until we're past startAfter
+			if driverStartAfter != "" {
+				// error out here because we already have StartOffset/StartAfter/StartFrom pass in api
+				if obj.Key < driverStartAfter {
+					return nil, "", fmt.Errorf("blob: entry with key < startAfter (%q)", driverStartAfter)
+				}
+				if obj.Key == driverStartAfter {
+					continue
+				}
+			}
+
+			fileLevel := fileutil.PathLevel(obj.Key, delimiter)
+
+			// Match directory if the glob is not double-star ("**")
+			// and the file level is greater than the glob level.
+			if !hasDoubleStar && fileLevel > globLevel {
+				// Extract the directory at the same depth as the glob pattern
+				// so it can be matched against the glob.
+				dirPath := fileutil.PrefixUntilLevel(obj.Key, globLevel, delimiter)
+
+				// If we've moved to a new directory, finalize and append
+				// the previously accumulated directory entry.
+				if currentDir != nil && currentDir.Path != dirPath {
+					entries = append(entries, *currentDir)
+					currentDir = nil
+					if len(entries) >= validPageSize {
+						break
+					}
+				}
+
+				lastProcessedIdx = i
+
+				// Ensure the glob ends with a delimiter so it correctly matches
+				// directory paths
+				globForDir := fileutil.EnsureTrailingDelim(glob, delimiter)
+				ok, err := doublestar.Match(globForDir, dirPath)
+				if err != nil {
+					return nil, "", err
+				}
+				if !ok {
+					continue
+				}
+
+				// Initialize current directory
+				if currentDir == nil {
+					currentDir = &drivers.ObjectStoreEntry{
+						Path:      dirPath,
+						IsDir:     true,
+						Size:      0,
+						UpdatedOn: obj.ModTime,
+					}
+				}
+
+				// Accumulate size and update timestamp
+				currentDir.Size += obj.Size
+				if obj.ModTime.After(currentDir.UpdatedOn) {
+					currentDir.UpdatedOn = obj.ModTime
+				}
+				continue
+			}
+
+			// finalize and append the previously accumulated directory entry.
+			if currentDir != nil {
+				entries = append(entries, *currentDir)
+				currentDir = nil
+				if len(entries) >= validPageSize {
+					break
+				}
+			}
+
+			lastProcessedIdx = i
+			ok, err := doublestar.Match(glob, obj.Key)
+			if err != nil {
+				return nil, "", err
+			}
+			if !ok {
+				continue
+			}
+			entries = append(entries, drivers.ObjectStoreEntry{
+				Path:      obj.Key,
+				IsDir:     obj.IsDir,
+				Size:      obj.Size,
+				UpdatedOn: obj.ModTime,
+			})
+
+			// Stop if we've collected enough entries
+			if len(entries) == validPageSize {
 				break
 			}
-			return nil, err
 		}
 
-		// Workaround for some object stores not marking IsDir correctly.
-		if strings.HasSuffix(obj.Key, "/") {
-			obj.IsDir = true
+		if len(entries) == validPageSize {
+			if lastProcessedIdx == len(retval)-1 {
+				driverPageToken = nextDriverPageToken
+				driverStartAfter = ""
+			} else if lastProcessedIdx != -1 {
+				driverStartAfter = retval[lastProcessedIdx].Key
+				// reset to first page token because s3 and azure blob storage only supports startAfter for first page
+				// if we use nextDriverPageToken it will ignore the startAfter and use the next page token
+				driverPageToken = blob.FirstPageToken
+			}
+			break
 		}
 
-		ok, err := doublestar.Match(glob, obj.Key)
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			continue
-		}
-
-		entries = append(entries, drivers.ObjectStoreEntry{
-			Path:      obj.Key,
-			IsDir:     obj.IsDir,
-			Size:      obj.Size,
-			UpdatedOn: obj.ModTime,
-		})
+		driverPageToken = nextDriverPageToken
+		driverStartAfter = ""
 	}
 
-	return entries, nil
+	if driverPageToken == nil {
+		// finalizing the current dir, if no object left to process
+		if currentDir != nil {
+			entries = append(entries, *currentDir)
+			currentDir = nil
+		}
+		return entries, "", nil
+	}
+	return entries, pagination.MarshalPageToken(driverPageToken, driverStartAfter), nil
 }
 
 func (b *Bucket) ListObjects(ctx context.Context, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
-	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSizeForObjects)
 	driverPageToken := blob.FirstPageToken
 	if pageToken != "" {
 		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken); err != nil {

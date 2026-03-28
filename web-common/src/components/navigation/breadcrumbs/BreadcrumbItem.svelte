@@ -6,6 +6,7 @@
   import type { PathOption, PathOptions } from "./types";
   import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
   export let pathOptions: PathOptions;
   export let current: string;
@@ -65,7 +66,7 @@
   >
     {#if selected}
       <a
-        on:click={() => {
+        onclick={() => {
           if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
         href={isCurrentPage
@@ -84,25 +85,25 @@
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <button
-            use:builder.action
-            {...builder}
-            class="trigger"
-            aria-label="Breadcrumb dropdown"
-          >
-            <CaretDownIcon size="14px" />
-          </button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <button {...props} class="trigger" aria-label="Breadcrumb dropdown">
+              <CaretDownIcon size="14px" />
+            </button>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
           align="start"
           class="min-w-44 max-h-96 overflow-y-auto"
         >
           {#each options as [id, option] (id)}
-            {@const selected = id === current.toLowerCase()}
+            {@const isSelected = id === current.toLowerCase()}
+            {@const icon = option.resourceKind
+              ? resourceIconMapping[option.resourceKind]
+              : undefined}
             <DropdownMenu.CheckboxItem
               class="cursor-pointer"
-              checked={selected}
+              checked={isSelected}
               checkSize={"h-3 w-3"}
               href={linkMaker(
                 currentPath,
@@ -112,13 +113,18 @@
                 $page.route.id ?? "",
               )}
               preloadData={option.preloadData}
-              on:click={() => {
+              onclick={() => {
                 if (onSelect) {
                   onSelect(id);
                 }
               }}
             >
-              <span class="text-xs text-fg-secondary flex-grow">
+              <span
+                class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+              >
+                {#if icon}
+                  <svelte:component this={icon} size="12px" />
+                {/if}
                 {option.label}
               </span>
             </DropdownMenu.CheckboxItem>
@@ -141,7 +147,7 @@
   }
 
   .trigger:hover,
-  .trigger[data-state="open"] {
+  .trigger:global([data-state="open"]) {
     @apply bg-gray-100;
   }
 </style>

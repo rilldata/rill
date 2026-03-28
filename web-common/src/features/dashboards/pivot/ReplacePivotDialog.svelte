@@ -17,16 +17,20 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} type="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <Button {...props} large type="secondary" onClick={onCancel}
+            >Cancel</Button
+          >
+        {/snippet}
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild let:builder>
-        <Button large builders={[builder]} type="primary" onClick={onReplace}>
-          Replace
-        </Button>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <Button {...props} large type="primary" onClick={onReplace}
+            >Replace</Button
+          >
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

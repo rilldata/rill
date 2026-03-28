@@ -340,7 +340,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	var nextPageToken string
 	if len(partitions) == pagination.ValidPageSize(req.PageSize, defaultPageSize) {
 		last := partitions[len(partitions)-1]
-		nextPageToken = pagination.MarshalPageToken(last.Index, last.Key)
+		nextPageToken = pagination.MarshalPageToken(last.ExecutedOn, last.Key)
 	}
 
 	return &runtimev1.GetModelPartitionsResponse{

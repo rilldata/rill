@@ -2,7 +2,9 @@
   import AddDataModal from "@rilldata/web-common/features/sources/modal/AddDataModal.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
-  import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
+  import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
+
+  const ingestedPath = sourceIngestionTracker.ingestedPath;
 
   let showDropOverlay = false;
 
@@ -15,11 +17,25 @@
 <main
   role="application"
   class="index-body relative size-full flex flex-col overflow-hidden"
-  on:drag|preventDefault|stopPropagation
-  on:drop|preventDefault|stopPropagation
-  on:dragenter|preventDefault|stopPropagation
-  on:dragleave|preventDefault|stopPropagation
-  on:dragover|preventDefault|stopPropagation={(e) => {
+  ondrag={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondrop={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondragenter={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondragleave={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  ondragover={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (isEventWithFiles(e)) showDropOverlay = true;
   }}
 >
@@ -31,4 +47,4 @@
 {/if}
 
 <AddDataModal />
-<SourceImportedModal sourcePath={$sourceImportedPath} />
+<SourceImportedModal sourcePath={$ingestedPath} />

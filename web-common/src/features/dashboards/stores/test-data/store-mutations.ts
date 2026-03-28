@@ -42,13 +42,18 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
   RandomDomains,
   RandomPublishers,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  type DashboardTimeControls,
+  type TimeRange,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -136,7 +141,7 @@ export const AD_BIDS_CLEAR_FILTERS: TestDashboardMutation = (mut) =>
 export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
-    { name: TimeRangePreset.LAST_7_DAYS } as any,
+    { name: TimeRangePreset.LAST_7_DAYS } as TimeRange,
     V1TimeGrain.TIME_GRAIN_DAY,
     undefined,
     AD_BIDS_METRICS_INIT,
@@ -144,7 +149,7 @@ export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
 export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
-    { name: TimeRangePreset.LAST_4_WEEKS } as any,
+    { name: TimeRangePreset.LAST_4_WEEKS } as TimeRange,
     V1TimeGrain.TIME_GRAIN_WEEK,
     undefined,
     AD_BIDS_METRICS_INIT,
@@ -152,7 +157,7 @@ export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
 export const AD_BIDS_SET_ALL_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
-    { name: TimeRangePreset.ALL_TIME } as any,
+    { name: TimeRangePreset.ALL_TIME } as TimeRange,
     V1TimeGrain.TIME_GRAIN_DAY,
     undefined,
     AD_BIDS_METRICS_INIT,
@@ -166,7 +171,7 @@ export const AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER: TestDashboar
     metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
-      { name: "rill-PP" } as any,
+      { name: "rill-PP" } as DashboardTimeControls,
       AD_BIDS_METRICS_INIT,
     );
   };
@@ -175,7 +180,16 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
     metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
-      { name: "rill-PW" } as any,
+      { name: "rill-PW" } as DashboardTimeControls,
+      AD_BIDS_METRICS_INIT,
+    );
+  };
+export const AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
+  () => {
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_EXPLORE_NAME,
+      { name: "7D offset -7D" } as DashboardTimeControls,
       AD_BIDS_METRICS_INIT,
     );
   };
@@ -380,13 +394,30 @@ export const AD_BIDS_SORT_PIVOT_BY_DOMAIN_DESC: TestDashboardMutation = () =>
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
-    { id: V1TimeGrain.TIME_GRAIN_DAY, desc: false },
+    {
+      id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_DAY}`,
+      desc: false,
+    },
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
   () =>
     metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
+// Matches actual TanStack Table sort id format: {timeDimension}_rill_{grain}
+export const AD_BIDS_SORT_PIVOT_BY_RILL_TIME_DAY_DESC: TestDashboardMutation =
+  () =>
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      {
+        id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_DAY}`,
+        desc: true,
+      },
+    ]);
+// Minimized accessor format used for column-specific measure sorts
+export const AD_BIDS_SORT_PIVOT_BY_ACCESSOR_DESC: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+    { id: "c0v2m0", desc: true },
+  ]);
 
 export const AD_BIDS_SET_PIVOT_ROW_LIMIT_10: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, 10);

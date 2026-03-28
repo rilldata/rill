@@ -378,31 +378,31 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-  }}
   onOpenChange={(open) => {
     if (!open) {
       handleClose();
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>
       <DialogTitle>Edit group</DialogTitle>
     </DialogHeader>
-
-    <div class="flex flex-col gap-4 w-full">
-      <!-- Name -->
-      <form
-        id={formId}
-        class="w-full"
-        on:submit|preventDefault={submit}
-        use:enhance
-      >
+    <form
+      id={formId}
+      class="w-full"
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
+      use:enhance
+    >
+      <div class="flex flex-col gap-4 w-full">
         <Input
           bind:value={$form.newName}
           id="edit-user-group-name"
@@ -411,68 +411,148 @@
           errors={$errors.newName}
           alwaysShowError={true}
         />
-      </form>
 
-      <!-- Projects -->
-      <div class="flex flex-col gap-1">
-        <div class="text-sm font-medium text-fg-primary">Projects</div>
-        <div class="rounded-md border border-border">
-          {#if projectsLoading}
-            <div class="px-3 py-2 text-sm text-fg-secondary">
-              Loading projects…
-            </div>
-          {:else}
-            {#if selectedProjects.length > 0}
+        <!-- Projects -->
+        <div class="flex flex-col gap-1">
+          <div class="text-sm font-medium text-fg-primary">Projects</div>
+          <div class="rounded-md border border-border">
+            {#if projectsLoading}
+              <div class="px-3 py-2 text-sm text-fg-secondary">
+                Loading projects…
+              </div>
+            {:else}
+              {#if selectedProjects.length > 0}
+                <div class="max-h-40 overflow-y-auto divide-y divide-border">
+                  {#each selectedProjects as project (project.name)}
+                    <div
+                      class="flex items-center gap-2 px-3 py-2 bg-surface-background"
+                    >
+                      <span class="flex-1 truncate text-sm">{project.name}</span
+                      >
+                      <DropdownMenu.Root
+                        bind:open={projectRoleDropdownOpen[project.name]}
+                      >
+                        <DropdownMenu.Trigger
+                          class="flex flex-row gap-1 items-center rounded-sm text-xs outline-none border-none {projectRoleDropdownOpen[
+                            project.name
+                          ]
+                            ? 'bg-surface-active'
+                            : 'hover:bg-surface-hover'} px-2 py-1"
+                        >
+                          {capitalize(project.role)}
+                          {#if projectRoleDropdownOpen[project.name]}
+                            <CaretUpIcon size="12px" />
+                          {:else}
+                            <CaretDownIcon size="12px" />
+                          {/if}
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content
+                          align="start"
+                          strategy="fixed"
+                          class="min-w-[200px]"
+                        >
+                          {#each PROJECT_ROLES_OPTIONS as opt (opt.value)}
+                            <DropdownMenu.Item
+                              class="font-normal flex flex-col items-start py-2 {project.role ===
+                              opt.value
+                                ? 'bg-surface-active'
+                                : ''}"
+                              onclick={() =>
+                                handleProjectRoleChange(
+                                  project.name,
+                                  opt.value,
+                                )}
+                            >
+                              <span class="font-medium">{opt.label}</span>
+                              <span class="text-xs text-fg-secondary"
+                                >{opt.description}</span
+                              >
+                            </DropdownMenu.Item>
+                          {/each}
+                        </DropdownMenu.Content>
+                      </DropdownMenu.Root>
+                      <button
+                        type="button"
+                        class="text-fg-muted hover:text-destructive text-xs leading-none p-1 rounded hover:bg-destructive-foreground"
+                        onclick={() => handleProjectRemove(project.name)}
+                        aria-label="Remove {project.name}"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+
+              <!-- Inline project search -->
+              <div
+                class="relative border-border bg-surface-subtle rounded-b-md"
+                class:border-t={selectedProjects.length > 0}
+                class:rounded-md={selectedProjects.length === 0}
+              >
+                {#if projectSearchFocused}
+                  <div
+                    class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-surface-background shadow-md"
+                  >
+                    {#if filteredProjectOptions.length > 0}
+                      {#each filteredProjectOptions as name (name)}
+                        <button
+                          type="button"
+                          class="w-full border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-surface-hover"
+                          onmousedown={(e) => {
+                            e.preventDefault();
+                            handleProjectAdd(name);
+                          }}
+                        >
+                          {name}
+                        </button>
+                      {/each}
+                    {:else}
+                      <div class="px-3 py-2 text-sm text-fg-muted">
+                        No more projects found
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
+                <input
+                  type="text"
+                  bind:this={projectSearchInputEl}
+                  bind:value={projectSearchInput}
+                  onfocus={() => (projectSearchFocused = true)}
+                  onblur={() =>
+                    setTimeout(() => (projectSearchFocused = false), 150)}
+                  placeholder="Search projects…"
+                  class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-fg-muted"
+                />
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Members -->
+        <div class="flex flex-col gap-1">
+          <div class="text-sm font-medium text-fg-primary">Members</div>
+          <div class="rounded-md border border-border">
+            {#if selectedUsers.length > 0}
               <div class="max-h-40 overflow-y-auto divide-y divide-border">
-                {#each selectedProjects as project (project.name)}
+                {#each selectedUsers as user (user.userEmail)}
                   <div
                     class="flex items-center gap-2 px-3 py-2 bg-surface-background"
                   >
-                    <span class="flex-1 truncate text-sm">{project.name}</span>
-                    <DropdownMenu.Root
-                      bind:open={projectRoleDropdownOpen[project.name]}
-                    >
-                      <DropdownMenu.Trigger
-                        class="flex flex-row gap-1 items-center rounded-sm text-xs outline-none border-none {projectRoleDropdownOpen[
-                          project.name
-                        ]
-                          ? 'bg-surface-active'
-                          : 'hover:bg-surface-hover'} px-2 py-1"
-                      >
-                        {capitalize(project.role)}
-                        {#if projectRoleDropdownOpen[project.name]}
-                          <CaretUpIcon size="12px" />
-                        {:else}
-                          <CaretDownIcon size="12px" />
-                        {/if}
-                      </DropdownMenu.Trigger>
-                      <DropdownMenu.Content
-                        align="start"
-                        strategy="fixed"
-                        class="min-w-[200px]"
-                      >
-                        {#each PROJECT_ROLES_OPTIONS as opt (opt.value)}
-                          <DropdownMenu.Item
-                            class="font-normal flex flex-col items-start py-2 {project.role ===
-                            opt.value
-                              ? 'bg-surface-active'
-                              : ''}"
-                            on:click={() =>
-                              handleProjectRoleChange(project.name, opt.value)}
-                          >
-                            <span class="font-medium">{opt.label}</span>
-                            <span class="text-xs text-fg-secondary"
-                              >{opt.description}</span
-                            >
-                          </DropdownMenu.Item>
-                        {/each}
-                      </DropdownMenu.Content>
-                    </DropdownMenu.Root>
+                    <div class="flex-1 min-w-0">
+                      <AvatarListItem
+                        name={user.userName ?? ""}
+                        email={user.userEmail ?? ""}
+                        photoUrl={user.userPhotoUrl}
+                        isCurrentUser={user.userEmail === currentUserEmail}
+                        role={user.roleName ?? ""}
+                      />
+                    </div>
                     <button
                       type="button"
-                      class="text-fg-muted hover:text-destructive text-xs leading-none p-1 rounded hover:bg-destructive-foreground"
-                      on:click={() => handleProjectRemove(project.name)}
-                      aria-label="Remove {project.name}"
+                      class="shrink-0 text-fg-muted hover:text-destructive text-xs leading-none p-1 rounded hover:bg-destructive-foreground"
+                      onclick={() => handleMemberRemove(user.userEmail ?? "")}
+                      aria-label="Remove {user.userName ?? ''}"
                     >
                       ✕
                     </button>
@@ -481,128 +561,57 @@
               </div>
             {/if}
 
-            <!-- Inline project search -->
+            <!-- Inline member search -->
             <div
               class="relative border-border bg-surface-subtle rounded-b-md"
-              class:border-t={selectedProjects.length > 0}
-              class:rounded-md={selectedProjects.length === 0}
+              class:border-t={selectedUsers.length > 0}
+              class:rounded-md={selectedUsers.length === 0}
             >
-              {#if projectSearchFocused}
+              {#if memberSearchFocused}
                 <div
                   class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-surface-background shadow-md"
                 >
-                  {#if filteredProjectOptions.length > 0}
-                    {#each filteredProjectOptions as name (name)}
+                  {#if $organizationUsersQuery.isLoading}
+                    <div class="px-3 py-2 text-sm text-fg-muted">Loading…</div>
+                  {:else if filteredMemberOptions.length > 0}
+                    {#each filteredMemberOptions as user (user.userEmail)}
                       <button
                         type="button"
-                        class="w-full border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-surface-hover"
-                        on:mousedown|preventDefault={() =>
-                          handleProjectAdd(name)}
+                        class="w-full border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-hover"
+                        onmousedown={(e) => {
+                          e.preventDefault();
+                          handleMemberAdd(user);
+                        }}
                       >
-                        {name}
+                        <AvatarListItem
+                          name={user.userName ?? ""}
+                          email={user.userEmail ?? ""}
+                          photoUrl={user.userPhotoUrl}
+                        />
                       </button>
                     {/each}
                   {:else}
                     <div class="px-3 py-2 text-sm text-fg-muted">
-                      No more projects found
+                      No more members found
                     </div>
                   {/if}
                 </div>
               {/if}
               <input
                 type="text"
-                bind:this={projectSearchInputEl}
-                bind:value={projectSearchInput}
-                on:focus={() => (projectSearchFocused = true)}
-                on:blur={() =>
-                  setTimeout(() => (projectSearchFocused = false), 150)}
-                placeholder="Search projects…"
+                bind:this={memberSearchInputEl}
+                bind:value={memberSearchInput}
+                onfocus={() => (memberSearchFocused = true)}
+                onblur={() =>
+                  setTimeout(() => (memberSearchFocused = false), 150)}
+                placeholder="Search members…"
                 class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-fg-muted"
               />
             </div>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Members -->
-      <div class="flex flex-col gap-1">
-        <div class="text-sm font-medium text-fg-primary">Members</div>
-        <div class="rounded-md border border-border">
-          {#if selectedUsers.length > 0}
-            <div class="max-h-40 overflow-y-auto divide-y divide-border">
-              {#each selectedUsers as user (user.userEmail)}
-                <div
-                  class="flex items-center gap-2 px-3 py-2 bg-surface-background"
-                >
-                  <div class="flex-1 min-w-0">
-                    <AvatarListItem
-                      name={user.userName ?? ""}
-                      email={user.userEmail ?? ""}
-                      photoUrl={user.userPhotoUrl}
-                      isCurrentUser={user.userEmail === currentUserEmail}
-                      role={user.roleName ?? ""}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    class="shrink-0 text-fg-muted hover:text-destructive text-xs leading-none p-1 rounded hover:bg-destructive-foreground"
-                    on:click={() => handleMemberRemove(user.userEmail ?? "")}
-                    aria-label="Remove {user.userName ?? ''}"
-                  >
-                    ✕
-                  </button>
-                </div>
-              {/each}
-            </div>
-          {/if}
-
-          <!-- Inline member search -->
-          <div
-            class="relative border-border bg-surface-subtle rounded-b-md"
-            class:border-t={selectedUsers.length > 0}
-            class:rounded-md={selectedUsers.length === 0}
-          >
-            {#if memberSearchFocused}
-              <div
-                class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-surface-background shadow-md"
-              >
-                {#if $organizationUsersQuery.isLoading}
-                  <div class="px-3 py-2 text-sm text-fg-muted">Loading…</div>
-                {:else if filteredMemberOptions.length > 0}
-                  {#each filteredMemberOptions as user (user.userEmail)}
-                    <button
-                      type="button"
-                      class="w-full border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-hover"
-                      on:mousedown|preventDefault={() => handleMemberAdd(user)}
-                    >
-                      <AvatarListItem
-                        name={user.userName ?? ""}
-                        email={user.userEmail ?? ""}
-                        photoUrl={user.userPhotoUrl}
-                      />
-                    </button>
-                  {/each}
-                {:else}
-                  <div class="px-3 py-2 text-sm text-fg-muted">
-                    No more members found
-                  </div>
-                {/if}
-              </div>
-            {/if}
-            <input
-              type="text"
-              bind:this={memberSearchInputEl}
-              bind:value={memberSearchInput}
-              on:focus={() => (memberSearchFocused = true)}
-              on:blur={() =>
-                setTimeout(() => (memberSearchFocused = false), 150)}
-              placeholder="Search members…"
-              class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-fg-muted"
-            />
           </div>
         </div>
       </div>
-    </div>
+    </form>
 
     <DialogFooter>
       <Button type="tertiary" onClick={handleClose}>Cancel</Button>

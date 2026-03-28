@@ -175,7 +175,10 @@
 {#if priorRange || (subInterval?.isValid && !subInterval.start.equals(subInterval.end))}
   <button
     bind:this={button}
-    on:click|stopPropagation={handleClick}
+    onclick={(e) => {
+      e.stopPropagation();
+      handleClick();
+    }}
     aria-label={priorRange ? "Undo zoom" : "Zoom"}
   >
     <div class="content-wrapper">
@@ -199,12 +202,14 @@
 {/if}
 
 <!-- Only to be used on singleton components to avoid multiple state dispatches -->
-<svelte:window on:keydown={onKeyDown} />
+<svelte:window onkeydown={onKeyDown} />
 
 <style lang="postcss">
   button {
     @apply border rounded-[2px] bg-surface-subtle pointer-events-auto;
-    @apply absolute left-1/2 -top-8 -translate-x-1/2 z-50;
+    @apply absolute top-0 -translate-x-1/2 z-50;
+    /* Center over the plot body, not the full chart (40px right margin for y-axis labels) */
+    left: calc(50% - 20px);
   }
 
   .content-wrapper {

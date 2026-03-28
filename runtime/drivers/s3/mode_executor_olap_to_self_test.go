@@ -123,14 +123,14 @@ type: model
 sql: SELECT number FROM numbers(16)
 output:
   connector: s3
-  path: gs://integration-test.rilldata.com/export_test
+  path: s3://integration-test.rilldata.com/export_test
 `,
 		},
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
-	testExportedObjectExists(t, "gcs", rt, id)
+	testExportedObjectExists(t, "s3", rt, id)
 }
 
 func testExportedObjectExists(t *testing.T, driver string, rt *runtime.Runtime, id string) {
@@ -140,7 +140,7 @@ func testExportedObjectExists(t *testing.T, driver string, rt *runtime.Runtime, 
 
 	ctx := context.Background()
 	handle, _, err := rt.AcquireHandle(ctx, id, driver)
-	conn, err := drivers.Open(driver, "default", handle.Config(), storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(driver, "", "default", handle.Config(), storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

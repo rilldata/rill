@@ -106,10 +106,10 @@ export class MetricsService
   }
 
   private getOrSetClientID(): string {
-    let clientId = localStorage.getItem(ClientIDStorageKey);
-    if (clientId) return clientId;
+    const existing = localStorage.getItem(ClientIDStorageKey);
+    if (existing) return existing;
 
-    clientId = uuidv4();
+    const clientId = uuidv4();
     localStorage.setItem(ClientIDStorageKey, clientId);
     return clientId;
   }

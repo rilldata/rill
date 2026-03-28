@@ -70,7 +70,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:focus={handleRefocus} />
+<svelte:window onkeydown={handleKeydown} onfocus={handleRefocus} />
 
 <section>
   {#if $merging}
@@ -141,7 +141,7 @@
           bind:checked={autoSave}
           id="auto-save"
           small
-          on:click={() => {
+          onclick={() => {
             if (!autoSave) debounceSave();
           }}
         />
@@ -161,26 +161,23 @@
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
-        <AlertDialog.Action asChild let:builder>
-          <Button
-            builders={[builder]}
-            type="primary"
-            large
-            onClick={() => {
-              merging.set(true);
-            }}
-          >
-            Compare
-          </Button>
+        <AlertDialog.Action>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              type="primary"
+              large
+              onClick={() => {
+                merging.set(true);
+              }}
+            >
+              Compare
+            </Button>
 
-          <Button
-            builders={[builder]}
-            type="secondary"
-            large
-            onClick={revertContent}
-          >
-            Overwrite
-          </Button>
+            <Button type="secondary" large onClick={revertContent}>
+              Overwrite
+            </Button>
+          {/snippet}
         </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>

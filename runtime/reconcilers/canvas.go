@@ -158,6 +158,9 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	var conditionKinds []string
 	var conditionResources []*runtimev1.ResourceName
 	refs := &rendererRefs{
+		rt:           r.C.Runtime,
+		instanceID:   r.C.InstanceID,
+		claims:       claims,
 		metricsViews: make(map[string]bool),
 	}
 
@@ -216,10 +219,12 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			continue
 		}
 
-		// Track refs
-		err = refs.populateRendererRefs(componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse renderer properties for component %q: %w", componentName, err)
+		// Track refs.
+		// We silently ignore parse errors because some components may be malformed, which we don't want to block access to the entire canvas.
+		// Hopefully the parse errors were caught in normal validation; otherwise, the UI will probably fail the component at render time.
+		_ = refs.populateRendererRefs(ctx, componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
+		if ctx.Err() != nil { // Return ctx errors immediately.
+			return nil, ctx.Err()
 		}
 	}
 
@@ -319,18 +324,29 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 // We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields not present on the canvas).
 // See this PR for details in case we want to reintroduce it: https://github.com/rilldata/rill/pull/8370
 type rendererRefs struct {
+	rt           *runtime.Runtime
+	instanceID   string
+	claims       *runtime.SecurityClaims
 	metricsViews map[string]bool
 }
 
 // populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
-func (r *rendererRefs) populateRendererRefs(_ string, rendererProps map[string]any) error {
-	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
-	if !ok {
-		return nil
+func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string, rendererProps map[string]any) error {
+	// Check for a direct metrics_view reference.
+	if mv, ok := pathutil.GetPath(rendererProps, "metrics_view"); ok {
+		return r.metricsView(mv)
 	}
-	err := r.metricsView(mv)
-	if err != nil {
-		return err
+
+	// Check for a metrics_sql reference; use a resolver to discover the referenced metrics views.
+	if sql, ok := pathutil.GetPath(rendererProps, "metrics_sql"); ok {
+		return r.metricsSQL(ctx, sql)
+	}
+
+	// For markdown renderers, analyze the content text for embedded metrics_sql references.
+	if renderer == "markdown" {
+		if content, ok := pathutil.GetPath(rendererProps, "content"); ok {
+			return r.text(ctx, content)
+		}
 	}
 
 	return nil
@@ -343,4 +359,72 @@ func (r *rendererRefs) metricsView(mv any) error {
 		return nil
 	}
 	return fmt.Errorf("metrics view field is not a string")
+}
+
+// text initializes a text resolver to discover metrics view references in a template string.
+func (r *rendererRefs) text(ctx context.Context, content any) error {
+	contentStr, ok := content.(string)
+	if !ok {
+		return fmt.Errorf("content field is not a string")
+	}
+
+	initializer, ok := runtime.ResolverInitializers["text"]
+	if !ok {
+		return fmt.Errorf("text resolver not registered")
+	}
+	resolver, err := initializer(ctx, &runtime.ResolverOptions{
+		Runtime:    r.rt,
+		InstanceID: r.instanceID,
+		Properties: map[string]any{"text": contentStr},
+		Claims: &runtime.SecurityClaims{
+			UserID:         r.claims.UserID,
+			UserAttributes: r.claims.UserAttributes,
+			SkipChecks:     true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize text resolver: %w", err)
+	}
+	defer resolver.Close()
+
+	for _, ref := range resolver.Refs() {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			r.metricsViews[ref.Name] = true
+		}
+	}
+	return nil
+}
+
+// metricsSQL parses and registers metrics view references found in a metrics SQL string.
+func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
+	sqlStr, ok := sql.(string)
+	if !ok {
+		return fmt.Errorf("metrics_sql field is not a string")
+	}
+
+	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
+	if !ok {
+		return fmt.Errorf("metrics_sql resolver not registered")
+	}
+	resolver, err := initializer(ctx, &runtime.ResolverOptions{
+		Runtime:    r.rt,
+		InstanceID: r.instanceID,
+		Properties: map[string]any{"sql": sqlStr},
+		Claims: &runtime.SecurityClaims{
+			UserID:         r.claims.UserID,
+			UserAttributes: r.claims.UserAttributes,
+			SkipChecks:     true, // To avoid infinite recursion
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize metrics_sql resolver: %w", err)
+	}
+	defer resolver.Close()
+
+	for _, ref := range resolver.Refs() {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			r.metricsViews[ref.Name] = true
+		}
+	}
+	return nil
 }

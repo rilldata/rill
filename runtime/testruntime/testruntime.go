@@ -176,7 +176,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			{
 				Type:   olapDriver,
 				Name:   olapDriver,
-				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN})),
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN, "mode": "readwrite"})),
 			},
 			{
 				Type: "sqlite",
@@ -279,7 +279,7 @@ func newInstanceHelper(t TestingT, name string, instConfig map[string]string) (*
 			{
 				Type:   olapDriver,
 				Name:   olapDriver,
-				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN})),
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN, "mode": "readwrite"})),
 			},
 			{
 				Type: "sqlite",

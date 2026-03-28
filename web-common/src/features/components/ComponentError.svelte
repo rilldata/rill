@@ -16,7 +16,7 @@
   {#if error}
     <button
       class="p-2 rounded hover:bg-destructive/50 transition-colors"
-      on:click={() => copyToClipboard(error, "Copied error to clipboard")}
+      onclick={() => copyToClipboard(error, "Copied error to clipboard")}
       title="Copy error to clipboard"
     >
       <Copy size="14px" />

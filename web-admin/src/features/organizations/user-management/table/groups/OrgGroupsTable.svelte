@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
-  import { flexRender } from "@tanstack/svelte-table";
-  import type { ColumnDef } from "@tanstack/svelte-table";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import GroupActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupActionsCell.svelte";
   import GroupCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupCompositeCell.svelte";
   import GroupProjectsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupProjectsCell.svelte";
@@ -28,7 +28,7 @@
       enableSorting: true,
       sortDescFirst: true,
       cell: ({ row }) =>
-        flexRender(GroupCompositeCell, {
+        renderComponent(GroupCompositeCell, {
           groupName: row.original.groupName,
           name: row.original.groupName?.startsWith("autogroup:")
             ? transformGroupName(row.original.groupName)
@@ -44,7 +44,7 @@
       header: "Projects",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(GroupProjectsCell, {
+        renderComponent(GroupProjectsCell, {
           organization,
           groupName: row.original.groupName ?? "",
         }),
@@ -58,7 +58,7 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(GroupActionsCell, {
+        renderComponent(GroupActionsCell, {
           groupName: row.original.groupName,
           currentUserEmail: currentUserEmail,
         }),

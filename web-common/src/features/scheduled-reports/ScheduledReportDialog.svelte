@@ -52,7 +52,7 @@
     type V1ReportSpec,
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
@@ -64,8 +64,10 @@
   const user = createAdminServiceGetCurrentUser();
   const FORM_ID = "scheduled-report-form";
 
+  const runtimeClient = useRuntimeClient();
+
   $: ({ organization, project, report: reportName } = $page.params);
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: listProjectMemberUsersQuery = createAdminServiceListProjectMemberUsers(
     organization,
@@ -80,12 +82,12 @@
       ? props.exploreName
       : getDashboardNameFromReport(props.reportSpec);
 
-  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
+  $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     metricsViewName,
     undefined,
     queryClient,
@@ -99,16 +101,24 @@
   $: queryName =
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
-      : props.reportSpec.queryName;
+      : ((props.reportSpec.resolverProperties?.query_name as
+          | string
+          | undefined) ?? props.reportSpec.queryName);
   $: aggregationRequest = (
     props.mode === "create"
       ? props.query.metricsViewAggregationRequest
-      : JSON.parse(props.reportSpec.queryArgsJson || "{}")
+      : JSON.parse(
+          (props.reportSpec.resolverProperties?.query_args_json as
+            | string
+            | undefined) ??
+            props.reportSpec.queryArgsJson ??
+            "{}",
+        )
   ) as V1MetricsViewAggregationRequest;
 
   $: ({ filters, timeControls } =
     getFiltersAndTimeControlsFromAggregationRequest(
-      instanceId,
+      runtimeClient,
       metricsViewName,
       exploreName,
       aggregationRequest,
@@ -261,8 +271,10 @@
       if (props.mode === "edit") {
         await queryClient.invalidateQueries({
           queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-            "name.name": reportName,
-            "name.kind": ResourceKind.Report,
+            name: {
+              name: reportName,
+              kind: ResourceKind.Report,
+            },
           }),
         });
       }
@@ -290,8 +302,8 @@
   }
 </script>
 
-<Dialog.Root bind:open closeOnEscape={false}>
-  <Dialog.Content class="min-w-[900px]">
+<Dialog.Root bind:open>
+  <Dialog.Content class="min-w-[900px]" escapeKeydownBehavior="ignore">
     <Dialog.Title>Schedule report</Dialog.Title>
 
     <BaseScheduledReportForm
@@ -309,7 +321,7 @@
       <div class="text-red-500">{generalErrors}</div>
     {/if}
     <div class="flex items-center gap-x-2 mt-5">
-      <div class="grow" />
+      <div class="grow"></div>
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
         disabled={$submitting}
