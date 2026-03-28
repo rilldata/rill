@@ -416,16 +416,18 @@
       <!-- Projects -->
       <div class="flex flex-col gap-1">
         <div class="text-sm font-medium text-fg-primary">Projects</div>
-        <div class="rounded-md border border-gray-200">
+        <div class="rounded-md border border-border">
           {#if projectsLoading}
             <div class="px-3 py-2 text-sm text-fg-secondary">
               Loading projects…
             </div>
           {:else}
             {#if selectedProjects.length > 0}
-              <div class="max-h-40 overflow-y-auto divide-y divide-gray-100">
+              <div class="max-h-40 overflow-y-auto divide-y divide-border">
                 {#each selectedProjects as project (project.name)}
-                  <div class="flex items-center gap-2 px-3 py-2 bg-white">
+                  <div
+                    class="flex items-center gap-2 px-3 py-2 bg-surface-background"
+                  >
                     <span class="flex-1 truncate text-sm">{project.name}</span>
                     <DropdownMenu.Root
                       bind:open={projectRoleDropdownOpen[project.name]}
@@ -468,7 +470,7 @@
                     </DropdownMenu.Root>
                     <button
                       type="button"
-                      class="text-gray-400 hover:text-red-500 text-xs leading-none p-1 rounded hover:bg-red-50"
+                      class="text-fg-muted hover:text-destructive text-xs leading-none p-1 rounded hover:bg-destructive-foreground"
                       on:click={() => handleProjectRemove(project.name)}
                       aria-label="Remove {project.name}"
                     >
@@ -481,19 +483,19 @@
 
             <!-- Inline project search -->
             <div
-              class="relative border-gray-200 bg-gray-50 rounded-b-md"
+              class="relative border-border bg-surface-subtle rounded-b-md"
               class:border-t={selectedProjects.length > 0}
               class:rounded-md={selectedProjects.length === 0}
             >
               {#if projectSearchFocused}
                 <div
-                  class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
+                  class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-surface-background shadow-md"
                 >
                   {#if filteredProjectOptions.length > 0}
                     {#each filteredProjectOptions as name (name)}
                       <button
                         type="button"
-                        class="w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-gray-50"
+                        class="w-full border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-surface-hover"
                         on:mousedown|preventDefault={() =>
                           handleProjectAdd(name)}
                       >
@@ -501,7 +503,7 @@
                       </button>
                     {/each}
                   {:else}
-                    <div class="px-3 py-2 text-sm text-gray-400">
+                    <div class="px-3 py-2 text-sm text-fg-muted">
                       No more projects found
                     </div>
                   {/if}
@@ -515,7 +517,7 @@
                 on:blur={() =>
                   setTimeout(() => (projectSearchFocused = false), 150)}
                 placeholder="Search projects…"
-                class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-gray-400"
+                class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-fg-muted"
               />
             </div>
           {/if}
@@ -525,11 +527,13 @@
       <!-- Members -->
       <div class="flex flex-col gap-1">
         <div class="text-sm font-medium text-fg-primary">Members</div>
-        <div class="rounded-md border border-gray-200">
+        <div class="rounded-md border border-border">
           {#if selectedUsers.length > 0}
-            <div class="max-h-40 overflow-y-auto divide-y divide-gray-100">
+            <div class="max-h-40 overflow-y-auto divide-y divide-border">
               {#each selectedUsers as user (user.userEmail)}
-                <div class="flex items-center gap-2 px-3 py-2 bg-white">
+                <div
+                  class="flex items-center gap-2 px-3 py-2 bg-surface-background"
+                >
                   <div class="flex-1 min-w-0">
                     <AvatarListItem
                       name={user.userName ?? ""}
@@ -541,7 +545,7 @@
                   </div>
                   <button
                     type="button"
-                    class="shrink-0 text-gray-400 hover:text-red-500 text-xs leading-none p-1 rounded hover:bg-red-50"
+                    class="shrink-0 text-fg-muted hover:text-destructive text-xs leading-none p-1 rounded hover:bg-destructive-foreground"
                     on:click={() => handleMemberRemove(user.userEmail ?? "")}
                     aria-label="Remove {user.userName ?? ''}"
                   >
@@ -554,21 +558,21 @@
 
           <!-- Inline member search -->
           <div
-            class="relative border-gray-200 bg-gray-50 rounded-b-md"
+            class="relative border-border bg-surface-subtle rounded-b-md"
             class:border-t={selectedUsers.length > 0}
             class:rounded-md={selectedUsers.length === 0}
           >
             {#if memberSearchFocused}
               <div
-                class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
+                class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-surface-background shadow-md"
               >
                 {#if $organizationUsersQuery.isLoading}
-                  <div class="px-3 py-2 text-sm text-gray-400">Loading…</div>
+                  <div class="px-3 py-2 text-sm text-fg-muted">Loading…</div>
                 {:else if filteredMemberOptions.length > 0}
                   {#each filteredMemberOptions as user (user.userEmail)}
                     <button
                       type="button"
-                      class="w-full border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50"
+                      class="w-full border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-hover"
                       on:mousedown|preventDefault={() => handleMemberAdd(user)}
                     >
                       <AvatarListItem
@@ -579,7 +583,7 @@
                     </button>
                   {/each}
                 {:else}
-                  <div class="px-3 py-2 text-sm text-gray-400">
+                  <div class="px-3 py-2 text-sm text-fg-muted">
                     No more members found
                   </div>
                 {/if}
@@ -593,7 +597,7 @@
               on:blur={() =>
                 setTimeout(() => (memberSearchFocused = false), 150)}
               placeholder="Search members…"
-              class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-gray-400"
+              class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-fg-muted"
             />
           </div>
         </div>
