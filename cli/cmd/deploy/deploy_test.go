@@ -66,8 +66,14 @@ func TestManagedDeploy(t *testing.T) {
 
 	// clone the project to an empty directory and remove the __rill_remote to simulate fresh deploys in CI/CD
 
+	// Get an installation token so we can clone the managed (private) repo without credentials.
+	managedOwner, _, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
+	require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
+	cloneToken, _, err := adm.Admin.Github.InstallationTokenForOrg(t.Context(), managedOwner)
+	require.NoError(t, err)
+
 	cloneDir := t.TempDir()
-	cmd := exec.CommandContext(t.Context(), "git", "clone", resp.Project.GitRemote, cloneDir)
+	cmd := exec.CommandContext(t.Context(), "git", "clone", authGitURL(t, resp.Project.GitRemote, cloneToken), cloneDir)
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, "git clone failed: %s", out)
 
