@@ -13,17 +13,12 @@
   import {
     V1DeploymentStatus,
     createAdminServiceListDeployments,
-    getAdminServiceGetProjectQueryKey,
     type V1Deployment,
-    type V1GetProjectResponse,
   } from "../../client";
-  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let organization: string;
   export let project: string;
   export let primaryBranch: string | undefined = undefined;
-
-  const queryClient = useQueryClient();
 
   let open = false;
 
@@ -87,23 +82,6 @@
     if (isProdDeployment(deployment)) {
       requestSkipBranchInjection();
     }
-
-    // Optimistically seed the GetProject cache for the target branch so the
-    // layout's RuntimeProvider re-keys immediately instead of waiting for the
-    // network response.
-    const branchParam = isProdDeployment(deployment)
-      ? undefined
-      : { branch: deployment.branch };
-    const queryKey = getAdminServiceGetProjectQueryKey(
-      organization,
-      project,
-      branchParam,
-    );
-    queryClient.setQueryData<V1GetProjectResponse>(queryKey, (old) => ({
-      ...old,
-      deployment,
-    }));
-
     open = false;
   }
 
