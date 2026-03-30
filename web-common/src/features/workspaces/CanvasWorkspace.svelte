@@ -3,7 +3,6 @@
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -15,7 +14,7 @@
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import WorkspaceError from "@rilldata/web-common/layout/workspace/WorkspaceError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PreviewButton from "../explores/PreviewButton.svelte";
@@ -57,16 +56,7 @@
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = data?.meta?.reconcileError;
-  $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient,
-    data,
-    reconcileError,
-  );
-  $: rootCauseReconcileError = reconcileError
-    ? ($rootCauseQuery?.data ?? reconcileError)
-    : undefined;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -115,10 +105,12 @@
         </div>
       </WorkspaceHeader>
 
-      <WorkspaceEditorContainer
+      <WorkspaceError
         slot="body"
-        error={parseError?.message ?? rootCauseReconcileError}
-        showError={!!$remoteContent}
+        resource={data}
+        {parseError}
+        remoteContent={$remoteContent}
+        let:rootCauseReconcileError
       >
         {#if selectedView === "code"}
           <CanvasEditor
@@ -141,7 +133,7 @@
             />
           </CanvasLoadingState>
         {/if}
-      </WorkspaceEditorContainer>
+      </WorkspaceError>
       <svelte:fragment slot="inspector">
         {#if ready}
           <VisualCanvasEditing

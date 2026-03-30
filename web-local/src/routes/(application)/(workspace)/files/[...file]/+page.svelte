@@ -15,7 +15,7 @@
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import WorkspaceError from "@rilldata/web-common/layout/workspace/WorkspaceError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
@@ -43,7 +43,7 @@
     inferredResourceKind,
     path,
     getResource,
-    getAllErrors,
+    remoteContent,
   } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
@@ -59,9 +59,8 @@
       ? [customYAMLwithJSONandSQL]
       : getExtensionsForFile(path);
 
-  // Errors for the editor banner (parse + reconcile)
-  $: allErrorsStore = getAllErrors(queryClient);
-  $: allErrors = $allErrorsStore;
+  $: parseErrorStore = fileArtifact.getParseError(queryClient);
+  $: parseError = $parseErrorStore;
 
   onMount(() => {
     expandDirectory(path);
@@ -100,14 +99,19 @@
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer slot="body" error={allErrors[0]?.message}>
+        <WorkspaceError
+          slot="body"
+          {resource}
+          {parseError}
+          remoteContent={$remoteContent}
+        >
           <Editor
             {fileArtifact}
             {extensions}
             bind:editor
             bind:autoSave={$autoSave}
           />
-        </WorkspaceEditorContainer>
+        </WorkspaceError>
       </WorkspaceContainer>
     {/if}
   </div>

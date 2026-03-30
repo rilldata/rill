@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -12,7 +11,7 @@
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import WorkspaceError from "@rilldata/web-common/layout/workspace/WorkspaceError.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
@@ -63,17 +62,8 @@
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
     ?.reconcileError;
-  $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient,
-    exploreResource ?? metricsViewResource,
-    reconcileError,
-  );
-  $: rootCauseReconcileError = reconcileError
-    ? ($rootCauseQuery?.data ?? reconcileError)
-    : undefined;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -117,10 +107,12 @@
         </div>
       </WorkspaceHeader>
 
-      <WorkspaceEditorContainer
+      <WorkspaceError
         slot="body"
-        error={parseError?.message ?? rootCauseReconcileError}
-        showError={!!$remoteContent}
+        resource={exploreResource ?? metricsViewResource}
+        {parseError}
+        remoteContent={$remoteContent}
+        let:rootCauseReconcileError
       >
         {#if selectedView === "code"}
           <ExploreEditor
@@ -145,7 +137,7 @@
             <Spinner status={1} size="48px" />
           {/if}
         {/if}
-      </WorkspaceEditorContainer>
+      </WorkspaceError>
 
       <svelte:fragment slot="inspector">
         {#if ready}
