@@ -11,6 +11,10 @@
   export let parseError: V1ParseError | undefined = undefined;
   export let remoteContent: string | null | undefined = undefined;
 
+  interface $Slots {
+    default: { rootCauseReconcileError: string | undefined };
+  }
+
   const runtimeClient = useRuntimeClient();
 
   $: reconcileError = resource?.meta?.reconcileError;
