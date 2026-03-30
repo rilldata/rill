@@ -9,9 +9,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv({ path: resolve(__dirname, "../.env"), override: false });
 
-const dev =
-  process.env.RILL_ADMIN_FRONTEND_URL?.includes("localhost") ||
-  process.env.PLAYWRIGHT_TEST === "true";
+const dev = process.env.RILL_ADMIN_FRONTEND_URL?.includes("localhost")
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
