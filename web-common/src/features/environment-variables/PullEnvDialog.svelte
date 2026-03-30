@@ -83,7 +83,11 @@
       <div
         class="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800"
       >
-        <p>{error instanceof Error ? error.message : "Failed to pull environment variables"}</p>
+        <p>
+          {error instanceof Error
+            ? error.message
+            : "Failed to pull environment variables"}
+        </p>
       </div>
     {/if}
 

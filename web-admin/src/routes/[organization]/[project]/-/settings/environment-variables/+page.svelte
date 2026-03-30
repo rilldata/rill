@@ -68,7 +68,10 @@
   });
 
   $: sortedVariables = filteredVariables.sort((a, b) => {
-    return new Date(b.updatedOn ?? 0).getTime() - new Date(a.updatedOn ?? 0).getTime();
+    return (
+      new Date(b.updatedOn ?? 0).getTime() -
+      new Date(a.updatedOn ?? 0).getTime()
+    );
   });
 
   function handleFilterByEnvironment(environment: EnvironmentTypes) {

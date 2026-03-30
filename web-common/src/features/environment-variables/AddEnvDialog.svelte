@@ -305,7 +305,8 @@
               <ul class="flex flex-col gap-y-1">
                 {#each $allErrors as error}
                   <li>
-                    <b>{($form.variables ?? [])[getKeyFromError(error)]?.key}</b>
+                    <b>{($form.variables ?? [])[getKeyFromError(error)]?.key}</b
+                    >
                     <span class="text-xs text-red-600 font-normal">
                       {error.messages}
                     </span>

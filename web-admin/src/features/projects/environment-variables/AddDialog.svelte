@@ -212,9 +212,7 @@
       const variableKey = key.name;
 
       if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
-        const originalIndex = variables.findIndex(
-          (v) => v.key === variableKey,
-        );
+        const originalIndex = variables.findIndex((v) => v.key === variableKey);
         existingDuplicates.add(originalIndex);
         isDuplicateWithExisting = true;
       }
@@ -254,7 +252,8 @@
     for (const [key, value] of Object.entries(parsedVariables)) {
       const filteredVariables = variables.filter(
         (variable) =>
-          (variable.key ?? "").trim() !== "" || (variable.value ?? "").trim() !== "",
+          (variable.key ?? "").trim() !== "" ||
+          (variable.value ?? "").trim() !== "",
       );
 
       $form.variables = [...filteredVariables, { key, value }];
