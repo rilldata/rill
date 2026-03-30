@@ -103,21 +103,23 @@
   >
     <svelte:fragment slot="workspace-controls">
       <DropdownMenu.Root bind:open={dropdownOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Tooltip distance={8} suppress={dropdownOpen}>
-            <Button type="text" compact small builders={[builder]}>
-              Templates
-              <ChevronDownIcon size="12px" />
-            </Button>
-            <TooltipContent slot="tooltip-content">
-              Insert a starter API template
-            </TooltipContent>
-          </Tooltip>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <Tooltip distance={8} suppress={dropdownOpen}>
+              <Button {...props} type="text" compact small>
+                Templates
+                <ChevronDownIcon size="12px" />
+              </Button>
+              <TooltipContent slot="tooltip-content">
+                Insert a starter API template
+              </TooltipContent>
+            </Tooltip>
+          {/snippet}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end" class="w-56">
+        <DropdownMenu.Content align="end" class="w-44">
           {#each templates as template}
-            <DropdownMenu.Item on:click={() => selectTemplate(template)}>
-              <span class="text-sm">{template.label}</span>
+            <DropdownMenu.Item onclick={() => selectTemplate(template)}>
+              <span class="text-xs">{template.label}</span>
             </DropdownMenu.Item>
           {/each}
         </DropdownMenu.Content>
@@ -146,10 +148,8 @@
       >
       <AlertDialogDescription>
         {pendingTemplate?.description ?? ""}
-        {#if $hasUnsavedChanges}
-          <br /><br />
-          <strong>This will replace your current editor content.</strong>
-        {/if}
+        <br /><br />
+        Warning: this will overwrite your current file.
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>

@@ -22,7 +22,7 @@
   let apiResponse: unknown[] | null = null;
   let responseError: string | null = null;
   let isLoading = false;
-  let previewHeight = 200;
+  let previewHeight = 300;
 
   // Clear response and args when switching to a different API
   $: apiName, resetState();
@@ -135,14 +135,14 @@
   class="preview-panel"
   style:height="{previewHeight}px"
   style:min-height="100px"
-  style:max-height="60%"
+  style:max-height="80%"
 >
   <Resizer max={500} direction="NS" side="top" bind:dimension={previewHeight} />
 
   <div class="flex items-center gap-x-3 px-3 py-2 border-b">
     <div class="flex items-center gap-x-2 flex-1 min-w-0">
-      <span class="text-xs font-medium text-fg-secondary shrink-0">GET</span>
-      <span class="text-xs font-mono text-fg-muted truncate">{fullUrl}</span>
+      <span class="text-xs font-medium text-fg-secondary shrink-0">URL Preview: </span>
+      <span class="text-[11px] font-mono text-fg-muted truncate">{fullUrl}</span>
     </div>
 
     <div class="flex items-center gap-x-2 shrink-0">
@@ -154,24 +154,26 @@
       </Tooltip>
 
       <DropdownMenu.Root closeOnItemClick={false}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button type="text" compact small builders={[builder]}>
-            Args
-            {#if args.length > 0}
-              <span
-                class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium bg-surface-active text-fg-accent rounded-full"
-              >
-                {args.length}
-              </span>
-            {/if}
-            <ChevronDownIcon size="10px" />
-          </Button>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <Button {...props} type="text" compact small>
+              Args
+              {#if args.length > 0}
+                <span
+                  class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium bg-surface-active text-fg-accent rounded-full"
+                >
+                  {args.length}
+                </span>
+              {/if}
+              <ChevronDownIcon size="10px" />
+            </Button>
+          {/snippet}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end" class="w-72 p-2">
+        <DropdownMenu.Content align="end" class="w-96 p-3">
           <!-- svelte-ignore a11y-no-static-element-interactions -->
           <div
             class="args-container flex flex-col gap-y-2"
-            on:keydown={handleArgsKeydown}
+            onkeydown={handleArgsKeydown}
           >
             {#if args.length === 0}
               <p class="text-xs text-fg-muted px-1 py-2">
