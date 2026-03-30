@@ -16,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
@@ -80,6 +81,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		return map[string]string{"dsn": dsn}
 	},
 	"motherduck": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		path := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_PATH")
 		require.NotEmpty(t, path)
@@ -93,15 +95,8 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		loadDotEnv(t)
 		gac := os.Getenv("RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "GCS RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
-		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
-		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
-		require.NotEmpty(t, hmacKey, "GCS RILL_RUNTIME_GCS_TEST_HMAC_KEY not configured")
-		require.NotEmpty(t, hmacSecret, "GCS RILL_RUNTIME_GCS_TEST_HMAC_SECRET not configured")
-
 		return map[string]string{
 			"google_application_credentials": gac,
-			"key_id":                         hmacKey,
-			"secret":                         hmacSecret,
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {
@@ -267,6 +262,12 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"azure_storage_account":              azurite.AccountName,
 		}
 	},
+	"azure_cloud": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_AZURE_TEST_CONNECTION_STRING")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"azure_storage_connection_string": apiKey}
+	},
 	"pinot": func(t TestingT) map[string]string {
 		ctx := context.Background()
 		pinot, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -274,7 +275,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 				Image:        "apachepinot/pinot:latest",
 				ExposedPorts: []string{"9000/tcp", "8000/tcp"},
 				Cmd:          []string{"QuickStart", "-type", "batch"},
-				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(2 * time.Minute),
+				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(4 * time.Minute),
 			},
 			Started: true,
 		})

@@ -11,10 +11,12 @@
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceUnpackEmpty,
-    createRuntimeServiceUnpackExample,
+    createRuntimeServiceUnpackEmptyMutation,
+    createRuntimeServiceUnpackExampleMutation,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
   import {
@@ -22,12 +24,12 @@
     connectorLabelMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
-  const unpackExampleProject = createRuntimeServiceUnpackExample();
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const unpackExampleProject =
+    createRuntimeServiceUnpackExampleMutation(runtimeClient);
+  const unpackEmptyProject =
+    createRuntimeServiceUnpackEmptyMutation(runtimeClient);
 
   let selectedProjectName: string | null = null;
-
-  $: ({ instanceId } = $runtime);
 
   $: ({ mutateAsync: unpackExample } = $unpackExampleProject);
   $: ({ mutateAsync: unpackEmpty } = $unpackEmptyProject);
@@ -49,11 +51,8 @@
 
     try {
       await mutationFunction({
-        instanceId,
-        data: {
-          [key]: selectedProjectName,
-          force: true,
-        },
+        [key]: selectedProjectName,
+        force: true,
       });
 
       setTimeout(() => {
@@ -78,7 +77,7 @@
         imageUrl={example.image}
         disabled={!!selectedProjectName}
         isLoading={selectedProjectName === example.name}
-        on:click={async () => {
+        onclick={async () => {
           await unpackProject(example);
         }}
       >
@@ -100,7 +99,7 @@
     <Card
       disabled={!!selectedProjectName}
       isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
+      onclick={() => unpackProject()}
     >
       <AddCircleOutline size="2em" className="text-fg-secondary" />
       <CardTitle position="middle">Start with an empty project</CardTitle>

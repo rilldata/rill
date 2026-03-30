@@ -2,17 +2,17 @@
   import AlertHistoryTableCompositeCell from "@rilldata/web-admin/features/alerts/history/AlertHistoryTableCompositeCell.svelte";
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
 
   export let alert: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: alertQuery = useAlert(instanceId, alert);
+  $: alertQuery = useAlert(runtimeClient, alert);
 
   /**
    * Table column definitions.
@@ -23,7 +23,7 @@
     {
       id: "composite",
       cell: (info) =>
-        flexRender(AlertHistoryTableCompositeCell, {
+        renderComponent(AlertHistoryTableCompositeCell, {
           alertTime: info.row.original.executionTime,
           timeZone:
             $alertQuery.data.resource.alert.spec.refreshSchedule.timeZone,

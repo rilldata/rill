@@ -1,0 +1,56 @@
+<script lang="ts">
+  import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
+  import type { V1OlapTableInfo } from "@rilldata/web-common/runtime-client";
+  import { compareSizes } from "@rilldata/web-common/features/projects/status/tables/utils";
+  import ModelSizeCell from "@rilldata/web-common/features/projects/status/tables/ModelSizeCell.svelte";
+  import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
+  import MaterializationCell from "@rilldata/web-common/features/projects/status/tables/MaterializationCell.svelte";
+
+  export let tables: V1OlapTableInfo[] = [];
+  export let isView: Map<string, boolean> = new Map();
+
+  const columns: ColumnDef<V1OlapTableInfo, unknown>[] = [
+    {
+      id: "materialization",
+      accessorFn: (row) => isView.get(row.name ?? ""),
+      header: "Type",
+      cell: ({ row, getValue }) =>
+        renderComponent(MaterializationCell, {
+          isView: getValue() as boolean | undefined,
+          physicalSizeBytes: row.original.physicalSizeBytes,
+        }),
+    },
+    {
+      accessorFn: (row) => row.name,
+      header: "Name",
+      cell: ({ getValue }) =>
+        renderComponent(NameCell, {
+          name: getValue() as string,
+        }),
+    },
+    // TODO: add row count and column count columns when the API supports them
+    {
+      id: "size",
+      accessorFn: (row) => row.physicalSizeBytes,
+      header: "Database Size",
+      sortDescFirst: true,
+      sortingFn: (rowA, rowB) => {
+        const sizeA = rowA.getValue("size") as string | number | undefined;
+        const sizeB = rowB.getValue("size") as string | number | undefined;
+        return compareSizes(sizeA, sizeB);
+      },
+      cell: ({ getValue }) =>
+        renderComponent(ModelSizeCell, {
+          sizeBytes: getValue() as string | number | undefined,
+        }),
+    },
+  ];
+</script>
+
+<VirtualizedTable
+  tableId="external-tables-table"
+  data={tables}
+  {columns}
+  columnLayout="minmax(80px, 0.5fr) minmax(150px, 2fr) minmax(100px, 1fr)"
+/>

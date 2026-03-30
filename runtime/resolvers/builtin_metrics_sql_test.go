@@ -87,7 +87,7 @@ measures:
 
 	for idx, tc := range tt {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+			res, _, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 				InstanceID:         instanceID,
 				Resolver:           api.Spec.Resolver,
 				ResolverProperties: api.Spec.ResolverProperties.AsMap(),

@@ -2,7 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
@@ -17,11 +17,12 @@
   export let types: FieldType[];
   export let onMultiSelect: (items: string[]) => void = () => {};
 
+  const client = useRuntimeClient();
+
   let open = false;
   let searchValue = "";
 
-  $: ({ instanceId } = $runtime);
-  $: ctx = getCanvasStore(canvasName, instanceId);
+  $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: fieldData = useMetricFieldData(ctx, metricName, types);
 </script>
 
@@ -36,18 +37,18 @@
     bind:searchValue
   >
     <svelte:fragment slot="trigger">
-      <DropdownMenu.Trigger asChild let:builder>
-        <div class="flex justify-between gap-x-2">
-          <InputLabel small {label} {id} />
-          <button
-            aria-label={`Add ${types.join(", ")} fields`}
-            use:builder.action
-            {...builder}
-            class="text-sm px-2 h-6"
-          >
-            <PlusIcon size="14px" />
-          </button>
-        </div>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <div {...props} class="flex justify-between gap-x-2">
+            <InputLabel small {label} {id} />
+            <button
+              aria-label={`Add ${types.join(", ")} fields`}
+              class="text-sm px-2 h-6"
+            >
+              <PlusIcon size="14px" />
+            </button>
+          </div>
+        {/snippet}
       </DropdownMenu.Trigger>
     </svelte:fragment>
   </FieldSelectorDropdown>

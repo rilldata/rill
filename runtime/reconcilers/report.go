@@ -745,7 +745,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	}
 
 	// Execute AI resolver
-	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
 		ResolverProperties: props,
@@ -759,6 +759,10 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		return nil, fmt.Errorf("failed to execute AI resolver: %w", err)
 	}
 	defer result.Close()
+
+	if info != nil && len(info.Warnings) > 0 {
+		r.C.Logger.Warn("AI resolver returned warnings", zap.String("report", self.Meta.Name.Name), zap.Strings("warnings", info.Warnings), observability.ZapCtx(ctx))
+	}
 
 	// Get the result row
 	row, err := result.Next()

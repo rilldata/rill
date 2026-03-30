@@ -4,8 +4,7 @@
     DATA_TYPE_COLORS,
     INTERVALS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { httpRequestQueue } from "../../../runtime-client/http-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -37,10 +36,10 @@
 
   let active = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: nulls = getNullPercentage(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -50,7 +49,7 @@
   );
 
   $: columnCardinality = getCountDistinct(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -60,7 +59,7 @@
   );
 
   $: topK = getTopK(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -71,7 +70,6 @@
 
   function toggleColumnProfile() {
     active = !active;
-    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
   $: fetchingSummaries = isFetching($nulls);

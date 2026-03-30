@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
   $: organization = $page.params.organization;
@@ -46,7 +46,7 @@
       {navItems}
       minWidth="180px"
     />
-    <div class="flex flex-col gap-y-6 w-full">
+    <div class="flex flex-col gap-y-6 w-full min-w-0">
       <slot />
     </div>
   </div>

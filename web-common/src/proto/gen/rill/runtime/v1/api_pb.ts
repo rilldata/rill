@@ -5430,6 +5430,96 @@ export class CompleteStreamingResponse extends Message$1<CompleteStreamingRespon
 }
 
 /**
+ * Request message for RuntimeService.GetAIMessage
+ *
+ * @generated from message rill.runtime.v1.GetAIMessageRequest
+ */
+export class GetAIMessageRequest extends Message$1<GetAIMessageRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: string message_id = 3;
+   */
+  messageId = "";
+
+  constructor(data?: PartialMessage<GetAIMessageRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMessageRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMessageRequest | PlainMessage<GetAIMessageRequest> | undefined, b: GetAIMessageRequest | PlainMessage<GetAIMessageRequest> | undefined): boolean {
+    return proto3.util.equals(GetAIMessageRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GetAIMessage
+ *
+ * @generated from message rill.runtime.v1.GetAIMessageResponse
+ */
+export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Message message = 1;
+   */
+  message?: Message;
+
+  constructor(data?: PartialMessage<GetAIMessageResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMessageResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "message", kind: "message", T: Message },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined, b: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined): boolean {
+    return proto3.util.equals(GetAIMessageResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.IssueDevJWT
  *
  * @generated from message rill.runtime.v1.IssueDevJWTRequest

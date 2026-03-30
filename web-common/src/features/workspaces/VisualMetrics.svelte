@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
@@ -25,10 +26,9 @@
     type MetricsViewSpecDimension,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
-  import { slide } from "svelte/transition";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
@@ -90,9 +90,9 @@
   };
   let storedProperties: Record<string, unknown> = {};
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
+  $: instance = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
 
@@ -111,7 +111,7 @@
   };
 
   $: isModelingSupportedForConnector = olapConnector
-    ? useIsModelingSupportedForConnector(instanceId, olapConnector)
+    ? useIsModelingSupportedForConnector(runtimeClient, olapConnector)
     : null;
   $: isModelingSupported = $isModelingSupportedForConnector?.data;
 
@@ -132,9 +132,9 @@
 
   $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
-  $: modelsQuery = useModels(instanceId);
-  $: sourcesQuery = useSources(instanceId);
-  $: metricsViewQuery = getResource(queryClient, instanceId);
+  $: modelsQuery = useModels(runtimeClient);
+  $: sourcesQuery = useSources(runtimeClient);
+  $: metricsViewQuery = getResource(queryClient);
 
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
@@ -151,7 +151,8 @@
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
   $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
-    instanceId,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => {
@@ -182,7 +183,7 @@
 
   $: resourceQuery =
     resourceKind &&
-    useResource(instanceId, modelOrSourceOrTableName, resourceKind);
+    useResource(runtimeClient, modelOrSourceOrTableName, resourceKind);
 
   $: connector =
     yamlConnector ||
@@ -192,9 +193,9 @@
     olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
-    instanceId,
-    modelOrSourceOrTableName,
+    runtimeClient,
     {
+      tableName: modelOrSourceOrTableName,
       connector,
       database,
       databaseSchema,
@@ -271,13 +272,14 @@
   );
 
   $: tablesQuery = createConnectorServiceOLAPListTables(
-    {
-      instanceId,
-      connector,
-    },
+    runtimeClient,
+    { connector },
     {
       query: {
-        enabled: !!instanceId && !!connector && !hasValidModelOrSourceSelection,
+        enabled:
+          !!runtimeClient.instanceId &&
+          !!connector &&
+          !hasValidModelOrSourceSelection,
       },
     },
   );
@@ -552,7 +554,7 @@
             <svelte:fragment slot="mode-switch">
               {#if isModelingSupported}
                 <button
-                  on:click={switchTableMode}
+                  onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
                   Select model
@@ -561,26 +563,27 @@
             </svelte:fragment>
           </InputLabel>
           <DropdownMenu.Root bind:open={tableSelectionOpen}>
-            <DropdownMenu.Trigger asChild let:builder>
-              <button
-                use:builder.action
-                {...builder}
-                class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
-                focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
-               "
-              >
-                {#if !hasValidOLAPTableSelected}
-                  <span class="text-fg-muted truncate">Select table</span>
-                {:else}
-                  <span class="text-fg-secondary truncate">
-                    {modelOrSourceOrTableName}
-                  </span>
-                {/if}
-                <CaretDownIcon
-                  size="12px"
-                  className="!fill-gray-600 ml-auto flex-none"
-                />
-              </button>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <button
+                  {...props}
+                  class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
+                  focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
+                 "
+                >
+                  {#if !hasValidOLAPTableSelected}
+                    <span class="text-fg-muted truncate">Select table</span>
+                  {:else}
+                    <span class="text-fg-secondary truncate">
+                      {modelOrSourceOrTableName}
+                    </span>
+                  {/if}
+                  <CaretDownIcon
+                    size="12px"
+                    className="!fill-gray-600 ml-auto flex-none"
+                  />
+                </button>
+              {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
               sameWidth
@@ -623,7 +626,7 @@
             <svelte:fragment slot="mode-switch">
               {#if hasNonDuckDBOLAPConnector}
                 <button
-                  on:click={switchTableMode}
+                  onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
                   Select table
@@ -691,7 +694,7 @@
             {totalSelected > 1 ? "items" : "item"} selected:
           </div>
           <button
-            on:click={() => {
+            onclick={() => {
               triggerDelete();
             }}
             class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
@@ -701,7 +704,7 @@
           </button>
 
           <button
-            on:click={() => {
+            onclick={() => {
               selected = {
                 measures: new Set(),
                 dimensions: new Set(),

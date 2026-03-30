@@ -1,5 +1,5 @@
 ---
-description: How to develop a Rill project with an introduction to Rill's concepts and resource types
+description: Overview of how to develop a Rill project
 ---
 
 # Instructions for developing a Rill project
@@ -231,7 +231,10 @@ Your workflow will depend on the kind of task you are undertaking. Here follows 
 5. **Profile the data**: Before creating a metrics view, look at the schema of the underlying model/table to understand its shape. This informs which dimensions and measures you create. Consider using the SQL query tool to do a couple well-chosen queries to the table to get row counts, cardinality of important columns, example column values, date ranges, or similar. Be very careful not to run too many queries or expensive queries.
 6. **Create or update the metrics view**: Define dimensions and measures using columns in the underlying model/table. Start small with one time dimension (timeseries), up to 10 dimensions and up to 5 measures, and add more later if relevant.
 7. **Ensure there are dashboards**: Create an explore dashboard for drill-down analysis of the metrics view if one doesn't already exist. If the user wants an overview or report-style view, also create a canvas dashboard with components from one or more metrics views.
-8. **Keep iterating until errors are fixed:** At each stage, if there are parse or reconcile errors, keep updating the relevant file(s) to fix the error.
+8. **Check for errors and keep iterating until they are fixed:** At each stage, check if there is a parse or reconcile error, and if there is, keep updating the relevant file(s) to fix the error.
+{% if not .external %}
+9. **Navigate to the main file:** At the very end, once all work is done, call the `navigate` tool (kind `file`) for the main file you created or modified. Prefer dashboard or metrics view files over other files. Skip navigation if you did not modify any files or if the user is already viewing the main file you modified.
+{% end %}
 
 ### Available tools
 
@@ -239,9 +242,9 @@ The following tools are typically available for project development:
 {% if not .external %}
 - `file_list`, `file_search` and `file_read` for accessing existing files in the project
 - `develop_file` for delegating file development to a sub-agent, which handles writing and iterating on errors
-- `file_write` for directly creating, updating or deleting a file (available to sub-agents; waits for parse/reconcile and returns resource status)
+- `file_write` for directly creating, updating or deleting a file (available to sub-agents only); `file_write` will wait for parse/reconcile and return the resource status, so if you use it, you should not separately call `project_status`
 {% end %}
-- `project_status` for checking resource names and their current status (idle, running, error)
+- `project_status` for checking resource names and their current status (idle, running, error); supports `wait_until_idle` to block until reconciliation completes (use this if you just made a change and want to wait until it succeeds/errors); can also return recent logs, but they should be used sparingly and only for debugging a specific issue reported in the resource-level status overview
 - `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and low timeouts, and be mindful of performance or making too many queries
 - `query_metrics_view` for querying a metrics view; useful for answering data questions and validating dashboard behavior
 - `list_tables` and `show_table` for accessing the information schema of a database connector
@@ -253,8 +256,15 @@ The following tools are typically available for project development:
 
 You may be running in an external editor that does not have Rill's development MCP server on `localhost:9009` connected. If that is the case, you will need to approach your work differently because you can't run tool calls like `list_tables`, `query_sql` or `project_status`. Instead:
 1. Use the `rill validate` CLI command to validate the project and get the status of different resources.
-2. Before editing a resource, load the specific instruction file for its resource type (if available).
-3. Be more bold in making changes, and rely on `rill validate` or user feedback to inform you of issues.
+2. Be more bold in making changes, and rely on `rill validate` or user feedback to inform you of issues.
+
+### Loading documentation
+
+Before creating or editing a resource, you MUST try to load a skill for its resource type. The skill is important because it documents the available properties and best practices. Do NOT guess at properties or rely on memory.
+
+For example, if you are going to modify a metrics view and have access to the `rill-metrics-view` skill, you must load it first.
+
+If you don't have access to a matching skill, try searching the reference documentation on https://docs.rilldata.com.
 
 {% end %}
 
@@ -265,12 +275,17 @@ Avoid these mistakes when developing a project:
 - **Models as SQL files:** Always create new models as `.yaml` files, not `.sql` files (which are harder to extend later).
 - **Not creating connector files:** When Rill has native support for a connector (like S3 or BigQuery), always create a dedicated connector resource file for it.
 - **Forgetting to materialize**: Always materialize models that reference external data or perform expensive operations. This also includes models that load external data using a native SQL function, like `read_parquet(...)` or `s3(...)`. Non-materialized models become views, which re-execute on every query.
-- **Referencing non-existant environment variables:** Only reference environment variables that are present in `.env` (returned in `env` from `project_status`). If you need the user to add another environment variable, stop and ask them to do so.
+- **Referencing non-existant environment variables:** Only reference environment variables that are present in `.env` (returned in `env` from `project_status`). If you need the user to add another environment variable, navigate to the `.env` file and stop with a message asking the user to manually add the required environment variable(s).
 - **Processing too much data in development**: Use dev partitions to limit data to a small subset (e.g., one day) during development. This speeds up iteration and avoids unnecessary costs.
 - **Not adding a time dimension (timeseries) in metrics views**: Metrics views are much more useful when they have a time dimension. Make sure to set one of them as the primary time dimension using the `timeseries:` property.
+- **Being deceived by logs from `project_status`:** If you retrieve logs from the `project_status` tool, be aware that issues highlighted in the logs may have already been fixed. Only use the logs to debug errors indicated by the resource-level status.
+- **Using deprecated properties:** Never use a YAML property that is marked as deprecated for the resource type, even if it seems like a convenient way to solve your problem. The only exception is if the deprecated property is already present in the file you are editing. Find a non-deprecated alternative or give up.
+- **Adding undocumented properties:** Never add properties to a YAML file that are not documented for that resource type. For example, do not add a `description` property to a resource type that does not support it. Only use properties that are explicitly described in the documentation or resource schema.
 {% if not .external %}
 - **Doing too much introspection/profiling:** Reading files, introspecting connectors, profiling models/tables can be time consuming and easily load too much context. Stay disciplined and don't do too much open-ended exploration or unnecessarily look into other levels of the DAG, especially if your task is a small/surgical edit.
 - **Not using the `develop_file` tool:** You should plan the changes you want to make first, then delegate each change separately to the `develop_file` tool. When calling `develop_file`, pass in any relevant context from your investigation/planning/profiling phase.
 - **Doing too much at a time:** Consider the minimal amount of work to accomplish your current task. It's better to make changes incrementally and let the user guide your work.
-- **Don't stop if there are errors:** When a file has an error after you made changes, keep looping until you have done your best to fix the error. You should not give up easily, the user does expect you to try and fix errors.
+- **Making unrelated "drive by" improvements:** Never make changes that the user did not request, even if you notice something that looks wrong or could be improved. Stay focused on the task at hand. If you spot an unrelated issue, mention it in your final response instead of fixing it.
+- **Calling navigate too early:** Do NOT call `navigate` while iterating on changes. Only call it once, at the very end, right before your final response.
+- **Don't stop if there are errors:** When a file has an error after you made changes, keep looping until you have done your best to fix the error. You should not give up easily, the user expects you to try and fix errors.
 {% end %}

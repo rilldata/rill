@@ -63,7 +63,7 @@
   <button
     type="button"
     class="flex absolute inset-y-0 items-center pl-2 text-fg-secondary"
-    on:click={() => {
+    onclick={() => {
       ref?.focus();
     }}
   >
@@ -80,12 +80,14 @@
     class:rounded-sm={rounded === "sm"}
     class:rounded-md={rounded === "md"}
     class:rounded-lg={rounded === "lg"}
-    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none text-fg-secondary placeholder-fg-secondary"
+    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none text-fg-secondary placeholder-fg-secondary {large
+      ? 'min-h-9'
+      : ''}"
     class:h-full={large}
     {disabled}
     {placeholder}
-    on:input={handleInput}
-    on:keydown={handleKeyDown}
+    oninput={handleInput}
+    onkeydown={handleKeyDown}
     aria-label={label}
     role="textbox"
     tabindex="-1"

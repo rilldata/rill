@@ -26,9 +26,9 @@ func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 				model = args[1]
 			}
 
-			if !local && !cmd.Flags().Changed("project") && len(args) <= 1 && ch.Interactive {
+			if !local && project == "" {
 				var err error
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name or --local to target a local Rill process")
 				if err != nil {
 					return err
 				}

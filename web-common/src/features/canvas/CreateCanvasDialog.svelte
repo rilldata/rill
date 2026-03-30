@@ -9,11 +9,14 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { createResourceFile } from "../file-explorer/new-files";
 
   export let open = false;
   export let metricsViews: V1Resource[];
   export let wrapNavigation: (path: string | undefined) => Promise<void>;
+
+  const runtimeClient = useRuntimeClient();
 
   let selectedMetricsView: V1Resource | undefined = undefined;
 
@@ -25,6 +28,7 @@
   async function createResource() {
     if (selectedMetricsView) {
       const newFilePath = await createResourceFile(
+        runtimeClient,
         ResourceKind.Canvas,
         selectedMetricsView,
       );
@@ -58,20 +62,24 @@
     />
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} type="secondary">Cancel</Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <Button {...props} large type="secondary">Cancel</Button>
+        {/snippet}
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild let:builder>
-        <Button
-          disabled={!selectedMetricsView}
-          large
-          builders={[builder]}
-          type="primary"
-          onClick={createResource}
-        >
-          Continue
-        </Button>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            disabled={!selectedMetricsView}
+            large
+            type="primary"
+            onClick={createResource}
+          >
+            Continue
+          </Button>
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

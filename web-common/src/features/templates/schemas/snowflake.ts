@@ -4,7 +4,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "Snowflake",
-  "x-category": "warehouse",
+  "x-category": "olap",
   "x-form-height": "tall",
   properties: {
     auth_method: {
@@ -32,6 +32,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
           "database",
           "schema",
           "role",
+          "authenticator",
         ],
         dsn: ["dsn"],
       },
@@ -108,6 +109,28 @@ export const snowflakeSchema: MultiStepFormSchema = {
         "Include authenticator and privateKey query params for JWT if needed.",
       "x-visible-if": { auth_method: "dsn" },
     },
+    authenticator: {
+      type: "string",
+      title: "Authenticator",
+      description:
+        "Snowflake authentication type (e.g. snowflake, externalbrowser, snowflake_jwt)",
+      "x-placeholder": "snowflake",
+      "x-advanced": true,
+      "x-disabled-if": { auth_method: "private_key" },
+    },
+    parallel_fetch_limit: {
+      type: "number",
+      title: "Parallel fetch limit",
+      description: "Maximum number of parallel fetch operations",
+      "x-advanced": true,
+      "x-placeholder": "10",
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL",
@@ -140,6 +163,9 @@ export const snowflakeSchema: MultiStepFormSchema = {
       },
       then: {
         required: ["account", "user", "privateKey", "database", "warehouse"],
+        properties: {
+          authenticator: { const: "SNOWFLAKE_JWT" },
+        },
       },
     },
     {

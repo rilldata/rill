@@ -9,9 +9,9 @@ import Header from "web-common/src/components/alert-dialog/alert-dialog-header.s
 import Overlay from "web-common/src/components/alert-dialog/alert-dialog-overlay.svelte";
 import Content from "web-common/src/components/alert-dialog/alert-dialog-content.svelte";
 import Description from "web-common/src/components/alert-dialog/alert-dialog-description.svelte";
+import Trigger from "web-common/src/components/alert-dialog/alert-dialog-trigger.svelte";
 
 const Root = AlertDialogPrimitive.Root;
-const Trigger = AlertDialogPrimitive.Trigger;
 
 export {
   Root,

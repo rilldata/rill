@@ -540,6 +540,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: setup
+          description: If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+          in: query
+          required: false
+          type: boolean
         - name: superuserForceAccess
           in: query
           required: false
@@ -1052,6 +1057,16 @@ paths:
           in: query
           required: false
           type: string
+        - name: direct
+          description: Only return projects where the user has a direct membership (exclude usergroup-inherited access).
+          in: query
+          required: false
+          type: boolean
+        - name: includeRoles
+          description: Populate project_roles in the response.
+          in: query
+          required: false
+          type: boolean
   /v1/orgs/{org}/projects/{project}:
     get:
       summary: GetProject returns information about a specific project
@@ -5506,6 +5521,11 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+      projectRoles:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1ProjectMemberUser'
+        description: Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:

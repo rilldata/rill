@@ -8,7 +8,7 @@
   import ExploreLink from "@rilldata/web-common/features/explores/explore-link/ExploreLink.svelte";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
@@ -18,6 +18,7 @@
   import { getContext, hasContext } from "svelte";
   import type { Readable, Writable } from "svelte/store";
   import { derived, readable } from "svelte/store";
+  import type { View } from "vega-typings";
   import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
@@ -37,6 +38,9 @@
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
 
+  const client = useRuntimeClient();
+  let view: View;
+
   let chartProvider: ChartProvider;
   $: {
     const chartConfig = CHART_CONFIG[chartType];
@@ -55,7 +59,7 @@
       themeMode === "dark" ? "dark" : "light"
     ];
 
-  $: metricsViewSelectors = new MetricsViewSelectors($runtime.instanceId);
+  $: metricsViewSelectors = new MetricsViewSelectors(client);
 
   $: measures = metricsViewSelectors.getMeasuresForMetricView(
     $spec.metrics_view,
@@ -66,7 +70,7 @@
   );
 
   $: chartDataQuery = chartProvider.createChartDataQuery(
-    runtime,
+    client,
     timeAndFilterStore,
   );
 
@@ -86,7 +90,7 @@
   $: chartTitle = chartProvider?.chartTitle?.($chartData.fields) ?? "";
 
   $: exploreAvailability = showExploreLink
-    ? useExploreAvailability($runtime.instanceId, $spec?.metrics_view)
+    ? useExploreAvailability(client, $spec?.metrics_view)
     : readable({
         isAvailable: false,
         exploreName: null,
@@ -173,6 +177,7 @@
           {themeMode}
           theme={currentTheme}
           isCanvas={true}
+          bind:view
         />
       </div>
     </div>

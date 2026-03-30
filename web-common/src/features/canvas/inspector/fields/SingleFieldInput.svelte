@@ -4,8 +4,10 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricFieldData } from "../selectors";
+
+  const client = useRuntimeClient();
 
   export let metricName: string;
   export let label: string | undefined = undefined;
@@ -23,9 +25,7 @@
   let open = false;
   let searchValue = "";
 
-  $: ({ instanceId } = $runtime);
-
-  $: ctx = getCanvasStore(canvasName, instanceId);
+  $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.metricsView);
 
   $: timeDimension = getTimeDimensionForMetricView(metricName);
@@ -48,30 +48,32 @@
     {/if}
   </div>
 
-  <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
-    <DropdownMenu.Trigger asChild let:builder>
-      <Chip
-        fullWidth
-        caret
-        removable={isRemovable && !!selectedItem}
-        {onRemove}
-        type={isTimeSelected ? "time" : type}
-        builders={[builder]}
-      >
-        <span
-          class="font-bold truncate"
-          class:text-fg-tertiary={!selectedItem}
-          slot="body"
+  <DropdownMenu.Root bind:open>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Chip
+          {...props}
+          fullWidth
+          caret
+          removable={isRemovable && !!selectedItem}
+          {onRemove}
+          type={isTimeSelected ? "time" : type}
         >
-          {#if isTimeSelected}
-            Time
-          {:else if selectedItem}
-            {$fieldData.displayMap[selectedItem]?.label || selectedItem}
-          {:else}
-            Choose a field...
-          {/if}
-        </span>
-      </Chip>
+          <span
+            class="font-bold truncate"
+            class:text-fg-tertiary={!selectedItem}
+            slot="body"
+          >
+            {#if isTimeSelected}
+              Time
+            {:else if selectedItem}
+              {$fieldData.displayMap[selectedItem]?.label || selectedItem}
+            {:else}
+              Choose a field...
+            {/if}
+          </span>
+        </Chip>
+      {/snippet}
     </DropdownMenu.Trigger>
 
     <DropdownMenu.Content class="p-0" sameWidth>
@@ -82,7 +84,7 @@
         {#if type == "dimension" && includeTime && $timeDimension}
           <DropdownMenu.Item
             class="pl-8 mx-1"
-            on:click={() => {
+            onclick={() => {
               onSelect($timeDimension, "Time");
               open = false;
             }}
@@ -95,7 +97,7 @@
           {#if item !== selectedItem}
             <DropdownMenu.Item
               class="pl-8 mx-1"
-              on:click={() => {
+              onclick={() => {
                 onSelect(item, $fieldData.displayMap[item]?.label || item);
                 open = false;
               }}

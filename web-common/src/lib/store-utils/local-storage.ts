@@ -21,10 +21,10 @@ export function localStorageStore<T>(itemKey: string, defaultValue: T) {
       }
     }
   }
-  const debouncer = debounce(
-    (v: T) => localStorage.setItem(itemKey, JSON.stringify(v)),
-    300,
-  );
+  const debouncer = debounce((v: T) => {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(itemKey, JSON.stringify(v));
+  }, 300);
   store.subscribe(debouncer);
 
   return {

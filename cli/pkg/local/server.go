@@ -110,6 +110,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		GrpcPort:         int32(s.metadata.GRPCPort),
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
+		PreviewMode:      s.metadata.PreviewMode,
 	}), nil
 }
 
@@ -353,7 +354,11 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ArchiveAssetId: assetID,
 		}
 	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
-		ghRepo, err := s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+		gitBranch, err := currentGitBranch(s.app.ProjectPath)
+		if err != nil {
+			return nil, err
+		}
+		ghRepo, err := s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx, gitBranch)
 		if err != nil {
 			return nil, err
 		}
@@ -369,6 +374,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Public:        false,
 			DirectoryName: directoryName,
 			GitRemote:     ghRepo.Remote,
+			PrimaryBranch: ghRepo.DefaultBranch,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -528,14 +534,19 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			}
 		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.CreateManagedRepo {
 			// project was previously deployed using zip and ship, or we are overwriting another project already connected to github
-			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+			gitBranch, err := currentGitBranch(s.app.ProjectPath)
+			if err != nil {
+				return nil, err
+			}
+			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx, gitBranch)
 			if err != nil {
 				return nil, err
 			}
 			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-				Org:       projResp.Project.OrgName,
-				Project:   projResp.Project.Name,
-				GitRemote: &ghRepo.Remote,
+				Org:           projResp.Project.OrgName,
+				Project:       projResp.Project.Name,
+				GitRemote:     &ghRepo.Remote,
+				PrimaryBranch: &ghRepo.DefaultBranch,
 			})
 			if err != nil {
 				return nil, err
@@ -651,7 +662,7 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 
 	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 				LocalProjectName: localProjectName,
 			}), nil
@@ -732,7 +743,7 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 
 	projects, err := s.app.ch.InferProjects(ctx, "", s.app.ProjectPath)
 	if err != nil {
-		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
 				Projects: nil,
 			}), nil
@@ -949,6 +960,7 @@ type localMetadata struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
+	PreviewMode      bool   `json:"preview_mode"`
 	GRPCPort         int    `json:"grpc_port"`
 }
 
@@ -1057,4 +1069,21 @@ func (s *Server) traceHandler() http.Handler {
 			return
 		}
 	})
+}
+
+// currentGitBranch returns the current git branch of the repository at the given path.
+// It does not return error if the repo does not exist.
+func currentGitBranch(path string) (string, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return "", nil
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return "", err
+	}
+	if head.Name().IsBranch() {
+		return head.Name().Short(), nil
+	}
+	return "", fmt.Errorf("HEAD is not a branch. Checkout a branch to deploy")
 }

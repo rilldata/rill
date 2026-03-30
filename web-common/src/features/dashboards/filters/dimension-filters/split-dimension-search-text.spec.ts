@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { splitDimensionSearchText } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+import {
+  getFiltersFromText,
+  splitDimensionSearchText,
+} from "web-common/src/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+import { V1Operation } from "web-common/src/runtime-client";
+import {
+  createBinaryExpression,
+  createSubQueryExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 describe("splitDimensionSearchText", () => {
   it("should split by comma and return trimmed parts", () => {
@@ -20,5 +28,67 @@ describe("splitDimensionSearchText", () => {
     rill
     `);
     expect(result).toEqual(["facebook  ,  google", "rill"]);
+  });
+});
+
+describe("getFiltersFromText", () => {
+  it("should flatten array-wrapped values in IN expressions", () => {
+    const { expr } = getFiltersFromText("username IN (['Ashwani Yadav'])");
+    const inExpr = expr.cond?.exprs?.[0];
+    expect(inExpr?.cond?.op).toBe(V1Operation.OPERATION_IN);
+    expect(inExpr?.cond?.exprs).toEqual([
+      { ident: "username" },
+      { val: "Ashwani Yadav" },
+    ]);
+  });
+
+  it("should flatten array-wrapped values in NIN expressions", () => {
+    const { expr } = getFiltersFromText("username NIN (['Ashwani Yadav'])");
+    const ninExpr = expr.cond?.exprs?.[0];
+    expect(ninExpr?.cond?.op).toBe(V1Operation.OPERATION_NIN);
+    expect(ninExpr?.cond?.exprs).toEqual([
+      { ident: "username" },
+      { val: "Ashwani Yadav" },
+    ]);
+  });
+
+  it("should flatten multi-value array-wrapped IN expressions", () => {
+    const { expr } = getFiltersFromText(
+      "username IN (['Ashwani Yadav','John Doe'])",
+    );
+    const inExpr = expr.cond?.exprs?.[0];
+    expect(inExpr?.cond?.op).toBe(V1Operation.OPERATION_IN);
+    expect(inExpr?.cond?.exprs).toEqual([
+      { ident: "username" },
+      { val: "Ashwani Yadav" },
+      { val: "John Doe" },
+    ]);
+  });
+
+  it("should leave non-array IN expressions unchanged", () => {
+    const { expr } = getFiltersFromText(
+      "username IN ('Ashwani Yadav','John Doe')",
+    );
+    const inExpr = expr.cond?.exprs?.[0];
+    expect(inExpr?.cond?.op).toBe(V1Operation.OPERATION_IN);
+    expect(inExpr?.cond?.exprs).toEqual([
+      { ident: "username" },
+      { val: "Ashwani Yadav" },
+      { val: "John Doe" },
+    ]);
+  });
+
+  it("should leave measure filters alone", () => {
+    const { expr } = getFiltersFromText(
+      "publisher having (total_records gte 100)",
+    );
+    const inExpr = expr.cond?.exprs?.[0];
+    expect(inExpr).toEqual(
+      createSubQueryExpression(
+        "publisher",
+        ["total_records"],
+        createBinaryExpression("total_records", V1Operation.OPERATION_GTE, 100),
+      ),
+    );
   });
 });

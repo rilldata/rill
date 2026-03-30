@@ -3,10 +3,12 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 type localFileToSelfExecutor struct {
@@ -39,16 +41,31 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	inputProps := &inputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := outputProps.validateAndApplyDefaults(opts, &ModelInputProperties{}, outputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
@@ -129,5 +146,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Properties:   resultPropsMap,
 		Table:        tableName,
 		ExecDuration: metrics.duration,
+		Warnings:     warnings,
 	}, nil
 }
