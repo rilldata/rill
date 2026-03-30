@@ -14,6 +14,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
   import { derived } from "svelte/store";
+  import { convertV1ExpressionToMapstructure } from "./expression-utils";
 
   export let spec: string | undefined = undefined;
   export let metricsSQL: string[] = [];
@@ -49,7 +50,10 @@
         resolverProperties: {
           sql,
           ...(whereFilter?.cond?.exprs?.length
-            ? { additional_where: whereFilter }
+            ? {
+                additional_where:
+                  convertV1ExpressionToMapstructure(whereFilter),
+              }
             : {}),
           ...(timeRange ? { additional_time_range: timeRange } : {}),
         } as unknown as PartialMessage<Struct>,

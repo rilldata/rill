@@ -11,11 +11,13 @@ import type {
   ComponentPath,
 } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import { get } from "svelte/store";
 import CanvasCustomChart from "./CanvasCustomChart.svelte";
 
 export interface CustomChart
   extends ComponentCommonProperties,
     ComponentFilterProperties {
+  metrics_view?: string;
   prompt?: string;
   metrics_sql: string[];
   vega_spec: string;
@@ -34,6 +36,41 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
       vega_spec: "",
     };
     super(resource, parent, path, defaultSpec);
+    this.inferMetricsViewName();
+  }
+
+  override update(resource: V1Resource, path: ComponentPath) {
+    super.update(resource, path);
+    this.inferMetricsViewName();
+  }
+
+  /**
+   * If metrics_view isn't explicitly set in the spec, extract it from the
+   * first metrics_sql query. Metrics SQL always has a `FROM <metrics_view>` clause.
+   * This is needed so the canvas filter system can look up filters and
+   * dimensions/measures for this component's metrics view.
+   */
+  private inferMetricsViewName() {
+    const spec = get(this.specStore);
+    if (spec.metrics_view) {
+      this.metricsViewName = spec.metrics_view;
+      return;
+    }
+
+    const sql = spec.metrics_sql?.[0];
+    if (!sql) return;
+
+    const match = sql.match(/\bFROM\s+(\w+)/i);
+    if (!match) return;
+
+    this.metricsViewName = match[1];
+    this.localFilters = this.parent.filterManager.createLocalFilterStore(
+      this.metricsViewName,
+    );
+    this.specStore.update((s) => ({
+      ...s,
+      metrics_view: this.metricsViewName,
+    }));
   }
 
   isValid(spec: CustomChart): boolean {
