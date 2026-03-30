@@ -51,7 +51,7 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 
 	// Parse local .env files
 	// Instance's project_variables contains variables from both rill.yaml and .env so can't be used here
-	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
@@ -150,7 +150,7 @@ func (s *Server) PushEnv(ctx context.Context, req *runtimev1.PushEnvRequest) (*r
 	defer release()
 
 	// Parse local .env files
-	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}

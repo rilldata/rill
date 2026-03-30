@@ -97,15 +97,10 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				if added > 0 || changed > 0 {
 					ch.Printf("Environment %q: %d new and %d changed variable(s) found in local file.\n", envForPrint(env), added, changed)
 				}
-				confirmed := true
 				if ch.Interactive {
-					confirmed, err = cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-					if err != nil {
-						return fmt.Errorf("failed to prompt for confirmation: %w", err)
+					if err := cmdutil.ConfirmPrompt("Do you want to continue?", true); err != nil {
+						continue
 					}
-				}
-				if !confirmed {
-					continue
 				}
 
 				// Write the merged variables back to the cloud project
