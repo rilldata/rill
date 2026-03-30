@@ -49,7 +49,7 @@ func newUnion(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resol
 			return nil, fmt.Errorf("no resolver found of type %q", entry.Name)
 		}
 		if entry.Name == "glob" {
-			opts.Args["skip_last_optimization"] = true
+			delete(opts.Args, "partitions_model_id")
 		}
 		r, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    opts.Runtime,

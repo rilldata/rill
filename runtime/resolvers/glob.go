@@ -92,9 +92,8 @@ type globProps struct {
 // globArgs declares the arguments for a "glob" resolver.
 type globArgs struct {
 	// State to make available for template resolution in the props.
-	State                map[string]any `mapstructure:"state"`
-	PartitionsModelID    string         `mapstructure:"partitions_model_id"`
-	SkipLastOptimization bool           `mapstructure:"skip_last_optimization"`
+	State             map[string]any `mapstructure:"state"`
+	PartitionsModelID string         `mapstructure:"partitions_model_id"`
 }
 
 func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -153,7 +152,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	partitionStart := startURL.Path
 	partitionEnd := endURL.Path
 	last := ""
-	if props.Last > 0 && !args.SkipLastOptimization {
+	if props.Last > 0 && args.PartitionsModelID != "" {
 		catalog, release, err := opts.Runtime.Catalog(ctx, opts.InstanceID)
 		if err != nil {
 			return nil, err
