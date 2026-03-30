@@ -58,7 +58,11 @@
   $: parseError = $parseErrorQuery;
 
   $: reconcileError = data?.meta?.reconcileError;
-  $: rootCauseQuery = createRootCauseErrorQuery(runtimeClient, data, reconcileError);
+  $: rootCauseQuery = createRootCauseErrorQuery(
+    runtimeClient,
+    data,
+    reconcileError,
+  );
   $: rootCauseReconcileError = reconcileError
     ? ($rootCauseQuery?.data ?? reconcileError)
     : undefined;
