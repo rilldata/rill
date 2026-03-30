@@ -789,7 +789,6 @@
         </div>
       {/each}
     </div>
-
   </div>
 
   {#if $editingItemData !== null}
