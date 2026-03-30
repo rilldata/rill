@@ -1,9 +1,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+  import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
 
   let open = false;
@@ -19,15 +17,6 @@
   // CLI commands
   $: cloneCommand = `rill project clone --org ${organization} ${project}`;
   $: rillStartCommand = `rill start ${githubUrl}.git`;
-  let copiedCommand: string | null = null;
-
-  function onCopy(command: string) {
-    copyToClipboard(command, "Command copied to clipboard", false);
-    copiedCommand = command;
-    setTimeout(() => {
-      copiedCommand = null;
-    }, 2000);
-  }
 </script>
 
 <Popover.Root bind:open>
@@ -53,50 +42,11 @@
 
       <div class="flex flex-col gap-y-2">
         {#if isGithubConnected}
-          <button
-            class="command-box"
-            title={rillStartCommand}
-            onclick={() => onCopy(rillStartCommand)}
-          >
-            <code class="text-xs truncate">{rillStartCommand}</code>
-            <span class="text-fg-muted">
-              {#if copiedCommand === rillStartCommand}
-                <Check size="14px" color="#22c55e" />
-              {:else}
-                <CopyIcon size="14px" />
-              {/if}
-            </span>
-          </button>
+          <CopyableCodeBlock code={rillStartCommand} />
         {:else}
-          <button
-            class="command-box"
-            title={cloneCommand}
-            onclick={() => onCopy(cloneCommand)}
-          >
-            <code class="text-xs truncate">{cloneCommand}</code>
-            <span class="text-fg-muted">
-              {#if copiedCommand === cloneCommand}
-                <Check size="14px" color="#22c55e" />
-              {:else}
-                <CopyIcon size="14px" />
-              {/if}
-            </span>
-          </button>
+          <CopyableCodeBlock code={cloneCommand} />
         {/if}
       </div>
     </div>
   </Popover.Content>
 </Popover.Root>
-
-<style lang="postcss">
-  .command-box {
-    @apply flex items-center justify-between gap-x-2;
-    @apply bg-surface-subtle border border-gray-200 rounded px-2 py-1;
-    @apply font-mono text-fg-primary text-left;
-    @apply cursor-pointer w-full;
-  }
-
-  .command-box:hover {
-    @apply bg-surface-hover;
-  }
-</style>

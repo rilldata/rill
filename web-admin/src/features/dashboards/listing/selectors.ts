@@ -5,7 +5,7 @@ import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
+import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 export function useDashboardsLastUpdated(
   client: RuntimeClient,
@@ -35,6 +35,14 @@ export function useDashboardsLastUpdated(
   );
 }
 
+// Only poll while canvas/explore resources are reconciling. Without this
+// filter, the unfiltered ListResources response includes all resource types;
+// on dev/branch deployments the ProjectParser stays RUNNING indefinitely
+// (it watches for file changes), causing perpetual polling.
+const dashboardRefetchInterval = createSmartRefetchInterval(
+  (res) => !!res.canvas || !!res.explore,
+);
+
 export function useDashboards(
   client: RuntimeClient,
 ): CreateQueryResult<V1Resource[]> {
@@ -47,7 +55,7 @@ export function useDashboards(
           return data.resources.filter((res) => res.canvas || res.explore);
         },
         enabled: !!client.instanceId,
-        refetchInterval: smartRefetchIntervalFunc,
+        refetchInterval: dashboardRefetchInterval,
       },
     },
   );
