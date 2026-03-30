@@ -25,7 +25,7 @@ import (
 )
 
 func TestManagedDeploy(t *testing.T) {
-	// testmode.Expensive(t)
+	testmode.Expensive(t)
 	adm := testadmin.New(t)
 
 	_, c := adm.NewUser(t)
