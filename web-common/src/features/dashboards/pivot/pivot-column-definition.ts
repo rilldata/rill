@@ -320,12 +320,14 @@ function getFlatColumnDef(
         accessorFn: (row) => row[d.name],
         header: d.label || d.name,
         cell: ({ getValue }) => {
-          return formatDimensionValue(
+          const value = formatDimensionValue(
             getValue() as string,
             i,
             config.time,
             rowDimensionNames,
           );
+          if (value === null) return "null";
+          return value;
         },
       };
     },
