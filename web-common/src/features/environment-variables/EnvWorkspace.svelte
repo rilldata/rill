@@ -12,8 +12,8 @@
   import { Code2Icon, Plus, Settings, Download, Upload } from "lucide-svelte";
   import { parse as parseDotenv } from "dotenv";
   import type { EditorView } from "@codemirror/view";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { flexRender } from "tanstack-table-8-svelte-5";
   import ActionsCell from "./ActionsCell.svelte";
   import AddEnvDialog from "./AddEnvDialog.svelte";
   import PullEnvDialog from "./PullEnvDialog.svelte";
@@ -177,7 +177,7 @@
       <span
         style:left={viewMode === "code" ? "2px" : "24px"}
         class="toggle size-[22px] pointer-events-none absolute rounded-[4px] z-0 transition-[left]"
-      />
+      ></span>
     </div>
     <div slot="workspace-controls" class="flex gap-x-2 items-center">
       {#if rcUrl}
