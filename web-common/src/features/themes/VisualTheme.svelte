@@ -137,7 +137,7 @@
                     <div
                       class="mode-preview-dot"
                       style:background-color={currentColors[key]}
-                    />
+                    ></div>
                   {/if}
                 </div>
               {/each}
@@ -192,7 +192,7 @@
                 <div
                   class="palette-strip-cell"
                   style:background-color={color || "#e5e7eb"}
-                />
+                ></div>
               {/each}
             </div>
             <div class="palette-colors">
