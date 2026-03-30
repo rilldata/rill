@@ -16,7 +16,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { PROJECT_ROLES_DESCRIPTION_MAP } from "../constants";
+  import { PROJECT_ROLES_DESCRIPTION_MAP } from "./constants";
 
   type User = V1ProjectMemberUser | V1ProjectInvite;
 
