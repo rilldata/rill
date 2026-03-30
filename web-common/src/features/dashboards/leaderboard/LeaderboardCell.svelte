@@ -1,20 +1,19 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-  import { Tooltip as TooltipPrimitive } from "bits-ui";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store.ts";
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config.ts";
   import {
     copyToClipboard,
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard.ts";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config.ts";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click.ts";
-  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store.ts";
-  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
+  import { Tooltip as TooltipPrimitive } from "bits-ui";
+  import { onDestroy } from "svelte";
 
   export let value: string;
-  export let dataType: string;
+  export let tooltipValue: string = value;
   export let cellType: "dimension" | "measure" | "comparison";
   export let className: string = "";
   export let background: string = "";
@@ -77,8 +76,9 @@
         onclick={modified({
           shift: () => shiftClickHandler(value),
         })}
-        onpointerover={() => cellInspectorStore.updateValue(value)}
-        onfocus={() => cellInspectorStore.updateValue(value)}
+        onpointerover={() =>
+          cellInspectorStore.updateValue(value, tooltipValue)}
+        onfocus={() => cellInspectorStore.updateValue(value, tooltipValue)}
         onmouseleave={() => (tooltipActive = false)}
         style:background
         class="{cellType}-cell {className}"
@@ -93,13 +93,8 @@
       class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-fg-inverse"
       sideOffset={16}
     >
-      <FormattedDataType
-        customStyle="font-semibold !text-fg-inverse"
-        isNull={value === null || value === undefined}
-        type={dataType}
-        {value}
-      />
-      <div class="flex flex-row gap-x-6 items-baseline text-fg-muted">
+      <span class="font-semibold !text-fg-inverse">{tooltipValue}</span>
+      <div class="flex flex-row gap-x-6 items-baseline text-fg-disabled">
         <div>
           <StackingWord key="shift">Copy</StackingWord>
           this value to clipboard

@@ -240,6 +240,9 @@
             (colDimIdx === -1 &&
               effectiveDimIdx >= 0 &&
               effectiveDimIdx < lastDimIdx)}
+          {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
+            ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
+            : cell.getValue()}
           <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
@@ -252,11 +255,13 @@
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
             class:total-label={cell.getValue() === "Total"}
-            data-value={cell.getValue()}
+            data-value={tooltipValue}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
-            onmouseover={() => cellInspectorStore.updateValue(cell.getValue())}
-            onfocus={() => cellInspectorStore.updateValue(cell.getValue())}
+            onmouseover={() =>
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+            onfocus={() =>
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
           >
             {#if result?.component && result?.props}
               <svelte:component

@@ -15,6 +15,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import {
     getComparisonRequestMeasures,
     getURIRequestMeasure,
@@ -22,13 +23,14 @@
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import { getFiltersForOtherDimensions } from "../selectors";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
+  import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
   import {
     createAndExpression,
     createOrExpression,
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
@@ -39,9 +41,7 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
-  import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
-  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
+  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
 
   const runtimeClient = useRuntimeClient();
   const gutterWidth = 24;
@@ -69,6 +69,10 @@
   export let allowDimensionComparison = true;
   export let visible = false;
   export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
+  export let tooltipFormatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
@@ -378,7 +382,6 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
-            dataType={dimension.dataType?.code ?? ""}
             {itemData}
             {isValidPercentOfTotal}
             {leaderboardShowContextForAllMeasures}
@@ -387,6 +390,7 @@
             {toggleDimensionValueSelection}
             {leaderboardSortByMeasureName}
             {formatters}
+            {tooltipFormatters}
             {dimensionColumnWidth}
             {maxValues}
           />
@@ -397,7 +401,6 @@
         <LeaderboardRow
           {itemData}
           {dimensionName}
-          dataType={dimension.dataType?.code ?? ""}
           {isBeingCompared}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -410,6 +413,7 @@
           {toggleDimensionValueSelection}
           {leaderboardSortByMeasureName}
           {formatters}
+          {tooltipFormatters}
           {dimensionColumnWidth}
           {maxValues}
         />

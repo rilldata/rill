@@ -504,6 +504,9 @@
           {@const inHoveredCol =
             hoveredColRange && isHeaderInHoveredRange(i, 1)}
           {@const inSelectedCol = selectedColIndices.has(i)}
+          {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
+            ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
+            : cell.getValue()}
           <td
             class="ui-copy-number cell truncate group/cell"
             class:active-cell={isActive}
@@ -513,13 +516,15 @@
             class:cell-selected-row-header={i === 0 && hasClickedCell}
             class:interactive-cell={canShowDataViewer || enableClickToFilter}
             class:border-r={shouldShowRightBorder(i)}
-            data-value={cell.getValue()}
+            data-value={tooltipValue}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            onmouseover={() => cellInspectorStore.updateValue(cell.getValue())}
-            onfocus={() => cellInspectorStore.updateValue(cell.getValue())}
+            onmouseover={() =>
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+            onfocus={() =>
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
           >
             {#if result?.component && result?.props}
               <svelte:component

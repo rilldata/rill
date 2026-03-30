@@ -55,7 +55,9 @@ import {
   AD_BIDS_SORT_BY_VALUE,
   AD_BIDS_SORT_DESC_BY_BID_PRICE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+  AD_BIDS_SORT_PIVOT_BY_ACCESSOR_DESC,
   AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
+  AD_BIDS_SORT_PIVOT_BY_RILL_TIME_DAY_DESC,
   AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
@@ -81,7 +83,7 @@ import {
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
-import { deepClone } from "@vitest/utils";
+import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
@@ -715,6 +717,112 @@ describe("Human readable URL state variations", () => {
       TimeComparisonOption.CONTIGUOUS,
     );
     expect(currentState.whereFilter).toEqual(AD_BIDS_LARGE_FILTER);
+  });
+
+  describe("Pivot sort state roundtrip", () => {
+    function setupAndRoundtrip() {
+      const explore: V1ExploreSpec = {
+        ...AD_BIDS_EXPLORE_INIT,
+        timeZones: ["UTC", "Asia/Kathmandu"],
+      };
+      metricsExplorerStore.init(
+        AD_BIDS_EXPLORE_NAME,
+        getInitExploreStateForTest(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          explore,
+          AD_BIDS_TIME_RANGE_SUMMARY,
+        ),
+      );
+      const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        explore,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+      );
+      const defaultExplorePreset = getDefaultExplorePreset(
+        explore,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+      );
+      return { explore, defaultExploreUrlSearch, defaultExplorePreset };
+    }
+
+    it("should preserve time dimension sort (rill format) after URL roundtrip", async () => {
+      const { explore, defaultExploreUrlSearch, defaultExplorePreset } =
+        setupAndRoundtrip();
+
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_RILL_TIME_DAY_DESC,
+      ]);
+
+      const stateBeforeRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateBeforeRoundtrip.pivot?.sorting).toEqual([
+        { id: "timestamp_rill_TIME_GRAIN_DAY", desc: true },
+      ]);
+
+      // Serialize state to URL params
+      const urlParams = getCleanedUrlParamsForGoto(
+        explore,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        getTimeControlState(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          explore,
+          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        ),
+        defaultExploreUrlSearch,
+      );
+
+      // Deserialize URL back to state (simulates page refresh)
+      const url = new URL("http://localhost");
+      url.search = urlParams.toString();
+      applyURLToExploreState(url, explore, defaultExplorePreset);
+
+      const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
+        stateBeforeRoundtrip.pivot?.sorting,
+      );
+    });
+
+    it("should preserve minimized accessor sort after URL roundtrip", async () => {
+      const { explore, defaultExploreUrlSearch, defaultExplorePreset } =
+        setupAndRoundtrip();
+
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_ACCESSOR_DESC,
+      ]);
+
+      const stateBeforeRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateBeforeRoundtrip.pivot?.sorting).toEqual([
+        { id: "c0v2m0", desc: true },
+      ]);
+
+      // Serialize state to URL params
+      const urlParams = getCleanedUrlParamsForGoto(
+        explore,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        getTimeControlState(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          explore,
+          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        ),
+        defaultExploreUrlSearch,
+      );
+
+      // Deserialize URL back to state (simulates page refresh)
+      const url = new URL("http://localhost");
+      url.search = urlParams.toString();
+      applyURLToExploreState(url, explore, defaultExplorePreset);
+
+      const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
+        stateBeforeRoundtrip.pivot?.sorting,
+      );
+    });
   });
 });
 
