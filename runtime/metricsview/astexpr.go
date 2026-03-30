@@ -99,6 +99,8 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		TimeZone:            outer.TimeZone,
 		UseDisplayNames:     false,
 		Rows:                false,
+		QueryLimits:         outer.QueryLimits,
+		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
@@ -295,7 +297,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		if tupleStyle {
 			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
 		} else {
-			unnestColAlias = b.ast.Dialect.EscapeIdentifier(left.Name)
+			unnestColAlias = b.ast.Dialect.EscapeAlias(left.Name)
 		}
 
 		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias

@@ -218,18 +218,38 @@ func (c *connection) FindInactiveOrganizations(ctx context.Context) ([]*database
 	return res, nil
 }
 
-func (c *connection) FindProjects(ctx context.Context, afterName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjects(ctx context.Context, afterID string, limit int) ([]*database.Project, error) {
+	var qry strings.Builder
+	var args []any
+	qry.WriteString("SELECT p.* FROM projects p ")
+	if afterID != "" {
+		qry.WriteString("WHERE p.id > $1 ORDER BY p.id LIMIT $2")
+		args = []any{afterID, limit}
+	} else {
+		qry.WriteString("ORDER BY p.id LIMIT $1")
+		args = []any{limit}
+	}
 	var res []*projectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(name) > lower($1) ORDER BY lower(p.name) LIMIT $2", afterName, limit)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterID string, limit int) ([]*database.Project, error) {
+	var qry strings.Builder
+	var args []any
+	qry.WriteString("SELECT p.* FROM projects p WHERE p.prod_version = $1 ")
+	if afterID != "" {
+		qry.WriteString("AND p.id > $2 ORDER BY p.id LIMIT $3")
+		args = []any{version, afterID, limit}
+	} else {
+		qry.WriteString("ORDER BY p.id LIMIT $2")
+		args = []any{version, limit}
+	}
 	var res []*projectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.prod_version = $1 AND lower(name) > lower($2) ORDER BY lower(p.name) LIMIT $3", version, afterName, limit)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -330,18 +350,19 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, afterProjectName string, limit int) ([]*database.Project, error) {
 	var qry strings.Builder
 	qry.WriteString("SELECT p.* FROM projects p WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (")
 	if includePublic {
 		qry.WriteString("p.public = true OR ")
 	}
-	qry.WriteString(`p.id IN (
-		SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3
+	qry.WriteString("p.id IN (SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3")
+	if includeGroups {
+		qry.WriteString(`
 		UNION
-		SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3
-	)`)
-	qry.WriteString(") ORDER BY lower(p.name) LIMIT $4")
+		SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3`)
+	}
+	qry.WriteString(")) ORDER BY lower(p.name) LIMIT $4")
 
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), orgID, afterProjectName, userID, limit)
@@ -2257,6 +2278,43 @@ func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, u
 	return role, nil
 }
 
+func (c *connection) FindProjectMemberUsersForUserAndProjects(ctx context.Context, userID string, projectIDs []string) (map[string]*database.ProjectMemberUser, error) {
+	type row struct {
+		ProjectID string `db:"project_id"`
+		projectMemberUserDTO
+	}
+	var rows []row
+	err := c.getDB(ctx).SelectContext(ctx, &rows, `
+		SELECT
+			upr.project_id,
+			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
+			(SELECT pr.name FROM project_roles pr WHERE pr.id = upr.project_role_id) AS role_name,
+			(
+				SELECT orr.name
+				FROM org_roles orr
+				JOIN users_orgs_roles uor ON orr.id = uor.org_role_id
+				WHERE uor.user_id = u.id AND uor.org_id = (SELECT org_id FROM projects WHERE id = upr.project_id)
+			) AS org_role_name,
+			upr.resources,
+			upr.restrict_resources
+		FROM users u
+		JOIN users_projects_roles upr ON upr.user_id = u.id
+		WHERE upr.user_id = $1 AND upr.project_id = ANY($2)
+	`, userID, projectIDs)
+	if err != nil {
+		return nil, parseErr("project members", err)
+	}
+	res := make(map[string]*database.ProjectMemberUser, len(rows))
+	for i := range rows {
+		m, err := rows[i].projectMemberUserDTO.asModel()
+		if err != nil {
+			return nil, err
+		}
+		res[rows[i].ProjectID] = m
+	}
+	return res, nil
+}
+
 func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u WHERE u.superuser = true`)
@@ -3248,6 +3306,15 @@ func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, o
 func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM provisioner_resources WHERE id = $1", id)
 	return checkDeleteRow("provisioner resource", res, err)
+}
+
+func (c *connection) FindManagedGitRepos(ctx context.Context, afterRemote string, limit int) ([]*database.ManagedGitRepo, error) {
+	var res []*database.ManagedGitRepo
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM managed_git_repos WHERE remote > $1 ORDER BY remote LIMIT $2", afterRemote, limit)
+	if err != nil {
+		return nil, parseErr("managed git repos", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindManagedGitRepo(ctx context.Context, remote string) (*database.ManagedGitRepo, error) {

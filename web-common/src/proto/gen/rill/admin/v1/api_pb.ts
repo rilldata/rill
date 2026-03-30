@@ -1483,6 +1483,20 @@ export class ListProjectsForOrganizationAndUserRequest extends Message<ListProje
    */
   pageToken = "";
 
+  /**
+   * Only return projects where the user has a direct membership (exclude usergroup-inherited access).
+   *
+   * @generated from field: bool direct = 5;
+   */
+  direct = false;
+
+  /**
+   * Populate project_roles in the response.
+   *
+   * @generated from field: bool include_roles = 6;
+   */
+  includeRoles = false;
+
   constructor(data?: PartialMessage<ListProjectsForOrganizationAndUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1495,6 +1509,8 @@ export class ListProjectsForOrganizationAndUserRequest extends Message<ListProje
     { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "direct", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "include_roles", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationAndUserRequest {
@@ -1528,6 +1544,13 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
    */
   nextPageToken = "";
 
+  /**
+   * Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
+   *
+   * @generated from field: map<string, rill.admin.v1.ProjectMemberUser> project_roles = 3;
+   */
+  projectRoles: { [key: string]: ProjectMemberUser } = {};
+
   constructor(data?: PartialMessage<ListProjectsForOrganizationAndUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1538,6 +1561,7 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project_roles", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: ProjectMemberUser} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationAndUserResponse {
@@ -14173,6 +14197,13 @@ export class GetPaymentsPortalURLRequest extends Message<GetPaymentsPortalURLReq
   returnUrl = "";
 
   /**
+   * If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+   *
+   * @generated from field: bool setup = 4;
+   */
+  setup = false;
+
+  /**
    * @generated from field: bool superuser_force_access = 3;
    */
   superuserForceAccess = false;
@@ -14187,6 +14218,7 @@ export class GetPaymentsPortalURLRequest extends Message<GetPaymentsPortalURLReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "return_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "setup", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

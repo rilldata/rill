@@ -5,13 +5,13 @@
     OnChangeFn,
     SortingState,
     TableOptions,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createSvelteTable,
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
 
@@ -24,6 +24,7 @@
   export let rowHeight = 46;
   export let containerHeight = 400;
   export let overscan = 1;
+  export let tableId: string | undefined = undefined;
 
   let containerElement: HTMLDivElement;
   let sorting: SortingState = [];
@@ -110,6 +111,7 @@
 </script>
 
 <div
+  id={tableId}
   class="flex flex-col border rounded-sm overflow-hidden"
   style:--grid-template-columns={columnLayout}
 >
@@ -122,7 +124,7 @@
           tabindex="0"
           class="pl-{header.column.columnDef.meta?.marginLeft ||
             '4'} py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm"
-          on:click={header.column.getToggleSortingHandler()}
+          onclick={header.column.getToggleSortingHandler()}
         >
           {#if !header.isPlaceholder}
             <span class="truncate">

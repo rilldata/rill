@@ -17,11 +17,13 @@ export const INTEGERS = new Set([
   "CODE_INT32",
   "CODE_INT64",
   "CODE_INT128",
+  "CODE_INT256",
   "CODE_UINT8",
   "CODE_UINT16",
   "CODE_UINT32",
   "CODE_UINT64",
   "CODE_UINT128",
+  "CODE_UINT256",
 
   // DuckDB native types
   "BIGINT",
@@ -154,7 +156,7 @@ export const CATEGORICAL_TOKENS: ColorTokens = {
 
 export const NUMERIC_TOKENS: ColorTokens = {
   textClass: "text-red-800",
-  bgClass: "bg-red-200",
+  bgClass: "bg-primary-200",
   vizFillClass: "fill-red-300",
   vizStrokeClass: "stroke-red-300",
 };

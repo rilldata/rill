@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -20,8 +20,8 @@
     },
     {
       label: "Tables",
-      route: "/model-details",
-      hasPermission: false,
+      route: "/tables",
+      hasPermission: true,
     },
     {
       label: "Logs",

@@ -73,6 +73,23 @@ export const azureSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "sas_token" },
     },
+    path_prefixes: {
+      type: "string",
+      title: "Path prefixes",
+      description:
+        "Comma-separated list of container path prefixes this connector is allowed to access",
+      "x-placeholder": "azure://my-container/path/",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow host access",
+      description:
+        "Use Azure credentials from the host environment in addition to configured credentials",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     path: {
       type: "string",
       title: "Blob URI",

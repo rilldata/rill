@@ -88,7 +88,10 @@
 
 <form
   id={CreateNewOrgFormId}
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
   use:enhance
   class="flex flex-col gap-y-3"
 >

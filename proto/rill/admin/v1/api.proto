@@ -1465,11 +1465,17 @@ message ListProjectsForOrganizationAndUserRequest {
   string user_id = 2 [(validate.rules).string.min_len = 1];
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
+  // Only return projects where the user has a direct membership (exclude usergroup-inherited access).
+  bool direct = 5;
+  // Populate project_roles in the response.
+  bool include_roles = 6;
 }
 
 message ListProjectsForOrganizationAndUserResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
+  // Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
+  map<string, ProjectMemberUser> project_roles = 3;
 }
 
 message ListProjectsForFingerprintRequest {
@@ -3037,7 +3043,8 @@ message RenewBillingSubscriptionResponse {
 
 message GetPaymentsPortalURLRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
-  string return_url = 2 [(validate.rules).string.min_len = 1];
+  string return_url = 2;
+  bool setup = 4; // If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
   bool superuser_force_access = 3;
 }
 

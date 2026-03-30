@@ -21,7 +21,7 @@ func TestStarRocksOLAP(t *testing.T) {
 
 	dsn := teststarrocks.StartWithData(t)
 
-	conn, err := driver{}.Open("default", map[string]any{
+	conn, err := driver{}.Open("", "default", map[string]any{
 		"dsn": dsn,
 	}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)

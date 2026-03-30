@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -11,9 +12,8 @@
     getColorForValues,
     resolveCSSVariable,
   } from "@rilldata/web-common/features/components/charts/util";
-  import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+  import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
-  import { slide } from "svelte/transition";
 
   export let colorMapping: ColorMapping | undefined;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
@@ -40,7 +40,7 @@
   function handleColorChange(value: string, newColor: string) {
     const valueIndex = colorValues.findIndex((v) => v === value);
     const defaultColorVar =
-      COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
+      COMPARISON_COLORS[valueIndex % COMPARISON_COLORS.length];
 
     // Convert the color back to a CSS variable reference if it matches a palette color
     const colorToSave = colorToVariableReference(newColor);
@@ -88,7 +88,7 @@
   <div>
     <button
       class="w-full p-1 flex items-center justify-between hover:bg-surface-background"
-      on:click={toggleExpanded}
+      onclick={toggleExpanded}
     >
       <span class="text-xs font-medium">Color mapping</span>
       <div class="flex items-center gap-x-2">

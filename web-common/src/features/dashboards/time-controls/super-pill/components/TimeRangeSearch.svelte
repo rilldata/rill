@@ -37,7 +37,7 @@
     class:error={(inError || unableToParse) &&
       timeString !== ALL_TIME_RANGE_ALIAS}
     class=""
-    on:submit={(e) => {
+    onsubmit={(e) => {
       e.preventDefault();
 
       if (searchValue === ALL_TIME_RANGE_ALIAS) {
@@ -68,7 +68,7 @@
     <span
       class="mr-1 flex-none"
       role="presentation"
-      on:click={() => {
+      onclick={() => {
         searchElement.focus();
       }}
     >
@@ -78,7 +78,7 @@
       placeholder="Enter a time range"
       type="text"
       class="h-7 border w-full"
-      on:keydown={() => {
+      onkeydown={() => {
         if (unableToParse) {
           unableToParse = false;
         }

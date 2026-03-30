@@ -52,6 +52,7 @@
       currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
+  export let oninput: ((e: Event) => void) | undefined = undefined;
   export let onChange: (newValue: string) => void = voidFunction;
   export let onBlur: (
     e: FocusEvent & {
@@ -69,7 +70,7 @@
   let hitEnter = false;
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
-  let selectElement: HTMLButtonElement | undefined;
+  let selectElement: HTMLButtonElement | null = null;
   let focus = false;
 
   $: type = secret && !showPassword ? "password" : inputType;
@@ -171,14 +172,15 @@
           aria-label={label || title || placeholder}
           bind:this={inputElement}
           bind:value
-          on:input={(e) => {
+          oninput={(e) => {
             value = e.currentTarget.value;
             onInput(value, e);
+            oninput?.(e);
           }}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
-        />
+          onkeydown={onKeydown}
+          onblur={onElementBlur}
+          onfocus={() => (focus = true)}
+        ></textarea>
       {:else}
         <input
           title={label || title}
@@ -191,21 +193,23 @@
           value={value ?? (inputType === "number" ? null : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
-          on:input={(e) => {
+          oninput={(e) => {
             if (inputType === "number") {
               if (e.currentTarget.value === "") {
                 value = undefined;
               } else {
                 value = e.currentTarget.valueAsNumber;
               }
+              oninput?.(e);
               return;
             }
             value = e.currentTarget.value;
             onInput(value, e);
+            oninput?.(e);
           }}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
+          onkeydown={onKeydown}
+          onblur={onElementBlur}
+          onfocus={() => (focus = true)}
         />
       {/if}
       {#if secret}
@@ -213,7 +217,7 @@
           size={20}
           disableHover
           ariaLabel={showPassword ? "Hide password" : "Show password"}
-          on:click={() => {
+          onclick={() => {
             showPassword = !showPassword;
           }}
         >

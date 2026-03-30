@@ -26,10 +26,11 @@ type WriteFileArgs struct {
 }
 
 type WriteFileResult struct {
-	Diff       string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
-	IsNewFile  bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
-	Resources  []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
-	ParseError string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	Diff          string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
+	IsNewFile     bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
+	Resources     []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
+	ParseError    string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	ParseWarnings []string         `json:"parse_warnings,omitempty" jsonschema:"Parse warnings encountered when parsing the file, if any. The file may still be successfully reconciled if there are warnings."`
 }
 
 func (t *WriteFile) Spec() *mcp.Tool {
@@ -37,6 +38,12 @@ func (t *WriteFile) Spec() *mcp.Tool {
 		Name:        WriteFileName,
 		Title:       "Write file",
 		Description: "Creates, updates or deletes a file in a Rill project. If the file already exists, it will be overwritten. If the file declares a Rill resource, it will wait for the resource to reconcile and return its kind, name and any errors encountered.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(true),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    false,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Writing file...",
 			"openai/toolInvocation/invoked":  "Wrote file",
@@ -68,6 +75,7 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 	// Write the file
 	var resources []map[string]any
 	var parseErr string
+	var parseWarnings []string
 	if args.Remove {
 		err = t.Runtime.DeleteFile(ctx, s.InstanceID(), args.Path, false)
 		if err != nil {
@@ -79,7 +87,7 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 			return nil, err
 		}
 
-		resources, parseErr, err = t.reconcileAndGetStatus(ctx, args.Path)
+		resources, parseErr, parseWarnings, err = t.reconcileAndGetStatus(ctx, args.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -97,52 +105,58 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 
 	// Done
 	return &WriteFileResult{
-		Diff:       diff,
-		IsNewFile:  isNewFile,
-		Resources:  resources,
-		ParseError: parseErr,
+		Diff:          diff,
+		IsNewFile:     isNewFile,
+		Resources:     resources,
+		ParseError:    parseErr,
+		ParseWarnings: parseWarnings,
 	}, nil
 }
 
 // reconcileAndGetStatus waits until reconciliation is done, then returns the status of resources declared in the file at the given path.
-func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (resources []map[string]any, parseError string, err error) {
+func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (resources []map[string]any, parseError string, parseWarnings []string, err error) {
 	s := GetSession(ctx)
 	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName) // TODO: Only if not streaming
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 
 	select {
 	case <-time.After(time.Millisecond * 500):
 	case <-ctx.Done():
-		return nil, "", ctx.Err()
+		return nil, "", nil, ctx.Err()
 	}
 
 	p, err := ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
+	}
+	for _, e := range p.GetProjectParser().State.ParseErrors {
+		if e.FilePath == path && e.Warning {
+			parseWarnings = append(parseWarnings, e.Message)
+		}
 	}
 	for _, pe := range p.GetProjectParser().State.ParseErrors {
-		if pe.FilePath == path {
-			return nil, pe.Message, nil
+		if pe.FilePath == path && !pe.Warning {
+			return nil, pe.Message, parseWarnings, nil
 		}
 	}
 
 	err = ctrl.WaitUntilIdle(ctx, true)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 
 	rs, err := ctrl.List(ctx, "", path, false)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	if len(rs) == 0 {
-		return nil, "", nil
+		return nil, "", nil, nil
 	}
 
 	resources = []map[string]any{}
@@ -154,5 +168,5 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 			"reconcile_error":  r.Meta.ReconcileError,
 		})
 	}
-	return resources, "", nil
+	return resources, "", parseWarnings, nil
 }

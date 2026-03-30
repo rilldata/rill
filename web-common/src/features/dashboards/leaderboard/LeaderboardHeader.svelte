@@ -65,7 +65,7 @@
             ? 'hover:text-theme-700'
             : ''}"
           aria-label="Open dimension details"
-          on:click={() => setPrimaryDimension(dimensionName)}
+          onclick={() => setPrimaryDimension(dimensionName)}
         >
           <span class="line-clamp-2">{displayName}</span>
         </button>
@@ -99,7 +99,7 @@
       <th data-measure-header>
         <button
           aria-label="Toggle sort leaderboards by value"
-          on:click={() => {
+          onclick={() => {
             toggleSort(SortType.VALUE, measureName);
           }}
           class="font-normal text-right"
@@ -134,7 +134,7 @@
         <th data-percent-of-total-header>
           <button
             aria-label="Toggle sort leaderboards by percent of total"
-            on:click={() => toggleSort(SortType.PERCENT, measureName)}
+            onclick={() => toggleSort(SortType.PERCENT, measureName)}
           >
             <PercentOfTotal />
             {#if sortType === SortType.PERCENT && measureName === leaderboardSortByMeasureName}
@@ -164,7 +164,7 @@
         <th data-absolute-change-header>
           <button
             aria-label="Toggle sort leaderboards by absolute change"
-            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
+            onclick={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
           >
             <DeltaChange />
             {#if sortType === SortType.DELTA_ABSOLUTE && measureName === leaderboardSortByMeasureName}
@@ -194,7 +194,7 @@
         <th data-percent-change-header>
           <button
             aria-label="Toggle sort leaderboards by percent change"
-            on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
+            onclick={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
           >
             <DeltaChangePercentage />
             {#if sortType === SortType.DELTA_PERCENT && measureName === leaderboardSortByMeasureName}
@@ -233,7 +233,7 @@
   }
 
   th[data-dimension-header] {
-    @apply sticky left-0 z-30 bg-transparent text-left;
+    @apply sticky left-0 z-30 bg-surface-background text-left;
   }
 
   th:not(:first-of-type) {

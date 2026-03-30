@@ -24,7 +24,6 @@ import {
   type MetricsViewSpecMeasure,
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
@@ -88,7 +87,7 @@ export type ChartType =
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
-  HTTPError
+  Error
 >;
 
 export type ChartFieldsMap = Record<
@@ -102,7 +101,7 @@ export type ChartDataResult = {
   data: V1MetricsViewAggregationResponseDataItem[];
   isFetching: boolean;
   fields: ChartFieldsMap;
-  error?: HTTPError | null;
+  error?: Error | null;
   theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
   isDarkMode: boolean;
@@ -149,6 +148,8 @@ interface NominalFieldConfig {
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;
+  /** Explicit dimension values to use (skips topN query) */
+  values?: string[];
 }
 
 interface MarkFieldConfig {
@@ -171,6 +172,7 @@ interface BaseFieldConfig {
   field: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
+  axisOrient?: "top" | "bottom" | "left" | "right";
   fields?: string[]; // To support multi metric chart variants
 }
 

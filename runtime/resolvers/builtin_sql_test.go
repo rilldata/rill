@@ -46,7 +46,7 @@ func TestBuiltinSQL(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+		res, _, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 			InstanceID:         instanceID,
 			Resolver:           api.Spec.Resolver,
 			ResolverProperties: api.Spec.ResolverProperties.AsMap(),

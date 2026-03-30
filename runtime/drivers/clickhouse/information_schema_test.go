@@ -17,7 +17,7 @@ import (
 func TestInformationSchema(t *testing.T) {
 	testmode.Expensive(t)
 	dsn := testclickhouse.Start(t)
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	infoSchema, ok := conn.AsInformationSchema()
@@ -27,7 +27,7 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, conn) })
 	t.Run("testInformationSchemaSystemAllLike", func(t *testing.T) {
-		conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn + "/system", "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn + "/system", "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		testInformationSchemaSystemAllLike(t, conn)
 	})

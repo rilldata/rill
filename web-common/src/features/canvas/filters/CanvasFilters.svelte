@@ -8,10 +8,10 @@
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
-  import { Tooltip } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
 
   export let readOnly = false;
@@ -19,12 +19,14 @@
   export let builder = false;
   export let canvasName: string;
 
+  const runtimeClient = useRuntimeClient();
+
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
   let showDefaultItem = false;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: ({
     canvasEntity: {
       filterManager: {
@@ -135,7 +137,7 @@
     <div class="p-2 flex justify-between size-full py-0">
       <div class="flex items-center size-full">
         <div class="flex-none h-full pt-1.5 pointer-events-auto">
-          <Tooltip.Root openDelay={0}>
+          <Tooltip.Root delayDuration={0}>
             <Tooltip.Trigger class="cursor-default">
               <Calendar size="16px" />
             </Tooltip.Trigger>
