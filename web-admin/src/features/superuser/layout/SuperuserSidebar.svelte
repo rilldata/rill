@@ -44,7 +44,12 @@
         >
           {group.heading}
         </span>
-        <LeftNav {basePage} {baseRoute} navItems={group.items} minWidth="auto" />
+        <LeftNav
+          {basePage}
+          {baseRoute}
+          navItems={group.items}
+          minWidth="auto"
+        />
       </div>
     {/each}
   </div>

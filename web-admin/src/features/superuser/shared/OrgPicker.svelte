@@ -69,7 +69,9 @@
   />
   {#if showResults && searchQuery.length >= 3 && !value}
     {#if $orgNamesQuery.isFetching}
-      <div class="absolute z-10 left-0 right-0 mt-1 rounded-md border bg-surface-base shadow-md p-2">
+      <div
+        class="absolute z-10 left-0 right-0 mt-1 rounded-md border bg-surface-base shadow-md p-2"
+      >
         <p class="text-sm text-fg-secondary">Searching...</p>
       </div>
     {:else if matchedOrgs.length > 0}
@@ -90,7 +92,9 @@
         {/each}
       </div>
     {:else if $orgNamesQuery.isSuccess}
-      <div class="absolute z-10 left-0 right-0 mt-1 rounded-md border bg-surface-base shadow-md p-2">
+      <div
+        class="absolute z-10 left-0 right-0 mt-1 rounded-md border bg-surface-base shadow-md p-2"
+      >
         <p class="text-sm text-fg-secondary">No organizations found</p>
       </div>
     {/if}

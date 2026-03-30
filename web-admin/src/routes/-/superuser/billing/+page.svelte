@@ -55,12 +55,21 @@
       const url = await getBillingSetupURL(setupOrg);
       if (url) {
         setupUrl = url;
-        eventBus.emit("notification", { type: "success", message: `Billing setup URL generated for ${setupOrg}` });
+        eventBus.emit("notification", {
+          type: "success",
+          message: `Billing setup URL generated for ${setupOrg}`,
+        });
       } else {
-        eventBus.emit("notification", { type: "error", message: "No URL returned; check the org name." });
+        eventBus.emit("notification", {
+          type: "error",
+          message: "No URL returned; check the org name.",
+        });
       }
     } catch (err) {
-      eventBus.emit("notification", { type: "error", message: `Failed to generate billing setup URL: ${err}` });
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to generate billing setup URL: ${err}`,
+      });
     } finally {
       setupLoading = false;
     }
@@ -77,10 +86,16 @@
         await $extendTrial.mutateAsync({
           data: { org: trialOrg, days: trialDays },
         });
-        eventBus.emit("notification", { type: "success", message: `Trial extended by ${trialDays} days for ${trialOrg}` });
+        eventBus.emit("notification", {
+          type: "success",
+          message: `Trial extended by ${trialDays} days for ${trialOrg}`,
+        });
         trialOrg = "";
       } catch (err) {
-        eventBus.emit("notification", { type: "error", message: `Failed to extend trial: ${err}` });
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed to extend trial: ${err}`,
+        });
       } finally {
         trialLoading = false;
       }
@@ -95,14 +110,20 @@
     dialogAction = async () => {
       try {
         await $deleteBillingIssue.mutateAsync({ org, type });
-        eventBus.emit("notification", { type: "success", message: `Billing issue "${type}" deleted for ${org}` });
+        eventBus.emit("notification", {
+          type: "success",
+          message: `Billing issue "${type}" deleted for ${org}`,
+        });
         await queryClient.invalidateQueries({
           predicate: (q) =>
             (q.queryKey[0] as string)?.includes("/v1/organizations") ||
             (q.queryKey[0] as string)?.includes("/v1/superuser/billing"),
         });
       } catch (err) {
-        eventBus.emit("notification", { type: "error", message: `Failed to delete billing issue: ${err}` });
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed to delete billing issue: ${err}`,
+        });
       }
     };
     dialogOpen = true;
@@ -131,13 +152,16 @@
   <section class="p-5 rounded-lg border border-primary-200 bg-primary-50/50">
     <h2 class="text-sm font-semibold text-fg-primary mb-1">Billing Setup</h2>
     <p class="text-sm text-fg-secondary mb-4">
-      Generate a Stripe checkout page link for an organization to enter their billing information.
+      Generate a Stripe checkout page link for an organization to enter their
+      billing information.
     </p>
     <div class="flex gap-3 items-center flex-wrap">
       <div class="w-64">
         <OrgPicker bind:value={setupOrg} />
       </div>
-      <Button large class="font-normal"
+      <Button
+        large
+        class="font-normal"
         type="primary"
         onClick={handleBillingSetup}
         disabled={setupLoading || !setupOrg}
@@ -148,8 +172,12 @@
     </div>
     {#if setupUrl}
       <div class="mt-4 flex flex-col gap-1">
-        <span class="text-sm text-fg-secondary">Share this link with the customer:</span>
-        <div class="flex items-center gap-2 p-3 rounded-md bg-surface-subtle border">
+        <span class="text-sm text-fg-secondary"
+          >Share this link with the customer:</span
+        >
+        <div
+          class="flex items-center gap-2 p-3 rounded-md bg-surface-subtle border"
+        >
           <a
             href={setupUrl}
             target="_blank"
@@ -158,11 +186,16 @@
           >
             {setupUrl}
           </a>
-          <Button large class="font-normal"
+          <Button
+            large
+            class="font-normal"
             type="tertiary"
             onClick={() => {
               navigator.clipboard.writeText(setupUrl);
-              eventBus.emit("notification", { type: "success", message: "URL copied to clipboard" });
+              eventBus.emit("notification", {
+                type: "success",
+                message: "URL copied to clipboard",
+              });
             }}
           >
             Copy
@@ -175,7 +208,9 @@
   <!-- Extend Trial -->
   <section class="p-5 rounded-lg border">
     <h2 class="text-sm font-semibold text-fg-primary mb-1">Extend Trial</h2>
-    <p class="text-sm text-fg-secondary mb-4">Add days to an organization's trial period.</p>
+    <p class="text-sm text-fg-secondary mb-4">
+      Add days to an organization's trial period.
+    </p>
     <div class="flex gap-3 items-center flex-wrap">
       <div class="w-64">
         <OrgPicker bind:value={trialOrg} />
@@ -187,7 +222,9 @@
         max="30"
         bind:value={trialDays}
       />
-      <Button large class="font-normal"
+      <Button
+        large
+        class="font-normal"
         type="primary"
         onClick={confirmExtendTrial}
         disabled={trialLoading || !trialOrg}
@@ -201,7 +238,9 @@
   <!-- Billing Issues -->
   <section class="p-5 rounded-lg border">
     <h2 class="text-sm font-semibold text-fg-primary mb-1">Billing Issues</h2>
-    <p class="text-sm text-fg-secondary mb-4">View and resolve billing issues for an organization.</p>
+    <p class="text-sm text-fg-secondary mb-4">
+      View and resolve billing issues for an organization.
+    </p>
     <div class="flex gap-3 items-center flex-wrap mb-4">
       <div class="w-64">
         <OrgPicker bind:value={issuesOrg} />
@@ -212,14 +251,25 @@
     {:else if $billingIssuesQuery.data?.issues?.length}
       <div class="flex flex-col gap-2">
         {#each $billingIssuesQuery.data.issues as issue}
-          <div class="flex items-center justify-between px-3 py-2 rounded bg-surface-subtle">
+          <div
+            class="flex items-center justify-between px-3 py-2 rounded bg-surface-subtle"
+          >
             <div>
-              <span class="text-sm font-mono text-fg-primary">{issue.type}</span>
-              <span class="text-sm text-fg-secondary ml-2">{issue.metadata ?? ""}</span>
+              <span class="text-sm font-mono text-fg-primary">{issue.type}</span
+              >
+              <span class="text-sm text-fg-secondary ml-2"
+                >{issue.metadata ?? ""}</span
+              >
             </div>
-            <Button large class="font-normal"
+            <Button
+              large
+              class="font-normal"
               type="secondary-destructive"
-              onClick={() => confirmDeleteIssue(issuesOrg, issue.type ?? "BILLING_ISSUE_TYPE_UNSPECIFIED")}
+              onClick={() =>
+                confirmDeleteIssue(
+                  issuesOrg,
+                  issue.type ?? "BILLING_ISSUE_TYPE_UNSPECIFIED",
+                )}
             >
               Delete Issue
             </Button>
@@ -239,8 +289,15 @@
       <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button large class="font-normal" type="tertiary" onClick={() => (dialogOpen = false)}>Cancel</Button>
-      <Button large class="font-normal"
+      <Button
+        large
+        class="font-normal"
+        type="tertiary"
+        onClick={() => (dialogOpen = false)}>Cancel</Button
+      >
+      <Button
+        large
+        class="font-normal"
         type={dialogDestructive ? "destructive" : "primary"}
         onClick={handleConfirm}
         loading={dialogLoading}

@@ -8,7 +8,7 @@ import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 export const STORAGE_KEY = "rill-representing-user";
 
 // Store tracks the currently assumed user email
-const initial = browser ? sessionStorage.getItem(STORAGE_KEY) ?? "" : "";
+const initial = browser ? (sessionStorage.getItem(STORAGE_KEY) ?? "") : "";
 const { subscribe, set } = writable(initial);
 
 export const assumedUser = {

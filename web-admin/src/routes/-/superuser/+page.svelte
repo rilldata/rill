@@ -58,12 +58,18 @@
       actionInProgress = `delete:${email}`;
       try {
         await $deleteUser.mutateAsync({ email });
-        eventBus.emit("notification", { type: "success", message: `User ${email} deleted` });
+        eventBus.emit("notification", {
+          type: "success",
+          message: `User ${email} deleted`,
+        });
         await queryClient.invalidateQueries({
           predicate: (q) => q.queryKey[0] === "/v1/users/search",
         });
       } catch (err) {
-        eventBus.emit("notification", { type: "error", message: `Failed to delete user: ${err}` });
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed to delete user: ${err}`,
+        });
       } finally {
         actionInProgress = "";
       }
@@ -94,7 +100,9 @@
     class="flex items-center gap-3 mb-4 px-4 py-2 rounded-md bg-yellow-100 border border-yellow-300 text-yellow-800 text-sm"
   >
     <span>Currently assumed as <strong>{$assumedUser}</strong></span>
-    <Button large class="font-normal" type="tertiary" onClick={handleUnassume}>Unassume</Button>
+    <Button large class="font-normal" type="tertiary" onClick={handleUnassume}
+      >Unassume</Button
+    >
   </div>
 {/if}
 
@@ -117,31 +125,62 @@
     <table class="w-full border-collapse">
       <thead>
         <tr>
-          <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Email</th>
-          <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Display Name</th>
-          <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Created</th>
-          <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Actions</th>
+          <th
+            class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+            >Email</th
+          >
+          <th
+            class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+            >Display Name</th
+          >
+          <th
+            class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+            >Created</th
+          >
+          <th
+            class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+            >Actions</th
+          >
         </tr>
       </thead>
       <tbody>
         {#each $usersQuery.data.users as user}
           {@const isAssumed = $assumedUser === user.email}
           <tr>
-            <td class="px-4 py-3 text-sm font-mono text-fg-primary border-b">{user.email}</td>
-            <td class="px-4 py-3 text-sm text-fg-primary border-b">{user.displayName ?? "-"}</td>
+            <td class="px-4 py-3 text-sm font-mono text-fg-primary border-b"
+              >{user.email}</td
+            >
+            <td class="px-4 py-3 text-sm text-fg-primary border-b"
+              >{user.displayName ?? "-"}</td
+            >
             <td class="px-4 py-3 text-sm text-fg-secondary border-b">
-              {user.createdOn ? new Date(user.createdOn).toLocaleDateString() : "-"}
+              {user.createdOn
+                ? new Date(user.createdOn).toLocaleDateString()
+                : "-"}
             </td>
             <td class="px-4 py-3 text-sm text-fg-primary border-b">
               <div class="flex gap-2">
                 {#if isAssumed}
-                  <Button large class="font-normal" type="tertiary" onClick={handleUnassume}>Unassume</Button>
+                  <Button
+                    large
+                    class="font-normal"
+                    type="tertiary"
+                    onClick={handleUnassume}>Unassume</Button
+                  >
                 {:else}
-                  <Button large class="font-normal" type="tertiary" onClick={() => handleAssume(user.email ?? "")}>Open as User</Button>
+                  <Button
+                    large
+                    class="font-normal"
+                    type="tertiary"
+                    onClick={() => handleAssume(user.email ?? "")}
+                    >Open as User</Button
+                  >
                 {/if}
-                <Button large class="font-normal"
+                <Button
+                  large
+                  class="font-normal"
                   type="secondary-destructive"
-                                   disabled={actionInProgress === `delete:${user.email}`}
+                  disabled={actionInProgress === `delete:${user.email}`}
                   loading={actionInProgress === `delete:${user.email}`}
                   onClick={() => handleDelete(user.email ?? "")}
                 >
@@ -169,8 +208,15 @@
       <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button large class="font-normal" type="tertiary" onClick={() => (dialogOpen = false)}>Cancel</Button>
-      <Button large class="font-normal"
+      <Button
+        large
+        class="font-normal"
+        type="tertiary"
+        onClick={() => (dialogOpen = false)}>Cancel</Button
+      >
+      <Button
+        large
+        class="font-normal"
         type={dialogDestructive ? "destructive" : "primary"}
         onClick={handleConfirm}
         loading={dialogLoading}

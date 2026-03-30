@@ -5,7 +5,10 @@
   export let value: string = "";
   export let debounceMs: number = 300;
 
-  const dispatch = createEventDispatcher<{ search: string; keydown: KeyboardEvent }>();
+  const dispatch = createEventDispatcher<{
+    search: string;
+    keydown: KeyboardEvent;
+  }>();
 
   let timeout: ReturnType<typeof setTimeout>;
 

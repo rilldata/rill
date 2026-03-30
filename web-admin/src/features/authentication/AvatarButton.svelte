@@ -149,7 +149,9 @@
     {/if}
 
     {#if isSuperuser}
-      <DropdownMenu.Item href="/-/superuser">Superuser Console</DropdownMenu.Item>
+      <DropdownMenu.Item href="/-/superuser"
+        >Superuser Console</DropdownMenu.Item
+      >
       <DropdownMenu.Separator />
     {/if}
 

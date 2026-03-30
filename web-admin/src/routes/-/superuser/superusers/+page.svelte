@@ -31,14 +31,22 @@
     if (!newEmail) return;
     addLoading = true;
     try {
-      await $setSuperuser.mutateAsync({ data: { email: newEmail, superuser: true } });
-      eventBus.emit("notification", { type: "success", message: `${newEmail} added as superuser` });
+      await $setSuperuser.mutateAsync({
+        data: { email: newEmail, superuser: true },
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `${newEmail} added as superuser`,
+      });
       newEmail = "";
       await queryClient.invalidateQueries({
         predicate: (q) => (q.queryKey[0] as string)?.includes("/v1/superuser"),
       });
     } catch (err) {
-      eventBus.emit("notification", { type: "error", message: `Failed: ${err}` });
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed: ${err}`,
+      });
     } finally {
       addLoading = false;
     }
@@ -49,12 +57,19 @@
     dialogAction = async () => {
       try {
         await $setSuperuser.mutateAsync({ data: { email, superuser: false } });
-        eventBus.emit("notification", { type: "success", message: `${email} removed as superuser` });
+        eventBus.emit("notification", {
+          type: "success",
+          message: `${email} removed as superuser`,
+        });
         await queryClient.invalidateQueries({
-          predicate: (q) => (q.queryKey[0] as string)?.includes("/v1/superuser"),
+          predicate: (q) =>
+            (q.queryKey[0] as string)?.includes("/v1/superuser"),
         });
       } catch (err) {
-        eventBus.emit("notification", { type: "error", message: `Failed: ${err}` });
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed: ${err}`,
+        });
       }
     };
     dialogOpen = true;
@@ -88,7 +103,9 @@
       bind:value={newEmail}
       on:keydown={(e) => e.key === "Enter" && handleAdd()}
     />
-    <Button large class="font-normal"
+    <Button
+      large
+      class="font-normal"
       type="primary"
       onClick={handleAdd}
       disabled={addLoading || !newEmail}
@@ -103,25 +120,43 @@
   <p class="text-sm text-fg-secondary py-4">Loading superusers...</p>
 {:else if $superusersQuery.data?.users?.length}
   <p class="text-sm text-fg-secondary mb-2">
-    {$superusersQuery.data.users.length} superuser{$superusersQuery.data.users.length === 1 ? "" : "s"}
+    {$superusersQuery.data.users.length} superuser{$superusersQuery.data.users
+      .length === 1
+      ? ""
+      : "s"}
   </p>
   <table class="w-full">
     <thead>
       <tr>
-        <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Email</th>
-        <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Display Name</th>
-        <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Actions</th>
+        <th
+          class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+          >Email</th
+        >
+        <th
+          class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+          >Display Name</th
+        >
+        <th
+          class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+          >Actions</th
+        >
       </tr>
     </thead>
     <tbody>
       {#each $superusersQuery.data.users as user}
         <tr>
-          <td class="px-4 py-3 text-sm font-mono text-fg-primary border-b">{user.email}</td>
-          <td class="px-4 py-3 text-sm text-fg-primary border-b">{user.displayName ?? "-"}</td>
+          <td class="px-4 py-3 text-sm font-mono text-fg-primary border-b"
+            >{user.email}</td
+          >
+          <td class="px-4 py-3 text-sm text-fg-primary border-b"
+            >{user.displayName ?? "-"}</td
+          >
           <td class="px-4 py-3 text-sm text-fg-primary border-b">
-            <Button large class="font-normal"
+            <Button
+              large
+              class="font-normal"
               type="secondary-destructive"
-                           onClick={() => handleRemove(user.email ?? "")}
+              onClick={() => handleRemove(user.email ?? "")}
             >
               Remove
             </Button>
@@ -137,12 +172,24 @@
     <AlertDialogHeader>
       <AlertDialogTitle>Remove Superuser</AlertDialogTitle>
       <AlertDialogDescription>
-        Remove superuser access for {removeTarget}? They will lose access to this console.
+        Remove superuser access for {removeTarget}? They will lose access to
+        this console.
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button large class="font-normal" type="tertiary" onClick={() => (dialogOpen = false)}>Cancel</Button>
-      <Button large class="font-normal" type="destructive" onClick={handleConfirm} loading={dialogLoading}>Remove</Button>
+      <Button
+        large
+        class="font-normal"
+        type="tertiary"
+        onClick={() => (dialogOpen = false)}>Cancel</Button
+      >
+      <Button
+        large
+        class="font-normal"
+        type="destructive"
+        onClick={handleConfirm}
+        loading={dialogLoading}>Remove</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

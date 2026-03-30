@@ -40,8 +40,10 @@
     projects = q.projects != null ? String(q.projects) : "";
     deployments = q.deployments != null ? String(q.deployments) : "";
     slotsTotal = q.slotsTotal != null ? String(q.slotsTotal) : "";
-    slotsPerDeployment = q.slotsPerDeployment != null ? String(q.slotsPerDeployment) : "";
-    outstandingInvites = q.outstandingInvites != null ? String(q.outstandingInvites) : "";
+    slotsPerDeployment =
+      q.slotsPerDeployment != null ? String(q.slotsPerDeployment) : "";
+    outstandingInvites =
+      q.outstandingInvites != null ? String(q.outstandingInvites) : "";
     storageLimitBytes = q.storageLimitBytesPerDeployment ?? "";
   }
 
@@ -58,12 +60,21 @@
           projects: projects ? Number(projects) : undefined,
           deployments: deployments ? Number(deployments) : undefined,
           slotsTotal: slotsTotal ? Number(slotsTotal) : undefined,
-          slotsPerDeployment: slotsPerDeployment ? Number(slotsPerDeployment) : undefined,
-          outstandingInvites: outstandingInvites ? Number(outstandingInvites) : undefined,
-          storageLimitBytesPerDeployment: storageLimitBytes ? storageLimitBytes : undefined,
+          slotsPerDeployment: slotsPerDeployment
+            ? Number(slotsPerDeployment)
+            : undefined,
+          outstandingInvites: outstandingInvites
+            ? Number(outstandingInvites)
+            : undefined,
+          storageLimitBytesPerDeployment: storageLimitBytes
+            ? storageLimitBytes
+            : undefined,
         },
       });
-      eventBus.emit("notification", { type: "success", message: `Quotas updated for org: ${activeOrg}` });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Quotas updated for org: ${activeOrg}`,
+      });
       await queryClient.invalidateQueries({
         predicate: (q) =>
           (q.queryKey[0] as string)?.includes("/v1/superuser/quotas") ||
@@ -71,7 +82,10 @@
       });
       dialogOpen = false;
     } catch (err) {
-      eventBus.emit("notification", { type: "error", message: `Failed to update quotas: ${err}` });
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to update quotas: ${err}`,
+      });
     } finally {
       dialogLoading = false;
     }
@@ -96,33 +110,83 @@
     {:else if activeOrg && $orgQuery.data?.organization}
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-fg-secondary" for="projects">Projects</label>
-          <input id="projects" type="number" class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500" bind:value={projects} />
+          <label class="text-sm font-medium text-fg-secondary" for="projects"
+            >Projects</label
+          >
+          <input
+            id="projects"
+            type="number"
+            class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500"
+            bind:value={projects}
+          />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-fg-secondary" for="deployments">Deployments</label>
-          <input id="deployments" type="number" class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500" bind:value={deployments} />
+          <label class="text-sm font-medium text-fg-secondary" for="deployments"
+            >Deployments</label
+          >
+          <input
+            id="deployments"
+            type="number"
+            class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500"
+            bind:value={deployments}
+          />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-fg-secondary" for="slotsTotal">Total Slots</label>
-          <input id="slotsTotal" type="number" class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500" bind:value={slotsTotal} />
+          <label class="text-sm font-medium text-fg-secondary" for="slotsTotal"
+            >Total Slots</label
+          >
+          <input
+            id="slotsTotal"
+            type="number"
+            class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500"
+            bind:value={slotsTotal}
+          />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-fg-secondary" for="slotsPerDeployment">Slots per Deployment</label>
-          <input id="slotsPerDeployment" type="number" class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500" bind:value={slotsPerDeployment} />
+          <label
+            class="text-sm font-medium text-fg-secondary"
+            for="slotsPerDeployment">Slots per Deployment</label
+          >
+          <input
+            id="slotsPerDeployment"
+            type="number"
+            class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500"
+            bind:value={slotsPerDeployment}
+          />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-fg-secondary" for="outstandingInvites">Outstanding Invites</label>
-          <input id="outstandingInvites" type="number" class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500" bind:value={outstandingInvites} />
+          <label
+            class="text-sm font-medium text-fg-secondary"
+            for="outstandingInvites">Outstanding Invites</label
+          >
+          <input
+            id="outstandingInvites"
+            type="number"
+            class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500"
+            bind:value={outstandingInvites}
+          />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-fg-secondary" for="storageLimitBytes">Storage Limit (bytes)</label>
-          <input id="storageLimitBytes" type="text" class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500" bind:value={storageLimitBytes} />
+          <label
+            class="text-sm font-medium text-fg-secondary"
+            for="storageLimitBytes">Storage Limit (bytes)</label
+          >
+          <input
+            id="storageLimitBytes"
+            type="text"
+            class="px-3 py-2 text-sm rounded-md border bg-input text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary-500"
+            bind:value={storageLimitBytes}
+          />
         </div>
       </div>
 
       <div class="mt-4">
-        <Button large class="font-normal" type="primary" onClick={confirmSaveQuotas}>Save Quotas</Button>
+        <Button
+          large
+          class="font-normal"
+          type="primary"
+          onClick={confirmSaveQuotas}>Save Quotas</Button
+        >
       </div>
     {/if}
   </section>
@@ -133,12 +197,20 @@
     <AlertDialogHeader>
       <AlertDialogTitle>Update Quotas</AlertDialogTitle>
       <AlertDialogDescription>
-        This will update the resource quotas for "{activeOrg}". This change takes effect immediately.
+        This will update the resource quotas for "{activeOrg}". This change
+        takes effect immediately.
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button large class="font-normal" type="tertiary" onClick={() => (dialogOpen = false)}>Cancel</Button>
-      <Button large class="font-normal"
+      <Button
+        large
+        class="font-normal"
+        type="tertiary"
+        onClick={() => (dialogOpen = false)}>Cancel</Button
+      >
+      <Button
+        large
+        class="font-normal"
         type="primary"
         onClick={handleSaveQuotas}
         loading={dialogLoading}

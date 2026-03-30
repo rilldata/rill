@@ -69,7 +69,10 @@
   async function handleSaveSlots() {
     const slots = parseInt(slotsValue, 10);
     if (!slots || slots < 1) {
-      eventBus.emit("notification", { type: "error", message: "Prod slots must be a positive integer" });
+      eventBus.emit("notification", {
+        type: "error",
+        message: "Prod slots must be a positive integer",
+      });
       return;
     }
     const [org, project] = slotsProjectName.split("/");
@@ -80,10 +83,16 @@
         project,
         data: { prodSlots: String(slots), superuserForceAccess: true },
       });
-      eventBus.emit("notification", { type: "success", message: `Prod slots for ${slotsProjectName} set to ${slots}` });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Prod slots for ${slotsProjectName} set to ${slots}`,
+      });
       slotsDialogOpen = false;
     } catch (err) {
-      eventBus.emit("notification", { type: "error", message: `Failed to update slots: ${err}` });
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to update slots: ${err}`,
+      });
     } finally {
       slotsSaving = false;
     }
@@ -98,9 +107,15 @@
       actionInProgress = `hibernate:${name}`;
       try {
         await $hibernateProject.mutateAsync({ org, project });
-        eventBus.emit("notification", { type: "success", message: `Project ${name} hibernated` });
+        eventBus.emit("notification", {
+          type: "success",
+          message: `Project ${name} hibernated`,
+        });
       } catch (err) {
-        eventBus.emit("notification", { type: "error", message: `Failed: ${err}` });
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed: ${err}`,
+        });
       } finally {
         actionInProgress = "";
       }
@@ -117,9 +132,15 @@
       actionInProgress = `redeploy:${name}`;
       try {
         await $redeployProject.mutateAsync({ org, project });
-        eventBus.emit("notification", { type: "success", message: `Project ${name} redeployed` });
+        eventBus.emit("notification", {
+          type: "success",
+          message: `Project ${name} redeployed`,
+        });
       } catch (err) {
-        eventBus.emit("notification", { type: "error", message: `Failed: ${err}` });
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed: ${err}`,
+        });
       } finally {
         actionInProgress = "";
       }
@@ -156,34 +177,60 @@
   <p class="text-sm text-fg-secondary py-4">Searching projects...</p>
 {:else if $projectsQuery.data?.names?.length}
   <p class="text-sm text-fg-secondary mb-2">
-    {$projectsQuery.data.names.length} result{$projectsQuery.data.names.length === 1 ? "" : "s"}
+    {$projectsQuery.data.names.length} result{$projectsQuery.data.names
+      .length === 1
+      ? ""
+      : "s"}
   </p>
   <table class="w-full">
     <thead>
       <tr>
-        <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Project</th>
-        <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Actions</th>
+        <th
+          class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+          >Project</th
+        >
+        <th
+          class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b"
+          >Actions</th
+        >
       </tr>
     </thead>
     <tbody>
       {#each $projectsQuery.data.names as name}
         <tr>
-          <td class="px-4 py-3 text-sm font-mono text-fg-primary border-b">{name}</td>
+          <td class="px-4 py-3 text-sm font-mono text-fg-primary border-b"
+            >{name}</td
+          >
           <td class="px-4 py-3 text-sm text-fg-primary border-b">
             <div class="flex gap-2 items-center">
-              <Button large class="font-normal" type="tertiary" href={`/${name}`} target="_blank">View</Button>
-              <Button large class="font-normal" type="tertiary" onClick={() => handleChangeSlots(name)}>Change Slots</Button>
-              <Button large class="font-normal"
+              <Button
+                large
+                class="font-normal"
                 type="tertiary"
-                               disabled={actionInProgress === `hibernate:${name}`}
+                href={`/${name}`}
+                target="_blank">View</Button
+              >
+              <Button
+                large
+                class="font-normal"
+                type="tertiary"
+                onClick={() => handleChangeSlots(name)}>Change Slots</Button
+              >
+              <Button
+                large
+                class="font-normal"
+                type="tertiary"
+                disabled={actionInProgress === `hibernate:${name}`}
                 loading={actionInProgress === `hibernate:${name}`}
                 onClick={() => handleHibernate(name)}
               >
                 Hibernate
               </Button>
-              <Button large class="font-normal"
+              <Button
+                large
+                class="font-normal"
                 type="secondary-destructive"
-                               disabled={actionInProgress === `redeploy:${name}`}
+                disabled={actionInProgress === `redeploy:${name}`}
                 loading={actionInProgress === `redeploy:${name}`}
                 onClick={() => handleRedeploy(name)}
               >
@@ -211,8 +258,15 @@
       <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button large class="font-normal" type="tertiary" onClick={() => (dialogOpen = false)}>Cancel</Button>
-      <Button large class="font-normal"
+      <Button
+        large
+        class="font-normal"
+        type="tertiary"
+        onClick={() => (dialogOpen = false)}>Cancel</Button
+      >
+      <Button
+        large
+        class="font-normal"
         type={dialogDestructive ? "destructive" : "primary"}
         onClick={handleConfirm}
         loading={dialogLoading}
@@ -238,10 +292,14 @@
       <div class="flex flex-col gap-3 py-2">
         <div class="flex items-center gap-2">
           <span class="text-sm text-fg-secondary">Current:</span>
-          <span class="text-sm font-mono text-fg-primary">{slotsCurrentValue || "—"}</span>
+          <span class="text-sm font-mono text-fg-primary"
+            >{slotsCurrentValue || "—"}</span
+          >
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-fg-secondary" for="slots-input">New slots</label>
+          <label class="text-sm font-medium text-fg-secondary" for="slots-input"
+            >New slots</label
+          >
           <input
             id="slots-input"
             type="number"
@@ -255,8 +313,15 @@
       </div>
     {/if}
     <AlertDialogFooter>
-      <Button large class="font-normal" type="tertiary" onClick={() => (slotsDialogOpen = false)}>Cancel</Button>
-      <Button large class="font-normal"
+      <Button
+        large
+        class="font-normal"
+        type="tertiary"
+        onClick={() => (slotsDialogOpen = false)}>Cancel</Button
+      >
+      <Button
+        large
+        class="font-normal"
         type="primary"
         onClick={handleSaveSlots}
         disabled={slotsSaving || slotsLoading || !slotsValue}
