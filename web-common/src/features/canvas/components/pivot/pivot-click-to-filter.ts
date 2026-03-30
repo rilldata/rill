@@ -167,6 +167,16 @@ export function createPivotClickToFilter(
     return false;
   }
 
+  /** Returns all cell keys in `cells` that belong to the given row. */
+  function getCellKeysForRow(cells: Set<string>, rowId: string): string[] {
+    const prefix = rowId + ":";
+    const result: string[] = [];
+    for (const key of cells) {
+      if (key.startsWith(prefix)) result.push(key);
+    }
+    return result;
+  }
+
   // --- Retained value computation for safe deselect ---
 
   function collectRetainedDimensionValues(
@@ -352,6 +362,104 @@ export function createPivotClickToFilter(
     }
   }
 
+  /**
+   * Atomically replaces one cell selection with another in a single URL update.
+   * Used by flat tables where only one cell per row is allowed.
+   */
+  function applyReplacementFilters(
+    oldFilters: V1Expression,
+    newFilters: V1Expression,
+    updateSelectionSets: (
+      rowHeaders: Set<string>,
+      cells: Set<string>,
+      colHeaders: Set<string>,
+    ) => void,
+  ) {
+    const oldDimFilters = extractDimensionFiltersFromExpression(oldFilters);
+    const newDimFilters = extractDimensionFiltersFromExpression(newFilters);
+    if (oldDimFilters.length === 0 && newDimFilters.length === 0) return;
+
+    const allDimFilters = [...oldDimFilters, ...newDimFilters];
+    const preExistingDims = getActiveDimensionNames(get(whereFilterStore));
+
+    const filterClass = filterManager.metricsViewFilters.get(metricsViewName);
+    if (!filterClass) return;
+
+    // Clone and update selection sets (remove old key, add new key)
+    const $clickSelection = get(clickSelectionStore);
+    const updatedRowHeaders = new Set($clickSelection.rowHeaderSelections);
+    const updatedCells = new Set($clickSelection.cellSelections);
+    const updatedColHeaders = new Set($clickSelection.columnHeaderSelections);
+    updateSelectionSets(updatedRowHeaders, updatedCells, updatedColHeaders);
+
+    // Clear temporary filter status for all affected dimensions
+    allDimFilters.forEach(({ dimensionName }) => {
+      filterManager.checkTemporaryFilter(dimensionName, [metricsViewName]);
+    });
+
+    let filterString: string | null = null;
+
+    // Phase 1: Remove orphaned values from old cell
+    const retainedValues = collectRetainedDimensionValues(
+      updatedRowHeaders,
+      updatedCells,
+      updatedColHeaders,
+    );
+
+    oldDimFilters.forEach(({ dimensionName, values }) => {
+      const stillNeeded = retainedValues.get(dimensionName);
+      const orphanedValues = stillNeeded
+        ? values.filter((v) => !stillNeeded.has(v))
+        : values;
+      if (orphanedValues.length > 0) {
+        filterString = filterClass.toggleDimensionValueSelections(
+          dimensionName,
+          orphanedValues,
+          false,
+          false,
+        );
+      }
+    });
+
+    // Phase 2: Add new cell's values
+    newDimFilters.forEach(({ dimensionName, values }) => {
+      filterString = filterClass.addDimensionValueSelections(
+        dimensionName,
+        values,
+      );
+    });
+
+    clickSelectionStore.set(
+      buildClickSelection(
+        updatedRowHeaders,
+        updatedCells,
+        updatedColHeaders,
+        rowDimClickIndex,
+      ),
+    );
+
+    // Mark newly-added dimensions as self-filtered
+    const wasInactive = get(selfFilteredDimensions).size === 0;
+    selfFilteredDimensions.update((dims) => {
+      const next = new Set(dims);
+      allDimFilters.forEach(({ dimensionName }) => {
+        if (!preExistingDims.has(dimensionName)) {
+          next.add(dimensionName);
+        }
+      });
+      return next;
+    });
+    if (wasInactive && get(selfFilteredDimensions).size > 0) {
+      onBecomeActive?.();
+    }
+
+    if (filterString !== null) {
+      filterManager.applyFiltersToUrl(
+        new Map([[metricsViewName, filterString]]),
+      );
+    }
+  }
+
   // --- Click handlers ---
 
   function handleCellClickToFilter(
@@ -390,6 +498,52 @@ export function createPivotClickToFilter(
         );
 
     if (!cellFilters.filters) return;
+
+    // Flat table: replace existing cell selection in the same row instead of
+    // accumulating. Nested tables allow multi-select within a row.
+    if ($config.isFlat && !isRowHeader && !isDeselect) {
+      const existingKeys = getCellKeysForRow(
+        $clickSelection.cellSelections,
+        rowId,
+      );
+      if (existingKeys.length > 0) {
+        // Compute old cell's filters so we can remove its orphaned values
+        const oldKey = existingKeys[0];
+        const oldColumnId = oldKey.slice(oldKey.indexOf(":") + 1);
+        const oldFlatDimIdx = $config.rowDimensionNames.indexOf(oldColumnId);
+        const oldUpToDimIdx = oldFlatDimIdx >= 0 ? oldFlatDimIdx : undefined;
+        const oldCellFilters = getFiltersForCell(
+          $config,
+          rowId,
+          oldColumnId,
+          $data.columnDimensionAxes ?? {},
+          $data.data,
+          oldUpToDimIdx,
+        );
+
+        if (oldCellFilters.filters) {
+          applyReplacementFilters(
+            oldCellFilters.filters,
+            cellFilters.filters,
+            (_nextRowHeaders, nextCells) => {
+              // Remove all existing cell keys for this row
+              for (const k of existingKeys) {
+                nextCells.delete(k);
+              }
+              // Add the new cell
+              nextCells.add(cellKey(rowId, columnId));
+              // Update rowDimClickIndex for visual classification
+              if (upToDimensionIndex !== undefined) {
+                rowDimClickIndex.set(rowId, upToDimensionIndex);
+              } else {
+                rowDimClickIndex.delete(rowId);
+              }
+            },
+          );
+          return;
+        }
+      }
+    }
 
     applyDimensionFilters(
       cellFilters.filters,

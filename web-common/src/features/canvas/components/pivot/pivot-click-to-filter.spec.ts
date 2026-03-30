@@ -1,23 +1,109 @@
-import { describe, expect, it, vi } from "vitest";
+import type {
+  PivotDataRow,
+  PivotDataStore,
+  PivotDataStoreConfig,
+  PivotFilter,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  V1Operation,
+  type V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
-import { createPivotClickToFilter } from "./pivot-click-to-filter";
-import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { describe, expect, it, vi } from "vitest";
 import type { FilterManager } from "../../stores/filter-manager";
+import { createPivotClickToFilter } from "./pivot-click-to-filter";
+
+// Partial mocks: override only the filter-extraction functions while keeping
+// the rest of each module's real exports (extractDimensionFiltersFromExpression,
+// getActiveDimensionNames, etc.) which the factory depends on.
+vi.mock(
+  "@rilldata/web-common/features/dashboards/pivot/pivot-utils",
+  async () => ({
+    ...(await vi.importActual(
+      "@rilldata/web-common/features/dashboards/pivot/pivot-utils",
+    )),
+    getFiltersForCell: vi.fn(() => ({ filters: undefined, timeRange: null })),
+  }),
+);
+
+vi.mock(
+  "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection",
+  async () => ({
+    ...(await vi.importActual(
+      "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection",
+    )),
+    getFiltersForRowHeader: vi.fn(() => ({
+      filters: undefined,
+      timeRange: null,
+    })),
+  }),
+);
+
+import { getFiltersForCell } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+
+/** Build a V1Expression with a single IN clause: dimensionName IN (values) */
+function makeInFilter(dimensionName: string, values: string[]): V1Expression {
+  return {
+    cond: {
+      op: V1Operation.OPERATION_AND,
+      exprs: [
+        {
+          cond: {
+            op: V1Operation.OPERATION_IN,
+            exprs: [
+              { ident: dimensionName },
+              ...values.map((v) => ({ val: v })),
+            ],
+          },
+        },
+      ],
+    },
+  };
+}
+
+/** Build a PivotFilter with no time range (sufficient for these tests). */
+function makePivotFilter(dimensionName: string, values: string[]): PivotFilter {
+  return {
+    filters: makeInFilter(dimensionName, values),
+    timeRange: { start: undefined, end: undefined },
+  };
+}
 
 /**
- * Minimal stub for FilterManager; only the fields touched by the factory
- * are provided. Everything else is left as `undefined` / `never`.
+ * Stub for FilterManager. The factory only accesses `metricsViewFilters`
+ * (via `.get`/`.set`), `checkTemporaryFilter`, and `applyFiltersToUrl`.
+ * A plain Map structurally satisfies the `.get`/`.set` calls at runtime.
  */
-function stubFilterManager(): FilterManager {
+function stubFilterManager() {
   return {
-    metricsViewFilters: new Map(),
+    metricsViewFilters: new Map<
+      string,
+      {
+        addDimensionValueSelections: ReturnType<typeof vi.fn>;
+        toggleDimensionValueSelections: ReturnType<typeof vi.fn>;
+      }
+    >(),
     checkTemporaryFilter: vi.fn(),
     applyFiltersToUrl: vi.fn(),
   } as unknown as FilterManager;
 }
 
-function emptyConfig(): PivotDataStoreConfig {
+/** Create a FilterManager with a working filterClass stub for a metrics view */
+function stubFilterManagerWithClass(metricsViewName: string) {
+  const fm = stubFilterManager();
+  const filterClass = {
+    addDimensionValueSelections: vi.fn(() => "filter-string"),
+    toggleDimensionValueSelections: vi.fn(() => "filter-string"),
+  };
+  (fm.metricsViewFilters as unknown as Map<string, typeof filterClass>).set(
+    metricsViewName,
+    filterClass,
+  );
+  return { fm, filterClass };
+}
+
+/** Stub config with only the fields the factory reads. */
+function emptyConfig() {
   return {
     rowDimensionNames: ["country"],
     colDimensionNames: [],
@@ -26,29 +112,74 @@ function emptyConfig(): PivotDataStoreConfig {
   } as unknown as PivotDataStoreConfig;
 }
 
+function flatConfigTwoDims() {
+  return {
+    rowDimensionNames: ["country", "city"],
+    colDimensionNames: [],
+    measureNames: ["revenue"],
+    isFlat: true,
+  } as unknown as PivotDataStoreConfig;
+}
+
+function nestedConfig() {
+  return {
+    rowDimensionNames: ["country"],
+    colDimensionNames: [],
+    measureNames: ["revenue"],
+    isFlat: false,
+  } as unknown as PivotDataStoreConfig;
+}
+
+/** Build a PivotDataStore with the given data rows and optional axes. */
+function stubPivotDataStore(
+  data: PivotDataRow[],
+  columnDimensionAxes: Record<string, string[]> = {},
+): PivotDataStore {
+  return writable({
+    isFetching: false,
+    data,
+    columnDef: [],
+    assembled: true,
+    totalColumns: 0,
+    columnDimensionAxes,
+  });
+}
+
+/**
+ * Build the args object for createPivotClickToFilter with sensible defaults.
+ * Callers override only what they need.
+ */
+function createFactoryArgs(
+  overrides: Partial<Parameters<typeof createPivotClickToFilter>[0]> = {},
+): Parameters<typeof createPivotClickToFilter>[0] {
+  return {
+    pivotConfig: writable(emptyConfig()) as Readable<PivotDataStoreConfig>,
+    pivotDataStore: stubPivotDataStore([]),
+    filterManager: stubFilterManager(),
+    metricsViewName: "mv1",
+    componentId: "pivot-1",
+    activeComponent: writable<string | null>(null),
+    selfFilteredDimensions: writable<Set<string>>(new Set()),
+    whereFilterStore: writable<V1Expression | undefined>(undefined),
+    ...overrides,
+  };
+}
+
 describe("pivot-click-to-filter: clearActiveComponent", () => {
   it("should clear selfFilteredDimensions when activeComponent is set to null", () => {
     const activeComponent = writable<string | null>(null);
     const selfFilteredDimensions = writable<Set<string>>(new Set());
-    const whereFilter = writable<V1Expression | undefined>(undefined);
-    const pivotConfig = writable(emptyConfig());
-    const pivotDataStore = writable({ data: null }) as any;
-
     const onBecomeActive = vi.fn();
     const onBecomeInactive = vi.fn();
 
-    const result = createPivotClickToFilter({
-      pivotConfig: pivotConfig as Readable<PivotDataStoreConfig>,
-      pivotDataStore,
-      filterManager: stubFilterManager(),
-      metricsViewName: "mv1",
-      componentId: "pivot-1",
-      activeComponent,
-      selfFilteredDimensions,
-      whereFilterStore: whereFilter,
-      onBecomeActive,
-      onBecomeInactive,
-    });
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        activeComponent,
+        selfFilteredDimensions,
+        onBecomeActive,
+        onBecomeInactive,
+      }),
+    );
 
     // Simulate the pivot becoming active with some self-filtered dimensions
     activeComponent.set("pivot-1");
@@ -71,23 +202,15 @@ describe("pivot-click-to-filter: clearActiveComponent", () => {
   it("should clear selfFilteredDimensions when another component becomes active", () => {
     const activeComponent = writable<string | null>(null);
     const selfFilteredDimensions = writable<Set<string>>(new Set());
-    const whereFilter = writable<V1Expression | undefined>(undefined);
-    const pivotConfig = writable(emptyConfig());
-    const pivotDataStore = writable({ data: null }) as any;
-
     const onBecomeInactive = vi.fn();
 
-    const result = createPivotClickToFilter({
-      pivotConfig: pivotConfig as Readable<PivotDataStoreConfig>,
-      pivotDataStore,
-      filterManager: stubFilterManager(),
-      metricsViewName: "mv1",
-      componentId: "pivot-1",
-      activeComponent,
-      selfFilteredDimensions,
-      whereFilterStore: whereFilter,
-      onBecomeInactive,
-    });
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        activeComponent,
+        selfFilteredDimensions,
+        onBecomeInactive,
+      }),
+    );
 
     // Simulate active pivot with self-filtered dimensions
     activeComponent.set("pivot-1");
@@ -106,20 +229,13 @@ describe("pivot-click-to-filter: clearActiveComponent", () => {
   it("should NOT clear selfFilteredDimensions when this component is set as active", () => {
     const activeComponent = writable<string | null>(null);
     const selfFilteredDimensions = writable<Set<string>>(new Set());
-    const whereFilter = writable<V1Expression | undefined>(undefined);
-    const pivotConfig = writable(emptyConfig());
-    const pivotDataStore = writable({ data: null }) as any;
 
-    const result = createPivotClickToFilter({
-      pivotConfig: pivotConfig as Readable<PivotDataStoreConfig>,
-      pivotDataStore,
-      filterManager: stubFilterManager(),
-      metricsViewName: "mv1",
-      componentId: "pivot-1",
-      activeComponent,
-      selfFilteredDimensions,
-      whereFilterStore: whereFilter,
-    });
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        activeComponent,
+        selfFilteredDimensions,
+      }),
+    );
 
     // Simulate active pivot with self-filtered dimensions
     selfFilteredDimensions.set(new Set(["country"]));
@@ -130,6 +246,149 @@ describe("pivot-click-to-filter: clearActiveComponent", () => {
     // selfFilteredDimensions should remain unchanged
     expect(get(selfFilteredDimensions).size).toBe(1);
     expect(get(selfFilteredDimensions).has("country")).toBe(true);
+
+    result.destroy();
+  });
+});
+
+describe("pivot-click-to-filter: flat table single-cell-per-row", () => {
+  /** Flat table data: two rows, each with country and city dimensions */
+  const flatTableData = [
+    { country: "US", city: "NYC", revenue: 100 },
+    { country: "UK", city: "London", revenue: 200 },
+  ];
+
+  function setupFlat() {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    // Configure getFiltersForCell mock to return appropriate filters per column
+    vi.mocked(getFiltersForCell).mockImplementation(
+      (_config, _rowId, colId, _axes, _data, _upTo) => {
+        if (colId === "country") return makePivotFilter("country", ["US"]);
+        if (colId === "city") return makePivotFilter("city", ["NYC"]);
+        return makePivotFilter("country", ["US"]);
+      },
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(
+          flatConfigTwoDims(),
+        ) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(flatTableData),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    return { result, filterClass, selfFilteredDimensions, fm };
+  }
+
+  it("should replace existing cell in the same row for flat tables", () => {
+    const { result, filterClass } = setupFlat();
+
+    // Click on country column in row 0
+    result.handleCellClickToFilter("0", "country", false);
+
+    let sel = get(result.clickSelection);
+    expect(sel.isCellSelected("0", "country")).toBe(true);
+    expect(sel.cellSelections.size).toBe(1);
+
+    // Now click on city column in the same row 0; should replace, not accumulate
+    result.handleCellClickToFilter("0", "city", false);
+
+    sel = get(result.clickSelection);
+    expect(sel.isCellSelected("0", "country")).toBe(false);
+    expect(sel.isCellSelected("0", "city")).toBe(true);
+    expect(sel.cellSelections.size).toBe(1);
+
+    // toggleDimensionValueSelections should have been called to remove old values
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalled();
+
+    result.destroy();
+  });
+
+  it("should still allow deselect by re-clicking the same cell", () => {
+    const { result } = setupFlat();
+
+    // Click on country in row 0
+    result.handleCellClickToFilter("0", "country", false);
+    let sel = get(result.clickSelection);
+    expect(sel.isCellSelected("0", "country")).toBe(true);
+
+    // Click on the same cell again to deselect
+    result.handleCellClickToFilter("0", "country", false);
+    sel = get(result.clickSelection);
+    expect(sel.isCellSelected("0", "country")).toBe(false);
+    expect(sel.cellSelections.size).toBe(0);
+
+    result.destroy();
+  });
+
+  it("should allow selections across different rows independently", () => {
+    const { result } = setupFlat();
+
+    // Click on country in row 0
+    result.handleCellClickToFilter("0", "country", false);
+
+    // Click on country in row 1 (different row; not a replacement)
+    vi.mocked(getFiltersForCell).mockImplementation(() =>
+      makePivotFilter("country", ["UK"]),
+    );
+    result.handleCellClickToFilter("1", "country", false);
+
+    const sel = get(result.clickSelection);
+    expect(sel.isCellSelected("0", "country")).toBe(true);
+    expect(sel.isCellSelected("1", "country")).toBe(true);
+    expect(sel.cellSelections.size).toBe(2);
+
+    result.destroy();
+  });
+});
+
+describe("pivot-click-to-filter: nested table multi-select", () => {
+  function setupNested() {
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    vi.mocked(getFiltersForCell).mockImplementation(() =>
+      makePivotFilter("country", ["US"]),
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(nestedConfig()) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore([
+          {
+            country: "US",
+            revenue: 100,
+            subRows: [{ country: "US-East", revenue: 50 }],
+          },
+        ]),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+      }),
+    );
+
+    return { result, filterClass };
+  }
+
+  it("should allow multiple cells in the same row for nested tables", () => {
+    const { result } = setupNested();
+
+    // Click on two different columns in the same row
+    result.handleCellClickToFilter("0", "revenue", false);
+    let sel = get(result.clickSelection);
+    expect(sel.isCellSelected("0", "revenue")).toBe(true);
+
+    result.handleCellClickToFilter("0", "other_measure", false);
+    sel = get(result.clickSelection);
+
+    // Both should be selected (no replacement in nested mode)
+    expect(sel.isCellSelected("0", "revenue")).toBe(true);
+    expect(sel.isCellSelected("0", "other_measure")).toBe(true);
+    expect(sel.cellSelections.size).toBe(2);
 
     result.destroy();
   });
