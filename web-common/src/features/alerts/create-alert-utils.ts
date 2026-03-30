@@ -9,6 +9,7 @@ import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashbo
 import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
@@ -53,13 +54,13 @@ export function getNewAlertInitialFormValues(
 }
 
 export function getNewAlertInitialFiltersFormValues(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   exploreName: string,
   exploreState: Partial<ExploreState>,
 ) {
   const metricsViewMetadata = new ExploreMetricsViewMetadata(
-    instanceId,
+    client,
     metricsViewName,
     exploreName,
   );

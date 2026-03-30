@@ -12,6 +12,9 @@
   } from "@rilldata/web-common/features/explore-mappers/types";
   import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
 
   export let exploreName: string;
   export let displayName: string | undefined = undefined;
@@ -32,6 +35,7 @@
 
     try {
       const exploreURL = await generateExploreLink(
+        runtimeClient,
         exploreState,
         exploreName,
         organization,
@@ -61,7 +65,7 @@
 </script>
 
 {#if mode === "dropdown-item"}
-  <DropdownMenu.Item on:click={gotoExplorePage}>
+  <DropdownMenu.Item onclick={gotoExplorePage}>
     {#if isNavigating}
       <Spinner status={EntityStatus.Running} size="14px" />
     {:else}
@@ -71,7 +75,7 @@
   </DropdownMenu.Item>
 {:else if mode === "icon-button"}
   <IconButton
-    on:click={gotoExplorePage}
+    onclick={gotoExplorePage}
     size={28}
     disabled={!canNavigate}
     ariaLabel={tooltipText}
@@ -86,7 +90,7 @@
   </IconButton>
 {:else}
   <button
-    on:click={gotoExplorePage}
+    onclick={gotoExplorePage}
     class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
     disabled={!canNavigate}
     type="button"

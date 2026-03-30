@@ -26,7 +26,6 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### _Databases_
 - [**MySQL**](#mysql) - MySQL databases
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
-- [**SQLite**](#sqlite) - SQLite databases
 - [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
 ### _Object Storage_
@@ -42,7 +41,6 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 ### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**Salesforce**](#salesforce) - Salesforce data
 
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{ .env.KEY_NAME }}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
@@ -111,7 +109,7 @@ _[string]_ - Athena workgroup to use for query execution. Defaults to 'primary' 
 
 _[string]_ - S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration. 
 
-### `aws_region`
+### `region`
 
 _[string]_ - AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified. 
 
@@ -131,7 +129,7 @@ role_session_name: "MySession" # Session name for STS AssumeRole
 external_id: "MyExternalID" # External ID for cross-account access
 workgroup: "primary" # Athena workgroup (defaults to 'primary')
 output_location: "s3://my-bucket/athena-output/" # S3 URI for query results
-aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')
+region: "us-east-1" # AWS region (defaults to 'us-east-1')
 allow_host_access: true # Allow host environment access _(default: true)_
 ```
 
@@ -191,17 +189,13 @@ _[string]_ - Raw contents of the Google Cloud service account key (in JSON forma
 
 _[string]_ - Google Cloud project ID 
 
-### `dataset_id`
-
-_[string]_ - BigQuery dataset ID 
-
-### `location`
-
-_[string]_ - BigQuery dataset location 
-
 ### `allow_host_access`
 
 _[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments. 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
 
 ```yaml
 # Example: BigQuery connector configuration
@@ -257,6 +251,14 @@ _[boolean]_ - Indicates whether a secured SSL connection is required
 ### `cluster`
 
 _[string]_ - Cluster name, required for running distributed queries 
+
+### `write_dsn`
+
+_[string]_ - Separate connection string for write operations 
+
+### `database_whitelist`
+
+_[string]_ - Comma-separated list of databases to show 
 
 ### `log_queries`
 
@@ -616,6 +618,10 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disabled`, `preferred`, or `required`. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: MySQL connector configured using individual properties
 type: connector
@@ -649,6 +655,14 @@ _[string]_ - API key for connecting to OpenAI _(required)_
 
 _[string]_ - The OpenAI model to use (e.g., 'gpt-4o') 
 
+### `max_output_tokens`
+
+_[number]_ - Maximum number of tokens to generate in the completion (default: 8192) 
+
+### `reasoning_effort`
+
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high') 
+
 ### `base_url`
 
 _[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1') 
@@ -667,6 +681,8 @@ type: connector # Must be `connector` (required)
 driver: openai # Must be `openai` _(required)_
 api_key: "{{ .env.OPENAI_API_KEY }}" # API key for connecting to OpenAI
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')
+max_output_tokens: 8192 # Maximum number of tokens to generate in the completion (default: 8192)
+reasoning_effort: "medium" # Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
 api_type: "openai" # The type of OpenAI API to use
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
@@ -856,6 +872,10 @@ _[string]_ - StarRocks database name
 
 _[boolean]_ - Enable SSL/TLS encryption 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: StarRocks connector configuration
 type: connector # Must be `connector` (required)
@@ -929,6 +949,10 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: Postgres connector configured using individual properties
 type: connector
@@ -990,6 +1014,10 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: Supabase connector configured using individual properties
 type: connector
@@ -1042,6 +1070,14 @@ _[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Reds
 ### `cluster_identifier`
 
 _[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' . 
+
+### `allow_host_access`
+
+_[boolean]_ - Allow access to host environment configuration 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
 
 ```yaml
 # Example: Redshift connector configuration
@@ -1115,43 +1151,6 @@ aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Ke
 aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # Optional AWS session token for temporary credentials
 endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage
 region: "us-east-1" # AWS region of the S3 bucket
-```
-
-## Salesforce
-
-### `driver`
-
-_[string]_ - Refers to the driver type and must be driver `salesforce` _(required)_
-
-### `username`
-
-_[string]_ - Salesforce account username _(required)_
-
-### `password`
-
-_[string]_ - Salesforce account password (secret) 
-
-### `key`
-
-_[string]_ - Authentication key for Salesforce (secret) 
-
-### `endpoint`
-
-_[string]_ - Salesforce API endpoint URL _(required)_
-
-### `client_id`
-
-_[string]_ - Client ID used for Salesforce OAuth authentication _(required)_
-
-```yaml
-# Example: Salesforce connector configuration
-type: connector # Must be `connector` (required)
-driver: salesforce # Must be `salesforce` _(required)_
-username: "myusername" # Salesforce account username
-password: "{{ .env.SALESFORCE_PASSWORD }}" # Salesforce account password (secret)
-key: "{{ .env.SALESFORCE_KEY }}" # Authentication key for Salesforce (secret)
-endpoint: "https://login.salesforce.com" # Salesforce API endpoint URL
-client_id: "my-client-id" # Client ID used for Salesforce OAuth authentication
 ```
 
 ## Slack
@@ -1245,6 +1244,10 @@ For details on private key generation and encoding, see the `privateKey` propert
 
 _[integer]_ - Maximum number of concurrent fetches during query execution. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: Snowflake connector basic configuration
 type: connector
@@ -1265,21 +1268,4 @@ type: connector
 driver: snowflake
 dsn: "{{ .env.SNOWFLAKE_DSN }}" # define SNOWFLAKE_DSN in .env file
 parallel_fetch_limit: 2
-```
-
-## SQLite
-
-### `driver`
-
-_[string]_ - Refers to the driver type and must be driver `sqlite` _(required)_
-
-### `dsn`
-
-_[string]_ - DSN(Data Source Name) for the sqlite connection _(required)_
-
-```yaml
-# Example: SQLite connector configuration
-type: connector # Must be `connector` (required)
-driver: sqlite # Must be `sqlite` _(required)_
-dsn: "file:mydatabase.db" # DSN for the sqlite connection
 ```

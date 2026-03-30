@@ -74,7 +74,7 @@
         : "auto"}
       class:!opacity-100={isDropZone}
       class="peer h-full flex items-center justify-center w-4 disabled:opacity-60 disabled:cursor-default cursor-col-resize"
-      on:mousedown={() => {
+      onmousedown={() => {
         if (onColumnResizeStart) onColumnResizeStart(resizeIndex);
         activeDivider.set(dividerId);
         window.addEventListener(
@@ -115,7 +115,7 @@
         <Tooltip distance={8} location="bottom">
           <button
             class="h-7 px-1 grid place-content-center border-t hover:bg-surface-background active:bg-gray-100 text-fg-secondary"
-            on:click={(e) => {
+            onclick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               spreadEvenly(rowIndex);

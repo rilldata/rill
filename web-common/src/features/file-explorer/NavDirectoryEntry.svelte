@@ -15,8 +15,8 @@
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { Folder } from "lucide-svelte";
-  import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { createRuntimeServiceCreateDirectoryMutation } from "../../runtime-client";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
@@ -28,21 +28,24 @@
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
+  const runtimeClient = useRuntimeClient();
+
   let contextMenuOpen = false;
 
-  const createFolder = createRuntimeServiceCreateDirectory();
+  const createFolder =
+    createRuntimeServiceCreateDirectoryMutation(runtimeClient);
 
   $: id = `${dir.path}-nav-entry`;
   $: expanded = $directoryState[dir.path];
   $: padding = getPaddingFromPath(dir.path);
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 
   $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
-    instanceId,
+    runtimeClient,
     dir.path,
   );
 
@@ -65,10 +68,7 @@
         : nextFolderName;
 
     await $createFolder.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path: path,
-      },
+      path: path,
     });
 
     // Expand the directory to show the new folder
@@ -84,8 +84,8 @@
     : 'text-fg-primary hover:text-fg-primary'}
   font-medium hover:bg-surface-hover"
   {id}
-  on:click={() => toggleDirectory(dir)}
-  on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
+  onclick={() => toggleDirectory(dir)}
+  onmousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
   style:padding-left="{padding}px"
   aria-controls={`nav-${dir.path}`}
   aria-expanded={expanded}
@@ -99,16 +99,17 @@
   </span>
   {#if !isProtectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <ContextButton
-          builders={[builder]}
-          id="more-actions-{dir.path}"
-          label="{dir.name} actions menu trigger"
-          suppressTooltip={contextMenuOpen}
-          tooltipText="More actions"
-        >
-          <MoreHorizontal />
-        </ContextButton>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <ContextButton
+            {...props}
+            label="{dir.name} actions menu trigger"
+            suppressTooltip={contextMenuOpen}
+            tooltipText="More actions"
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"
@@ -116,15 +117,15 @@
         side="right"
         sideOffset={16}
       >
-        <NavigationMenuItem on:click={handleAddFolder}>
+        <NavigationMenuItem onclick={handleAddFolder}>
           <Folder slot="icon" size="12px" />
           New folder
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
+        <NavigationMenuItem onclick={() => onRename(dir.path, true)}>
           <EditIcon slot="icon" />
           Rename
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDelete(dir.path, true)}>
+        <NavigationMenuItem onclick={() => onDelete(dir.path, true)}>
           <Cancel slot="icon" />
           Delete
         </NavigationMenuItem>

@@ -2,12 +2,12 @@
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
@@ -19,19 +19,21 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
-  import { filterResources } from "./utils";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import {
     createUrlFilterSync,
     parseArrayParam,
     parseStringParam,
-  } from "../url-filter-sync";
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
@@ -90,16 +92,16 @@
     ResourceKind.Connector,
   ];
 
-  $: ({ instanceId } = $runtime);
-
-  $: resources = useResources(instanceId);
+  $: resources = useResources(runtimeClient);
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     },
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );
@@ -143,19 +145,14 @@
   }
 
   function refreshAllSourcesAndModels() {
-    void $createTrigger
-      .mutateAsync({
-        instanceId,
-        data: { all: true },
-      })
-      .then(() => {
-        void queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceListResourcesQueryKey(
-            instanceId,
-            undefined,
-          ),
-        });
+    void $createTrigger.mutateAsync({ all: true }).then(() => {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+          undefined,
+        ),
       });
+    });
   }
 </script>
 
@@ -202,6 +199,7 @@
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableTypes as type}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedTypes.includes(type)}
             onCheckedChange={() => toggleType(type)}
           >
@@ -239,6 +237,7 @@
       <DropdownMenu.Content align="start" class="w-48">
         {#each statusFilters as status}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedStatuses.includes(status.value)}
             onCheckedChange={() => toggleStatus(status.value)}
           >
@@ -251,7 +250,7 @@
     {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>

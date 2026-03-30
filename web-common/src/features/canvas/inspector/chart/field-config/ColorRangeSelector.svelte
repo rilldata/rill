@@ -4,6 +4,7 @@
   Defaults to tealblues scheme but allows switching to custom gradient mode.
 -->
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
@@ -20,14 +21,15 @@
   } from "@rilldata/web-common/features/themes/color-config";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { slide } from "svelte/transition";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColorScheme } from "vega-typings";
 
   export let colorRange: ColorRangeMapping | undefined;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
   export let colorRangeConfig: ChartFieldInput["colorRangeSelector"];
   export let canvasName: string;
+
+  const client = useRuntimeClient();
 
   // Available Vega-Lite color schemes
   // https://vega.github.io/vega/docs/schemes/
@@ -54,10 +56,9 @@
     { label: "Spectral", value: "spectral" },
   ];
 
-  $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: { theme },
-  } = getCanvasStore(canvasName, instanceId));
+  } = getCanvasStore(canvasName, client.instanceId));
 
   $: isThemeModeDark = $themeControl === "dark";
   $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);

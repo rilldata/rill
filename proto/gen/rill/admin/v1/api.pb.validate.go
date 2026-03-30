@@ -39167,16 +39167,9 @@ func (m *GetPaymentsPortalURLRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetReturnUrl()) < 1 {
-		err := GetPaymentsPortalURLRequestValidationError{
-			field:  "ReturnUrl",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for ReturnUrl
+
+	// no validation rules for Setup
 
 	// no validation rules for SuperuserForceAccess
 

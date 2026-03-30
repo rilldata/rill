@@ -17,7 +17,7 @@ import (
 
 func TestExecute(t *testing.T) {
 	tempDir := t.TempDir()
-	duckDB, err := drivers.Open("duckdb", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	duckDB, err := drivers.Open("duckdb", "", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer duckDB.Close()
 
@@ -69,7 +69,7 @@ func TestExecute(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, result.Close())
 
-	fileHandle, err := drivers.Open("file", "default", map[string]any{}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	fileHandle, err := drivers.Open("file", "", "default", map[string]any{}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer fileHandle.Close()
 

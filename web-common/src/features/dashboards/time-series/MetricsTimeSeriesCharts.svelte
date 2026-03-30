@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -13,44 +14,36 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
+  import ChartSettingsMenu from "@rilldata/web-common/features/dashboards/time-series/ChartSettingsMenu.svelte";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import {
-    TimeRangePreset,
     TimeComparisonOption,
+    TimeRangePreset,
     type AvailableTimeGrain,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { DateTime, Interval } from "luxon";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { featureFlags } from "../../feature-flags";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
+  import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import ChartInteractions from "./ChartInteractions.svelte";
-  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import { DateTime, Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-  } from "@rilldata/web-common/components/popover";
 
   const { rillTime } = featureFlags;
 
@@ -79,9 +72,10 @@
 
   let grainDropdownOpen = false;
   let connectNulls = true;
-  let chartSettingsOpen = false;
+  let forceLineChart = false;
+  let dynamicYAxisScale = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: ({
     selectedTimeRange,
@@ -182,7 +176,7 @@
   $: chartReady = !!ready;
 
   // Check if annotations are enabled for this explore
-  $: exploreValidSpec = useExploreValidSpec(instanceId, exploreName);
+  $: exploreValidSpec = useExploreValidSpec(client, exploreName);
   $: annotationsEnabled =
     !!$exploreValidSpec.data?.metricsView?.annotations?.length;
 
@@ -199,7 +193,7 @@
       { name: TimeRangePreset.CUSTOM, start, end },
       activeTimeGrain,
       comparisonTimeRange,
-      {},
+      $exploreValidSpec.data?.metricsView ?? {},
     );
   }
 
@@ -262,7 +256,7 @@
   }
 </script>
 
-<svelte:window on:click={maybeClearMeasureSelection} />
+<svelte:window onclick={maybeClearMeasureSelection} />
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
   <div
@@ -270,14 +264,24 @@
     class="flex items-center gap-x-1 px-2.5"
   >
     {#if showTimeDimensionDetail}
-      <BackToExplore />
-      <ChartTypeSelector
-        hasComparison={Boolean(
-          showComparison || includedValuesForDimension.length,
-        )}
-        {exploreName}
-        chartType={tddChartType}
-      />
+      <div class="flex justify-between w-full items-center py-2">
+        <BackToExplore />
+        <div class="flex items-center mr-4 gap-x-1">
+          <ChartTypeSelector
+            hasComparison={Boolean(
+              showComparison || includedValuesForDimension.length,
+            )}
+            {exploreName}
+            chartType={tddChartType}
+          />
+          <ChartSettingsMenu
+            bind:connectNulls
+            bind:forceLineChart
+            bind:dynamicYAxisScale
+            showForceLineChart={false}
+          />
+        </div>
+      </div>
     {:else}
       <DashboardMetricsDraggableList
         type="measure"
@@ -289,33 +293,33 @@
 
       {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
-          <DropdownMenu.Trigger asChild let:builder>
-            <button
-              {...builder}
-              use:builder.action
-              aria-label="Select aggregation grain"
-              class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
-            >
-              by <b>
-                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
-              </b>
-              <span
-                class:-rotate-90={grainDropdownOpen}
-                class="transition-transform"
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                aria-label="Select aggregation grain"
+                class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
               >
-                <CaretDownIcon />
-              </span>
-            </button>
+                by <b>
+                  {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+                </b>
+                <span
+                  class:-rotate-90={grainDropdownOpen}
+                  class="transition-transform"
+                >
+                  <CaretDownIcon />
+                </span>
+              </button>
+            {/snippet}
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Content align="start" class="w-48">
             {#each aggregationOptions ?? [] as option (option)}
               <DropdownMenu.CheckboxItem
                 checkRight
-                role="menuitem"
                 checked={option === activeTimeGrain}
                 class="text-xs cursor-pointer"
-                on:click={() => {
+                onclick={() => {
                   metricsExplorerStore.setTimeGrain(exploreName, option);
                 }}
               >
@@ -326,28 +330,14 @@
         </DropdownMenu.Root>
       {/if}
 
-      <Popover bind:open={chartSettingsOpen}>
-        <PopoverTrigger>
-          <IconButton rounded active={chartSettingsOpen}>
-            <MoreHorizontal size="16px" />
-          </IconButton>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          side="bottom"
-          class="flex flex-row items-center justify-between gap-x-2 w-[200px] px-3.5 py-2.5"
-        >
-          <span>Connect sparse data</span>
-          <Switch
-            small
-            checked={connectNulls}
-            onCheckedChange={() => (connectNulls = !connectNulls)}
-          />
-        </PopoverContent>
-      </Popover>
+      <ChartSettingsMenu
+        bind:connectNulls
+        bind:forceLineChart
+        bind:dynamicYAxisScale
+      />
 
       {#if !hideStartPivotButton}
-        <div class="grow" />
+        <div class="grow"></div>
         <Button
           type="toolbar"
           onClick={() => {
@@ -370,7 +360,7 @@
         <div
           class="sticky top-0 z-10 bg-surface-background col-span-2 grid grid-cols-subgrid"
         >
-          <div />
+          <div></div>
           <div class="relative">
             <MeasureChartXAxis
               interval={chartInterval}
@@ -390,7 +380,6 @@
           {measure}
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
-          {instanceId}
           metricsViewName={chartMetricsViewName}
           where={chartWhere}
           {timeDimension}
@@ -409,7 +398,6 @@
             tddChartType={showTimeDimensionDetail
               ? (tddChartType ?? TDDChart.DEFAULT)
               : TDDChart.DEFAULT}
-            {instanceId}
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}
@@ -429,6 +417,8 @@
             onPanRight={() => handlePan("right")}
             {showComparison}
             {showTimeDimensionDetail}
+            {forceLineChart}
+            dynamicYAxis={dynamicYAxisScale}
             onScrub={handleScrub}
             onScrubClear={() => {
               metricsExplorerStore.setSelectedScrubRange(

@@ -17,6 +17,7 @@
   export let color = MainLineColor;
   export let strokeWidth = 4;
   export let fill: boolean | undefined;
+  export let clipPathId: string | undefined = undefined;
 
   const gradientId = `chart-gradient-${Math.random().toString(36).slice(2, 11)}`;
 
@@ -39,7 +40,12 @@
 </script>
 
 {#if fill}
-  <path d={areaPath} fill="url(#{gradientId})" class="pointer-events-none" />
+  <path
+    d={areaPath}
+    fill="url(#{gradientId})"
+    class="pointer-events-none"
+    style={clipPathId ? `clip-path: url(#${clipPathId})` : undefined}
+  />
 
   <defs>
     <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">

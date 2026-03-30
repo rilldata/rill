@@ -14211,6 +14211,13 @@ export class GetPaymentsPortalURLRequest extends Message<GetPaymentsPortalURLReq
   returnUrl = "";
 
   /**
+   * If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+   *
+   * @generated from field: bool setup = 4;
+   */
+  setup = false;
+
+  /**
    * @generated from field: bool superuser_force_access = 3;
    */
   superuserForceAccess = false;
@@ -14225,6 +14232,7 @@ export class GetPaymentsPortalURLRequest extends Message<GetPaymentsPortalURLReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "return_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "setup", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

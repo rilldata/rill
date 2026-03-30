@@ -98,6 +98,7 @@ export abstract class BaseChart<
   abstract createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery;
 
   abstract chartTitle(fields: ChartFieldsMap): string;

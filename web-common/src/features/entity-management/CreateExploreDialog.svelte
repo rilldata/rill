@@ -4,10 +4,13 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { createResourceAndNavigate } from "../file-explorer/new-files";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { ResourceKind } from "./resource-selectors";
 
   export let open = false;
   export let metricsViews: V1Resource[];
+
+  const runtimeClient = useRuntimeClient();
 
   let selectedMetricsView: V1Resource | undefined = undefined;
 
@@ -42,24 +45,29 @@
     />
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} type="secondary">Cancel</Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <Button {...props} large type="secondary">Cancel</Button>
+        {/snippet}
       </AlertDialog.Cancel>
 
-      <AlertDialog.Action asChild let:builder>
-        <Button
-          disabled={!selectedMetricsView}
-          large
-          builders={[builder]}
-          type="primary"
-          onClick={() =>
-            void createResourceAndNavigate(
-              ResourceKind.Explore,
-              selectedMetricsView,
-            )}
-        >
-          Continue
-        </Button>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            disabled={!selectedMetricsView}
+            large
+            type="primary"
+            onClick={() =>
+              void createResourceAndNavigate(
+                runtimeClient,
+                ResourceKind.Explore,
+                selectedMetricsView,
+              )}
+          >
+            Continue
+          </Button>
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

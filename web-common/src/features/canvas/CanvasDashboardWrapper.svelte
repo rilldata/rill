@@ -1,10 +1,12 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
+
+  const client = useRuntimeClient();
 
   export let maxWidth: number;
   export let clientWidth = 0;
@@ -17,7 +19,7 @@
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = client);
 
   $: ({
     canvasEntity: { theme },
@@ -36,7 +38,9 @@
       <header
         role="presentation"
         class="bg-surface-subtle border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
-        on:click|self={onClick}
+        onclick={(e) => {
+          if (e.target === e.currentTarget) onClick();
+        }}
       >
         <CanvasFilters {canvasName} {maxWidth} {builder} />
       </header>
@@ -50,7 +54,9 @@
       class:w-full={$dynamicHeight}
       class:size-full={!$dynamicHeight}
       class:pb-48={!embedded}
-      on:click|self={onClick}
+      onclick={(e) => {
+        if (e.target === e.currentTarget) onClick();
+      }}
     >
       <div
         class="w-full h-fit flex flex-col items-center row-container relative"

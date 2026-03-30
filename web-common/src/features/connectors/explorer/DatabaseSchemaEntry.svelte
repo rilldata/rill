@@ -5,17 +5,19 @@
     V1AnalyzedConnector,
     V1TableInfo,
   } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import TableEntry from "./TableEntry.svelte";
   import { useInfiniteListTables } from "../selectors";
   import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { onMount } from "svelte";
 
-  export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
+
+  const client = useRuntimeClient();
 
   $: connectorName = connector?.name as string;
 
@@ -23,7 +25,7 @@
   $: expanded = $expandedStore;
 
   $: tablesQuery = useInfiniteListTables(
-    instanceId,
+    client,
     connectorName,
     database,
     databaseSchema,
@@ -66,7 +68,7 @@
   <button
     class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
     class:open={expanded}
-    on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
+    onclick={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
       className="transform transition-transform text-fg-secondary {expanded

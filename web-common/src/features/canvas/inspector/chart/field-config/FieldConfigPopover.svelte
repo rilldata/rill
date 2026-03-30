@@ -78,7 +78,7 @@
           <Switch
             small
             checked={fieldConfig?.showAxisTitle}
-            on:click={() => {
+            onclick={() => {
               onChange("showAxisTitle", !fieldConfig?.showAxisTitle);
             }}
           />
@@ -91,7 +91,7 @@
             <Switch
               small
               checked={fieldConfig?.showNull}
-              on:click={() => {
+              onclick={() => {
                 onChange("showNull", !fieldConfig?.showNull);
               }}
             />
@@ -124,7 +124,7 @@
             <Switch
               small
               checked={fieldConfig?.zeroBasedOrigin}
-              on:click={() => {
+              onclick={() => {
                 onChange("zeroBasedOrigin", !fieldConfig?.zeroBasedOrigin);
               }}
             />
@@ -136,7 +136,7 @@
             <Switch
               small
               checked={fieldConfig?.showTotal}
-              on:click={() => {
+              onclick={() => {
                 onChange("showTotal", !fieldConfig?.showTotal);
               }}
             />

@@ -32,7 +32,7 @@ import (
 
 // maxMessageSizeBytes is the maximum allowed size of a message's contents.
 // Exceeding it will result in an error.
-const maxMessageSizeBytes = 10 * 1024 // 10 KB
+const maxMessageSizeBytes = 100 * 1024 // 100 KB
 
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
@@ -1315,11 +1315,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 						Out:  nil,
 						Args: block.ToolCall.Input.AsMap(),
 					})
-					if err != nil && toolResult.Result == nil {
+					if err != nil {
 						if ctx.Err() != nil {
 							return nil, ctx.Err()
 						}
-						return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						if toolResult == nil || toolResult.Result == nil {
+							return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						}
+						// Fall through since it's a structured error that we can capture in the messages.
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {

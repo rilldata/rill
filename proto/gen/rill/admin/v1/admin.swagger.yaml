@@ -540,6 +540,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: setup
+          description: If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+          in: query
+          required: false
+          type: boolean
         - name: superuserForceAccess
           in: query
           required: false

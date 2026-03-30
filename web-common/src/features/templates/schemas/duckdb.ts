@@ -4,6 +4,7 @@ export const duckdbSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "DuckDB",
+  "x-form-width": "wide",
   "x-category": "olap",
   "x-button-labels": {
     connector_type: {
@@ -52,6 +53,18 @@ export const duckdbSchema: MultiStepFormSchema = {
         connector_type: "self-hosted",
       },
       "x-step": "connector",
+    },
+    mode: {
+      type: "boolean",
+      title: "Enable write mode",
+      description:
+        "Read-write mode allows Rill to drop, create, and modify tables, not just query them",
+      default: false,
+      "x-display": "toggle",
+      "x-yaml-value": "readwrite",
+      "x-visible-if": { connector_type: "self-hosted" },
+      "x-step": "connector",
+      "x-advanced": true,
     },
   },
   required: ["connector_type"],

@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Collapsible from "@rilldata/web-common/components/collapsible";
-  import { getAttrs, builderActions } from "bits-ui";
   import { ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
   import type { Readable } from "svelte/store";
   import type { PickerTreeNode } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
@@ -15,6 +14,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import SimpleOption from "@rilldata/web-common/features/chat/core/context/picker/SimpleOption.svelte";
   import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let node: PickerTreeNode;
   export let selectedChatContext: InlineContext | null;
@@ -27,9 +27,11 @@
   const item = node.item;
   const context = item.context;
 
+  const runtimeClient = useRuntimeClient();
+
   const typeConfig = InlineContextConfig[context.type];
   const typeLabel = typeConfig.typeLabel;
-  const contextMetadataStore = getInlineChatContextMetadata();
+  const contextMetadataStore = getInlineChatContextMetadata(runtimeClient);
   $: icon = typeConfig?.getIcon?.(context, $contextMetadataStore);
   const selectedItemId = selectedChatContext
     ? getIdForContext(selectedChatContext)
@@ -59,46 +61,50 @@
 </script>
 
 <Collapsible.Root open={$openStore}>
-  <Collapsible.Trigger asChild let:builder>
-    <button
-      class="context-item parent-context-item"
-      class:focused
-      type="button"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      use:enhancePickerNode={item}
-      on:click={onClick}
-    >
-      <input
-        type="radio"
-        checked={selected}
-        on:click|stopPropagation={() => onSelect(context)}
-        class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
-      />
-      <div class="min-w-3.5">
-        {#if $openStore && node.children.length}
-          <ChevronDownIcon size="12px" strokeWidth={4} />
-        {:else if icon}
-          <svelte:component this={icon} size="12px" />
-        {:else}
-          <ChevronRightIcon size="12px" strokeWidth={4} />
-        {/if}
-      </div>
+  <Collapsible.Trigger>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        class="context-item parent-context-item"
+        class:focused
+        type="button"
+        use:enhancePickerNode={item}
+        onclick={onClick}
+      >
+        <input
+          type="radio"
+          checked={selected}
+          onclick={(e) => {
+            e.stopPropagation();
+            onSelect(context);
+          }}
+          class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+        />
+        <div class="min-w-3.5">
+          {#if $openStore && node.children.length}
+            <ChevronDownIcon size="12px" strokeWidth={4} />
+          {:else if icon}
+            <svelte:component this={icon} size="12px" />
+          {:else}
+            <ChevronRightIcon size="12px" strokeWidth={4} />
+          {/if}
+        </div>
 
-      <span class="context-item-label">{context.label}</span>
+        <span class="context-item-label">{context.label}</span>
 
-      {#if focused}
-        {#if typeLabel}
-          <div class="context-item-type-label">
-            {typeLabel}
-          </div>
+        {#if focused}
+          {#if typeLabel}
+            <div class="context-item-type-label">
+              {typeLabel}
+            </div>
+          {/if}
+        {:else if item.recentlyUsed}
+          <span class="parent-context-label">Recently asked</span>
+        {:else if item.currentlyActive}
+          <span class="parent-context-label">Current</span>
         {/if}
-      {:else if item.recentlyUsed}
-        <span class="parent-context-label">Recently asked</span>
-      {:else if item.currentlyActive}
-        <span class="parent-context-label">Current</span>
-      {/if}
-    </button>
+      </button>
+    {/snippet}
   </Collapsible.Trigger>
 
   <Collapsible.Content class="flex flex-col ml-0.5 gap-y-0.5">

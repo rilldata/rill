@@ -33,7 +33,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get repo for project path: %w", err)
 			}
-			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
+			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb", true)
 			if err != nil {
 				return fmt.Errorf("failed to parse project: %w", err)
 			}
@@ -43,9 +43,9 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Find the cloud project name
 			if projectName == "" {
-				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				projectName, err = ch.InferProjectName(cmd.Context(), projectPath, "use --project to specify the name")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 

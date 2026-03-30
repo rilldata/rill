@@ -1,4 +1,19 @@
+<script context="module" lang="ts">
+  // Navigating between org and project pages swaps OrgHeader for ProjectHeader
+  // (and vice versa). Both headers render an AvatarButton, but the old one
+  // unmounts before the new one mounts. A normal <img> would be destroyed and
+  // recreated, forcing the browser to re-decode the photo — causing a visible
+  // flicker or broken-image flash.
+  //
+  // To avoid this, we keep a single <img> element at module scope. Each
+  // AvatarButton instance adopts it via appendChild on mount and detaches it
+  // on unmount. The browser retains the decoded image data, so it paints
+  // instantly with no flash.
+  let sharedImg: HTMLImageElement | null = null;
+</script>
+
 <script lang="ts">
+  import { onMount } from "svelte";
   import { page } from "$app/stores";
   import { redirectToLogout } from "@rilldata/web-admin/client/redirect-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -14,8 +29,41 @@
 
   const user = createAdminServiceGetCurrentUser();
 
+  let imgContainer: HTMLElement;
   let primaryMenuOpen = false;
   let subMenuOpen = false;
+
+  onMount(() => {
+    const photoUrl = $user.data?.user?.photoUrl;
+    if (!sharedImg) {
+      sharedImg = document.createElement("img");
+      sharedImg.className = "h-7 w-7 rounded-full";
+      sharedImg.referrerPolicy = "no-referrer";
+      sharedImg.alt = "avatar";
+    }
+    if (photoUrl && sharedImg.src !== photoUrl) {
+      sharedImg.src = photoUrl;
+    }
+    imgContainer.appendChild(sharedImg);
+    return () => {
+      // Only detach if we're still the owner; a newer instance may have
+      // already adopted the element via appendChild.
+      if (sharedImg?.parentNode === imgContainer) {
+        sharedImg.remove();
+      }
+    };
+  });
+
+  // Keep src in sync if the user query resolves or changes after mount.
+  // sharedImg is module-level (shared singleton); reactivity is driven by $user.data.
+  // svelte-ignore reactive_declaration_module_script_dependency
+  $: if (
+    sharedImg &&
+    $user.data?.user?.photoUrl &&
+    sharedImg.src !== $user.data.user.photoUrl
+  ) {
+    sharedImg.src = $user.data.user.photoUrl;
+  }
 
   $: if ($user.data?.user) {
     // Actions to take when the user is known
@@ -34,12 +82,7 @@
 
 <DropdownMenu.Root bind:open={primaryMenuOpen}>
   <DropdownMenu.Trigger class="flex-none">
-    <img
-      src={$user.data?.user?.photoUrl}
-      alt="avatar"
-      class="h-7 inline-flex items-center rounded-full"
-      referrerpolicy="no-referrer"
-    />
+    <div bind:this={imgContainer} class="h-7 w-7"></div>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
     {#if params.organization && params.project}
@@ -50,7 +93,7 @@
         <svelte:fragment slot="manage-project">
           <DropdownMenu.Sub bind:open={subMenuOpen}>
             <DropdownMenu.SubTrigger
-              on:click={() => {
+              onclick={() => {
                 subMenuOpen = !subMenuOpen;
               }}
             >
@@ -102,9 +145,9 @@
     >
       Join us on Discord
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={handlePylon}>
+    <DropdownMenu.Item onclick={handlePylon}>
       Contact Rill support
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={redirectToLogout}>Logout</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={redirectToLogout}>Logout</DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

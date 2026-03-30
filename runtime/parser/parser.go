@@ -178,6 +178,7 @@ type Parser struct {
 	InstanceID           string
 	Environment          string
 	DefaultOLAPConnector string
+	StrictResolverProps  bool
 
 	// Output
 	RillYAML  *RillYAML
@@ -192,6 +193,16 @@ type Parser struct {
 	insertedResources         []*Resource
 	updatedResources          []*Resource
 	deletedResources          []*Resource
+}
+
+// HasParseErrors returns true if the parser has any non-warning parse errors.
+func (p *Parser) HasParseErrors() bool {
+	for _, err := range p.Errors {
+		if !err.Warning {
+			return true
+		}
+	}
+	return false
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -220,12 +231,13 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 }
 
 // Parse creates a new parser and parses the entire project.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string, strictResolverProps bool) (*Parser, error) {
 	p := &Parser{
 		Repo:                 repo,
 		InstanceID:           instanceID,
 		Environment:          environment,
 		DefaultOLAPConnector: defaultOLAPConnector,
+		StrictResolverProps:  strictResolverProps,
 	}
 
 	err := p.reload(ctx)
@@ -1016,6 +1028,14 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 		FilePath:      path,
 		StartLocation: loc,
 		External:      external,
+	})
+}
+
+func (p *Parser) addParseWarning(path, warning string) {
+	p.Errors = append(p.Errors, &runtimev1.ParseError{
+		Message:  warning,
+		FilePath: path,
+		Warning:  true,
 	})
 }
 
