@@ -6,9 +6,10 @@ import type {
   PivotFilter,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
-  V1Operation,
-  type V1Expression,
-} from "@rilldata/web-common/runtime-client";
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
 import { describe, expect, it, vi } from "vitest";
 import { dimKeyFromRow } from "../../../dashboards/pivot/pivot-click-selection";
@@ -41,30 +42,10 @@ vi.mock(
   }),
 );
 
-/** Build a V1Expression with a single IN clause: dimensionName IN (values) */
-function makeInFilter(dimensionName: string, values: string[]): V1Expression {
-  return {
-    cond: {
-      op: V1Operation.OPERATION_AND,
-      exprs: [
-        {
-          cond: {
-            op: V1Operation.OPERATION_IN,
-            exprs: [
-              { ident: dimensionName },
-              ...values.map((v) => ({ val: v })),
-            ],
-          },
-        },
-      ],
-    },
-  };
-}
-
 /** Build a PivotFilter with no time range (sufficient for these tests). */
 function makePivotFilter(dimensionName: string, values: string[]): PivotFilter {
   return {
-    filters: makeInFilter(dimensionName, values),
+    filters: createAndExpression([createInExpression(dimensionName, values)]),
     timeRange: { start: undefined, end: undefined },
   };
 }
