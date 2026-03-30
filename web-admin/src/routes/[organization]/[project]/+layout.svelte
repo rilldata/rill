@@ -50,8 +50,6 @@
 
   let organization = $derived(page.params.organization);
   let project = $derived(page.params.project);
-  let pathname = $derived(page.url.pathname);
-  let pageData = $derived(page.data);
 
   // Token: from route params, or from search params on report/alert pages
   let token = $derived.by(() => {
@@ -66,13 +64,13 @@
 
   // From root layout; passed through to header components
   let organizationPermissions = $derived(
-    pageData?.organizationPermissions ?? {},
+    page.data?.organizationPermissions ?? {},
   );
-  let planDisplayName = $derived(pageData?.planDisplayName);
+  let planDisplayName = $derived(page.data?.planDisplayName);
   let organizationLogoUrl = $derived(
     getThemedLogoUrl(
       $themeControl,
-      pageData?.organization as V1Organization | undefined,
+      page.data?.organization as V1Organization | undefined,
     ),
   );
 
@@ -156,8 +154,7 @@
   // --- Derived state (resolve effective runtime connection from whichever auth mode is active) ---
 
   let projectData = $derived($projectQuery.data);
-  let projectError = $derived($projectQuery.error);
-  let error = $derived(projectError as HTTPError);
+  let error = $derived($projectQuery.error as HTTPError);
 
   let deploymentStatus = $derived(projectData?.deployment?.status);
   let isProjectAvailable = $derived(
@@ -252,7 +249,7 @@
           <ProjectTabs
             projectPermissions={runtime.projectPermissions}
             {organization}
-            {pathname}
+            pathname={page.url.pathname}
             {project}
           />
         {/if}
