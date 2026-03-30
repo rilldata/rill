@@ -194,6 +194,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   updateTableType(newTableType: "pivot" | "table") {
     if (!this.parent.fileArtifact) return;
 
+    // Clear active component if this pivot was the active one
+    if (get(this.parent.activeComponent) === this.id) {
+      this.parent.clearActiveComponent();
+    }
+    this.selfFilteredDimensions.set(new Set());
+
     this.type = newTableType;
 
     this.pivotState.set(this.getInitPivotState(newTableType));
