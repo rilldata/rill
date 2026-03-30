@@ -3,9 +3,8 @@
   import {
     type ImportAddDataStep,
     ImportDataStep,
-  } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { runImportStep } from "@rilldata/web-common/features/add-data/steps/import.ts";
   import { onMount } from "svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -22,6 +21,7 @@
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
 
   export let importAddDataStep: ImportAddDataStep;
   export let onClose: () => void;
@@ -30,9 +30,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: currentFileRoute = importAddDataStep.currentFilePath
-    ? `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`
-    : "/";
+  $: currentFileRoute = "/";
   $: sourceName = importAddDataStep.config.importTo.modelName ?? "";
   $: isDone = importAddDataStep.importStep === ImportDataStep.Done;
   let error: string | null = null;
@@ -50,16 +48,16 @@
 
   async function runImport() {
     try {
-      while (importAddDataStep.importStep !== ImportDataStep.Done) {
-        importAddDataStep = await runImportStep(
-          runtimeClient,
-          importAddDataStep,
-        );
-      }
-      if (!importAddDataStep.currentFilePath) return goto("/");
-      return goto(
-        `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`,
+      await runImportSteps(
+        runtimeClient,
+        importAddDataStep.config,
+        (_, currentFilePath) => {
+          if (currentFilePath) {
+            currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+          }
+        },
       );
+      return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
     }

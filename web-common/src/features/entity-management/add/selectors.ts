@@ -69,5 +69,6 @@ function groupBySchema(connectors: V1AnalyzedConnector[]) {
 }
 
 export function inferSchemaForConnector(connector: V1AnalyzedConnector) {
+  // TODO: some schema will share driver name, differentiate them.
   return connector.driver?.name ?? "";
 }

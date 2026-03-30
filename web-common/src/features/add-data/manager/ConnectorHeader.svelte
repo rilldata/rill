@@ -4,11 +4,12 @@
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import type { AddDataConfig } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import type { AddDataConfig } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import {
     getConnectorDriverForSchema,
     isConnectorType,
-  } from "@rilldata/web-common/features/add-data/steps/utils.ts";
+  } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import { inferSchemaForConnector } from "@rilldata/web-common/features/entity-management/add/selectors.ts";
 
   export let config: AddDataConfig;
   export let schemaName: string;
@@ -23,7 +24,7 @@
   $: analyzedConnectorsQuery = getAnalyzedConnectors(runtimeClient, false);
   // TODO: some schema will share driver name, differentiate them.
   $: connectorsForSchema = $analyzedConnectorsQuery.data?.connectors.filter(
-    (connector) => connector.driver?.name === schemaName,
+    (connector) => inferSchemaForConnector(connector) === schemaName,
   );
   $: connectorOptions =
     connectorsForSchema?.map((connector) => ({

@@ -3,7 +3,7 @@
     connectorClassMapping,
     connectorIconMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
-  import type { AddDataConfig } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  import type { AddDataConfig } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
   import { ChevronRightIcon } from "lucide-svelte";

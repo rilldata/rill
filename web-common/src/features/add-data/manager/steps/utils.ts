@@ -10,9 +10,9 @@ import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors
 
 export function getConnectorDriverForSchema(
   schemaName: string,
-): V1ConnectorDriver | null {
+): V1ConnectorDriver | undefined {
   const connectorInfo = connectorInfoMap.get(schemaName);
-  if (!connectorInfo) return null;
+  if (!connectorInfo) return undefined;
   const schema = getConnectorSchema(connectorInfo.name);
   const category = schema?.["x-category"];
   const backendName = getBackendConnectorName(connectorInfo.name);

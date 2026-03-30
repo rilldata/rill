@@ -4,10 +4,10 @@
   import type {
     CreateModelStep,
     ExploreConnectorStep,
-  } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { connectorInfoMap } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { maybeDeleteConnector } from "@rilldata/web-common/features/add-data/steps/connector.ts";
+  import { maybeDeleteConnector } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   let {

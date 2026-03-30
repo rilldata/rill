@@ -8,31 +8,25 @@
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { createConnector } from "@rilldata/web-common/features/add-data/steps/connector.ts";
+  import {
+    createConnector,
+    maybeDeleteConnector,
+  } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
   import { getLabelsForConnector } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
-  import type {
-    AddDataState,
-    CreateConnectorStep,
-  } from "@rilldata/web-common/features/add-data/steps/types.ts";
-  import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  import type { CreateConnectorStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
-  import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/steps/utils.ts";
+  import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 
   export let step: CreateConnectorStep;
-  export let onSubmit: (newState: AddDataState) => void;
+  export let onSubmit: (
+    connectorName: string,
+    connectorFormValues: Record<string, unknown>,
+  ) => void;
   export let onBack: () => void;
   export let onClose: () => void;
 
   const runtimeClient = useRuntimeClient();
-
-  const connectorName = getName(
-    step.schema,
-    fileArtifacts.getNamesForKind(ResourceKind.Connector),
-  );
 
   $: connectorDriver = getConnectorDriverForSchema(step.schema);
 
@@ -61,18 +55,13 @@
         await createConnector({
           runtimeClient,
           queryClient,
-          connectorName,
+          connectorName: step.assignedConnectorName,
           connectorDriver,
           formValues: form.data,
           validate: true,
           existingEnvBlob,
         });
-        const newState = await transitionToNextStep(runtimeClient, step, {
-          schema: step.schema,
-          connector: connectorName,
-          connectorFormValues: form.data,
-        });
-        onSubmit(newState);
+        onSubmit(step.assignedConnectorName, form.data);
       } catch (e) {
         setSubmitError(form, e);
       }
@@ -98,7 +87,7 @@
     const connectorPath = await createConnector({
       runtimeClient,
       queryClient,
-      connectorName,
+      connectorName: step.assignedConnectorName,
       connectorDriver,
       formValues: $form,
       validate: false,
@@ -106,6 +95,16 @@
     });
     onClose();
     return goto(`/files${addLeadingSlash(connectorPath)}`);
+  }
+
+  async function cleanupAndBack() {
+    await maybeDeleteConnector(
+      runtimeClient,
+      queryClient,
+      step.assignedConnectorName,
+    );
+
+    onBack();
   }
 </script>
 
@@ -118,6 +117,6 @@
     {yamlPreview}
     step="connector"
     onSave={saveConnector}
-    {onBack}
+    onBack={cleanupAndBack}
   />
 {/if}

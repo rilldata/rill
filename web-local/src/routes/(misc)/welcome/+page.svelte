@@ -4,8 +4,6 @@
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import OnboardingGenerateSampleData from "@rilldata/web-common/features/add-data/OnboardingGenerateSampleData.svelte";
   import ConnectYourDataWidget from "@rilldata/web-common/features/add-data/ConnectYourDataWidget.svelte";
-
-  import { AddDataStep } from "@rilldata/web-common/features/add-data/steps/types.ts";
 </script>
 
 <TitleContent />
@@ -13,14 +11,7 @@
 <div class="flex flex-row gap-x-12">
   <ConnectYourDataWidget
     startConnectorSelection={(name) =>
-      void goto("/welcome/add-data", {
-        state: {
-          step: name
-            ? AddDataStep.CreateConnector
-            : AddDataStep.SelectConnector,
-          schema: name,
-        },
-      })}
+      void goto("/welcome/add-data" + (name ? `?schema=${name}` : ""))}
     onWelcomeScreen
   />
   <OnboardingGenerateSampleData />

@@ -28,8 +28,6 @@ import type { MultiStepFormSchema } from "@rilldata/web-common/features/template
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
-  deleteEnvVariable,
-  getEnvVarsFromConnectorYAML,
   replaceOlapConnectorInYAML,
   unsetResourceEnvVars,
   updateDotEnvWithSecrets,

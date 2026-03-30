@@ -2,7 +2,7 @@ import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "@rilldata/web-common/features/connectors/selectors.ts";
 import { derived } from "svelte/store";
 import { connectors } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-import type { AddDataConfig } from "@rilldata/web-common/features/add-data/steps/types.ts";
+import type { AddDataConfig } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
 
 export function getSupportedConnectorInfos(
   runtimeClient: RuntimeClient,

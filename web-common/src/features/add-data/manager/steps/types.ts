@@ -1,4 +1,7 @@
 export enum AddDataStep {
+  // Used purely to transition from Init to one of the other steps.
+  // This is used to start the import flow from the middle by selecting schema/connector directly.
+  Init,
   SelectConnector,
   CreateConnector,
   CreateModel,
@@ -28,6 +31,7 @@ export enum ImportDataStep {
 }
 
 export type AddDataState =
+  | InitConnectorStep
   | SelectConnectorStep
   | CreateConnectorStep
   | CreateModelStep
@@ -39,6 +43,10 @@ export type AddDataState =
  * Individual steps for strong typing
  */
 
+type InitConnectorStep = {
+  step: AddDataStep.Init;
+};
+
 type SelectConnectorStep = {
   step: AddDataStep.SelectConnector;
 };
@@ -46,6 +54,8 @@ type SelectConnectorStep = {
 export type CreateConnectorStep = {
   step: AddDataStep.CreateConnector;
   schema: string;
+  // Assigned connector name to keep a consistent name across retries
+  assignedConnectorName: string;
 };
 
 export type CreateModelStep = {
@@ -63,7 +73,6 @@ export type ExploreConnectorStep = {
 
 type DoneAddDataStep = {
   step: AddDataStep.Done;
-  finalPath: string;
 };
 
 // Import data step and types

@@ -9,15 +9,14 @@
   import {
     type ImportAddDataStep,
     ImportDataStep,
-  } from "@rilldata/web-common/features/add-data/steps/types.ts";
+  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import {
     cleanupImportStep,
-    runImportStep,
-  } from "@rilldata/web-common/features/add-data/steps/import.ts";
+    runImportSteps,
+  } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
-  import { maybeDeleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   export let importAddDataStep: ImportAddDataStep;
@@ -26,8 +25,6 @@
 
   const runtimeClient = useRuntimeClient();
   const initialAddDataStep = { ...importAddDataStep };
-
-  $: ({ importStep } = importAddDataStep);
 
   const StepLabels = [
     {
@@ -53,25 +50,28 @@
     (s) => StepLabels.find((label) => label.step === s)!,
   );
 
-  $: currentFileRoute = importAddDataStep.currentFilePath
-    ? `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`
-    : "/";
+  let importStep = ImportDataStep.Init;
+  $: currentFileRoute = "/";
   let error: string | null = null;
   $: hasErrored = !!error;
 
   async function runImport() {
+    importStep = ImportDataStep.Init;
+    error = null;
+
     try {
-      while (importAddDataStep.importStep !== ImportDataStep.Done) {
-        importAddDataStep = await runImportStep(
-          runtimeClient,
-          importAddDataStep,
-        );
-      }
-      onClose();
-      if (!importAddDataStep.currentFilePath) return goto("/");
-      return goto(
-        `/files${addLeadingSlash(importAddDataStep.currentFilePath)}`,
+      await runImportSteps(
+        runtimeClient,
+        importAddDataStep.config,
+        (step, currentFilePath) => {
+          importStep = step;
+          if (currentFilePath) {
+            currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+          }
+        },
       );
+      onClose();
+      return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
     }
@@ -79,12 +79,15 @@
 
   function rerunImport() {
     importAddDataStep = { ...initialAddDataStep };
-    error = null;
     return runImport();
   }
 
   async function cleanupAndBack() {
-    await cleanupImportStep(runtimeClient, queryClient, importAddDataStep);
+    await cleanupImportStep(
+      runtimeClient,
+      queryClient,
+      importAddDataStep.config,
+    );
 
     onBack();
   }

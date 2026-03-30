@@ -1,9 +1,9 @@
 import {
-  type ImportAddDataStep,
   ImportDataStep,
   type ImportFromConfig,
+  type ImportStepConfig,
   type ImportToConfig,
-} from "@rilldata/web-common/features/add-data/steps/types.ts";
+} from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
 import {
   runtimeServiceCreateTrigger,
   runtimeServiceGenerateCanvasFile,
@@ -24,42 +24,40 @@ import {
   compileSourceYAML,
   inferModelNameFromSQL,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/transitions.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/code-utils.ts";
 
-export async function runImportStep(
+export async function runImportSteps(
   runtimeClient: RuntimeClient,
-  step: ImportAddDataStep,
-): Promise<ImportAddDataStep> {
-  switch (step.importStep) {
-    case ImportDataStep.Init:
-      if (step.config.importSteps.length === 0) {
-        throw new Error("Must specify at least one import step");
-      }
-      return advanceToNextImportStep(step, step.config.importSteps[0]);
-
-    case ImportDataStep.CreateModel:
-      await runCreateModelStep(runtimeClient, step);
-      break;
-
-    case ImportDataStep.CreateMetricsView:
-      await runCreateMetricsViewStep(runtimeClient, step);
-      break;
-
-    case ImportDataStep.CreateDashboard:
-      // We create both explore and canvas in the same step.
-      await runCreateExploreStep(runtimeClient, step);
-      await runCreateCanvasStep(runtimeClient, step);
-      break;
-
-    // ImportDataStep.Done is handled in the caller by ending the import flow.
+  config: ImportStepConfig,
+  onProgress: (
+    step: ImportDataStep,
+    currentFilePath: string | undefined,
+  ) => void,
+) {
+  for (const step of config.importSteps) {
+    switch (step) {
+      case ImportDataStep.CreateModel:
+        onProgress(step, config.importTo.modelPath);
+        await runCreateModelStep(runtimeClient, config);
+        break;
+      case ImportDataStep.CreateMetricsView:
+        onProgress(step, config.importTo.metricsViewPath);
+        await runCreateMetricsViewStep(runtimeClient, config);
+        break;
+      case ImportDataStep.CreateDashboard:
+        onProgress(step, config.importTo.explorePath);
+        await runCreateExploreStep(runtimeClient, config);
+        onProgress(step, config.importTo.canvasPath);
+        await runCreateCanvasStep(runtimeClient, config);
+        break;
+    }
   }
-
-  return advanceToNextImportStep(step);
+  onProgress(ImportDataStep.Done, undefined);
 }
 
 export function generateImportToConfig(
@@ -110,9 +108,9 @@ export function generateImportToConfig(
 export async function cleanupImportStep(
   runtimeClient: RuntimeClient,
   queryClient: QueryClient,
-  step: ImportAddDataStep,
+  config: ImportStepConfig,
 ) {
-  const importToConfig = step.config.importTo;
+  const importToConfig = config.importTo;
 
   let envBlob: string | null = null;
   if (
@@ -153,70 +151,29 @@ export async function cleanupImportStep(
   }
 }
 
-function getNextImportStep(step: ImportAddDataStep) {
-  const curStepIndex = step.config.importSteps.findIndex(
-    (is) => is === step.importStep,
-  );
-  if (curStepIndex === -1) {
-    throw new Error("Invalid import step");
-  } else if (curStepIndex === step.config.importSteps.length - 1) {
-    return ImportDataStep.Done;
-  } else {
-    return step.config.importSteps[curStepIndex + 1];
-  }
-}
-
-function advanceToNextImportStep(
-  step: ImportAddDataStep,
-  nextImportStep: ImportDataStep = getNextImportStep(step),
-) {
-  let currentFilePath: string | undefined = undefined;
-  switch (nextImportStep) {
-    case ImportDataStep.CreateModel:
-      currentFilePath = step.config.importTo.modelPath;
-      break;
-
-    case ImportDataStep.CreateMetricsView:
-      currentFilePath = step.config.importTo.metricsViewPath;
-      break;
-
-    case ImportDataStep.CreateDashboard:
-      currentFilePath = step.config.importTo.canvasPath;
-      break;
-  }
-
-  return {
-    ...step,
-    importStep: nextImportStep,
-    currentFilePath,
-  };
-}
-
 async function runCreateModelStep(
   runtimeClient: RuntimeClient,
-  step: ImportAddDataStep,
+  config: ImportStepConfig,
 ) {
   // Get the connector driver for the connector instance
   const connectorDriver = await maybeGetConnectorDriver(
     runtimeClient,
     undefined,
-    step.config.connector,
+    config.connector,
   );
   if (!connectorDriver) {
-    throw new Error(
-      `Failed to get connector driver for ${step.config.connector}`,
-    );
+    throw new Error(`Failed to get connector driver for ${config.connector}`);
   }
 
   // Validate model name and path are generated upstream
-  const importToConfig = step.config.importTo;
+  const importToConfig = config.importTo;
   if (!importToConfig.modelName || !importToConfig.modelPath) {
     throw new Error("Model name and path must be generated upstream.");
   }
 
   // Build the model YAML based on the import source
   let yaml = "";
-  const importFromConfig = step.config.importFrom;
+  const importFromConfig = config.importFrom;
   switch (importFromConfig.from) {
     // Generated using a form directly into yaml.
     case "yaml":
@@ -232,7 +189,7 @@ async function runCreateModelStep(
           sql: importFromConfig.sql,
         },
         {
-          connectorInstanceName: step.config.connector,
+          connectorInstanceName: config.connector,
         },
       );
       break;
@@ -251,18 +208,18 @@ async function runCreateModelStep(
           sql: sql,
         },
         {
-          connectorInstanceName: step.config.connector,
+          connectorInstanceName: config.connector,
         },
       );
       break;
     }
   }
 
-  if (step.config.envBlob) {
+  if (config.envBlob) {
     // Make sure the file has reconciled before testing the connection
     await runtimeServicePutFileAndWaitForReconciliation(runtimeClient, {
       path: ".env",
-      blob: step.config.envBlob,
+      blob: config.envBlob,
       create: true,
       createOnly: false,
     });
@@ -303,20 +260,20 @@ async function runCreateModelStep(
 
 async function runCreateMetricsViewStep(
   runtimeClient: RuntimeClient,
-  step: ImportAddDataStep,
+  config: ImportStepConfig,
 ) {
   // Validate metrics view name and path are generated upstream
-  const importToConfig = step.config.importTo;
+  const importToConfig = config.importTo;
   if (!importToConfig.metricsViewName || !importToConfig.metricsViewPath) {
     throw new Error("Metrics view name and path must be generated upstream.");
   }
 
-  let connector = step.config.connector;
+  let connector = config.connector;
   let table = "";
   let database = "";
   let databaseSchema = "";
   if (
-    step.config.importSteps.includes(ImportDataStep.CreateModel) &&
+    config.importSteps.includes(ImportDataStep.CreateModel) &&
     importToConfig.modelPath
   ) {
     // Get the model and use it's sink table/connector
@@ -331,10 +288,10 @@ async function runCreateMetricsViewStep(
     // Database and schema do not apply in this case.
     table = modelResource.model.state?.resultTable ?? "";
     connector = modelResource.model.spec?.outputConnector ?? "";
-  } else if (step.config.importFrom.from === "table") {
-    table = step.config.importFrom.table;
-    database = step.config.importFrom.database;
-    databaseSchema = step.config.importFrom.schema;
+  } else if (config.importFrom.from === "table") {
+    table = config.importFrom.table;
+    database = config.importFrom.database;
+    databaseSchema = config.importFrom.schema;
   } else {
     throw new Error(
       "Must specify a model name or table to create a metrics view",
@@ -360,10 +317,10 @@ async function runCreateMetricsViewStep(
 
 async function runCreateExploreStep(
   runtimeClient: RuntimeClient,
-  step: ImportAddDataStep,
+  config: ImportStepConfig,
 ) {
   // Validate explore name and path are generated upstream
-  const importToConfig = step.config.importTo;
+  const importToConfig = config.importTo;
   if (!importToConfig.exploreName || !importToConfig.explorePath) {
     throw new Error("Explore name and path must be generated upstream.");
   }
@@ -402,10 +359,10 @@ async function runCreateExploreStep(
 
 async function runCreateCanvasStep(
   runtimeClient: RuntimeClient,
-  step: ImportAddDataStep,
+  config: ImportStepConfig,
 ) {
   // Validate canvas name and path are generated upstream
-  const importToConfig = step.config.importTo;
+  const importToConfig = config.importTo;
   if (!importToConfig.canvasName || !importToConfig.canvasPath) {
     throw new Error("Canvas name and path must be generated upstream.");
   }

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import SourceSelector from "@rilldata/web-common/features/add-data/manager/SourceSelector.svelte";
   import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
   import SourceForm from "@rilldata/web-common/features/add-data/form/SourceForm.svelte";
@@ -8,102 +7,120 @@
   import {
     type AddDataConfig,
     AddDataStep,
-    type AddDataState,
     type ImportStepConfig,
     ImportDataStep,
-  } from "@rilldata/web-common/features/add-data/steps/types.ts";
-  import { transitionToNextStep } from "@rilldata/web-common/features/add-data/steps/transitions.ts";
+  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ConnectorHeader from "@rilldata/web-common/features/add-data/manager/ConnectorHeader.svelte";
   import ImportDataStatus from "@rilldata/web-common/features/add-data/manager/ImportDataStatus.svelte";
-  import SwitchConnectorConfirmation from "@rilldata/web-common/features/add-data/manager/SwitchConnectorConfirmation.svelte";
+  import {
+    AddDataStateManager,
+    TransitionEventType,
+  } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
+  import {
+    getConnectorDriverForConnector,
+    getConnectorDriverForSchema,
+  } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
-  export let config: AddDataConfig = {};
-  export let initStepState: AddDataState = {
-    step: AddDataStep.SelectConnector,
-  };
-  export let onClose: () => void = () => {};
-  export let onStepChange: (step: AddDataStep) => void = () => {};
+  const {
+    config,
+    initSchema,
+    initConnector,
+    onDone,
+    onClose = () => {},
+    onStepChange,
+  }: {
+    config: AddDataConfig;
+    initSchema?: string;
+    initConnector?: string;
+    onDone?: () => void;
+    onClose?: () => void;
+    onStepChange?: (step: AddDataStep) => void;
+  } = $props();
+
+  const stateManager = $derived(
+    new AddDataStateManager(onDone, onClose, onStepChange),
+  );
+  $effect(() => void init(initConnector, initSchema));
 
   const runtimeClient = useRuntimeClient();
 
-  let stepState: AddDataState = initStepState;
-  let stateStack: AddDataState[] = [];
-  function pushState(newState: AddDataState) {
-    stateStack.push(stepState);
-    stepState = newState;
-  }
-  function popState() {
-    stepState = stateStack.pop() ?? { step: AddDataStep.SelectConnector };
-  }
+  let stepState = $derived(stateManager.state);
 
-  // beforeNavigate, onNavigate or afterNavigate do not seem to get called when state changes.
-  // "popstate" event does not have direct access to the page state, rather it is under `sveltekit:states` key which seems like internal key.
-  // So we need this reactive statement to update the state.
-  $: if ("step" in $page.state) {
-    stepState = $page.state as AddDataState;
-    onStepChange(stepState.step);
-  }
-
-  $: schema = (stepState as any).schema as string | undefined;
-  $: connector = (stepState as any).connector as string | undefined;
+  let schema = $derived((stepState as any).schema as string | undefined);
+  let connector = $derived((stepState as any).connector as string | undefined);
 
   const SizeClassMap: Partial<Record<AddDataStep, string>> = {
     [AddDataStep.SelectConnector]: "h-fit w-[900px]",
     [AddDataStep.Import]: "h-fit w-[550px]",
   };
-  $: sizeClass = SizeClassMap[stepState.step] ?? "h-[630px] w-[900px]";
-  $: shouldShowHeader =
+  let sizeClass = $derived(
+    SizeClassMap[stepState.step] ?? "h-[630px] w-[900px]",
+  );
+  let shouldShowHeader = $derived(
     stepState.step === AddDataStep.CreateConnector ||
-    stepState.step === AddDataStep.CreateModel ||
-    stepState.step === AddDataStep.ExploreConnector;
+      stepState.step === AddDataStep.CreateModel ||
+      stepState.step === AddDataStep.ExploreConnector,
+  );
 
-  let showSwitchConnectorConfirmation = false;
-
-  async function transitionFromInit(
-    schema: string | undefined,
-    connector: string | undefined,
-  ) {
-    const newState = await transitionToNextStep(
-      runtimeClient,
-      {
-        step: AddDataStep.SelectConnector,
-      },
-      {
-        schema,
+  async function init(connector?: string, schema?: string) {
+    let driver: V1ConnectorDriver | undefined = undefined;
+    if (connector) {
+      const analyzedConnector = await getConnectorDriverForConnector(
+        runtimeClient,
         connector,
-      },
-    );
-    pushState(newState);
-  }
-
-  async function transitionToSchema(schema: string) {
-    const newState = await transitionToNextStep(runtimeClient, stepState, {
+      );
+      driver = analyzedConnector?.driver;
+      schema = driver?.name ?? schema;
+    } else if (schema) {
+      driver = getConnectorDriverForSchema(schema);
+    }
+    stateManager.transition({
+      type: TransitionEventType.Init,
+      connector,
       schema,
+      driver,
     });
-    pushState(newState);
   }
 
-  async function setAndStartImport(importConfig: ImportStepConfig) {
-    const newState = await transitionToNextStep(runtimeClient, stepState, {
-      importConfig,
+  function schemaSelected(schema: string) {
+    const driver = getConnectorDriverForSchema(schema);
+    if (!driver) return;
+    stateManager.transition({
+      type: TransitionEventType.SchemaSelected,
+      schema,
+      driver,
     });
-    pushState(newState);
   }
 
-  function showSwitchConnector() {
-    showSwitchConnectorConfirmation = true;
-  }
-
-  async function transitionToSelectConnector() {
-    const newState = await transitionToNextStep(
+  async function connectorSelected(
+    connector: string,
+    connectorFormValues: Record<string, any>,
+  ) {
+    const analyzedConnector = await getConnectorDriverForConnector(
       runtimeClient,
-      {
-        step: AddDataStep.SelectConnector,
-      },
-      {},
+      connector,
     );
-    pushState(newState);
+    if (!analyzedConnector?.driver) return;
+    stateManager.transition({
+      type: TransitionEventType.ConnectorSelected,
+      schema: analyzedConnector.driver.name!,
+      driver: analyzedConnector.driver,
+      connector,
+      connectorFormValues,
+    });
+  }
+
+  function importConfigured(importConfig: ImportStepConfig) {
+    stateManager.transition({
+      type: TransitionEventType.ImportConfigured,
+      config: importConfig,
+    });
+  }
+
+  function onBack() {
+    stateManager.transition({ type: TransitionEventType.Back });
   }
 </script>
 
@@ -115,19 +132,19 @@
       {config}
       schemaName={schema}
       connectorName={connector}
-      onConnectorChange={(newConnector) =>
-        transitionFromInit(undefined, newConnector)}
-      onNewConnector={() => transitionFromInit(schema, undefined)}
+      onConnectorChange={(newConnector) => connectorSelected(newConnector, {})}
+      onNewConnector={() => schemaSelected(schema)}
     />
   {/if}
 
   {#if stepState.step === AddDataStep.SelectConnector}
-    <SourceSelector {config} onSelect={transitionToSchema} onBack={popState} />
+    <SourceSelector {config} onSelect={schemaSelected} {onBack} />
   {:else if stepState.step === AddDataStep.CreateConnector}
     <ConnectorForm
       step={stepState}
-      onSubmit={pushState}
-      onBack={popState}
+      onSubmit={(connectorName, connectorFormValues) =>
+        void connectorSelected(connectorName, connectorFormValues)}
+      {onBack}
       {onClose}
     />
   {:else if stepState.step === AddDataStep.CreateModel}
@@ -135,8 +152,8 @@
       <SourceForm
         {config}
         step={stepState}
-        onSubmit={setAndStartImport}
-        onBack={showSwitchConnector}
+        onSubmit={importConfigured}
+        {onBack}
       />
     {/key}
   {:else if stepState.step === AddDataStep.ExploreConnector}
@@ -144,8 +161,8 @@
       <ImportTableForm
         {config}
         step={stepState}
-        onSubmit={setAndStartImport}
-        onBack={showSwitchConnector}
+        onSubmit={importConfigured}
+        {onBack}
       />
     {/key}
   {:else if stepState.step === AddDataStep.Import}
@@ -158,17 +175,9 @@
     {:else}
       <GenerateDashboardStatus
         importAddDataStep={stepState}
-        onBack={popState}
+        {onBack}
         {onClose}
       />
     {/if}
   {/if}
 </div>
-
-{#if stepState.step === AddDataStep.CreateModel || stepState.step === AddDataStep.ExploreConnector}
-  <SwitchConnectorConfirmation
-    bind:open={showSwitchConnectorConfirmation}
-    {stepState}
-    onClose={() => void transitionToSelectConnector()}
-  />
-{/if}
