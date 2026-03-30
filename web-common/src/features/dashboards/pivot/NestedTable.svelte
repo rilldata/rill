@@ -66,6 +66,8 @@
 
   // Compute which leaf column indices are covered by selected column headers.
   // Iterates header groups to find selected headers and collects their ranges.
+  $: hasCrossSelection = clickSelection?.hasCrossSelection ?? false;
+
   $: selectedColIndices = (() => {
     if (!clickSelection?.hasAnySelection) return new Set<number>();
     const indices = new Set<number>();
@@ -533,7 +535,9 @@
         ancestorRowIdsOfSelectedHeaders.has(rowId)}
       <tr
         class:show-more-row={isShowMoreRow(rows[row.index])}
-        class:selected-row={isSelected && isRowHeaderSelected}
+        class:selected-row={isSelected &&
+          isRowHeaderSelected &&
+          !hasCrossSelection}
         class:dimmed-row={hasSelection &&
           !isSelected &&
           !hasClickedCell &&
@@ -550,6 +554,17 @@
           {@const inHoveredCol =
             hoveredColRange && isHeaderInHoveredRange(i, 1)}
           {@const inSelectedCol = selectedColIndices.has(i)}
+          {@const isIntersectionCell =
+            hasCrossSelection && isRowHeaderSelected && inSelectedCol && i > 0}
+          {@const isRowArmCell =
+            hasCrossSelection && isRowHeaderSelected && !inSelectedCol && i > 0}
+          {@const isColArmCell =
+            hasCrossSelection &&
+            inSelectedCol &&
+            !isRowHeaderSelected &&
+            !isAncestorOfSelectedHeader}
+          {@const isCrossSelectedRowHeader =
+            hasCrossSelection && isRowHeaderSelected && i === 0}
           {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
             ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
             : cell.getValue()}
@@ -558,8 +573,12 @@
             class:active-cell={isActive}
             class:selected-cell={isClicked}
             class:col-dim-hover-body={inHoveredCol}
-            class:selected-col-body={inSelectedCol}
+            class:selected-col-body={inSelectedCol && !hasCrossSelection}
             class:cell-selected-row-header={i === 0 && hasClickedCell}
+            class:cross-intersection={isIntersectionCell}
+            class:cross-row-arm={isRowArmCell}
+            class:cross-col-arm={isColArmCell}
+            class:cross-selected-row-header={isCrossSelectedRowHeader}
             class:interactive-cell={isTotalsRow
               ? canShowDataViewer
               : canShowDataViewer || enableClickToFilter}
@@ -767,6 +786,35 @@
     @apply bg-primary-100;
   }
   .with-row-dimension .selected-row:hover > td:first-of-type {
+    @apply bg-primary-100;
+  }
+
+  /* Cross-selection: intersection cells (both selected row + selected col) */
+  .cross-intersection.cell {
+    @apply bg-primary-50;
+  }
+  .cross-intersection.cell:hover {
+    @apply bg-primary-100;
+  }
+  tbody tr:hover .cross-intersection.cell {
+    @apply bg-primary-100;
+  }
+
+  /* Cross-selection: arm cells (muted) */
+  .cross-row-arm.cell,
+  .cross-col-arm.cell {
+    @apply bg-surface-muted;
+  }
+  tbody tr:hover .cross-row-arm.cell,
+  tbody tr:hover .cross-col-arm.cell {
+    @apply bg-surface-muted;
+  }
+
+  /* Cross-selection: row header cell for selected row (stays highlighted) */
+  .with-row-dimension tr > td.cross-selected-row-header:first-of-type {
+    @apply bg-primary-100;
+  }
+  .with-row-dimension tr:hover > td.cross-selected-row-header:first-of-type {
     @apply bg-primary-100;
   }
 

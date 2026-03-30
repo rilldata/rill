@@ -51,6 +51,8 @@ export interface PivotClickSelectionState {
   columnHeaderSelections: Set<string>;
   /** Whether any selection exists at all */
   hasAnySelection: boolean;
+  /** Whether both row-header and column-header selections exist (cross-selection) */
+  hasCrossSelection: boolean;
   /** Check if a specific row was selected via row-header click */
   isRowHeaderSelected: (dimKey: string) => boolean;
   /** Check if a specific cell was selected via data-cell click */
@@ -79,6 +81,7 @@ export function createEmptyClickSelectionState(): PivotClickSelectionState {
     cellSelections: new Map(),
     columnHeaderSelections: new Set(),
     hasAnySelection: false,
+    hasCrossSelection: false,
     isRowHeaderSelected: () => false,
     isCellSelected: () => false,
     hasSelectedCellInRow: () => false,
@@ -95,6 +98,7 @@ export function buildClickSelection(
   colHeaders: Set<string>,
 ): PivotClickSelectionState {
   const hasAny = rowHeaders.size > 0 || cells.size > 0 || colHeaders.size > 0;
+  const hasCrossSelection = rowHeaders.size > 0 && colHeaders.size > 0;
 
   // Build sets of dimKeys and columnIds that have at least one selected cell
   const rowsWithSelectedCells = new Set<string>();
@@ -124,6 +128,7 @@ export function buildClickSelection(
     cellSelections: cells,
     columnHeaderSelections: colHeaders,
     hasAnySelection: hasAny,
+    hasCrossSelection,
     isRowHeaderSelected: (dk) => rowHeaders.has(dk),
     isCellSelected: (dk, cid) => cells.has(cellKey(dk, cid)),
     hasSelectedCellInRow: (dk) => rowsWithSelectedCells.has(dk),
