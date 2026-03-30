@@ -35,13 +35,7 @@ const fakeMockedPermissions: V1ProjectPermissions = {
 
 describe("resolveRuntimeConnection", () => {
   it("returns cookie auth (user) by default", () => {
-    const result = resolveRuntimeConnection(
-      fakeProjectData,
-      undefined,
-      undefined,
-      undefined,
-      false,
-    );
+    const result = resolveRuntimeConnection(fakeProjectData, undefined, false);
     expect(result).toEqual({
       authContext: "user",
       host: "https://runtime.example.com",
@@ -52,13 +46,7 @@ describe("resolveRuntimeConnection", () => {
   });
 
   it("returns undefined fields when projectData is undefined", () => {
-    const result = resolveRuntimeConnection(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      false,
-    );
+    const result = resolveRuntimeConnection(undefined, undefined, false);
     expect(result).toEqual({
       authContext: "user",
       host: undefined,
@@ -69,13 +57,7 @@ describe("resolveRuntimeConnection", () => {
   });
 
   it("returns magic auth on public URL pages", () => {
-    const result = resolveRuntimeConnection(
-      fakeProjectData,
-      undefined,
-      undefined,
-      undefined,
-      true,
-    );
+    const result = resolveRuntimeConnection(fakeProjectData, undefined, true);
     expect(result.authContext).toBe("magic");
     expect(result.host).toBe("https://runtime.example.com");
   });
@@ -83,9 +65,10 @@ describe("resolveRuntimeConnection", () => {
   it("returns mock auth when View As is active", () => {
     const result = resolveRuntimeConnection(
       fakeProjectData,
-      "user-789",
-      fakeMockedCredentials,
-      fakeMockedPermissions,
+      {
+        credentials: fakeMockedCredentials,
+        permissions: fakeMockedPermissions,
+      },
       false,
     );
     expect(result).toEqual({
@@ -100,9 +83,10 @@ describe("resolveRuntimeConnection", () => {
   it("mock auth takes priority over public URL", () => {
     const result = resolveRuntimeConnection(
       fakeProjectData,
-      "user-789",
-      fakeMockedCredentials,
-      fakeMockedPermissions,
+      {
+        credentials: fakeMockedCredentials,
+        permissions: fakeMockedPermissions,
+      },
       true,
     );
     expect(result.authContext).toBe("mock");
@@ -111,33 +95,11 @@ describe("resolveRuntimeConnection", () => {
   it("falls back to project permissions when mock permissions are undefined", () => {
     const result = resolveRuntimeConnection(
       fakeProjectData,
-      "user-789",
-      fakeMockedCredentials,
-      undefined,
+      { credentials: fakeMockedCredentials },
       false,
     );
     expect(result.projectPermissions).toEqual(
       fakeProjectData.projectPermissions,
     );
-  });
-
-  it("requires both mockedUserId and credentials for mock mode", () => {
-    const resultWithIdOnly = resolveRuntimeConnection(
-      fakeProjectData,
-      "user-789",
-      undefined,
-      undefined,
-      false,
-    );
-    expect(resultWithIdOnly.authContext).toBe("user");
-
-    const resultWithCredsOnly = resolveRuntimeConnection(
-      fakeProjectData,
-      undefined,
-      fakeMockedCredentials,
-      undefined,
-      false,
-    );
-    expect(resultWithCredsOnly.authContext).toBe("user");
   });
 });

@@ -165,14 +165,17 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING,
   );
 
+  let mockUser = $derived(
+    mockedUserId && mockedUserDeploymentCredentials
+      ? {
+          credentials: mockedUserDeploymentCredentials,
+          permissions: $mockedUserProjectQuery.data?.projectPermissions,
+        }
+      : undefined,
+  );
+
   let runtime = $derived(
-    resolveRuntimeConnection(
-      projectData,
-      mockedUserId,
-      mockedUserDeploymentCredentials,
-      $mockedUserProjectQuery.data?.projectPermissions,
-      onPublicURLPage,
-    ),
+    resolveRuntimeConnection(projectData, mockUser, onPublicURLPage),
   );
 
   // --- Side effects (cache invalidation and telemetry) ---

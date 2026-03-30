@@ -15,9 +15,12 @@ import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime
  */
 export function resolveRuntimeConnection(
   projectData: V1GetProjectResponse | undefined,
-  mockedUserId: string | undefined,
-  mockedCredentials: V1GetDeploymentCredentialsResponse | undefined,
-  mockedProjectPermissions: V1ProjectPermissions | undefined,
+  mockUser:
+    | {
+        credentials: V1GetDeploymentCredentialsResponse;
+        permissions?: V1ProjectPermissions;
+      }
+    | undefined,
   onPublicURLPage: boolean,
 ): {
   authContext: AuthContext;
@@ -26,16 +29,14 @@ export function resolveRuntimeConnection(
   jwt: string | undefined;
   projectPermissions: V1ProjectPermissions | undefined;
 } {
-  const isMocked = !!(mockedUserId && mockedCredentials);
-
-  if (isMocked) {
+  if (mockUser) {
     return {
       authContext: "mock",
-      host: mockedCredentials.runtimeHost,
-      instanceId: mockedCredentials.instanceId,
-      jwt: mockedCredentials.accessToken,
+      host: mockUser.credentials.runtimeHost,
+      instanceId: mockUser.credentials.instanceId,
+      jwt: mockUser.credentials.accessToken,
       projectPermissions:
-        mockedProjectPermissions ?? projectData?.projectPermissions,
+        mockUser.permissions ?? projectData?.projectPermissions,
     };
   }
 
