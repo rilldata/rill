@@ -147,7 +147,8 @@
 
   <div class="flex items-center gap-x-2 px-3 py-2 border-b">
     <span class="text-xs font-medium text-fg-primary uppercase tracking-wide"
-    >URL Preview: </span>
+      >URL Preview:
+    </span>
     <span class="text-[11px] font-mono text-fg-muted truncate flex-1 min-w-0"
       >{fullUrl}</span
     >
