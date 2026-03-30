@@ -1,5 +1,5 @@
 import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
-import grammar from "./rill-time.cjs";
+import grammar from "./rill-time.js";
 import nearley from "nearley";
 
 const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
@@ -9,6 +9,15 @@ export function parseRillTime(rillTimeRange: string): RillTime {
   const rt = parser.results[0] as RillTime;
   if (!rt) throw new Error("Unknown error");
   return rt;
+}
+
+export function isNewRillTimeFormat(rillTime: string): boolean {
+  try {
+    const parser = parseRillTime(rillTime);
+    return !parser.isOldFormat;
+  } catch {
+    return false;
+  }
 }
 
 export function validateRillTime(rillTime: string): Error | undefined {

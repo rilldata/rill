@@ -20,7 +20,14 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value";
+  "x-display"?:
+    | "radio"
+    | "select"
+    | "textarea"
+    | "file"
+    | "tabs"
+    | "key-value"
+    | "toggle";
   /** Visual style for select fields. "rich" renders with icons and colored cards. */
   "x-select-style"?: "standard" | "rich";
   /** Render the field value in a monospace font. */
@@ -31,6 +38,8 @@ export type JSONSchemaField = {
   "x-secret"?: boolean;
   /** Show this field only when other fields match the given values. */
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
+  /** Always disable this field (read-only). */
+  "x-disabled"?: boolean;
   /** Disable this field (read-only) when other fields match the given values. */
   "x-disabled-if"?: Record<string, JSONSchemaVisibleIfValue>;
   /** Human-readable labels for each enum option, in the same order as `enum`. */
@@ -55,6 +64,10 @@ export type JSONSchemaField = {
   "x-informational"?: boolean;
   /** URL to external documentation for this field, shown as a help link. */
   "x-docs-url"?: string;
+  /** Field is an advanced setting, hidden by default behind an expandable section. */
+  "x-advanced"?: boolean;
+  /** For boolean fields: the YAML value to emit when the toggle is checked (true). When unchecked, the field is omitted. */
+  "x-yaml-value"?: string | number | boolean;
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**
@@ -66,6 +79,12 @@ export type JSONSchemaField = {
    * Group fields under tab options for enum-driven tab layouts.
    */
   "x-tab-group"?: Record<string, string[]>;
+  /**
+   * Maps enum option values to required connector driver names.
+   * Options whose required driver is not found among existing connectors
+   * are rendered as disabled in ConnectionTypeSelector.
+   */
+  "x-required-driver"?: Record<string, string>;
   /**
    * Explicit environment variable name for secret fields.
    * When set, this name is used instead of computing it from driver + property key.

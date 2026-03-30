@@ -146,10 +146,15 @@ export function buildDimensionSeriesData(
         ts: datum.ts
           ? DateTime.fromJSDate(datum.ts, { zone: timeZone })
           : DateTime.invalid("missing"),
-        value: (datum[measureName] as number | null) ?? null,
+        value:
+          datum[measureName] !== null && datum[measureName] !== undefined
+            ? Number(datum[measureName])
+            : null,
         comparisonValue:
           compKey in datum
-            ? ((datum[compKey] as number | null) ?? null)
+            ? datum[compKey] !== null && datum[compKey] !== undefined
+              ? Number(datum[compKey])
+              : null
             : undefined,
         comparisonTs:
           compTsKey in datum && datum[compTsKey]

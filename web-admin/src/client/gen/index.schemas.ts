@@ -1736,6 +1736,10 @@ export type AdminServiceListOrganizationBillingIssuesParams = {
 
 export type AdminServiceGetPaymentsPortalURLParams = {
   returnUrl?: string;
+  /**
+   * If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+   */
+  setup?: boolean;
   superuserForceAccess?: boolean;
 };
 

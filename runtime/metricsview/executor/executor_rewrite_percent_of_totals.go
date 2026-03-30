@@ -42,6 +42,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         qry.QueryLimits,
+		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.

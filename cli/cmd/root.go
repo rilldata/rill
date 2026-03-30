@@ -39,6 +39,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Instructions for agents that we add to the root help command in non-interactive environments.
+const agentInstructions = `
+For Agents:
+If you are administrating a Rill Cloud project, the CLI help menus speak for themselves (e.g. "rill project -h" or "rill user -h").
+But if you are developing a Rill project, it is imperative that you initialize and load the Rill agent instructions in the project directory.
+If you are creating a new project, use "rill init <path>" to set up a project with instructions.
+If you are working with an existing project, use "rill init <path> --agent claude" to add agent instructions to the project if it doesn't already have them.
+Make sure you load the instruction files after they are initialized. If necessary, cd into the project directory to discover them.
+`
+
 func init() {
 	cobra.EnableCommandSorting = false
 }
@@ -89,11 +99,18 @@ func Run(ctx context.Context, ver version.Version) {
 
 // RootCmd creates the root command and adds all subcommands.
 func RootCmd(ch *cmdutil.Helper) *cobra.Command {
+	// Build long description with agent instructions if in non-interactive mode
+	long := "Work with Rill projects from the command line."
+	if !ch.Interactive {
+		long += "\n\n"
+		long += strings.TrimSpace(agentInstructions)
+	}
+
 	// Root command
 	rootCmd := &cobra.Command{
 		Use:   "rill <command> [flags]",
 		Short: "A CLI for Rill",
-		Long:  `Work with Rill projects directly from the command line.`,
+		Long:  long,
 	}
 	rootCmd.Version = ch.Version.String()
 	// silence usage, usage string will only show up if missing arguments/flags
@@ -101,7 +118,7 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 	// we want to override some error messages
 	rootCmd.SilenceErrors = true
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
-	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", true, "Prompt for missing required parameters")
+	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", ch.Interactive, "Prompt for missing required parameters")
 	rootCmd.PersistentFlags().Var(&ch.Printer.Format, "format", `Output format (options: "human", "json", "csv")`)
 	rootCmd.PersistentFlags().StringVar(&ch.AdminURLOverride, "api-url", ch.AdminURLOverride, "Base URL for the cloud API")
 	if !ch.IsDev() {
