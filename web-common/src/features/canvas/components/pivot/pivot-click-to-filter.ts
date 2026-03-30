@@ -25,10 +25,15 @@ import {
   extractDimensionFiltersFromExpression,
   extractSelectionDimensionFilters,
   getActiveDimensionNames,
+  getDimensionValuesForRow,
   getFiltersForColumnHeader,
   getFiltersForRowData,
+  getFiltersForRowHeader,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
-import { getFiltersFromRow } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import {
+  getFiltersForCell,
+  getFiltersFromRow,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
   PivotDataRow,
   PivotDataStore,
@@ -416,7 +421,7 @@ export function createPivotClickToFilter(
   // --- Click handlers ---
 
   function handleCellClickToFilter(
-    _rowId: string,
+    rowId: string,
     columnId: string,
     isRowHeader: boolean,
     rowData: PivotDataRow,
@@ -426,8 +431,18 @@ export function createPivotClickToFilter(
     if (!$config || !$data?.data) return;
 
     const dk = dimKeyFromRow(rowData, $config.rowDimensionNames);
-    const dimValues = captureDimValues(rowData, $config.rowDimensionNames);
     const $clickSelection = get(clickSelectionStore);
+
+    // In nested mode, row data stores all values under rowDimensions[0],
+    // so we must use positional rowId navigation to get correct dim→value pairs.
+    const isNested = !$config.isFlat;
+    const dimValues = isNested
+      ? Object.fromEntries(
+          getDimensionValuesForRow($config, rowId, $data.data).map(
+            ({ dimensionName, value }) => [dimensionName, value],
+          ),
+        )
+      : captureDimValues(rowData, $config.rowDimensionNames);
 
     // Determine if this click is deselecting a previously selected element
     const isDeselect = isRowHeader
@@ -443,14 +458,24 @@ export function createPivotClickToFilter(
     const upToDimensionIndex = flatDimIdx >= 0 ? flatDimIdx : undefined;
 
     const cellFilters = isRowHeader
-      ? getFiltersForRowData($config, rowData)
-      : getFiltersFromRow(
-          $config,
-          rowData,
-          columnId,
-          $data.columnDimensionAxes ?? {},
-          upToDimensionIndex,
-        );
+      ? isNested
+        ? getFiltersForRowHeader($config, rowId, $data.data)
+        : getFiltersForRowData($config, rowData)
+      : isNested
+        ? getFiltersForCell(
+            $config,
+            rowId,
+            columnId,
+            $data.columnDimensionAxes ?? {},
+            $data.data,
+          )
+        : getFiltersFromRow(
+            $config,
+            rowData,
+            columnId,
+            $data.columnDimensionAxes ?? {},
+            upToDimensionIndex,
+          );
 
     if (!cellFilters.filters) return;
 

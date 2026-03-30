@@ -104,6 +104,24 @@
     return indices;
   })();
 
+  // Compute TanStack row IDs that are ancestors of any row-header-selected row.
+  // Used to highlight parent row headers when a child row header is selected.
+  $: ancestorRowIdsOfSelectedHeaders = (() => {
+    if (!clickSelection?.rowHeaderSelections?.size) return new Set<string>();
+    const ancestorIds = new Set<string>();
+    for (const row of rows) {
+      const dk = dimKeyFromRow(row.original, rowDimensionNames);
+      if (clickSelection.isRowHeaderSelected(dk)) {
+        let id = row.id;
+        while (id.includes(".")) {
+          id = id.substring(0, id.lastIndexOf("."));
+          ancestorIds.add(id);
+        }
+      }
+    }
+    return ancestorIds;
+  })();
+
   // Check if a header (by its leaf column range) contains any cell-selected columns
   function isInCellSelectedColRange(
     colStart: number,
@@ -425,6 +443,14 @@
             colStart,
             header.colSpan,
           )}
+          {@const isAncestorOfSelected =
+            isColDimHeader &&
+            !isSelfSelected &&
+            !!dimMeta.dimensionPath &&
+            (clickSelection?.isAncestorOfSelectedColumnHeader(
+              dimMeta.dimensionPath,
+            ) ??
+              false)}
 
           <th
             colSpan={header.colSpan}
@@ -433,6 +459,7 @@
             class:selected-col-header={isSelfSelected}
             class:in-selected-col-range={inSelectedRange}
             class:cell-selected-col-header={inCellSelectedCol}
+            class:ancestor-selected-col-header={isAncestorOfSelected}
             onmouseenter={() => {
               if (isColDimHeader) {
                 hoveredColRange = {
@@ -491,16 +518,24 @@
       {@const rowData = rows[row.index].original}
       {@const dk = dimKeyFromRow(rowData, rowDimensionNames)}
       {@const isTotalsRow = !!totalsRow && rowId === "0"}
-      {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
+      {@const isSelected =
+        rowSelectionState?.isRowSelected(rowData, rows[row.index].depth) ??
+        false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
       {@const isRowHeaderSelected =
         clickSelection?.isRowHeaderSelected(dk) ?? false}
       {@const hasClickedCell =
         clickSelection?.hasSelectedCellInRow(dk) ?? false}
+      {@const isAncestorOfSelectedHeader =
+        ancestorRowIdsOfSelectedHeaders.has(rowId)}
       <tr
         class:show-more-row={isShowMoreRow(rows[row.index])}
         class:selected-row={isSelected && isRowHeaderSelected}
-        class:dimmed-row={hasSelection && !isSelected && !hasClickedCell}
+        class:dimmed-row={hasSelection &&
+          !isSelected &&
+          !hasClickedCell &&
+          !isAncestorOfSelectedHeader}
+        class:ancestor-of-selected-row={isAncestorOfSelectedHeader}
       >
         {#each cells as cell, i (cell.id)}
           {@const result =
@@ -783,5 +818,18 @@
   }
   .with-row-dimension tr:hover > td.cell-selected-row-header:first-of-type {
     @apply bg-primary-100;
+  }
+
+  /* Parent row header highlight when a child row header is selected */
+  .with-row-dimension .ancestor-of-selected-row > td:first-of-type {
+    @apply bg-primary-50;
+  }
+  .with-row-dimension .ancestor-of-selected-row:hover > td:first-of-type {
+    @apply bg-primary-100;
+  }
+
+  /* Parent column header highlight when a child column header is selected */
+  .ancestor-selected-col-header .header-cell {
+    @apply bg-primary-50;
   }
 </style>

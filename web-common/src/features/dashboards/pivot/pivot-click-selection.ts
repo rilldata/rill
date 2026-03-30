@@ -67,6 +67,10 @@ export interface PivotClickSelectionState {
    * was clicked (measure click, row-header click, or no selection).
    */
   getClickedDimensionIndex: (dimKey: string) => number;
+  /** Check if a column header is an ancestor of any selected column header */
+  isAncestorOfSelectedColumnHeader: (
+    dimensionPath: Record<string, string>,
+  ) => boolean;
 }
 
 export function createEmptyClickSelectionState(): PivotClickSelectionState {
@@ -81,6 +85,7 @@ export function createEmptyClickSelectionState(): PivotClickSelectionState {
     isColumnHeaderSelected: () => false,
     selectedCellColumnIds: new Set(),
     getClickedDimensionIndex: () => -1,
+    isAncestorOfSelectedColumnHeader: () => false,
   };
 }
 
@@ -97,6 +102,13 @@ export function buildClickSelection(
   for (const entry of cells.values()) {
     rowsWithSelectedCells.add(entry.dimKey);
     columnsWithSelectedCells.add(entry.columnId);
+  }
+
+  // Pre-parse selected column header paths for ancestor checks
+  const parsedColHeaders: Record<string, string>[] = [];
+  for (const key of colHeaders) {
+    const entries: [string, string][] = JSON.parse(key);
+    parsedColHeaders.push(Object.fromEntries(entries));
   }
 
   // Build a map of dimKey → dimClickIndex for quick lookup
@@ -118,5 +130,16 @@ export function buildClickSelection(
     isColumnHeaderSelected: (path) => colHeaders.has(columnHeaderKey(path)),
     selectedCellColumnIds: columnsWithSelectedCells,
     getClickedDimensionIndex: (dk) => dimClickIndexByKey.get(dk) ?? -1,
+    isAncestorOfSelectedColumnHeader: (path) => {
+      if (parsedColHeaders.length === 0) return false;
+      const pathEntries = Object.entries(path);
+      const pathSize = pathEntries.length;
+      return parsedColHeaders.some((selectedPath) => {
+        // Must be a strict superset (selected has more entries)
+        if (Object.keys(selectedPath).length <= pathSize) return false;
+        // Every entry in this header's path must exist in the selected path
+        return pathEntries.every(([k, v]) => selectedPath[k] === v);
+      });
+    },
   };
 }

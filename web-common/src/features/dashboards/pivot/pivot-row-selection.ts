@@ -26,8 +26,12 @@ import type {
 export interface PivotRowSelectionState {
   /** True if at least one row dimension has active filter selections */
   hasActiveSelection: boolean;
-  /** Check if a row is selected based on current filters (reads values from row data directly) */
-  isRowSelected: (rowData: PivotDataRow) => boolean;
+  /**
+   * Check if a row is selected based on current filters.
+   * For nested tables, pass the row's depth so the value under
+   * rowDimensions[0] is checked against the correct dimension filter.
+   */
+  isRowSelected: (rowData: PivotDataRow, depth?: number) => boolean;
   /** Highest row dimension index with an active selection filter, or -1 */
   maxFilteredDimensionIndex: number;
 }
@@ -209,7 +213,23 @@ export function computePivotRowSelection(
   return {
     hasActiveSelection: true,
     maxFilteredDimensionIndex,
-    isRowSelected: (rowData: PivotDataRow) => {
+    isRowSelected: (rowData: PivotDataRow, depth?: number) => {
+      // In nested mode, all rows store their value under rowDimensions[0]
+      // but the actual dimension is rowDimensionNames[depth]. When depth
+      // is provided, use it for correct dimension mapping.
+      if (depth !== undefined && !config.isFlat) {
+        const firstDim = config.rowDimensionNames[0];
+        const actualDim = config.rowDimensionNames[depth];
+        const value = rowData[firstDim];
+        if (value === undefined) return false;
+        const strValue = String(value ?? "");
+        if (!strValue) return false;
+
+        const selectedSet = dimensionFilters.get(actualDim);
+        if (!selectedSet) return true; // dimension not filtered; doesn't block
+        return selectedSet.has(strValue);
+      }
+
       const rowDimValues = getDimensionValuesFromRowData(config, rowData);
       if (rowDimValues.length === 0) return false;
 
