@@ -590,8 +590,14 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 //
 // If h.Interactive is true and there are remote commits, the user will be prompted to choose how to proceed.
 func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature, defaultPushChoice string) error {
+	// Set remote if not set (go-git complains if we try to fetch without setting remote)
+	err := gitutil.SetRemote(root, config)
+	if err != nil {
+		return fmt.Errorf("failed to set git remote: %w", err)
+	}
+
 	// 1. Fetch latest from remote
-	err := gitutil.GitFetch(ctx, root, config)
+	err = gitutil.GitFetch(ctx, root, config)
 	if err != nil {
 		return fmt.Errorf("failed to fetch from remote: %w", err)
 	}

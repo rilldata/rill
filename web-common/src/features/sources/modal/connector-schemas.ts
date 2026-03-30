@@ -153,11 +153,13 @@ export function isMultiStepConnector(
 
 /**
  * Determine if a connector supports explorer mode (SQL query interface).
- * SQL stores and warehouses can browse tables and write custom queries.
+ * Detected by the presence of fields tagged with x-step: "explorer".
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
-  const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse";
+  if (!schema?.properties) return false;
+  return Object.values(schema.properties).some(
+    (p) => p["x-step"] === "explorer",
+  );
 }
 
 /**

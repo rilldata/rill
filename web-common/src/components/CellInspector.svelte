@@ -17,6 +17,7 @@
   let isJson = false;
   let parsedJson: any = null;
   let isLocked = false;
+  let formattedValue: string | null = null;
 
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
@@ -24,6 +25,7 @@
     // Update value when open and not locked, and a value has been set via hover
     if (state.isOpen && !isLocked && state.hasValue) {
       value = state.value;
+      formattedValue = state.formattedValue;
     }
   });
 
@@ -183,7 +185,8 @@
         {:else}
           <span
             class="whitespace-pre-wrap break-words text-sm text-fg-primary w-full"
-            class:font-mono={isJson}>{formatValue(value)}</span
+            class:font-mono={isJson}
+            >{formattedValue || formatValue(value)}</span
           >
         {/if}
       </div>
