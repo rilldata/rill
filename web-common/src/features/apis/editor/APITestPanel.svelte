@@ -1,13 +1,18 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { PlusIcon, PlayIcon, ChevronDownIcon, CopyIcon } from "lucide-svelte";
+  import {
+    PlusIcon,
+    PlayIcon,
+    ChevronDownIcon,
+    ChevronRightIcon,
+    CopyIcon,
+  } from "lucide-svelte";
   import { tick } from "svelte";
   import APIResponsePreview from "./APIResponsePreview.svelte";
   import type { Arg } from "./types";
@@ -22,7 +27,8 @@
   let apiResponse: unknown[] | null = null;
   let responseError: string | null = null;
   let isLoading = false;
-  let previewHeight = 300;
+  let previewHeight = 500;
+  let argsOpen = false;
 
   // Clear response and args when switching to a different API
   $: apiName, resetState();
@@ -139,12 +145,12 @@
 >
   <Resizer max={500} direction="NS" side="top" bind:dimension={previewHeight} />
 
-  <div class="flex items-center gap-x-3 px-3 py-2 border-b">
-    <div class="flex items-center gap-x-2 flex-1 min-w-0">
-      <span class="text-xs font-medium text-fg-secondary shrink-0">URL Preview: </span>
-      <span class="text-[11px] font-mono text-fg-muted truncate">{fullUrl}</span>
-    </div>
-
+  <div class="flex items-center gap-x-2 px-3 py-2 border-b">
+    <span class="text-xs font-medium text-fg-primary uppercase tracking-wide"
+    >URL Preview: </span>
+    <span class="text-[11px] font-mono text-fg-muted truncate flex-1 min-w-0"
+      >{fullUrl}</span
+    >
     <div class="flex items-center gap-x-2 shrink-0">
       <Tooltip distance={8}>
         <Button type="text" compact small onClick={handleCopyUrl}>
@@ -152,68 +158,21 @@
         </Button>
         <TooltipContent slot="tooltip-content">Copy URL</TooltipContent>
       </Tooltip>
-
-      <DropdownMenu.Root closeOnItemClick={false}>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button {...props} type="text" compact small>
-              Args
-              {#if args.length > 0}
-                <span
-                  class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium bg-surface-active text-fg-accent rounded-full"
-                >
-                  {args.length}
-                </span>
-              {/if}
-              <ChevronDownIcon size="10px" />
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end" class="w-96 p-3">
-          <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <div
-            class="args-container flex flex-col gap-y-2"
-            onkeydown={handleArgsKeydown}
+      <Button type="text" small compact onClick={() => (argsOpen = !argsOpen)}>
+        {#if argsOpen}
+          <ChevronDownIcon size="12px" />
+        {:else}
+          <ChevronRightIcon size="12px" />
+        {/if}
+        Args
+        {#if args.length > 0}
+          <span
+            class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium bg-primary-100 text-primary-600 rounded-full"
           >
-            {#if args.length === 0}
-              <p class="text-xs text-fg-muted px-1 py-2">
-                No arguments. Click "Add" below.
-              </p>
-            {:else}
-              {#each args as arg (arg.id)}
-                <div class="flex items-center gap-x-1">
-                  <Input
-                    bind:value={arg.key}
-                    placeholder="key"
-                    size="sm"
-                    width="100px"
-                  />
-                  <Input
-                    bind:value={arg.value}
-                    placeholder="value"
-                    size="sm"
-                    full
-                  />
-                  <Button
-                    type="ghost"
-                    square
-                    small
-                    compact
-                    onClick={() => removeArg(arg.id)}
-                  >
-                    <Trash size="12px" />
-                  </Button>
-                </div>
-              {/each}
-            {/if}
-            <Button type="text" compact small onClick={addArg}>
-              <PlusIcon size="12px" />
-              Add
-            </Button>
-          </div>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
+            {args.length}
+          </span>
+        {/if}
+      </Button>
       <Button
         type="primary"
         small
@@ -231,6 +190,57 @@
       </Button>
     </div>
   </div>
+
+  {#if argsOpen}
+    <div class="border-b px-3 py-2">
+      <div class="flex items-center justify-between mb-2">
+        <span
+          class="text-[10px] font-semibold text-fg-primary uppercase tracking-wide"
+          >Query Parameters</span
+        >
+        <Button type="text" compact small onClick={addArg}>
+          <PlusIcon size="12px" />
+          Add
+        </Button>
+      </div>
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div
+        class="args-container flex flex-col gap-y-2"
+        onkeydown={handleArgsKeydown}
+      >
+        {#if args.length === 0}
+          <p class="text-xs text-fg-muted py-1">
+            No query parameters. Click "Add" to create one.
+          </p>
+        {:else}
+          <div class="grid grid-cols-[1fr_1fr_28px] gap-x-2 gap-y-2">
+            <span
+              class="text-[10px] font-medium text-fg-muted uppercase tracking-wide"
+              >Key</span
+            >
+            <span
+              class="text-[10px] font-medium text-fg-muted uppercase tracking-wide"
+              >Value</span
+            >
+            <span></span>
+            {#each args as arg (arg.id)}
+              <Input bind:value={arg.key} placeholder="key" size="sm" />
+              <Input bind:value={arg.value} placeholder="value" size="sm" />
+              <Button
+                type="ghost"
+                square
+                small
+                compact
+                onClick={() => removeArg(arg.id)}
+              >
+                <Trash size="12px" />
+              </Button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
 
   <div class="flex-1 overflow-auto">
     <APIResponsePreview
