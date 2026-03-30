@@ -104,8 +104,10 @@
         class="insert-button"
         aria-label="Insert {table} into query"
         title="Insert into query"
-        on:click|stopPropagation={() =>
-          onInsertTable(driver, connector, database, databaseSchema, table)}
+        onclick={(e) => {
+          e.stopPropagation();
+          onInsertTable(driver, connector, database, databaseSchema, table);
+        }}
       >
         +
       </button>
