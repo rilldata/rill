@@ -37,6 +37,7 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -262,7 +263,7 @@ async function unsetOlapConnectorInRillYAML(
   });
 }
 
-function isPublicAuth(
+export function isPublicAuth(
   schema: MultiStepFormSchema | null,
   values: Record<string, unknown>,
 ) {
@@ -274,3 +275,55 @@ function isPublicAuth(
       : undefined) || "";
   return selectedAuthMethod === "public";
 }
+
+type CacheEntry = {
+  name: string;
+  formValues: Record<string, unknown>;
+  existingEnvBlob: string;
+};
+
+export class ConnectorFormCache {
+  private id = 0;
+
+  private cache = new Map<string, CacheEntry>();
+
+  public getNextId() {
+    const id = ++this.id;
+    return id.toString();
+  }
+
+  public async getOrCreate(schema: string, id: string): Promise<CacheEntry> {
+    if (this.cache.has(id)) {
+      return this.cache.get(id)!;
+    }
+
+    const name = getName(
+      schema,
+      fileArtifacts.getNamesForKind(ResourceKind.Connector),
+    );
+
+    const envFile = fileArtifacts.getFileArtifact(".env");
+    const envBlob = (await envFile.fetchContent(false)) ?? "";
+
+    const entry = {
+      name,
+      formValues: {},
+      existingEnvBlob: envBlob,
+    };
+    this.cache.set(id, entry);
+    return entry;
+  }
+
+  public updateFormValues(id: string, formValues: Record<string, unknown>) {
+    const entry = this.cache.get(id);
+    if (entry) {
+      entry.formValues = formValues;
+    }
+  }
+
+  public clear() {
+    this.cache.clear();
+    this.id = 0;
+  }
+}
+export const connectorFormCache = new ConnectorFormCache();

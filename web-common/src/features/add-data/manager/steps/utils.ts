@@ -7,6 +7,10 @@ import {
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
+import {
+  type AddDataConfig,
+  ImportDataStep,
+} from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
 
 export function getConnectorDriverForSchema(
   schemaName: string,
@@ -38,6 +42,24 @@ export async function getConnectorDriverForConnector(
   return connectors.find((r) => r.name === connectorName);
 }
 
+export async function maybeGetConnectorDriver(
+  runtimeClient: RuntimeClient,
+  schemaName: string | undefined,
+  connectorName: string | undefined,
+) {
+  if (connectorName) {
+    const analyzedConnector = await getConnectorDriverForConnector(
+      runtimeClient,
+      connectorName,
+    );
+    return (
+      analyzedConnector?.driver ?? getConnectorDriverForSchema(connectorName)
+    );
+  }
+  if (schemaName) return getConnectorDriverForSchema(schemaName);
+  return null;
+}
+
 export function isConnectorType(connectorDriver: V1ConnectorDriver) {
   return (
     connectorDriver?.implementsObjectStore ||
@@ -58,4 +80,24 @@ export function isExplorerType(connectorDriver: V1ConnectorDriver) {
 
 export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {
   return !!connectorDriver?.implementsOlap;
+}
+
+const NonModelSteps = [
+  ImportDataStep.CreateMetricsView,
+  ImportDataStep.CreateDashboard,
+];
+const FullListOfSteps = [ImportDataStep.CreateModel, ...NonModelSteps];
+
+export function getImportStepsForConnector(
+  config: AddDataConfig,
+  driver: V1ConnectorDriver,
+) {
+  // Live connectors cannot create models as of now.
+  // They will create metrics views directly.
+  const steps = isLiveConnectorType(driver) ? NonModelSteps : FullListOfSteps;
+  return config.importOnly ? [steps[0]] : steps;
+}
+
+export function getImportStepsForSource(config: AddDataConfig) {
+  return config.importOnly ? [ImportDataStep.CreateModel] : FullListOfSteps;
 }

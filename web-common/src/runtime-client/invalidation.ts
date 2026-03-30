@@ -5,6 +5,12 @@ import {
   isTableProfilingQuery,
 } from "@rilldata/web-common/runtime-client/query-matcher";
 import type { Query, QueryClient } from "@tanstack/svelte-query";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import {
+  getConnectorServiceListDatabaseSchemasQueryKey,
+  getConnectorServiceListTablesQueryKey,
+  getConnectorServiceOLAPListTablesQueryKey,
+} from "@rilldata/web-common/runtime-client/v2/gen";
 
 /** Matches the new key format for a given instanceId. */
 function isRuntimeQueryForInstance(
@@ -194,5 +200,31 @@ export async function invalidateComponentData(
   return queryClient.resetQueries({
     predicate: matchesComponent,
     type: "active",
+  });
+}
+
+export async function invalidateConnectorQueries(
+  queryClient: QueryClient,
+  instanceId: string,
+  connector: string,
+) {
+  return queryClient.resetQueries({
+    predicate: (query) => {
+      const queryKey = query.queryKey;
+      // Format: ["QueryService", "oLAPGetTable" or "listDatabaseSchemas" or "listTables", instanceId, { connector, ... }]
+      if (queryKey[0] !== "ConnectorService" || queryKey[2] !== instanceId)
+        return false;
+      const isConnectorQuery =
+        queryKey[1] === "oLAPGetTable" ||
+        queryKey[1] === "listDatabaseSchemas" ||
+        queryKey[1] === "listTables";
+      if (!isConnectorQuery) return false;
+      const request = queryKey[3];
+      return (
+        typeof request === "object" &&
+        request !== null &&
+        (request as Record<string, unknown>).connector === connector
+      );
+    },
   });
 }

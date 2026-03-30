@@ -24,12 +24,12 @@ import {
   compileSourceYAML,
   inferModelNameFromSQL,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/transitions.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/code-utils.ts";
+import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 
 export async function runImportSteps(
   runtimeClient: RuntimeClient,

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   AddDataStateManager,
   type TransitionEvent,
@@ -11,6 +11,7 @@ import {
   type ImportStepConfig,
 } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
 import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+import { connectorFormCache } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
 
 const ClickhouseSchema = "clickhouse";
 const ClickhouseConnector = "clickhouse_conn";
@@ -36,7 +37,7 @@ describe("AddDataStateManager", () => {
     title: string;
     events: {
       event: TransitionEvent;
-      expectedStep?: AddDataState;
+      expectedStep: AddDataState;
     }[];
   }[] = [
     {
@@ -56,7 +57,7 @@ describe("AddDataStateManager", () => {
           expectedStep: {
             step: AddDataStep.CreateConnector,
             schema: ClickhouseSchema,
-            assignedConnectorName: "clickhouse",
+            connectorId: "1",
           },
         },
         {
@@ -104,7 +105,7 @@ describe("AddDataStateManager", () => {
           expectedStep: {
             step: AddDataStep.CreateConnector,
             schema: ClickhouseSchema,
-            assignedConnectorName: "clickhouse",
+            connectorId: "1",
           },
         },
         {
@@ -174,21 +175,29 @@ describe("AddDataStateManager", () => {
     },
   ];
 
+  beforeEach(() => {
+    connectorFormCache.clear();
+  });
+
   describe("Forward transition", () => {
     TestCases.forEach(({ title, events }) => {
       it(`Test forward transition ${title}`, () => {
+        const doneStub = vi.fn();
+        const closeStub = vi.fn();
         const stateManager = new AddDataStateManager(
-          undefined,
-          undefined,
+          doneStub,
+          closeStub,
           undefined,
         );
 
         events.forEach(({ event, expectedStep }) => {
-          const prevState = { ...stateManager.state };
+          expect(doneStub).not.toHaveBeenCalled();
           stateManager.transition(event);
-          if (expectedStep) expect(stateManager.state).toEqual(expectedStep);
-          else expect(stateManager.state).toEqual(prevState);
+          expect(stateManager.state).toEqual(expectedStep);
         });
+
+        expect(doneStub).toHaveBeenCalledTimes(1);
+        expect(closeStub).not.toHaveBeenCalled();
       });
     });
   });
@@ -196,9 +205,11 @@ describe("AddDataStateManager", () => {
   describe("Backwards transition", () => {
     TestCases.forEach(({ title, events }) => {
       it(`Test back ${title}`, () => {
+        const doneStub = vi.fn();
+        const closeStub = vi.fn();
         const stateManager = new AddDataStateManager(
-          undefined,
-          undefined,
+          doneStub,
+          closeStub,
           undefined,
         );
 
@@ -206,12 +217,59 @@ describe("AddDataStateManager", () => {
           stateManager.transition(events[i].event);
         }
 
-        for (let i = events.length - 3; i >= 0; i--) {
-          const { expectedStep } = events[i];
+        for (let i = events.length - 2; i >= 1; i--) {
+          const { expectedStep } = events[i - 1];
           stateManager.transition({ type: TransitionEventType.Back });
-          if (expectedStep) expect(stateManager.state).toEqual(expectedStep);
+          expect(stateManager.state).toEqual(expectedStep);
         }
+        stateManager.transition({ type: TransitionEventType.Back });
+        expect(stateManager.state.step).toEqual(AddDataStep.Init);
+
+        expect(doneStub).not.toHaveBeenCalled();
+        expect(closeStub).toHaveBeenCalledTimes(1);
       });
     });
+  });
+
+  it("Lateral transition", () => {
+    const doneStub = vi.fn();
+    const closeStub = vi.fn();
+    const stateManager = new AddDataStateManager(
+      doneStub,
+      closeStub,
+      undefined,
+    );
+
+    stateManager.transition({ type: TransitionEventType.Init });
+    stateManager.transition({
+      type: TransitionEventType.SchemaSelected,
+      schema: ClickhouseSchema,
+      driver: ClickhouseDriver,
+    });
+    stateManager.transition({
+      type: TransitionEventType.ConnectorSelected,
+      schema: ClickhouseSchema,
+      connector: ClickhouseConnector,
+      driver: ClickhouseDriver,
+      connectorFormValues: {},
+    });
+
+    // Lateral transition to another connector
+    stateManager.transition({
+      type: TransitionEventType.ConnectorSelected,
+      schema: ClickhouseSchema,
+      connector: ClickhouseConnector + "_1",
+      driver: ClickhouseDriver,
+      connectorFormValues: {},
+    });
+    // On the correct step
+    expect(stateManager.state.step).toEqual(AddDataStep.ExploreConnector);
+    expect((stateManager.state as any).connector).toEqual(
+      ClickhouseConnector + "_1",
+    );
+
+    // Going back will now close the state manager
+    stateManager.transition({ type: TransitionEventType.Back });
+    expect(stateManager.state.step).toEqual(AddDataStep.Init);
   });
 });

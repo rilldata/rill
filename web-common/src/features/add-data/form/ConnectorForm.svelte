@@ -1,14 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
-  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-  import { onMount } from "svelte";
   import { getConnectorYamlPreview } from "./yaml-preview.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
+    connectorFormCache,
     createConnector,
     maybeDeleteConnector,
   } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
@@ -26,25 +25,13 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
+  export let cachedFormValues: Record<string, unknown>;
+  export let connectorName: string;
+  export let cachedEnvBlob: string;
+
   const runtimeClient = useRuntimeClient();
 
   $: connectorDriver = getConnectorDriverForSchema(step.schema);
-
-  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
-  // This prevents the preview from updating when Test and Connect writes to .env.
-  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
-  let existingEnvBlob: string | null = null;
-  onMount(async () => {
-    try {
-      const envFile = await runtimeServiceGetFile(runtimeClient, {
-        path: ".env",
-      });
-      existingEnvBlob = envFile.blob ?? "";
-    } catch {
-      // .env doesn't exist yet
-      existingEnvBlob = "";
-    }
-  });
 
   const superFormsParams = createConnectorForm({
     schemaName: step.schema,
@@ -55,17 +42,21 @@
         await createConnector({
           runtimeClient,
           queryClient,
-          connectorName: step.assignedConnectorName,
+          connectorName,
           connectorDriver,
           formValues: form.data,
           validate: true,
-          existingEnvBlob,
+          existingEnvBlob: cachedEnvBlob,
         });
-        onSubmit(step.assignedConnectorName, form.data);
+
+        connectorFormCache.updateFormValues(step.connectorId, form.data);
+
+        onSubmit(connectorName, form.data);
       } catch (e) {
         setSubmitError(form, e);
       }
     },
+    additionalDefaults: cachedFormValues,
   });
 
   $: ({ form } = superFormsParams);
@@ -76,7 +67,7 @@
         connector: connectorDriver,
         formValues: $form,
         schema,
-        existingEnvBlob,
+        existingEnvBlob: cachedEnvBlob,
       })
     : "";
 
@@ -87,22 +78,18 @@
     const connectorPath = await createConnector({
       runtimeClient,
       queryClient,
-      connectorName: step.assignedConnectorName,
+      connectorName,
       connectorDriver,
       formValues: $form,
       validate: false,
-      existingEnvBlob,
+      existingEnvBlob: cachedEnvBlob,
     });
     onClose();
     return goto(`/files${addLeadingSlash(connectorPath)}`);
   }
 
   async function cleanupAndBack() {
-    await maybeDeleteConnector(
-      runtimeClient,
-      queryClient,
-      step.assignedConnectorName,
-    );
+    await maybeDeleteConnector(runtimeClient, queryClient, connectorName);
 
     onBack();
   }

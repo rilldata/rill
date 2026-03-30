@@ -15,13 +15,6 @@ export type AddDataConfig = {
   importOnly?: boolean;
 };
 
-export type AddDataTransitionArgs = {
-  schema?: string;
-  connector?: string;
-  importConfig?: ImportStepConfig;
-  connectorFormValues?: Record<string, unknown>;
-};
-
 export enum ImportDataStep {
   Init,
   CreateModel,
@@ -54,8 +47,9 @@ type SelectConnectorStep = {
 export type CreateConnectorStep = {
   step: AddDataStep.CreateConnector;
   schema: string;
-  // Assigned connector name to keep a consistent name across retries
-  assignedConnectorName: string;
+  // Generated ID used to fetch cached info in the connector form.
+  // Used to reuse form state when user comes back to this step.
+  connectorId: string;
 };
 
 export type CreateModelStep = {

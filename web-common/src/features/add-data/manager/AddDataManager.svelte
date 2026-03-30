@@ -1,6 +1,5 @@
 <script lang="ts">
   import SourceSelector from "@rilldata/web-common/features/add-data/manager/SourceSelector.svelte";
-  import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
   import SourceForm from "@rilldata/web-common/features/add-data/form/SourceForm.svelte";
   import ImportTableForm from "@rilldata/web-common/features/add-data/form/ImportTableForm.svelte";
   import GenerateDashboardStatus from "@rilldata/web-common/features/add-data/manager/GenerateDashboardStatus.svelte";
@@ -22,13 +21,16 @@
     getConnectorDriverForSchema,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import ConnectorFormWrapper from "@rilldata/web-common/features/add-data/form/ConnectorFormWrapper.svelte";
+  import { isPublicAuth } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
 
   const {
     config,
     initSchema,
     initConnector,
-    onDone,
-    onClose = () => {},
+    onDone = () => {},
+    onClose,
     onStepChange,
   }: {
     config: AddDataConfig;
@@ -65,6 +67,9 @@
   );
 
   async function init(connector?: string, schema?: string) {
+    // Load .env file to make sure it's available to the state manager.
+    await fileArtifacts.getFileArtifact(".env").fetchContent(false);
+
     let driver: V1ConnectorDriver | undefined = undefined;
     if (connector) {
       const analyzedConnector = await getConnectorDriverForConnector(
@@ -102,14 +107,27 @@
       runtimeClient,
       connector,
     );
-    if (!analyzedConnector?.driver) return;
-    stateManager.transition({
-      type: TransitionEventType.ConnectorSelected,
-      schema: analyzedConnector.driver.name!,
-      driver: analyzedConnector.driver,
-      connector,
-      connectorFormValues,
-    });
+    if (analyzedConnector?.driver) {
+      stateManager.transition({
+        type: TransitionEventType.ConnectorSelected,
+        schema: analyzedConnector.driver.name!,
+        driver: analyzedConnector.driver,
+        connector,
+        connectorFormValues,
+      });
+    }
+
+    if (connectorFormValues["auth_method"] === "public") {
+      const driver = getConnectorDriverForSchema(connector);
+      if (!driver) return;
+      stateManager.transition({
+        type: TransitionEventType.ConnectorSelected,
+        schema: connector,
+        driver,
+        connector,
+        connectorFormValues,
+      });
+    }
   }
 
   function importConfigured(importConfig: ImportStepConfig) {
@@ -140,12 +158,12 @@
   {#if stepState.step === AddDataStep.SelectConnector}
     <SourceSelector {config} onSelect={schemaSelected} {onBack} />
   {:else if stepState.step === AddDataStep.CreateConnector}
-    <ConnectorForm
+    <ConnectorFormWrapper
       step={stepState}
       onSubmit={(connectorName, connectorFormValues) =>
         void connectorSelected(connectorName, connectorFormValues)}
       {onBack}
-      {onClose}
+      onClose={onDone}
     />
   {:else if stepState.step === AddDataStep.CreateModel}
     {#key stepState.connector}
@@ -171,12 +189,12 @@
       stepState.config.importSteps[0] === ImportDataStep.CreateModel}
     {#if isImportOnlyStep}
       <!-- Special case for import only, we show additional options to handle success and failures. -->
-      <ImportDataStatus importAddDataStep={stepState} {onClose} />
+      <ImportDataStatus importAddDataStep={stepState} onClose={onDone} />
     {:else}
       <GenerateDashboardStatus
         importAddDataStep={stepState}
         {onBack}
-        {onClose}
+        onClose={onDone}
       />
     {/if}
   {/if}

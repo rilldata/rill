@@ -22,6 +22,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateComponentData,
+  invalidateConnectorQueries,
   invalidateMetricsViewData,
   invalidateProfilingQueries,
 } from "@rilldata/web-common/runtime-client/invalidation";
@@ -324,13 +325,12 @@ export class FileAndResourceWatcher {
               ),
             });
 
-            // Invalidate the connector's list of tables
-            void queryClient.invalidateQueries({
-              queryKey: getConnectorServiceOLAPListTablesQueryKey(
-                this.instanceId,
-                { connector: res.name.name },
-              ),
-            });
+            // Invalidate the connector's queries
+            void invalidateConnectorQueries(
+              queryClient,
+              this.instanceId,
+              res.name.name,
+            );
 
             // Done
             return;

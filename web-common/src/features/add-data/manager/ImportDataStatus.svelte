@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     type ImportAddDataStep,
     ImportDataStep,
@@ -30,9 +29,10 @@
 
   const runtimeClient = useRuntimeClient();
 
+  let importStep = ImportDataStep.Init;
   $: currentFileRoute = "/";
   $: sourceName = importAddDataStep.config.importTo.modelName ?? "";
-  $: isDone = importAddDataStep.importStep === ImportDataStep.Done;
+  $: isDone = importStep === ImportDataStep.Done;
   let error: string | null = null;
 
   $: createDashboardFromTable =
@@ -51,13 +51,13 @@
       await runImportSteps(
         runtimeClient,
         importAddDataStep.config,
-        (_, currentFilePath) => {
+        (step, currentFilePath) => {
+          importStep = step;
           if (currentFilePath) {
             currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
           }
         },
       );
-      return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
     }

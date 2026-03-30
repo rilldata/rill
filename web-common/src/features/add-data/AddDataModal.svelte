@@ -7,7 +7,7 @@
   export let connector: string | undefined = undefined;
 
   // Use a boolean to mount remount when the modal is re-opened.
-  // It is used to reset any state
+  // It is used to enure there is no stale state.
   let showForm = false;
 
   $: if (open) showForm = true;

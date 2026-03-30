@@ -9,14 +9,11 @@ import {
   isExplorerType,
 } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
-import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { connectorFormCache } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
 
 export enum TransitionEventType {
   Init,
   SchemaSelected,
-  // Fired when either connector is created or it is selected to create a model/metrics view on.
   ConnectorSelected,
   ImportConfigured,
   Imported,
@@ -80,6 +77,10 @@ export class AddDataStateManager {
 
       // SelectConnector =={SchemaSelected event}=> CreateConnector/CreateModel
       case AddDataStep.SelectConnector: {
+        if (event.type === TransitionEventType.Back) {
+          this.popState();
+          return;
+        }
         if (event.type !== TransitionEventType.SchemaSelected) return;
         const newState = getStepForSchema(event.schema, event.driver);
         this.pushState(newState);
@@ -98,26 +99,50 @@ export class AddDataStateManager {
           event.schema,
           event.connector,
           event.driver,
+          event.connectorFormValues,
         );
         this.pushState(newState);
         break;
       }
 
-      // CreateModel/ExploreConnector =={Back event}=> Init/SelectConnector/CreateConnector
-      // CreateModel/ExploreConnector =={ImportConfigured event}=> Import
       case AddDataStep.CreateModel:
       case AddDataStep.ExploreConnector:
-        if (event.type === TransitionEventType.Back) {
-          // Can be back to Init/SelectConnector/CreateConnector
-          this.popState();
-          return;
+        switch (event.type) {
+          // CreateModel/ExploreConnector =={Back event}=> Init/SelectConnector/CreateConnector
+          case TransitionEventType.Back:
+            this.popState();
+            return;
+
+          // CreateModel/ExploreConnector =={ImportConfigured event}=> Import
+          case TransitionEventType.ImportConfigured:
+            this.pushState({
+              step: AddDataStep.Import,
+              importStep: ImportDataStep.Init,
+              config: event.config,
+            });
+            break;
+
+          // CreateModel/ExploreConnector =={ConnectorSelected event}=> CreateModel/ExploreConnector
+          // Connector selected from the connector dropdown in the header.
+          case TransitionEventType.ConnectorSelected:
+            this.clearStack(); // Lateral state change, clear the stack.
+            this.pushState(
+              getStepForConnector(
+                event.schema,
+                event.connector,
+                event.driver,
+                event.connectorFormValues,
+              ),
+            );
+            break;
+
+          // CreateModel/ExploreConnector =={SchemaSelected event}=> CreateModel/ExploreConnector
+          // New connector selected from the connector dropdown in the header.
+          case TransitionEventType.SchemaSelected:
+            this.clearStack(); // Lateral state change, clear the stack.
+            this.pushState(getStepForSchema(event.schema, event.driver));
+            break;
         }
-        if (event.type !== TransitionEventType.ImportConfigured) return;
-        this.pushState({
-          step: AddDataStep.Import,
-          importStep: ImportDataStep.Init,
-          config: event.config,
-        });
         break;
 
       // Import =={Back event}=> Init/CreateModel/ExploreConnector
@@ -146,9 +171,15 @@ export class AddDataStateManager {
   }
 
   private popState() {
+    this.state = this.stateStack.pop() ?? { step: AddDataStep.Init };
     if (this.stateStack.length === 0) this.onClose?.();
-    this.state = this.stateStack.pop() ?? { step: AddDataStep.Done };
     this.onStepChange?.(this.state.step);
+  }
+
+  // For lateral state change, going back is not supported.
+  // So we need to clear the stack.
+  private clearStack() {
+    this.stateStack = [];
   }
 }
 
@@ -160,7 +191,7 @@ function getStepForSchema(
     return {
       step: AddDataStep.CreateConnector,
       schema,
-      assignedConnectorName: getConnectorName(schema),
+      connectorId: connectorFormCache.getNextId(),
     };
   } else {
     return {
@@ -176,6 +207,7 @@ function getStepForConnector(
   schema: string,
   connector: string,
   driver: V1ConnectorDriver,
+  connectorFormValues: Record<string, any> = {},
 ): AddDataState {
   if (isExplorerType(driver))
     return {
@@ -188,11 +220,7 @@ function getStepForConnector(
       step: AddDataStep.CreateModel,
       schema,
       connector,
-      connectorFormValues: {},
+      connectorFormValues,
     };
   }
-}
-
-function getConnectorName(schema: string) {
-  return getName(schema, fileArtifacts.getNamesForKind(ResourceKind.Connector));
 }

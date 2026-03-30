@@ -16,7 +16,6 @@
     type ImportStepConfig,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getImportStepsForSource } from "@rilldata/web-common/features/add-data/manager/steps/transitions.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import { uploadFile } from "@rilldata/web-common/features/sources/modal/file-upload.ts";
   import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
@@ -25,7 +24,10 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { getAnalyzedConnectorByName } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { generateImportToConfig } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
-  import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import {
+    getConnectorDriverForSchema,
+    getImportStepsForSource,
+  } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 
   export let config: AddDataConfig;
   export let step: CreateModelStep;

@@ -1,6 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
 import { ClickHouseTestContainer } from "../utils/clickhouse";
+import { gotoNavEntry } from "../utils/waitHelpers.ts";
+import { validateYamlContents } from "../utils/yamlHelpers.ts";
 
 test.describe("ClickHouse connector", () => {
   const clickhouseOne = new ClickHouseTestContainer();
@@ -20,7 +22,27 @@ test.describe("ClickHouse connector", () => {
 
   test.describe("Welcome screen", () => {
     test("Create connector using individual fields", async ({ page }) => {
+      // Open the connect to clickhouse modal
+      await page.getByLabel("Connect to clickhouse").click();
+      // Verify form validation - empty host - button should be disabled
+      await expect(
+        page.getByRole("button", { name: "Test and Connect" }),
+      ).toBeDisabled();
+
       await enterClickhouseCredentials(page, clickhouseOne);
+      // Fill the incorrect password first
+      await page.getByRole("textbox", { name: "Password" }).fill("invalid");
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      // Error message should be displayed
+      await expect(page.getByLabel("Submission error")).toBeVisible();
+
+      // Fill the correct password
+      await page.getByRole("textbox", { name: "Password" }).fill("password");
+      // Error message is cleared when fields are updated
+      await expect(page.getByLabel("Submission error")).not.toBeVisible();
 
       // Submit the form
       await page.getByRole("button", { name: "Test and Connect" }).click();
@@ -39,10 +61,11 @@ test.describe("ClickHouse connector", () => {
 
       // Go to the `.env` file and verify the CLICKHOUSE_PASSWORD is set
       await page.getByRole("link", { name: ".env" }).click();
-      const envEditor = page
-        .getByLabel("codemirror editor")
-        .getByRole("textbox");
-      await expect(envEditor).toContainText(`CLICKHOUSE_PASSWORD=password`);
+      await validateYamlContents(
+        page,
+        [`CLICKHOUSE_PASSWORD=password`],
+        [`CLICKHOUSE_PASSWORD_1`],
+      );
     });
 
     test("Create connector using DSN", async ({ page }) => {
@@ -55,6 +78,19 @@ test.describe("ClickHouse connector", () => {
 
       // Switch to the DSN tab
       await page.getByRole("tab", { name: "Enter connection string" }).click();
+
+      // Fill in incorrect DSN
+      await page
+        .getByRole("textbox", { name: "Connection String" })
+        .fill(
+          `http://${clickhouseOne.getHost()}:${clickhouseOne.getPort().toString()}?username=invalid&password=invalid`,
+        );
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      // Error message should be displayed
+      await expect(page.getByLabel("Submission error")).toBeVisible();
 
       // Fill in the form correctly
       await page
@@ -78,19 +114,17 @@ test.describe("ClickHouse connector", () => {
 
       // Go to the `.env` file and verify the CLICKHOUSE_DSN is set
       await page.getByRole("link", { name: ".env" }).click();
-      const envEditor = page
-        .getByLabel("codemirror editor")
-        .getByRole("textbox");
-      await expect(envEditor).toContainText(
-        `CLICKHOUSE_DSN=http://${clickhouseOne.getHost()}:${clickhouseOne.getPort().toString()}?username=default&password=password`,
+      await validateYamlContents(
+        page,
+        [
+          `CLICKHOUSE_DSN=http://${clickhouseOne.getHost()}:${clickhouseOne.getPort().toString()}?username=default&password=password`,
+        ],
+        [`CLICKHOUSE_DSN_1`],
       );
 
       // Go to the `rill.yaml` and verify the OLAP connector is set
       await page.getByRole("link", { name: "rill.yaml" }).click();
-      const rillYamlEditor = page
-        .getByLabel("codemirror editor")
-        .getByRole("textbox");
-      await expect(rillYamlEditor).toContainText("olap_connector: clickhouse");
+      await validateYamlContents(page, [`olap_connector: clickhouse`]);
 
       // Assert that the connector explorer now has a ClickHouse connector
       await expect(
@@ -110,7 +144,25 @@ test.describe("ClickHouse connector", () => {
     test("Create connector and metrics view from home screen", async ({
       page,
     }) => {
+      // Open the connect to clickhouse modal
+      await page.getByLabel("Connect to clickhouse").click();
+      // Verify form validation - empty host - button should be disabled
+      await expect(
+        page.getByRole("button", { name: "Test and Connect" }),
+      ).toBeDisabled();
+
       await enterClickhouseCredentials(page, clickhouseOne);
+      // Fill the incorrect password first
+      await page.getByRole("textbox", { name: "Password" }).fill("invalid");
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      // Error message should be displayed
+      await expect(page.getByLabel("Submission error")).toBeVisible();
+
+      // Fill the correct password
+      await page.getByRole("textbox", { name: "Password" }).fill("password");
 
       // Submit the form
       await page.getByRole("button", { name: "Test and Connect" }).click();
@@ -119,10 +171,7 @@ test.describe("ClickHouse connector", () => {
 
       // Go to the `rill.yaml` and verify the OLAP connector is set
       await page.getByRole("link", { name: "rill.yaml" }).click();
-      const rillYamlEditor = page
-        .getByLabel("codemirror editor")
-        .getByRole("textbox");
-      await expect(rillYamlEditor).toContainText("olap_connector: clickhouse");
+      await validateYamlContents(page, [`olap_connector: clickhouse`]);
 
       // Assert that the connector explorer now has a ClickHouse connector
       await expect(
@@ -138,6 +187,8 @@ test.describe("ClickHouse connector", () => {
     test("Create connector from home screen and metrics view from add asset", async ({
       page,
     }) => {
+      // Open the connect to clickhouse modal
+      await page.getByLabel("Connect to clickhouse").click();
       await enterClickhouseCredentials(page, clickhouseOne);
       // Save without testing connection
       await page.getByLabel("Save connector").click();
@@ -162,6 +213,8 @@ test.describe("ClickHouse connector", () => {
       await page.getByLabel("Add Asset").click();
       await page.getByLabel("Add Data").click();
 
+      // Open the connect to clickhouse modal
+      await page.getByLabel("Connect to clickhouse").click();
       // Create another clickhouse connector.
       await enterClickhouseCredentials(page, clickhouseTwo, false);
       // Save without testing connection
@@ -206,6 +259,102 @@ test.describe("ClickHouse connector", () => {
         timeout: 10_000,
       });
     });
+
+    test("Create one connector and another from header", async ({ page }) => {
+      // Open the connect to clickhouse modal
+      await page.getByLabel("Connect to clickhouse").click();
+      await enterClickhouseCredentials(page, clickhouseOne);
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      // Select the add new clickhouse connector option
+      await page.getByLabel("Select connector").click();
+      await page
+        .getByRole("option", { name: "+ ClickHouse connector" })
+        .click();
+
+      // Enter details for the 2nd clickhouse instance
+      await enterClickhouseCredentials(page, clickhouseTwo, false);
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      await selectAdImpressionsAndSubmit(page);
+
+      // Open the connectors folder
+      await page.getByLabel("/connectors").click();
+
+      // Assert that "connector" is created
+      await gotoNavEntry(page, "/connectors/clickhouse.yaml");
+      await validateYamlContents(page, [
+        `port: "${clickhouseOne.getPort().toString()}"`,
+        'password: "{{ .env.CLICKHOUSE_PASSWORD }}"',
+      ]);
+
+      // Assert that "connector_1" is created
+      await gotoNavEntry(page, "/connectors/clickhouse_1.yaml");
+      await validateYamlContents(page, [
+        `port: "${clickhouseTwo.getPort().toString()}"`,
+        'password: "{{ .env.CLICKHOUSE_PASSWORD_1 }}"',
+      ]);
+
+      // Go to the `.env` file and verify the CLICKHOUSE_PASSWORD and CLICKHOUSE_PASSWORD_1 is set
+      await page.getByRole("link", { name: ".env" }).click();
+      await validateYamlContents(page, [
+        `CLICKHOUSE_PASSWORD=password`,
+        `CLICKHOUSE_PASSWORD_1=password`,
+      ]);
+    });
+
+    test("Create one connector and go back and create another", async ({
+      page,
+    }) => {
+      // Open the connect to clickhouse modal
+      await page.getByLabel("Connect to clickhouse").click();
+      await enterClickhouseCredentials(page, clickhouseOne);
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      // Wait for pick a table screen
+      await expect(
+        page.getByText("Pick a table to power your first dashboard"),
+      ).toBeVisible();
+      // Go back to the connector form
+      await page.getByRole("button", { name: "Back" }).click();
+
+      // Enter details for the 2nd clickhouse instance
+      await enterClickhouseCredentials(page, clickhouseTwo);
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      await selectAdImpressionsAndSubmit(page);
+
+      // Open the connectors folder
+      await page.getByLabel("/connectors").click();
+
+      // Assert that "connector" is created with the second clickhouse instance
+      await gotoNavEntry(page, "/connectors/clickhouse.yaml");
+      await validateYamlContents(page, [
+        `port: "${clickhouseTwo.getPort().toString()}"`,
+        'password: "{{ .env.CLICKHOUSE_PASSWORD }}"',
+      ]);
+
+      // Assert that "connector_1" is not created
+      await expect(
+        page.getByLabel("/connectors/clickhouse_1.yaml"),
+      ).not.toBeVisible();
+
+      // Go to the `.env` file and verify the CLICKHOUSE_PASSWORD is set
+      await page.getByRole("link", { name: ".env" }).click();
+      await validateYamlContents(
+        page,
+        [`CLICKHOUSE_PASSWORD=password`],
+        [`CLICKHOUSE_PASSWORD_1`],
+      );
+    });
   });
 });
 
@@ -214,17 +363,9 @@ async function enterClickhouseCredentials(
   clickhouse: ClickHouseTestContainer,
   assertYaml = true,
 ) {
-  // Open the connect to clickhouse modal
-  await page.getByLabel("Connect to clickhouse").click();
-
-  // Verify form validation - empty host - button should be disabled
-  await expect(
-    page.getByRole("button", { name: "Test and Connect" }),
-  ).toBeDisabled();
-
   // Switch to "self-managed", "cloud" options does not allow non-ssl connections.
   await page.getByLabel("Connection type").click();
-  await page.getByText("Self Managed").click();
+  await page.getByRole("option").getByText("Self Managed").click();
 
   // Fill in the form correctly
   await page.getByRole("textbox", { name: "Host" }).fill(clickhouse.getHost());
@@ -236,7 +377,9 @@ async function enterClickhouseCredentials(
   await page.getByRole("textbox", { name: "Username" }).fill("default");
   await page.getByRole("textbox", { name: "Password" }).fill("password");
   await page.getByRole("checkbox").scrollIntoViewIfNeeded();
-  await page.getByRole("checkbox").click();
+  if (await page.getByRole("checkbox").isChecked()) {
+    await page.getByRole("checkbox").click();
+  }
 
   if (assertYaml) {
     // Assert that the yaml contains key properties
@@ -290,6 +433,27 @@ async function selectAdBidsAndSubmit(page: Page, metricsViewOnly: boolean) {
 
   // Wait for navigation to the new file
   await page.waitForURL(/\/files\/dashboards\/ad_bids_metrics_canvas.yaml/, {
+    timeout: 10_000,
+  });
+}
+
+async function selectAdImpressionsAndSubmit(page: Page) {
+  // Wait for pick a table screen
+  await expect(
+    page.getByText("Pick a table to power your first dashboard"),
+  ).toBeVisible();
+
+  // Select `ad_impressions` from the second connector
+  await page.getByLabel("Node: default, level 0").click();
+  await page.getByLabel("Node: ad_impressions, level 1").click();
+
+  // Click generate dashboard button
+  await page
+    .getByRole("button", { name: "Generate dashboard with AI" })
+    .click();
+
+  // Wait for navigation to the new file
+  await page.waitForURL(/\/files\/metrics\/ad_impressions_metrics.yaml/, {
     timeout: 10_000,
   });
 }

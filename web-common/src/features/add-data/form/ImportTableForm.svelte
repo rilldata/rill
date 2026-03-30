@@ -19,13 +19,15 @@
     type ImportFromConfig,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getImportStepsForConnector } from "@rilldata/web-common/features/add-data/manager/steps/transitions.ts";
   import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
   import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import { generateImportToConfig } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
-  import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import {
+    getConnectorDriverForSchema,
+    getImportStepsForConnector,
+  } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 
   export let config: AddDataConfig;
   export let step: ExploreConnectorStep;

@@ -37,7 +37,8 @@
     connectorName &&
     driverForSchema &&
     isConnectorType(driverForSchema) &&
-    !config.welcomeScreen;
+    !config.welcomeScreen &&
+    connectorOptions.length > 0;
 </script>
 
 {#if connectorInfo}
