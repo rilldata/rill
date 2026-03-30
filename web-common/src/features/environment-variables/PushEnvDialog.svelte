@@ -9,31 +9,29 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createRuntimeServiceGetInstance,
-    createRuntimeServicePushEnv,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+    createRuntimeServicePushEnvMutation,
+  } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 
   export let open = false;
   export let isProjectLinked = false;
   export let onSuccess: (() => void) | undefined = undefined;
 
-  $: instanceQuery = createRuntimeServiceGetInstance($runtime.instanceId);
+  const client = useRuntimeClient();
+  $: instanceQuery = createRuntimeServiceGetInstance(client, {});
   $: environment = $instanceQuery.data?.instance?.environment ?? "";
 
-  const pushEnvMutation = createRuntimeServicePushEnv();
+  const pushEnvMutation = createRuntimeServicePushEnvMutation(client);
 
   $: isPending = $pushEnvMutation.isPending;
   $: error = $pushEnvMutation.error;
 
   async function handlePush() {
     try {
-      const result = await $pushEnvMutation.mutateAsync({
-        instanceId: $runtime.instanceId,
-        data: {},
-      });
+      const result = await $pushEnvMutation.mutateAsync({});
 
       const addedCount = result.addedCount ?? 0;
       const changedCount = result.changedCount ?? 0;
@@ -59,7 +57,7 @@
 </script>
 
 <Dialog bind:open>
-  <DialogTrigger asChild>
+  <DialogTrigger>
     <div class="hidden"></div>
   </DialogTrigger>
   <DialogContent>
@@ -84,7 +82,7 @@
       <div
         class="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800"
       >
-        <p>{error?.message || "Failed to push environment variables"}</p>
+        <p>{error instanceof Error ? error.message : "Failed to push environment variables"}</p>
       </div>
     {/if}
 

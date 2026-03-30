@@ -94,7 +94,7 @@
 </script>
 
 <Dialog bind:open>
-  <DialogTrigger asChild>
+  <DialogTrigger>
     <div class="hidden"></div>
   </DialogTrigger>
   <DialogContent>

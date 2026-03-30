@@ -37,7 +37,7 @@
   let rowIds: number[] = [nextId++];
 
   $: hasExistingKeys = Object.keys(inputErrors).length > 0;
-  $: hasNewChanges = $form.variables.some(
+  $: hasNewChanges = ($form.variables ?? []).some(
     (variable) => variable.key !== "" || variable.value !== "",
   );
 
@@ -209,7 +209,7 @@
     $submitting ||
     hasExistingKeys ||
     !hasNewChanges ||
-    Object.values($form.variables).every((v) => !v.key.trim());
+    Object.values($form.variables ?? []).every((v) => !v.key.trim());
 </script>
 
 <Dialog
@@ -219,12 +219,8 @@
       handleReset();
     }
   }}
-  onOutsideClick={() => {
-    open = false;
-    handleReset();
-  }}
 >
-  <DialogTrigger asChild>
+  <DialogTrigger>
     <div class="hidden"></div>
   </DialogTrigger>
   <DialogContent>
@@ -263,7 +259,7 @@
           <div
             class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
           >
-            {#each $form.variables as variable, index (rowIds[index])}
+            {#each $form.variables ?? [] as variable, index (rowIds[index])}
               <div
                 class="flex flex-row items-center gap-2"
                 id={`variable-${index}`}
@@ -309,7 +305,7 @@
               <ul class="flex flex-col gap-y-1">
                 {#each $allErrors as error}
                   <li>
-                    <b>{$form.variables[getKeyFromError(error)].key}</b>
+                    <b>{($form.variables ?? [])[getKeyFromError(error)]?.key}</b>
                     <span class="text-xs text-red-600 font-normal">
                       {error.messages}
                     </span>

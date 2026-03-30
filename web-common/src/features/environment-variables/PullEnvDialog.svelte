@@ -9,31 +9,29 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createRuntimeServiceGetInstance,
-    createRuntimeServicePullEnv,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+    createRuntimeServicePullEnvMutation,
+  } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 
   export let open = false;
   export let isProjectLinked = false;
   export let onSuccess: (() => void) | undefined = undefined;
 
-  $: instanceQuery = createRuntimeServiceGetInstance($runtime.instanceId);
+  const client = useRuntimeClient();
+  $: instanceQuery = createRuntimeServiceGetInstance(client, {});
   $: environment = $instanceQuery.data?.instance?.environment ?? "";
 
-  const pullEnvMutation = createRuntimeServicePullEnv();
+  const pullEnvMutation = createRuntimeServicePullEnvMutation(client);
 
   $: isPending = $pullEnvMutation.isPending;
   $: error = $pullEnvMutation.error;
 
   async function handlePull() {
     try {
-      const result = await $pullEnvMutation.mutateAsync({
-        instanceId: $runtime.instanceId,
-        data: {},
-      });
+      const result = await $pullEnvMutation.mutateAsync({});
 
       const variablesCount = result.variablesCount ?? 0;
       const modified = result.modified ?? false;
@@ -62,7 +60,7 @@
 </script>
 
 <Dialog bind:open>
-  <DialogTrigger asChild>
+  <DialogTrigger>
     <div class="hidden"></div>
   </DialogTrigger>
   <DialogContent>
@@ -85,7 +83,7 @@
       <div
         class="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800"
       >
-        <p>{error?.message || "Failed to pull environment variables"}</p>
+        <p>{error instanceof Error ? error.message : "Failed to pull environment variables"}</p>
       </div>
     {/if}
 

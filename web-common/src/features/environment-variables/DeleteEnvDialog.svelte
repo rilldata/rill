@@ -29,7 +29,7 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild>
+  <AlertDialogTrigger>
     <div class="hidden"></div>
   </AlertDialogTrigger>
   <AlertDialogContent>

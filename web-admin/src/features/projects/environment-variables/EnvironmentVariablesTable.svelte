@@ -20,8 +20,8 @@
       header: "Key",
       cell: ({ row }) =>
         renderComponent(KeyCell, {
-          name: row.original.name,
-          environment: row.original.environment,
+          name: row.original.name ?? "",
+          environment: row.original.environment ?? "",
         }),
     },
     {
@@ -30,7 +30,7 @@
       enableSorting: false,
       cell: ({ row }) =>
         renderComponent(ValueCell, {
-          value: row.original.value,
+          value: row.original.value ?? "",
         }),
     },
     {
@@ -39,7 +39,7 @@
       accessorFn: (row) => row.createdOn,
       cell: ({ row }) => {
         return renderComponent(ActivityCell, {
-          updatedOn: row.original.updatedOn,
+          updatedOn: row.original.updatedOn ?? "",
         });
       },
     },
@@ -48,10 +48,10 @@
       header: "",
       cell: ({ row }) =>
         renderComponent(ActionsCell, {
-          id: row.original.id,
-          name: row.original.name,
-          value: row.original.value,
-          environment: row.original.environment,
+          id: row.original.id ?? "",
+          name: row.original.name ?? "",
+          value: row.original.value ?? "",
+          environment: row.original.environment ?? "",
           variableNames,
         }),
       enableSorting: false,
