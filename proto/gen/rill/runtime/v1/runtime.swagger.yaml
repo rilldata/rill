@@ -6919,6 +6919,11 @@ definitions:
         items:
           type: string
         description: warnings contains any warnings generated during the model's execution.
+      testWarnings:
+        type: array
+        items:
+          type: string
+        description: test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
       totalExecutionDurationMs:
         type: string
         format: int64

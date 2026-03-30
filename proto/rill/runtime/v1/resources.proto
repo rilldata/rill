@@ -169,6 +169,8 @@ message ModelState {
   bool partitions_have_errors = 11;
   // warnings contains any warnings generated during the model's execution.
   repeated string warnings = 29;
+  // test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+  repeated string test_warnings = 30;
   // total_execution_duration_ms is the time user queries took to execute while refreshing the model.
   // In case of incremental models it is the sum of all successful executions so far.
   // This is not the time it took to refresh the model which also includes other stuff like taking a write lock.

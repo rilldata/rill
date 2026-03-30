@@ -1186,6 +1186,13 @@ export class ModelState extends Message<ModelState> {
   warnings: string[] = [];
 
   /**
+   * test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+   *
+   * @generated from field: repeated string test_warnings = 30;
+   */
+  testWarnings: string[] = [];
+
+  /**
    * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
    * In case of incremental models it is the sum of all successful executions so far.
    * This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
@@ -1237,6 +1244,7 @@ export class ModelState extends Message<ModelState> {
     { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 29, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 30, name: "test_warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 14, name: "rows_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
