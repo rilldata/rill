@@ -104,14 +104,17 @@
     return indices;
   })();
 
-  // Compute TanStack row IDs that are ancestors of any row-header-selected row.
-  // Used to highlight parent row headers when a child row header is selected.
+  // Compute TanStack row IDs that are ancestors of any selected child row
+  // (row header click or cell click). Used to highlight parent row headers.
   $: ancestorRowIdsOfSelectedHeaders = (() => {
-    if (!clickSelection?.rowHeaderSelections?.size) return new Set<string>();
+    if (!clickSelection?.hasAnySelection) return new Set<string>();
     const ancestorIds = new Set<string>();
     for (const row of rows) {
       const dk = dimKeyFromRow(row.original, rowDimensionNames);
-      if (clickSelection.isRowHeaderSelected(dk)) {
+      if (
+        clickSelection.isRowHeaderSelected(dk) ||
+        clickSelection.hasSelectedCellInRow(dk)
+      ) {
         let id = row.id;
         while (id.includes(".")) {
           id = id.substring(0, id.lastIndexOf("."));
