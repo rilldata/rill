@@ -298,7 +298,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment)
+	vars, err := s.ResolveVariables(ctx, depl)
 	if err != nil {
 		return err
 	}
