@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -539,8 +540,15 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect to UI
-	http.Redirect(w, r, a.admin.URLs.Frontend(), http.StatusTemporaryRedirect)
+	// Redirect to UI (optionally to a specific path)
+	redirect := a.admin.URLs.Frontend()
+	if rd := r.URL.Query().Get("redirect"); rd != "" {
+		// Only allow relative paths to prevent open redirect
+		if strings.HasPrefix(rd, "/") && !strings.HasPrefix(rd, "//") {
+			redirect = a.admin.URLs.Frontend() + rd
+		}
+	}
+	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
 // authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.

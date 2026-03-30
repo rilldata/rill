@@ -17,14 +17,17 @@ export const assumedUser = {
   /**
    * Navigates to Rill Cloud as the given user in the current tab.
    * Stores the email in sessionStorage so the banner knows who we're browsing as.
+   * Optionally redirects to a specific path (e.g. "/<orgName>") after assuming.
    */
-  assume(email: string, ttlMinutes = 60) {
+  assume(email: string, opts?: { ttlMinutes?: number; redirect?: string }) {
+    const { ttlMinutes = 60, redirect } = opts ?? {};
     set(email);
     if (browser) sessionStorage.setItem(STORAGE_KEY, email);
 
     const u = new URL("auth/assume-open", ADMIN_URL);
     u.searchParams.set("representing_user", email);
     u.searchParams.set("ttl_minutes", String(ttlMinutes));
+    if (redirect) u.searchParams.set("redirect", redirect);
     window.location.href = u.toString();
   },
 

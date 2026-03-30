@@ -41,7 +41,7 @@
     dialogDescription = `You will start browsing Rill Cloud as ${email}. The session will expire after 60 minutes. Use the banner to unassume when done.`;
     dialogDestructive = false;
     dialogAction = async () => {
-      assumedUser.assume(email);
+      assumedUser.assume(email, {});
     };
     dialogOpen = true;
   }

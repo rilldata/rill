@@ -21,6 +21,7 @@
     createRedeployProjectMutation,
     createHibernateProjectMutation,
   } from "@rilldata/web-admin/features/superuser/projects/selectors";
+  import { assumedUser } from "@rilldata/web-admin/features/superuser/users/assume-state";
 
   let selectedOrg = "";
   let dialogOpen = false;
@@ -39,6 +40,16 @@
   $: orgQuery = getOrganization(selectedOrg);
   $: membersQuery = getOrgMembers(selectedOrg);
   $: projectsQuery = getOrgProjects(selectedOrg);
+
+  function handleOpenAsUser(email: string, orgName: string) {
+    dialogTitle = "Open as User";
+    dialogDescription = `You will start browsing Rill Cloud as ${email}, landing on the "${orgName}" organization. The session will expire after 60 minutes. Use the banner to unassume when done.`;
+    dialogDestructive = false;
+    dialogAction = async () => {
+      assumedUser.assume(email, { redirect: `/${orgName}` });
+    };
+    dialogOpen = true;
+  }
 
   function handleDeleteOrg(orgName: string) {
     dialogTitle = "Delete Organization";
@@ -207,6 +218,7 @@
               <tr>
                 <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Email</th>
                 <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Role</th>
+                <th class="text-left text-sm font-medium text-fg-secondary uppercase tracking-wider px-4 py-2 border-b">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -214,6 +226,14 @@
                 <tr>
                   <td class="px-4 py-2 text-sm font-mono text-fg-primary border-b">{member.userEmail}</td>
                   <td class="px-4 py-2 text-sm text-fg-primary border-b">{member.roleName}</td>
+                  <td class="px-4 py-2 text-sm text-fg-primary border-b">
+                    <Button large class="font-normal"
+                      type="tertiary"
+                      onClick={() => handleOpenAsUser(member.userEmail ?? "", org.name ?? "")}
+                    >
+                      Open as user
+                    </Button>
+                  </td>
                 </tr>
               {/each}
             </tbody>
