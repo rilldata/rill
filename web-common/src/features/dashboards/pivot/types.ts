@@ -68,7 +68,7 @@ export type PivotTableMode = "flat" | "nest";
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
 
-  [key: string]: string | number | PivotDataRow[] | undefined;
+  [key: string]: string | number | null | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {

@@ -33,8 +33,8 @@ export function columnHeaderKey(dimensionPath: Record<string, string>): string {
 
 export interface SelectionEntry {
   dimKey: string;
-  /** Row dimension name→value pairs captured at click time */
-  dimValues: Record<string, string>;
+  /** Row dimension name→value pairs captured at click time; null for null dimension values */
+  dimValues: Record<string, string | null>;
   columnId: string;
   /** For flat-table dimension cell clicks: the index into rowDimensionNames */
   dimClickIndex?: number;

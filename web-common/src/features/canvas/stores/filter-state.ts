@@ -264,7 +264,7 @@ export class FilterState {
 
   toggleDimensionValueSelections = (
     dimensionName: string,
-    dimensionValues: string[],
+    dimensionValues: (string | null)[],
     keepPillVisible?: boolean,
     isExclusiveFilter?: boolean,
     exclude: boolean = false,
@@ -337,7 +337,7 @@ export class FilterState {
    */
   addDimensionValueSelections = (
     dimensionName: string,
-    dimensionValues: string[],
+    dimensionValues: (string | null)[],
   ) => {
     const {
       dimensionFilter: wf,

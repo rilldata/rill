@@ -112,7 +112,8 @@ export function getFiltersForRowData(
   const rowNestFilters = rowDimensionNames
     .map((dim) => {
       const value = rowData[dim];
-      if (value === undefined || value === null) return null;
+      if (value === undefined) return null;
+      if (value === null) return createInExpression(dim, [null]);
       return createInExpression(dim, [String(value)]);
     })
     .filter((f): f is V1Expression => {
@@ -313,7 +314,7 @@ export function getFiltersForColumnHeader(
 
 export interface ExtractedFilter {
   dimensionName: string;
-  values: string[];
+  values: (string | null)[];
 }
 
 /**
@@ -335,7 +336,7 @@ export function extractDimensionFiltersFromExpression(
       const values = expr?.cond?.exprs
         ?.slice(1)
         .map((e) => e.val)
-        .filter((val): val is string => val !== undefined && val !== null);
+        .filter((val): val is string | null => val !== undefined);
 
       if (values?.length) {
         result.push({ dimensionName: ident, values });

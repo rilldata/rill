@@ -674,7 +674,8 @@ export function getFiltersFromRow(
   const rowNestFilters = dimNames
     .map((dim) => {
       const value = rowData[dim];
-      if (value === undefined || value === null) return null;
+      if (value === undefined) return null;
+      if (value === null) return createInExpression(dim, [null]);
       return createInExpression(dim, [String(value)]);
     })
     .filter((f): f is V1Expression => {

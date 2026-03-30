@@ -43,7 +43,10 @@ vi.mock(
 );
 
 /** Build a PivotFilter with no time range (sufficient for these tests). */
-function makePivotFilter(dimensionName: string, values: string[]): PivotFilter {
+function makePivotFilter(
+  dimensionName: string,
+  values: (string | null)[],
+): PivotFilter {
   return {
     filters: createAndExpression([createInExpression(dimensionName, values)]),
     timeRange: { start: undefined, end: undefined },
@@ -380,6 +383,75 @@ describe("pivot-click-to-filter: nested table multi-select", () => {
     expect(sel.isCellSelected(row0DimKey, "revenue")).toBe(true);
     expect(sel.isCellSelected(row0DimKey, "other_measure")).toBe(true);
     expect(sel.cellSelections.size).toBe(2);
+
+    result.destroy();
+  });
+});
+
+describe("pivot-click-to-filter: null dimension values", () => {
+  const nullData: PivotDataRow[] = [
+    { country: null, revenue: 100 },
+    { country: "US", revenue: 200 },
+  ];
+
+  const nullRow = nullData[0];
+  const nullDimKey = dimKeyFromRow(nullRow, ["country"]);
+
+  function setupNull() {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    // Mock getFiltersFromRow to return a filter with null value
+    vi.mocked(getFiltersFromRow).mockImplementation((_config, rowData) => {
+      const value = rowData["country"];
+      return makePivotFilter("country", [value as string]);
+    });
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(emptyConfig()) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(nullData),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    return { result, filterClass, selfFilteredDimensions };
+  }
+
+  it("should select a cell with a null dimension value", () => {
+    const { result, filterClass } = setupNull();
+
+    // Click on a row where country is null
+    result.handleCellClickToFilter("0", "total", false, nullRow);
+
+    const sel = get(result.clickSelection);
+    expect(sel.isCellSelected(nullDimKey, "total")).toBe(true);
+    expect(sel.cellSelections.size).toBe(1);
+
+    // The filter should have been applied
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "country",
+      [null],
+    );
+
+    result.destroy();
+  });
+
+  it("should deselect a cell with a null dimension value", () => {
+    const { result, filterClass } = setupNull();
+
+    // Select then deselect
+    result.handleCellClickToFilter("0", "total", false, nullRow);
+    result.handleCellClickToFilter("0", "total", false, nullRow);
+
+    const sel = get(result.clickSelection);
+    expect(sel.isCellSelected(nullDimKey, "total")).toBe(false);
+    expect(sel.cellSelections.size).toBe(0);
+
+    // Toggle should have been called to remove the null value
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalled();
 
     result.destroy();
   });

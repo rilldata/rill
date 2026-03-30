@@ -159,11 +159,13 @@ export function createPivotClickToFilter(
   function captureDimValues(
     rowData: PivotDataRow,
     rowDimensionNames: string[],
-  ): Record<string, string> {
-    const result: Record<string, string> = {};
+  ): Record<string, string | null> {
+    const result: Record<string, string | null> = {};
     for (const dim of rowDimensionNames) {
       const val = rowData[dim];
-      if (typeof val === "string" || typeof val === "number") {
+      if (val === null || val === undefined) {
+        result[dim] = null;
+      } else if (typeof val === "string" || typeof val === "number") {
         result[dim] = String(val);
       }
     }
@@ -176,10 +178,10 @@ export function createPivotClickToFilter(
     remainingRowHeaders: Map<string, SelectionEntry>,
     remainingCells: Map<string, SelectionEntry>,
     remainingColHeaders: Set<string>,
-  ): Map<string, Set<string>> {
-    const retainedValues = new Map<string, Set<string>>();
+  ): Map<string, Set<string | null>> {
+    const retainedValues = new Map<string, Set<string | null>>();
 
-    const addRetainedValue = (dimensionName: string, value: string) => {
+    const addRetainedValue = (dimensionName: string, value: string | null) => {
       let valueSet = retainedValues.get(dimensionName);
       if (!valueSet) {
         valueSet = new Set();
