@@ -24,12 +24,8 @@
     : undefined;
 
   $: error = parseError?.message ?? rootCauseReconcileError;
-
-  interface $$Slots {
-    default: { rootCauseReconcileError: string | undefined };
-  }
 </script>
 
 <WorkspaceEditorContainer {error} showError={!!remoteContent}>
-  <slot {rootCauseReconcileError} />
+  <slot />
 </WorkspaceEditorContainer>

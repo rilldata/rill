@@ -35,7 +35,7 @@ export default [
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^\\$\\$" },
+        { argsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/ban-ts-comment": "warn",
       "@typescript-eslint/no-unsafe-assignment": "warn",

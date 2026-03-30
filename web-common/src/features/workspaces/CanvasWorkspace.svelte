@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
+  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -57,6 +58,10 @@
   $: parseError = $parseErrorQuery;
 
   $: reconcileError = data?.meta?.reconcileError;
+  $: rootCauseQuery = createRootCauseErrorQuery(runtimeClient, data, reconcileError);
+  $: rootCauseReconcileError = reconcileError
+    ? ($rootCauseQuery?.data ?? reconcileError)
+    : undefined;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -110,7 +115,6 @@
         resource={data}
         {parseError}
         remoteContent={$remoteContent}
-        let:rootCauseReconcileError
       >
         {#if selectedView === "code"}
           <CanvasEditor
