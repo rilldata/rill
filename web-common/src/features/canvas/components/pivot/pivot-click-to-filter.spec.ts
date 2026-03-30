@@ -1,3 +1,4 @@
+import { getFiltersFromRow } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
   PivotDataRow,
   PivotDataStore,
@@ -10,6 +11,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
 import { describe, expect, it, vi } from "vitest";
+import { dimKeyFromRow } from "../../../dashboards/pivot/pivot-click-selection";
 import type { FilterManager } from "../../stores/filter-manager";
 import { createPivotClickToFilter } from "./pivot-click-to-filter";
 
@@ -22,7 +24,7 @@ vi.mock(
     ...(await vi.importActual(
       "@rilldata/web-common/features/dashboards/pivot/pivot-utils",
     )),
-    getFiltersForCell: vi.fn(() => ({ filters: undefined, timeRange: null })),
+    getFiltersFromRow: vi.fn(() => ({ filters: undefined, timeRange: null })),
   }),
 );
 
@@ -32,14 +34,12 @@ vi.mock(
     ...(await vi.importActual(
       "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection",
     )),
-    getFiltersForRowHeader: vi.fn(() => ({
+    getFiltersForRowData: vi.fn(() => ({
       filters: undefined,
       timeRange: null,
     })),
   }),
 );
-
-import { getFiltersForCell } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 
 /** Build a V1Expression with a single IN clause: dimensionName IN (values) */
 function makeInFilter(dimensionName: string, values: string[]): V1Expression {
@@ -253,18 +253,23 @@ describe("pivot-click-to-filter: clearActiveComponent", () => {
 
 describe("pivot-click-to-filter: flat table single-cell-per-row", () => {
   /** Flat table data: two rows, each with country and city dimensions */
-  const flatTableData = [
+  const flatTableData: PivotDataRow[] = [
     { country: "US", city: "NYC", revenue: 100 },
     { country: "UK", city: "London", revenue: 200 },
   ];
+
+  const row0 = flatTableData[0];
+  const row1 = flatTableData[1];
+  const row0DimKey = dimKeyFromRow(row0, ["country", "city"]);
+  const row1DimKey = dimKeyFromRow(row1, ["country", "city"]);
 
   function setupFlat() {
     const selfFilteredDimensions = writable<Set<string>>(new Set());
     const { fm, filterClass } = stubFilterManagerWithClass("mv1");
 
-    // Configure getFiltersForCell mock to return appropriate filters per column
-    vi.mocked(getFiltersForCell).mockImplementation(
-      (_config, _rowId, colId, _axes, _data, _upTo) => {
+    // Configure getFiltersFromRow mock to return appropriate filters per column
+    vi.mocked(getFiltersFromRow).mockImplementation(
+      (_config, _rowData, colId) => {
         if (colId === "country") return makePivotFilter("country", ["US"]);
         if (colId === "city") return makePivotFilter("city", ["NYC"]);
         return makePivotFilter("country", ["US"]);
@@ -290,22 +295,22 @@ describe("pivot-click-to-filter: flat table single-cell-per-row", () => {
     const { result, filterClass } = setupFlat();
 
     // Click on country column in row 0
-    result.handleCellClickToFilter("0", "country", false);
+    result.handleCellClickToFilter("0", "country", false, row0);
 
     let sel = get(result.clickSelection);
-    expect(sel.isCellSelected("0", "country")).toBe(true);
+    expect(sel.isCellSelected(row0DimKey, "country")).toBe(true);
     expect(sel.cellSelections.size).toBe(1);
 
     // Now click on city column in the same row 0; should replace, not accumulate
-    result.handleCellClickToFilter("0", "city", false);
+    result.handleCellClickToFilter("0", "city", false, row0);
 
     sel = get(result.clickSelection);
-    expect(sel.isCellSelected("0", "country")).toBe(false);
-    expect(sel.isCellSelected("0", "city")).toBe(true);
+    expect(sel.isCellSelected(row0DimKey, "country")).toBe(false);
+    expect(sel.isCellSelected(row0DimKey, "city")).toBe(true);
     expect(sel.cellSelections.size).toBe(1);
 
-    // toggleDimensionValueSelections should have been called to remove old values
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalled();
+    // addDimensionValueSelections should have been called for the new cell values
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalled();
 
     result.destroy();
   });
@@ -314,14 +319,14 @@ describe("pivot-click-to-filter: flat table single-cell-per-row", () => {
     const { result } = setupFlat();
 
     // Click on country in row 0
-    result.handleCellClickToFilter("0", "country", false);
+    result.handleCellClickToFilter("0", "country", false, row0);
     let sel = get(result.clickSelection);
-    expect(sel.isCellSelected("0", "country")).toBe(true);
+    expect(sel.isCellSelected(row0DimKey, "country")).toBe(true);
 
     // Click on the same cell again to deselect
-    result.handleCellClickToFilter("0", "country", false);
+    result.handleCellClickToFilter("0", "country", false, row0);
     sel = get(result.clickSelection);
-    expect(sel.isCellSelected("0", "country")).toBe(false);
+    expect(sel.isCellSelected(row0DimKey, "country")).toBe(false);
     expect(sel.cellSelections.size).toBe(0);
 
     result.destroy();
@@ -331,17 +336,17 @@ describe("pivot-click-to-filter: flat table single-cell-per-row", () => {
     const { result } = setupFlat();
 
     // Click on country in row 0
-    result.handleCellClickToFilter("0", "country", false);
+    result.handleCellClickToFilter("0", "country", false, row0);
 
     // Click on country in row 1 (different row; not a replacement)
-    vi.mocked(getFiltersForCell).mockImplementation(() =>
+    vi.mocked(getFiltersFromRow).mockImplementation(() =>
       makePivotFilter("country", ["UK"]),
     );
-    result.handleCellClickToFilter("1", "country", false);
+    result.handleCellClickToFilter("1", "country", false, row1);
 
     const sel = get(result.clickSelection);
-    expect(sel.isCellSelected("0", "country")).toBe(true);
-    expect(sel.isCellSelected("1", "country")).toBe(true);
+    expect(sel.isCellSelected(row0DimKey, "country")).toBe(true);
+    expect(sel.isCellSelected(row1DimKey, "country")).toBe(true);
     expect(sel.cellSelections.size).toBe(2);
 
     result.destroy();
@@ -349,23 +354,28 @@ describe("pivot-click-to-filter: flat table single-cell-per-row", () => {
 });
 
 describe("pivot-click-to-filter: nested table multi-select", () => {
+  const nestedData: PivotDataRow[] = [
+    {
+      country: "US",
+      revenue: 100,
+      subRows: [{ country: "US-East", revenue: 50 }],
+    },
+  ];
+
+  const row0 = nestedData[0];
+  const row0DimKey = dimKeyFromRow(row0, ["country"]);
+
   function setupNested() {
     const { fm, filterClass } = stubFilterManagerWithClass("mv1");
 
-    vi.mocked(getFiltersForCell).mockImplementation(() =>
+    vi.mocked(getFiltersFromRow).mockImplementation(() =>
       makePivotFilter("country", ["US"]),
     );
 
     const result = createPivotClickToFilter(
       createFactoryArgs({
         pivotConfig: writable(nestedConfig()) as Readable<PivotDataStoreConfig>,
-        pivotDataStore: stubPivotDataStore([
-          {
-            country: "US",
-            revenue: 100,
-            subRows: [{ country: "US-East", revenue: 50 }],
-          },
-        ]),
+        pivotDataStore: stubPivotDataStore(nestedData),
         filterManager: fm,
         activeComponent: writable<string | null>("pivot-1"),
       }),
@@ -378,17 +388,83 @@ describe("pivot-click-to-filter: nested table multi-select", () => {
     const { result } = setupNested();
 
     // Click on two different columns in the same row
-    result.handleCellClickToFilter("0", "revenue", false);
+    result.handleCellClickToFilter("0", "revenue", false, row0);
     let sel = get(result.clickSelection);
-    expect(sel.isCellSelected("0", "revenue")).toBe(true);
+    expect(sel.isCellSelected(row0DimKey, "revenue")).toBe(true);
 
-    result.handleCellClickToFilter("0", "other_measure", false);
+    result.handleCellClickToFilter("0", "other_measure", false, row0);
     sel = get(result.clickSelection);
 
     // Both should be selected (no replacement in nested mode)
-    expect(sel.isCellSelected("0", "revenue")).toBe(true);
-    expect(sel.isCellSelected("0", "other_measure")).toBe(true);
+    expect(sel.isCellSelected(row0DimKey, "revenue")).toBe(true);
+    expect(sel.isCellSelected(row0DimKey, "other_measure")).toBe(true);
     expect(sel.cellSelections.size).toBe(2);
+
+    result.destroy();
+  });
+});
+
+describe("pivot-click-to-filter: selection survives sorting", () => {
+  it("should identify same row after data order changes (simulated sort)", () => {
+    const { fm } = stubFilterManagerWithClass("mv1");
+
+    const dataBeforeSort: PivotDataRow[] = [
+      { country: "US", revenue: 100 },
+      { country: "UK", revenue: 200 },
+    ];
+
+    const pivotDataStore = writable({
+      isFetching: false,
+      data: dataBeforeSort,
+      columnDef: [],
+      assembled: true,
+      totalColumns: 0,
+      columnDimensionAxes: {},
+    });
+
+    vi.mocked(getFiltersFromRow).mockImplementation(() =>
+      makePivotFilter("country", ["US"]),
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(emptyConfig()) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: pivotDataStore as unknown as PivotDataStore,
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+      }),
+    );
+
+    const usRow = dataBeforeSort[0];
+    const usDimKey = dimKeyFromRow(usRow, ["country"]);
+
+    // Click on US row (index 0 before sort)
+    result.handleCellClickToFilter("0", "total", false, usRow);
+
+    let sel = get(result.clickSelection);
+    expect(sel.isCellSelected(usDimKey, "total")).toBe(true);
+
+    // Simulate sorting: UK now comes first, US second
+    const dataAfterSort: PivotDataRow[] = [
+      { country: "UK", revenue: 200 },
+      { country: "US", revenue: 100 },
+    ];
+    pivotDataStore.set({
+      isFetching: false,
+      data: dataAfterSort,
+      columnDef: [],
+      assembled: true,
+      totalColumns: 0,
+      columnDimensionAxes: {},
+    });
+
+    // The selection should still match US, not the row at index 0 (which is now UK)
+    sel = get(result.clickSelection);
+    expect(sel.isCellSelected(usDimKey, "total")).toBe(true);
+
+    // UK's dimKey should NOT be selected
+    const ukDimKey = dimKeyFromRow(dataAfterSort[0], ["country"]);
+    expect(sel.isCellSelected(ukDimKey, "total")).toBe(false);
 
     result.destroy();
   });

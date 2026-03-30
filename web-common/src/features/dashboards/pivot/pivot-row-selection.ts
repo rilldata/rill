@@ -26,8 +26,8 @@ import type {
 export interface PivotRowSelectionState {
   /** True if at least one row dimension has active filter selections */
   hasActiveSelection: boolean;
-  /** Check if a specific row (by rowId) is selected based on current filters */
-  isRowSelected: (rowId: string) => boolean;
+  /** Check if a row is selected based on current filters (reads values from row data directly) */
+  isRowSelected: (rowData: PivotDataRow) => boolean;
   /** Highest row dimension index with an active selection filter, or -1 */
   maxFilteredDimensionIndex: number;
 }
@@ -82,6 +82,70 @@ export function getDimensionValuesForRow(
 }
 
 /**
+ * Like getDimensionValuesForRow but reads values directly from a PivotDataRow
+ * instead of using positional rowId indexing. Stable across sorting.
+ */
+export function getDimensionValuesFromRowData(
+  config: PivotDataStoreConfig,
+  rowData: PivotDataRow,
+): Array<{ dimensionName: string; value: string }> {
+  return config.rowDimensionNames
+    .filter((dim) => !isTimeDimension(dim, config.time.timeDimension))
+    .map((dim) => ({
+      dimensionName: dim,
+      value: String(rowData[dim] ?? ""),
+    }))
+    .filter(({ value }) => value !== "");
+}
+
+/**
+ * Like getFiltersForRowHeader but reads values directly from a PivotDataRow.
+ * Stable across sorting.
+ */
+export function getFiltersForRowData(
+  config: PivotDataStoreConfig,
+  rowData: PivotDataRow,
+): PivotFilter {
+  const { rowDimensionNames } = config;
+
+  const rowNestTimeFilters: TimeFilters[] = [];
+  const rowNestFilters = rowDimensionNames
+    .map((dim) => {
+      const value = rowData[dim];
+      if (value === undefined || value === null) return null;
+      return createInExpression(dim, [String(value)]);
+    })
+    .filter((f): f is V1Expression => {
+      if (!f) return false;
+      if (
+        isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
+      ) {
+        rowNestTimeFilters.push({
+          timeStart: f.cond?.exprs?.[1].val as string,
+          interval: getTimeGrainFromDimension(
+            f.cond?.exprs?.[0].ident as string,
+          ),
+        });
+        return false;
+      }
+      return true;
+    });
+
+  let rowFilters: V1Expression | undefined = undefined;
+  if (rowNestFilters.length) {
+    rowFilters = createAndExpression(rowNestFilters);
+  }
+
+  const timeRange: TimeRangeString = getTimeForQuery(
+    config.time,
+    rowNestTimeFilters,
+  );
+
+  const filters = mergeFilters(rowFilters, config.whereFilter);
+  return { filters, timeRange };
+}
+
+/**
  * Extracts dimension -> Set<values> from a V1Expression (whereFilter).
  * Only considers IN expressions for selection matching; other filter types
  * (LIKE, NIN, threshold) are ignored for highlighting purposes.
@@ -121,7 +185,7 @@ export function extractSelectionDimensionFilters(
  */
 export function computePivotRowSelection(
   config: PivotDataStoreConfig,
-  tableData: PivotDataRow[],
+  _tableData: PivotDataRow[],
   dimensionFilters: Map<string, Set<string>>,
 ): PivotRowSelectionState {
   const hasActiveSelection = dimensionFilters.size > 0;
@@ -144,8 +208,8 @@ export function computePivotRowSelection(
   return {
     hasActiveSelection: true,
     maxFilteredDimensionIndex,
-    isRowSelected: (rowId: string) => {
-      const rowDimValues = getDimensionValuesForRow(config, rowId, tableData);
+    isRowSelected: (rowData: PivotDataRow) => {
+      const rowDimValues = getDimensionValuesFromRowData(config, rowData);
       if (rowDimValues.length === 0) return false;
 
       // A row is selected if every dimension that IS filtered

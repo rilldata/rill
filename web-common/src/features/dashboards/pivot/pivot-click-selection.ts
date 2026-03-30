@@ -1,24 +1,62 @@
 /**
  * Tracks which pivot elements (row headers, data cells, column headers)
- * were selected via click-to-filter. Pure data types and key builders
- * with no dependencies on other pivot modules.
+ * were selected via click-to-filter.
+ *
+ * Selections are keyed by dimension values (dimKey), not positional row
+ * indices, so they remain stable across sorting and data refreshes.
  */
 
+import type { PivotDataRow } from "./types";
+
+/**
+ * Produces a stable string key from a row's dimension values.
+ * Uses NUL as separator since dimension values won't contain it.
+ */
+export function dimKeyFromRow(
+  rowData: PivotDataRow,
+  rowDimensionNames: string[],
+): string {
+  return rowDimensionNames.map((d) => String(rowData[d] ?? "")).join("\0");
+}
+
+export function cellKey(dimKey: string, columnId: string) {
+  return `${dimKey}\t${columnId}`;
+}
+
+export function columnHeaderKey(dimensionPath: Record<string, string>): string {
+  return JSON.stringify(
+    Object.entries(dimensionPath).sort(([a], [b]) => a.localeCompare(b)),
+  );
+}
+
+// ---- Selection entry (stored per cell / row-header click) ----
+
+export interface SelectionEntry {
+  dimKey: string;
+  /** Row dimension name→value pairs captured at click time */
+  dimValues: Record<string, string>;
+  columnId: string;
+  /** For flat-table dimension cell clicks: the index into rowDimensionNames */
+  dimClickIndex?: number;
+}
+
+// ---- Selection state ----
+
 export interface PivotClickSelectionState {
-  /** rowIds selected via row-header clicks */
-  rowHeaderSelections: Set<string>;
-  /** "rowId:columnId" keys selected via data-cell clicks */
-  cellSelections: Set<string>;
-  /** "dimensionName:dimensionValue" keys selected via column-header clicks */
+  /** dimKey → entry for row-header clicks */
+  rowHeaderSelections: Map<string, SelectionEntry>;
+  /** "dimKey\tcolumnId" → entry for data-cell clicks */
+  cellSelections: Map<string, SelectionEntry>;
+  /** Serialised dimension-path keys for column-header clicks */
   columnHeaderSelections: Set<string>;
   /** Whether any selection exists at all */
   hasAnySelection: boolean;
   /** Check if a specific row was selected via row-header click */
-  isRowHeaderSelected: (rowId: string) => boolean;
+  isRowHeaderSelected: (dimKey: string) => boolean;
   /** Check if a specific cell was selected via data-cell click */
-  isCellSelected: (rowId: string, columnId: string) => boolean;
+  isCellSelected: (dimKey: string, columnId: string) => boolean;
   /** Check if any data cell in this row was selected via click */
-  hasSelectedCellInRow: (rowId: string) => boolean;
+  hasSelectedCellInRow: (dimKey: string) => boolean;
   /** Check if a column header was selected via click */
   isColumnHeaderSelected: (dimensionPath: Record<string, string>) => boolean;
   /** Column IDs that have at least one selected cell (for highlighting column headers) */
@@ -28,13 +66,13 @@ export interface PivotClickSelectionState {
    * (i.e. the index into rowDimensionNames), or -1 if no dimension cell
    * was clicked (measure click, row-header click, or no selection).
    */
-  getClickedDimensionIndex: (rowId: string) => number;
+  getClickedDimensionIndex: (dimKey: string) => number;
 }
 
 export function createEmptyClickSelectionState(): PivotClickSelectionState {
   return {
-    rowHeaderSelections: new Set(),
-    cellSelections: new Set(),
+    rowHeaderSelections: new Map(),
+    cellSelections: new Map(),
     columnHeaderSelections: new Set(),
     hasAnySelection: false,
     isRowHeaderSelected: () => false,
@@ -46,33 +84,26 @@ export function createEmptyClickSelectionState(): PivotClickSelectionState {
   };
 }
 
-export function cellKey(rowId: string, columnId: string) {
-  return `${rowId}:${columnId}`;
-}
-
-export function columnHeaderKey(dimensionPath: Record<string, string>): string {
-  return JSON.stringify(
-    Object.entries(dimensionPath).sort(([a], [b]) => a.localeCompare(b)),
-  );
-}
-
 export function buildClickSelection(
-  rowHeaders: Set<string>,
-  cells: Set<string>,
+  rowHeaders: Map<string, SelectionEntry>,
+  cells: Map<string, SelectionEntry>,
   colHeaders: Set<string>,
-  /** Maps rowId → dimension column index for dimension-cell clicks in flat tables */
-  rowDimClickIndex: Map<string, number> = new Map(),
 ): PivotClickSelectionState {
   const hasAny = rowHeaders.size > 0 || cells.size > 0 || colHeaders.size > 0;
 
-  // Build sets of rowIds and columnIds that have at least one selected cell
+  // Build sets of dimKeys and columnIds that have at least one selected cell
   const rowsWithSelectedCells = new Set<string>();
   const columnsWithSelectedCells = new Set<string>();
-  for (const key of cells) {
-    const sep = key.indexOf(":");
-    if (sep !== -1) {
-      rowsWithSelectedCells.add(key.slice(0, sep));
-      columnsWithSelectedCells.add(key.slice(sep + 1));
+  for (const entry of cells.values()) {
+    rowsWithSelectedCells.add(entry.dimKey);
+    columnsWithSelectedCells.add(entry.columnId);
+  }
+
+  // Build a map of dimKey → dimClickIndex for quick lookup
+  const dimClickIndexByKey = new Map<string, number>();
+  for (const entry of cells.values()) {
+    if (entry.dimClickIndex !== undefined && entry.dimClickIndex >= 0) {
+      dimClickIndexByKey.set(entry.dimKey, entry.dimClickIndex);
     }
   }
 
@@ -81,11 +112,11 @@ export function buildClickSelection(
     cellSelections: cells,
     columnHeaderSelections: colHeaders,
     hasAnySelection: hasAny,
-    isRowHeaderSelected: (rid) => rowHeaders.has(rid),
-    isCellSelected: (rid, cid) => cells.has(cellKey(rid, cid)),
-    hasSelectedCellInRow: (rid) => rowsWithSelectedCells.has(rid),
+    isRowHeaderSelected: (dk) => rowHeaders.has(dk),
+    isCellSelected: (dk, cid) => cells.has(cellKey(dk, cid)),
+    hasSelectedCellInRow: (dk) => rowsWithSelectedCells.has(dk),
     isColumnHeaderSelected: (path) => colHeaders.has(columnHeaderKey(path)),
     selectedCellColumnIds: columnsWithSelectedCells,
-    getClickedDimensionIndex: (rid) => rowDimClickIndex.get(rid) ?? -1,
+    getClickedDimensionIndex: (dk) => dimClickIndexByKey.get(dk) ?? -1,
   };
 }

@@ -2,16 +2,22 @@
  * Factory that creates all click-to-filter orchestration logic for a
  * canvas pivot component.
  *
+ * Selections are keyed by dimension values (dimKey) rather than
+ * positional TanStack row indices, so they survive sorting and
+ * data refreshes.
+ *
  * Returns readable stores for selection/row-highlight state, click
  * handlers for cells and column headers, and a destroy function for
  * cleanup.
  */
 import {
   type PivotClickSelectionState,
+  type SelectionEntry,
   buildClickSelection,
   cellKey,
   columnHeaderKey,
   createEmptyClickSelectionState,
+  dimKeyFromRow,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
 import {
   type PivotRowSelectionState,
@@ -19,12 +25,12 @@ import {
   extractDimensionFiltersFromExpression,
   extractSelectionDimensionFilters,
   getActiveDimensionNames,
-  getDimensionValuesForRow,
   getFiltersForColumnHeader,
-  getFiltersForRowHeader,
+  getFiltersForRowData,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
-import { getFiltersForCell } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import { getFiltersFromRow } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
+  PivotDataRow,
   PivotDataStore,
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -58,6 +64,7 @@ export interface PivotClickToFilterResult {
     rowId: string,
     columnId: string,
     isRowHeader: boolean,
+    rowData: PivotDataRow,
   ) => void;
   handleColumnHeaderClick: (dimensionPath: Record<string, string>) => void;
   destroy: () => void;
@@ -83,9 +90,6 @@ export function createPivotClickToFilter(
   const clickSelectionStore = writable<PivotClickSelectionState>(
     createEmptyClickSelectionState(),
   );
-
-  // Maps rowId → dimension column index for dimension-cell clicks (flat table only)
-  const rowDimClickIndex = new Map<string, number>();
 
   // Svelte store subscriptions fire synchronously on setup. This flag prevents
   // onBecomeInactive from firing during the initial subscription cascade before
@@ -113,7 +117,6 @@ export function createPivotClickToFilter(
   // --- Clear click selection when no self-filtered dimensions remain ---
   const clearUnsub = selfFilteredDimensions.subscribe(($selfFiltered) => {
     if ($selfFiltered.size === 0) {
-      rowDimClickIndex.clear();
       clickSelectionStore.set(createEmptyClickSelectionState());
       if (initialized) {
         onBecomeInactive?.();
@@ -152,27 +155,17 @@ export function createPivotClickToFilter(
 
   // --- Helpers ---
 
-  /** Check if any remaining cell selection for a row is a dimension column. */
-  function rowHasDimensionCell(
-    cells: Set<string>,
-    rowId: string,
-    config: PivotDataStoreConfig,
-  ): boolean {
-    const prefix = rowId + ":";
-    for (const key of cells) {
-      if (!key.startsWith(prefix)) continue;
-      const colId = key.slice(prefix.length);
-      if (config.rowDimensionNames.includes(colId)) return true;
-    }
-    return false;
-  }
-
-  /** Returns all cell keys in `cells` that belong to the given row. */
-  function getCellKeysForRow(cells: Set<string>, rowId: string): string[] {
-    const prefix = rowId + ":";
-    const result: string[] = [];
-    for (const key of cells) {
-      if (key.startsWith(prefix)) result.push(key);
+  /** Capture dimension name→value pairs from a PivotDataRow. */
+  function captureDimValues(
+    rowData: PivotDataRow,
+    rowDimensionNames: string[],
+  ): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const dim of rowDimensionNames) {
+      const val = rowData[dim];
+      if (typeof val === "string" || typeof val === "number") {
+        result[dim] = String(val);
+      }
     }
     return result;
   }
@@ -180,8 +173,8 @@ export function createPivotClickToFilter(
   // --- Retained value computation for safe deselect ---
 
   function collectRetainedDimensionValues(
-    remainingRowHeaders: Set<string>,
-    remainingCells: Set<string>,
+    remainingRowHeaders: Map<string, SelectionEntry>,
+    remainingCells: Map<string, SelectionEntry>,
     remainingColHeaders: Set<string>,
   ): Map<string, Set<string>> {
     const retainedValues = new Map<string, Set<string>>();
@@ -195,49 +188,21 @@ export function createPivotClickToFilter(
       valueSet.add(value);
     };
 
-    const $config = get(pivotConfig);
-    const $data = get(pivotDataStore);
-    if (!$config || !$data?.data) return retainedValues;
-
-    // Values from remaining row header selections
-    for (const rowId of remainingRowHeaders) {
-      const rowDimValues = getDimensionValuesForRow($config, rowId, $data.data);
-      for (const { dimensionName, value } of rowDimValues) {
-        addRetainedValue(dimensionName, value);
+    // Values from remaining row header selections (stored dimValues)
+    for (const entry of remainingRowHeaders.values()) {
+      for (const [dim, val] of Object.entries(entry.dimValues)) {
+        addRetainedValue(dim, val);
       }
     }
 
-    // Values from remaining data cell selections (row + column dimensions)
-    for (const selectionKey of remainingCells) {
-      const separatorIndex = selectionKey.indexOf(":");
-      if (separatorIndex === -1) continue;
-      const rowId = selectionKey.slice(0, separatorIndex);
-      const columnId = selectionKey.slice(separatorIndex + 1);
-      // For flat-table dimension cell clicks, only include dims up to the clicked column
-      const dimIdx = $config.isFlat
-        ? $config.rowDimensionNames.indexOf(columnId)
-        : -1;
-      const upToDimensionIndex = dimIdx >= 0 ? dimIdx : undefined;
-      const cellFilter = getFiltersForCell(
-        $config,
-        rowId,
-        columnId,
-        $data.columnDimensionAxes ?? {},
-        $data.data,
-        upToDimensionIndex,
-      );
-      if (cellFilter.filters) {
-        const extractedFilters = extractDimensionFiltersFromExpression(
-          cellFilter.filters,
-        );
-        for (const { dimensionName, values } of extractedFilters) {
-          for (const value of values) addRetainedValue(dimensionName, value);
-        }
+    // Values from remaining data cell selections (stored dimValues)
+    for (const entry of remainingCells.values()) {
+      for (const [dim, val] of Object.entries(entry.dimValues)) {
+        addRetainedValue(dim, val);
       }
     }
 
     // Values from remaining column header selections
-    // Key format: JSON-serialised sorted entries, e.g. '[["dim","val"]]'
     for (const headerKey of remainingColHeaders) {
       try {
         const entries: [string, string][] = JSON.parse(headerKey);
@@ -256,17 +221,15 @@ export function createPivotClickToFilter(
     filters: V1Expression,
     isDeselect: boolean,
     updateSelectionSets: (
-      rowHeaders: Set<string>,
-      cells: Set<string>,
+      rowHeaders: Map<string, SelectionEntry>,
+      cells: Map<string, SelectionEntry>,
       colHeaders: Set<string>,
     ) => void,
   ) {
     const dimensionFilters = extractDimensionFiltersFromExpression(filters);
     if (dimensionFilters.length === 0) return;
 
-    // Capture which dimensions were already in the global filter before this click.
-    // Dimensions present here were not added by this component and should not be
-    // excluded from its own query (they are not "self-filtered").
+    // Capture which dimensions were already in the global filter before this click
     const preExistingDims = getActiveDimensionNames(get(whereFilterStore));
 
     const filterClass = filterManager.metricsViewFilters.get(metricsViewName);
@@ -274,8 +237,8 @@ export function createPivotClickToFilter(
 
     // Update selection sets first so we can compute retained values
     const $clickSelection = get(clickSelectionStore);
-    const updatedRowHeaders = new Set($clickSelection.rowHeaderSelections);
-    const updatedCells = new Set($clickSelection.cellSelections);
+    const updatedRowHeaders = new Map($clickSelection.rowHeaderSelections);
+    const updatedCells = new Map($clickSelection.cellSelections);
     const updatedColHeaders = new Set($clickSelection.columnHeaderSelections);
     updateSelectionSets(updatedRowHeaders, updatedCells, updatedColHeaders);
 
@@ -329,17 +292,10 @@ export function createPivotClickToFilter(
     }
 
     clickSelectionStore.set(
-      buildClickSelection(
-        updatedRowHeaders,
-        updatedCells,
-        updatedColHeaders,
-        rowDimClickIndex,
-      ),
+      buildClickSelection(updatedRowHeaders, updatedCells, updatedColHeaders),
     );
 
-    // Mark only newly-added dimensions as self-filtered. Dimensions that were
-    // already in the global filter before this click are not owned by this
-    // component and must not be stripped from its own query.
+    // Mark only newly-added dimensions as self-filtered
     const wasInactive = get(selfFilteredDimensions).size === 0;
     selfFilteredDimensions.update((dims) => {
       const next = new Set(dims);
@@ -370,8 +326,8 @@ export function createPivotClickToFilter(
     oldFilters: V1Expression,
     newFilters: V1Expression,
     updateSelectionSets: (
-      rowHeaders: Set<string>,
-      cells: Set<string>,
+      rowHeaders: Map<string, SelectionEntry>,
+      cells: Map<string, SelectionEntry>,
       colHeaders: Set<string>,
     ) => void,
   ) {
@@ -387,8 +343,8 @@ export function createPivotClickToFilter(
 
     // Clone and update selection sets (remove old key, add new key)
     const $clickSelection = get(clickSelectionStore);
-    const updatedRowHeaders = new Set($clickSelection.rowHeaderSelections);
-    const updatedCells = new Set($clickSelection.cellSelections);
+    const updatedRowHeaders = new Map($clickSelection.rowHeaderSelections);
+    const updatedCells = new Map($clickSelection.cellSelections);
     const updatedColHeaders = new Set($clickSelection.columnHeaderSelections);
     updateSelectionSets(updatedRowHeaders, updatedCells, updatedColHeaders);
 
@@ -430,12 +386,7 @@ export function createPivotClickToFilter(
     });
 
     clickSelectionStore.set(
-      buildClickSelection(
-        updatedRowHeaders,
-        updatedCells,
-        updatedColHeaders,
-        rowDimClickIndex,
-      ),
+      buildClickSelection(updatedRowHeaders, updatedCells, updatedColHeaders),
     );
 
     // Mark newly-added dimensions as self-filtered
@@ -463,20 +414,23 @@ export function createPivotClickToFilter(
   // --- Click handlers ---
 
   function handleCellClickToFilter(
-    rowId: string,
+    _rowId: string,
     columnId: string,
     isRowHeader: boolean,
+    rowData: PivotDataRow,
   ) {
     const $config = get(pivotConfig);
     const $data = get(pivotDataStore);
     if (!$config || !$data?.data) return;
 
+    const dk = dimKeyFromRow(rowData, $config.rowDimensionNames);
+    const dimValues = captureDimValues(rowData, $config.rowDimensionNames);
     const $clickSelection = get(clickSelectionStore);
 
     // Determine if this click is deselecting a previously selected element
     const isDeselect = isRowHeader
-      ? $clickSelection.isRowHeaderSelected(rowId)
-      : $clickSelection.isCellSelected(rowId, columnId);
+      ? $clickSelection.isRowHeaderSelected(dk)
+      : $clickSelection.isCellSelected(dk, columnId);
 
     // For flat-table dimension cell clicks, only filter up to (and including) the
     // clicked column's dimension index, not all row dimensions.
@@ -487,37 +441,50 @@ export function createPivotClickToFilter(
     const upToDimensionIndex = flatDimIdx >= 0 ? flatDimIdx : undefined;
 
     const cellFilters = isRowHeader
-      ? getFiltersForRowHeader($config, rowId, $data.data)
-      : getFiltersForCell(
+      ? getFiltersForRowData($config, rowData)
+      : getFiltersFromRow(
           $config,
-          rowId,
+          rowData,
           columnId,
           $data.columnDimensionAxes ?? {},
-          $data.data,
           upToDimensionIndex,
         );
 
     if (!cellFilters.filters) return;
 
+    // Build the dimValues to store; for partial dimension clicks, only keep
+    // dimensions up to the clicked index
+    const storedDimValues =
+      upToDimensionIndex !== undefined
+        ? Object.fromEntries(
+            Object.entries(dimValues).filter(([dim]) => {
+              const idx = $config.rowDimensionNames.indexOf(dim);
+              return idx >= 0 && idx <= upToDimensionIndex;
+            }),
+          )
+        : dimValues;
+
     // Flat table: replace existing cell selection in the same row instead of
     // accumulating. Nested tables allow multi-select within a row.
     if ($config.isFlat && !isRowHeader && !isDeselect) {
-      const existingKeys = getCellKeysForRow(
-        $clickSelection.cellSelections,
-        rowId,
-      );
-      if (existingKeys.length > 0) {
+      // Find existing cell keys for this dimKey
+      const existingEntries: [string, SelectionEntry][] = [];
+      for (const [key, entry] of $clickSelection.cellSelections) {
+        if (entry.dimKey === dk) {
+          existingEntries.push([key, entry]);
+        }
+      }
+
+      if (existingEntries.length > 0) {
         // Compute old cell's filters so we can remove its orphaned values
-        const oldKey = existingKeys[0];
-        const oldColumnId = oldKey.slice(oldKey.indexOf(":") + 1);
-        const oldFlatDimIdx = $config.rowDimensionNames.indexOf(oldColumnId);
-        const oldUpToDimIdx = oldFlatDimIdx >= 0 ? oldFlatDimIdx : undefined;
-        const oldCellFilters = getFiltersForCell(
+        const [, oldEntry] = existingEntries[0];
+        const oldDimIdx = $config.rowDimensionNames.indexOf(oldEntry.columnId);
+        const oldUpToDimIdx = oldDimIdx >= 0 ? oldDimIdx : undefined;
+        const oldCellFilters = getFiltersFromRow(
           $config,
-          rowId,
-          oldColumnId,
+          rowData,
+          oldEntry.columnId,
           $data.columnDimensionAxes ?? {},
-          $data.data,
           oldUpToDimIdx,
         );
 
@@ -527,17 +494,17 @@ export function createPivotClickToFilter(
             cellFilters.filters,
             (_nextRowHeaders, nextCells) => {
               // Remove all existing cell keys for this row
-              for (const k of existingKeys) {
-                nextCells.delete(k);
+              for (const [key] of existingEntries) {
+                nextCells.delete(key);
               }
               // Add the new cell
-              nextCells.add(cellKey(rowId, columnId));
-              // Update rowDimClickIndex for visual classification
-              if (upToDimensionIndex !== undefined) {
-                rowDimClickIndex.set(rowId, upToDimensionIndex);
-              } else {
-                rowDimClickIndex.delete(rowId);
-              }
+              const newKey = cellKey(dk, columnId);
+              nextCells.set(newKey, {
+                dimKey: dk,
+                dimValues: storedDimValues,
+                columnId,
+                dimClickIndex: upToDimensionIndex,
+              });
             },
           );
           return;
@@ -550,28 +517,26 @@ export function createPivotClickToFilter(
       isDeselect,
       (nextRowHeaders, nextCells) => {
         if (isRowHeader) {
-          if (nextRowHeaders.has(rowId)) nextRowHeaders.delete(rowId);
-          else nextRowHeaders.add(rowId);
+          if (nextRowHeaders.has(dk)) {
+            nextRowHeaders.delete(dk);
+          } else {
+            nextRowHeaders.set(dk, {
+              dimKey: dk,
+              dimValues,
+              columnId,
+            });
+          }
         } else {
-          const key = cellKey(rowId, columnId);
+          const key = cellKey(dk, columnId);
           if (nextCells.has(key)) {
             nextCells.delete(key);
-            // Only remove the dimension click index if no remaining cell
-            // selection for this row is a dimension cell. Otherwise a
-            // measure-cell deselect would corrupt the dimension highlight.
-            if (!rowHasDimensionCell(nextCells, rowId, $config)) {
-              rowDimClickIndex.delete(rowId);
-            }
           } else {
-            nextCells.add(key);
-            // Track which dimension index was clicked for visual classification
-            if (upToDimensionIndex !== undefined) {
-              rowDimClickIndex.set(rowId, upToDimensionIndex);
-            } else if (!rowDimClickIndex.has(rowId)) {
-              // Only clear if there is no existing dimension cell index for
-              // this row; a prior dimension click should be preserved.
-              rowDimClickIndex.delete(rowId);
-            }
+            nextCells.set(key, {
+              dimKey: dk,
+              dimValues: storedDimValues,
+              columnId,
+              dimClickIndex: upToDimensionIndex,
+            });
           }
         }
       },

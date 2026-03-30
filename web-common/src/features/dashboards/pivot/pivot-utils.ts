@@ -646,6 +646,87 @@ export function getFiltersForCell(
   return { filters, timeRange };
 }
 
+/**
+ * Like getFiltersForCell but reads dimension values directly from a
+ * PivotDataRow object instead of doing parseInt(rowId) array indexing.
+ * This makes selections stable across sorting and data refreshes.
+ */
+export function getFiltersFromRow(
+  config: PivotDataStoreConfig,
+  rowData: PivotDataRow,
+  colId: string,
+  colDimensionAxes: Record<string, string[]> = {},
+  upToDimensionIndex?: number,
+): PivotFilter {
+  const { rowDimensionNames, measureNames, isFlat } = config;
+  const defaultTimeRange = {
+    start: config.time.timeStart,
+    end: config.time.timeEnd,
+  };
+
+  // Extract dimension values directly from the row data object
+  let dimNames = rowDimensionNames;
+  if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
+    dimNames = rowDimensionNames.slice(0, upToDimensionIndex + 1);
+  }
+
+  const rowNestTimeFilters: TimeFilters[] = [];
+  const rowNestFilters = dimNames
+    .map((dim) => {
+      const value = rowData[dim];
+      if (value === undefined || value === null) return null;
+      return createInExpression(dim, [String(value)]);
+    })
+    .filter((f): f is V1Expression => {
+      if (!f) return false;
+      if (
+        isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
+      ) {
+        rowNestTimeFilters.push({
+          timeStart: f.cond?.exprs?.[1].val as string,
+          interval: getTimeGrainFromDimension(
+            f.cond?.exprs?.[0].ident as string,
+          ),
+        });
+        return false;
+      }
+      return true;
+    });
+
+  let rowFilters: V1Expression | undefined = undefined;
+  if (rowNestFilters.length) {
+    rowFilters = createAndExpression(rowNestFilters);
+  }
+
+  const timeRangeRow: TimeRangeString = getTimeForQuery(
+    config.time,
+    rowNestTimeFilters,
+  );
+
+  // Get filters for column dimensions
+  let columnFilters: V1Expression | undefined;
+  let timeRangeCol: TimeRangeString;
+  const firstDimension = rowDimensionNames?.[0];
+  if (firstDimension === colId || measureNames.includes(colId) || isFlat) {
+    columnFilters = undefined;
+    timeRangeCol = defaultTimeRange;
+  } else {
+    const { filters, timeRange } = getColumnFiltersFromMinimizedAccessor(
+      config,
+      colId,
+      colDimensionAxes,
+    );
+    columnFilters = filters;
+    timeRangeCol = timeRange;
+  }
+
+  const timeRange = mergeTimeStrings(timeRangeRow, timeRangeCol);
+  const cellFilters = mergeFilters(rowFilters, columnFilters);
+  const filters = mergeFilters(cellFilters, config.whereFilter);
+
+  return { filters, timeRange };
+}
+
 export function getErrorFromResponse(
   queryResult: QueryObserverResult<
     V1MetricsViewAggregationResponse,

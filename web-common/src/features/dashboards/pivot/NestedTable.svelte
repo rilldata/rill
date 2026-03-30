@@ -10,7 +10,10 @@
   import type { Cell, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
-  import type { PivotClickSelectionState } from "./pivot-click-selection";
+  import {
+    type PivotClickSelectionState,
+    dimKeyFromRow,
+  } from "./pivot-click-selection";
   import {
     getRowNestedLabel,
     type DimensionColumnProps,
@@ -122,6 +125,7 @@
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
   $: hasMeasures = measures.length > 0;
+  $: rowDimensionNames = rowDimensions.map((d) => d.name);
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
@@ -224,7 +228,8 @@
   }
 
   function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
-    return clickSelection?.isCellSelected(cell.row.id, cell.column.id) ?? false;
+    const dk = dimKeyFromRow(cell.row.original, rowDimensionNames);
+    return clickSelection?.isCellSelected(dk, cell.column.id) ?? false;
   }
 
   function isHeaderInHoveredRange(
@@ -483,13 +488,15 @@
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       {@const rowId = rows[row.index].id}
+      {@const rowData = rows[row.index].original}
+      {@const dk = dimKeyFromRow(rowData, rowDimensionNames)}
       {@const isTotalsRow = !!totalsRow && rowId === "0"}
-      {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
+      {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
       {@const isRowHeaderSelected =
-        clickSelection?.isRowHeaderSelected(rowId) ?? false}
+        clickSelection?.isRowHeaderSelected(dk) ?? false}
       {@const hasClickedCell =
-        clickSelection?.hasSelectedCellInRow(rowId) ?? false}
+        clickSelection?.hasSelectedCellInRow(dk) ?? false}
       <tr
         class:show-more-row={isShowMoreRow(rows[row.index])}
         class:selected-row={isSelected && isRowHeaderSelected}

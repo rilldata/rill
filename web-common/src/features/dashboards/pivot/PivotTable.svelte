@@ -64,7 +64,12 @@
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
   export let onCellClickToFilter:
-    | ((rowId: string, columnId: string, isRowHeader: boolean) => void)
+    | ((
+        rowId: string,
+        columnId: string,
+        isRowHeader: boolean,
+        rowData: PivotDataRow,
+      ) => void)
     | undefined = undefined;
   export let onColumnHeaderClick:
     | ((dimensionPath: Record<string, string>) => void)
@@ -266,7 +271,7 @@
 
       // Apply click-to-filter (Canvas or future Explore)
       if (onCellClickToFilter) {
-        onCellClickToFilter(rowId, columnId, rowHeader);
+        onCellClickToFilter(rowId, columnId, rowHeader, row.original);
       }
     }
   }

@@ -21,7 +21,10 @@
   } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
-  import type { PivotClickSelectionState } from "./pivot-click-selection";
+  import {
+    type PivotClickSelectionState,
+    dimKeyFromRow,
+  } from "./pivot-click-selection";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
@@ -100,7 +103,11 @@
   }
 
   function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
-    return clickSelection?.isCellSelected(cell.row.id, cell.column.id) ?? false;
+    const dk = dimKeyFromRow(
+      cell.row.original,
+      config?.rowDimensionNames ?? [],
+    );
+    return clickSelection?.isCellSelected(dk, cell.column.id) ?? false;
   }
 
   $: lastDimIdx = (config?.rowDimensionNames.length ?? 0) - 1;
@@ -202,13 +209,15 @@
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       {@const rowId = rows[row.index].id}
-      {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
+      {@const rowData = rows[row.index].original}
+      {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
+      {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
       {@const isTotalsRow = !!totalsRow && rowId === "0"}
       {@const hasClickedCell =
-        clickSelection?.hasSelectedCellInRow(rowId) ?? false}
+        clickSelection?.hasSelectedCellInRow(dk) ?? false}
       {@const clickedDimIdx =
-        clickSelection?.getClickedDimensionIndex(rowId) ?? -1}
+        clickSelection?.getClickedDimensionIndex(dk) ?? -1}
       {@const effectiveDimIdx = hasClickedCell
         ? clickedDimIdx >= 0
           ? clickedDimIdx
