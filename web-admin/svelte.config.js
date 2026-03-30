@@ -1,6 +1,8 @@
 import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
+const dev = process.env.RILL_ADMIN_FRONTEND_URL?.includes("localhost");
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
@@ -60,6 +62,7 @@ const config = {
           "https://cdn.prod.website-files.com",
           "https://*.stripe.com",
           "wss://*.pusher.com",
+          ...(dev ? ["http://localhost:*", "ws://localhost:*"] : []),
         ],
         "font-src": [
           "self",
