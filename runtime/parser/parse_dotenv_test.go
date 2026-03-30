@@ -113,7 +113,7 @@ PROD_VAR=prod
 
 	t.Run("dev environment applies .dev.env and not .prod.env", func(t *testing.T) {
 		ctx := context.Background()
-		parser, err := Parse(ctx, repo, "", "dev", "duckdb")
+		parser, err := Parse(ctx, repo, "", "dev", "duckdb", false)
 		require.NoError(t, err)
 		require.Empty(t, parser.Errors)
 
@@ -126,7 +126,7 @@ PROD_VAR=prod
 
 	t.Run("prod environment applies .prod.env and not .dev.env", func(t *testing.T) {
 		ctx := context.Background()
-		parser, err := Parse(ctx, repo, "", "prod", "duckdb")
+		parser, err := Parse(ctx, repo, "", "prod", "duckdb", false)
 		require.NoError(t, err)
 		require.Empty(t, parser.Errors)
 
