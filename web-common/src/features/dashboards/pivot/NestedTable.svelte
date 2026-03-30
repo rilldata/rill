@@ -483,6 +483,7 @@
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       {@const rowId = rows[row.index].id}
+      {@const isTotalsRow = !!totalsRow && rowId === "0"}
       {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
       {@const isRowHeaderSelected =
@@ -514,7 +515,9 @@
             class:col-dim-hover-body={inHoveredCol}
             class:selected-col-body={inSelectedCol}
             class:cell-selected-row-header={i === 0 && hasClickedCell}
-            class:interactive-cell={canShowDataViewer || enableClickToFilter}
+            class:interactive-cell={isTotalsRow
+              ? canShowDataViewer
+              : canShowDataViewer || enableClickToFilter}
             class:border-r={shouldShowRightBorder(i)}
             data-value={tooltipValue}
             data-rowid={cell.row.id}
@@ -558,7 +561,7 @@
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
-    @apply font-normal;
+    @apply font-normal cursor-default;
     @apply bg-surface-background table-fixed;
   }
 

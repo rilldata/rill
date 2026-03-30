@@ -204,6 +204,7 @@
       {@const rowId = rows[row.index].id}
       {@const isSelected = rowSelectionState?.isRowSelected(rowId) ?? false}
       {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
+      {@const isTotalsRow = !!totalsRow && rowId === "0"}
       {@const hasClickedCell =
         clickSelection?.hasSelectedCellInRow(rowId) ?? false}
       {@const clickedDimIdx =
@@ -249,8 +250,9 @@
             class:selected-cell={isClicked}
             class:selected-context-cell={isLeftOfClick}
             class:muted-cell={isMutedCell}
-            class:interactive-cell={(canShowDataViewer ||
-              enableClickToFilter) &&
+            class:interactive-cell={(isTotalsRow
+              ? canShowDataViewer
+              : canShowDataViewer || enableClickToFilter) &&
               cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
@@ -295,7 +297,7 @@
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
-    @apply font-normal;
+    @apply font-normal cursor-default;
     @apply bg-surface-background table-fixed;
   }
 
