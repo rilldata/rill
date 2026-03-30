@@ -9,16 +9,12 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Command Long Description
-var long = `Query a resolver within a project.
+var long = `Query data in a project.
 
-You can query a resolver by providing a SQL query, a resolver name, or a connector name.
+You can query data by providing a SQL query and optional connector name.
+As an advanced option, you can also query other resolvers such as metrics_sql.
 
-Example Usage:
-
-Query a resolver by providing a SQL query:
-rill query my-project --sql "SELECT * FROM my-table"
-rill query --sql "SELECT * FROM my-table" --limit 10
+Note that large results are automatically truncated (use --limit to override).
 `
 
 func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -29,8 +25,13 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	queryCmd := &cobra.Command{
 		Use:   "query [<project>]",
-		Short: "Query a resolver within a project",
+		Short: "Query data in a project",
 		Long:  long,
+		Example: `  # SQL query against a Rill Cloud project
+  rill query my-project --sql "SELECT * FROM my-table"
+
+  # SQL query against a local Rill project running with 'rill start'
+  rill query --local --sql "SELECT * FROM my-table"`,
 		RunE: func(cmd *cobra.Command, cmdArgs []string) error {
 			// Validate the inputs
 			if resolver == "" && sql == "" {
@@ -56,12 +57,25 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(cmdArgs) > 0 {
 				project = cmdArgs[0]
 			}
-			if !local && !cmd.Flags().Changed("project") && len(cmdArgs) == 0 && ch.Interactive {
-				var err error
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
-				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+			if !local && project == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("set --project to target a Rill Cloud project, or use --local to target a locally running Rill project")
 				}
+				// Check if a local Rill project is running; if so, target it automatically.
+				if cmdutil.IsLocalRillRunning(cmd.Context()) {
+					local = true
+				} else {
+					var err error
+					project, err = ch.InferProjectName(cmd.Context(), path, "set --project to target a Rill Cloud project, or use --local to target a locally running Rill project")
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			// If targeting a local runtime, verify that rill start is running.
+			if local && !cmdutil.IsLocalRillRunning(cmd.Context()) {
+				return fmt.Errorf("could not connect to a local Rill project on http://localhost:9009 (run `rill start` to start the project, then retry this query)")
 			}
 
 			// Connect to the runtime
@@ -83,7 +97,11 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to execute query: %w", err)
 			}
 
+			// Print rows with warning if the default limit was reached.
 			ch.PrintQueryResponse(res)
+			if !cmd.Flags().Changed("limit") && len(res.Data) == limit {
+				ch.PrintfWarn("Warning: The result was truncated to %d rows (use --limit to override)\n", limit)
+			}
 			return nil
 		},
 	}

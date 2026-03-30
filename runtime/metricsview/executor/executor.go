@@ -190,6 +190,8 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 		res, err = e.resolveDruid(ctx, timeExpr)
 	case drivers.DialectStarRocks:
 		res, err = e.resolveStarRocks(ctx, timeExpr)
+	case drivers.DialectSnowflake:
+		res, err = e.resolveSnowflake(ctx, timeExpr)
 	default:
 		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
@@ -533,6 +535,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 				RequireTimeRange: false,
 				MaxTimeRangeDays: 0, // not enforced
 			},
+			UnusedFields: nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -678,6 +681,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 			RequireTimeRange: false,
 			MaxTimeRangeDays: 0, // not enforced
 		},
+		UnusedFields: nil,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {

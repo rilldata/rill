@@ -66,8 +66,8 @@
   class:dragging
   class:ghost
   class:selected={finalSelected}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
   bind:this={row}
 >
   <td class="!pl-0 sticky">
@@ -76,7 +76,7 @@
         class:opacity-0={!hovered}
         disabled={!hovered || disableDrag}
         class="disabled:cursor-not-allowed"
-        on:mousedown={handleDragStart}
+        onmousedown={handleDragStart}
       >
         <DragHandle size="16px" className="fill-fg-secondary" />
       </button>
@@ -85,7 +85,7 @@
     </div>
   </td>
 
-  <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
+  <td class="source-code truncate" onclick={onCellClick} aria-label="Name">
     {#if !name && item instanceof YAMLDimension && item.resourceName}
       <span
         class="text-fg-secondary"
@@ -97,7 +97,7 @@
       <span class="text-fg-secondary">{name || "-"}</span>
     {/if}
   </td>
-  <td on:click={onCellClick} aria-label="Display name">
+  <td onclick={onCellClick} aria-label="Display name">
     <div class="text-[12px] pr-4">
       <Chip
         slideDuration={0}
@@ -113,7 +113,7 @@
 
   <td
     class="source-code truncate"
-    on:click={onCellClick}
+    onclick={onCellClick}
     aria-label="SQL expression"
     style:max-width="{expressionWidth}px"
   >
@@ -121,48 +121,54 @@
   </td>
 
   {#if item instanceof YAMLMeasure}
-    <td on:click={onCellClick} aria-label="Format">
+    <td onclick={onCellClick} aria-label="Format">
       <span>{item?.format_preset || item?.format_d3 || "-"}</span>
     </td>
   {/if}
 
   <td
     style:max-width="{expressionWidth}px"
-    on:click={onCellClick}
+    onclick={onCellClick}
     aria-label="Description"
   >
     <span>{description || "-"}</span>
   </td>
 
   {#if hovered && !ghost}
-    <div
-      class="editing-controls"
-      style:right="{Math.max(0, tableWidth - scrollLeft)}px"
-      class:editing
-      class:selected={finalSelected}
-    >
-      <EditControls
-        itemType={type}
-        name={item.display_name || item.name}
-        selected={finalSelected}
-        first={i === 0}
-        last={i === length - 1}
-        onEdit={() => {
-          onEdit(i, type);
-        }}
-        {onMoveTo}
-        onDuplicate={() => {
-          onDuplicate(i, type);
-        }}
-        onDelete={() => {
-          onDelete(i, type);
-        }}
-      />
-    </div>
+    <td class="editing-controls-cell">
+      <div
+        class="editing-controls"
+        style:right="{Math.max(0, tableWidth - scrollLeft)}px"
+        class:editing
+        class:selected={finalSelected}
+      >
+        <EditControls
+          itemType={type}
+          name={item.display_name || item.name}
+          selected={finalSelected}
+          first={i === 0}
+          last={i === length - 1}
+          onEdit={() => {
+            onEdit(i, type);
+          }}
+          {onMoveTo}
+          onDuplicate={() => {
+            onDuplicate(i, type);
+          }}
+          onDelete={() => {
+            onDelete(i, type);
+          }}
+        />
+      </div>
+    </td>
   {/if}
 </tr>
 
 <style lang="postcss">
+  .editing-controls-cell {
+    @apply p-0 border-0 w-0;
+  }
+
   .editing-controls {
     height: 39px;
     width: 192px;

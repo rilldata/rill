@@ -9,13 +9,62 @@ import {
 } from "@rilldata/web-common/runtime-client/index.js";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { getLocalRuntimeClient } from "../lib/runtime-client";
+import {
+  DEVELOPER_ALLOWED_PREFIXES,
+  PREVIEW_ALLOWED_PREFIXES,
+} from "./route-constants";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
 
+// Cache metadata: previewMode is static for the server lifetime, so fetch once
+let cachedMetadata: Awaited<ReturnType<typeof localServiceGetMetadata>> | null =
+  null;
+
 export async function load({ url, depends, untrack }) {
-  depends("init");
+  depends("app:init");
+
+  // Fetch metadata to check preview mode (cached after first load)
+  if (!cachedMetadata) {
+    cachedMetadata = await localServiceGetMetadata();
+  }
+  const metadata = cachedMetadata;
+  const previewMode = metadata.previewMode ?? false;
+
+  // Enforce mode-based route locking.
+  // Wrapped in untrack() so SvelteKit does not register url.pathname as a
+  // dependency; without this, the entire load function re-runs on every
+  // client-side navigation, causing unnecessary data refetches and UI flicker.
+  untrack(() => {
+    if (previewMode) {
+      // Preview mode: only allow preview-related and shared routes
+      const isAllowed = PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
+        url.pathname.startsWith(prefix),
+      );
+      if (!isAllowed) {
+        eventBus.emit("notification", {
+          message: "This page is only available in Developer mode",
+        });
+        throw redirect(303, "/dashboards");
+      }
+    } else {
+      // Developer mode: block preview-exclusive routes
+      const isAllowed =
+        url.pathname === "/" ||
+        DEVELOPER_ALLOWED_PREFIXES.some((prefix) =>
+          url.pathname.startsWith(prefix),
+        );
+      if (!isAllowed) {
+        eventBus.emit("notification", {
+          message: "This page is only available in Preview mode",
+        });
+        throw redirect(303, "/");
+      }
+    }
+  });
 
   const client = getLocalRuntimeClient();
 
@@ -37,8 +86,14 @@ export async function load({ url, depends, untrack }) {
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
 
   const redirectPath = untrack(() => {
+    if (!url.searchParams.get("redirect")) return false;
+
+    // In preview mode, redirect to /dashboards instead of /files
+    if (previewMode) {
+      return url.pathname !== "/dashboards" && "/dashboards";
+    }
+
     return (
-      !!url.searchParams.get("redirect") &&
       url.pathname !== `/files${firstDashboardFile?.path}` &&
       `/files${firstDashboardFile?.path}`
     );
@@ -50,5 +105,5 @@ export async function load({ url, depends, untrack }) {
     throw redirect(303, redirectPath);
   }
 
-  return { initialized };
+  return { initialized, previewMode, metadata };
 }

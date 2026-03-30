@@ -7,6 +7,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { View } from "svelte-vega";
   import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
   import type { BaseChart } from "./BaseChart";
@@ -16,6 +17,7 @@
   export let component: BaseChart<CanvasChartSpec>;
 
   const runtimeClient = useRuntimeClient();
+  let viewVL: View;
 
   // Theme mode (light/dark) - separate from which theme is selected
   $: isThemeModeDark = derived(
@@ -30,6 +32,7 @@
     parent: { name: canvasName, theme },
     timeAndFilterStore,
     chartType: type,
+    visible,
   } = component);
 
   $: chartType = $type;
@@ -68,6 +71,7 @@
     chartSpec,
     timeAndFilterStore,
     isThemeModeDark,
+    visible,
   );
 
   $: ({ isFetching, error } = $chartData);
@@ -101,6 +105,7 @@
         {chartData}
         measures={$measures}
         isCanvas
+        bind:view={viewVL}
         themeMode={$isThemeModeDark ? "dark" : "light"}
         theme={currentTheme}
       />

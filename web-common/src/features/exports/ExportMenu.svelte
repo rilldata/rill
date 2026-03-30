@@ -15,6 +15,8 @@
   import { onMount } from "svelte";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 
   const runtimeClient = useRuntimeClient();
 
@@ -46,19 +48,26 @@
     includeHeader?: boolean;
   }) {
     const { format, includeHeader = false } = options;
-    const result = await $exportDash.mutateAsync({
-      query: exportQuery as any,
-      format: format as any,
-      includeHeader,
-      // Include metadata for CSV/XLSX exports in Cloud context.
-      ...(includeHeader &&
-        $adminServer && {
-          originDashboard: { name: exploreName, kind: ResourceKind.Explore },
-          originUrl: window.location.href,
-        }),
-    });
-    const downloadUrl = `${runtimeClient.host}${result.downloadUrlPath}`;
-    window.open(downloadUrl, "_self");
+    try {
+      const result = await $exportDash.mutateAsync({
+        query: exportQuery as any,
+        format: format as any,
+        includeHeader,
+        // Include metadata for CSV/XLSX exports in Cloud context.
+        ...(includeHeader &&
+          $adminServer && {
+            originDashboard: { name: exploreName, kind: ResourceKind.Explore },
+            originUrl: window.location.href,
+          }),
+      });
+      const downloadUrl = `${runtimeClient.host}${result.downloadUrlPath}`;
+      window.open(downloadUrl, "_self");
+    } catch (err) {
+      eventBus.emit("notification", {
+        message: `Export failed: ${extractErrorMessage(err)}`,
+        type: "error",
+      });
+    }
   }
 
   // Only import the Scheduled Report dialog if in the Cloud context.
@@ -74,37 +83,38 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
-    {#if workspace}
-      <Tooltip distance={8} suppress={open}>
-        <Button {label} {disabled} type="secondary" builders={[builder]} square>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      {#if workspace}
+        <Tooltip distance={8} suppress={open}>
+          <Button {...props} {label} {disabled} type="secondary" square>
+            <Export size="15px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">Export model</TooltipContent>
+        </Tooltip>
+      {:else}
+        <Button {...props} {label} {disabled} type="toolbar">
           <Export size="15px" />
+          Export
+          <CaretDownIcon
+            className="transition-transform {open && '-rotate-180'}"
+            size="10px"
+          />
         </Button>
-        <TooltipContent slot="tooltip-content">Export model</TooltipContent>
-      </Tooltip>
-    {:else}
-      <Button {label} {disabled} type="toolbar" builders={[builder]}>
-        <Export size="15px" />
-        Export
-        <CaretDownIcon
-          className="transition-transform {open && '-rotate-180'}"
-          size="10px"
-        />
-      </Button>
-    {/if}
+      {/if}
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start">
     <DropdownMenu.Item
-      on:click={() =>
-        handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
+      onclick={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
       disabled={!exportQuery}
     >
       Export as CSV
     </DropdownMenu.Item>
     {#if !workspace && $exportHeader}
       <DropdownMenu.Item
-        on:click={() =>
+        onclick={() =>
           handleExport({
             format: V1ExportFormat.EXPORT_FORMAT_CSV,
             includeHeader: true,
@@ -115,7 +125,7 @@
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      on:click={() =>
+      onclick={() =>
         handleExport({ format: V1ExportFormat.EXPORT_FORMAT_PARQUET })}
       disabled={!exportQuery}
     >
@@ -123,7 +133,7 @@
     </DropdownMenu.Item>
 
     <DropdownMenu.Item
-      on:click={() =>
+      onclick={() =>
         handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX })}
       disabled={!exportQuery}
     >
@@ -131,7 +141,7 @@
     </DropdownMenu.Item>
     {#if !workspace && $exportHeader}
       <DropdownMenu.Item
-        on:click={() =>
+        onclick={() =>
           handleExport({
             format: V1ExportFormat.EXPORT_FORMAT_XLSX,
             includeHeader: true,
@@ -143,7 +153,7 @@
     {/if}
     {#if includeScheduledReport && $reports && exploreName}
       <DropdownMenu.Item
-        on:click={() => (showScheduledReportDialog = true)}
+        onclick={() => (showScheduledReportDialog = true)}
         disabled={!scheduledReportQuery}
       >
         Create scheduled report...

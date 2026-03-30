@@ -119,10 +119,12 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
   createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery {
     return this.provider.createChartDataQuery(
       ctx.runtimeClient,
       timeAndFilterStore,
+      visible,
     );
   }
 

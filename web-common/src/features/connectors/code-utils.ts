@@ -25,6 +25,7 @@ import {
   getDriverNameForConnector,
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
+import { getDocsCategory } from "../sources/modal/connector-schemas";
 
 function yamlModelTemplate(driverName: string) {
   return `# Model YAML
@@ -171,14 +172,30 @@ export function compileConnectorYAML(
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
-    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    schema?: {
+      properties?: Record<
+        string,
+        {
+          "x-env-var-name"?: string;
+          default?: string | number | boolean;
+          type?: string;
+          "x-yaml-value"?: string | number | boolean;
+          "x-advanced"?: boolean;
+        }
+      >;
+    };
     existingEnvBlob?: string;
   },
 ) {
   // Add instructions to the top of the file
   const driverName = getDriverNameForConnector(connector.name as string);
+  const category = connector.implementsAi
+    ? "ai"
+    : connector.implementsOlap
+      ? "olap"
+      : undefined;
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${driverName}
 
 type: connector
 
@@ -216,11 +233,27 @@ driver: ${driverName}`;
         value === false
       )
         return false;
+      // For advanced fields, skip values that match the field's effective default.
+      const schemaProp = options?.schema?.properties?.[property.key as string];
+      if (schemaProp?.["x-advanced"]) {
+        const typeDefault =
+          schemaProp.type === "boolean"
+            ? false
+            : schemaProp.type === "number" || schemaProp.type === "integer"
+              ? 0
+              : schemaProp.type === "string"
+                ? ""
+                : undefined;
+        const effectiveDefault =
+          schemaProp.default !== undefined ? schemaProp.default : typeDefault;
+        if (effectiveDefault !== undefined && value === effectiveDefault)
+          return false;
+      }
       return true;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       if (key === "headers") {
         return formatHeadersAsYamlMap(
@@ -239,6 +272,12 @@ driver: ${driverName}`;
           options?.schema,
         );
         return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
+      }
+
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false
+      const schemaPropForMap = options?.schema?.properties?.[key];
+      if (schemaPropForMap?.["x-yaml-value"] !== undefined && value === true) {
+        return `${key}: ${schemaPropForMap["x-yaml-value"]}`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -540,6 +579,38 @@ export function replaceOlapConnectorInYAML(
     return blob.replace(olapConnectorRegex, `olap_connector: ${newConnector}`);
   } else {
     return `${blob}${blob !== "" ? "\n" : ""}olap_connector: ${newConnector}\n`;
+  }
+}
+
+export async function updateRillYAMLWithAiConnector(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+  newConnector: string,
+): Promise<string> {
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+  return replaceAiConnectorInYAML(blob, newConnector);
+}
+
+/**
+ * Update the `ai_connector` key in a YAML file.
+ * This function uses a regex approach to preserve comments and formatting.
+ */
+export function replaceAiConnectorInYAML(
+  blob: string,
+  newConnector: string,
+): string {
+  const aiConnectorRegex = /^ai_connector: .+$/m;
+
+  if (aiConnectorRegex.test(blob)) {
+    return blob.replace(aiConnectorRegex, `ai_connector: ${newConnector}`);
+  } else {
+    return `${blob}${blob !== "" ? "\n" : ""}ai_connector: ${newConnector}\n`;
   }
 }
 

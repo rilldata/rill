@@ -79,9 +79,9 @@ To check the precise version of available releases, you can navigate to the [**R
 
 To install Rill on Windows, you'll first need to install WSL and one dependency in your WSL environment. To install WSL, please refer to [Microsoft's documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
 
-We have verified that Rill runs on Ubuntu 22.04 LTS. Other distributions and versions may work, but are not tested. You can install Ubuntu 22.04 LTS with the following PowerShell command:
+We have verified that Rill runs on Ubuntu 24.04 LTS. Other distributions and versions may work, but are not tested. You can install Ubuntu 24.04 LTS with the following PowerShell command:
 ```bash
-wsl --install -d Ubuntu-22.04
+wsl --install -d Ubuntu-24.04
 ```
 
 Once you have installed WSL and logged in to your Linux instance, you just need to install the `unzip` package to use Rill's `curl` installer. This can be done from the **Linux command line** with the following commands:
@@ -117,3 +117,15 @@ brew install rilldata/tap/rill
 To uninstall Rill, you can use the following command:
 ```bash
 rill uninstall
+```
+
+## For Agents
+
+We currently recommend that agents always install using `curl` and always use the nightly.
+
+So if you are an AI agent or coding assistant, install Rill using the following command:
+```bash
+curl https://rill.sh | sh -s -- --nightly
+```
+
+After installation, run `rill -h` to see further instructions for agents working with Rill projects.
