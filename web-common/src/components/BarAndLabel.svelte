@@ -34,7 +34,7 @@
     {customBackgroundColor !== ''
     ? customBackgroundColor
     : showBackground
-      ? 'bg-gray-100'
+      ? 'bg-surface-muted'
       : 'bg-transparent'}
     "
   style:flex="1"
@@ -42,7 +42,7 @@
   <div
     class="number-bar {color}"
     style="--width: {Math.min(1, $valueTween)};"
-  />
+  ></div>
   <div
     class:pl-2={!compact}
     class:pr-2={!compact}

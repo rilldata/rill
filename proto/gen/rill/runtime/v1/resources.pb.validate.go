@@ -2783,6 +2783,10 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for LatestExecutionDurationMs
 
+	// no validation rules for RowsTotal
+
+	// no validation rules for BytesTotal
+
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
 	}
@@ -11729,6 +11733,8 @@ func (m *ParseError) validate(all bool) error {
 	}
 
 	// no validation rules for External
+
+	// no validation rules for Warning
 
 	if len(errors) > 0 {
 		return ParseErrorMultiError(errors)

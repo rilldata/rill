@@ -1,5 +1,3 @@
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 /**
@@ -118,12 +116,18 @@ export class SSEFetchClient {
       method?: "GET" | "POST";
       body?: Record<string, unknown>;
       headers?: Record<string, string>;
+      getJwt?: () => string | undefined;
     } = {},
   ): Promise<void> {
     // Clean up any existing connection
     this.stop();
 
-    const { method = "GET", body, headers: customHeaders = {} } = options;
+    const {
+      method = "GET",
+      body,
+      headers: customHeaders = {},
+      getJwt,
+    } = options;
 
     // Prepare headers with authentication
     const headers: Record<string, string> = {
@@ -131,9 +135,9 @@ export class SSEFetchClient {
       ...customHeaders,
     };
 
-    const jwt = get(runtime).jwt;
+    const jwt = getJwt?.();
     if (jwt) {
-      headers["Authorization"] = `Bearer ${jwt.token}`;
+      headers["Authorization"] = `Bearer ${jwt}`;
     }
 
     try {

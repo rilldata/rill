@@ -109,5 +109,5 @@ curl https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/
   -H "Authorization: Bearer <user-token>"
 ```
 
-For more details, see [Custom API Integration](/developers/integrate/custom-api).
+For more details, see [Calling Custom APIs](/developers/build/custom-apis/calling).
 

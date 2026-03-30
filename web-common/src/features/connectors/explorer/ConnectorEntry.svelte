@@ -1,11 +1,9 @@
 <script lang="ts">
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../../components/tag";
-  import {
-    type V1AnalyzedConnector,
-    createRuntimeServiceGetInstance,
-  } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { connectorIconMapping } from "../connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors-utils";
@@ -14,11 +12,12 @@
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
 
+  const client = useRuntimeClient();
+
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName);
   $: expanded = $expandedStore;
-  $: ({ instanceId } = $runtime);
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
+  $: instance = createRuntimeServiceGetInstance(client, {
     sensitive: true,
   });
   $: olapConnector = $instance.data?.instance?.olapConnector;
@@ -39,7 +38,7 @@
       <button
         class="connector-entry-header text-fg-primary"
         aria-label={connector.name}
-        on:click={() => {
+        onclick={() => {
           store.toggleItem(connectorName);
         }}
       >
@@ -66,7 +65,7 @@
       </button>
 
       {#if expanded}
-        <DatabaseExplorer {instanceId} {connector} {store} />
+        <DatabaseExplorer {connector} {store} />
       {/if}
     </li>
   {/if}

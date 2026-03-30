@@ -380,13 +380,13 @@ func testScan(t *testing.T, olap drivers.OLAPStore) {
 			args:  nil,
 			scanFunc: func(rows drivers.Rows) error {
 				var booleanCol int8
-				var bitCol string
+				var bitCol []byte
 
 				require.True(t, rows.Next())
 				err := rows.Scan(&booleanCol, &bitCol)
 				require.NoError(t, err)
 				require.Equal(t, int8(1), booleanCol)
-				require.Equal(t, "1", bitCol)
+				require.Equal(t, []byte{1}, bitCol)
 				return nil
 			},
 		},
@@ -517,7 +517,7 @@ func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
 
 func acquireTestMySQL(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "mysql")
-	conn, err := drivers.Open("mysql", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("mysql", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

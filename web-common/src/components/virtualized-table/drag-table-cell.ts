@@ -1,5 +1,14 @@
-export function dragTableCell(node) {
+interface DragTableCellOptions {
+  onresize?: (size: number) => void;
+  onresizeend?: () => void;
+}
+
+export function dragTableCell(
+  node: HTMLElement,
+  options: DragTableCellOptions = {},
+) {
   let moving = false;
+  let opts = options;
 
   function mousedown() {
     moving = true;
@@ -7,21 +16,15 @@ export function dragTableCell(node) {
 
   function mousemove(e: MouseEvent) {
     if (moving) {
-      const rect = node.parentNode.getBoundingClientRect();
-      const left = rect.left;
-
-      node.dispatchEvent(
-        new CustomEvent("resize", {
-          detail: e.pageX - left,
-        }),
-      );
+      const rect = node.parentElement!.getBoundingClientRect();
+      opts.onresize?.(e.pageX - rect.left);
     }
   }
 
   function mouseup() {
     if (moving) {
       moving = false;
-      node.dispatchEvent(new CustomEvent("resizeend"));
+      opts.onresizeend?.();
     }
   }
 
@@ -30,7 +33,8 @@ export function dragTableCell(node) {
   window.addEventListener("mouseup", mouseup);
 
   return {
-    update() {
+    update(newOptions: DragTableCellOptions) {
+      opts = newOptions;
       moving = false;
     },
     destroy() {

@@ -7,57 +7,56 @@
   import {
     V1ReconcileStatus,
     type V1Resource,
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges: boolean;
 
-  const triggerMutation = createRuntimeServiceCreateTrigger();
-
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
   $: isIncrementalModel = resource?.model?.spec?.incremental;
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   function refreshModel(full: boolean) {
     void $triggerMutation.mutateAsync({
-      instanceId,
-      data: {
-        models: [{ model: resource?.meta?.name?.name, full: full }],
-      },
+      models: [{ model: resource?.meta?.name?.name, full: full }],
     });
   }
 </script>
 
 {#if isIncrementalModel}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <Tooltip distance={8}>
-        <Button
-          square
-          type="secondary"
-          builders={[builder]}
-          disabled={!isModelIdle || hasUnsavedChanges}
-          label="Refresh Incremental Model"
-        >
-          <RefreshIcon size="14px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          {#if hasUnsavedChanges}
-            Save your changes to refresh
-          {:else}
-            Refresh model
-          {/if}
-        </TooltipContent>
-      </Tooltip>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Tooltip distance={8}>
+          <Button
+            {...props}
+            square
+            type="secondary"
+            disabled={!isModelIdle || hasUnsavedChanges}
+            label="Refresh Incremental Model"
+          >
+            <RefreshIcon size="14px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            {#if hasUnsavedChanges}
+              Save your changes to refresh
+            {:else}
+              Refresh model
+            {/if}
+          </TooltipContent>
+        </Tooltip>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
-      <DropdownMenu.Item on:click={() => refreshModel(false)}>
+      <DropdownMenu.Item onclick={() => refreshModel(false)}>
         Incremental refresh
       </DropdownMenu.Item>
-      <DropdownMenu.Item on:click={() => refreshModel(true)}>
+      <DropdownMenu.Item onclick={() => refreshModel(true)}>
         Full refresh
       </DropdownMenu.Item>
     </DropdownMenu.Content>

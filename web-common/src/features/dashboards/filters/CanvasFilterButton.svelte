@@ -61,20 +61,21 @@
   ];
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Tooltip distance={8} suppress={open}>
-      <button
-        class:addBorder
-        class:active={open}
-        use:builder.action
-        {...builder}
-        aria-label="Add filter button"
-      >
-        <Add size="17px" />
-      </button>
-      <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
-    </Tooltip>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip distance={8} suppress={open}>
+        <button
+          {...props}
+          class:addBorder
+          class:active={open}
+          aria-label="Add filter button"
+        >
+          <Add size="17px" />
+        </button>
+        <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent

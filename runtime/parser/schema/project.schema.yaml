@@ -64,7 +64,7 @@ definitions:
       - [**MySQL**](#mysql) - MySQL databases
       - [**Oracle**](#oracle) - Oracle databases
       - [**PostgreSQL**](#postgres) - PostgreSQL databases
-      - [**SQLite**](#sqlite) - SQLite databases
+      - [**Supabase**](#supabase) - Supabase (managed PostgreSQL)
 
       ### _Object Storage_
       - [**Azure**](#azure) - Azure Blob Storage
@@ -79,7 +79,6 @@ definitions:
 
       ### _Other_
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-      - [**Salesforce**](#salesforce) - Salesforce data
 
       :::warning Security Recommendation
       For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{ .env.KEY_NAME }}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
@@ -130,7 +129,7 @@ definitions:
             output_location:
               type: string
               description: S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration.
-            aws_region:
+            region:
               type: string
               description: AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified.
             allow_host_access:
@@ -149,7 +148,7 @@ definitions:
               external_id: "MyExternalID"                      # External ID for cross-account access
               workgroup: "primary"                             # Athena workgroup (defaults to 'primary')
               output_location: "s3://my-bucket/athena-output/" # S3 URI for query results
-              aws_region: "us-east-1"                          # AWS region (defaults to 'us-east-1')
+              region: "us-east-1"                              # AWS region (defaults to 'us-east-1')
               allow_host_access: true                          # Allow host environment access _(default: true)_
           required:
             - driver
@@ -207,15 +206,12 @@ definitions:
             project_id:
               type: string
               description: Google Cloud project ID
-            dataset_id:
-              type: string
-              description: BigQuery dataset ID
-            location:
-              type: string
-              description: BigQuery dataset location
             allow_host_access:
               type: boolean
               description: Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: BigQuery connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -263,6 +259,12 @@ definitions:
             cluster:
               type: string
               description: Cluster name, required for running distributed queries
+            write_dsn:
+              type: string
+              description: Separate connection string for write operations
+            database_whitelist:
+              type: string
+              description: Comma-separated list of databases to show
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
@@ -309,6 +311,8 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
+        # See /developers/build/connectors/data-source/delta for configuration details.
         - type: object
           title: Druid
           properties:
@@ -526,6 +530,8 @@ definitions:
           required:
             - driver
             - path
+        # Note: Iceberg is not a standalone connector. It uses DuckDB's iceberg_scan() function.
+        # See /developers/build/connectors/data-source/iceberg for configuration details.
         - type: object
           title: MotherDuck
           properties:
@@ -604,7 +610,10 @@ definitions:
               description: Password for authentication
             ssl-mode:
               type: string
-              description: "ssl mode options: `disabled`, `preferred`, or `required`."       
+              description: "ssl mode options: `disabled`, `preferred`, or `required`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: MySQL connector configured using individual properties
               type: connector
@@ -684,6 +693,12 @@ definitions:
             model:
               type: string
               description: The OpenAI model to use (e.g., 'gpt-4o')
+            max_output_tokens:
+              type: number
+              description: "Maximum number of tokens to generate in the completion (default: 8192)"
+            reasoning_effort:
+              type: string
+              description: "Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')"
             base_url:
               type: string
               description: The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
@@ -700,6 +715,8 @@ definitions:
 
               api_key: "{{ .env.OPENAI_API_KEY }}"            # API key for connecting to OpenAI
               model: "gpt-4o"                                  # The OpenAI model to use (e.g., 'gpt-4o')
+              max_output_tokens: 8192                           # Maximum number of tokens to generate in the completion (default: 8192)
+              reasoning_effort: "medium"                        # Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
               base_url: "https://api.openai.com/v1"            # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
               api_type: "openai"                               # The type of OpenAI API to use
               api_version: "2023-05-15"                        # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
@@ -868,6 +885,9 @@ definitions:
               type: boolean
               description: Enable SSL/TLS encryption
               default: false
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: StarRocks connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -935,6 +955,9 @@ definitions:
             sslmode:
               type: string
               description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Postgres connector configured using individual properties
               type: connector
@@ -949,6 +972,60 @@ definitions:
               type: connector
               driver: postgres
               dsn: "{{ .env.POSTGRES_DSN }}"  # Define DSN in .env file
+          required:
+            - driver
+        - type: object
+          title: Supabase
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `postgres`
+            dsn:
+              type: string
+              description: |
+                **Data Source Name (DSN)** for the Supabase connection, provided in
+                [PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+                Supabase uses PostgreSQL under the hood, so all PostgreSQL connection formats are supported.
+
+                URI format example:
+                ```text
+                postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+                ```
+            host:
+              type: string
+              description: Hostname of the Supabase database (e.g. aws-0-us-east-1.pooler.supabase.com)
+            port:
+              type: string
+              description: Port number for the Supabase database
+            dbname:
+              type: string
+              description: Name of the Supabase database
+            user:
+              type: string
+              description: Username for authentication (e.g. postgres.[your-project-ref])
+            password:
+              type: string
+              description: Password for authentication
+            sslmode:
+              type: string
+              description: "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
+          examples:
+            - # Example: Supabase connector configured using individual properties
+              type: connector
+              driver: postgres
+              host: aws-0-us-east-1.pooler.supabase.com
+              port: 5432
+              dbname: postgres
+              user: "postgres.[your-project-ref]"
+              password: "{{ .env.SUPABASE_PASSWORD }}"
+              sslmode: require
+            - # Example: Supabase connector configured using dsn
+              type: connector
+              driver: postgres
+              dsn: "{{ .env.SUPABASE_DSN }}"  # Define DSN in .env file
           required:
             - driver
         - type: object
@@ -978,6 +1055,12 @@ definitions:
             cluster_identifier:
               type: string
               description: Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
+            allow_host_access:
+              type: boolean
+              description: Allow access to host environment configuration
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Redshift connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -1049,42 +1132,6 @@ definitions:
           required:
             - driver
             - bucket
-        - type: object
-          title: Salesforce
-          properties:
-            driver:
-              type: string
-              description: Refers to the driver type and must be driver `salesforce`
-            username:
-              type: string
-              description: Salesforce account username
-            password:
-              type: string
-              description: Salesforce account password (secret)
-            key:
-              type: string
-              description: Authentication key for Salesforce (secret)
-            endpoint:
-              type: string
-              description: Salesforce API endpoint URL
-            client_id:
-              type: string
-              description: Client ID used for Salesforce OAuth authentication
-          examples:
-            - # Example: Salesforce connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: salesforce                               # Must be `salesforce` _(required)_
-
-              username: "myusername"                           # Salesforce account username
-              password: "{{ .env.SALESFORCE_PASSWORD }}"      # Salesforce account password (secret)
-              key: "{{ .env.SALESFORCE_KEY }}"                # Authentication key for Salesforce (secret)
-              endpoint: "https://login.salesforce.com"         # Salesforce API endpoint URL
-              client_id: "my-client-id"                        # Client ID used for Salesforce OAuth authentication
-          required: 
-            - driver
-            - username
-            - endpoint
-            - client_id
         - type: object
           title: Slack
           properties:
@@ -1167,6 +1214,9 @@ definitions:
             parallel_fetch_limit:
               type: integer
               description: Maximum number of concurrent fetches during query execution.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
           - # Example: Snowflake connector basic configuration
               type: connector
@@ -1189,26 +1239,8 @@ definitions:
           required:
           - type
           - driver
-        - type: object
-          title: SQLite
-          properties:
-            driver:
-              type: string
-              description: Refers to the driver type and must be driver `sqlite`
-            dsn:
-              type: string
-              description: DSN(Data Source Name) for the sqlite connection
-          examples:
-            - # Example: SQLite connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: sqlite                                   # Must be `sqlite` _(required)_
 
-              dsn: "file:mydatabase.db"                        # DSN for the sqlite connection
-          required:
-            - driver
-            - dsn
 
-    
   # Source YAML
   sources:
     title: Source YAML
@@ -1244,7 +1276,7 @@ definitions:
               - redshift
               - oracle
               - postgres
-              - sqlite
+              - supabase
               - snowflake
               - bigquery
               - duckdb
@@ -1721,15 +1753,6 @@ definitions:
                 - connector
             then:
               $ref: '#/definitions/models/definitions/s3'
-          - if:
-              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
-              properties:
-                connector:
-                  const: salesforce
-              required:
-                - connector
-            then:
-              $ref: '#/definitions/models/definitions/salesforce'
     definitions:
       athena:
         type: object
@@ -1911,18 +1934,6 @@ definitions:
           batch_size:
             type: string
             description: 'Size of a batch (e.g., ''100MB'')'
-      salesforce:
-        type: object
-        properties:
-          soql:
-            type: string
-            description: SOQL query to execute against the Salesforce instance.
-          sobject:
-            type: string
-            description: Salesforce object (e.g., Account, Contact) targeted by the query.
-          queryAll:
-            type: boolean
-            description: Whether to include deleted and archived records in the query (uses queryAll API).
     examples: 
       - ### Incremental model 
         type: model
@@ -2096,7 +2107,19 @@ definitions:
                   type:
                     - string
                     - boolean
-                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
+                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)
+                lookup_table:
+                  type: string
+                  description: the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details
+                lookup_key_column:
+                  type: string
+                  description: the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table
+                lookup_value_column:
+                  type: string
+                  description: the attribute column in the lookup dictionary whose values will be displayed for this dimension
+                lookup_default_expression:
+                  type: string
+                  description: an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
               anyOf:
                 - required:
                     - column
@@ -2405,19 +2428,12 @@ definitions:
             description: |
               defines the defaults YAML struct
                 ```yaml
-                defaults: #define all the defaults within here
+                defaults:
                   time_range: P1M
-                  comparison_mode: dimension #time, none
+                  comparison_mode: dimension # time, none
                   comparison_dimension: filename
                   filters:
-                    dimensions:
-                      - dimension: country
-                        values: ["US", "CA"]
-                        mode: in_list
-                    measures:
-                      - measure: revenue
-                        operator: gt
-                        values: ["1000"]
+                    metrics_view_name: "dimension_name = 'value' AND measure_name > 1000"
                 ```
             properties:
               time_range:
@@ -2435,70 +2451,9 @@ definitions:
                 type: string
               filters:
                 type: object
-                description: Default filter configuration
-                properties:
-                  dimensions:
-                    type: array
-                    description: List of default dimension filters
-                    items:
-                      type: object
-                      properties:
-                        dimension:
-                          type: string
-                          description: Name of the dimension to filter on
-                        values:
-                          type: array
-                          items:
-                            type: string
-                          description: List of values to filter by
-                        limit:
-                          type: integer
-                          description: Maximum number of values to show in the filter
-                        removable:
-                          type: boolean
-                          description: Whether the filter can be removed by the user
-                        locked:
-                          type: boolean
-                          description: Whether the filter is locked and cannot be modified
-                        hidden:
-                          type: boolean
-                          description: Whether the filter is hidden from the UI
-                        mode:
-                          type: string
-                          enum: [select, in_list, contains]
-                          description: Filter mode - select for dropdown, in_list for multi-select, contains for text search
-                        exclude:
-                          type: boolean
-                          description: Whether to exclude the specified values instead of including them
-                  measures:
-                    type: array
-                    description: List of default measure filters
-                    items:
-                      type: object
-                      properties:
-                        measure:
-                          type: string
-                          description: Name of the measure to filter on
-                        by_dimension:
-                          type: string
-                          description: Dimension to group the measure filter by
-                        operator:
-                          type: string
-                          description: Operator for the measure filter (e.g., eq, gt, lt, gte, lte)
-                        values:
-                          type: array
-                          items:
-                            type: string
-                          description: List of values to filter by
-                        removable:
-                          type: boolean
-                          description: Whether the filter can be removed by the user
-                        locked:
-                          type: boolean
-                          description: Whether the filter is locked and cannot be modified
-                        hidden:
-                          type: boolean
-                          description: Whether the filter is hidden from the UI
+                description: Default filter expressions keyed by metrics view name. Each value is a Metrics SQL WHERE expression.
+                additionalProperties:
+                  type: string
           theme:
             oneOf:
               - type: string
@@ -3474,16 +3429,45 @@ definitions:
         description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
-            description: Defines the file path or pattern to query from the specified connector.
-            anyOf:
+            description: Simple path/glob pattern or path/glob patternwith advanced options .
+            oneOf:
               - type: string
-                description: A simple file path/glob pattern as a string.
+                description: Glob pattern used to match files or directories in the object store.
               - type: object
-                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
-                additionalProperties: true
-          connector:
-            type: string
-            description: Specifies the connector to use with the glob input.
+                description: Configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: false
+                properties:
+                  connector:
+                    type: string
+                    description: Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
+                  path:
+                    type: string
+                    description: Glob pattern used to match files or directories in the object store.
+                  start:
+                    type: string
+                    description: Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
+                  end:
+                    type: string
+                    description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
+                  last:
+                    type: integer
+                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                  partition:
+                    type: string
+                    enum: [ "file", "directory", "hive"]
+                    description: >
+                      Controls how matched files are grouped:
+                      - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level).
+                      - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want.
+                      - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+                  rollup_files:
+                    type: boolean
+                    description: If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+                  transform_sql:
+                    type: string
+                    description: Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
+                required:
+                  - path
         required:
           - glob
         examples: 
@@ -3505,11 +3489,32 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
-        examples: 
+        examples:
           - type: api
             resource_status:
               where_error: true
- 
+
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - # Exampe for union resolvers
+            type: api
+            union:
+              - connector: duckdb
+                sql: SELECT 1
+              - connector: clickhouse
+                sql: SELECT 2
   data_properties:
     oneOf:
       - title: SQL Query
@@ -3551,16 +3556,45 @@ definitions:
         description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
-            description: Defines the file path or pattern to query from the specified connector.
-            anyOf:
+            description: Simple path/glob pattern or path/glob patternwith advanced options .
+            oneOf:
               - type: string
-                description: A simple file path/glob pattern as a string.
+                description: Glob pattern used to match files or directories in the object store.
               - type: object
-                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
-                additionalProperties: true
-          connector:
-            type: string
-            description: Specifies the connector to use with the glob input.
+                description: Configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: false
+                properties:
+                  connector:
+                    type: string
+                    description: Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
+                  path:
+                    type: string
+                    description: Glob pattern used to match files or directories in the object store.
+                  start:
+                    type: string
+                    description: Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
+                  end:
+                    type: string
+                    description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
+                  last:
+                    type: integer
+                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                  partition:
+                    type: string
+                    enum: [ "file", "directory", "hive"]
+                    description: >
+                      Controls how matched files are grouped:
+                      - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level).
+                      - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want.
+                      - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+                  rollup_files:
+                    type: boolean
+                    description: If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+                  transform_sql:
+                    type: string
+                    description: Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
+                required:
+                  - path
         required:
           - glob
       - title: Resource Status Check
@@ -3581,6 +3615,27 @@ definitions:
           -
             resource_status:
               where_error: true
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - union:
+              - glob:
+                  path: s3://bucket/dir/year=*/month=*
+                  end: dir/year=2025/month=03
+              - glob:
+                  path: s3://bucket/year=*/month=*/day=*
+                  start: dir/year=2025/month=03/day=01
       - title: AI Resolver
         type: object
         description: Uses AI to generate insights and analysis from metrics data. Only available for reports.

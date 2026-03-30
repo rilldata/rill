@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
 import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
 
@@ -7,7 +7,7 @@ test.describe("Time grain derivation from URL", () => {
 
   // Helper to run a time grain derivation test
   async function testGrainDerivation(
-    page: import("@playwright/test").Page,
+    page: Page,
     timeRange: string,
     expectedGrain: string,
   ) {
@@ -31,128 +31,51 @@ test.describe("Time grain derivation from URL", () => {
     expect(grain).toBe(expectedGrain);
   }
 
-  // Basic ISO duration tests
-  test("derives day grain for P7D (7 days)", async ({ page }) => {
-    await testGrainDerivation(page, "P7D", "day");
-  });
+  const cases: [string, string, string][] = [
+    // Basic ISO duration tests
+    ["P7D (7 days)", "P7D", "day"],
+    ["PT6H (6 hours)", "PT6H", "hour"],
+    ["P4W (4 weeks)", "P4W", "week"],
 
-  test("derives hour grain for PT6H (6 hours)", async ({ page }) => {
-    await testGrainDerivation(page, "PT6H", "hour");
-  });
+    // Rill time syntax tests with "as of latest" format
+    ["365d as of latest/h+1h", "365d as of latest/h+1h", "day"],
+    ["12M as of latest/m+1m", "12M as of latest/m+1m", "day"],
+    ["365M as of latest/d+1d", "365M as of latest/d+1d", "month"],
 
-  test("derives week grain for P4W (4 weeks)", async ({ page }) => {
-    await testGrainDerivation(page, "P4W", "week");
-  });
+    // Edge cases around bucket limits (1500 max)
+    ["24h as of latest/h", "24h as of latest/h", "hour"],
+    ["90d as of latest/d", "90d as of latest/d", "day"],
+    ["2y as of latest/M", "2y as of latest/M", "month"],
+    ["5y as of latest/d", "5y as of latest/d", "week"],
 
-  // Rill time syntax tests with "as of latest" format
-  test("derives day grain for 365d as of latest/h+1h", async ({ page }) => {
-    // 365 days at hour grain = 8760 buckets (exceeds 1500 limit)
-    // Should use day grain = 365 buckets
-    await testGrainDerivation(page, "365d as of latest/h+1h", "day");
-  });
+    // Period-to-date tests
+    ["week-to-date", "rill-WTD", "day"],
+    ["month-to-date", "rill-MTD", "day"],
 
-  test("derives day grain for 12M as of latest/m+1m", async ({ page }) => {
-    await testGrainDerivation(page, "12M as of latest/m+1m", "day");
-  });
+    // Snap grain should influence derived grain
+    ["7d as of latest/h", "7d as of latest/h", "hour"],
+    ["52w as of latest/w", "52w as of latest/w", "week"],
 
-  test("derives month grain for 365M as of latest/d+1d", async ({ page }) => {
-    // 365 months at day grain = ~11,000 buckets (exceeds 1500 limit)
-    // Should use month grain = 365 buckets
-    await testGrainDerivation(page, "365M as of latest/d+1d", "month");
-  });
+    // Bucket limit boundary tests (1500 max buckets)
+    ["24h as of latest/m (1440 buckets)", "24h as of latest/m", "minute"],
+    ["26h as of latest/m (1560 buckets)", "26h as of latest/m", "hour"],
+    ["62d as of latest/h (1488 buckets)", "62d as of latest/h", "hour"],
+    ["64d as of latest/h (1536 buckets)", "64d as of latest/h", "day"],
 
-  // Edge cases around bucket limits (1500 max)
-  test("derives hour grain for 24h as of latest/h", async ({ page }) => {
-    await testGrainDerivation(page, "24h as of latest/h", "hour");
-  });
+    // Very large intervals
+    ["10y as of latest/M", "10y as of latest/M", "month"],
+    ["6y as of latest/d", "6y as of latest/d", "week"],
 
-  test("derives day grain for 90d as of latest/d", async ({ page }) => {
-    await testGrainDerivation(page, "90d as of latest/d", "day");
-  });
+    // Quarter grain tests
+    ["3y as of latest/Q", "3y as of latest/Q", "quarter"],
+    ["20y as of latest/M", "20y as of latest/M", "month"],
+  ];
 
-  test("derives month grain for 2y as of latest/M", async ({ page }) => {
-    await testGrainDerivation(page, "2y as of latest/M", "month");
-  });
-
-  test("derives week grain for 5y as of latest/d", async ({ page }) => {
-    // 5 years = ~1825 days (exceeds 1500 limit at day grain)
-    // Should use week grain = ~260 buckets
-    await testGrainDerivation(page, "5y as of latest/d", "week");
-  });
-
-  // Period-to-date tests
-  test("derives day grain for week-to-date", async ({ page }) => {
-    await testGrainDerivation(page, "rill-WTD", "day");
-  });
-
-  test("derives day grain for month-to-date", async ({ page }) => {
-    await testGrainDerivation(page, "rill-MTD", "day");
-  });
-
-  // Snap grain should influence derived grain
-  test("derives hour grain for 7d as of latest/h", async ({ page }) => {
-    // 7 days with hour snap = 168 buckets (under 1500)
-    // Snap grain (hour) should be used
-    await testGrainDerivation(page, "7d as of latest/h", "hour");
-  });
-
-  test("derives week grain for 52w as of latest/w", async ({ page }) => {
-    // 52 weeks = 52 buckets at week grain
-    await testGrainDerivation(page, "52w as of latest/w", "week");
-  });
-
-  // Bucket limit boundary tests (1500 max buckets)
-  test("derives minute grain for 24h as of latest/m (1440 buckets, under limit)", async ({
-    page,
-  }) => {
-    // 24 hours = 1440 minutes (just under 1500 limit)
-    await testGrainDerivation(page, "24h as of latest/m", "minute");
-  });
-
-  test("derives hour grain for 26h as of latest/m (1560 buckets, over limit)", async ({
-    page,
-  }) => {
-    // 26 hours = 1560 minutes (just over 1500 limit)
-    // Should fall back to hour grain = 26 buckets
-    await testGrainDerivation(page, "26h as of latest/m", "hour");
-  });
-
-  test("derives day grain for 62d as of latest/h (1488 buckets, under limit)", async ({
-    page,
-  }) => {
-    // 62 days = 1488 hours (just under 1500 limit)
-    await testGrainDerivation(page, "62d as of latest/h", "hour");
-  });
-
-  test("derives day grain for 64d as of latest/h (1536 buckets, over limit)", async ({
-    page,
-  }) => {
-    // 64 days = 1536 hours (just over 1500 limit)
-    // Should fall back to day grain = 64 buckets
-    await testGrainDerivation(page, "64d as of latest/h", "day");
-  });
-
-  // Very large intervals
-  test("derives year grain for 10y as of latest/M", async ({ page }) => {
-    // 10 years = 120 months at month grain
-    await testGrainDerivation(page, "10y as of latest/M", "month");
-  });
-
-  test("derives month grain for 6y as of latest/d", async ({ page }) => {
-    // 6 years = ~2190 days (exceeds 1500 limit at day grain)
-    // Should use week grain = ~312 buckets, or month = 72 buckets
-    await testGrainDerivation(page, "6y as of latest/d", "week");
-  });
-
-  // Quarter grain tests
-  test("derives quarter grain for 3y as of latest/Q", async ({ page }) => {
-    // 3 years = 12 quarters
-    await testGrainDerivation(page, "3y as of latest/Q", "quarter");
-  });
-
-  test("derives quarter grain for 20y as of latest/M", async ({ page }) => {
-    // 20 years = 240 months (under 1500 at month grain)
-    // Should use month grain
-    await testGrainDerivation(page, "20y as of latest/M", "month");
+  test("derives correct grain for all time ranges", async ({ page }) => {
+    for (const [label, timeRange, expectedGrain] of cases) {
+      await test.step(`${label} → ${expectedGrain}`, async () => {
+        await testGrainDerivation(page, timeRange, expectedGrain);
+      });
+    }
   });
 });

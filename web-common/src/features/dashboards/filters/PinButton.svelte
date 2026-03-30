@@ -9,10 +9,10 @@
 
 <button
   class="h-full aspect-square flex items-center"
-  on:click={onTogglePin}
+  onclick={onTogglePin}
   aria-label={pinned ? "Unpin filter" : "Pin filter"}
 >
-  <BitsTooltip.Root portal="body">
+  <BitsTooltip.Root>
     <BitsTooltip.Trigger id="pin-measure-filter-tooltip">
       {#if pinned}
         <PinOff size="15px" />

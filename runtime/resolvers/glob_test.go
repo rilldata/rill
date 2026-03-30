@@ -22,7 +22,7 @@ func TestGlobUnpartitioned(t *testing.T) {
 		"dir/file3.csv": ``,
 	})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "glob",
 		ResolverProperties: map[string]any{
@@ -51,7 +51,7 @@ func TestGlobTrimsWhitespace(t *testing.T) {
 		"dir/file3.csv": ``,
 	})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "glob",
 		ResolverProperties: map[string]any{
@@ -80,7 +80,7 @@ func TestGlobDirectoryPartitioned(t *testing.T) {
 		"dir/subdir/file3.csv": ``,
 	})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "glob",
 		ResolverProperties: map[string]any{
@@ -115,7 +115,7 @@ func TestGlobHivePartitioned(t *testing.T) {
 		"dir/year=2024/month=03/file3.csv": ``,
 	})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "glob",
 		ResolverProperties: map[string]any{
@@ -149,7 +149,7 @@ func TestGlobHivePartitionedTransformSQL(t *testing.T) {
 		"dir/year=2024/month=03/file3.csv": ``,
 	})
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "glob",
 		ResolverProperties: map[string]any{

@@ -5,27 +5,24 @@ import {
 import type { MockUser } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
 import { runtimeServiceIssueDevJWT } from "@rilldata/web-common/runtime-client";
 import { invalidateAllMetricsViews } from "@rilldata/web-common/runtime-client/invalidation";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 
 export async function updateDevJWT(
   queryClient: QueryClient,
+  client: RuntimeClient,
   mockUser: MockUser | null,
 ) {
   selectedMockUserStore.set(mockUser);
 
   if (mockUser === null) {
     selectedMockUserJWT.set(null);
-    runtime.update((runtimeState) => {
-      runtimeState.jwt = undefined;
-      return runtimeState;
-    });
+    client.updateJwt(undefined, "user");
   } else {
     try {
       const { name, email, groups, admin, ...customAttributes } = mockUser;
 
-      const { jwt } = await runtimeServiceIssueDevJWT({
+      const { jwt } = await runtimeServiceIssueDevJWT(client, {
         email,
         name: name || "Mock User",
         admin: !!admin,
@@ -36,19 +33,11 @@ export async function updateDevJWT(
       if (!jwt) throw new Error("No JWT returned");
 
       selectedMockUserJWT.set(jwt);
-
-      runtime.update((runtimeState) => {
-        runtimeState.jwt = {
-          token: jwt,
-          receivedAt: Date.now(),
-          authContext: "mock",
-        };
-        return runtimeState;
-      });
+      client.updateJwt(jwt, "mock");
     } catch {
       // no-op
     }
   }
 
-  return invalidateAllMetricsViews(queryClient, get(runtime).instanceId);
+  return invalidateAllMetricsViews(queryClient, client.instanceId);
 }

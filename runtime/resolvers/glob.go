@@ -12,6 +12,7 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -51,32 +53,47 @@ const (
 
 // globResolver is a resolver that lists objects matching a glob pattern in an object store.
 type globResolver struct {
-	runtime      *runtime.Runtime
-	instanceID   string
-	props        *globProps
-	bucketURI    *globutil.URL
-	tmpTableName string
+	runtime        *runtime.Runtime
+	instanceID     string
+	props          *globProps
+	bucketURI      *globutil.URL
+	tmpTableName   string
+	partitionStart string
+	partitionEnd   string
 }
 
 // globProps declares the properties for a "glob" resolver.
 type globProps struct {
-	// Connector is the object store connector to target.
+	// Connector specifies the object store connector to use (e.g. "s3", "gcs").
+	// If not provided, it is inferred from the scheme of the path (e.g. "s3://", "gs://").
 	Connector string `mapstructure:"connector"`
-	// Path is the glob pattern to match.
+	// Path is the glob pattern used to match files or directories in the object store.
 	Path string `mapstructure:"path"`
+	// Start defines the lower bound (inclusive) for partition filtering.
+	// Only partitions with paths greater than or equal to this value are considered.
+	Start string `mapstructure:"start"`
+	// End defines the upper bound (exclusive) for partition filtering.
+	// Only partitions with paths less than this value are considered.
+	End string `mapstructure:"end"`
+	// Last sets a lower bound based on the Nth partition from the end of the
+	// lexicographically sorted, successfully processed partitions. Only partitions
+	// after this point are included.
+	Last int `mapstructure:"last"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
 	// RollupFiles is a flag to roll up and include the files in each partition in the output.
 	RollupFiles bool `mapstructure:"rollup_files"`
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
-	TransformSQL string `mapstructure:"transform_sql"`
+	TransformSQL string         `mapstructure:"transform_sql"`
+	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
 // globArgs declares the arguments for a "glob" resolver.
 type globArgs struct {
 	// State to make available for template resolution in the props.
-	State map[string]any `mapstructure:"state"`
+	State             map[string]any `mapstructure:"state"`
+	PartitionsModelID string         `mapstructure:"partitions_model_id"`
 }
 
 func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -118,6 +135,64 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	props.Path = strings.TrimSpace(props.Path)
 
+	if props.TransformSQL != "" && (props.Start != "" || props.Last > 0 || props.End != "") {
+		return nil, fmt.Errorf("Properties `start`, `last` and `end` is not support with transform_sql")
+	}
+
+	startURL, err := globutil.ParseBucketURLLenient(props.Start)
+	if err != nil {
+		return nil, err
+	}
+
+	endURL, err := globutil.ParseBucketURLLenient(props.End)
+	if err != nil {
+		return nil, err
+	}
+
+	partitionStart := startURL.Path
+	partitionEnd := endURL.Path
+	last := ""
+	if props.Last > 0 && args.PartitionsModelID != "" {
+		catalog, release, err := opts.Runtime.Catalog(ctx, opts.InstanceID)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+
+		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+			ModelID:         args.PartitionsModelID,
+			WhereSuccessful: true,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		paths := make([]string, len(partitions))
+		for _, p := range partitions {
+			var data map[string]any
+
+			if err := json.Unmarshal(p.DataJSON, &data); err != nil {
+				return nil, fmt.Errorf("partition %s: invalid JSON: %w", p.Key, err)
+			}
+			pathVal, ok := data["path"]
+			if !ok {
+				return nil, fmt.Errorf("partition %s: missing 'path' field", p.Key)
+			}
+			pathStr, ok := pathVal.(string)
+			if !ok || pathStr == "" {
+				return nil, fmt.Errorf("partition %s: 'path' is not valid string", p.Key)
+			}
+			paths = append(paths, pathStr)
+		}
+		sort.Strings(paths)
+		if props.Last <= len(paths) {
+			last = paths[len(paths)-props.Last]
+		}
+	}
+	if last != "" && partitionStart > last {
+		partitionStart = last
+	}
+
 	// set props to span attributes
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
@@ -147,11 +222,13 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	}
 
 	return &globResolver{
-		runtime:      opts.Runtime,
-		instanceID:   opts.InstanceID,
-		props:        props,
-		bucketURI:    bucketURI,
-		tmpTableName: tmpTableName,
+		runtime:        opts.Runtime,
+		instanceID:     opts.InstanceID,
+		props:          props,
+		bucketURI:      bucketURI,
+		tmpTableName:   tmpTableName,
+		partitionStart: partitionStart,
+		partitionEnd:   partitionEnd,
 	}, nil
 }
 
@@ -168,6 +245,12 @@ func (r *globResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *globResolver) Validate(ctx context.Context) error {
+	if len(r.props.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
+			Name:   "glob",
+			Fields: maps.Keys(r.props.UnusedFields),
+		}
+	}
 	return nil
 }
 
@@ -187,7 +270,12 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", r.props.Path, err)
 	}
-	entries, err := store.ListObjectsForGlob(ctx, url.Host, url.Path)
+
+	entries, err := pagination.CollectAll(ctx,
+		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
+			return store.ListObjectsForGlob(ctx, url.Host, url.Path, pz, tk, r.partitionStart, r.partitionEnd)
+		},
+		1000)
 	if err != nil {
 		return nil, err
 	}
@@ -227,19 +315,21 @@ func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, 
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
 	rows := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
+		p := entry.Path
 		if entry.IsDir {
-			continue
+			// removing the tralling '/'
+			p = path.Clean(entry.Path)
 		}
 
 		uri := &globutil.URL{
 			Scheme: r.bucketURI.Scheme,
 			Host:   r.bucketURI.Host,
-			Path:   entry.Path,
+			Path:   p,
 		}
 
 		rows = append(rows, map[string]any{
 			"uri":        uri.String(),
-			"path":       entry.Path,
+			"path":       uri.Path,
 			"updated_on": entry.UpdatedOn,
 		})
 	}

@@ -34,14 +34,14 @@
 <div class="flex flex-row gap-2 items-center truncate">
   <button
     class="hover:bg-surface-hover rounded-sm p-0.5 flex-none"
-    on:click={toggleShowValue}
+    onclick={toggleShowValue}
   >
     <svelte:component this={showValue ? EyeInvisible : Eye} size="18px" />
   </button>
 
   {#if showValue}
     <Tooltip distance={6} location="top" suppress={isValueHidden || isEmpty}>
-      <button on:click={onCopy} class="truncate">
+      <button onclick={onCopy} class="truncate">
         <span
           class:italic={isEmpty}
           class="text-sm text-fg-primary font-medium truncate"
