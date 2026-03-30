@@ -693,11 +693,27 @@
     @apply bg-primary-50 relative z-[1];
     box-shadow: 0 0 0 1px theme(colors.primary.400);
   }
-  /* The totals row is z-20 and covers the outset top shadow; use an inset top border instead */
+  /* The sticky row header (z-10) covers the outset left shadow; add inset left border */
+  td.cell-selected-row-header + td.selected-cell.cell {
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 1px 0 0 0 theme(colors.primary.400);
+  }
+  /* The totals row is z-20 and covers the outset top shadow; add inset top border */
   .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
     box-shadow:
       0 0 0 1px theme(colors.primary.400),
       inset 0 1px 0 0 theme(colors.primary.400);
+  }
+  /* Both: right after totals AND next to sticky row header */
+  .with-totals-row
+    tbody
+    > tr:nth-of-type(3)
+    > td.cell-selected-row-header
+    + td.selected-cell.cell {
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 1px 1px 0 0 theme(colors.primary.400);
   }
   td.selected-cell.cell:hover {
     @apply bg-primary-100;
