@@ -286,9 +286,9 @@
   class:valid={isValidDropZone}
   class:horizontal={isDropLocation}
   style:--ghost-width="{ghostWidth ?? 0}px"
-  on:mouseup={handleDrop}
-  on:mouseenter={handleDragEnter}
-  on:mouseleave={handleDragLeave}
+  onmouseup={handleDrop}
+  onmouseenter={handleDragEnter}
+  onmouseleave={handleDragLeave}
   use:swapListener={{
     condition: isDropLocation && swap,
     ghostIndex: _ghostIndex,
@@ -310,7 +310,7 @@
         <span
           class="ghost"
           class:rounded={dragChip?.type !== PivotChipType.Measure}
-        />
+        ></span>
       {/if}
 
       <div
@@ -331,7 +331,7 @@
             availableGrains={availableTimeGrains}
             onTimeGrainSelect={(timeGrain) =>
               handleTimeGrainSelect(item, timeGrain)}
-            on:mousedown={(e) => handleMouseDown(e, item)}
+            onmousedown={(e) => handleMouseDown(e, item)}
             onRemove={() => {
               items = items.filter((i) => i.id !== item.id);
               onUpdate(items);
@@ -342,7 +342,7 @@
             {item}
             grab
             removable={isDropLocation}
-            on:mousedown={(e) => handleMouseDown(e, item)}
+            onmousedown={(e) => handleMouseDown(e, item)}
             onRemove={() => {
               items = items.filter((i) => i.id !== item.id);
               onUpdate(items);
@@ -357,7 +357,7 @@
             <Tooltip distance={8} location="top" alignment="start">
               <button
                 class="icon-wrapper"
-                on:click={() => handleRowClick(item)}
+                onclick={() => handleRowClick(item)}
                 aria-label="Add Row"
                 type="button"
               >
@@ -371,7 +371,7 @@
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"
-              on:click={() => handleColumnClick(item)}
+              onclick={() => handleColumnClick(item)}
               aria-label="Add Column"
               type="button"
             >
@@ -391,10 +391,8 @@
   {/each}
 
   {#if ghostIndex === items.length}
-    <span
-      class="ghost"
-      class:rounded={dragChip?.type !== PivotChipType.Measure}
-    />
+    <span class="ghost" class:rounded={dragChip?.type !== PivotChipType.Measure}
+    ></span>
   {/if}
 
   {#if zone === "columns" || zone === "rows"}

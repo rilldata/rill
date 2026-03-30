@@ -223,6 +223,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ## Table Formats
 ### Delta Lake
+### Apache Iceberg
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -231,14 +232,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Read Delta tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/delta"
     linkLabel="Learn more"
-    referenceLink="delta"
   />
-</div>
-
-## Table Formats
-### Apache Iceberg
-
-<div className="connector-icon-grid">
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Iceberg.svg" alt="Apache Iceberg" />}
     header="Apache Iceberg"
@@ -247,6 +241,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
   />
 </div>
+
 
 ## Other Data Connectors
 ### External DuckDB

@@ -60,7 +60,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("failed to normalize output path: %w", err)
 	}
 
-	client, err := getS3Client(ctx, e.c.config, bucket)
+	client, err := getS3Client(ctx, e.c.config, bucket, e.c.logger)
 	if err != nil {
 		return nil, err
 	}

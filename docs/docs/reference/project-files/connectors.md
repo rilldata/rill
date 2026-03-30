@@ -110,7 +110,7 @@ _[string]_ - Athena workgroup to use for query execution. Defaults to 'primary' 
 
 _[string]_ - S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration. 
 
-### `aws_region`
+### `region`
 
 _[string]_ - AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified. 
 
@@ -130,7 +130,7 @@ role_session_name: "MySession" # Session name for STS AssumeRole
 external_id: "MyExternalID" # External ID for cross-account access
 workgroup: "primary" # Athena workgroup (defaults to 'primary')
 output_location: "s3://my-bucket/athena-output/" # S3 URI for query results
-aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')
+region: "us-east-1" # AWS region (defaults to 'us-east-1')
 allow_host_access: true # Allow host environment access _(default: true)_
 ```
 
@@ -190,17 +190,13 @@ _[string]_ - Raw contents of the Google Cloud service account key (in JSON forma
 
 _[string]_ - Google Cloud project ID 
 
-### `dataset_id`
-
-_[string]_ - BigQuery dataset ID 
-
-### `location`
-
-_[string]_ - BigQuery dataset location 
-
 ### `allow_host_access`
 
 _[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments. 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
 
 ```yaml
 # Example: BigQuery connector configuration
@@ -256,6 +252,14 @@ _[boolean]_ - Indicates whether a secured SSL connection is required
 ### `cluster`
 
 _[string]_ - Cluster name, required for running distributed queries 
+
+### `write_dsn`
+
+_[string]_ - Separate connection string for write operations 
+
+### `database_whitelist`
+
+_[string]_ - Comma-separated list of databases to show 
 
 ### `log_queries`
 
@@ -656,6 +660,10 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disabled`, `preferred`, or `required`. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: MySQL connector configured using individual properties
 type: connector
@@ -906,6 +914,10 @@ _[string]_ - StarRocks database name
 
 _[boolean]_ - Enable SSL/TLS encryption 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: StarRocks connector configuration
 type: connector # Must be `connector` (required)
@@ -979,6 +991,10 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: Postgres connector configured using individual properties
 type: connector
@@ -1040,6 +1056,10 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: Supabase connector configured using individual properties
 type: connector
@@ -1092,6 +1112,14 @@ _[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Reds
 ### `cluster_identifier`
 
 _[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' . 
+
+### `allow_host_access`
+
+_[boolean]_ - Allow access to host environment configuration 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
 
 ```yaml
 # Example: Redshift connector configuration
@@ -1257,6 +1285,10 @@ For details on private key generation and encoding, see the `privateKey` propert
 ### `parallel_fetch_limit`
 
 _[integer]_ - Maximum number of concurrent fetches during query execution. 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
 
 ```yaml
 # Example: Snowflake connector basic configuration

@@ -47,7 +47,7 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import type { SortingState } from "@tanstack/svelte-table";
+import type { SortingState } from "tanstack-table-8-svelte-5";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,

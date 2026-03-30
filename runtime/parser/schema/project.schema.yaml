@@ -129,7 +129,7 @@ definitions:
             output_location:
               type: string
               description: S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration.
-            aws_region:
+            region:
               type: string
               description: AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified.
             allow_host_access:
@@ -148,7 +148,7 @@ definitions:
               external_id: "MyExternalID"                      # External ID for cross-account access
               workgroup: "primary"                             # Athena workgroup (defaults to 'primary')
               output_location: "s3://my-bucket/athena-output/" # S3 URI for query results
-              aws_region: "us-east-1"                          # AWS region (defaults to 'us-east-1')
+              region: "us-east-1"                              # AWS region (defaults to 'us-east-1')
               allow_host_access: true                          # Allow host environment access _(default: true)_
           required:
             - driver
@@ -206,15 +206,12 @@ definitions:
             project_id:
               type: string
               description: Google Cloud project ID
-            dataset_id:
-              type: string
-              description: BigQuery dataset ID
-            location:
-              type: string
-              description: BigQuery dataset location
             allow_host_access:
               type: boolean
               description: Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: BigQuery connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -262,6 +259,12 @@ definitions:
             cluster:
               type: string
               description: Cluster name, required for running distributed queries
+            write_dsn:
+              type: string
+              description: Separate connection string for write operations
+            database_whitelist:
+              type: string
+              description: Comma-separated list of databases to show
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
@@ -644,7 +647,10 @@ definitions:
               description: Password for authentication
             ssl-mode:
               type: string
-              description: "ssl mode options: `disabled`, `preferred`, or `required`."       
+              description: "ssl mode options: `disabled`, `preferred`, or `required`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: MySQL connector configured using individual properties
               type: connector
@@ -865,6 +871,9 @@ definitions:
               type: boolean
               description: Enable SSL/TLS encryption
               default: false
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: StarRocks connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -932,6 +941,9 @@ definitions:
             sslmode:
               type: string
               description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Postgres connector configured using individual properties
               type: connector
@@ -983,6 +995,9 @@ definitions:
             sslmode:
               type: string
               description: "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Supabase connector configured using individual properties
               type: connector
@@ -1026,6 +1041,12 @@ definitions:
             cluster_identifier:
               type: string
               description: Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
+            allow_host_access:
+              type: boolean
+              description: Allow access to host environment configuration
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Redshift connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -1179,6 +1200,9 @@ definitions:
             parallel_fetch_limit:
               type: integer
               description: Maximum number of concurrent fetches during query execution.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
           - # Example: Snowflake connector basic configuration
               type: connector
@@ -3390,16 +3414,45 @@ definitions:
         description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
-            description: Defines the file path or pattern to query from the specified connector.
-            anyOf:
+            description: Simple path/glob pattern or path/glob patternwith advanced options .
+            oneOf:
               - type: string
-                description: A simple file path/glob pattern as a string.
+                description: Glob pattern used to match files or directories in the object store.
               - type: object
-                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
-                additionalProperties: true
-          connector:
-            type: string
-            description: Specifies the connector to use with the glob input.
+                description: Configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: false
+                properties:
+                  connector:
+                    type: string
+                    description: Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
+                  path:
+                    type: string
+                    description: Glob pattern used to match files or directories in the object store.
+                  start:
+                    type: string
+                    description: Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
+                  end:
+                    type: string
+                    description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
+                  last:
+                    type: integer
+                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                  partition:
+                    type: string
+                    enum: [ "file", "directory", "hive"]
+                    description: >
+                      Controls how matched files are grouped:
+                      - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level).
+                      - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want.
+                      - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+                  rollup_files:
+                    type: boolean
+                    description: If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+                  transform_sql:
+                    type: string
+                    description: Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
+                required:
+                  - path
         required:
           - glob
         examples: 
@@ -3440,13 +3493,13 @@ definitions:
         required:
           - union
         examples:
-          - type: api
+          - # Exampe for union resolvers
+            type: api
             union:
               - connector: duckdb
                 sql: SELECT 1
               - connector: clickhouse
                 sql: SELECT 2
-
   data_properties:
     oneOf:
       - title: SQL Query
@@ -3488,16 +3541,45 @@ definitions:
         description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
-            description: Defines the file path or pattern to query from the specified connector.
-            anyOf:
+            description: Simple path/glob pattern or path/glob patternwith advanced options .
+            oneOf:
               - type: string
-                description: A simple file path/glob pattern as a string.
+                description: Glob pattern used to match files or directories in the object store.
               - type: object
-                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
-                additionalProperties: true
-          connector:
-            type: string
-            description: Specifies the connector to use with the glob input.
+                description: Configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: false
+                properties:
+                  connector:
+                    type: string
+                    description: Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
+                  path:
+                    type: string
+                    description: Glob pattern used to match files or directories in the object store.
+                  start:
+                    type: string
+                    description: Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
+                  end:
+                    type: string
+                    description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
+                  last:
+                    type: integer
+                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                  partition:
+                    type: string
+                    enum: [ "file", "directory", "hive"]
+                    description: >
+                      Controls how matched files are grouped:
+                      - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level).
+                      - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want.
+                      - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+                  rollup_files:
+                    type: boolean
+                    description: If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+                  transform_sql:
+                    type: string
+                    description: Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
+                required:
+                  - path
         required:
           - glob
       - title: Resource Status Check
@@ -3534,10 +3616,11 @@ definitions:
         examples:
           - union:
               - glob:
-                  path: s3://bucket/year=*/month=*
+                  path: s3://bucket/dir/year=*/month=*
+                  end: dir/year=2025/month=03
               - glob:
                   path: s3://bucket/year=*/month=*/day=*
-                  last: 30
+                  start: dir/year=2025/month=03/day=01
       - title: AI Resolver
         type: object
         description: Uses AI to generate insights and analysis from metrics data. Only available for reports.

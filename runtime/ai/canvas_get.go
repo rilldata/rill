@@ -34,6 +34,12 @@ func (t *GetCanvas) Spec() *mcp.Tool {
 		Name:        GetCanvasName,
 		Title:       "Get Canvas",
 		Description: "Get the specification for a given canvas, including available components and metrics views",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting canvas definition...",
 			"openai/toolInvocation/invoked":  "Found canvas definition",

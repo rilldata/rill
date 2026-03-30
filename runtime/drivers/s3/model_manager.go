@@ -34,7 +34,7 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	if err != nil {
 		return err
 	}
-	client, err := getS3Client(ctx, c.config, u.Host)
+	client, err := getS3Client(ctx, c.config, u.Host, c.logger)
 	if err != nil {
 		return err
 	}
