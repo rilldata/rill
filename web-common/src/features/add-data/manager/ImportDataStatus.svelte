@@ -105,10 +105,6 @@
       has been ingested. What would you like to do next?
     </div>
     <div class="footer">
-      <Button type="secondary" href={currentFileRoute} onClick={onClose}>
-        View this source
-      </Button>
-
       <Button onClick={generateMetrics} type="primary">
         Generate dashboard
 
@@ -116,6 +112,10 @@
           with AI
           <WandIcon class="w-3 h-3" />
         {/if}
+      </Button>
+
+      <Button type="secondary" href={currentFileRoute} onClick={onClose}>
+        View this source
       </Button>
     </div>
   {:else}
