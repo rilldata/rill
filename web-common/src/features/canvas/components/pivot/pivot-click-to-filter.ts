@@ -30,6 +30,7 @@ import {
   getFiltersForRowData,
   getFiltersForRowHeader,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   getFiltersForCell,
   getFiltersFromRow,
@@ -175,6 +176,21 @@ export function createPivotClickToFilter(
       }
     }
     return result;
+  }
+
+  /** Determine the nesting level of a column header from its serialized key. */
+  function getColumnHeaderLevel(headerKey: string): number {
+    const entries = JSON.parse(headerKey) as [string, string][];
+    return entries.length;
+  }
+
+  /**
+   * Returns the level of currently selected column headers, or -1 if none.
+   * All selected headers are at the same level due to level-switch enforcement.
+   */
+  function getCurrentColumnHeaderLevel(colHeaders: Set<string>): number {
+    for (const key of colHeaders) return getColumnHeaderLevel(key);
+    return -1;
   }
 
   // --- Retained value computation for safe deselect ---
@@ -326,8 +342,10 @@ export function createPivotClickToFilter(
   }
 
   /**
-   * Atomically replaces one cell selection with another in a single URL update.
-   * Used by flat tables where only one cell per row is allowed.
+   * Atomically replaces old selections with new ones in a single URL update.
+   * Phase 1: removes orphaned filter values from old selections.
+   * Phase 2: adds new selection's filter values.
+   * Used by flat table single-cell-per-row and column header level switching.
    */
   function applyReplacementFilters(
     oldFilters: V1Expression,
@@ -362,7 +380,7 @@ export function createPivotClickToFilter(
 
     let filterString: string | null = null;
 
-    // Phase 1: Remove orphaned values from old cell
+    // Phase 1: Remove orphaned values from old selections
     const retainedValues = collectRetainedDimensionValues(
       updatedRowHeaders,
       updatedCells,
@@ -384,7 +402,7 @@ export function createPivotClickToFilter(
       }
     });
 
-    // Phase 2: Add new cell's values
+    // Phase 2: Add new selection's values
     newDimFilters.forEach(({ dimensionName, values }) => {
       filterString = filterClass.addDimensionValueSelections(
         dimensionName,
@@ -416,6 +434,42 @@ export function createPivotClickToFilter(
         new Map([[metricsViewName, filterString]]),
       );
     }
+  }
+
+  /**
+   * Builds a combined old-filters expression from all existing column header
+   * selections, then delegates to applyReplacementFilters.
+   */
+  function applyColumnHeaderLevelSwitch(
+    oldColumnHeaders: Set<string>,
+    newDimensionPath: Record<string, string>,
+    newFilters: V1Expression,
+  ) {
+    const $config = get(pivotConfig);
+    if (!$config) return;
+
+    // Build combined old filters from all existing column header selections
+    const oldExprs: V1Expression[] = [];
+    for (const oldKey of oldColumnHeaders) {
+      const entries = JSON.parse(oldKey) as [string, string][];
+      const oldPath = Object.fromEntries(entries) as Record<string, string>;
+      const oldColFilters = getFiltersForColumnHeader($config, oldPath);
+      if (oldColFilters.filters?.cond?.exprs) {
+        oldExprs.push(...oldColFilters.filters.cond.exprs);
+      }
+    }
+
+    const oldFilters = createAndExpression(oldExprs);
+    const newKey = columnHeaderKey(newDimensionPath);
+
+    applyReplacementFilters(
+      oldFilters,
+      newFilters,
+      (_nextRowHeaders, _nextCells, nextColHeaders) => {
+        nextColHeaders.clear();
+        nextColHeaders.add(newKey);
+      },
+    );
   }
 
   // --- Click handlers ---
@@ -580,6 +634,23 @@ export function createPivotClickToFilter(
     const colFilters = getFiltersForColumnHeader($config, dimensionPath);
     if (!colFilters.filters) return;
 
+    // Enforce single-level constraint: if clicking a header at a different
+    // level than existing selections, replace all old selections atomically.
+    const clickLevel = Object.keys(dimensionPath).length;
+    const currentLevel = getCurrentColumnHeaderLevel(
+      $clickSelection.columnHeaderSelections,
+    );
+
+    if (!isDeselect && currentLevel !== -1 && clickLevel !== currentLevel) {
+      applyColumnHeaderLevelSwitch(
+        $clickSelection.columnHeaderSelections,
+        dimensionPath,
+        colFilters.filters,
+      );
+      return;
+    }
+
+    // Same level or deselect: use existing toggle behavior
     applyDimensionFilters(
       colFilters.filters,
       isDeselect,

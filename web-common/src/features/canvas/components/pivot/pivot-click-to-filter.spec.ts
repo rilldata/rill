@@ -1,3 +1,4 @@
+import { getFiltersForColumnHeader } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
 import {
   getFiltersForCell,
   getFiltersFromRow,
@@ -15,7 +16,10 @@ import {
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
 import { describe, expect, it, vi } from "vitest";
-import { dimKeyFromRow } from "../../../dashboards/pivot/pivot-click-selection";
+import {
+  columnHeaderKey,
+  dimKeyFromRow,
+} from "../../../dashboards/pivot/pivot-click-selection";
 import type { FilterManager } from "../../stores/filter-manager";
 import { createPivotClickToFilter } from "./pivot-click-to-filter";
 
@@ -47,6 +51,10 @@ vi.mock(
       filters: undefined,
       timeRange: null,
     })),
+    getFiltersForColumnHeader: vi.fn(() => ({
+      filters: undefined,
+      timeRange: null,
+    })),
   }),
 );
 
@@ -57,6 +65,18 @@ function makePivotFilter(
 ): PivotFilter {
   return {
     filters: createAndExpression([createInExpression(dimensionName, values)]),
+    timeRange: { start: undefined, end: undefined },
+  };
+}
+
+/** Build a PivotFilter with multiple dimensions (for column header tests). */
+function makeMultiDimPivotFilter(
+  dims: Array<{ name: string; values: (string | null)[] }>,
+): PivotFilter {
+  return {
+    filters: createAndExpression(
+      dims.map(({ name, values }) => createInExpression(name, values)),
+    ),
     timeRange: { start: undefined, end: undefined },
   };
 }
@@ -119,6 +139,21 @@ function nestedConfig() {
     colDimensionNames: [],
     measureNames: ["revenue"],
     isFlat: false,
+  } as unknown as PivotDataStoreConfig;
+}
+
+function nestedConfigWithColDims() {
+  return {
+    rowDimensionNames: ["country"],
+    colDimensionNames: ["region", "category", "product"],
+    measureNames: ["revenue"],
+    isFlat: false,
+    whereFilter: createAndExpression([]),
+    time: {
+      timeDimension: "",
+      timeStart: undefined,
+      timeEnd: undefined,
+    },
   } as unknown as PivotDataStoreConfig;
 }
 
@@ -526,6 +561,207 @@ describe("pivot-click-to-filter: selection survives sorting", () => {
     // UK's dimKey should NOT be selected
     const ukDimKey = dimKeyFromRow(dataAfterSort[0], ["country"]);
     expect(sel.isCellSelected(ukDimKey, "total")).toBe(false);
+
+    result.destroy();
+  });
+});
+
+describe("pivot-click-to-filter: column header level selection constraint", () => {
+  // Level 0 (1 key): { region: "NA" }
+  // Level 1 (2 keys): { region: "NA", category: "Electronics" }
+  // Level 2 (3 keys): { region: "NA", category: "Electronics", product: "Laptop" }
+
+  function setupColumnHeaders() {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    vi.mocked(getFiltersForColumnHeader).mockImplementation(
+      (_config, dimensionPath) => {
+        const dims = Object.entries(dimensionPath).map(([name, value]) => ({
+          name,
+          values: [value],
+        }));
+        return makeMultiDimPivotFilter(dims);
+      },
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(
+          nestedConfigWithColDims(),
+        ) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore([]),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    return { result, filterClass, selfFilteredDimensions, fm };
+  }
+
+  it("should allow multiple selections at the same level", () => {
+    const { result } = setupColumnHeaders();
+
+    // Select two different level-0 headers
+    result.handleColumnHeaderClick({ region: "NA" });
+    result.handleColumnHeaderClick({ region: "EU" });
+
+    const sel = get(result.clickSelection);
+    expect(sel.isColumnHeaderSelected({ region: "NA" })).toBe(true);
+    expect(sel.isColumnHeaderSelected({ region: "EU" })).toBe(true);
+    expect(sel.columnHeaderSelections.size).toBe(2);
+
+    result.destroy();
+  });
+
+  it("should replace column header selections when clicking a different level", () => {
+    const { result, filterClass } = setupColumnHeaders();
+
+    // Select a level-0 header
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    let sel = get(result.clickSelection);
+    expect(sel.isColumnHeaderSelected({ region: "NA" })).toBe(true);
+    expect(sel.columnHeaderSelections.size).toBe(1);
+
+    // Now click a level-1 header (different level); should replace
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    sel = get(result.clickSelection);
+    expect(sel.isColumnHeaderSelected({ region: "NA" })).toBe(false);
+    expect(
+      sel.isColumnHeaderSelected({ region: "NA", category: "Electronics" }),
+    ).toBe(true);
+    expect(sel.columnHeaderSelections.size).toBe(1);
+
+    // New values should have been added
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "category",
+      ["Electronics"],
+    );
+
+    result.destroy();
+  });
+
+  it("should remove orphaned values when switching to a level with different dimensions", () => {
+    const { result, filterClass } = setupColumnHeaders();
+
+    // Select level-0: { region: "NA" }
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    // Switch to level-0 with different value, then switch to level-1
+    // First, let's select { region: "EU" } at level 0 (same level, accumulates)
+    result.handleColumnHeaderClick({ region: "EU" });
+
+    // Now switch to level-1: { region: "NA", category: "Electronics" }
+    // "EU" is no longer needed (only "NA" is in the new selection)
+    filterClass.toggleDimensionValueSelections.mockClear();
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    // "EU" should have been toggled off as orphaned
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "region",
+      ["EU"],
+      false,
+      false,
+    );
+
+    result.destroy();
+  });
+
+  it("should replace multiple same-level selections when switching levels", () => {
+    const { result } = setupColumnHeaders();
+
+    // Select two level-0 headers
+    result.handleColumnHeaderClick({ region: "NA" });
+    result.handleColumnHeaderClick({ region: "EU" });
+
+    let sel = get(result.clickSelection);
+    expect(sel.columnHeaderSelections.size).toBe(2);
+
+    // Now click a level-1 header; both level-0 selections should be removed
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    sel = get(result.clickSelection);
+    expect(sel.isColumnHeaderSelected({ region: "NA" })).toBe(false);
+    expect(sel.isColumnHeaderSelected({ region: "EU" })).toBe(false);
+    expect(
+      sel.isColumnHeaderSelected({ region: "NA", category: "Electronics" }),
+    ).toBe(true);
+    expect(sel.columnHeaderSelections.size).toBe(1);
+
+    result.destroy();
+  });
+
+  it("should still allow deselect by re-clicking the same header", () => {
+    const { result } = setupColumnHeaders();
+
+    // Select a level-1 header
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    let sel = get(result.clickSelection);
+    expect(
+      sel.isColumnHeaderSelected({ region: "NA", category: "Electronics" }),
+    ).toBe(true);
+
+    // Click it again to deselect
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    sel = get(result.clickSelection);
+    expect(
+      sel.isColumnHeaderSelected({ region: "NA", category: "Electronics" }),
+    ).toBe(false);
+    expect(sel.columnHeaderSelections.size).toBe(0);
+
+    result.destroy();
+  });
+
+  it("should allow fresh selection at any level after all headers are deselected", () => {
+    const { result } = setupColumnHeaders();
+
+    // Select and deselect a level-0 header
+    result.handleColumnHeaderClick({ region: "NA" });
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    let sel = get(result.clickSelection);
+    expect(sel.columnHeaderSelections.size).toBe(0);
+
+    // Now select a level-1 header; should work as a fresh add
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    sel = get(result.clickSelection);
+    expect(
+      sel.isColumnHeaderSelected({ region: "NA", category: "Electronics" }),
+    ).toBe(true);
+    expect(sel.columnHeaderSelections.size).toBe(1);
+
+    result.destroy();
+  });
+
+  it("should not remove shared dimension values when switching levels", () => {
+    const { result, filterClass } = setupColumnHeaders();
+
+    // Select level-0: { region: "NA" }
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    // Switch to level-1: { region: "NA", category: "Electronics" }
+    // "region: NA" is shared; it should NOT be orphaned/removed
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    // toggleDimensionValueSelections should NOT have been called with "region"
+    // because "NA" is still needed by the new selection
+    const toggleCalls = filterClass.toggleDimensionValueSelections.mock.calls;
+    const regionToggleCalls = toggleCalls.filter(
+      (call: unknown[]) => call[0] === "region",
+    );
+    expect(regionToggleCalls.length).toBe(0);
+
+    // addDimensionValueSelections should have been called for the new values
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "category",
+      ["Electronics"],
+    );
 
     result.destroy();
   });
