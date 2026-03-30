@@ -462,6 +462,11 @@ func (c *Connection) Driver() string {
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
+	// Inject ClickHouse Cloud info for frontend consumption
+	m["is_clickhouse_cloud"] = c.isClickHouseCloud()
+	if host := c.resolvedHost(); host != "" {
+		m["resolved_host"] = host
+	}
 	return m
 }
 
@@ -594,6 +599,50 @@ func (c *Connection) used() {
 // This can be used to guess if the DB may currently be scaled to zero.
 func (c *Connection) lastUsedOn() time.Time {
 	return time.Unix(c.lastUsedUnixTime.Load(), 0)
+}
+
+// isClickHouseCloud returns true if the connected host is a ClickHouse Cloud endpoint.
+func (c *Connection) isClickHouseCloud() bool {
+	return strings.HasSuffix(strings.ToLower(c.resolvedHost()), ".clickhouse.cloud")
+}
+
+// resolvedHost returns the host this connection targets, checking config, parsed opts, and DSN.
+func (c *Connection) resolvedHost() string {
+	if c.config.Host != "" {
+		return c.config.Host
+	}
+	if c.opts != nil && len(c.opts.Addr) > 0 {
+		host, _, err := net.SplitHostPort(c.opts.Addr[0])
+		if err == nil && host != "" {
+			return host
+		}
+		return c.opts.Addr[0]
+	}
+	if c.config.DSN != "" {
+		return hostFromDSN(c.config.DSN)
+	}
+	return ""
+}
+
+// hostFromDSN extracts the hostname from a DSN string.
+func hostFromDSN(dsn string) string {
+	if idx := strings.Index(dsn, "://"); idx >= 0 {
+		dsn = dsn[idx+3:]
+	}
+	if idx := strings.Index(dsn, "@"); idx >= 0 {
+		dsn = dsn[idx+1:]
+	}
+	if idx := strings.Index(dsn, "?"); idx >= 0 {
+		dsn = dsn[:idx]
+	}
+	if idx := strings.Index(dsn, "/"); idx >= 0 {
+		dsn = dsn[:idx]
+	}
+	host, _, err := net.SplitHostPort(dsn)
+	if err == nil && host != "" {
+		return host
+	}
+	return dsn
 }
 
 // Periodically collects stats about the database and emit them as activity events.
