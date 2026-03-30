@@ -54,7 +54,7 @@
   // Token: from route params, or from search params on report/alert pages
   let token = $derived.by(() => {
     if (isPublicReportPage(page) || isPublicAlertPage(page)) {
-      return page.url.searchParams.get("token") ?? page.params.token;
+      return page.url.searchParams.get("token");
     }
     return page.params.token;
   });
