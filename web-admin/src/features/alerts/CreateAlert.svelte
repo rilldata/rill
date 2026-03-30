@@ -39,24 +39,32 @@
     bind:open
     let:onCancel
     let:onClose
+    let:preventClose
   >
-    <DialogTrigger asChild let:builder>
-      <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
-        <Button
-          compact
-          disabled={$isCustomTimeRange}
-          type="secondary"
-          builders={[builder]}
-          label="Create alert"
-        >
-          <BellPlusIcon class="inline-flex" size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          To create an alert, set a non-custom time range.
-        </TooltipContent>
-      </Tooltip>
+    <DialogTrigger>
+      {#snippet child({ props })}
+        <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
+          <Button
+            {...props}
+            compact
+            disabled={$isCustomTimeRange}
+            type="secondary"
+            label="Create alert"
+          >
+            <BellPlusIcon class="inline-flex" size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            To create an alert, set a non-custom time range.
+          </TooltipContent>
+        </Tooltip>
+      {/snippet}
     </DialogTrigger>
-    <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
+    <DialogContent
+      class="p-0 m-0 w-[802px] max-w-fit rounded-md"
+      noClose
+      onEscapeKeydown={preventClose}
+      onInteractOutside={preventClose}
+    >
       <AlertForm
         props={{ mode: "create", exploreName: $exploreName }}
         {onCancel}

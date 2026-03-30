@@ -4,6 +4,7 @@
   Defaults to tealblues scheme but allows switching to custom gradient mode.
 -->
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
@@ -21,7 +22,6 @@
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { slide } from "svelte/transition";
   import type { ColorScheme } from "vega-typings";
 
   export let colorRange: ColorRangeMapping | undefined;

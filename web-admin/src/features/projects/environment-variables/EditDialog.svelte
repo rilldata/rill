@@ -269,15 +269,16 @@
   }
 </script>
 
-<Dialog
-  bind:open
-  onOpenChange={() => handleReset()}
-  onOutsideClick={() => handleReset()}
->
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+<Dialog bind:open onOpenChange={() => handleReset()}>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={() => handleReset()}
+  >
     <DialogHeader>
       <DialogTitle>Edit environment variable</DialogTitle>
     </DialogHeader>
@@ -290,7 +291,10 @@
     <form
       id={$formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-y-5">
@@ -330,14 +334,14 @@
                   ? "error-input-wrapper"
                   : ""}
                 placeholder="Key"
-                on:input={(e) => handleKeyChange(e)}
+                oninput={(e) => handleKeyChange(e)}
               />
               <Input
                 bind:value={$form.value}
                 label=""
                 id={`edit-${value}`}
                 placeholder="Value"
-                on:input={(e) => handleValueChange(e)}
+                oninput={(e) => handleValueChange(e)}
               />
             </div>
             {#if $errors.key}

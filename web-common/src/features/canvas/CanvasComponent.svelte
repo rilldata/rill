@@ -1,9 +1,9 @@
 <script lang="ts" context="module">
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
-  import { onMount } from "svelte";
 </script>
 
 <script lang="ts">
@@ -84,7 +84,7 @@
   <div
     role="presentation"
     class="size-full grow flex flex-col"
-    on:mousedown={onMouseDown}
+    onmousedown={onMouseDown}
   >
     {#if component}
       <svelte:component this={component.component} {component} />
@@ -101,7 +101,7 @@
     @apply shadow-md outline;
   }
 
-  .component-card:has(.component-error) {
+  .component-card:has(:global(.component-error)) {
     @apply outline-destructive;
   }
 

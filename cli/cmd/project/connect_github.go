@@ -28,7 +28,9 @@ const (
 )
 
 func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
-	opts := &DeployOpts{}
+	opts := &DeployOpts{
+		ProdVersion: "latest",
+	}
 
 	deployCmd := &cobra.Command{
 		Use:   "connect-github [<path>]",
@@ -51,7 +53,6 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
-	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
@@ -65,14 +66,13 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
-	if !ch.Interactive {
-		return fmt.Errorf("the GitHub connect flow requires an interactive terminal")
-	}
-
 	// Set a default org for the user if necessary
 	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
 	// TODO : similar to UI workflow create a org taking user input
 	if ch.Org == "" {
+		if !ch.Interactive {
+			return fmt.Errorf("`org` must be set to use the GitHub connect flow in non-interactive mode")
+		}
 		if err := org.SetDefaultOrg(ctx, ch); err != nil {
 			return err
 		}
@@ -417,6 +417,9 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adm
 
 	// If the user has not already granted access, open browser and poll for access
 	if !res.HasAccess {
+		if !ch.Interactive {
+			return nil, fmt.Errorf("the GitHub connect flow requires an interactive terminal to grant access to the GitHub repository. Please run this command in an interactive terminal and follow the instructions to grant access.")
+		}
 		// Emit start telemetry
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedStart)
 
@@ -486,6 +489,9 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 		if !errMsgContains(err, "a project with that name already exists in the org") {
 			return nil, err
 		}
+		if !ch.Interactive {
+			return nil, fmt.Errorf("a project with the name %q already exists in the org %q. Please provide a different name using the --name flag and try again", req.Project, req.Org)
+		}
 
 		ch.PrintfWarn("Rill project names are derived from your Github repository name.\n")
 		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Project, req.Org)
@@ -518,7 +524,9 @@ func repoInSyncFlow(ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bo
 	if st.LocalCommits > 0 {
 		ch.PrintfWarn("Local commits are not pushed to remote yet. These changes will not be present in the deployed project.\n")
 	}
-
+	if !ch.Interactive {
+		return false, fmt.Errorf("commit and push your changes to remote before deploying")
+	}
 	ok, err := cmdutil.YesNoPrompt("Do you want to continue", true)
 	return ok, err
 }
@@ -535,13 +543,12 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}
-				exists, err := projectExists(ctx, ch, orgName, name)
+				_, exists, err := getProject(ctx, ch, orgName, name)
 				if err != nil {
-					return fmt.Errorf("project already exists at %s/%s", orgName, name)
+					return fmt.Errorf("failed to check project name: %w", err)
 				}
 				if exists {
-					// this should always be true but adding this check from completeness POV
-					return fmt.Errorf("project with name %q already exists in the org", name)
+					return fmt.Errorf("project already exists at %s/%s", orgName, name)
 				}
 				return nil
 			},

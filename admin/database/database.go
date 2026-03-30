@@ -345,6 +345,7 @@ type DB interface {
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
 
+	FindManagedGitRepos(ctx context.Context, afterRemote string, limit int) ([]*ManagedGitRepo, error)
 	FindManagedGitRepo(ctx context.Context, remote string) (*ManagedGitRepo, error)
 	FindUnusedManagedGitRepos(ctx context.Context, limit int) ([]*ManagedGitRepo, error)
 	CountManagedGitRepos(ctx context.Context, orgID string) (int, error)

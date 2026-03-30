@@ -43,6 +43,12 @@ func (t *ProjectStatus) Spec() *mcp.Tool {
 		Name:        ProjectStatusName,
 		Title:       "Get project status",
 		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors and optionally recent logs. If you have recently updated a resource in the project, it can optionally wait until all resources have finished reconciling before returning. Warning: If you retrieve logs, note they are append-only, so you may see old issues that have already been resolved; always cross-reference logs with the resource-level status, parse errors and later logs to get the full picture.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting project status...",
 			"openai/toolInvocation/invoked":  "Got project status",
@@ -165,8 +171,9 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 			continue
 		}
 		parseErrors = append(parseErrors, map[string]any{
-			"path": pe.FilePath,
-			"msg":  pe.Message,
+			"path":    pe.FilePath,
+			"msg":     pe.Message,
+			"warning": pe.Warning,
 		})
 	}
 

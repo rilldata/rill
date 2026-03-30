@@ -13,7 +13,7 @@ Each Rill Cloud project can be connected to a single GitHub repository. This ena
 
 On first deployment, if you've deployed via the UI, your project will not be connected to a GitHub repository. You will need to manually connect it:
 
-1. Navigate to your project's **Status** page
+1. Navigate to your project's **Settings** page
 2. Select **Connect to GitHub**
 3. Follow the steps to connect your repository
 
@@ -23,7 +23,7 @@ On first deployment, if you've deployed via the UI, your project will not be con
 
 In some cases, you will need to change the repository that your project is synced to:
 
-1. Navigate to your project's **Status** page
+1. Navigate to your project's **Settings** page
 2. Select the dropdown next to the repository name
 3. Choose **Disconnect** to remove the current connection
 

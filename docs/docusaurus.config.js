@@ -167,6 +167,10 @@ const config = {
                 label: "Project Files",
               },
               {
+                to: "/reference/time-syntax",
+                label: "Time Syntax",
+              },
+              {
                 to: "/reference/time-syntax/rill-iso-extensions",
                 label: "Rill ISO 8601",
               },
@@ -178,7 +182,6 @@ const config = {
                 to: "/reference/cli",
                 label: "CLI",
               },
-
               {
                 to: "/api/admin/",
                 label: "REST API",
@@ -186,19 +189,6 @@ const config = {
 
             ],
           },
-
-          // {
-          //   type: 'dropdown',
-          //   label: 'Reference',
-          //   position: 'left',
-          //   className: "navbar-reference-link",
-          //   items: [
-          //     { to: '/reference/project-files', label: 'Project Files' },
-          //     { to: '/reference/cli', label: 'CLI' },
-          //     { to: '/api/admin/', label: 'REST API' },
-
-          //   ],
-          // },
           {
             to: "/contact",
             label: "Contact Us",

@@ -60,7 +60,7 @@ func TestSQLLimit(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+			res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 				InstanceID:         instanceID,
 				Resolver:           "sql",
 				ResolverProperties: map[string]any{"sql": tc.sql, "limit": tc.limit},
@@ -96,7 +96,7 @@ func TestSimpleSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "simple_sql_api")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
@@ -125,7 +125,7 @@ func TestTemplateSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
@@ -157,7 +157,7 @@ func TestTemplateSQLApi2(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api_2")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),

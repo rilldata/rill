@@ -1,28 +1,33 @@
 expensive: true
 connectors:
-  - gcs
+  - gcs_s3_compat
 project_files:
-  iceberg_gcs_with_secrets.yaml:
+  gcs_hmac.yaml:
+    type: connector
+    driver: gcs
+    key_id: '{{.env.connector.gcs_s3_compat.key_id }}'
+    secret: '{{.env.connector.gcs_s3_compat.secret }}'
+  model_iceberg_to_duckdb_with_gcs_hmac.yaml:
     type: model
     connector: duckdb
-    create_secrets_from_connectors: gcs
+    create_secrets_from_connectors: gcs_hmac
     materialize: true
     sql: |
       SELECT *
       FROM iceberg_scan('gs://integration-test.rilldata.com/iceberg/lineitem_iceberg',
         allow_moved_paths = true)
 tests:
-  - name: test_iceberg_gcs_with_secrets_row_count
+  - name: test_row_count_for_model_iceberg_to_duckdb_with_gcs_hmac
     resolver: sql
     properties:
-      sql: "select count(*) as count from iceberg_gcs_with_secrets"
+      sql: "select count(*) as count from model_iceberg_to_duckdb_with_gcs_hmac"
     result_csv: |
       count
       51793
-  - name: test_iceberg_gcs_with_secrets_schema
+  - name: test_schema_for_model_iceberg_to_duckdb_with_gcs_hmac
     resolver: sql
     properties:
-      sql: "describe iceberg_gcs_with_secrets"
+      sql: "describe model_iceberg_to_duckdb_with_gcs_hmac"
     result_csv: |
       column_name,column_type,null,key,default,extra
       l_orderkey,INTEGER,YES,,,
