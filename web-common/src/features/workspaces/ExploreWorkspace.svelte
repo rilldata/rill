@@ -120,7 +120,7 @@
       <WorkspaceEditorContainer
         slot="body"
         error={parseError?.message ?? rootCauseReconcileError}
-        showError={!!$remoteContent && selectedView === "code"}
+        showError={!!$remoteContent}
       >
         {#if selectedView === "code"}
           <ExploreEditor

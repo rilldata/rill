@@ -1,16 +1,12 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -73,7 +69,6 @@
   );
 
   export let fileArtifact: FileArtifact;
-  export let parseError: V1ParseError | undefined = undefined;
   export let switchView: () => void;
   export let unsavedChanges = false;
 
@@ -795,16 +790,6 @@
       {/each}
     </div>
 
-    {#if parseError}
-      <div
-        role="status"
-        transition:slide={{ duration: LIST_SLIDE_DURATION }}
-        class="flex items-center gap-x-2 border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-40 overflow-auto"
-      >
-        <CancelCircle className="text-destructive" />
-        {parseError.message}
-      </div>
-    {/if}
   </div>
 
   {#if $editingItemData !== null}

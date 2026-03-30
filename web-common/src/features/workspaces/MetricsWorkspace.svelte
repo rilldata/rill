@@ -8,6 +8,7 @@
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -113,11 +114,14 @@
     </div>
   </WorkspaceHeader>
 
-  <svelte:fragment slot="body">
+  <WorkspaceEditorContainer
+    slot="body"
+    error={parseError?.message ?? rootCauseReconcileError}
+    showError={!!$remoteContent}
+  >
     {#if $selectedView === "code"}
       <MetricsEditor
         bind:autoSave={$autoSave}
-        {rootCauseReconcileError}
         {fileArtifact}
         {filePath}
         {parseError}
@@ -126,7 +130,6 @@
     {:else}
       {#key fileArtifact}
         <VisualMetrics
-          {parseError}
           {fileArtifact}
           switchView={() => {
             $selectedView = "code";
@@ -134,7 +137,7 @@
         />
       {/key}
     {/if}
-  </svelte:fragment>
+  </WorkspaceEditorContainer>
 
   <MetricsInspector
     {filePath}
