@@ -1,4 +1,7 @@
-import { getFiltersFromRow } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import {
+  getFiltersForCell,
+  getFiltersFromRow,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
   PivotDataRow,
   PivotDataStore,
@@ -26,6 +29,7 @@ vi.mock(
       "@rilldata/web-common/features/dashboards/pivot/pivot-utils",
     )),
     getFiltersFromRow: vi.fn(() => ({ filters: undefined, timeRange: null })),
+    getFiltersForCell: vi.fn(() => ({ filters: undefined, timeRange: null })),
   }),
 );
 
@@ -36,6 +40,10 @@ vi.mock(
       "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection",
     )),
     getFiltersForRowData: vi.fn(() => ({
+      filters: undefined,
+      timeRange: null,
+    })),
+    getFiltersForRowHeader: vi.fn(() => ({
       filters: undefined,
       timeRange: null,
     })),
@@ -352,7 +360,7 @@ describe("pivot-click-to-filter: nested table multi-select", () => {
   function setupNested() {
     const { fm, filterClass } = stubFilterManagerWithClass("mv1");
 
-    vi.mocked(getFiltersFromRow).mockImplementation(() =>
+    vi.mocked(getFiltersForCell).mockImplementation(() =>
       makePivotFilter("country", ["US"]),
     );
 
