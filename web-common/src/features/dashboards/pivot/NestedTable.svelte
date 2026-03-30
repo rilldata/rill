@@ -689,10 +689,17 @@
     @apply bg-primary-50;
   }
 
-  .selected-cell.cell {
-    @apply bg-primary-50 ring-1 ring-inset ring-primary-400;
+  td.selected-cell.cell {
+    @apply bg-primary-50 relative z-[1];
+    box-shadow: 0 0 0 1px theme(colors.primary.400);
   }
-  .selected-cell.cell:hover {
+  /* The totals row is z-20 and covers the outset top shadow; use an inset top border instead */
+  .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 1px 0 0 theme(colors.primary.400);
+  }
+  td.selected-cell.cell:hover {
     @apply bg-primary-100;
   }
 
