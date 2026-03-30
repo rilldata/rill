@@ -128,7 +128,7 @@ definitions:
             output_location:
               type: string
               description: S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration.
-            aws_region:
+            region:
               type: string
               description: AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified.
             allow_host_access:
@@ -147,7 +147,7 @@ definitions:
               external_id: "MyExternalID"                      # External ID for cross-account access
               workgroup: "primary"                             # Athena workgroup (defaults to 'primary')
               output_location: "s3://my-bucket/athena-output/" # S3 URI for query results
-              aws_region: "us-east-1"                          # AWS region (defaults to 'us-east-1')
+              region: "us-east-1"                              # AWS region (defaults to 'us-east-1')
               allow_host_access: true                          # Allow host environment access _(default: true)_
           required:
             - driver
@@ -205,15 +205,12 @@ definitions:
             project_id:
               type: string
               description: Google Cloud project ID
-            dataset_id:
-              type: string
-              description: BigQuery dataset ID
-            location:
-              type: string
-              description: BigQuery dataset location
             allow_host_access:
               type: boolean
               description: Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: BigQuery connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -261,6 +258,12 @@ definitions:
             cluster:
               type: string
               description: Cluster name, required for running distributed queries
+            write_dsn:
+              type: string
+              description: Separate connection string for write operations
+            database_whitelist:
+              type: string
+              description: Comma-separated list of databases to show
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
@@ -307,6 +310,8 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
+        # See /developers/build/connectors/data-source/delta for configuration details.
         - type: object
           title: Druid
           properties:
@@ -604,7 +609,10 @@ definitions:
               description: Password for authentication
             ssl-mode:
               type: string
-              description: "ssl mode options: `disabled`, `preferred`, or `required`."       
+              description: "ssl mode options: `disabled`, `preferred`, or `required`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: MySQL connector configured using individual properties
               type: connector
@@ -825,6 +833,9 @@ definitions:
               type: boolean
               description: Enable SSL/TLS encryption
               default: false
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: StarRocks connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -892,6 +903,9 @@ definitions:
             sslmode:
               type: string
               description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Postgres connector configured using individual properties
               type: connector
@@ -943,6 +957,9 @@ definitions:
             sslmode:
               type: string
               description: "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Supabase connector configured using individual properties
               type: connector
@@ -986,6 +1003,12 @@ definitions:
             cluster_identifier:
               type: string
               description: Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
+            allow_host_access:
+              type: boolean
+              description: Allow access to host environment configuration
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
             - # Example: Redshift connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -1139,6 +1162,9 @@ definitions:
             parallel_fetch_limit:
               type: integer
               description: Maximum number of concurrent fetches during query execution.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
           examples:
           - # Example: Snowflake connector basic configuration
               type: connector
@@ -2028,7 +2054,19 @@ definitions:
                   type:
                     - string
                     - boolean
-                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
+                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)
+                lookup_table:
+                  type: string
+                  description: the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details
+                lookup_key_column:
+                  type: string
+                  description: the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table
+                lookup_value_column:
+                  type: string
+                  description: the attribute column in the lookup dictionary whose values will be displayed for this dimension
+                lookup_default_expression:
+                  type: string
+                  description: an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
               anyOf:
                 - required:
                     - column
@@ -3369,11 +3407,32 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
-        examples: 
+        examples:
           - type: api
             resource_status:
               where_error: true
- 
+
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - type: api
+            union:
+              - connector: duckdb
+                sql: SELECT 1
+              - connector: clickhouse
+                sql: SELECT 2
+
   data_properties:
     oneOf:
       - title: SQL Query
@@ -3445,6 +3504,26 @@ definitions:
           -
             resource_status:
               where_error: true
+      - title: Union
+        type: object
+        description: Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+        properties:
+          union:
+            type: array
+            description: List of resolver definitions whose results are combined into a single result set.
+            items:
+              type: object
+              description: A resolver definition. Exactly one resolver key (sql, glob, metrics_sql, api, etc.) must be specified per entry.
+              additionalProperties: true
+        required:
+          - union
+        examples:
+          - union:
+              - glob:
+                  path: s3://bucket/year=*/month=*
+              - glob:
+                  path: s3://bucket/year=*/month=*/day=*
+                  last: 30
       - title: AI Resolver
         type: object
         description: Uses AI to generate insights and analysis from metrics data. Only available for reports.

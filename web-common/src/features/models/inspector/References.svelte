@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
@@ -11,7 +12,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
-  import { slide } from "svelte/transition";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 

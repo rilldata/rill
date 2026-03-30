@@ -192,7 +192,7 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" strategy="fixed">
     <DropdownMenu.Item
-      on:click={setAccessInviteOnly}
+      onclick={setAccessInviteOnly}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'invite-only'
         ? 'bg-surface-background'
@@ -203,14 +203,14 @@
         <span class="text-xs font-medium text-fg-primary">Invite only</span>
       </div>
       <div class="flex flex-row items-center gap-2">
-        <div class="w-[20px]" />
+        <div class="w-[20px]"></div>
         <span class="text-[11px] text-fg-secondary"
           >Only admins and invited users can access</span
         >
       </div>
     </DropdownMenu.Item>
     <DropdownMenu.Item
-      on:click={setAccessEveryone}
+      onclick={setAccessEveryone}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'everyone'
         ? 'bg-surface-background'
@@ -229,7 +229,7 @@
         >
       </div>
       <div class="flex flex-row items-center gap-2">
-        <div class="w-[20px]" />
+        <div class="w-[20px]"></div>
         <span class="text-[11px] text-fg-secondary">Org members can access</span
         >
       </div>

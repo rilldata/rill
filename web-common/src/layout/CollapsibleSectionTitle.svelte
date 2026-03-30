@@ -38,7 +38,7 @@
                 max-width: 100%;
 
             "
-      on:click={() => {
+      onclick={() => {
         active = !active;
       }}
     >

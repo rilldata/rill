@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -576,6 +577,13 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	// Add instance annotations as attributes to pass organization id, project id, etc.
 	attrs := instanceAnnotationsToAttribs(inst)
 	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
+
+	// Emit prod_slots metric for billing
+	if v, ok := inst.Annotations["project_prod_slots"]; ok {
+		if slots, err := strconv.Atoi(v); err == nil {
+			r.activity.RecordMetric(context.Background(), "prod_slots", float64(slots), attrs...)
+		}
+	}
 }
 
 // updateProjectConfig updates the project config for the given instance.

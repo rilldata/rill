@@ -138,7 +138,7 @@
           ) === 'admin'
             ? 'bg-gray-100'
             : ''}"
-          on:click={() =>
+          onclick={() =>
             handleSetRole(getUserEmail(user), ProjectUserRoles.Admin)}
         >
           <span class="font-medium">Admin</span>
@@ -153,7 +153,7 @@
         'editor'
           ? 'bg-gray-100'
           : ''}"
-        on:click={() =>
+        onclick={() =>
           handleSetRole(getUserEmail(user), ProjectUserRoles.Editor)}
       >
         <span class="font-medium">Editor</span>
@@ -167,7 +167,7 @@
         'viewer'
           ? 'bg-gray-100'
           : ''}"
-        on:click={() =>
+        onclick={() =>
           handleSetRole(getUserEmail(user), ProjectUserRoles.Viewer)}
       >
         <span class="font-medium">Viewer</span>
@@ -180,7 +180,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="font-normal flex items-center py-2"
-          on:click={() => handleRemove(getUserEmail(user))}
+          onclick={() => handleRemove(getUserEmail(user))}
         >
           <span class="text-red-600">Remove</span>
         </DropdownMenu.Item>

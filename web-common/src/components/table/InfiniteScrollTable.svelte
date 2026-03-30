@@ -5,13 +5,13 @@
     OnChangeFn,
     SortingState,
     TableOptions,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createSvelteTable,
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
@@ -178,7 +178,7 @@
                 colSpan={header.colSpan}
                 style={`width: ${widthPercent}%;`}
                 class="px-4 py-2 text-left"
-                on:click={header.column.getToggleSortingHandler()}
+                onclick={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
                   <div

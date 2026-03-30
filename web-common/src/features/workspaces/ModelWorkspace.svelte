@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade, slide } from "svelte/transition";
   import { goto } from "$app/navigation";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -21,7 +22,6 @@
 
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { fade, slide } from "svelte/transition";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import { getUserFriendlyError } from "../models/error-utils";

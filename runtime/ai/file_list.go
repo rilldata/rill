@@ -27,6 +27,12 @@ func (t *ListFiles) Spec() *mcp.Tool {
 		Name:        ListFilesName,
 		Title:       "List project files",
 		Description: "Lists all the files in the Rill project, as well as the resources they declare and the current status of those resources",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "List files...",
 			"openai/toolInvocation/invoked":  "Listed files",

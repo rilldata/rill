@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
+	"go.uber.org/zap"
 )
 
 type tableWriteMetrics struct {
@@ -127,11 +128,19 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 
 			// Create a temporary table with the new data
-			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			tmp := fmt.Sprintf("__rill_temp_%s", name)
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
+			defer func() {
+				bgctx, cancel := graceful.WithMinimumDuration(ctx, time.Second*10)
+				defer cancel()
+				_, err := conn.ExecContext(bgctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
+				if err != nil {
+					c.logger.Warn("failed to drop temporary table", zap.Error(err))
+				}
+			}()
 
 			// check the count of the new data
 			// skip if the count is 0
@@ -188,11 +197,19 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 
 			// Create a temporary table with the new data
-			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			tmp := fmt.Sprintf("__rill_temp_%s", name)
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
 				return err
 			}
+			defer func() {
+				bgctx, cancel := graceful.WithMinimumDuration(ctx, time.Second*10)
+				defer cancel()
+				_, err := conn.ExecContext(bgctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
+				if err != nil {
+					c.logger.Warn("failed to drop temporary table", zap.Error(err))
+				}
+			}()
 
 			// Check the count of the new data
 			// Skip if the count is 0
