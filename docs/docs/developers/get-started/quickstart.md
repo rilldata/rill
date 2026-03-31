@@ -40,7 +40,7 @@ This will:
 
 ![New Rill Project](/img/tutorials/rill-basics/new-rill-project.png)
 :::note Rill Developer vs Rill Cloud
-Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/developers/deploy/cloud-vs-developer).
+Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/developers/deploy).
 :::
 
 ### Step 2: Connect Your Data
@@ -125,6 +125,6 @@ This quick start covered the basics, but Rill offers much more:
 
 - **[Data Modeling](/developers/build/models)** - Transform and prepare your data with SQL
 - **[Metrics Layer](/developers/build/metrics-view)** - Define business KPIs and calculations
-- **[Deployment](/developers/deploy/deploy-to-cloud)** - Share your dashboards with your team
+- **[Deployment](/developers/deploy/from-local)** - Share your dashboards with your team
 
 Ready to build something more complex? Check out our [comprehensive tutorial](/developers/tutorials/rill-basics/launch) for a complete walkthrough of Rill's advanced features.

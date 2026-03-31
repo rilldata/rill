@@ -1,18 +1,17 @@
 ---
-title: Deploy to Rill Cloud
-sidebar_label: Deploy to Rill Cloud
-sidebar_position: 15
+title: Deploying your Rill Project from Local
+sidebar_label: Local Deploy
+sidebar_position: 10
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 import ThemedImage from '@theme/ThemedImage';
 
-Once you've built your dashboards locally, deploying to Rill Cloud lets you share them with your team, set up [alerts and scheduled reports](/guide/dashboards/explore), [embed dashboards](/developers/embed/dashboards) in other apps, and collaborate with others.
+Deploy dashboards you've built locally with Rill Developer — whether you authored them yourself or with an AI coding agent. This uploads your project files to Rill Cloud, where your team can access dashboards, alerts, APIs, and more.
 
-There are two ways to deploy:
+Two options:
 
-- **Direct upload** — Uploads a snapshot of your project files to Rill Cloud. Quick to set up; you push updates manually. Good for solo work or getting started fast.
-- **GitHub-connected** — Links a GitHub repo to your Rill Cloud project. Changes pushed to GitHub deploy automatically. Best for teams and production workflows.
+- **Direct upload** — Push a snapshot of your project to Rill Cloud. You push updates manually. Good for solo work or getting started fast.
+- **GitHub-connected** — Link a GitHub repo for continuous deployment. Best for teams and production workflows.
 
 ## Deploy without GitHub
 

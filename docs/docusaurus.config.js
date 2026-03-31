@@ -246,6 +246,14 @@ const config = {
           // Legacy paths and misc redirects
           // ============================================
           {
+            from: '/developers/deploy/deploy-to-cloud',
+            to: '/developers/deploy/from-local',
+          },
+          {
+            from: '/developers/deploy/cloud-vs-developer',
+            to: '/developers/deploy',
+          },
+          {
             from: '/developers/guides/setting-up-mcp',
             to: '/guide/ai/mcp',
           },
@@ -263,7 +271,7 @@ const config = {
           },
           {
             from: '/developers/deploy/deploy-dashboard',
-            to: '/developers/deploy/deploy-to-cloud',
+            to: '/developers/deploy/from-local',
           },
           {
             from: '/install',
@@ -287,7 +295,7 @@ const config = {
           },
           {
             from: '/home/concepts/developerVsCloud',
-            to: '/developers/deploy/cloud-vs-developer',
+            to: '/developers/deploy',
           },
           {
             from: '/home/concepts/OLAP',
@@ -347,7 +355,7 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/developers/deploy/cloud-vs-developer',
+            to: '/developers/deploy',
           },
           {
             from: '/concepts/OLAP',
@@ -371,7 +379,7 @@ const config = {
           },
           {
             from: '/get-started/concepts/cloud-vs-developer',
-            to: '/developers/deploy/cloud-vs-developer',
+            to: '/developers/deploy',
           },
           {
             from: '/get-started/concepts/architecture',
@@ -1054,7 +1062,7 @@ const config = {
           },
           {
             from: '/deploy/cloud-vs-developer',
-            to: '/developers/deploy/cloud-vs-developer',
+            to: '/developers/deploy',
           },
           {
             from: '/deploy/deploy-credentials',
@@ -1062,11 +1070,11 @@ const config = {
           },
           {
             from: '/deploy/deploy-dashboard',
-            to: '/developers/deploy/deploy-to-cloud',
+            to: '/developers/deploy/from-local',
           },
           {
             from: '/deploy/deploy-dashboard/deploy-dashboard',
-            to: '/developers/deploy/deploy-to-cloud',
+            to: '/developers/deploy/from-local',
           },
           {
             from: '/deploy/deploy-dashboard/deploy-from-cli',

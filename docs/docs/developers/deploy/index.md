@@ -1,20 +1,17 @@
 ---
-title: Publish your Dashboards to Rill Cloud
-sidebar_label: Publish
+title: Deploy
+sidebar_label: Deploy
 sidebar_position: 0
 ---
 
-Rill Developer is a great tool for building, testing, and viewing your data locally, but once you're ready to share your findings, you'll need to publish the dashboard to Rill Cloud! 
+Once your project is ready, deploy it to Rill Cloud to share dashboards, set up alerts, expose APIs, and collaborate with your team.
 
-### Concepts
-- [**Rill Developer vs Rill Cloud**](/developers/deploy/cloud-vs-developer) - Before you deploy, understand the difference between Rill Developer and Rill Cloud
+There are two paths to deployment depending on where you build:
 
-### Credentials
-- [**Deployment Credentials**](/developers/deploy/deploy-credentials) - Confirm deployment credentials based on your deployment environment
+- [**Agent Deploy**](/developers/deploy/from-local) — Deploy from Rill Developer via the UI, CLI, or an AI coding agent.
+- [**Cloud Deploy**](/developers/deploy/from-cloud) — Edit and deploy projects entirely in the browser, no local setup required. *(Coming soon)*
 
-### Deployment
-- [**Deploy to Rill Cloud**](/developers/deploy/deploy-to-cloud) - Publish your dashboard to Rill Cloud
+### After deploying
 
-### Post-Deployment Steps
-- [**Managing Project Errors**](/developers/deploy/project-errors) - Troubleshooting errors in Rill Cloud
-
+- [**Deployment Credentials**](/developers/deploy/deploy-credentials) — Configure credentials for production data sources
+- [**Managing Project Errors**](/developers/deploy/project-errors) — Troubleshoot and set up error alerts

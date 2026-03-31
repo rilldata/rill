@@ -41,8 +41,8 @@ Looking for hands-on examples? Browse our [tutorials and example projects](/deve
 Rill Developer is great for building and testing locally, but once you're ready to share your work, deploy your project to Rill Cloud. Rill Cloud is a fully managed service where your team can explore dashboards, ask questions with AI Chat, set up alerts, and schedule reports — no local setup required for consumers.
 
 <FeatureList items={[
-  { name: "Local vs Cloud", description: "Understand the differences between local and cloud", link: "/developers/deploy/cloud-vs-developer" },
-  { name: "Deploy to Rill Cloud", description: "Publish your project to Rill Cloud", link: "/developers/deploy/deploy-to-cloud" },
+  { name: "Local vs Cloud", description: "Understand the differences between local and cloud", link: "/developers/deploy" },
+  { name: "Deploy to Rill Cloud", description: "Publish your project to Rill Cloud", link: "/developers/deploy/from-local" },
   { name: "Credentials", description: "Configure deployment credentials", link: "/developers/deploy/deploy-credentials" },
 ]} />
 
