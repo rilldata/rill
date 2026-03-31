@@ -53,7 +53,7 @@
 </defs>
 
 {#if hasSelection && orderedStartIdx !== null && orderedEndIdx !== null}
-  <g class="scrub-group" on:contextmenu={handleContextMenu} role="presentation">
+  <g class="scrub-group" oncontextmenu={handleContextMenu} role="presentation">
     <rect
       class="selection-rect"
       class:scrubbing={isScrubbing}

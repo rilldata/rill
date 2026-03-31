@@ -1,7 +1,7 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fileAndResourceWatcher } from "./file-and-resource-watcher";
-  import { Tooltip } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
 
   const { status: statusStore } = fileAndResourceWatcher;

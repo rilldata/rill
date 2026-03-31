@@ -42,6 +42,7 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
   RandomDomains,
@@ -393,13 +394,30 @@ export const AD_BIDS_SORT_PIVOT_BY_DOMAIN_DESC: TestDashboardMutation = () =>
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
-    { id: V1TimeGrain.TIME_GRAIN_DAY, desc: false },
+    {
+      id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_DAY}`,
+      desc: false,
+    },
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
   () =>
     metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
+// Matches actual TanStack Table sort id format: {timeDimension}_rill_{grain}
+export const AD_BIDS_SORT_PIVOT_BY_RILL_TIME_DAY_DESC: TestDashboardMutation =
+  () =>
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      {
+        id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_DAY}`,
+        desc: true,
+      },
+    ]);
+// Minimized accessor format used for column-specific measure sorts
+export const AD_BIDS_SORT_PIVOT_BY_ACCESSOR_DESC: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+    { id: "c0v2m0", desc: true },
+  ]);
 
 export const AD_BIDS_SET_PIVOT_ROW_LIMIT_10: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, 10);

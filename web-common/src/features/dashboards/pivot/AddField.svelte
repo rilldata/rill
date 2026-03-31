@@ -96,16 +96,13 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <button
-      class:active={open}
-      use:builder.action
-      {...builder}
-      aria-label="Add filter button"
-    >
-      <Add size="17px" />
-    </button>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <button {...props} class:active={open} aria-label="Add filter button">
+        <Add size="17px" />
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent
@@ -123,10 +120,6 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply bg-input border;
-  }
-
-  button.addBorder {
-    @apply border border-dashed border-gray-300;
   }
 
   button:hover {

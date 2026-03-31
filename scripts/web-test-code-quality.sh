@@ -79,7 +79,7 @@ if [[ "$COMMON" == "true" ]]; then
   npx svelte-kit sync
   cd ..
   npx eslint web-common --quiet || exit_code=$?
-  npx svelte-check --workspace web-common --no-tsconfig --ignore "src/stories/Tooltip.stories.svelte,src/lib/number-formatting/__stories__/NumberFormatting.stories.svelte" || exit_code=$?
+  npx svelte-check --workspace web-common --no-tsconfig || exit_code=$?
 fi
 
 if [[ "$LOCAL" == "true" ]]; then

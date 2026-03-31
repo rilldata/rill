@@ -63,6 +63,34 @@ func TestManagedDeploy(t *testing.T) {
 
 	// verify changes are pushed to Github repo
 	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
+
+	// clone the project to an empty directory and remove the __rill_remote to simulate fresh deploys in CI/CD
+
+	// Get an installation token so we can clone the managed (private) repo without credentials.
+	managedOwner, _, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
+	require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
+	cloneToken, _, err := adm.Admin.Github.InstallationTokenForOrg(t.Context(), managedOwner)
+	require.NoError(t, err)
+
+	cloneDir := t.TempDir()
+	cmd := exec.CommandContext(t.Context(), "git", "clone", authGitURL(t, resp.Project.GitRemote, cloneToken), cloneDir)
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git clone failed: %s", out)
+
+	// remove __rill_remote to simulate fresh deploys in CI/CD where the git history is not preserved
+	err = os.Remove(filepath.Join(cloneDir, ".git", "refs", "heads", "main"))
+	require.NoError(t, err)
+
+	// deploy again from the cloned directory with changes
+	changes2 := map[string]string{
+		"models/model.sql": `SELECT 2 AS two`,
+	}
+	putFiles(t, cloneDir, changes2)
+	result = u1.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=rill-mgd-deploy", "--skip-deploy=true", "--path="+cloneDir)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify changes are pushed to Github repo
+	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes2)
 }
 
 func TestManagedDeployWithPrimaryBranch(t *testing.T) {

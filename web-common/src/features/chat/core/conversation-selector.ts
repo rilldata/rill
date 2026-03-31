@@ -58,6 +58,23 @@ export interface ConversationSelector {
  * Only handles REAL conversation IDs - optimistic state is managed by Chat class.
  */
 export class URLConversationSelector implements ConversationSelector {
+  private readonly basePath: () => string;
+
+  /**
+   * @param basePath - A function returning the base path for AI chat routes
+   *   (e.g., () => `/${org}/${project}/-/ai` for web-admin, () => "/ai" for web-local)
+   */
+  constructor(basePath?: () => string) {
+    this.basePath =
+      basePath ??
+      (() => {
+        const currentPage = get(page);
+        const organization = currentPage.params.organization;
+        const project = currentPage.params.project;
+        return `/${organization}/${project}/-/ai`;
+      });
+  }
+
   // Single reactive source of truth
   readonly currentConversationId = derived(
     page,
@@ -71,19 +88,13 @@ export class URLConversationSelector implements ConversationSelector {
   );
 
   async selectConversation(id: string): Promise<void> {
-    const currentPage = get(page);
-    const organization = currentPage.params.organization;
-    const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/ai/${id}`, {
+    await goto(`${this.basePath()}/${id}`, {
       replaceState: true,
     });
   }
 
   async clearSelection(): Promise<void> {
-    const currentPage = get(page);
-    const organization = currentPage.params.organization;
-    const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/ai`, {
+    await goto(this.basePath(), {
       replaceState: true,
     });
   }

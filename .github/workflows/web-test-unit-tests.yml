@@ -39,7 +39,3 @@ jobs:
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
-
-      - name: Run storybook smoke tests
-        run: |-
-          npm run storybook:smoketest -w web-common

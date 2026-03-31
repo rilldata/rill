@@ -29,7 +29,7 @@
     {color}
     grid place-items-center rounded"
     style="width: 16px; height: 16px;"
-    on:click={modified({
+    onclick={modified({
       shift: () => copyToClipboard(type),
     })}
   >

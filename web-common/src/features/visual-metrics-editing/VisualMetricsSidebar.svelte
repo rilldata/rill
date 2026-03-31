@@ -348,7 +348,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Escape") onCancel(unsavedChanges);
   }}
 />
@@ -421,13 +421,13 @@
       {/if}
     {/each}
 
-    <span />
+    <span></span>
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
     <p class="text-fg-muted">
       For more options,
-      <button on:click={switchView} class="text-primary-600 font-medium">
+      <button onclick={switchView} class="text-primary-600 font-medium">
         edit in YAML
       </button>
     </p>
@@ -467,8 +467,10 @@
 </div>
 
 <Alert.Root bind:open={showTypeMismatchModal}>
-  <Alert.Trigger asChild>
-    <div class="hidden"></div>
+  <Alert.Trigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </Alert.Trigger>
   <Alert.Content noCancel>
     <Alert.Header>
