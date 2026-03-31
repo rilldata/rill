@@ -130,7 +130,8 @@
       <p class="mt-2 text-sm text-muted-foreground">
         Processing may take several minutes depending on file size. The upload
         continues in the background, and you'll receive a notification when it's
-        complete. You can safely close this modal or cancel at any time.
+        complete. You can safely close this window — the import will continue in
+        the background.
       </p>
     </div>
     <div class="footer">
