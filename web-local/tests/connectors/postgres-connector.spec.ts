@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
 import { PostgresTestContainer } from "../utils/postgres.ts";
+import { validateYamlContents } from "../utils/yamlHelpers.ts";
 
 test.describe("Postgres connector", () => {
   const postgresOne = new PostgresTestContainer();
@@ -123,6 +124,81 @@ test.describe("Postgres connector", () => {
         `POSTGRES_DSN=postgresql://default:password@${postgresOne.getHost()}:${postgresOne.getPort().toString()}/postgres`,
       );
     });
+
+    test("Create connector, create invalid source and go all the way back", async ({
+      page,
+    }) => {
+      await page.getByLabel("Connect your data").click();
+      await enterPostgresCredentials(page, postgresOne);
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      // Wait for pick a table screen
+      await expect(
+        page.getByText(
+          "Pick a table or input your SQL to power your first dashboard",
+        ),
+      ).toBeVisible();
+
+      // Switch to the SQL mode
+      await page.getByRole("tab", { name: "SQL" }).click();
+
+      // Enter sql query to get data from ad_bids
+      await page
+        .getByRole("textbox", { name: "SQL" })
+        .fill("SELECT * FROM invalid_table");
+
+      // Click generate dashboard button
+      await page
+        .getByRole("button", { name: "Generate dashboard with AI" })
+        .click();
+
+      // Creating model is triggered.
+      await expect(page.getByText("Ingesting data...")).toBeVisible();
+
+      // Ingesting should fail.
+      await expect(page.getByText("Ingesting data failed.")).not.toBeVisible();
+
+      // Go back to explorer
+      await page.getByRole("button", { name: "Back" }).click();
+
+      // Go back to connector form
+      await page.getByRole("button", { name: "Back" }).click();
+
+      // Go back to connectors selector
+      await page.getByRole("button", { name: "Back" }).click();
+
+      // Wait for connectors selectors
+      await expect(page.getByText("Where is your data?")).toBeVisible();
+
+      // Reload, there should be a blank project
+      await page.reload();
+
+      // Open the connectors folder
+      await page.getByLabel("/connectors").click();
+
+      // Assert that "connector" is not created
+      await expect
+        .poll(() => page.getByLabel("/connectors/postgres.yaml").count(), {
+          timeout: 10_000,
+        })
+        .toBe(0);
+
+      // Go to the `.env` file and verify the POSTGRES_PASSWORD is unset
+      await page.getByRole("link", { name: ".env" }).click();
+      await validateYamlContents(page, [], [`POSTGRES_PASSWORD`]);
+
+      // Open the models folder
+      await page.getByLabel("/models").click();
+
+      // Assert that "connector" is not created
+      await expect
+        .poll(() => page.getByLabel("/models/invalid_table.yaml").count(), {
+          timeout: 10_000,
+        })
+        .toBe(0);
+    });
   });
 
   test.describe("Home page", () => {
@@ -176,7 +252,6 @@ test.describe("Postgres connector", () => {
       await page.getByLabel("Create model for postgres").click();
 
       await selectAdBidsAndSubmit(page, true);
-      await page.getByRole("button", { name: "View this source" }).click();
 
       // Open the add data modal.
       await page.getByLabel("Add Asset").click();
@@ -222,10 +297,18 @@ test.describe("Postgres connector", () => {
       // Creating model is triggered.
       await expect(page.getByText("Ingesting data...")).toBeVisible();
 
+      // Wait for model to be created.
+      await expect
+        .poll(() => page.getByText("Data imported successfully!").isVisible(), {
+          timeout: 30_000,
+        })
+        .toBeTruthy();
+
+      // Click view source button
+      await page.getByRole("button", { name: "View this source" }).click();
+
       // Wait for navigation to the new file
-      await page.waitForURL(/\/files\/models\/ad_impressions.yaml/, {
-        timeout: 10_000,
-      });
+      await page.waitForURL(/\/files\/models\/ad_impressions.yaml/);
     });
   });
 });
@@ -287,10 +370,18 @@ async function selectAdBidsAndSubmit(page: Page, modelOnly: boolean) {
   await expect(page.getByText("Ingesting data...")).toBeVisible();
 
   if (modelOnly) {
+    // Wait for model to be created.
+    await expect
+      .poll(() => page.getByText("Data imported successfully!").isVisible(), {
+        timeout: 30_000,
+      })
+      .toBeTruthy();
+
+    // Click view source button
+    await page.getByRole("button", { name: "View this source" }).click();
+
     // Wait for navigation to the new file
-    await page.waitForURL(/\/files\/models\/ad_bids.yaml/, {
-      timeout: 30_000,
-    });
+    await page.waitForURL(/\/files\/models\/ad_bids.yaml/);
     return;
   }
 

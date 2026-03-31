@@ -11,6 +11,7 @@ import {
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
+  deleteFileArtifact,
   maybeDeleteFileArtifact,
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
@@ -111,6 +112,11 @@ export async function cleanupImportStep(
   config: ImportStepConfig,
 ) {
   const importToConfig = config.importTo;
+  console.log(
+    "cleanupImportStep",
+    importToConfig,
+    fileArtifacts.hasFileArtifact(importToConfig.modelPath ?? ""),
+  );
 
   let envBlob: string | null = null;
   if (
@@ -128,6 +134,8 @@ export async function cleanupImportStep(
       queryClient,
       modelYaml ?? "",
     );
+
+    await deleteFileArtifact(runtimeClient, importToConfig.modelPath);
   }
 
   // Cleanup any generated files.

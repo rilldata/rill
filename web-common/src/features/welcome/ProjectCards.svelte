@@ -1,6 +1,5 @@
 <script lang="ts">
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
-  import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,

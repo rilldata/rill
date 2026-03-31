@@ -620,11 +620,11 @@ export function maybeUnsetOlapConnectorInYaml(
   connectorName: string,
 ): [boolean, string] {
   const olapConnectorRegex = new RegExp(
-    `^olap_connector: ${connectorName}+$`,
+    `^\\s*olap_connector:\\s+${connectorName}\\s*$`,
     "m",
   );
   if (!olapConnectorRegex.test(blob)) return [false, blob];
-  return [true, blob.replace(olapConnectorRegex, "olap_connector: duckdb")];
+  return [true, blob.replace(olapConnectorRegex, "")];
 }
 
 export async function updateRillYAMLWithAiConnector(

@@ -3,7 +3,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
-  import { CheckIcon, XIcon } from "lucide-svelte";
+  import { XIcon } from "lucide-svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -93,7 +93,7 @@
     onBack();
   }
 
-  // onMount(runImport);
+  onMount(runImport);
 </script>
 
 <div class="flex flex-col gap-4 p-6 mx-auto w-fit justify-center">

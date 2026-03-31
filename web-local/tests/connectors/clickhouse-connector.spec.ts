@@ -355,6 +355,45 @@ test.describe("ClickHouse connector", () => {
         [`CLICKHOUSE_PASSWORD_1`],
       );
     });
+
+    test("Create a connector cancel all the way to connector selector", async ({
+      page,
+    }) => {
+      // Open the connect to clickhouse modal
+      await page.getByLabel("Connect to clickhouse").click();
+      await enterClickhouseCredentials(page, clickhouseOne);
+
+      // Submit the form
+      await page.getByRole("button", { name: "Test and Connect" }).click();
+
+      // Wait for pick a table screen
+      await expect(
+        page.getByText("Pick a table to power your first dashboard"),
+      ).toBeVisible();
+      // Go back to the connector form
+      await page.getByRole("button", { name: "Back" }).click();
+
+      // Go back to the connector form
+      await page.getByRole("button", { name: "Back" }).click();
+
+      // Open the connectors folder
+      await page.getByLabel("/connectors").click();
+
+      // Assert that "connector" is not created
+      await expect
+        .poll(() => page.getByLabel("/connectors/clickhouse.yaml").count(), {
+          timeout: 10_000,
+        })
+        .toBe(0);
+
+      // Go to the `.env` file and verify the CLICKHOUSE_PASSWORD is unset
+      await page.getByRole("link", { name: ".env" }).click();
+      await validateYamlContents(page, [], [`CLICKHOUSE_PASSWORD`]);
+
+      // Go to the `rill.yaml` and verify the OLAP connector is unset
+      await page.getByRole("link", { name: "rill.yaml" }).click();
+      await validateYamlContents(page, [], [`olap_connector: clickhouse`]);
+    });
   });
 });
 

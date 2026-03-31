@@ -27,13 +27,12 @@ export function getAddDataClass(addDataState: AddDataState) {
 const FormClassBySchemaMap: Partial<Record<string, string>> = {
   local_file: "px-6 my-auto h-fit",
 };
-const DefaultFormClass = "p-6 flex-grow";
+const DefaultFormClass = "p-6 flex-grow overflow-auto";
 
 export function getFormClass(addDataState: AddDataState) {
   const schema = (
     addDataState as CreateConnectorStep | CreateModelStep | ExploreConnectorStep
   ).schema;
-  console.log("schema", schema);
   if (schema && schema in FormClassBySchemaMap)
     return FormClassBySchemaMap[schema];
   return DefaultFormClass;

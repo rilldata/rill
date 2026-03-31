@@ -28,7 +28,7 @@ import type { MultiStepFormSchema } from "@rilldata/web-common/features/template
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
-  replaceOlapConnectorInYAML,
+  maybeUnsetOlapConnectorInYaml,
   unsetResourceEnvVars,
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
@@ -254,7 +254,7 @@ async function unsetOlapConnectorInRillYAML(
   });
   const blob = file.blob || "";
 
-  const [ok, newBlob] = replaceOlapConnectorInYAML(blob, connectorName);
+  const [ok, newBlob] = maybeUnsetOlapConnectorInYaml(blob, connectorName);
   if (!ok) return;
 
   await runtimeServicePutFile(runtimeClient, {

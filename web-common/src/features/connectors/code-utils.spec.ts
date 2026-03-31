@@ -13,6 +13,7 @@ import {
   formatHeadersAsYamlMap,
   updateDotEnvWithSecrets,
   getEnvVarsFromConnectorYAML,
+  maybeUnsetOlapConnectorInYaml,
 } from "./code-utils";
 
 // Import the template for testing
@@ -122,6 +123,40 @@ describe("replaceOlapConnectorInYAML", () => {
     expect(updatedBlob).toBe(
       `# here's a comment\ntitle: test project\n\nolap_connector: clickhouse\n`,
     );
+  });
+});
+
+describe("maybeUnsetOlapConnectorInYaml", () => {
+  it("should not update yaml if olap_connector is not set", () => {
+    const existingBlob = `# here's a comment\ntitle: test project\n`;
+    const [updated, updatedBlob] = maybeUnsetOlapConnectorInYaml(
+      existingBlob,
+      "clickhouse",
+    );
+    expect(updated).toBe(false);
+    expect(updatedBlob).toBe(existingBlob);
+  });
+
+  it("should unset olap_connector if it is set to the same value", () => {
+    const existingBlob = `# here's a comment\ntitle: test project\nolap_connector: clickhouse\nfeatures: ["developer_chat"]`;
+    const [updated, updatedBlob] = maybeUnsetOlapConnectorInYaml(
+      existingBlob,
+      "clickhouse",
+    );
+    expect(updated).toBe(true);
+    expect(updatedBlob).toBe(
+      '# here\'s a comment\ntitle: test project\n\nfeatures: ["developer_chat"]',
+    );
+  });
+
+  it("should not unset olap_connector if it is set to a different value", () => {
+    const existingBlob = `# here's a comment\ntitle: test project\nolap_connector: snowflake`;
+    const [updated, updatedBlob] = maybeUnsetOlapConnectorInYaml(
+      existingBlob,
+      "clickhouse",
+    );
+    expect(updated).toBe(false);
+    expect(updatedBlob).toBe(existingBlob);
   });
 });
 
