@@ -179,24 +179,26 @@
 
         {#if hasResults}
           <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild let:builder>
-              <Button
-                label="Export results"
-                type="secondary"
-                small
-                builders={[builder]}
-              >
-                <Export size="13px" />
-              </Button>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  label="Export results"
+                  type="secondary"
+                  small
+                >
+                  <Export size="13px" />
+                </Button>
+              {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
               <DropdownMenu.Item
-                on:click={() => downloadResultsAsCSV(schema, data)}
+                onclick={() => downloadResultsAsCSV(schema, data)}
               >
                 Download as CSV
               </DropdownMenu.Item>
               <DropdownMenu.Item
-                on:click={() => downloadResultsAsJSON(schema, data)}
+                onclick={() => downloadResultsAsJSON(schema, data)}
               >
                 Download as JSON
               </DropdownMenu.Item>

@@ -87,7 +87,7 @@
   role="textbox"
   aria-label="SQL query editor"
   tabindex="0"
-/>
+></div>
 
 <style lang="postcss">
   div :global(.cm-editor) {
