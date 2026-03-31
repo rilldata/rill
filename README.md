@@ -96,6 +96,7 @@ sql: |
 **2. Define metrics** — `metrics/events_metrics.yaml`
 
 ```yaml
+version: 1
 type: metrics_view
 model: events
 timeseries: timestamp
@@ -114,7 +115,19 @@ measures:
     description: Total revenue
 ```
 
-**3. Deploy**
+**3. Create a dashboard** — `dashboards/events_explore.yaml`
+
+```yaml
+type: explore
+
+display_name: "Events Dashboard"
+metrics_view: events_metrics
+
+dimensions: '*'
+measures: '*'
+```
+
+**4. Deploy**
 
 ```bash
 rill deploy                      # push to Rill Cloud
