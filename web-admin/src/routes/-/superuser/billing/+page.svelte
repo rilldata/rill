@@ -103,7 +103,8 @@
         message: `Billing issue "${deleteIssueType}" deleted for ${deleteIssueOrg}`,
       });
       await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationBillingIssuesQueryKey(deleteIssueOrg),
+        queryKey:
+          getAdminServiceListOrganizationBillingIssuesQueryKey(deleteIssueOrg),
       });
     } catch (err) {
       eventBus.emit("notification", {
