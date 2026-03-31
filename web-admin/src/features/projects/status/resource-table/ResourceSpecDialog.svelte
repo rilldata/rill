@@ -8,14 +8,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import CanvasDescribe from "./describe/CanvasDescribe.svelte";
-  import ComponentDescribe from "./describe/ComponentDescribe.svelte";
-  import ConnectorDescribe from "./describe/ConnectorDescribe.svelte";
-  import ExploreDescribe from "./describe/ExploreDescribe.svelte";
-  import FallbackDescribe from "./describe/FallbackDescribe.svelte";
-  import MetricsViewDescribe from "./describe/MetricsViewDescribe.svelte";
-  import SourceModelDescribe from "./describe/SourceModelDescribe.svelte";
-  import ThemeDescribe from "./describe/ThemeDescribe.svelte";
+  import StructuredView from "./describe/StructuredView.svelte";
 
   export let open = false;
   export let resourceName = "";
@@ -27,7 +20,6 @@
   export let parentResource: V1Resource | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
-    "view-component": { componentName: string };
     back: void;
   }>();
 
@@ -54,24 +46,7 @@
     }
   }
 
-  function getDescription(
-    k: ResourceKind,
-    r: V1Resource | undefined,
-  ): string | undefined {
-    switch (k) {
-      case ResourceKind.MetricsView:
-        return r?.metricsView?.spec?.description;
-      case ResourceKind.Explore:
-        return r?.explore?.spec?.description;
-      case ResourceKind.Component:
-        return r?.component?.spec?.description;
-      default:
-        return undefined;
-    }
-  }
-
   $: displayName = getDisplayName(kind, resource);
-  $: description = getDescription(kind, resource);
 </script>
 
 <Dialog.Root bind:open>
@@ -102,9 +77,6 @@
           <span>{displayName || resourceName}</span>
         </Dialog.Title>
       </div>
-      {#if description}
-        <p class="text-xs text-fg-secondary mt-1">{description}</p>
-      {/if}
       {#if filePath}
         <p class="text-xs text-fg-muted font-mono mt-1">
           {removeLeadingSlash(filePath)}
@@ -114,31 +86,12 @@
 
     <hr class="border-border -mx-6 mb-2" />
 
-    <!-- Body: per-type content -->
-    <div class="overflow-auto flex-1 min-h-0">
+    <!-- Body -->
+    <div class="overflow-y-auto min-h-0 flex-1">
       {#if !resource}
         <p class="text-sm text-fg-secondary">No resource data available</p>
-      {:else if kind === ResourceKind.Connector && resource.connector}
-        <ConnectorDescribe connector={resource.connector} />
-      {:else if kind === ResourceKind.Source && resource.source}
-        <SourceModelDescribe source={resource.source} />
-      {:else if kind === ResourceKind.Model && resource.model}
-        <SourceModelDescribe model={resource.model} />
-      {:else if kind === ResourceKind.MetricsView && resource.metricsView}
-        <MetricsViewDescribe metricsView={resource.metricsView} />
-      {:else if kind === ResourceKind.Explore && resource.explore}
-        <ExploreDescribe explore={resource.explore} />
-      {:else if kind === ResourceKind.Component && resource.component}
-        <ComponentDescribe component={resource.component} />
-      {:else if kind === ResourceKind.Canvas && resource.canvas}
-        <CanvasDescribe
-          canvas={resource.canvas}
-          on:view-component={(e) => dispatch("view-component", e.detail)}
-        />
-      {:else if kind === ResourceKind.Theme && resource.theme}
-        <ThemeDescribe theme={resource.theme} />
       {:else}
-        <FallbackDescribe {resource} />
+        <StructuredView {resource} />
       {/if}
     </div>
   </Dialog.Content>
