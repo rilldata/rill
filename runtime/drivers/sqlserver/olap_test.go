@@ -306,7 +306,7 @@ func testFullTableScan(t *testing.T, olap drivers.OLAPStore) {
 
 func acquireTestSQLServer(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "sqlserver")
-	conn, err := drivers.Open("sqlserver", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("sqlserver", "default", "", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
