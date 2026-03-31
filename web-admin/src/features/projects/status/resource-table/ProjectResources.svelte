@@ -91,7 +91,7 @@
   const filterSections: { label: string; types: string[] }[] = [
     {
       label: "Data",
-      types: [ResourceKind.Source, ResourceKind.Model, ResourceKind.Connector],
+      types: [ResourceKind.Connector, ResourceKind.Source, ResourceKind.Model],
     },
     {
       label: "Dashboards",
