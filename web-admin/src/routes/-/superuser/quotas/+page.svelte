@@ -1,5 +1,4 @@
 <script lang="ts">
-  import SuperuserPageHeader from "@rilldata/web-admin/features/superuser/layout/SuperuserPageHeader.svelte";
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -92,10 +91,7 @@
   }
 </script>
 
-<SuperuserPageHeader
-  title="Quotas"
-  description="View and adjust resource quotas for organizations."
-/>
+<p class="text-sm text-fg-secondary mb-4">View and adjust resource quotas for organizations.</p>
 
 <div class="flex flex-col gap-6">
   <section class="p-5 rounded-lg border">

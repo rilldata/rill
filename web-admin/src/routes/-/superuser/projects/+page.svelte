@@ -1,5 +1,4 @@
 <script lang="ts">
-  import SuperuserPageHeader from "@rilldata/web-admin/features/superuser/layout/SuperuserPageHeader.svelte";
   import SearchInput from "@rilldata/web-admin/features/superuser/shared/SearchInput.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -161,10 +160,7 @@
   }
 </script>
 
-<SuperuserPageHeader
-  title="Projects"
-  description="Search projects across all organizations. Change prod slots, hibernate, or redeploy."
-/>
+<p class="text-sm text-fg-secondary mb-4">Search projects across all organizations. Change prod slots, hibernate, or redeploy.</p>
 
 <div class="mb-4 max-w-md">
   <SearchInput

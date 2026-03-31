@@ -1,5 +1,4 @@
 <script lang="ts">
-  import SuperuserPageHeader from "@rilldata/web-admin/features/superuser/layout/SuperuserPageHeader.svelte";
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -140,10 +139,7 @@
   }
 </script>
 
-<SuperuserPageHeader
-  title="Organizations"
-  description="Search for any organization by name to view details, members, and projects."
-/>
+<p class="text-sm text-fg-secondary mb-4">Search for any organization by name to view details, members, and projects.</p>
 
 <div class="mb-6 max-w-lg">
   <OrgPicker

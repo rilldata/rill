@@ -1,5 +1,4 @@
 <script lang="ts">
-  import SuperuserPageHeader from "@rilldata/web-admin/features/superuser/layout/SuperuserPageHeader.svelte";
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -142,10 +141,7 @@
   }
 </script>
 
-<SuperuserPageHeader
-  title="Billing"
-  description="Generate billing setup links, extend trials, and manage billing issues."
-/>
+<p class="text-sm text-fg-secondary mb-4">Generate billing setup links, extend trials, and manage billing issues.</p>
 
 <div class="flex flex-col gap-6 pb-12">
   <!-- Billing Setup -->

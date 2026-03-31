@@ -3,7 +3,6 @@
     createAdminServiceListSuperusers,
     createAdminServiceSetSuperuser,
   } from "@rilldata/web-admin/client";
-  import SuperuserPageHeader from "@rilldata/web-admin/features/superuser/layout/SuperuserPageHeader.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     AlertDialog,
@@ -88,10 +87,7 @@
   }
 </script>
 
-<SuperuserPageHeader
-  title="Superusers"
-  description="Manage who has superuser access across all of Rill Cloud."
-/>
+<p class="text-sm text-fg-secondary mb-4">Manage who has superuser access across all of Rill Cloud.</p>
 
 <div class="p-5 rounded-lg border mb-6">
   <h2 class="text-sm font-semibold text-fg-primary mb-3">Add Superuser</h2>
