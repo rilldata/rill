@@ -1,9 +1,10 @@
-export const ORG_ROLES = ["admin", "editor", "viewer", "guest", ""];
-export const PROJECT_ROLES = ["admin", "editor", "viewer"];
+import { capitalize } from "@rilldata/web-common/components/table/utils";
 
-export function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
+export { capitalize };
+
+export const NONE_ROLE = "";
+export const ORG_ROLES = ["admin", "editor", "viewer", "guest", NONE_ROLE];
+export const PROJECT_ROLES = ["admin", "editor", "viewer"];
 
 export function formatOrgRole(role: string | undefined): string {
   if (!role) return "None";
@@ -19,8 +20,13 @@ export function validateServiceName(value: string): string {
   return "";
 }
 
+function isValidDate(value: string): boolean {
+  const date = new Date(value);
+  return !isNaN(date.getTime()) && date.getFullYear() > 1970;
+}
+
 export function formatServiceDate(value: string | undefined): string {
-  if (!value) return "-";
+  if (!value || !isValidDate(value)) return "-";
   return new Date(value).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -29,7 +35,7 @@ export function formatServiceDate(value: string | undefined): string {
 }
 
 export function formatServiceDateTime(value: string | undefined): string {
-  if (!value) return "-";
+  if (!value || !isValidDate(value)) return "-";
   return new Date(value).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",

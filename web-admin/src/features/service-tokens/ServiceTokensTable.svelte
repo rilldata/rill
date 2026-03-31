@@ -4,7 +4,6 @@
   import KeyIcon from "@rilldata/web-common/components/icons/KeyIcon.svelte";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import ServiceActionsCell from "./ServiceActionsCell.svelte";
-  import ServiceNameCell from "./ServiceNameCell.svelte";
   import ServiceProjectRolesCell from "./ServiceProjectRolesCell.svelte";
   import { formatServiceDate, formatOrgRole } from "./utils";
 
@@ -15,10 +14,7 @@
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) =>
-        flexRender(ServiceNameCell, {
-          name: row.original.name ?? "",
-        }),
+      cell: (info) => info.getValue() as string,
     },
     {
       accessorKey: "roleName",

@@ -73,10 +73,10 @@
       eventBus.emit("notification", {
         message: "Token issued",
       });
-    } catch (error) {
-      console.error("Error issuing token", error);
+    } catch (e: any) {
+      console.error("Error issuing token", e);
       eventBus.emit("notification", {
-        message: "Error issuing token",
+        message: e?.response?.data?.message ?? "Error issuing token",
         type: "error",
       });
     }
@@ -97,10 +97,10 @@
       eventBus.emit("notification", {
         message: "Token revoked",
       });
-    } catch (error) {
-      console.error("Error revoking token", error);
+    } catch (e: any) {
+      console.error("Error revoking token", e);
       eventBus.emit("notification", {
-        message: "Error revoking token",
+        message: e?.response?.data?.message ?? "Error revoking token",
         type: "error",
       });
     }

@@ -9,10 +9,13 @@
   export let hasProjectRoles: boolean;
 
   let isDropdownOpen = false;
+  let hasOpened = false;
+
+  $: if (isDropdownOpen) hasOpened = true;
 
   $: organization = $page.params.organization;
   $: serviceQuery = createAdminServiceGetService(organization, serviceName, {
-    query: { enabled: hasProjectRoles },
+    query: { enabled: hasProjectRoles && hasOpened },
   });
   $: memberships = $serviceQuery.data?.projectMemberships ?? [];
   $: projectCount = memberships.length;
@@ -25,7 +28,11 @@
         ? 'bg-gray-200'
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
-      <span>{projectCount} {projectCount === 1 ? "project" : "projects"}</span>
+      <span
+        >{hasOpened
+          ? `${projectCount} ${projectCount === 1 ? "project" : "projects"}`
+          : "View projects"}</span
+      >
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
       {:else}

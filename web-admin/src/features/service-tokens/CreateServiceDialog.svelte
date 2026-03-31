@@ -18,19 +18,12 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import * as Select from "@rilldata/web-common/components/select";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { CopyIcon, Plus, Trash2Icon } from "lucide-svelte";
-  import {
-    ORG_ROLES,
-    PROJECT_ROLES,
-    capitalize,
-    formatOrgRole,
-    validateServiceName,
-  } from "./utils";
+  import { CopyIcon } from "lucide-svelte";
+  import { validateServiceName } from "./utils";
+  import ServiceForm from "./ServiceForm.svelte";
 
   export let open = false;
 
@@ -41,22 +34,14 @@
   let issuedToken = "";
   let tokenCopied = false;
   let step: "form" | "token" = "form";
-  let nameError = "";
 
   $: organization = $page.params.organization;
   $: projectsQuery =
     createAdminServiceListProjectsForOrganization(organization);
   $: allProjects = $projectsQuery.data?.projects ?? [];
-  $: assignedProjectNames = new Set(projectAssignments.map((p) => p.project));
-  $: availableProjects = allProjects.filter(
-    (p) => !assignedProjectNames.has(p.name ?? ""),
-  );
 
   $: nameError = name ? validateServiceName(name) : "";
-  $: hasAtLeastOneAssignment =
-    orgRole !== "" ||
-    projectAssignments.length > 0 ||
-    attributes.some((a) => a.key.trim());
+  $: hasAtLeastOneAssignment = orgRole !== "" || projectAssignments.length > 0;
   $: isValid = name.trim() !== "" && !nameError && hasAtLeastOneAssignment;
 
   const queryClient = useQueryClient();
@@ -72,24 +57,10 @@
     issuedToken = "";
     tokenCopied = false;
     step = "form";
-    nameError = "";
-  }
-
-  function addProjectAssignment() {
-    if (availableProjects.length === 0) return;
-    projectAssignments = [
-      ...projectAssignments,
-      { project: availableProjects[0].name ?? "", role: "viewer" },
-    ];
-  }
-
-  function removeProjectAssignment(index: number) {
-    projectAssignments = projectAssignments.filter((_, i) => i !== index);
   }
 
   async function handleSubmit() {
     try {
-      // Create the service with the first project assignment (if any)
       const firstProject = projectAssignments[0];
       const attrObj = Object.fromEntries(
         attributes
@@ -112,7 +83,6 @@
         },
       });
 
-      // Add remaining project assignments
       for (let i = 1; i < projectAssignments.length; i++) {
         const pa = projectAssignments[i];
         await $setProjectRole.mutateAsync({
@@ -123,7 +93,6 @@
         });
       }
 
-      // Auto-issue a token
       const result = await $issueToken.mutateAsync({
         org: organization,
         serviceName: name.trim(),
@@ -137,10 +106,10 @@
       });
 
       step = "token";
-    } catch (error) {
-      console.error("Error creating service", error);
+    } catch (e: any) {
+      console.error("Error creating service", e);
       eventBus.emit("notification", {
-        message: "Error creating service",
+        message: e?.response?.data?.message ?? "Error creating service",
         type: "error",
       });
     }
@@ -172,170 +141,17 @@
       <DialogDescription>
         Create a service account to access Rill programmatically.
       </DialogDescription>
-      <form
-        id="create-service-form"
-        class="w-full flex flex-col gap-y-4 max-h-[45vh] overflow-y-auto"
-        on:submit|preventDefault={handleSubmit}
-      >
-        <Input
-          bind:value={name}
-          id="service-name"
-          label="Name"
-          placeholder="my-service"
-          errors={nameError || null}
-        />
-
-        <div class="flex flex-col gap-y-1">
-          <label for="org-role" class="text-sm font-medium text-fg-primary"
-            >Organization role</label
-          >
-          <span class="text-xs text-fg-tertiary"
-            >Applies across all projects. Use "None" for project-only access.</span
-          >
-          <Select.Root
-            onSelectedChange={(v) => {
-              if (v) orgRole = v.value;
-            }}
-            selected={orgRole !== undefined && orgRole !== ""
-              ? { value: orgRole, label: formatOrgRole(orgRole) }
-              : undefined}
-          >
-            <Select.Trigger>
-              <Select.Value placeholder="Select a role" />
-            </Select.Trigger>
-            <Select.Content>
-              {#each ORG_ROLES as role}
-                <Select.Item value={role}>{formatOrgRole(role)}</Select.Item>
-              {/each}
-            </Select.Content>
-          </Select.Root>
-        </div>
-
-        <!-- Project assignments -->
-        <div class="flex flex-col gap-y-2">
-          <div class="flex flex-col gap-y-0.5">
-            <span class="text-sm font-medium text-fg-primary"
-              >Project access (optional)</span
-            >
-            <span class="text-xs text-fg-tertiary"
-              >Grant this service account access to specific projects with a
-              designated role.</span
-            >
-          </div>
-          {#each projectAssignments as assignment, index}
-            <div class="flex items-center gap-x-2">
-              <div class="flex-1">
-                <Select.Root
-                  onSelectedChange={(v) => {
-                    if (v) projectAssignments[index].project = v.value;
-                  }}
-                  selected={{
-                    value: assignment.project,
-                    label: assignment.project,
-                  }}
-                >
-                  <Select.Trigger>
-                    <Select.Value placeholder="Select project" />
-                  </Select.Trigger>
-                  <Select.Content>
-                    {#each allProjects as project}
-                      <Select.Item
-                        value={project.name ?? ""}
-                        disabled={assignedProjectNames.has(
-                          project.name ?? "",
-                        ) && project.name !== assignment.project}
-                      >
-                        {project.name}
-                      </Select.Item>
-                    {/each}
-                  </Select.Content>
-                </Select.Root>
-              </div>
-              <div class="w-28">
-                <Select.Root
-                  onSelectedChange={(v) => {
-                    if (v) projectAssignments[index].role = v.value;
-                  }}
-                  selected={{
-                    value: assignment.role,
-                    label: capitalize(assignment.role),
-                  }}
-                >
-                  <Select.Trigger>
-                    <Select.Value placeholder="Role" />
-                  </Select.Trigger>
-                  <Select.Content>
-                    {#each PROJECT_ROLES as role}
-                      <Select.Item value={role}>{capitalize(role)}</Select.Item>
-                    {/each}
-                  </Select.Content>
-                </Select.Root>
-              </div>
-              <IconButton on:click={() => removeProjectAssignment(index)}>
-                <Trash2Icon size="14px" class="text-fg-secondary" />
-              </IconButton>
-            </div>
-          {/each}
-          {#if availableProjects.length > 0}
-            <Button
-              type="secondary"
-              small
-              class="w-fit"
-              onClick={addProjectAssignment}
-            >
-              <Plus size="14px" />
-              <span>Add project</span>
-            </Button>
-          {/if}
-        </div>
-
-        <!-- Custom attributes -->
-        <div class="flex flex-col gap-y-2">
-          <div class="flex flex-col gap-y-0.5">
-            <span class="text-sm font-medium text-fg-primary"
-              >Attributes (optional)</span
-            >
-            <span class="text-xs text-fg-tertiary"
-              >Key-value pairs passed to security policies for row-level access
-              control.</span
-            >
-          </div>
-          {#each attributes as attr, index}
-            <div class="flex items-center gap-x-2">
-              <Input
-                bind:value={attr.key}
-                id="attr-key-{index}"
-                label=""
-                placeholder="Key"
-              />
-              <Input
-                bind:value={attr.value}
-                id="attr-value-{index}"
-                label=""
-                placeholder="Value"
-              />
-              <IconButton
-                on:click={() => {
-                  attributes = attributes.filter((_, i) => i !== index);
-                }}
-              >
-                <Trash2Icon size="14px" class="text-fg-secondary" />
-              </IconButton>
-            </div>
-          {/each}
-          <Button
-            type="secondary"
-            small
-            class="w-fit"
-            onClick={() => {
-              attributes = [...attributes, { key: "", value: "" }];
-            }}
-          >
-            <Plus size="14px" />
-            <span>Add attribute</span>
-          </Button>
-        </div>
-      </form>
+      <ServiceForm
+        bind:name
+        bind:orgRole
+        bind:projectAssignments
+        bind:attributes
+        {nameError}
+        {allProjects}
+        formId="create-service-form"
+        showOptionalLabels
+        onSubmit={handleSubmit}
+      />
       <DialogFooter>
         <Button type="tertiary" onClick={handleClose}>Cancel</Button>
         <Button
@@ -385,7 +201,7 @@
             }}
           >
             <CopyIcon size="14px" />
-            Copy & Close
+            Copy token
           </Button>
         {/if}
       </DialogFooter>
