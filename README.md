@@ -30,6 +30,24 @@ curl https://rill.sh | sh        # install
 rill start my-project            # create a project and open the UI
 ```
 
+### Start with a demo project
+
+Use `rill init` to scaffold a project interactively:
+
+```
+➜ rill init
+? Project name my-rill-project
+? OLAP engine duckdb
+? Agent instructions claude
+
+Created a new Rill project at ~/my-rill-project
+Added Claude instructions in .claude and .mcp.json
+
+Success! Run the following command to start the project:
+
+  rill start my-rill-project
+```
+
 ## Why Rill?
 
 - **Build with agents** — BI-as-code (YAML + SQL) means coding agents like Claude Code and Cursor can author projects, dashboards, and security policies end-to-end
@@ -72,7 +90,7 @@ connector: duckdb
 materialize: true
 
 sql: |
-  select * from read_parquet('s3://my-bucket/events/*.parquet')
+  select * from read_parquet('gs://rilldata-public/auction_data.parquet')
 ```
 
 **2. Define metrics** — `metrics/events_metrics.yaml`
