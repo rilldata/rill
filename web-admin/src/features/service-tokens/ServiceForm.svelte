@@ -63,7 +63,8 @@
       }}
     >
       <Select.Trigger>
-        <span class="text-sm {orgRole ? 'text-fg-primary' : 'text-fg-secondary'}"
+        <span
+          class="text-sm {orgRole ? 'text-fg-primary' : 'text-fg-secondary'}"
           >{orgRole ? formatOrgRole(orgRole) : "Select a role"}</span
         >
       </Select.Trigger>
