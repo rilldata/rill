@@ -30,7 +30,7 @@ curl https://rill.sh | sh        # install
 rill start my-project            # create a project and open the UI
 ```
 
-### Start with a demo project
+### Scaffold a project with agent context
 
 Use `rill init` to scaffold a project interactively:
 
