@@ -12,7 +12,7 @@
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import WorkspaceError from "@rilldata/web-common/layout/workspace/WorkspaceError.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
@@ -116,7 +116,7 @@
         </div>
       </WorkspaceHeader>
 
-      <WorkspaceError
+      <WorkspaceEditorContainer
         slot="body"
         resource={exploreResource ?? metricsViewResource}
         {parseError}
@@ -145,7 +145,7 @@
             <Spinner status={1} size="48px" />
           {/if}
         {/if}
-      </WorkspaceError>
+      </WorkspaceEditorContainer>
 
       <svelte:fragment slot="inspector">
         {#if ready}

@@ -15,7 +15,7 @@
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import WorkspaceError from "@rilldata/web-common/layout/workspace/WorkspaceError.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
@@ -99,7 +99,7 @@
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceError
+        <WorkspaceEditorContainer
           slot="body"
           {resource}
           {parseError}
@@ -111,7 +111,7 @@
             bind:editor
             bind:autoSave={$autoSave}
           />
-        </WorkspaceError>
+        </WorkspaceEditorContainer>
       </WorkspaceContainer>
     {/if}
   </div>

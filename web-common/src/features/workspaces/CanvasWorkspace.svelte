@@ -15,7 +15,7 @@
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import WorkspaceError from "@rilldata/web-common/layout/workspace/WorkspaceError.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PreviewButton from "../explores/PreviewButton.svelte";
@@ -114,7 +114,7 @@
         </div>
       </WorkspaceHeader>
 
-      <WorkspaceError
+      <WorkspaceEditorContainer
         slot="body"
         resource={data}
         {parseError}
@@ -141,7 +141,7 @@
             />
           </CanvasLoadingState>
         {/if}
-      </WorkspaceError>
+      </WorkspaceEditorContainer>
       <svelte:fragment slot="inspector">
         {#if ready}
           <VisualCanvasEditing
