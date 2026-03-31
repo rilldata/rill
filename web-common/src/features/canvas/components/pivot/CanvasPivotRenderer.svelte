@@ -46,6 +46,7 @@
       />
     {:else}
       <PivotTable
+        fullWidth
         border={hasHeader}
         rounded={hasHeader}
         {pivotDataStore}
