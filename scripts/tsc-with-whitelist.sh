@@ -18,6 +18,7 @@ web-admin/src/routes/[organization]/-/settings/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/payment/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/upgrade/+page.ts: error TS2307
+web-admin/src/routes/[organization]/-/settings/service-accounts/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/usage/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/upgrade-callback/+page.ts: error TS2307
 web-admin/src/routes/[organization]/[project]/-/open-query/+page.ts: error TS2307
