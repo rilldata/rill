@@ -1,14 +1,8 @@
 <script lang="ts">
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
+  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
+  import GuardedDeleteDialog from "@rilldata/web-admin/features/superuser/dialogs/GuardedDeleteDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     getOrganization,
@@ -23,13 +17,28 @@
   import { assumedUser } from "@rilldata/web-admin/features/superuser/users/assume-state";
 
   let selectedOrg = "";
-  let dialogOpen = false;
-  let dialogTitle = "";
-  let dialogDescription = "";
-  let dialogDestructive = false;
-  let dialogAction: () => Promise<void> = async () => {};
-  let dialogLoading = false;
   let actionInProgress = "";
+
+  // Open as User dialog state
+  let assumeDialogOpen = false;
+  let assumeEmail = "";
+  let assumeOrgName = "";
+
+  // Delete Org dialog state
+  let deleteOrgDialogOpen = false;
+  let deleteOrgName = "";
+  let deleteOrgLoading = false;
+  let deleteOrgError: string | undefined = undefined;
+
+  // Hibernate dialog state
+  let hibernateDialogOpen = false;
+  let hibernateOrgName = "";
+  let hibernateProjectName = "";
+
+  // Redeploy dialog state
+  let redeployDialogOpen = false;
+  let redeployOrgName = "";
+  let redeployProjectName = "";
 
   const redeployProject = createRedeployProjectMutation();
   const hibernateProject = createHibernateProjectMutation();
@@ -40,106 +49,74 @@
   $: membersQuery = getOrgMembers(selectedOrg);
   $: projectsQuery = getOrgProjects(selectedOrg);
 
-  function handleOpenAsUser(email: string, orgName: string) {
-    dialogTitle = "Open as User";
-    dialogDescription = `You will start browsing Rill Cloud as ${email}, landing on the "${orgName}" organization. The session will expire after 60 minutes. Use the banner to unassume when done.`;
-    dialogDestructive = false;
-    dialogAction = async () => {
-      assumedUser.assume(email, { redirect: `/${orgName}` });
-    };
-    dialogOpen = true;
+  async function doAssume() {
+    assumedUser.assume(assumeEmail, { redirect: `/${assumeOrgName}` });
   }
 
-  function handleDeleteOrg(orgName: string) {
-    dialogTitle = "Delete Organization";
-    dialogDescription = `This will permanently delete "${orgName}" and all its projects, members, and data. This action cannot be undone.`;
-    dialogDestructive = true;
-    dialogAction = async () => {
-      try {
-        await $deleteOrg.mutateAsync({ org: orgName });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Organization "${orgName}" deleted`,
-        });
-        selectedOrg = "";
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to delete organization: ${err}`,
-        });
-      }
-    };
-    dialogOpen = true;
-  }
-
-  function handleHibernate(orgName: string, projectName: string) {
-    dialogTitle = "Hibernate Project";
-    dialogDescription = `This will hibernate the deployment for ${orgName}/${projectName}. The project data will be preserved but the deployment will be stopped.`;
-    dialogDestructive = false;
-    dialogAction = async () => {
-      actionInProgress = `hibernate:${projectName}`;
-      try {
-        await $hibernateProject.mutateAsync({
-          org: orgName,
-          project: projectName,
-        });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Project ${orgName}/${projectName} hibernated`,
-        });
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed: ${err}`,
-        });
-      } finally {
-        actionInProgress = "";
-      }
-    };
-    dialogOpen = true;
-  }
-
-  function handleRedeploy(orgName: string, projectName: string) {
-    dialogTitle = "Redeploy Project";
-    dialogDescription = `This will completely redeploy ${orgName}/${projectName}. This is a disruptive operation.`;
-    dialogDestructive = true;
-    dialogAction = async () => {
-      actionInProgress = `redeploy:${projectName}`;
-      try {
-        await $redeployProject.mutateAsync({
-          org: orgName,
-          project: projectName,
-        });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Project ${orgName}/${projectName} redeployed`,
-        });
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed: ${err}`,
-        });
-      } finally {
-        actionInProgress = "";
-      }
-    };
-    dialogOpen = true;
-  }
-
-  async function handleConfirm() {
-    dialogLoading = true;
+  async function doDeleteOrg() {
+    deleteOrgLoading = true;
+    deleteOrgError = undefined;
     try {
-      await dialogAction();
-      dialogOpen = false;
-    } catch {
-      // Keep open for retry
+      await $deleteOrg.mutateAsync({ org: deleteOrgName });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Organization "${deleteOrgName}" deleted`,
+      });
+      selectedOrg = "";
+    } catch (err) {
+      deleteOrgError = `Failed to delete organization: ${err}`;
+      throw err;
     } finally {
-      dialogLoading = false;
+      deleteOrgLoading = false;
+    }
+  }
+
+  async function doHibernate() {
+    actionInProgress = `hibernate:${hibernateProjectName}`;
+    try {
+      await $hibernateProject.mutateAsync({
+        org: hibernateOrgName,
+        project: hibernateProjectName,
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Project ${hibernateOrgName}/${hibernateProjectName} hibernated`,
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed: ${err}`,
+      });
+    } finally {
+      actionInProgress = "";
+    }
+  }
+
+  async function doRedeploy() {
+    actionInProgress = `redeploy:${redeployProjectName}`;
+    try {
+      await $redeployProject.mutateAsync({
+        org: redeployOrgName,
+        project: redeployProjectName,
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Project ${redeployOrgName}/${redeployProjectName} redeployed`,
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed: ${err}`,
+      });
+    } finally {
+      actionInProgress = "";
     }
   }
 </script>
 
-<p class="text-sm text-fg-secondary mb-4">Search for any organization by name to view details, members, and projects.</p>
+<p class="text-sm text-fg-secondary mb-4">
+  Search for any organization by name to view details, members, and projects.
+</p>
 
 <div class="mb-6 max-w-lg">
   <OrgPicker
@@ -168,7 +145,11 @@
             large
             class="font-normal"
             type="destructive"
-            onClick={() => handleDeleteOrg(org.name ?? "")}
+            disabled={!org.name}
+            onClick={() => {
+              deleteOrgName = org.name ?? "";
+              deleteOrgDialogOpen = true;
+            }}
           >
             Delete Organization
           </Button>
@@ -210,10 +191,15 @@
                     large
                     class="font-normal"
                     type="tertiary"
-                    disabled={actionInProgress === `hibernate:${project.name}`}
+                    disabled={!org.name ||
+                      !project.name ||
+                      actionInProgress === `hibernate:${project.name}`}
                     loading={actionInProgress === `hibernate:${project.name}`}
-                    onClick={() =>
-                      handleHibernate(org.name ?? "", project.name ?? "")}
+                    onClick={() => {
+                      hibernateOrgName = org.name ?? "";
+                      hibernateProjectName = project.name ?? "";
+                      hibernateDialogOpen = true;
+                    }}
                   >
                     Hibernate
                   </Button>
@@ -221,10 +207,15 @@
                     large
                     class="font-normal"
                     type="secondary-destructive"
-                    disabled={actionInProgress === `redeploy:${project.name}`}
+                    disabled={!org.name ||
+                      !project.name ||
+                      actionInProgress === `redeploy:${project.name}`}
                     loading={actionInProgress === `redeploy:${project.name}`}
-                    onClick={() =>
-                      handleRedeploy(org.name ?? "", project.name ?? "")}
+                    onClick={() => {
+                      redeployOrgName = org.name ?? "";
+                      redeployProjectName = project.name ?? "";
+                      redeployDialogOpen = true;
+                    }}
                   >
                     Redeploy
                   </Button>
@@ -275,11 +266,12 @@
                       large
                       class="font-normal"
                       type="tertiary"
-                      onClick={() =>
-                        handleOpenAsUser(
-                          member.userEmail ?? "",
-                          org.name ?? "",
-                        )}
+                      disabled={!member.userEmail}
+                      onClick={() => {
+                        assumeEmail = member.userEmail ?? "";
+                        assumeOrgName = org.name ?? "";
+                        assumeDialogOpen = true;
+                      }}
                     >
                       Open as user
                     </Button>
@@ -294,28 +286,35 @@
   {/if}
 {/if}
 
-<AlertDialog bind:open={dialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
-      <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        large
-        class="font-normal"
-        type="tertiary"
-        onClick={() => (dialogOpen = false)}>Cancel</Button
-      >
-      <Button
-        large
-        class="font-normal"
-        type={dialogDestructive ? "destructive" : "primary"}
-        onClick={handleConfirm}
-        loading={dialogLoading}
-      >
-        Confirm
-      </Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<ConfirmActionDialog
+  bind:open={assumeDialogOpen}
+  title="Open as User"
+  description={`You will start browsing Rill Cloud as ${assumeEmail}, landing on the "${assumeOrgName}" organization. The session will expire after 60 minutes. Use the banner to unassume when done.`}
+  onConfirm={doAssume}
+/>
+
+<GuardedDeleteDialog
+  bind:open={deleteOrgDialogOpen}
+  title="Delete Organization"
+  description={`This will permanently delete "${deleteOrgName}" and all its projects, members, and data. This action cannot be undone.`}
+  confirmText={deleteOrgName}
+  confirmButtonText="Delete"
+  loading={deleteOrgLoading}
+  error={deleteOrgError}
+  onConfirm={doDeleteOrg}
+/>
+
+<ConfirmActionDialog
+  bind:open={hibernateDialogOpen}
+  title="Hibernate Project"
+  description={`This will hibernate the deployment for ${hibernateOrgName}/${hibernateProjectName}. The project data will be preserved but the deployment will be stopped.`}
+  onConfirm={doHibernate}
+/>
+
+<ConfirmActionDialog
+  bind:open={redeployDialogOpen}
+  title="Redeploy Project"
+  description={`This will completely redeploy ${redeployOrgName}/${redeployProjectName}. This is a disruptive operation.`}
+  confirmLabel="Redeploy"
+  onConfirm={doRedeploy}
+/>

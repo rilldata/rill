@@ -3,23 +3,16 @@
     createAdminServiceListSuperusers,
     createAdminServiceSetSuperuser,
   } from "@rilldata/web-admin/client";
+  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   let newEmail = "";
   let addLoading = false;
-  let dialogOpen = false;
-  let dialogAction: () => Promise<void> = async () => {};
-  let dialogLoading = false;
+
+  // Remove superuser dialog state
+  let removeDialogOpen = false;
   let removeTarget = "";
 
   const queryClient = useQueryClient();
@@ -51,43 +44,31 @@
     }
   }
 
-  function handleRemove(email: string) {
-    removeTarget = email;
-    dialogAction = async () => {
-      try {
-        await $setSuperuser.mutateAsync({ data: { email, superuser: false } });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `${email} removed as superuser`,
-        });
-        await queryClient.invalidateQueries({
-          predicate: (q) =>
-            (q.queryKey[0] as string)?.includes("/v1/superuser"),
-        });
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed: ${err}`,
-        });
-      }
-    };
-    dialogOpen = true;
-  }
-
-  async function handleConfirm() {
-    dialogLoading = true;
+  async function doRemove() {
     try {
-      await dialogAction();
-      dialogOpen = false;
-    } catch {
-      // Keep open for retry
-    } finally {
-      dialogLoading = false;
+      await $setSuperuser.mutateAsync({
+        data: { email: removeTarget, superuser: false },
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `${removeTarget} removed as superuser`,
+      });
+      await queryClient.invalidateQueries({
+        predicate: (q) => (q.queryKey[0] as string)?.includes("/v1/superuser"),
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed: ${err}`,
+      });
+      throw err;
     }
   }
 </script>
 
-<p class="text-sm text-fg-secondary mb-4">Manage who has superuser access across all of Rill Cloud.</p>
+<p class="text-sm text-fg-secondary mb-4">
+  Manage who has superuser access across all of Rill Cloud.
+</p>
 
 <div class="p-5 rounded-lg border mb-6">
   <h2 class="text-sm font-semibold text-fg-primary mb-3">Add Superuser</h2>
@@ -152,7 +133,11 @@
               large
               class="font-normal"
               type="secondary-destructive"
-              onClick={() => handleRemove(user.email ?? "")}
+              disabled={!user.email}
+              onClick={() => {
+                removeTarget = user.email ?? "";
+                removeDialogOpen = true;
+              }}
             >
               Remove
             </Button>
@@ -163,29 +148,10 @@
   </table>
 {/if}
 
-<AlertDialog bind:open={dialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Remove Superuser</AlertDialogTitle>
-      <AlertDialogDescription>
-        Remove superuser access for {removeTarget}? They will lose access to
-        this console.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        large
-        class="font-normal"
-        type="tertiary"
-        onClick={() => (dialogOpen = false)}>Cancel</Button
-      >
-      <Button
-        large
-        class="font-normal"
-        type="destructive"
-        onClick={handleConfirm}
-        loading={dialogLoading}>Remove</Button
-      >
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<ConfirmActionDialog
+  bind:open={removeDialogOpen}
+  title="Remove Superuser"
+  description={`Remove superuser access for ${removeTarget}? They will lose access to this console.`}
+  confirmLabel="Remove"
+  onConfirm={doRemove}
+/>

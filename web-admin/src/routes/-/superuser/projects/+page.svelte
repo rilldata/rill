@@ -1,5 +1,6 @@
 <script lang="ts">
   import SearchInput from "@rilldata/web-admin/features/superuser/shared/SearchInput.svelte";
+  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     AlertDialog,
@@ -19,13 +20,15 @@
   } from "@rilldata/web-admin/features/superuser/projects/selectors";
 
   let searchQuery = "";
-  let dialogOpen = false;
-  let dialogTitle = "";
-  let dialogDescription = "";
-  let dialogDestructive = false;
-  let dialogAction: () => Promise<void> = async () => {};
-  let dialogLoading = false;
   let actionInProgress = "";
+
+  // Hibernate dialog state
+  let hibernateDialogOpen = false;
+  let hibernateName = "";
+
+  // Redeploy dialog state
+  let redeployDialogOpen = false;
+  let redeployName = "";
 
   // Change Slots modal state
   let slotsDialogOpen = false;
@@ -97,70 +100,49 @@
     }
   }
 
-  function handleHibernate(name: string) {
-    const [org, project] = name.split("/");
-    dialogTitle = "Hibernate Project";
-    dialogDescription = `This will hibernate the deployment for ${name}. The project data will be preserved but the deployment will be stopped.`;
-    dialogDestructive = false;
-    dialogAction = async () => {
-      actionInProgress = `hibernate:${name}`;
-      try {
-        await $hibernateProject.mutateAsync({ org, project });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Project ${name} hibernated`,
-        });
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed: ${err}`,
-        });
-      } finally {
-        actionInProgress = "";
-      }
-    };
-    dialogOpen = true;
-  }
-
-  function handleRedeploy(name: string) {
-    const [org, project] = name.split("/");
-    dialogTitle = "Redeploy Project";
-    dialogDescription = `This will completely redeploy ${name}. This is a disruptive operation.`;
-    dialogDestructive = true;
-    dialogAction = async () => {
-      actionInProgress = `redeploy:${name}`;
-      try {
-        await $redeployProject.mutateAsync({ org, project });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Project ${name} redeployed`,
-        });
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed: ${err}`,
-        });
-      } finally {
-        actionInProgress = "";
-      }
-    };
-    dialogOpen = true;
-  }
-
-  async function handleConfirm() {
-    dialogLoading = true;
+  async function doHibernate() {
+    const [org, project] = hibernateName.split("/");
+    actionInProgress = `hibernate:${hibernateName}`;
     try {
-      await dialogAction();
-      dialogOpen = false;
-    } catch {
-      // Keep open for retry
+      await $hibernateProject.mutateAsync({ org, project });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Project ${hibernateName} hibernated`,
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed: ${err}`,
+      });
     } finally {
-      dialogLoading = false;
+      actionInProgress = "";
+    }
+  }
+
+  async function doRedeploy() {
+    const [org, project] = redeployName.split("/");
+    actionInProgress = `redeploy:${redeployName}`;
+    try {
+      await $redeployProject.mutateAsync({ org, project });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Project ${redeployName} redeployed`,
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed: ${err}`,
+      });
+    } finally {
+      actionInProgress = "";
     }
   }
 </script>
 
-<p class="text-sm text-fg-secondary mb-4">Search projects across all organizations. Change prod slots, hibernate, or redeploy.</p>
+<p class="text-sm text-fg-secondary mb-4">
+  Search projects across all organizations. Change prod slots, hibernate, or
+  redeploy.
+</p>
 
 <div class="mb-4 max-w-md">
   <SearchInput
@@ -218,7 +200,10 @@
                 type="tertiary"
                 disabled={actionInProgress === `hibernate:${name}`}
                 loading={actionInProgress === `hibernate:${name}`}
-                onClick={() => handleHibernate(name)}
+                onClick={() => {
+                  hibernateName = name;
+                  hibernateDialogOpen = true;
+                }}
               >
                 Hibernate
               </Button>
@@ -228,7 +213,10 @@
                 type="secondary-destructive"
                 disabled={actionInProgress === `redeploy:${name}`}
                 loading={actionInProgress === `redeploy:${name}`}
-                onClick={() => handleRedeploy(name)}
+                onClick={() => {
+                  redeployName = name;
+                  redeployDialogOpen = true;
+                }}
               >
                 Redeploy
               </Button>
@@ -246,34 +234,22 @@
   </p>
 {/if}
 
-<!-- Hibernate / Redeploy confirmation dialog -->
-<AlertDialog bind:open={dialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
-      <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        large
-        class="font-normal"
-        type="tertiary"
-        onClick={() => (dialogOpen = false)}>Cancel</Button
-      >
-      <Button
-        large
-        class="font-normal"
-        type={dialogDestructive ? "destructive" : "primary"}
-        onClick={handleConfirm}
-        loading={dialogLoading}
-      >
-        Confirm
-      </Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<ConfirmActionDialog
+  bind:open={hibernateDialogOpen}
+  title="Hibernate Project"
+  description={`This will hibernate the deployment for ${hibernateName}. The project data will be preserved but the deployment will be stopped.`}
+  onConfirm={doHibernate}
+/>
 
-<!-- Change Slots modal -->
+<ConfirmActionDialog
+  bind:open={redeployDialogOpen}
+  title="Redeploy Project"
+  description={`This will completely redeploy ${redeployName}. This is a disruptive operation.`}
+  confirmLabel="Redeploy"
+  onConfirm={doRedeploy}
+/>
+
+<!-- Change Slots modal (standalone pattern, kept as-is) -->
 <AlertDialog bind:open={slotsDialogOpen}>
   <AlertDialogContent>
     <AlertDialogHeader>
@@ -289,7 +265,7 @@
         <div class="flex items-center gap-2">
           <span class="text-sm text-fg-secondary">Current:</span>
           <span class="text-sm font-mono text-fg-primary"
-            >{slotsCurrentValue || "—"}</span
+            >{slotsCurrentValue || "\u2014"}</span
           >
         </div>
         <div class="flex flex-col gap-1">

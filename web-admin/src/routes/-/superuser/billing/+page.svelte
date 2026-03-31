@@ -1,14 +1,7 @@
 <script lang="ts">
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
+  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1BillingIssueType } from "@rilldata/web-admin/client";
   import {
@@ -29,16 +22,16 @@
   let trialDays = 14;
   let trialLoading = false;
 
+  // Extend Trial dialog state
+  let extendDialogOpen = false;
+
   // Billing Issues state
   let issuesOrg = "";
 
-  // Confirmation dialog state
-  let dialogOpen = false;
-  let dialogTitle = "";
-  let dialogDescription = "";
-  let dialogDestructive = false;
-  let dialogAction: () => Promise<void> = async () => {};
-  let dialogLoading = false;
+  // Delete Billing Issue dialog state
+  let deleteIssueDialogOpen = false;
+  let deleteIssueOrg = "";
+  let deleteIssueType: V1BillingIssueType = "BILLING_ISSUE_TYPE_UNSPECIFIED";
 
   const queryClient = useQueryClient();
   const extendTrial = createExtendTrialMutation();
@@ -74,74 +67,56 @@
     }
   }
 
-  function confirmExtendTrial() {
-    if (!trialOrg) return;
-    dialogTitle = "Extend Trial";
-    dialogDescription = `This will extend the trial for "${trialOrg}" by ${trialDays} day${trialDays === 1 ? "" : "s"}.`;
-    dialogDestructive = false;
-    dialogAction = async () => {
-      trialLoading = true;
-      try {
-        await $extendTrial.mutateAsync({
-          data: { org: trialOrg, days: trialDays },
-        });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Trial extended by ${trialDays} days for ${trialOrg}`,
-        });
-        trialOrg = "";
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to extend trial: ${err}`,
-        });
-      } finally {
-        trialLoading = false;
-      }
-    };
-    dialogOpen = true;
-  }
-
-  function confirmDeleteIssue(org: string, type: V1BillingIssueType) {
-    dialogTitle = "Delete Billing Issue";
-    dialogDescription = `This will delete the billing issue "${type}" for "${org}". This action cannot be undone.`;
-    dialogDestructive = true;
-    dialogAction = async () => {
-      try {
-        await $deleteBillingIssue.mutateAsync({ org, type });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Billing issue "${type}" deleted for ${org}`,
-        });
-        await queryClient.invalidateQueries({
-          predicate: (q) =>
-            (q.queryKey[0] as string)?.includes("/v1/organizations") ||
-            (q.queryKey[0] as string)?.includes("/v1/superuser/billing"),
-        });
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to delete billing issue: ${err}`,
-        });
-      }
-    };
-    dialogOpen = true;
-  }
-
-  async function handleConfirm() {
-    dialogLoading = true;
+  async function doExtendTrial() {
+    trialLoading = true;
     try {
-      await dialogAction();
-      dialogOpen = false;
-    } catch {
-      // Keep open for retry
+      await $extendTrial.mutateAsync({
+        data: { org: trialOrg, days: trialDays },
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Trial extended by ${trialDays} days for ${trialOrg}`,
+      });
+      trialOrg = "";
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to extend trial: ${err}`,
+      });
+      throw err;
     } finally {
-      dialogLoading = false;
+      trialLoading = false;
+    }
+  }
+
+  async function doDeleteIssue() {
+    try {
+      await $deleteBillingIssue.mutateAsync({
+        org: deleteIssueOrg,
+        type: deleteIssueType,
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Billing issue "${deleteIssueType}" deleted for ${deleteIssueOrg}`,
+      });
+      await queryClient.invalidateQueries({
+        predicate: (q) =>
+          (q.queryKey[0] as string)?.includes("/v1/organizations") ||
+          (q.queryKey[0] as string)?.includes("/v1/superuser/billing"),
+      });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to delete billing issue: ${err}`,
+      });
+      throw err;
     }
   }
 </script>
 
-<p class="text-sm text-fg-secondary mb-4">Generate billing setup links, extend trials, and manage billing issues.</p>
+<p class="text-sm text-fg-secondary mb-4">
+  Generate billing setup links, extend trials, and manage billing issues.
+</p>
 
 <div class="flex flex-col gap-6 pb-12">
   <!-- Billing Setup -->
@@ -222,7 +197,9 @@
         large
         class="font-normal"
         type="primary"
-        onClick={confirmExtendTrial}
+        onClick={() => {
+          if (trialOrg) extendDialogOpen = true;
+        }}
         disabled={trialLoading || !trialOrg}
         loading={trialLoading}
       >
@@ -261,11 +238,12 @@
               large
               class="font-normal"
               type="secondary-destructive"
-              onClick={() =>
-                confirmDeleteIssue(
-                  issuesOrg,
-                  issue.type ?? "BILLING_ISSUE_TYPE_UNSPECIFIED",
-                )}
+              onClick={() => {
+                deleteIssueOrg = issuesOrg;
+                deleteIssueType =
+                  issue.type ?? "BILLING_ISSUE_TYPE_UNSPECIFIED";
+                deleteIssueDialogOpen = true;
+              }}
             >
               Delete Issue
             </Button>
@@ -278,28 +256,17 @@
   </section>
 </div>
 
-<AlertDialog bind:open={dialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
-      <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        large
-        class="font-normal"
-        type="tertiary"
-        onClick={() => (dialogOpen = false)}>Cancel</Button
-      >
-      <Button
-        large
-        class="font-normal"
-        type={dialogDestructive ? "destructive" : "primary"}
-        onClick={handleConfirm}
-        loading={dialogLoading}
-      >
-        Confirm
-      </Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<ConfirmActionDialog
+  bind:open={extendDialogOpen}
+  title="Extend Trial"
+  description={`This will extend the trial for "${trialOrg}" by ${trialDays} day${trialDays === 1 ? "" : "s"}.`}
+  onConfirm={doExtendTrial}
+/>
+
+<ConfirmActionDialog
+  bind:open={deleteIssueDialogOpen}
+  title="Delete Billing Issue"
+  description={`This will delete the billing issue "${deleteIssueType}" for "${deleteIssueOrg}". This action cannot be undone.`}
+  confirmLabel="Delete"
+  onConfirm={doDeleteIssue}
+/>

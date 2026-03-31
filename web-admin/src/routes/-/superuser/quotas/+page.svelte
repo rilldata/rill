@@ -1,14 +1,7 @@
 <script lang="ts">
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
+  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     getOrgForQuotas,
@@ -17,8 +10,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   let activeOrg = "";
-  let dialogOpen = false;
-  let dialogLoading = false;
+
+  // Save quotas dialog state
+  let saveDialogOpen = false;
+  let saveLoading = false;
 
   const queryClient = useQueryClient();
   const updateOrgQuotas = createUpdateOrgQuotasMutation();
@@ -46,12 +41,8 @@
     storageLimitBytes = q.storageLimitBytesPerDeployment ?? "";
   }
 
-  function confirmSaveQuotas() {
-    dialogOpen = true;
-  }
-
-  async function handleSaveQuotas() {
-    dialogLoading = true;
+  async function doSaveQuotas() {
+    saveLoading = true;
     try {
       await $updateOrgQuotas.mutateAsync({
         data: {
@@ -79,19 +70,21 @@
           (q.queryKey[0] as string)?.includes("/v1/superuser/quotas") ||
           (q.queryKey[0] as string)?.includes("/v1/organizations"),
       });
-      dialogOpen = false;
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
         message: `Failed to update quotas: ${err}`,
       });
+      throw err;
     } finally {
-      dialogLoading = false;
+      saveLoading = false;
     }
   }
 </script>
 
-<p class="text-sm text-fg-secondary mb-4">View and adjust resource quotas for organizations.</p>
+<p class="text-sm text-fg-secondary mb-4">
+  View and adjust resource quotas for organizations.
+</p>
 
 <div class="flex flex-col gap-6">
   <section class="p-5 rounded-lg border">
@@ -181,38 +174,17 @@
           large
           class="font-normal"
           type="primary"
-          onClick={confirmSaveQuotas}>Save Quotas</Button
+          onClick={() => (saveDialogOpen = true)}>Save Quotas</Button
         >
       </div>
     {/if}
   </section>
 </div>
 
-<AlertDialog bind:open={dialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Update Quotas</AlertDialogTitle>
-      <AlertDialogDescription>
-        This will update the resource quotas for "{activeOrg}". This change
-        takes effect immediately.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        large
-        class="font-normal"
-        type="tertiary"
-        onClick={() => (dialogOpen = false)}>Cancel</Button
-      >
-      <Button
-        large
-        class="font-normal"
-        type="primary"
-        onClick={handleSaveQuotas}
-        loading={dialogLoading}
-      >
-        Confirm
-      </Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<ConfirmActionDialog
+  bind:open={saveDialogOpen}
+  title="Update Quotas"
+  description={`This will update the resource quotas for "${activeOrg}". This change takes effect immediately.`}
+  loading={saveLoading}
+  onConfirm={doSaveQuotas}
+/>

@@ -1,14 +1,8 @@
 <script lang="ts">
   import SearchInput from "@rilldata/web-admin/features/superuser/shared/SearchInput.svelte";
+  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
+  import GuardedDeleteDialog from "@rilldata/web-admin/features/superuser/dialogs/GuardedDeleteDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     searchUsers,
@@ -18,13 +12,16 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   let searchQuery = "";
-  let dialogOpen = false;
-  let dialogTitle = "";
-  let dialogDescription = "";
-  let dialogDestructive = false;
-  let dialogAction: () => Promise<void> = async () => {};
-  let dialogLoading = false;
-  let actionInProgress = "";
+
+  // Assume user dialog state
+  let assumeDialogOpen = false;
+  let assumeEmail = "";
+
+  // Delete user dialog state
+  let deleteDialogOpen = false;
+  let deleteEmail = "";
+  let deleteLoading = false;
+  let deleteError: string | undefined = undefined;
 
   const queryClient = useQueryClient();
   const deleteUser = createDeleteUserMutation();
@@ -35,72 +32,38 @@
     searchQuery = e.detail;
   }
 
-  function handleAssume(email: string) {
-    dialogTitle = "Open as User";
-    dialogDescription = `You will start browsing Rill Cloud as ${email}. The session will expire after 60 minutes. Use the banner to unassume when done.`;
-    dialogDestructive = false;
-    dialogAction = async () => {
-      assumedUser.assume(email, {});
-    };
-    dialogOpen = true;
-  }
-
   function handleUnassume() {
     assumedUser.unassume();
   }
 
-  function handleDelete(email: string) {
-    dialogTitle = "Delete User";
-    dialogDescription = `This will permanently delete the user ${email}. This action cannot be undone.`;
-    dialogDestructive = true;
-    dialogAction = async () => {
-      actionInProgress = `delete:${email}`;
-      try {
-        await $deleteUser.mutateAsync({ email });
-        eventBus.emit("notification", {
-          type: "success",
-          message: `User ${email} deleted`,
-        });
-        await queryClient.invalidateQueries({
-          predicate: (q) => q.queryKey[0] === "/v1/users/search",
-        });
-      } catch (err) {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to delete user: ${err}`,
-        });
-      } finally {
-        actionInProgress = "";
-      }
-    };
-    dialogOpen = true;
+  async function doAssume() {
+    assumedUser.assume(assumeEmail, {});
   }
 
-  async function handleConfirm() {
-    dialogLoading = true;
+  async function doDelete() {
+    deleteLoading = true;
+    deleteError = undefined;
     try {
-      await dialogAction();
-      dialogOpen = false;
-    } catch {
-      // Keep dialog open for retry
+      await $deleteUser.mutateAsync({ email: deleteEmail });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `User ${deleteEmail} deleted`,
+      });
+      await queryClient.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === "/v1/users/search",
+      });
+    } catch (err) {
+      deleteError = `Failed to delete user: ${err}`;
+      throw err;
     } finally {
-      dialogLoading = false;
+      deleteLoading = false;
     }
   }
 </script>
 
-<p class="text-sm text-fg-secondary mb-4">Search for users by email across all organizations.</p>
-
-{#if $assumedUser}
-  <div
-    class="flex items-center gap-3 mb-4 px-4 py-2 rounded-md bg-yellow-100 border border-yellow-300 text-yellow-800 text-sm"
-  >
-    <span>Currently assumed as <strong>{$assumedUser}</strong></span>
-    <Button large class="font-normal" type="tertiary" onClick={handleUnassume}
-      >Unassume</Button
-    >
-  </div>
-{/if}
+<p class="text-sm text-fg-secondary mb-4">
+  Search for users by email across all organizations.
+</p>
 
 <div class="mb-4 max-w-md">
   <SearchInput
@@ -168,17 +131,22 @@
                     large
                     class="font-normal"
                     type="tertiary"
-                    onClick={() => handleAssume(user.email ?? "")}
-                    >Open as User</Button
+                    disabled={!user.email}
+                    onClick={() => {
+                      assumeEmail = user.email ?? "";
+                      assumeDialogOpen = true;
+                    }}>Open as User</Button
                   >
                 {/if}
                 <Button
                   large
                   class="font-normal"
                   type="secondary-destructive"
-                  disabled={actionInProgress === `delete:${user.email}`}
-                  loading={actionInProgress === `delete:${user.email}`}
-                  onClick={() => handleDelete(user.email ?? "")}
+                  disabled={!user.email}
+                  onClick={() => {
+                    deleteEmail = user.email ?? "";
+                    deleteDialogOpen = true;
+                  }}
                 >
                   Delete
                 </Button>
@@ -197,28 +165,20 @@
   </p>
 {/if}
 
-<AlertDialog bind:open={dialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
-      <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        large
-        class="font-normal"
-        type="tertiary"
-        onClick={() => (dialogOpen = false)}>Cancel</Button
-      >
-      <Button
-        large
-        class="font-normal"
-        type={dialogDestructive ? "destructive" : "primary"}
-        onClick={handleConfirm}
-        loading={dialogLoading}
-      >
-        Confirm
-      </Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<ConfirmActionDialog
+  bind:open={assumeDialogOpen}
+  title="Open as User"
+  description={`You will start browsing Rill Cloud as ${assumeEmail}. The session will expire after 60 minutes. Use the banner to unassume when done.`}
+  onConfirm={doAssume}
+/>
+
+<GuardedDeleteDialog
+  bind:open={deleteDialogOpen}
+  title="Delete User"
+  description={`This will permanently delete the user ${deleteEmail}. This action cannot be undone.`}
+  confirmText={deleteEmail}
+  confirmButtonText="Delete"
+  loading={deleteLoading}
+  error={deleteError}
+  onConfirm={doDelete}
+/>
