@@ -707,7 +707,7 @@
   }
   .with-row-dimension .selected-row > td:first-of-type {
     @apply bg-primary-100;
-    box-shadow: inset 0 0 0 1px theme(colors.primary.400);
+    box-shadow: 0 0 0 1px theme(colors.primary.400);
   }
   .with-row-dimension .selected-row:hover > td:first-of-type {
     @apply bg-primary-100;
@@ -744,7 +744,7 @@
   }
 
   .dimmed-row .cell {
-    @apply opacity-50;
+    @apply text-fg-primary/50;
   }
 
   /* Show more row styling */
