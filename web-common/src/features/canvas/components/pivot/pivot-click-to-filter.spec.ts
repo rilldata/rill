@@ -16,10 +16,7 @@ import {
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
 import { describe, expect, it, vi } from "vitest";
-import {
-  columnHeaderKey,
-  dimKeyFromRow,
-} from "../../../dashboards/pivot/pivot-click-selection";
+import { dimKeyFromRow } from "../../../dashboards/pivot/pivot-click-selection";
 import type { FilterManager } from "../../stores/filter-manager";
 import { createPivotClickToFilter } from "./pivot-click-to-filter";
 

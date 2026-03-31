@@ -30,7 +30,6 @@ import {
   getFiltersForRowData,
   getFiltersForRowHeader,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   getFiltersForCell,
   getFiltersFromRow,
@@ -40,6 +39,7 @@ import type {
   PivotDataStore,
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import {
   type Readable,
@@ -189,8 +189,8 @@ export function createPivotClickToFilter(
    * All selected headers are at the same level due to level-switch enforcement.
    */
   function getCurrentColumnHeaderLevel(colHeaders: Set<string>): number {
-    for (const key of colHeaders) return getColumnHeaderLevel(key);
-    return -1;
+    const first = colHeaders.values().next().value as string | undefined;
+    return first !== undefined ? getColumnHeaderLevel(first) : -1;
   }
 
   // --- Retained value computation for safe deselect ---
@@ -333,7 +333,6 @@ export function createPivotClickToFilter(
       onBecomeActive?.();
     }
 
-    // Single batch URL update with the final filter string
     if (filterString !== null) {
       filterManager.applyFiltersToUrl(
         new Map([[metricsViewName, filterString]]),
