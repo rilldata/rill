@@ -12,7 +12,7 @@
     ScrollTextIcon,
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { getAvailableModelActions } from "./model-actions";
+  import { getAvailableModelActions } from "@rilldata/web-common/features/projects/status/tables/model-actions";
 
   export let resource: V1Resource | undefined;
   export let isReconciling: boolean = false;

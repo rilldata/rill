@@ -85,7 +85,7 @@
   <DropdownMenu.Trigger class="flex-none">
     <div bind:this={imgContainer} class="h-7 w-7"></div>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content>
+  <DropdownMenu.Content align="end">
     {#if isSuperuser}
       <DropdownMenu.Item href="/-/superuser"
         >Superuser Console</DropdownMenu.Item
