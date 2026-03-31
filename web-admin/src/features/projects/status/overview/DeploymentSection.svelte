@@ -11,12 +11,13 @@
   import {
     formatEnvironmentName,
     formatConnectorName,
+    getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
-  import OverviewCard from "./OverviewCard.svelte";
+  import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
 
   export let organization: string;
   export let project: string;
@@ -61,6 +62,7 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
+  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
@@ -138,20 +140,13 @@
 
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
-      <span class="info-value">
-        {olapConnector ? formatConnectorName(olapConnector.type) : "DuckDB"}
-        {#if olapConnector && (olapConnector.provision || olapConnector.type !== "duckdb")}
-          <span class="text-fg-tertiary text-xs ml-1">
-            ({olapConnector.provision ? "Rill-managed" : "Self-managed"})
-          </span>
-        {/if}
-      </span>
+      <span class="info-value">{olapEngineLabel}</span>
     </div>
 
     <div class="info-row">
-      <span class="info-label">AI</span>
+      <span class="info-label">AI Connector</span>
       <span class="info-value">
-        {#if aiConnector}
+        {#if aiConnector && aiConnector.name !== "admin"}
           {formatConnectorName(aiConnector.type)}
           <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
           >

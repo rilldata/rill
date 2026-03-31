@@ -165,7 +165,7 @@ setup.describe("global setup", () => {
     const { stdout: orgCreateStdout } = await execAsync(
       `rill org create ${RILL_ORG_NAME}`,
     );
-    expect(orgCreateStdout).toContain("Created organization");
+    expect(orgCreateStdout).toContain("Created org");
 
     // create service and write access token to file
     const { stdout: orgCreateService } = await execAsync(

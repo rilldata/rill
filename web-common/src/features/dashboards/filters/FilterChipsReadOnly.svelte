@@ -68,7 +68,7 @@ The main feature-set component for dashboard filters
   class:flex-wrap={chipLayout === "wrap"}
   aria-label="Readonly Filter Chips"
   bind:this={scrollContainer}
-  on:wheel={handleWheel}
+  onwheel={handleWheel}
 >
   {#if displayTimeRange}
     <TimeRangeReadOnly

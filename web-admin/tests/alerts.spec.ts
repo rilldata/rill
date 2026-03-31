@@ -20,15 +20,14 @@ test.describe.serial("Alerts", () => {
 
       // Select "Last 6 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
-        await alertForm.getByRole("menuitem", { name: "Last 6 hours" }).click();
+        // Menu content is portaled to document.body, so use page-level scope
+        await adminPage.getByRole("menuitem", { name: "Last 6 hours" }).click();
       });
       // Enable time comparison
       await alertForm.getByLabel("Toggle time comparison").click();
 
       // Select "App Site Name" as split by dimension
-      await adminPage
-        .getByRole("combobox", { name: "Split by dimension" })
-        .click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Name").click();
 
       // Preview should have the correct 1st row
@@ -164,24 +163,30 @@ test.describe.serial("Alerts", () => {
 
       // Select "Last 24 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
-        await alertForm
+        // Menu content is portaled to document.body, so use page-level scope
+        await adminPage
           .getByRole("menuitem", { name: "Last 24 hours" })
           .click();
       });
 
       // Add "Ad Size" filter
       await alertForm.getByLabel("Add filter button").click();
-      await alertForm.getByRole("menuitem", { name: "Ad Size" }).click();
-      // Add filters for 1024x768, 120x600, 160x600
-      await alertForm.getByRole("menuitem", { name: "1024x768" }).click();
-      await alertForm.getByRole("menuitem", { name: "120x600" }).click();
-      await alertForm.getByRole("menuitem", { name: "160x600" }).click();
+      // Menu content is portaled to document.body, so use page-level scope
+      await adminPage.getByRole("menuitem", { name: "Ad Size" }).click();
+      // DimensionFilter values are also portaled
+      await adminPage
+        .getByRole("menuitemcheckbox", { name: "1024x768" })
+        .click();
+      await adminPage
+        .getByRole("menuitemcheckbox", { name: "120x600" })
+        .click();
+      await adminPage
+        .getByRole("menuitemcheckbox", { name: "160x600" })
+        .click();
       await alertForm.getByLabel("Open ad_size filter").click();
 
       // Update split by dimension to "App Site Domain"
-      await adminPage
-        .getByRole("combobox", { name: "Split by dimension" })
-        .click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Domain").click();
 
       // Preview should have the correct 1st row
@@ -289,9 +294,7 @@ test.describe.serial("Alerts", () => {
       const alertForm = adminPage.locator("form#create-alert-form");
 
       // Select "App Site Name" as split by dimension
-      await adminPage
-        .getByRole("combobox", { name: "Split by dimension" })
-        .click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Name").click();
 
       // Go to criteria tab

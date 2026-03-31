@@ -9,10 +9,10 @@ import RadioGroup from "./DropdownMenuRadioGroup.svelte";
 import SubContent from "./DropdownMenuSubContent.svelte";
 import SubTrigger from "./DropdownMenuSubTrigger.svelte";
 import CheckboxItem from "./DropdownMenuCheckboxItem.svelte";
+import Trigger from "./DropdownMenuTrigger.svelte";
 
 const Sub = DropdownMenuPrimitive.Sub;
 const Root = DropdownMenuPrimitive.Root;
-const Trigger = DropdownMenuPrimitive.Trigger;
 const Group = DropdownMenuPrimitive.Group;
 
 export {

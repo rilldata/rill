@@ -19,15 +19,15 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
-  import { filterResources } from "./utils";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import {
     createUrlFilterSync,
     parseArrayParam,
     parseStringParam,
-  } from "../url-filter-sync";
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
   const runtimeClient = useRuntimeClient();
@@ -199,6 +199,7 @@
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableTypes as type}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedTypes.includes(type)}
             onCheckedChange={() => toggleType(type)}
           >
@@ -236,6 +237,7 @@
       <DropdownMenu.Content align="start" class="w-48">
         {#each statusFilters as status}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             checked={selectedStatuses.includes(status.value)}
             onCheckedChange={() => toggleStatus(status.value)}
           >
@@ -248,7 +250,7 @@
     {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>

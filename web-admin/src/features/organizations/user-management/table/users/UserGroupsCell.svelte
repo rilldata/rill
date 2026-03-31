@@ -46,7 +46,7 @@
         Error
       {:else}
         {#each userGroups as userGroup (userGroup.id)}
-          <Dropdown.Item on:click={() => onEditUserGroup(userGroup.name)}>
+          <Dropdown.Item onclick={() => onEditUserGroup(userGroup.name)}>
             <span class="text-fg-primary">{userGroup.name}</span>
             {#if userGroup.count > 0}
               <span class="text-fg-secondary">
