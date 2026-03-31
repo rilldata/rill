@@ -60,6 +60,7 @@ export function generateVLAreaChartSpec(
       xSort: config.x?.sort,
       primaryColor: data.theme.primary,
       isDarkMode: data.isDarkMode,
+      isInteractive: config.isInteractive,
       pivot:
         xField && yField && colorField && multiValueTooltipChannel?.length
           ? { field: colorField, value: yField, groupby: [xField] }

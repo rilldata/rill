@@ -28,6 +28,7 @@
 <svelte:element
   this={href ? "a" : "div"}
   {href}
+  class="font-normal text-inherit"
   data-sveltekit-preload-data={preloadData ? "hover" : "false"}
 >
   <DropdownMenuPrimitive.Item

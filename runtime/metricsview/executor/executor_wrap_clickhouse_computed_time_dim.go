@@ -107,7 +107,7 @@ func (e *Executor) wrapClickhouseComputedTimeDimWalk(a *metricsview.AST, n *metr
 		for i, f := range n.DimFields {
 			dims = append(dims, f)
 			if uniqName, ok := computedTimeDims[f.Name]; ok {
-				dims[i].Expr = a.Dialect.EscapeMember(n.FromSelect.Alias, uniqName)
+				dims[i].Expr = a.Dialect.EscapeMemberAlias(n.FromSelect.Alias, uniqName)
 			}
 		}
 		n.DimFields = dims

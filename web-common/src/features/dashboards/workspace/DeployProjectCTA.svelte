@@ -26,7 +26,7 @@
     getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
   import { onMount } from "svelte";
-  import { RocketIcon as Rocket } from "lucide-svelte";
+  import { Rocket } from "lucide-svelte";
   import { writable, get, derived } from "svelte/store";
   import { Button } from "../../../components/button";
 
@@ -159,7 +159,7 @@
         hasRemoteChanges ? (remoteChangeDialog = true) : onDeploy()}
       type="primary"
     >
-      <Rocket size="16px" />
+      <Rocket size={16} />
 
       Deploy
     </Button>

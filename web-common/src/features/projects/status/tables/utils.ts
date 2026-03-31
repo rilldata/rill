@@ -105,12 +105,15 @@ export function isModelIncremental(resource: V1Resource | undefined): boolean {
 }
 
 /**
- * Checks if a model resource has errored partitions.
+ * Checks if a model resource has errored partitions and supports partition refresh.
+ * Only incremental models can refresh errored partitions; the backend silently
+ * skips the trigger for non-incremental models.
  */
 export function hasModelErroredPartitions(
   resource: V1Resource | undefined,
 ): boolean {
   return (
+    !!resource?.model?.spec?.incremental &&
     !!resource?.model?.state?.partitionsModelId &&
     !!resource?.model?.state?.partitionsHaveErrors
   );
