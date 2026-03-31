@@ -12,6 +12,7 @@
     parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
+  import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
   import { onMount } from "svelte";
   import {
     ResourceKind,
@@ -128,9 +129,9 @@
   let filterDropdownOpen = false;
   let searchExpanded = false;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let selectedStatuses: string[] = parseArrayParam(
+  let selectedStatuses = parseArrayParam(
     $page.url.searchParams.get("status"),
-  );
+  ) as ResourceStatusFilterValue[];
   let hideIsolated =
     ($page.url.searchParams.get("isolated") ?? "hidden") === "hidden";
 

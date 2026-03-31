@@ -9,13 +9,10 @@
     buildResourceGraph,
     type ResourceGraphGrouping,
   } from "../graph-canvas/graph-builder";
-  import type { Edge, Node } from "@xyflow/svelte";
   import {
     coerceResourceKind,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import {
     ALLOWED_FOR_GRAPH,
     expandSeedsByKind,
@@ -45,11 +42,8 @@
   import { getResourceStatus } from "../shared/resource-status";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { FilterIcon, SearchIcon, XIcon } from "lucide-svelte";
 
   export let resources: V1Resource[] | undefined;
@@ -355,7 +349,10 @@
       positionNs: "sprawl",
       ignoreCache: true,
     });
-  })() as { nodes: Node<ResourceNodeData>[]; edges: Edge[] } | null;
+  })() as {
+    nodes: import("@xyflow/svelte").Node<ResourceNodeData>[];
+    edges: import("@xyflow/svelte").Edge[];
+  } | null;
 
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
