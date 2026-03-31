@@ -123,8 +123,8 @@ type: explore
 display_name: "Events Dashboard"
 metrics_view: events_metrics
 
-dimensions: '*'
-measures: '*'
+dimensions: "*"
+measures: "*"
 ```
 
 **4. Deploy**
