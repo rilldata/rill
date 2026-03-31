@@ -71,6 +71,11 @@
     placeholder="Search by email (min 3 characters)..."
     on:search={handleSearch}
   />
+  {#if searchQuery.length < 3}
+    <p class="text-sm text-fg-muted mt-2">
+      Type at least 3 characters to search across all organizations.
+    </p>
+  {/if}
 </div>
 
 {#if $usersQuery.isFetching && searchQuery.length >= 3}
@@ -160,10 +165,6 @@
   </div>
 {:else if searchQuery.length >= 3 && $usersQuery.isSuccess}
   <p class="text-sm text-fg-secondary">No users found for "{searchQuery}"</p>
-{:else if searchQuery.length < 3}
-  <p class="text-sm text-fg-muted">
-    Type at least 3 characters to search across all organizations.
-  </p>
 {/if}
 
 <ConfirmActionDialog

@@ -123,6 +123,11 @@
     bind:value={selectedOrg}
     placeholder="Search organizations (min 3 characters)..."
   />
+  {#if !selectedOrg}
+    <p class="text-sm text-fg-muted mt-2">
+      Type at least 3 characters to search by organization name.
+    </p>
+  {/if}
 </div>
 
 <!-- Selected org details -->
@@ -137,10 +142,22 @@
     {@const org = $orgQuery.data.organization}
     <div class="flex flex-col gap-4">
       <section class="p-5 rounded-lg border">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-semibold text-fg-primary">
-            Organization Details
-          </h2>
+        <h2 class="text-sm font-semibold text-fg-primary mb-3">
+          Organization Details
+        </h2>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {#each [{ label: "Name", value: org.name }, { label: "Display Name", value: org.displayName ?? "-" }, { label: "Description", value: org.description ?? "-" }, { label: "Billing Plan", value: org.billingPlanDisplayName ?? "-" }, { label: "Billing Customer ID", value: org.billingCustomerId ?? "-", mono: true }, { label: "Custom Domain", value: org.customDomain ?? "None" }, { label: "Created", value: org.createdOn ? new Date(org.createdOn).toLocaleDateString() : "-" }, { label: "ID", value: org.id, mono: true }] as field}
+            <div class="flex flex-col">
+              <span class="text-sm text-fg-secondary uppercase tracking-wider"
+                >{field.label}</span
+              >
+              <span class="text-sm text-fg-primary" class:font-mono={field.mono}
+                >{field.value}</span
+              >
+            </div>
+          {/each}
+        </div>
+        <div class="mt-4 pt-4 border-t">
           <Button
             large
             class="font-normal"
@@ -153,18 +170,6 @@
           >
             Delete Organization
           </Button>
-        </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {#each [{ label: "ID", value: org.id, mono: true }, { label: "Name", value: org.name }, { label: "Display Name", value: org.displayName ?? "-" }, { label: "Description", value: org.description ?? "-" }, { label: "Billing Plan", value: org.billingPlanDisplayName ?? "-" }, { label: "Billing Customer ID", value: org.billingCustomerId ?? "-", mono: true }, { label: "Custom Domain", value: org.customDomain ?? "None" }, { label: "Created", value: org.createdOn ? new Date(org.createdOn).toLocaleDateString() : "-" }] as field}
-            <div class="flex flex-col">
-              <span class="text-sm text-fg-secondary uppercase tracking-wider"
-                >{field.label}</span
-              >
-              <span class="text-sm text-fg-primary" class:font-mono={field.mono}
-                >{field.value}</span
-              >
-            </div>
-          {/each}
         </div>
       </section>
 

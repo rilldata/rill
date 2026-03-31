@@ -149,6 +149,11 @@
     placeholder="Search projects (e.g. org/project, min 3 chars)..."
     on:search={handleSearch}
   />
+  {#if searchQuery.length < 3}
+    <p class="text-sm text-fg-muted mt-2">
+      Type at least 3 characters to search across all organizations.
+    </p>
+  {/if}
 </div>
 
 {#if $projectsQuery.isFetching && searchQuery.length >= 3}
@@ -228,10 +233,6 @@
   </table>
 {:else if searchQuery.length >= 3 && $projectsQuery.isSuccess}
   <p class="text-sm text-fg-secondary">No projects found for "{searchQuery}"</p>
-{:else if searchQuery.length < 3}
-  <p class="text-sm text-fg-muted">
-    Type at least 3 characters to search across all organizations.
-  </p>
 {/if}
 
 <ConfirmActionDialog
