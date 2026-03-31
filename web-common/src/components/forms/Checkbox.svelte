@@ -14,7 +14,7 @@
     optional?: boolean;
   };
 
-  export let checked: $$Props["checked"] = undefined;
+  export let checked: $$Props["checked"] = false;
   export let disabled: $$Props["disabled"] = undefined;
   export let label: $$Props["label"] = undefined;
   export let inverse = false;

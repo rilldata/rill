@@ -7,7 +7,7 @@
     class?: string | null;
   } & Record<string, unknown>;
 
-  export let value: $$Props["value"] = undefined;
+  export let value: $$Props["value"] = "";
 
   let className: string | undefined | null = undefined;
   export { className as class };

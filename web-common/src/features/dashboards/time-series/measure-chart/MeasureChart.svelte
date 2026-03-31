@@ -1,31 +1,32 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import type { TimeSeriesPoint } from "./types";
-  import { createVisibilityObserver } from "./interactions";
-  import { ScrubController } from "./ScrubController";
-  import MeasureChartBody from "./MeasureChartBody.svelte";
-  import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
+  import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import { adjustTimeInterval } from "../utils";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     createQueryServiceMetricsViewTimeSeries,
+    V1TimeGrain,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { keepPreviousData } from "@tanstack/svelte-query";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { DateTime, Interval } from "luxon";
-  import { transformTimeSeriesData } from "./use-measure-time-series";
-  import {
-    createDimensionAggregationQuery,
-    buildDimensionSeriesData,
-  } from "./use-dimension-data";
+  import { onDestroy, onMount } from "svelte";
   import { createAnnotationsQuery } from "../annotations-selectors";
-  import { dateToIndex } from "./utils";
+  import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
   import { hoverIndex } from "./hover-index";
+  import { createVisibilityObserver } from "./interactions";
+  import MeasureChartBody from "./MeasureChartBody.svelte";
+  import { ScrubController } from "./ScrubController";
+  import type { TimeSeriesPoint } from "./types";
+  import {
+    buildDimensionSeriesData,
+    createDimensionAggregationQuery,
+  } from "./use-dimension-data";
+  import { transformTimeSeriesData } from "./use-measure-time-series";
+  import { dateToIndex } from "./utils";
 
   const VISIBILITY_ROOT_MARGIN = "120px";
 
@@ -234,8 +235,12 @@
     _dimension: undefined | string | null,
     ts: Date | undefined,
   ) {
-    if (ts) {
-      const idx = dateToIndex(data, ts.getTime());
+    if (ts && !isNaN(ts.getTime())) {
+      // The component chart applies adjustDataForTimeZone which shifts epochs
+      // so Vega displays correct wall-clock times in the browser's local timezone.
+      // Reverse that shift before comparing against the UTC-based data array.
+      const adjustedTs = localToTimeZoneOffset(ts, timeZone);
+      const idx = dateToIndex(data, adjustedTs.getTime());
       if (idx !== null) hoverIndex.set(idx, "tddChart");
     } else {
       hoverIndex.clear("tddChart");
@@ -249,9 +254,24 @@
   function handleTddBrushEnd(interval: { start: Date; end: Date }) {
     tddIsScrubbing = false;
     const { start, end } = adjustTimeInterval(interval, timeZone);
+    let startDt = DateTime.fromJSDate(start, { zone: timeZone });
+    let endDt = DateTime.fromJSDate(end, { zone: timeZone });
+
+    // Snap to grain boundaries: ceil start, floor end
+    if (timeGranularity) {
+      const unit = V1TimeGrainToDateTimeUnit[timeGranularity];
+      const startFloor = startDt.startOf(unit);
+      startDt =
+        +startFloor < +startDt ? startFloor.plus({ [unit]: 1 }) : startDt;
+      endDt = endDt.startOf(unit);
+    }
+
+    // Guard: if brush was within a single grain, snapping can invert the range
+    if (+endDt <= +startDt) return;
+
     onScrub?.({
-      start: DateTime.fromJSDate(start, { zone: timeZone }),
-      end: DateTime.fromJSDate(end, { zone: timeZone }),
+      start: startDt,
+      end: endDt,
       isScrubbing: false,
     });
   }
@@ -279,15 +299,20 @@
     </div>
   {:else if tddChartType !== TDDChart.DEFAULT && data.length > 0}
     <div class="w-full" style:height="{height}px">
-      <TDDAlternateChart
+      <TDDMeasureChart
         chartType={tddChartType}
-        expandedMeasureName={measureName}
-        timeSeriesPoints={data}
-        dimensionSeriesData={dimensionData}
-        timeGrain={timeGranularity}
-        xMin={undefined}
-        xMax={undefined}
-        isTimeComparison={showComparison}
+        {metricsViewName}
+        {measure}
+        {timeDimension}
+        {interval}
+        comparisonInterval={showComparison ? comparisonInterval : undefined}
+        {timeGranularity}
+        {timeZone}
+        {where}
+        {comparisonDimension}
+        {dimensionValues}
+        {dimensionData}
+        {showComparison}
         isScrubbing={tddIsScrubbing}
         onChartHover={handleTddHover}
         onChartBrush={handleTddBrush}
