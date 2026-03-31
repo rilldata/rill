@@ -300,6 +300,20 @@ func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedPa
 	}
 }
 
+func RequireReconcileErrorContains(t testing.TB, rt *runtime.Runtime, id, kind, name, expectedError string) {
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: kind, Name: name}, false)
+	require.NoError(t, err)
+	if expectedError == "" {
+		require.Empty(t, r.Meta.ReconcileError)
+		return
+	}
+	require.Contains(t, r.Meta.ReconcileError, expectedError)
+}
+
 type RequireResolveOptions struct {
 	Resolver           string
 	Properties         map[string]any
