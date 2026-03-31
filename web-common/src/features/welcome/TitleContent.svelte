@@ -4,7 +4,7 @@
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
 </script>
 
-<section class="flex flex-col gap-y-6 items-center text-center">
+<section class="flex flex-col gap-y-4 pb-4 items-center text-center">
   <RillLogoSquareNegative size="84px" gradient />
   <RadixH1>
     <span

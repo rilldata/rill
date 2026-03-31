@@ -59,9 +59,8 @@
   }
 </script>
 
-<section class="flex flex-col items-center gap-y-5">
-  <Subheading>Or jump right into an example project.</Subheading>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+<section class="flex flex-col items-center">
+  <div class="flex flex-row gap-4">
     {#each EXAMPLES as example (example.name)}
       {@const icon = connectorIconMapping[example.connector]}
       {@const loading = selectedProjectName === example.name}
@@ -75,7 +74,7 @@
       >
         <svelte:fragment slot="icon">
           {#if icon}
-            <svelte:component this={icon} />
+            <svelte:component this={icon} size="16px" />
           {/if}
         </svelte:fragment>
         <span>{example.title}</span>

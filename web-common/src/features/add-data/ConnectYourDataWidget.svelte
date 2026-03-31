@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DatabaseIcon } from "lucide-svelte";
+  import { DatabaseIcon, ArrowRightIcon } from "lucide-svelte";
   import {
     connectorIconMapping,
     connectorLabelMapping,
@@ -42,7 +42,7 @@
   aria-label="Connect your data"
 >
   <div class="header">
-    <DatabaseIcon />
+    <DatabaseIcon class="h-[18px]" />
     <span>Connect your data</span>
   </div>
 
@@ -74,19 +74,25 @@
     {/each}
   </div>
 
-  <div class="see-all">See all</div>
+  <div class="see-more-container">
+    <span class="grow"></span>
+    <div class="see-more">
+      <span>See more connectors</span>
+      <ArrowRightIcon class="w-4 h-4" />
+    </div>
+  </div>
 </button>
 
 <style lang="postcss">
   .container {
-    @apply flex flex-col p-6 gap-4 w-fit;
+    @apply flex flex-col p-6 gap-4 w-96 min-w-96 h-[246px];
     @apply border rounded-lg;
   }
 
   .container-welcome {
-    @apply border-primary-200;
+    @apply min-w-[430px] border-primary-200;
     background: radial-gradient(
-      58.72% 82.18% at 23.7% 14.73%,
+      94.8% 95.1% at 23.7% 14.73%,
       #d7e4ff 42.79%,
       #eaecff 96.63%
     );
@@ -116,16 +122,16 @@
   }
 
   .header {
-    @apply flex flex-row items-center gap-2;
+    @apply flex flex-row items-center gap-1.5;
     @apply text-lg text-fg-primary font-semibold;
   }
 
   .primary-connectors {
-    @apply grid grid-cols-2 gap-3;
+    @apply grid grid-cols-2 gap-3 grow;
   }
 
   .primary-connector-entry {
-    @apply flex flex-row gap-2 items-center p-2 w-40;
+    @apply flex flex-row gap-2 items-center px-3 py-2;
     @apply text-sm bg-surface-overlay rounded-md border;
   }
   .container-welcome .primary-connector-entry:hover {
@@ -135,7 +141,11 @@
     @apply bg-surface-hover;
   }
 
-  .see-all {
-    @apply text-xs text-fg-secondary hover:text-primary;
+  .see-more-container {
+    @apply flex flex-row items-center;
+  }
+  .see-more {
+    @apply flex flex-row items-center py-2 gap-1;
+    @apply text-sm font-medium text-fg-secondary hover:text-primary;
   }
 </style>

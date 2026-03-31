@@ -23,7 +23,7 @@
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import ConnectorFormWrapper from "@rilldata/web-common/features/add-data/form/ConnectorFormWrapper.svelte";
-  import { isPublicAuth } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+  import { getAddDataClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
 
   const {
     config,
@@ -53,13 +53,7 @@
   let schema = $derived((stepState as any).schema as string | undefined);
   let connector = $derived((stepState as any).connector as string | undefined);
 
-  const SizeClassMap: Partial<Record<AddDataStep, string>> = {
-    [AddDataStep.SelectConnector]: "h-fit w-[900px]",
-    [AddDataStep.Import]: "h-fit w-[550px]",
-  };
-  let sizeClass = $derived(
-    SizeClassMap[stepState.step] ?? "h-[630px] w-[900px]",
-  );
+  let sizeClass = $derived(getAddDataClass(stepState));
   let shouldShowHeader = $derived(
     stepState.step === AddDataStep.CreateConnector ||
       stepState.step === AddDataStep.CreateModel ||

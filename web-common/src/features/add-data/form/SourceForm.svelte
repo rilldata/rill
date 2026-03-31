@@ -157,7 +157,7 @@
     {superFormsParams}
     labels={sourceFormLabels}
     {yamlPreview}
-    step="source"
+    {step}
     {onBack}
   />
 {/if}

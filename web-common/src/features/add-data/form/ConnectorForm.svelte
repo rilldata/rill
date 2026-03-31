@@ -102,7 +102,7 @@
     {superFormsParams}
     labels={labelsForConnector}
     {yamlPreview}
-    step="connector"
+    {step}
     onSave={saveConnector}
     onBack={cleanupAndBack}
   />

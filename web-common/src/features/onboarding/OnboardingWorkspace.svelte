@@ -63,7 +63,7 @@
 
     <div class="my-auto text-gray-400 text-base">or</div>
 
-    <div class="flex flex-col w-64 gap-y-4">
+    <div class="onboarding-cta-container">
       <GenerateSampleData type="home" />
       <button
         on:click={() =>
@@ -109,7 +109,7 @@
 
   <div class="flex flex-row gap-x-8 items-center w-full">
     <div class="h-px grow border"></div>
-    <LightbulbIcon class="text-border" size="16px" />
+    <LightbulbIcon class="text-border" size="16px" strokeWidth={3} />
     <div class="h-px grow border"></div>
   </div>
 
@@ -138,8 +138,12 @@
     @apply flex flex-row text-center gap-x-6;
   }
 
+  .onboarding-cta-container {
+    @apply grid w-64 min-h-full gap-y-4;
+  }
+
   .onboarding-cta {
-    @apply flex flex-row gap-2 items-center justify-center p-2 h-12;
+    @apply flex flex-row gap-2 items-center justify-center p-2;
     @apply text-sm bg-surface-overlay rounded-md border;
   }
   .onboarding-cta:hover {

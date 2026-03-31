@@ -1,0 +1,40 @@
+import {
+  type AddDataState,
+  AddDataStep,
+  type CreateConnectorStep,
+  type CreateModelStep,
+  type ExploreConnectorStep,
+} from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+
+const AddDataClassByStepMap: Partial<Record<AddDataStep, string>> = {
+  [AddDataStep.SelectConnector]: "h-fit w-[900px]",
+  [AddDataStep.Import]: "h-fit w-[550px]",
+};
+const AddDataClassBySchemaMap: Partial<Record<string, string>> = {
+  local_file: "h-[300px] my-auto w-[550px]",
+};
+const DefaultAddDataClass = "h-[630px] w-[900px]";
+
+export function getAddDataClass(addDataState: AddDataState) {
+  const schema = (
+    addDataState as CreateConnectorStep | CreateModelStep | ExploreConnectorStep
+  ).schema;
+  if (schema && schema in AddDataClassBySchemaMap)
+    return AddDataClassBySchemaMap[schema];
+  return AddDataClassByStepMap[addDataState.step] ?? DefaultAddDataClass;
+}
+
+const FormClassBySchemaMap: Partial<Record<string, string>> = {
+  local_file: "px-6 my-auto h-fit",
+};
+const DefaultFormClass = "p-6 flex-grow";
+
+export function getFormClass(addDataState: AddDataState) {
+  const schema = (
+    addDataState as CreateConnectorStep | CreateModelStep | ExploreConnectorStep
+  ).schema;
+  console.log("schema", schema);
+  if (schema && schema in FormClassBySchemaMap)
+    return FormClassBySchemaMap[schema];
+  return DefaultFormClass;
+}

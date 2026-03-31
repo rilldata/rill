@@ -161,9 +161,9 @@
     submit(e);
   }}
   id={FormId}
-  class="flex flex-col gap-1 h-full overflow-y-auto"
+  class="flex flex-col h-full overflow-y-auto"
 >
-  <div class="flex flex-col gap-2 px-6 pt-2">
+  <div class="flex flex-col gap-2 px-6 pt-6" class:pb-3={!supportsModeling}>
     {#if supportsModeling}
       <div>Pick a table or input your SQL to power your first dashboard</div>
       <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
@@ -178,7 +178,7 @@
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
       <div class="flex flex-row size-full overflow-hidden border-t">
-        <div class="flex-grow border-r ml-6 mt-2">
+        <div class="flex-grow border-r px-6 py-2">
           <ConnectorExplorer
             connectorName={step.connector}
             onSelect={handleTableChange}
@@ -189,9 +189,10 @@
           minWidth={100}
           maxWidth={500}
           defaultWidth={288}
-          additionalClass="overflow-auto bg-surface-subtle p-2"
+          additionalClass="overflow-auto bg-surface-subtle"
         >
           {#if $form["table"]}
+            <div class="text-base px-4 py-2">SCHEMA</div>
             <TableSchema
               connector={step.connector}
               database={$form["database"]}

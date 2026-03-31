@@ -48,6 +48,8 @@
           <span class="source-label">{connector.displayName}</span>
           <ChevronRightIcon size="16px" />
         </button>
+      {:else}
+        <div class="source-selector-no-matches">No matches found</div>
       {/each}
     </div>
   </div>
@@ -64,11 +66,11 @@
   }
 
   .source-selector-content {
-    @apply min-h-0 flex-1 overflow-auto;
+    @apply min-h-0 flex-1 py-4 px-6 overflow-auto;
   }
 
   .source-selector-header {
-    @apply flex flex-row items-center gap-x-2 p-2.5 px-6;
+    @apply flex flex-row items-center gap-x-2 py-4 px-6;
     @apply border-b;
   }
 
@@ -77,7 +79,7 @@
   }
 
   .source-selector-grid {
-    @apply grid grid-cols-3 p-6 gap-2;
+    @apply grid grid-cols-3 grid-rows-7 gap-2;
   }
 
   .source-label {
@@ -90,6 +92,10 @@
   }
 
   .source-selector-footer {
-    @apply flex justify-between p-6 gap-2;
+    @apply flex justify-between pt-4 pb-6 px-6 gap-2 border-t;
+  }
+
+  .source-selector-no-matches {
+    @apply h-[58px] text-sm text-fg-disabled;
   }
 </style>

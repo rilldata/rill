@@ -18,6 +18,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import FeatherCheckCircle from "@rilldata/web-common/components/icons/FeatherCheckCircle.svelte";
 
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
@@ -92,51 +93,59 @@
     onBack();
   }
 
-  onMount(runImport);
+  // onMount(runImport);
 </script>
 
-<div class="flex flex-col gap-4 p-6 mx-auto w-fit">
+<div class="flex flex-col gap-4 p-6 mx-auto w-fit justify-center">
   <div class="flex justify-center">
     {#if hasErrored}
-      <AlertCircleOutline size="32px" className="text-destructive" />
+      <AlertCircleOutline size="16px" className="text-destructive" />
     {:else}
-      <Spinner status={EntityStatus.Running} size="32px" />
+      <Spinner status={EntityStatus.Running} size="30px" />
     {/if}
   </div>
-  <div class="text-center">Creating your dashboard</div>
-  {#each steps as s (s.step)}
-    <div class="flex flex-row items-center gap-4 text-fg-tertiary">
-      {#if importStep > s.step}
-        <CheckIcon size="14px" />
-        <div>{s.doneLabel}</div>
-      {:else if hasErrored}
-        {#if importStep === s.step}
-          <AlertCircleOutline size="14px" className="text-destructive" />
-          <div>{s.failedLabel}</div>
-        {:else}
-          <XIcon size="14px" className="text-destructive" />
-          <div>{s.pendingLabel}</div>
-        {/if}
-      {:else}
-        <LoadingSpinner size="14px" />
-        <div>{s.pendingLabel}</div>
-      {/if}
+  <div class="flex flex-col gap-y-2">
+    <div class="text-center font-semibold text-[18px]">
+      Creating your dashboard
     </div>
-  {/each}
-</div>
-{#if error}
-  <div class="w-96 mx-auto mb-4 text-destructive">
-    <div class="text-sm mb-2">{error}</div>
+    <div class="flex flex-col gap-y-1">
+      {#each steps as s (s.step)}
+        <div class="flex flex-row items-center gap-2 text-fg-tertiary text-sm">
+          {#if importStep > s.step}
+            <FeatherCheckCircle size="18px" />
+            <div>{s.doneLabel}</div>
+          {:else if hasErrored}
+            {#if importStep === s.step}
+              <AlertCircleOutline size="18px" className="text-destructive" />
+              <div>{s.failedLabel}</div>
+            {:else}
+              <XIcon size="18px" className="text-destructive" />
+              <div>{s.pendingLabel}</div>
+            {/if}
+          {:else}
+            <LoadingSpinner size="18px" />
+            <div>{s.pendingLabel}</div>
+          {/if}
+        </div>
+      {/each}
+    </div>
   </div>
-{/if}
-<div class="flex flex-row items-center gap-2 mb-4 mx-auto">
-  {#if hasErrored}
-    <Button type="secondary" noStroke onClick={cleanupAndBack}>Back</Button>
+
+  {#if error}
+    <div class="w-96 mx-auto text-destructive">
+      <div class="text-sm mb-2">{error}</div>
+    </div>
   {/if}
-  <Button type="secondary" href={currentFileRoute} onClick={onClose}>
-    Skip and view project
-  </Button>
-  {#if hasErrored}
-    <Button type="primary" onClick={rerunImport}>Retry</Button>
-  {/if}
+
+  <div class="flex flex-row items-center gap-2 py-6 mx-auto">
+    {#if hasErrored}
+      <Button type="secondary" noStroke onClick={cleanupAndBack}>Back</Button>
+    {/if}
+    <Button type="tertiary" href={currentFileRoute} onClick={onClose} large>
+      Skip and view project
+    </Button>
+    {#if hasErrored}
+      <Button type="primary" onClick={rerunImport}>Retry</Button>
+    {/if}
+  </div>
 </div>

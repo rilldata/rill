@@ -1,12 +1,11 @@
 <script lang="ts">
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
-  import { SparklesIcon } from "lucide-svelte";
+  import { SparklesIcon, ArrowUpIcon } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import IconButton from "../../components/button/IconButton.svelte";
-  import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { Button } from "@rilldata/web-common/components/button";
 
   export let open = false;
 
@@ -50,42 +49,40 @@
     <span>Generate sample data</span>
   </div>
 
-  <div>
-    <form
-      id={FORM_ID}
-      onsubmit={(e) => {
-        e.preventDefault();
-        submit(e);
-      }}
-      use:enhance
-      class="relative"
-    >
-      <textarea
-        class="prompt-input"
-        bind:value={$form.prompt}
-        class:empty={$form.prompt.length === 0}
-        placeholder={`E.g. "e-commerce transactions"`}
-        onkeydown={handleKeydown}
-      ></textarea>
-      <div class="absolute right-3 bottom-8">
-        <IconButton ariaLabel="Send message" on:click={submit}>
-          <SendIcon size="1.3em" />
-        </IconButton>
-      </div>
-      {#if $errors.prompt}
-        <div class="error">{$errors.prompt?.[0]}</div>
-      {/if}
-    </form>
-  </div>
+  <form
+    id={FORM_ID}
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
+    use:enhance
+    class="relative h-full"
+  >
+    <textarea
+      class="prompt-input"
+      bind:value={$form.prompt}
+      class:empty={$form.prompt.length === 0}
+      placeholder={`E.g. "e-commerce transactions"`}
+      onkeydown={handleKeydown}
+    ></textarea>
+    <div class="absolute right-3 bottom-3">
+      <Button type="ghost" ariaLabel="Send message" onClick={submit} compact>
+        <ArrowUpIcon class="h-4 w-4 text-accent-secondary-action" />
+      </Button>
+    </div>
+    {#if $errors.prompt}
+      <div class="error">{$errors.prompt?.[0]}</div>
+    {/if}
+  </form>
 </div>
 
 <style lang="postcss">
   .container {
-    @apply flex flex-col p-6 gap-4 w-96;
+    @apply flex flex-col p-6 gap-4 w-96 h-[246px];
     @apply border border-primary-200 rounded-lg;
     background: radial-gradient(
-      127% 274.12% at 111.07% 104.65%,
-      #d2f5ec 0%,
+      302.11% 152.07% at 111.07% 104.65%,
+      #f7fffd 0%,
       #ddf3ff 100%
     );
   }
@@ -102,12 +99,12 @@
   }
 
   .header {
-    @apply flex flex-row items-center gap-4;
+    @apply flex flex-row items-center gap-2;
     @apply text-lg text-fg-primary font-semibold;
   }
 
   .prompt-input {
-    @apply w-full my-4 p-2 min-h-28;
+    @apply w-full p-2 min-h-28 h-full;
     @apply border border-gray-300 rounded-[2px];
     @apply text-sm leading-relaxed;
   }

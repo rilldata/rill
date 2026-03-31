@@ -123,7 +123,7 @@
   }
 
   .button-home {
-    @apply flex flex-row gap-2 items-center justify-center p-2 h-12;
+    @apply flex flex-row gap-2 items-center justify-center p-2;
     @apply text-sm bg-surface-overlay rounded-md border;
   }
   .button-home:hover {

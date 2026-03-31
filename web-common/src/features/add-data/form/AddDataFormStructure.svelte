@@ -23,13 +23,18 @@
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import {
+    type AddDataState,
+    AddDataStep,
+  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+  import { getFormClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
 
   export let connectorDriver: V1ConnectorDriver;
   export let schema: MultiStepFormSchema | null;
   export let superFormsParams: ReturnType<typeof createConnectorForm>;
   export let labels = defaultFormLabels;
   export let yamlPreview: string;
-  export let step: "connector" | "source";
+  export let step: AddDataState;
   export let onSave: (() => void) | undefined = undefined;
   export let onBack: () => void;
 
@@ -37,9 +42,14 @@
     superFormsParams);
   $: taintedFields = $tainted;
 
+  $: legacyStep =
+    step.step === AddDataStep.CreateConnector ? "connector" : "source";
+
   $: ({ message, details } = getSubmitError($errors));
 
   $: hideRightPannel = connectorDriver.name === "local_file";
+
+  $: formClass = getFormClass(step);
 
   $: isSubmitDisabled = (() => {
     // No schema = disable submit (schema is required for all connectors)
@@ -47,7 +57,11 @@
       return true;
     }
 
-    const requiredFields = getRequiredFieldsForValues(schema, $form, step);
+    const requiredFields = getRequiredFieldsForValues(
+      schema,
+      $form,
+      legacyStep,
+    );
     for (const field of requiredFields) {
       if (!isVisibleForValues(schema, field, $form)) continue;
       const value = $form[field];
@@ -56,6 +70,12 @@
     }
     return false;
   })();
+
+  // Adhoc disabling of the save button for clickhouse connectors in playground mode.
+  // TODO: rethink this check if we have more such use cases.
+  $: isSaveButtonEnabled =
+    connectorDriver.name !== "clickhouse" ||
+    $form.deployment_type !== "playground";
 
   function onStringInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -136,7 +156,7 @@
 <div class="flex flex-col size-full md:flex-row overflow-y-auto">
   <!-- LEFT SIDE PANEL -->
   <div class="flex-1 flex flex-col min-w-0 h-full md:pr-0 pr-0 relative">
-    <div class="flex flex-col flex-grow overflow-y-auto p-6">
+    <div class="flex flex-col {formClass}">
       <form
         id={$formId}
         class="pb-5"
@@ -148,7 +168,7 @@
       >
         <JSONSchemaFormRenderer
           {schema}
-          {step}
+          step={legacyStep}
           {form}
           {errors}
           {onStringInputChange}
@@ -165,10 +185,11 @@
       <Button onClick={onBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
-        {#if onSave}
+        {#if onSave && isSaveButtonEnabled}
           <Button
-            disabled={$submitting || isSubmitDisabled}
+            disabled={isSubmitDisabled}
             type="secondary"
+            noStroke
             onClick={onSave}
             label="Save connector"
           >

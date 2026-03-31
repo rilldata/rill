@@ -5,12 +5,6 @@ import {
   isTableProfilingQuery,
 } from "@rilldata/web-common/runtime-client/query-matcher";
 import type { Query, QueryClient } from "@tanstack/svelte-query";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import {
-  getConnectorServiceListDatabaseSchemasQueryKey,
-  getConnectorServiceListTablesQueryKey,
-  getConnectorServiceOLAPListTablesQueryKey,
-} from "@rilldata/web-common/runtime-client/v2/gen";
 
 /** Matches the new key format for a given instanceId. */
 function isRuntimeQueryForInstance(
