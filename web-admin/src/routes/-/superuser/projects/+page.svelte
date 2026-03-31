@@ -11,13 +11,17 @@
     AlertDialogTitle,
   } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { adminServiceGetProject } from "@rilldata/web-admin/client";
+  import {
+    adminServiceGetProject,
+    adminServiceListOrganizationMemberUsers,
+  } from "@rilldata/web-admin/client";
   import {
     searchProjects,
     createUpdateProjectMutation,
     createRedeployProjectMutation,
     createHibernateProjectMutation,
   } from "@rilldata/web-admin/features/superuser/projects/selectors";
+  import { assumedUser } from "@rilldata/web-admin/features/superuser/users/assume-state";
 
   let searchQuery = "";
   let actionInProgress = "";
@@ -46,6 +50,33 @@
 
   function handleSearch(e: CustomEvent<string>) {
     searchQuery = e.detail;
+  }
+
+  async function handleView(name: string) {
+    const [org] = name.split("/");
+    actionInProgress = `view:${name}`;
+    try {
+      const resp = await adminServiceListOrganizationMemberUsers(org, {
+        superuserForceAccess: true,
+      });
+      const admin = resp.members?.find((m) => m.roleName === "admin");
+      const member = admin ?? resp.members?.[0];
+      if (!member?.userEmail) {
+        eventBus.emit("notification", {
+          type: "error",
+          message: `No members found in org "${org}" to assume as`,
+        });
+        return;
+      }
+      assumedUser.assume(member.userEmail, { redirect: `/${name}` });
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to look up org members: ${err}`,
+      });
+    } finally {
+      actionInProgress = "";
+    }
   }
 
   async function handleChangeSlots(name: string) {
@@ -190,8 +221,8 @@
                 large
                 class="font-normal"
                 type="tertiary"
-                href={`/${name}`}
-                target="_blank">View</Button
+                loading={actionInProgress === `view:${name}`}
+                onClick={() => handleView(name)}>View</Button
               >
               <Button
                 large
