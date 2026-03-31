@@ -707,7 +707,9 @@
   }
   .with-row-dimension .selected-row > td:first-of-type {
     @apply bg-primary-100;
-    box-shadow: 0 0 0 1px theme(colors.primary.400);
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 -1px 0 0 theme(colors.primary.400);
   }
   .with-row-dimension .selected-row:hover > td:first-of-type {
     @apply bg-primary-100;
@@ -737,7 +739,9 @@
   /* Cross-selection: row header cell for selected row (stays highlighted) */
   .with-row-dimension tr > td.cross-selected-row-header:first-of-type {
     @apply bg-primary-100;
-    box-shadow: inset 0 0 0 1px theme(colors.primary.400);
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 -1px 0 0 theme(colors.primary.400);
   }
   .with-row-dimension tr:hover > td.cross-selected-row-header:first-of-type {
     @apply bg-primary-100;
@@ -774,7 +778,9 @@
   }
   .selected-col-header {
     @apply relative z-[1];
-    box-shadow: 0 0 0 1px theme(colors.primary.400);
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 -1px 0 0 theme(colors.primary.400);
   }
 
   .in-selected-col-range .header-cell,
