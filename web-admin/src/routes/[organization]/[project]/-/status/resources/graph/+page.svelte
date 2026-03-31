@@ -128,7 +128,9 @@
   let filterDropdownOpen = false;
   let searchExpanded = false;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let selectedStatuses: string[] = parseArrayParam($page.url.searchParams.get("status"));
+  let selectedStatuses: string[] = parseArrayParam(
+    $page.url.searchParams.get("status"),
+  );
   let hideIsolated =
     ($page.url.searchParams.get("isolated") ?? "hidden") === "hidden";
 
@@ -163,13 +165,9 @@
     }
   }
 
-  $: activeFilterCount =
-    selectedStatuses.length +
-    (!hideIsolated ? 1 : 0);
+  $: activeFilterCount = selectedStatuses.length + (!hideIsolated ? 1 : 0);
   $: hasActiveFilters =
-    selectedStatuses.length > 0 ||
-    !hideIsolated ||
-    searchText.length > 0;
+    selectedStatuses.length > 0 || !hideIsolated || searchText.length > 0;
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
@@ -187,188 +185,177 @@
 </script>
 
 <section class="flex flex-col gap-y-3">
-<!-- Row 1: Resources + Refresh -->
-<div class="flex items-center justify-between h-9">
-  <h2 class="text-lg font-medium">Resources</h2>
-  <Button
-    type="secondary"
-    large
-    class="shrink-0 whitespace-nowrap"
-    onClick={() => {
-      isConfirmDialogOpen = true;
-    }}
-    disabled={hasReconcilingResources}
-  >
-    <span class="hidden lg:inline">Refresh all sources and models</span>
-    <span class="lg:hidden">Refresh all</span>
-  </Button>
-</div>
+  <!-- Row 1: Resources + Refresh -->
+  <div class="flex items-center justify-between h-9">
+    <h2 class="text-lg font-medium">Resources</h2>
+    <Button
+      type="secondary"
+      large
+      class="shrink-0 whitespace-nowrap"
+      onClick={() => {
+        isConfirmDialogOpen = true;
+      }}
+      disabled={hasReconcilingResources}
+    >
+      <span class="hidden lg:inline">Refresh all sources and models</span>
+      <span class="lg:hidden">Refresh all</span>
+    </Button>
+  </div>
 
-<!-- Row 2: [Filter button] ...spacer... [search] [Grid/List] -->
-<div class="flex items-center min-h-8">
-  <!-- Filter dropdown -->
-  <DropdownMenu.Root bind:open={filterDropdownOpen}>
-    <DropdownMenu.Trigger>
-      {#snippet child({ props })}
-        <button
-          {...props}
-          class="filter-trigger"
-        >
-          <FilterIcon size="14px" />
-          <span>Filter</span>
-          {#if activeFilterCount > 0}
-            <span class="filter-badge">{activeFilterCount}</span>
-          {/if}
-        </button>
-      {/snippet}
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start" class="w-52">
-      <DropdownMenu.Group>
-        <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
-          >Status</DropdownMenu.Label
-        >
-        {#each statusFilters as status}
+  <!-- Row 2: [Filter button] ...spacer... [search] [Grid/List] -->
+  <div class="flex items-center min-h-8">
+    <!-- Filter dropdown -->
+    <DropdownMenu.Root bind:open={filterDropdownOpen}>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <button {...props} class="filter-trigger">
+            <FilterIcon size="14px" />
+            <span>Filter</span>
+            {#if activeFilterCount > 0}
+              <span class="filter-badge">{activeFilterCount}</span>
+            {/if}
+          </button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-52">
+        <DropdownMenu.Group>
+          <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+            >Status</DropdownMenu.Label
+          >
+          {#each statusFilters as status}
+            <DropdownMenu.CheckboxItem
+              closeOnSelect={false}
+              checked={selectedStatuses.includes(status.value)}
+              onCheckedChange={() => toggleStatus(status.value)}
+            >
+              {status.label}
+            </DropdownMenu.CheckboxItem>
+          {/each}
+        </DropdownMenu.Group>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Group>
+          <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+            >Visibility</DropdownMenu.Label
+          >
           <DropdownMenu.CheckboxItem
             closeOnSelect={false}
-            checked={selectedStatuses.includes(status.value)}
-            onCheckedChange={() => toggleStatus(status.value)}
+            checked={hideIsolated}
+            onCheckedChange={() => (hideIsolated = !hideIsolated)}
           >
-            {status.label}
+            Hide isolated
           </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Group>
-      <DropdownMenu.Separator />
-      <DropdownMenu.Group>
-        <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
-          >Visibility</DropdownMenu.Label
-        >
-        <DropdownMenu.CheckboxItem
-          closeOnSelect={false}
-          checked={hideIsolated}
-          onCheckedChange={() => (hideIsolated = !hideIsolated)}
-        >
-          Hide isolated
-        </DropdownMenu.CheckboxItem>
-      </DropdownMenu.Group>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
+        </DropdownMenu.Group>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
 
-  <div class="flex-1"></div>
+    <div class="flex-1"></div>
 
-  <!-- Search icon / expandable search -->
-  {#if searchExpanded}
-    <div class="flex items-center w-56 h-9 shrink-0">
-      <Search
-        bind:value={searchText}
-        placeholder="Search resources..."
-        large
-        autofocus={true}
-        showBorderOnFocus={false}
-        retainValueOnMount
-      />
-      <button
-        class="h-9 w-9 flex items-center justify-center text-fg-primary shrink-0"
-        onclick={toggleSearchExpanded}
-      >
-        <XIcon size="14px" />
+    <!-- Search icon / expandable search -->
+    {#if searchExpanded}
+      <div class="flex items-center w-56 h-9 shrink-0">
+        <Search
+          bind:value={searchText}
+          placeholder="Search resources..."
+          large
+          autofocus={true}
+          showBorderOnFocus={false}
+          retainValueOnMount
+        />
+        <button
+          class="h-9 w-9 flex items-center justify-center text-fg-primary shrink-0"
+          onclick={toggleSearchExpanded}
+        >
+          <XIcon size="14px" />
+        </button>
+      </div>
+    {:else}
+      <button class="toolbar-icon-btn" onclick={toggleSearchExpanded}>
+        <SearchIcon size="14px" />
+      </button>
+    {/if}
+
+    <!-- Grid / List toggle -->
+    <div class="view-toggle ml-0.5">
+      <a href={graphBasePath} class="toggle-btn active">
+        <LayoutGridIcon size="16px" />
+      </a>
+      <a href={basePath} class="toggle-btn">
+        <ListIcon size="16px" />
+      </a>
+    </div>
+  </div>
+
+  <hr class="border-t border-gray-200 my-0" />
+
+  <!-- Row 3: Filter pills + Clear all (when any filter or search is active) -->
+  {#if hasActiveFilters}
+    <div class="filter-pills-row">
+      <div class="filter-pills-scroll">
+        {#if selectedStatuses.length > 0}
+          <button class="filter-pill" onclick={() => (selectedStatuses = [])}>
+            <span
+              >Status = {selectedStatuses
+                .map(
+                  (s) => statusFilters.find((f) => f.value === s)?.label ?? s,
+                )
+                .join(", ")}</span
+            >
+            <XIcon size="10px" />
+          </button>
+        {/if}
+        {#if !hideIsolated}
+          <button class="filter-pill" onclick={() => (hideIsolated = true)}>
+            <span>Show isolated</span>
+            <XIcon size="10px" />
+          </button>
+        {/if}
+      </div>
+      <button class="filter-pills-clear" onclick={clearFilters}>
+        Clear all
       </button>
     </div>
-  {:else}
-    <button
-      class="toolbar-icon-btn"
-      onclick={toggleSearchExpanded}
-    >
-      <SearchIcon size="14px" />
-    </button>
   {/if}
 
-  <!-- Grid / List toggle -->
-  <div class="view-toggle ml-0.5">
-    <a href={graphBasePath} class="toggle-btn active">
-      <LayoutGridIcon size="16px" />
-    </a>
-    <a href={basePath} class="toggle-btn">
-      <ListIcon size="16px" />
-    </a>
+  <div class="graph-wrapper">
+    <GraphContainer
+      {seeds}
+      statusFilter={selectedStatuses}
+      searchQuery={searchText}
+      showSummary={false}
+      layout="sidebar"
+      {selectedGroupId}
+      onSelectedGroupChange={handleSelectedGroupChange}
+      onSelectAll={() => goto(graphBasePath)}
+      {hasUrlFilters}
+      flushToolbar
+      showTitle={false}
+      showToolbar={false}
+      showIsolatedResources={!hideIsolated}
+    />
   </div>
-</div>
 
-<hr class="border-t border-gray-200 my-0" />
-
-<!-- Row 3: Filter pills + Clear all (when any filter or search is active) -->
-{#if hasActiveFilters}
-  <div class="filter-pills-row">
-    <div class="filter-pills-scroll">
-      {#if selectedStatuses.length > 0}
-        <button
-          class="filter-pill"
-          onclick={() => (selectedStatuses = [])}
-        >
-          <span>Status = {selectedStatuses
-            .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
-            .join(", ")}</span>
-          <XIcon size="10px" />
-        </button>
+  <div class="parse-errors">
+    <h3 class="parse-errors-header">
+      Parse Errors
+      {#if parseErrors.length > 0}
+        <span class="parse-errors-badge">{parseErrors.length}</span>
       {/if}
-      {#if !hideIsolated}
-        <button
-          class="filter-pill"
-          onclick={() => (hideIsolated = true)}
-        >
-          <span>Show isolated</span>
-          <XIcon size="10px" />
-        </button>
-      {/if}
-    </div>
-    <button
-      class="filter-pills-clear"
-      onclick={clearFilters}
-    >
-      Clear all
-    </button>
-  </div>
-{/if}
-
-<div class="graph-wrapper">
-  <GraphContainer
-    {seeds}
-    statusFilter={selectedStatuses}
-    searchQuery={searchText}
-    showSummary={false}
-    layout="sidebar"
-    {selectedGroupId}
-    onSelectedGroupChange={handleSelectedGroupChange}
-    onSelectAll={() => goto(graphBasePath)}
-    {hasUrlFilters}
-    flushToolbar
-    showTitle={false}
-    showToolbar={false}
-    showIsolatedResources={!hideIsolated}
-  />
-</div>
-
-<div class="parse-errors">
-  <h3 class="parse-errors-header">
-    Parse Errors
-    {#if parseErrors.length > 0}
-      <span class="parse-errors-badge">{parseErrors.length}</span>
+    </h3>
+    {#if parseErrors.length === 0}
+      <p class="text-sm text-fg-secondary">No parse errors</p>
+    {:else}
+      <div class="parse-errors-list">
+        {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}
+          <div class="parse-error-item">
+            {#if error.filePath}
+              <span class="parse-error-file">{error.filePath}</span>
+            {/if}
+            <span class="parse-error-message">{error.message}</span>
+          </div>
+        {/each}
+      </div>
     {/if}
-  </h3>
-  {#if parseErrors.length === 0}
-    <p class="text-sm text-fg-secondary">No parse errors</p>
-  {:else}
-    <div class="parse-errors-list">
-      {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}
-        <div class="parse-error-item">
-          {#if error.filePath}
-            <span class="parse-error-file">{error.filePath}</span>
-          {/if}
-          <span class="parse-error-message">{error.message}</span>
-        </div>
-      {/each}
-    </div>
-  {/if}
-</div>
+  </div>
 </section>
 
 <RefreshAllSourcesAndModelsConfirmDialog
@@ -393,13 +380,13 @@
     @apply flex items-center gap-1.5 h-9 px-4 rounded-sm bg-primary-50 text-sm text-primary-600;
   }
   :global(.dark) .filter-trigger {
-    @apply bg-surface-background text-primary-500;
+    @apply bg-surface-active text-primary-500;
   }
   .filter-trigger:hover {
     @apply bg-primary-100;
   }
   :global(.dark) .filter-trigger:hover {
-    @apply bg-surface-muted;
+    @apply bg-surface-hover;
   }
 
   .filter-badge {

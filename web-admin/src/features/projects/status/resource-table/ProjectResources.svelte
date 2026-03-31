@@ -208,10 +208,7 @@
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}
-          <button
-            {...props}
-            class="filter-trigger"
-          >
+          <button {...props} class="filter-trigger">
             <FilterIcon size="14px" />
             <span>Filter</span>
             {#if activeFilterCount > 0}
@@ -279,10 +276,7 @@
         </button>
       </div>
     {:else}
-      <button
-        class="toolbar-icon-btn"
-        onclick={toggleSearchExpanded}
-      >
+      <button class="toolbar-icon-btn" onclick={toggleSearchExpanded}>
         <SearchIcon size="14px" />
       </button>
     {/if}
@@ -305,30 +299,27 @@
     <div class="filter-pills-row">
       <div class="filter-pills-scroll">
         {#if selectedStatuses.length > 0}
-          <button
-            class="filter-pill"
-            onclick={() => (selectedStatuses = [])}
-          >
-            <span>Status = {selectedStatuses
-              .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
-              .join(", ")}</span>
+          <button class="filter-pill" onclick={() => (selectedStatuses = [])}>
+            <span
+              >Status = {selectedStatuses
+                .map(
+                  (s) => statusFilters.find((f) => f.value === s)?.label ?? s,
+                )
+                .join(", ")}</span
+            >
             <XIcon size="10px" />
           </button>
         {/if}
         {#if selectedTypes.length > 0}
-          <button
-            class="filter-pill"
-            onclick={() => (selectedTypes = [])}
-          >
-            <span>Type = {selectedTypes.map(prettyResourceKind).join(", ")}</span>
+          <button class="filter-pill" onclick={() => (selectedTypes = [])}>
+            <span
+              >Type = {selectedTypes.map(prettyResourceKind).join(", ")}</span
+            >
             <XIcon size="10px" />
           </button>
         {/if}
       </div>
-      <button
-        class="filter-pills-clear"
-        onclick={clearFilters}
-      >
+      <button class="filter-pills-clear" onclick={clearFilters}>
         Clear all
       </button>
     </div>
@@ -379,13 +370,13 @@
     @apply flex items-center gap-1.5 h-9 px-4 rounded-sm bg-primary-50 text-sm text-primary-600;
   }
   :global(.dark) .filter-trigger {
-    @apply bg-surface-background text-primary-500;
+    @apply bg-surface-active text-primary-500;
   }
   .filter-trigger:hover {
     @apply bg-primary-100;
   }
   :global(.dark) .filter-trigger:hover {
-    @apply bg-surface-muted;
+    @apply bg-surface-hover;
   }
 
   .filter-badge {

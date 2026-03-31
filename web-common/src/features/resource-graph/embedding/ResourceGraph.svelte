@@ -50,11 +50,7 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import {
-    FilterIcon,
-    SearchIcon,
-    XIcon,
-  } from "lucide-svelte";
+  import { FilterIcon, SearchIcon, XIcon } from "lucide-svelte";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -368,9 +364,7 @@
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // Whether any filters are active (URL params, status, or tree search)
-  $: activeFilterCount =
-    statusFilter.length +
-    (!showIsolatedResources ? 0 : 0); // extend as needed
+  $: activeFilterCount = statusFilter.length + (!showIsolatedResources ? 0 : 0); // extend as needed
   $: hasActiveFilters =
     hasUrlFilters ||
     statusFilter.length > 0 ||
@@ -864,223 +858,224 @@
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
     <section class="flex flex-col gap-y-3 flex-1 min-h-0">
-    {#if showToolbar}
-      <!-- Row 1: Title + Refresh -->
-      {#if showTitle}
+      {#if showToolbar}
+        <!-- Row 1: Title + Refresh -->
+        {#if showTitle}
+          <div
+            class="graph-title-bar"
+            class:nav-collapsed={!$navigationOpen}
+            class:flush-toolbar={flushToolbar}
+          >
+            <h2 class="text-lg font-medium">Resource Graph (DAG)</h2>
+            {#if onRefreshAll}
+              <Button
+                type="secondary"
+                large
+                class="shrink-0 whitespace-nowrap"
+                onClick={onRefreshAll}
+              >
+                <span class="hidden lg:inline"
+                  >Refresh all sources and models</span
+                >
+                <span class="lg:hidden">Refresh all</span>
+              </Button>
+            {/if}
+          </div>
+        {/if}
+        <!-- Row 2: Filter + search -->
         <div
-          class="graph-title-bar"
+          class="graph-toolbar-bar"
           class:nav-collapsed={!$navigationOpen}
           class:flush-toolbar={flushToolbar}
         >
-          <h2 class="text-lg font-medium">Resource Graph (DAG)</h2>
-          {#if onRefreshAll}
-            <Button
-              type="secondary"
-              large
-              class="shrink-0 whitespace-nowrap"
-              onClick={onRefreshAll}
-            >
-              <span class="hidden lg:inline">Refresh all sources and models</span>
-              <span class="lg:hidden">Refresh all</span>
-            </Button>
-          {/if}
-        </div>
-      {/if}
-      <!-- Row 2: Filter + search -->
-      <div
-        class="graph-toolbar-bar"
-        class:nav-collapsed={!$navigationOpen}
-        class:flush-toolbar={flushToolbar}
-      >
-        <!-- Filter dropdown -->
-        <DropdownMenu.Root bind:open={filterDropdownOpen}>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <button
-                {...props}
-                class="filter-trigger"
-              >
-                <FilterIcon size="14px" />
-                <span>Filter</span>
-                {#if statusFilter.length > 0}
-                  <span class="filter-badge">{statusFilter.length}</span>
-                {/if}
-              </button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start" class="w-52">
-            {#if statusFilterOptions.length > 0}
+          <!-- Filter dropdown -->
+          <DropdownMenu.Root bind:open={filterDropdownOpen}>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <button {...props} class="filter-trigger">
+                  <FilterIcon size="14px" />
+                  <span>Filter</span>
+                  {#if statusFilter.length > 0}
+                    <span class="filter-badge">{statusFilter.length}</span>
+                  {/if}
+                </button>
+              {/snippet}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start" class="w-52">
+              {#if statusFilterOptions.length > 0}
+                <DropdownMenu.Group>
+                  <DropdownMenu.Label
+                    class="uppercase text-[10px] tracking-wide"
+                    >Status</DropdownMenu.Label
+                  >
+                  {#each statusFilterOptions as opt (opt.value)}
+                    <DropdownMenu.CheckboxItem
+                      closeOnSelect={false}
+                      checked={statusFilter.includes(opt.value)}
+                      onCheckedChange={() => onStatusToggle?.(opt.value)}
+                    >
+                      {opt.label}
+                    </DropdownMenu.CheckboxItem>
+                  {/each}
+                </DropdownMenu.Group>
+                <DropdownMenu.Separator />
+              {/if}
               <DropdownMenu.Group>
                 <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
-                  >Status</DropdownMenu.Label
+                  >Visibility</DropdownMenu.Label
                 >
-                {#each statusFilterOptions as opt (opt.value)}
-                  <DropdownMenu.CheckboxItem
-                    closeOnSelect={false}
-                    checked={statusFilter.includes(opt.value)}
-                    onCheckedChange={() => onStatusToggle?.(opt.value)}
-                  >
-                    {opt.label}
-                  </DropdownMenu.CheckboxItem>
-                {/each}
+                <DropdownMenu.CheckboxItem
+                  closeOnSelect={false}
+                  checked={!showIsolatedResources}
+                  onCheckedChange={() => {
+                    showIsolatedResources = !showIsolatedResources;
+                    onShowIsolatedChange?.(showIsolatedResources);
+                  }}
+                >
+                  Hide isolated
+                </DropdownMenu.CheckboxItem>
               </DropdownMenu.Group>
-              <DropdownMenu.Separator />
-            {/if}
-            <DropdownMenu.Group>
-              <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
-                >Visibility</DropdownMenu.Label
-              >
-              <DropdownMenu.CheckboxItem
-                closeOnSelect={false}
-                checked={!showIsolatedResources}
-                onCheckedChange={() => {
-                  showIsolatedResources = !showIsolatedResources;
-                  onShowIsolatedChange?.(showIsolatedResources);
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+
+          <div class="flex-1"></div>
+
+          <!-- Search icon / expandable search -->
+          {#if searchExpanded}
+            <div class="flex items-center w-56 h-9 shrink-0">
+              <Search
+                bind:value={treeSearchQuery}
+                placeholder="Search resources..."
+                large
+                autofocus={true}
+                showBorderOnFocus={false}
+                retainValueOnMount
+              />
+              <button
+                class="h-9 w-9 flex items-center justify-center text-fg-primary shrink-0"
+                onclick={() => {
+                  searchExpanded = false;
+                  treeSearchQuery = "";
                 }}
               >
-                Hide isolated
-              </DropdownMenu.CheckboxItem>
-            </DropdownMenu.Group>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-
-        <div class="flex-1"></div>
-
-        <!-- Search icon / expandable search -->
-        {#if searchExpanded}
-          <div class="flex items-center w-56 h-9 shrink-0">
-            <Search
-              bind:value={treeSearchQuery}
-              placeholder="Search resources..."
-              large
-              autofocus={true}
-              showBorderOnFocus={false}
-              retainValueOnMount
-            />
+                <XIcon size="14px" />
+              </button>
+            </div>
+          {:else}
             <button
-              class="h-9 w-9 flex items-center justify-center text-fg-primary shrink-0"
-              onclick={() => {
-                searchExpanded = false;
-                treeSearchQuery = "";
-              }}
+              class="toolbar-icon-btn"
+              onclick={() => (searchExpanded = true)}
             >
-              <XIcon size="14px" />
+              <SearchIcon size="14px" />
+            </button>
+          {/if}
+        </div>
+
+        <!-- Divider -->
+        <hr
+          class="graph-divider border-t border-gray-200 my-0"
+          class:nav-collapsed={!$navigationOpen}
+          class:flush-toolbar={flushToolbar}
+        />
+
+        <!-- Filter pills row -->
+        {#if hasActiveFilters}
+          <div
+            class="filter-pills-row"
+            class:nav-collapsed={!$navigationOpen}
+            class:flush-toolbar={flushToolbar}
+          >
+            <div class="filter-pills-scroll">
+              {#if statusFilter.length > 0}
+                <button class="filter-pill" onclick={() => onClearFilters?.()}>
+                  <span
+                    >Status = {statusFilter
+                      .map(
+                        (s) =>
+                          statusFilterOptions.find((o) => o.value === s)
+                            ?.label ?? s,
+                      )
+                      .join(", ")}</span
+                  >
+                  <XIcon size="10px" />
+                </button>
+              {/if}
+              {#if showIsolatedResources}
+                <button
+                  class="filter-pill"
+                  onclick={() => {
+                    showIsolatedResources = false;
+                    onShowIsolatedChange?.(false);
+                  }}
+                >
+                  <span>Show isolated</span>
+                  <XIcon size="10px" />
+                </button>
+              {/if}
+            </div>
+            <button class="filter-pills-clear" onclick={handleClearFilters}>
+              Clear all
             </button>
           </div>
-        {:else}
-          <button
-            class="toolbar-icon-btn"
-            onclick={() => (searchExpanded = true)}
-          >
-            <SearchIcon size="14px" />
-          </button>
         {/if}
-
+      {/if}
+      <div class="sidebar-main" bind:clientWidth={sidebarMainWidth}>
+        {#if error}
+          <div class="state error">
+            <p>{error}</p>
+          </div>
+        {:else if isLoading || seedTransitionLoading}
+          <div class="state">
+            <div class="loading-state">
+              <LoadingSpinner size="1.5rem" />
+              <p>
+                {isLoading ? "Loading project graph..." : "Updating graphs..."}
+              </p>
+            </div>
+          </div>
+        {:else if isSprawlMode && sprawlLayout}
+          <GraphCanvas
+            flowId="sprawl"
+            resources={normalizedResources}
+            precomputedNodes={sprawlLayout.nodes}
+            precomputedEdges={sprawlLayout.edges}
+            title={null}
+            titleLabel={null}
+            titleErrorCount={null}
+            anchorError={false}
+            {showControls}
+            {showNodeActions}
+            showLock={false}
+            fillParent={true}
+            enableExpand={false}
+            {fitViewPadding}
+            {fitViewMinZoom}
+            {fitViewMaxZoom}
+          />
+        {:else if selectedGroup}
+          <GraphCanvas
+            flowId={selectedGroup.id}
+            resources={selectedGroup.resources}
+            title={null}
+            titleLabel={null}
+            titleErrorCount={null}
+            anchorError={false}
+            rootNodeIds={groupRootNodeIds(selectedGroup)}
+            {showControls}
+            {showNodeActions}
+            showLock={false}
+            fillParent={true}
+            enableExpand={false}
+            {fitViewPadding}
+            {fitViewMinZoom}
+            {fitViewMaxZoom}
+          />
+        {:else}
+          <div class="state">
+            <p>No resources match the current filters.</p>
+          </div>
+        {/if}
       </div>
-
-      <!-- Divider -->
-      <hr
-        class="border-t border-gray-200 my-0"
-        class:flush-toolbar={flushToolbar}
-      />
-
-      <!-- Filter pills row -->
-      {#if hasActiveFilters}
-        <div
-          class="filter-pills-row"
-          class:flush-toolbar={flushToolbar}
-        >
-          <div class="filter-pills-scroll">
-            {#if statusFilter.length > 0}
-              <button
-                class="filter-pill"
-                onclick={() => onClearFilters?.()}
-              >
-                <span>Status = {statusFilter
-                  .map((s) => statusFilterOptions.find((o) => o.value === s)?.label ?? s)
-                  .join(", ")}</span>
-                <XIcon size="10px" />
-              </button>
-            {/if}
-            {#if showIsolatedResources}
-              <button
-                class="filter-pill"
-                onclick={() => {
-                  showIsolatedResources = false;
-                  onShowIsolatedChange?.(false);
-                }}
-              >
-                <span>Show isolated</span>
-                <XIcon size="10px" />
-              </button>
-            {/if}
-          </div>
-          <button
-            class="filter-pills-clear"
-            onclick={handleClearFilters}
-          >
-            Clear all
-          </button>
-        </div>
-      {/if}
-    {/if}
-    <div class="sidebar-main" bind:clientWidth={sidebarMainWidth}>
-      {#if error}
-        <div class="state error">
-          <p>{error}</p>
-        </div>
-      {:else if isLoading || seedTransitionLoading}
-        <div class="state">
-          <div class="loading-state">
-            <LoadingSpinner size="1.5rem" />
-            <p>
-              {isLoading ? "Loading project graph..." : "Updating graphs..."}
-            </p>
-          </div>
-        </div>
-      {:else if isSprawlMode && sprawlLayout}
-        <GraphCanvas
-          flowId="sprawl"
-          resources={normalizedResources}
-          precomputedNodes={sprawlLayout.nodes}
-          precomputedEdges={sprawlLayout.edges}
-          title={null}
-          titleLabel={null}
-          titleErrorCount={null}
-          anchorError={false}
-          {showControls}
-          {showNodeActions}
-          showLock={false}
-          fillParent={true}
-          enableExpand={false}
-          {fitViewPadding}
-          {fitViewMinZoom}
-          {fitViewMaxZoom}
-        />
-      {:else if selectedGroup}
-        <GraphCanvas
-          flowId={selectedGroup.id}
-          resources={selectedGroup.resources}
-          title={null}
-          titleLabel={null}
-          titleErrorCount={null}
-          anchorError={false}
-          rootNodeIds={groupRootNodeIds(selectedGroup)}
-          {showControls}
-          {showNodeActions}
-          showLock={false}
-          fillParent={true}
-          enableExpand={false}
-          {fitViewPadding}
-          {fitViewMinZoom}
-          {fitViewMaxZoom}
-        />
-      {:else}
-        <div class="state">
-          <p>No resources match the current filters.</p>
-        </div>
-      {/if}
-    </div>
     </section>
   {:else if error}
     <div class="state error">
@@ -1213,24 +1208,43 @@
   }
 
   .filter-trigger {
-    @apply flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
+    @apply flex items-center gap-1.5 px-4 rounded-sm bg-primary-50 text-sm text-primary-600;
+    height: 36px;
   }
   :global(.dark) .filter-trigger {
-    @apply bg-surface-background text-primary-500;
+    @apply bg-surface-active text-primary-500;
   }
   .filter-trigger:hover {
     @apply bg-primary-100;
   }
   :global(.dark) .filter-trigger:hover {
-    @apply bg-surface-muted;
+    @apply bg-surface-hover;
   }
 
   .filter-badge {
     @apply text-[10px] font-semibold bg-primary-500 text-white rounded-full w-4 h-4 flex items-center justify-center;
   }
 
+  .graph-divider {
+    @apply mx-2;
+    transition: margin-left 300ms ease-in-out;
+  }
+
+  .graph-divider.nav-collapsed {
+    margin-left: 44px;
+  }
+
+  .graph-divider.flush-toolbar {
+    @apply mx-0;
+  }
+
   .filter-pills-row {
     @apply flex items-center min-h-7 relative px-2;
+    transition: padding-left 300ms ease-in-out;
+  }
+
+  .filter-pills-row.nav-collapsed {
+    padding-left: 44px;
   }
 
   .filter-pills-row.flush-toolbar {
