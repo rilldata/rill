@@ -13,14 +13,14 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import type {
-    Cell,
-    Column,
-    HeaderGroup,
-    Row,
-  } from "tanstack-table-8-svelte-5";
+  import type { Column, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import {
+    computeEffectiveDimIdx,
+    flatCellState,
+    flatRowState,
+  } from "./pivot-cell-classes";
   import {
     type PivotClickSelectionState,
     dimKeyFromRow,
@@ -95,19 +95,8 @@
     return measures.find((m) => m.name === columnId);
   }
 
-  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
-    return (
-      cell.row.id === activeCell?.rowId &&
-      cell.column.id === activeCell?.columnId
-    );
-  }
-
-  function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
-    const dk = dimKeyFromRow(
-      cell.row.original,
-      config?.rowDimensionNames ?? [],
-    );
-    return clickSelection?.isCellSelected(dk, cell.column.id) ?? false;
+  function isCellActive(rowId: string, columnId: string) {
+    return rowId === activeCell?.rowId && columnId === activeCell?.columnId;
   }
 
   $: lastDimIdx = (config?.rowDimensionNames.length ?? 0) - 1;
@@ -211,58 +200,51 @@
       {@const rowId = rows[row.index].id}
       {@const rowData = rows[row.index].original}
       {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
-      {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
-      {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
       {@const isTotalsRow = !!totalsRow && rowId === "0"}
+      {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
       {@const hasClickedCell =
         clickSelection?.hasSelectedCellInRow(dk) ?? false}
-      {@const clickedDimIdx =
-        clickSelection?.getClickedDimensionIndex(dk) ?? -1}
-      {@const effectiveDimIdx = hasClickedCell
-        ? clickedDimIdx >= 0
-          ? clickedDimIdx
-          : lastDimIdx
-        : isSelected
-          ? (rowSelectionState?.maxFilteredDimensionIndex ?? -1)
-          : -1}
-      <tr
-        class:selected-row={isSelected &&
-          !hasClickedCell &&
-          effectiveDimIdx < 0}
-        class:dimmed-row={hasSelection && !isSelected && !hasClickedCell}
-      >
+      {@const effectiveDimIdx = computeEffectiveDimIdx(
+        hasClickedCell,
+        clickSelection?.getClickedDimensionIndex(dk) ?? -1,
+        lastDimIdx,
+        isSelected,
+        rowSelectionState?.maxFilteredDimensionIndex ?? -1,
+      )}
+      {@const rs = flatRowState({
+        isSelected,
+        hasSelection: rowSelectionState?.hasActiveSelection ?? false,
+        hasClickedCell,
+        effectiveDimIdx,
+      })}
+      <tr class:selected-row={rs.selectedRow} class:dimmed-row={rs.dimmedRow}>
         {#each cells as cell (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
-          {@const isActive = isCellActive(cell)}
-          {@const isClicked = isCellClicked(cell)}
-          {@const colDimIdx =
-            config?.rowDimensionNames.indexOf(cell.column.id) ?? -1}
-          {@const isLeftOfClick =
-            effectiveDimIdx >= 0 &&
-            (colDimIdx >= 0
-              ? colDimIdx <= effectiveDimIdx
-              : effectiveDimIdx === lastDimIdx)}
-          {@const isMutedCell =
-            (effectiveDimIdx >= 0 && colDimIdx > effectiveDimIdx) ||
-            (colDimIdx === -1 &&
-              effectiveDimIdx >= 0 &&
-              effectiveDimIdx < lastDimIdx)}
+          {@const cs = flatCellState({
+            isActive: isCellActive(cell.row.id, cell.column.id),
+            isClicked:
+              clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
+            colDimIdx: config?.rowDimensionNames.indexOf(cell.column.id) ?? -1,
+            effectiveDimIdx,
+            lastDimIdx,
+            isTotalsRow,
+            canShowDataViewer,
+            enableClickToFilter,
+            hasValue: cell.getValue() !== undefined,
+          })}
           {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
             ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
             : cell.getValue()}
           <td
             class="ui-copy-number cell truncate"
-            class:active-cell={isActive}
-            class:selected-cell={isClicked}
-            class:selected-context-cell={isLeftOfClick}
-            class:muted-cell={isMutedCell}
-            class:interactive-cell={(isTotalsRow
-              ? canShowDataViewer
-              : canShowDataViewer || enableClickToFilter) &&
-              cell.getValue() !== undefined}
+            class:active-cell={cs.activeCell}
+            class:selected-cell={cs.selectedCell}
+            class:selected-context-cell={cs.selectedContextCell}
+            class:muted-cell={cs.mutedCell}
+            class:interactive-cell={cs.interactiveCell}
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
             class:total-label={cell.getValue() === "Total"}

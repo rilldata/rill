@@ -7,9 +7,14 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import type { Cell, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
+  import type { HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import {
+    nestedCellState,
+    nestedHeaderState,
+    nestedRowState,
+  } from "./pivot-cell-classes";
   import {
     type PivotClickSelectionState,
     dimKeyFromRow,
@@ -25,6 +30,16 @@
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import {
+    computeAncestorRowIds,
+    computeCellSelectedColIndices,
+    computeSelectedColIndices,
+    type HoveredColRange,
+    isHeaderInHoveredRange,
+    isHoveredHeader,
+    isInCellSelectedColRange,
+    isInSelectedColRange,
+  } from "./pivot-selection-indices";
   import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
@@ -62,82 +77,22 @@
   const HEADER_HEIGHT = 30;
 
   // Hover state for column dimension headers
-  let hoveredColRange: { start: number; size: number } | null = null;
+  let hoveredColRange: HoveredColRange | null = null;
 
-  // Compute which leaf column indices are covered by selected column headers.
-  // Iterates header groups to find selected headers and collects their ranges.
   $: hasCrossSelection = clickSelection?.hasCrossSelection ?? false;
-
-  $: selectedColIndices = (() => {
-    if (!clickSelection?.hasAnySelection) return new Set<number>();
-    const indices = new Set<number>();
-    for (const group of headerGroups) {
-      let colStart = 0;
-      for (const header of group.headers) {
-        const meta = header.column.columnDef.meta;
-        if (
-          meta?.dimensionPath &&
-          clickSelection.isColumnHeaderSelected(meta.dimensionPath)
-        ) {
-          for (let c = colStart; c < colStart + header.colSpan; c++) {
-            indices.add(c);
-          }
-        }
-        colStart += header.colSpan;
-      }
-    }
-    return indices;
-  })();
-
-  // Compute which leaf column indices have a cell selected via click-to-filter.
-  // Uses the last header group (leaf columns) to map column IDs to indices.
-  $: cellSelectedColIndices = (() => {
-    if (!clickSelection?.selectedCellColumnIds?.size) return new Set<number>();
-    const leafGroup = headerGroups[headerGroups.length - 1];
-    if (!leafGroup) return new Set<number>();
-    const indices = new Set<number>();
-    let colIdx = 0;
-    for (const header of leafGroup.headers) {
-      if (clickSelection.selectedCellColumnIds.has(header.column.id)) {
-        indices.add(colIdx);
-      }
-      colIdx += header.colSpan;
-    }
-    return indices;
-  })();
-
-  // Compute TanStack row IDs that are ancestors of any selected child row
-  // (row header click or cell click). Used to highlight parent row headers.
-  $: ancestorRowIdsOfSelectedHeaders = (() => {
-    if (!clickSelection?.hasAnySelection) return new Set<string>();
-    const ancestorIds = new Set<string>();
-    for (const row of rows) {
-      const dk = dimKeyFromRow(row.original, rowDimensionNames);
-      if (
-        clickSelection.isRowHeaderSelected(dk) ||
-        clickSelection.hasSelectedCellInRow(dk)
-      ) {
-        let id = row.id;
-        while (id.includes(".")) {
-          id = id.substring(0, id.lastIndexOf("."));
-          ancestorIds.add(id);
-        }
-      }
-    }
-    return ancestorIds;
-  })();
-
-  // Check if a header (by its leaf column range) contains any cell-selected columns
-  function isInCellSelectedColRange(
-    colStart: number,
-    colSpan: number,
-  ): boolean {
-    if (cellSelectedColIndices.size === 0) return false;
-    for (let i = colStart; i < colStart + colSpan; i++) {
-      if (cellSelectedColIndices.has(i)) return true;
-    }
-    return false;
-  }
+  $: selectedColIndices = computeSelectedColIndices(
+    clickSelection,
+    headerGroups,
+  );
+  $: cellSelectedColIndices = computeCellSelectedColIndices(
+    clickSelection,
+    headerGroups,
+  );
+  $: ancestorRowIdsOfSelectedHeaders = computeAncestorRowIds(
+    clickSelection,
+    rows,
+    rowDimensionNames,
+  );
 
   let resizingMeasure = false;
   let initialMeasureIndexOnResize = 0;
@@ -243,50 +198,8 @@
     percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
   }
 
-  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
-    return (
-      cell.row.id === activeCell?.rowId &&
-      cell.column.id === activeCell?.columnId
-    );
-  }
-
-  function isCellClicked(cell: Cell<PivotDataRow, unknown>) {
-    const dk = dimKeyFromRow(cell.row.original, rowDimensionNames);
-    return clickSelection?.isCellSelected(dk, cell.column.id) ?? false;
-  }
-
-  function isHeaderInHoveredRange(
-    headerStart: number,
-    headerSize: number,
-  ): boolean {
-    if (!hoveredColRange) return false;
-    const hovEnd = hoveredColRange.start + hoveredColRange.size;
-    return (
-      headerStart >= hoveredColRange.start && headerStart + headerSize <= hovEnd
-    );
-  }
-
-  function isHoveredHeader(colStart: number, colSpan: number): boolean {
-    if (!hoveredColRange) return false;
-    return (
-      colStart === hoveredColRange.start && colSpan === hoveredColRange.size
-    );
-  }
-
-  // Returns true if this header should be highlighted as falling within a
-  // selected column range (i.e. it is a child of the clicked header).
-  function isInSelectedColRange(
-    colStart: number,
-    colSpan: number,
-    isSelfSelected: boolean,
-  ): boolean {
-    if (selectedColIndices.size === 0 || colSpan === 0 || isSelfSelected) {
-      return false;
-    }
-    for (let i = colStart; i < colStart + colSpan; i++) {
-      if (!selectedColIndices.has(i)) return false;
-    }
-    return true;
+  function isCellActive(rowId: string, columnId: string) {
+    return rowId === activeCell?.rowId && columnId === activeCell?.columnId;
   }
 
   function shouldShowHeaderRightBorder(header: any, index: number): boolean {
@@ -430,41 +343,51 @@
           {@const colStart = headerGroup.headers
             .slice(0, i)
             .reduce((sum, h) => sum + h.colSpan, 0)}
-          {@const inHoverRange =
-            hoveredColRange && isHeaderInHoveredRange(colStart, header.colSpan)}
-          {@const isTheHoveredHeader =
-            inHoverRange && isHoveredHeader(colStart, header.colSpan)}
+          {@const inHoverRange = isHeaderInHoveredRange(
+            colStart,
+            header.colSpan,
+            hoveredColRange,
+          )}
           {@const isSelfSelected =
             isColDimHeader &&
             !!dimMeta.dimensionPath &&
             (clickSelection?.isColumnHeaderSelected(dimMeta.dimensionPath) ??
               false)}
-          {@const inSelectedRange = isInSelectedColRange(
-            colStart,
-            header.colSpan,
+          {@const hs = nestedHeaderState({
+            isTheHoveredHeader:
+              inHoverRange &&
+              isHoveredHeader(colStart, header.colSpan, hoveredColRange),
+            inHoverRange,
             isSelfSelected,
-          )}
-          {@const inCellSelectedCol = isInCellSelectedColRange(
-            colStart,
-            header.colSpan,
-          )}
-          {@const isAncestorOfSelected =
-            isColDimHeader &&
-            !isSelfSelected &&
-            !!dimMeta.dimensionPath &&
-            (clickSelection?.isAncestorOfSelectedColumnHeader(
-              dimMeta.dimensionPath,
-            ) ??
-              false)}
+            inSelectedRange: isInSelectedColRange(
+              colStart,
+              header.colSpan,
+              isSelfSelected,
+              selectedColIndices,
+            ),
+            inCellSelectedCol: isInCellSelectedColRange(
+              colStart,
+              header.colSpan,
+              cellSelectedColIndices,
+            ),
+            isAncestorOfSelected:
+              isColDimHeader &&
+              !isSelfSelected &&
+              !!dimMeta.dimensionPath &&
+              (clickSelection?.isAncestorOfSelectedColumnHeader(
+                dimMeta.dimensionPath,
+              ) ??
+                false),
+          })}
 
           <th
             colSpan={header.colSpan}
-            class:col-dim-hover-self={isTheHoveredHeader}
-            class:col-dim-hover-child={inHoverRange && !isTheHoveredHeader}
-            class:selected-col-header={isSelfSelected}
-            class:in-selected-col-range={inSelectedRange}
-            class:cell-selected-col-header={inCellSelectedCol}
-            class:ancestor-selected-col-header={isAncestorOfSelected}
+            class:col-dim-hover-self={hs.colDimHoverSelf}
+            class:col-dim-hover-child={hs.colDimHoverChild}
+            class:selected-col-header={hs.selectedColHeader}
+            class:in-selected-col-range={hs.inSelectedColRange}
+            class:cell-selected-col-header={hs.cellSelectedColHeader}
+            class:ancestor-selected-col-header={hs.ancestorSelectedColHeader}
             onmouseenter={() => {
               if (isColDimHeader) {
                 hoveredColRange = {
@@ -526,62 +449,62 @@
       {@const isSelected =
         rowSelectionState?.isRowSelected(rowData, rows[row.index].depth) ??
         false}
-      {@const hasSelection = rowSelectionState?.hasActiveSelection ?? false}
       {@const isRowHeaderSelected =
         clickSelection?.isRowHeaderSelected(dk) ?? false}
       {@const hasClickedCell =
         clickSelection?.hasSelectedCellInRow(dk) ?? false}
       {@const isAncestorOfSelectedHeader =
         ancestorRowIdsOfSelectedHeaders.has(rowId)}
+      {@const rs = nestedRowState({
+        isSelected,
+        hasSelection: rowSelectionState?.hasActiveSelection ?? false,
+        isRowHeaderSelected,
+        hasClickedCell,
+        hasCrossSelection,
+        isAncestorOfSelectedHeader,
+        isShowMore: isShowMoreRow(rows[row.index]),
+      })}
       <tr
-        class:show-more-row={isShowMoreRow(rows[row.index])}
-        class:selected-row={isSelected &&
-          isRowHeaderSelected &&
-          !hasCrossSelection}
-        class:dimmed-row={hasSelection &&
-          !isSelected &&
-          !hasClickedCell &&
-          !isAncestorOfSelectedHeader}
-        class:ancestor-of-selected-row={isAncestorOfSelectedHeader}
+        class:show-more-row={rs.showMoreRow}
+        class:selected-row={rs.selectedRow}
+        class:dimmed-row={rs.dimmedRow}
+        class:ancestor-of-selected-row={rs.ancestorOfSelectedRow}
       >
         {#each cells as cell, i (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
-          {@const isActive = isCellActive(cell)}
-          {@const isClicked = isCellClicked(cell)}
-          {@const inHoveredCol =
-            hoveredColRange && isHeaderInHoveredRange(i, 1)}
-          {@const inSelectedCol = selectedColIndices.has(i)}
-          {@const isIntersectionCell =
-            hasCrossSelection && isRowHeaderSelected && inSelectedCol && i > 0}
-          {@const isRowArmCell =
-            hasCrossSelection && isRowHeaderSelected && !inSelectedCol && i > 0}
-          {@const isColArmCell =
-            hasCrossSelection &&
-            inSelectedCol &&
-            !isRowHeaderSelected &&
-            !isAncestorOfSelectedHeader}
-          {@const isCrossSelectedRowHeader =
-            hasCrossSelection && isRowHeaderSelected && i === 0}
+          {@const cs = nestedCellState({
+            isActive: isCellActive(cell.row.id, cell.column.id),
+            isClicked:
+              clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
+            cellIndex: i,
+            hasClickedCell,
+            inHoveredCol: isHeaderInHoveredRange(i, 1, hoveredColRange),
+            inSelectedCol: selectedColIndices.has(i),
+            isRowHeaderSelected,
+            hasCrossSelection,
+            isAncestorOfSelectedHeader,
+            isTotalsRow,
+            canShowDataViewer,
+            enableClickToFilter,
+          })}
           {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
             ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
             : cell.getValue()}
           <td
             class="ui-copy-number cell truncate group/cell"
-            class:active-cell={isActive}
-            class:selected-cell={isClicked}
-            class:col-dim-hover-body={inHoveredCol}
-            class:selected-col-body={inSelectedCol && !hasCrossSelection}
-            class:cell-selected-row-header={i === 0 && hasClickedCell}
-            class:cross-intersection={isIntersectionCell}
-            class:cross-row-arm={isRowArmCell}
-            class:cross-col-arm={isColArmCell}
-            class:cross-selected-row-header={isCrossSelectedRowHeader}
-            class:interactive-cell={isTotalsRow
-              ? canShowDataViewer
-              : canShowDataViewer || enableClickToFilter}
+            class:active-cell={cs.activeCell}
+            class:selected-cell={cs.selectedCell}
+            class:col-dim-hover-body={cs.colDimHoverBody}
+            class:selected-col-body={cs.selectedColBody}
+            class:cell-selected-row-header={cs.cellSelectedRowHeader}
+            class:cross-intersection={cs.crossIntersection}
+            class:cross-row-arm={cs.crossRowArm}
+            class:cross-col-arm={cs.crossColArm}
+            class:cross-selected-row-header={cs.crossSelectedRowHeader}
+            class:interactive-cell={cs.interactiveCell}
             class:border-r={shouldShowRightBorder(i)}
             data-value={tooltipValue}
             data-rowid={cell.row.id}
