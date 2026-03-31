@@ -8,6 +8,7 @@
     searchUsers,
     createDeleteUserMutation,
   } from "@rilldata/web-admin/features/superuser/users/selectors";
+  import { getAdminServiceSearchUsersQueryKey } from "@rilldata/web-admin/client";
   import { assumedUser } from "@rilldata/web-admin/features/superuser/users/assume-state";
   import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -50,7 +51,7 @@
         message: `User ${deleteEmail} deleted`,
       });
       await queryClient.invalidateQueries({
-        predicate: (q) => q.queryKey[0] === "/v1/users/search",
+        queryKey: getAdminServiceSearchUsersQueryKey(),
       });
     } catch (err) {
       deleteError = `Failed to delete user: ${err}`;

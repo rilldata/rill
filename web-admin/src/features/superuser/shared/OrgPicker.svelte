@@ -95,7 +95,10 @@
       <div
         class="absolute z-10 left-0 right-0 mt-1 rounded-md border bg-surface-base shadow-md p-2"
       >
-        <p class="text-sm text-fg-secondary">No organizations found</p>
+        <p class="text-sm text-fg-secondary">
+          No organizations found. Note: orgs with zero projects won't appear in
+          search.
+        </p>
       </div>
     {/if}
   {/if}

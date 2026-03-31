@@ -7,6 +7,7 @@
     getOrgForQuotas,
     createUpdateOrgQuotasMutation,
   } from "@rilldata/web-admin/features/superuser/quotas/selectors";
+  import { getAdminServiceGetOrganizationQueryKey } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   let activeOrg = "";
@@ -66,9 +67,7 @@
         message: `Quotas updated for org: ${activeOrg}`,
       });
       await queryClient.invalidateQueries({
-        predicate: (q) =>
-          (q.queryKey[0] as string)?.includes("/v1/superuser/quotas") ||
-          (q.queryKey[0] as string)?.includes("/v1/organizations"),
+        queryKey: getAdminServiceGetOrganizationQueryKey(activeOrg),
       });
     } catch (err) {
       eventBus.emit("notification", {

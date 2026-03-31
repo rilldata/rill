@@ -2,6 +2,7 @@
   import {
     createAdminServiceListSuperusers,
     createAdminServiceSetSuperuser,
+    getAdminServiceListSuperusersQueryKey,
   } from "@rilldata/web-admin/client";
   import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -32,7 +33,7 @@
       });
       newEmail = "";
       await queryClient.invalidateQueries({
-        predicate: (q) => (q.queryKey[0] as string)?.includes("/v1/superuser"),
+        queryKey: getAdminServiceListSuperusersQueryKey(),
       });
     } catch (err) {
       eventBus.emit("notification", {
@@ -54,7 +55,7 @@
         message: `${removeTarget} removed as superuser`,
       });
       await queryClient.invalidateQueries({
-        predicate: (q) => (q.queryKey[0] as string)?.includes("/v1/superuser"),
+        queryKey: getAdminServiceListSuperusersQueryKey(),
       });
     } catch (err) {
       eventBus.emit("notification", {

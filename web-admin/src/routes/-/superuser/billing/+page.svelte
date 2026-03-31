@@ -3,7 +3,10 @@
   import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { V1BillingIssueType } from "@rilldata/web-admin/client";
+  import {
+    type V1BillingIssueType,
+    getAdminServiceListOrganizationBillingIssuesQueryKey,
+  } from "@rilldata/web-admin/client";
   import {
     getBillingSetupURL,
     createExtendTrialMutation,
@@ -100,9 +103,7 @@
         message: `Billing issue "${deleteIssueType}" deleted for ${deleteIssueOrg}`,
       });
       await queryClient.invalidateQueries({
-        predicate: (q) =>
-          (q.queryKey[0] as string)?.includes("/v1/organizations") ||
-          (q.queryKey[0] as string)?.includes("/v1/superuser/billing"),
+        queryKey: getAdminServiceListOrganizationBillingIssuesQueryKey(deleteIssueOrg),
       });
     } catch (err) {
       eventBus.emit("notification", {
