@@ -203,7 +203,7 @@
   </div>
 
   <!-- Row 2: [Filter button] ...spacer... [search] [Grid/List] -->
-  <div class="flex items-center gap-x-2 min-h-8">
+  <div class="flex items-center min-h-8">
     <!-- Filter dropdown -->
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
       <DropdownMenu.Trigger>
@@ -262,16 +262,17 @@
 
     <!-- Search icon / expandable search -->
     {#if searchExpanded}
-      <div class="flex items-center w-56 shrink-0">
+      <div class="flex items-center w-56 h-9 shrink-0">
         <Search
           bind:value={searchText}
           placeholder="Search resources..."
+          large
           autofocus={true}
           showBorderOnFocus={false}
           retainValueOnMount
         />
         <button
-          class="ml-1 p-1 text-fg-primary hover:bg-surface-hover rounded-sm"
+          class="h-9 w-9 flex items-center justify-center text-fg-primary shrink-0"
           onclick={toggleSearchExpanded}
         >
           <XIcon size="14px" />
@@ -287,17 +288,17 @@
     {/if}
 
     <!-- Grid / List toggle -->
-    <div class="view-toggle">
+    <div class="view-toggle ml-0.5">
       <a href="{basePath}/graph" class="toggle-btn" class:active={isGraphView}>
-        <LayoutGridIcon size="14px" />
+        <LayoutGridIcon size="16px" />
       </a>
       <a href={basePath} class="toggle-btn" class:active={!isGraphView}>
-        <ListIcon size="14px" />
+        <ListIcon size="16px" />
       </a>
     </div>
   </div>
 
-  <hr class="border-t border-gray-200 -mt-1 mb-1" />
+  <hr class="border-t border-gray-200 my-0" />
 
   <!-- Row 3: Filter pills + Clear all (when any filter or search is active) -->
   {#if hasActiveFilters}
@@ -375,10 +376,16 @@
 
 <style lang="postcss">
   .filter-trigger {
-    @apply flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
+    @apply flex items-center gap-1.5 h-9 px-4 rounded-sm bg-primary-50 text-sm text-primary-600;
+  }
+  :global(.dark) .filter-trigger {
+    @apply bg-surface-background text-primary-500;
   }
   .filter-trigger:hover {
     @apply bg-primary-100;
+  }
+  :global(.dark) .filter-trigger:hover {
+    @apply bg-surface-muted;
   }
 
   .filter-badge {
@@ -386,7 +393,7 @@
   }
 
   .filter-pills-row {
-    @apply flex items-center min-h-7 relative;
+    @apply flex items-center h-9 relative;
   }
 
   .filter-pills-scroll {
@@ -398,24 +405,21 @@
   }
 
   .filter-pill {
-    @apply flex items-center gap-1.5 text-xs font-medium text-fg-primary border border-gray-300 rounded-sm px-2 py-1 whitespace-nowrap shrink-0;
+    @apply flex items-center gap-1.5 h-7 text-xs font-medium text-fg-primary border border-gray-300 rounded-sm px-2 whitespace-nowrap shrink-0;
   }
   .filter-pill:hover {
     @apply bg-surface-hover;
   }
 
   .toolbar-icon-btn {
-    @apply p-1.5 rounded-sm text-fg-primary;
-  }
-  .toolbar-icon-btn:hover {
-    @apply bg-surface-hover;
+    @apply h-9 w-9 flex items-center justify-center text-fg-primary;
   }
 
   .view-toggle {
-    @apply flex rounded-sm border border-gray-200 overflow-hidden shrink-0;
+    @apply flex rounded-sm border border-gray-200 overflow-hidden shrink-0 w-16 h-9;
   }
   .toggle-btn {
-    @apply flex items-center p-1.5 text-fg-primary no-underline;
+    @apply flex items-center justify-center w-8 h-full text-fg-primary no-underline;
   }
   .toggle-btn:hover {
     @apply bg-surface-hover;

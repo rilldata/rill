@@ -863,6 +863,7 @@
 >
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
+    <section class="flex flex-col gap-y-3 flex-1 min-h-0">
     {#if showToolbar}
       <!-- Row 1: Title + Refresh -->
       {#if showTitle}
@@ -947,16 +948,17 @@
 
         <!-- Search icon / expandable search -->
         {#if searchExpanded}
-          <div class="flex items-center w-56 shrink-0">
+          <div class="flex items-center w-56 h-9 shrink-0">
             <Search
               bind:value={treeSearchQuery}
               placeholder="Search resources..."
+              large
               autofocus={true}
               showBorderOnFocus={false}
               retainValueOnMount
             />
             <button
-              class="ml-1 p-1 text-fg-primary hover:bg-surface-hover rounded-sm"
+              class="h-9 w-9 flex items-center justify-center text-fg-primary shrink-0"
               onclick={() => {
                 searchExpanded = false;
                 treeSearchQuery = "";
@@ -978,9 +980,8 @@
 
       <!-- Divider -->
       <hr
-        class="border-t border-gray-200 -mt-1 mb-3"
+        class="border-t border-gray-200 my-0"
         class:flush-toolbar={flushToolbar}
-        style={flushToolbar ? "" : "margin-left: 0.5rem; margin-right: 0.5rem;"}
       />
 
       <!-- Filter pills row -->
@@ -1080,6 +1081,7 @@
         </div>
       {/if}
     </div>
+    </section>
   {:else if error}
     <div class="state error">
       <p>{error}</p>
@@ -1198,7 +1200,7 @@
   }
 
   .graph-toolbar-bar {
-    @apply flex flex-row items-center min-h-[3rem] flex-none gap-x-2 px-2;
+    @apply flex flex-row items-center min-h-[3rem] flex-none px-2;
     transition: padding-left 300ms ease-in-out;
   }
 
@@ -1213,8 +1215,14 @@
   .filter-trigger {
     @apply flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
   }
+  :global(.dark) .filter-trigger {
+    @apply bg-surface-background text-primary-500;
+  }
   .filter-trigger:hover {
     @apply bg-primary-100;
+  }
+  :global(.dark) .filter-trigger:hover {
+    @apply bg-surface-muted;
   }
 
   .filter-badge {
@@ -1245,10 +1253,7 @@
   }
 
   .toolbar-icon-btn {
-    @apply p-1.5 rounded-sm text-fg-primary;
-  }
-  .toolbar-icon-btn:hover {
-    @apply bg-surface-hover;
+    @apply h-9 w-9 flex items-center justify-center text-fg-primary;
   }
 
   .graph-title-bar {
