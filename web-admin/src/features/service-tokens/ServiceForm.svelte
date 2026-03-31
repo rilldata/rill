@@ -56,15 +56,16 @@
       >Applies across all projects. Use "None" for project-only access.</span
     >
     <Select.Root
-      onSelectedChange={(v) => {
-        if (v) orgRole = v.value;
+      type="single"
+      value={orgRole}
+      onValueChange={(v) => {
+        if (v) orgRole = v;
       }}
-      selected={orgRole
-        ? { value: orgRole, label: formatOrgRole(orgRole) }
-        : undefined}
     >
       <Select.Trigger>
-        <Select.Value placeholder="Select a role" />
+        <span class="text-sm {orgRole ? 'text-fg-primary' : 'text-fg-secondary'}"
+          >{orgRole ? formatOrgRole(orgRole) : "Select a role"}</span
+        >
       </Select.Trigger>
       <Select.Content>
         {#each ORG_ROLES as role}
@@ -89,16 +90,16 @@
       <div class="flex items-center gap-x-2">
         <div class="flex-1">
           <Select.Root
-            onSelectedChange={(v) => {
-              if (v) projectAssignments[index].project = v.value;
-            }}
-            selected={{
-              value: assignment.project,
-              label: assignment.project,
+            type="single"
+            value={assignment.project}
+            onValueChange={(v) => {
+              if (v) projectAssignments[index].project = v;
             }}
           >
             <Select.Trigger>
-              <Select.Value placeholder="Select project" />
+              <span class="text-sm text-fg-primary"
+                >{assignment.project || "Select project"}</span
+              >
             </Select.Trigger>
             <Select.Content>
               {#each allProjects as project}
@@ -115,16 +116,16 @@
         </div>
         <div class="w-28">
           <Select.Root
-            onSelectedChange={(v) => {
-              if (v) projectAssignments[index].role = v.value;
-            }}
-            selected={{
-              value: assignment.role,
-              label: capitalize(assignment.role),
+            type="single"
+            value={assignment.role}
+            onValueChange={(v) => {
+              if (v) projectAssignments[index].role = v;
             }}
           >
             <Select.Trigger>
-              <Select.Value placeholder="Role" />
+              <span class="text-sm text-fg-primary"
+                >{capitalize(assignment.role)}</span
+              >
             </Select.Trigger>
             <Select.Content>
               {#each PROJECT_ROLES as role}

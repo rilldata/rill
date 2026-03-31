@@ -24,14 +24,14 @@
     <DropdownMenu.Content align="end" class="min-w-[140px]">
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => onManageTokens(name)}
+        onclick={() => onManageTokens(name)}
       >
         <KeyRound size="12px" />
         <span class="ml-2">Manage tokens</span>
       </DropdownMenu.Item>
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => {
+        onclick={() => {
           isEditDialogOpen = true;
         }}
       >
@@ -41,7 +41,7 @@
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={() => {
+        onclick={() => {
           isDeleteDialogOpen = true;
         }}
       >
