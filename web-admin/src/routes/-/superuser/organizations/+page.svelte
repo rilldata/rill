@@ -161,7 +161,7 @@
           <Button
             large
             class="font-normal"
-            type="destructive"
+            type="secondary-destructive"
             disabled={!org.name}
             onClick={() => {
               deleteOrgName = org.name ?? "";
