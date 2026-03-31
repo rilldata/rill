@@ -1,5 +1,5 @@
 ---
-title: Deploying your Rill Project from Local
+title: Local Deploy
 sidebar_label: Local Deploy
 sidebar_position: 10
 ---
@@ -12,6 +12,17 @@ Two options:
 
 - **Direct upload** — Push a snapshot of your project to Rill Cloud. You push updates manually. Good for solo work or getting started fast.
 - **GitHub-connected** — Link a GitHub repo for continuous deployment. Best for teams and production workflows.
+
+## Deploy with an AI agent
+
+If you're using an AI coding agent like [Claude Code](https://claude.ai/code) or [Cursor](https://www.cursor.com/), you can ask it to deploy your project directly. The agent will run the same CLI commands described below on your behalf, read any errors from `rill project status`, and iterate — all without leaving your editor.
+
+**Example prompts:**
+
+- *"Deploy my Rill project to Rill Cloud."* → runs `rill project deploy`
+- *"Connect my project to GitHub and set up continuous deployment."* → runs `rill project connect-github`
+- *"Create a new GitHub repo for this project and connect it to Rill Cloud."* → runs `rill project connect-github` and handles repo creation
+- *"Check my deployment status and fix any errors."* → runs `rill project status`
 
 ## Deploy without GitHub
 
