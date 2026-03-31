@@ -50,6 +50,11 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import {
+    FilterIcon,
+    SearchIcon,
+    XIcon,
+  } from "lucide-svelte";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -363,6 +368,9 @@
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // Whether any filters are active (URL params, status, or tree search)
+  $: activeFilterCount =
+    statusFilter.length +
+    (!showIsolatedResources ? 0 : 0); // extend as needed
   $: hasActiveFilters =
     hasUrlFilters ||
     statusFilter.length > 0 ||
@@ -383,6 +391,8 @@
 
   let resourceDropdownOpen = false;
   let statusDropdownOpen = false;
+  let filterDropdownOpen = false;
+  let searchExpanded = false;
   let treeSearchQuery = "";
 
   // Sync search bar with URL-selected resource on initial navigation
@@ -393,6 +403,7 @@
       ? (selectedGroupId.split(":").pop() ?? selectedGroupId)
       : selectedGroupId;
     treeSearchQuery = name;
+    searchExpanded = true;
     lastSyncedGroupId = selectedGroupId;
   }
 
@@ -853,164 +864,164 @@
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
     {#if showToolbar}
+      <!-- Row 1: Title + Refresh -->
       {#if showTitle}
-        <h2
-          class="graph-title"
+        <div
+          class="graph-title-bar"
           class:nav-collapsed={!$navigationOpen}
           class:flush-toolbar={flushToolbar}
         >
-          Resource Graph (DAG)
-        </h2>
+          <h2 class="text-lg font-medium">Resource Graph (DAG)</h2>
+          {#if onRefreshAll}
+            <Button
+              type="secondary"
+              large
+              class="shrink-0 whitespace-nowrap"
+              onClick={onRefreshAll}
+            >
+              <span class="hidden lg:inline">Refresh all sources and models</span>
+              <span class="lg:hidden">Refresh all</span>
+            </Button>
+          {/if}
+        </div>
       {/if}
+      <!-- Row 2: Filter + search -->
       <div
         class="graph-toolbar-bar"
         class:nav-collapsed={!$navigationOpen}
         class:flush-toolbar={flushToolbar}
       >
-      <!-- Search combo: input + resource dropdown -->
-      <div
-        class="search-combo"
-        onfocusin={() => (resourceDropdownOpen = true)}
-        onfocusout={handleSearchComboBlur}
-      >
-        <Search
-          bind:value={treeSearchQuery}
-          placeholder="Search all resources"
-          large
-          autofocus={false}
-          showBorderOnFocus={false}
-          retainValueOnMount
-          onSubmit={() => (resourceDropdownOpen = false)}
-        />
-        {#if resourceDropdownOpen}
-          <div class="search-combo-dropdown">
-            <div class="tree-dropdown-list">
+        <!-- Filter dropdown -->
+        <DropdownMenu.Root bind:open={filterDropdownOpen}>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
               <button
-                class="combo-item {selectedGroupIsConnector
-                  ? 'font-semibold'
-                  : ''}"
-                onmousedown={(e) => e.preventDefault()}
-                onclick={() => {
-                  treeSearchQuery = "";
-                  handleSelectAll();
-                  resourceDropdownOpen = false;
+                {...props}
+                class="filter-trigger"
+              >
+                <FilterIcon size="14px" />
+                <span>Filter</span>
+                {#if statusFilter.length > 0}
+                  <span class="filter-badge">{statusFilter.length}</span>
+                {/if}
+              </button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="start" class="w-52">
+            {#if statusFilterOptions.length > 0}
+              <DropdownMenu.Group>
+                <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+                  >Status</DropdownMenu.Label
+                >
+                {#each statusFilterOptions as opt (opt.value)}
+                  <DropdownMenu.CheckboxItem
+                    closeOnSelect={false}
+                    checked={statusFilter.includes(opt.value)}
+                    onCheckedChange={() => onStatusToggle?.(opt.value)}
+                  >
+                    {opt.label}
+                  </DropdownMenu.CheckboxItem>
+                {/each}
+              </DropdownMenu.Group>
+              <DropdownMenu.Separator />
+            {/if}
+            <DropdownMenu.Group>
+              <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+                >Visibility</DropdownMenu.Label
+              >
+              <DropdownMenu.CheckboxItem
+                closeOnSelect={false}
+                checked={!showIsolatedResources}
+                onCheckedChange={() => {
+                  showIsolatedResources = !showIsolatedResources;
+                  onShowIsolatedChange?.(showIsolatedResources);
                 }}
               >
-                <span class="flex-1 truncate text-xs">All Resource Trees</span>
-              </button>
-              {#each allResourceSections as section (section.kind)}
-                <div class="combo-separator"></div>
-                <div class="section-header">
-                  <ResourceTypeBadge kind={section.kind} />
-                  <span class="text-[10px] text-fg-muted"
-                    >{section.entries.length}</span
-                  >
-                </div>
-                {#each section.entries as entry (entry.name)}
-                  {@const entryId = `${entry.kind}:${entry.name}`}
-                  <button
-                    class="combo-item {effectiveSelectedGroupId === entryId
-                      ? 'font-semibold'
-                      : ''}"
-                    onmousedown={(e) => e.preventDefault()}
-                    onclick={() => {
-                      treeSearchQuery = entry.name;
-                      handleResourceSelect(entry);
-                      resourceDropdownOpen = false;
-                    }}
-                  >
-                    <svelte:component
-                      this={resourceIconMapping[entry.kind]}
-                      size="12px"
-                    />
-                    <span class="flex-1 truncate text-xs">
-                      {entry.name}
-                    </span>
-                    <span class="status-dot {entry.status}"></span>
-                  </button>
-                {/each}
-              {/each}
-              {#if allResourceSections.length === 0}
-                <div class="px-3 py-2 text-xs text-fg-muted">
-                  No resources match.
-                </div>
-              {/if}
-            </div>
-          </div>
-        {/if}
-      </div>
-
-      {#if statusFilterOptions.length > 0}
-        <DropdownMenu.Root bind:open={statusDropdownOpen}>
-          <DropdownMenu.Trigger
-            class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
-              ? 'bg-surface-hover'
-              : 'hover:bg-surface-hover'} px-2 py-1"
-          >
-            <span class="text-fg-secondary font-medium">
-              {#if statusFilter.length === 0}
-                All statuses
-              {:else if statusFilter.length === 1}
-                {statusFilterOptions.find((o) => o.value === statusFilter[0])
-                  ?.label ?? statusFilter[0]}
-              {:else}
-                {statusFilterOptions.find((o) => o.value === statusFilter[0])
-                  ?.label}, +{statusFilter.length - 1} other{statusFilter.length >
-                2
-                  ? "s"
-                  : ""}
-              {/if}
-            </span>
-            {#if statusDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" class="w-48">
-            {#each statusFilterOptions as opt (opt.value)}
-              <DropdownMenu.CheckboxItem
-                checked={statusFilter.includes(opt.value)}
-                onCheckedChange={() => onStatusToggle?.(opt.value)}
-              >
-                {opt.label}
+                Hide isolated
               </DropdownMenu.CheckboxItem>
-            {/each}
+            </DropdownMenu.Group>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
-      {/if}
 
-      <!-- svelte-ignore a11y-label-has-associated-control -->
-      <label
-        class="flex items-center gap-1.5 shrink-0 cursor-pointer select-none"
-      >
-        <Switch small bind:checked={showIsolatedResources} />
-        <span class="text-xs text-fg-secondary whitespace-nowrap">
-          Show isolated
-        </span>
-      </label>
+        <div class="flex-1"></div>
 
+        <!-- Search icon / expandable search -->
+        {#if searchExpanded}
+          <div class="flex items-center w-56 shrink-0">
+            <Search
+              bind:value={treeSearchQuery}
+              placeholder="Search resources..."
+              autofocus={true}
+              showBorderOnFocus={false}
+              retainValueOnMount
+            />
+            <button
+              class="ml-1 p-1 text-fg-primary hover:bg-surface-hover rounded-sm"
+              onclick={() => {
+                searchExpanded = false;
+                treeSearchQuery = "";
+              }}
+            >
+              <XIcon size="14px" />
+            </button>
+          </div>
+        {:else}
+          <button
+            class="toolbar-icon-btn"
+            onclick={() => (searchExpanded = true)}
+          >
+            <SearchIcon size="14px" />
+          </button>
+        {/if}
+
+      </div>
+
+      <!-- Divider -->
+      <hr
+        class="border-t border-gray-200 -mt-1 mb-3"
+        class:flush-toolbar={flushToolbar}
+        style={flushToolbar ? "" : "margin-left: 0.5rem; margin-right: 0.5rem;"}
+      />
+
+      <!-- Filter pills row -->
       {#if hasActiveFilters}
-        <button
-          class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-          onclick={handleClearFilters}
+        <div
+          class="filter-pills-row"
+          class:flush-toolbar={flushToolbar}
         >
-          Clear
-        </button>
+          <div class="filter-pills-scroll">
+            {#if statusFilter.length > 0}
+              <button
+                class="filter-pill"
+                onclick={() => onClearFilters?.()}
+              >
+                <span>Status = {statusFilter
+                  .map((s) => statusFilterOptions.find((o) => o.value === s)?.label ?? s)
+                  .join(", ")}</span>
+                <XIcon size="10px" />
+              </button>
+            {/if}
+            {#if showIsolatedResources}
+              <button
+                class="filter-pill"
+                onclick={() => {
+                  showIsolatedResources = false;
+                  onShowIsolatedChange?.(false);
+                }}
+              >
+                <span>Show isolated</span>
+                <XIcon size="10px" />
+              </button>
+            {/if}
+          </div>
+          <button
+            class="filter-pills-clear"
+            onclick={handleClearFilters}
+          >
+            Clear all
+          </button>
+        </div>
       {/if}
-
-      {#if onRefreshAll}
-        <Button
-          type="secondary"
-          large
-          class="shrink-0 whitespace-nowrap"
-          onClick={onRefreshAll}
-        >
-          <span class="hidden lg:inline">Refresh all sources and models</span>
-          <span class="lg:hidden">Refresh all</span>
-        </Button>
-      {/if}
-    </div>
     {/if}
     <div class="sidebar-main" bind:clientWidth={sidebarMainWidth}>
       {#if error}
@@ -1187,7 +1198,7 @@
   }
 
   .graph-toolbar-bar {
-    @apply flex flex-row items-center min-h-[3rem] flex-none gap-x-4 px-4;
+    @apply flex flex-row items-center min-h-[3rem] flex-none gap-x-2 px-2;
     transition: padding-left 300ms ease-in-out;
   }
 
@@ -1199,16 +1210,57 @@
     @apply px-0;
   }
 
-  .graph-title {
-    @apply text-sm font-semibold text-fg-primary flex-none px-4 pt-3 pb-1;
+  .filter-trigger {
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
+  }
+  .filter-trigger:hover {
+    @apply bg-primary-100;
+  }
+
+  .filter-badge {
+    @apply text-[10px] font-semibold bg-primary-500 text-white rounded-full w-4 h-4 flex items-center justify-center;
+  }
+
+  .filter-pills-row {
+    @apply flex items-center min-h-7 relative px-2;
+  }
+
+  .filter-pills-row.flush-toolbar {
+    @apply px-0;
+  }
+
+  .filter-pills-scroll {
+    @apply flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden;
+  }
+
+  .filter-pills-clear {
+    @apply shrink-0 text-xs text-fg-primary hover:underline whitespace-nowrap pl-2 pr-1;
+  }
+
+  .filter-pill {
+    @apply flex items-center gap-1.5 text-xs font-medium text-fg-primary border border-gray-300 rounded-sm px-2 py-1 whitespace-nowrap shrink-0;
+  }
+  .filter-pill:hover {
+    @apply bg-surface-hover;
+  }
+
+  .toolbar-icon-btn {
+    @apply p-1.5 rounded-sm text-fg-primary;
+  }
+  .toolbar-icon-btn:hover {
+    @apply bg-surface-hover;
+  }
+
+  .graph-title-bar {
+    @apply flex items-center justify-between h-9 flex-none px-2 pt-3 pb-1;
     transition: padding-left 300ms ease-in-out;
   }
 
-  .graph-title.nav-collapsed {
+  .graph-title-bar.nav-collapsed {
     padding-left: 44px;
   }
 
-  .graph-title.flush-toolbar {
+  .graph-title-bar.flush-toolbar {
     @apply px-0;
   }
 

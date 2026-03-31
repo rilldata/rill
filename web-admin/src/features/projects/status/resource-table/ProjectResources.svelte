@@ -268,9 +268,10 @@
           placeholder="Search resources..."
           autofocus={true}
           showBorderOnFocus={false}
+          retainValueOnMount
         />
         <button
-          class="ml-1 p-1 text-fg-muted hover:text-fg-primary"
+          class="ml-1 p-1 text-fg-primary hover:bg-surface-hover rounded-sm"
           onclick={toggleSearchExpanded}
         >
           <XIcon size="14px" />
@@ -296,10 +297,10 @@
     </div>
   </div>
 
-  <hr class="border-t border-gray-200 -my-1" />
+  <hr class="border-t border-gray-200 -mt-1 mb-1" />
 
-  <!-- Row 3: Filter pills + Clear all (only when filters active) -->
-  {#if activeFilterCount > 0}
+  <!-- Row 3: Filter pills + Clear all (when any filter or search is active) -->
+  {#if hasActiveFilters}
     <div class="filter-pills-row">
       <div class="filter-pills-scroll">
         {#if selectedStatuses.length > 0}
@@ -374,7 +375,7 @@
 
 <style lang="postcss">
   .filter-trigger {
-    @apply flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
   }
   .filter-trigger:hover {
     @apply bg-primary-100;
@@ -393,7 +394,7 @@
   }
 
   .filter-pills-clear {
-    @apply shrink-0 text-xs text-fg-primary hover:underline whitespace-nowrap pl-4 pr-1 bg-gradient-to-l from-white from-70% to-transparent;
+    @apply shrink-0 text-xs text-fg-primary hover:underline whitespace-nowrap pl-2 pr-1;
   }
 
   .filter-pill {

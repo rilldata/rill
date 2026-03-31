@@ -99,7 +99,12 @@
     viewLineage(kindToken, resourceName) {
       const params = new URLSearchParams();
       if (kindToken) params.set("kind", kindToken);
-      if (resourceName) params.set("resource", resourceName);
+      if (resourceName) {
+        params.set("resource", resourceName);
+        params.set("q", resourceName);
+        searchText = resourceName;
+        searchExpanded = true;
+      }
       goto(`${graphBasePath}?${params.toString()}`);
     },
   });
@@ -257,9 +262,10 @@
         placeholder="Search resources..."
         autofocus={true}
         showBorderOnFocus={false}
+        retainValueOnMount
       />
       <button
-        class="ml-1 p-1 text-fg-muted hover:text-fg-primary"
+        class="ml-1 p-1 text-fg-primary hover:bg-surface-hover rounded-sm"
         onclick={toggleSearchExpanded}
       >
         <XIcon size="14px" />
@@ -285,34 +291,35 @@
   </div>
 </div>
 
-<hr class="border-t border-gray-200 mt-1.5 mb-0" />
+<hr class="border-t border-gray-200 mt-1.5" />
 
-<!-- Row 3: Filter pills + Clear all (only when filters active) -->
-{#if activeFilterCount > 0}
-  <div class="flex items-center gap-1.5 min-h-7 mt-1.5">
-    {#if selectedStatuses.length > 0}
-      <button
-        class="filter-pill"
-        onclick={() => (selectedStatuses = [])}
-      >
-        <span>Status = {selectedStatuses
-          .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
-          .join(", ")}</span>
-        <XIcon size="10px" />
-      </button>
-    {/if}
-    {#if !hideIsolated}
-      <button
-        class="filter-pill"
-        onclick={() => (hideIsolated = true)}
-      >
-        <span>Show isolated</span>
-        <XIcon size="10px" />
-      </button>
-    {/if}
-    <div class="flex-1"></div>
+<!-- Row 3: Filter pills + Clear all (when any filter or search is active) -->
+{#if hasActiveFilters}
+  <div class="filter-pills-row mt-1.5">
+    <div class="filter-pills-scroll">
+      {#if selectedStatuses.length > 0}
+        <button
+          class="filter-pill"
+          onclick={() => (selectedStatuses = [])}
+        >
+          <span>Status = {selectedStatuses
+            .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
+            .join(", ")}</span>
+          <XIcon size="10px" />
+        </button>
+      {/if}
+      {#if !hideIsolated}
+        <button
+          class="filter-pill"
+          onclick={() => (hideIsolated = true)}
+        >
+          <span>Show isolated</span>
+          <XIcon size="10px" />
+        </button>
+      {/if}
+    </div>
     <button
-      class="shrink-0 text-xs text-fg-primary hover:underline whitespace-nowrap px-1"
+      class="filter-pills-clear"
       onclick={clearFilters}
     >
       Clear all
@@ -380,7 +387,7 @@
   }
 
   .filter-trigger {
-    @apply flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
+    @apply flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
   }
   .filter-trigger:hover {
     @apply bg-primary-100;
@@ -390,8 +397,20 @@
     @apply text-[10px] font-semibold bg-primary-500 text-white rounded-full w-4 h-4 flex items-center justify-center;
   }
 
+  .filter-pills-row {
+    @apply flex items-center min-h-7 relative;
+  }
+
+  .filter-pills-scroll {
+    @apply flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden;
+  }
+
+  .filter-pills-clear {
+    @apply shrink-0 text-xs text-fg-primary hover:underline whitespace-nowrap pl-2 pr-1;
+  }
+
   .filter-pill {
-    @apply flex items-center gap-1.5 text-xs font-medium text-fg-primary border border-gray-300 rounded-sm px-2 py-1 whitespace-nowrap;
+    @apply flex items-center gap-1.5 text-xs font-medium text-fg-primary border border-gray-300 rounded-sm px-2 py-1 whitespace-nowrap shrink-0;
   }
   .filter-pill:hover {
     @apply bg-surface-hover;
