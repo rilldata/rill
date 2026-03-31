@@ -1,7 +1,7 @@
 <script lang="ts">
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Dialog as DialogPrimitive } from "bits-ui";
-  import Cross2 from "svelte-radix/Cross2.svelte";
+  import { XIcon as Cross2 } from "lucide-svelte";
   import * as Dialog from "web-common/src/components/dialog/index.js";
 
   type $$Props = DialogPrimitive.ContentProps & { noClose?: boolean };

@@ -2,16 +2,17 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
-  import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
   import { setGraphNavigation } from "@rilldata/web-common/features/resource-graph/shared/graph-navigation-context";
-  import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
   import {
     deriveGraphState,
-    readIsolatedPreference,
-    writeIsolatedPreference,
     buildGroupChangeParams,
-    STATUS_FILTER_OPTIONS,
   } from "@rilldata/web-common/features/resource-graph/shared/graph-page-utils";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
+  import { onMount } from "svelte";
   import {
     ResourceKind,
     SingletonProjectParserName,
@@ -23,20 +24,76 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import { useResources } from "@rilldata/web-admin/features/projects/status/selectors";
+  import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
+  import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import {
+    FilterIcon,
+    ListIcon,
+    NetworkIcon,
+    SearchIcon,
+    XIcon,
+  } from "lucide-svelte";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const triggerMutation =
+  const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  let showIsolatedResources = readIsolatedPreference();
+  let isConfirmDialogOpen = false;
 
-  function handleIsolatedChange(value: boolean) {
-    showIsolatedResources = value;
-    writeIsolatedPreference(value);
+  $: allResources = useResources(runtimeClient);
+  $: hasReconcilingResources = $allResources.data?.resources?.some(
+    isResourceReconciling,
+  );
+
+  function refreshAllSourcesAndModels() {
+    void $createTrigger.mutateAsync({ all: true }).then(() => {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+          undefined,
+        ),
+      });
+    });
   }
 
-  $: graphBasePath = `/${$page.params.organization}/${$page.params.project}/-/status/resources/graph`;
+  $: basePath = `/${$page.params.organization}/${$page.params.project}/-/status/resources`;
+  $: graphBasePath = `${basePath}/graph`;
+
+  const filterSync = createUrlFilterSync([
+    { key: "status", type: "array" },
+    { key: "q", type: "string" },
+    { key: "isolated", type: "enum", defaultValue: "hidden" },
+  ]);
+  filterSync.init($page.url);
+
+  let mounted = false;
+
+  onMount(() => {
+    mounted = true;
+  });
+
+  // Sync URL → local state on external navigation (back/forward)
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    searchText = parseStringParam($page.url.searchParams.get("q"));
+    hideIsolated =
+      ($page.url.searchParams.get("isolated") ?? "hidden") === "hidden";
+  }
+
+  // Sync filter state → URL
+  $: if (mounted) {
+    filterSync.syncToUrl({
+      status: selectedStatuses,
+      q: searchText,
+      isolated: hideIsolated ? "hidden" : "shown",
+    });
+  }
 
   setGraphNavigation({
     viewLineage(kindToken, resourceName) {
@@ -46,8 +103,6 @@
       goto(`${graphBasePath}?${params.toString()}`);
     },
   });
-
-  $: ({ instanceId } = runtimeClient);
 
   $: graphState = deriveGraphState($page.url);
   $: ({ activeKind, seeds, selectedGroupId } = graphState);
@@ -61,49 +116,55 @@
     });
   }
 
-  // Status filter state
-  let selectedStatuses: ResourceStatusFilterValue[] = [];
-
-  function toggleStatus(value: ResourceStatusFilterValue) {
-    if (selectedStatuses.includes(value)) {
-      selectedStatuses = selectedStatuses.filter((s) => s !== value);
-    } else {
-      selectedStatuses = [...selectedStatuses, value];
-    }
-  }
-
   $: hasUrlFilters =
     !!graphState.urlParams.kind || graphState.urlParams.resources.length > 0;
 
-  function handleClearFilters() {
+  // Filter state
+  let filterDropdownOpen = false;
+  let searchExpanded = false;
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedStatuses: string[] = parseArrayParam($page.url.searchParams.get("status"));
+  let hideIsolated =
+    ($page.url.searchParams.get("isolated") ?? "hidden") === "hidden";
+
+  type StatusFilter = { label: string; value: string };
+  const statusFilters: StatusFilter[] = [
+    { label: "OK", value: "ok" },
+    { label: "Pending", value: "pending" },
+    { label: "Warning", value: "warning" },
+    { label: "Errored", value: "errored" },
+  ];
+
+  function toggleStatus(status: string) {
+    if (selectedStatuses.includes(status)) {
+      selectedStatuses = selectedStatuses.filter((s) => s !== status);
+    } else {
+      selectedStatuses = [...selectedStatuses, status];
+    }
+  }
+
+  function clearFilters() {
     selectedStatuses = [];
+    searchText = "";
+    searchExpanded = false;
+    hideIsolated = true;
     goto(graphBasePath);
   }
 
-  let isConfirmDialogOpen = false;
-
-  function handleRefreshAll() {
-    isConfirmDialogOpen = true;
+  function toggleSearchExpanded() {
+    searchExpanded = !searchExpanded;
+    if (!searchExpanded) {
+      searchText = "";
+    }
   }
 
-  function refreshAllSourcesAndModels() {
-    isConfirmDialogOpen = false;
-    void $triggerMutation
-      .mutateAsync({
-        all: true,
-      })
-      .then(() => {
-        void queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceListResourcesQueryKey(
-            instanceId,
-            undefined,
-          ),
-        });
-      })
-      .catch((err) => {
-        console.error("Failed to refresh all sources and models:", err);
-      });
-  }
+  $: activeFilterCount =
+    selectedStatuses.length +
+    (!hideIsolated ? 1 : 0);
+  $: hasActiveFilters =
+    selectedStatuses.length > 0 ||
+    !hideIsolated ||
+    searchText.length > 0;
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
@@ -120,24 +181,156 @@
     $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 </script>
 
+<!-- Row 1: Resources + Refresh -->
+<div class="flex items-center justify-between h-9">
+  <h2 class="text-lg font-medium">Resources</h2>
+  <Button
+    type="secondary"
+    small
+    class="shrink-0 whitespace-nowrap"
+    onClick={() => {
+      isConfirmDialogOpen = true;
+    }}
+    disabled={hasReconcilingResources}
+  >
+    <span class="hidden lg:inline">Refresh all sources and models</span>
+    <span class="lg:hidden">Refresh all</span>
+  </Button>
+</div>
+
+<!-- Row 2: [Filter] [pills] ...spacer... [clear] [search] [List/Graph] -->
+<div class="flex items-center gap-x-2 min-h-8 mt-3">
+  <!-- Filter dropdown -->
+  <DropdownMenu.Root bind:open={filterDropdownOpen}>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <button
+          {...props}
+          class="filter-btn"
+          class:active={filterDropdownOpen || activeFilterCount > 0}
+        >
+          <FilterIcon size="14px" />
+          {#if activeFilterCount > 0}
+            <span class="filter-badge">{activeFilterCount}</span>
+          {/if}
+        </button>
+      {/snippet}
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start" class="w-52">
+      <DropdownMenu.Group>
+        <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+          >Status</DropdownMenu.Label
+        >
+        {#each statusFilters as status}
+          <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
+            checked={selectedStatuses.includes(status.value)}
+            onCheckedChange={() => toggleStatus(status.value)}
+          >
+            {status.label}
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Group>
+      <DropdownMenu.Separator />
+      <DropdownMenu.Group>
+        <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+          >Visibility</DropdownMenu.Label
+        >
+        <DropdownMenu.CheckboxItem
+          closeOnSelect={false}
+          checked={hideIsolated}
+          onCheckedChange={() => (hideIsolated = !hideIsolated)}
+        >
+          Hide isolated
+        </DropdownMenu.CheckboxItem>
+      </DropdownMenu.Group>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+
+  <!-- Grouped filter pills -->
+  <div class="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
+    {#if selectedStatuses.length > 0}
+      <button
+        class="filter-pill"
+        onclick={() => (selectedStatuses = [])}
+      >
+        <span>Status = {selectedStatuses
+          .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
+          .join(", ")}</span>
+        <XIcon size="10px" />
+      </button>
+    {/if}
+    {#if !hideIsolated}
+      <button
+        class="filter-pill"
+        onclick={() => (hideIsolated = true)}
+      >
+        <span>Show isolated</span>
+        <XIcon size="10px" />
+      </button>
+    {/if}
+  </div>
+
+  {#if hasActiveFilters}
+    <button
+      class="shrink-0 text-xs text-primary-500 hover:text-primary-600 whitespace-nowrap px-1"
+      onclick={clearFilters}
+    >
+      Clear all
+    </button>
+  {/if}
+
+  <!-- Search icon / expandable search -->
+  {#if searchExpanded}
+    <div class="flex items-center w-56 shrink-0">
+      <Search
+        bind:value={searchText}
+        placeholder="Search resources..."
+        autofocus={true}
+        showBorderOnFocus={false}
+      />
+      <button
+        class="ml-1 p-1 text-fg-muted hover:text-fg-primary"
+        onclick={toggleSearchExpanded}
+      >
+        <XIcon size="14px" />
+      </button>
+    </div>
+  {:else}
+    <button
+      class="toolbar-icon-btn"
+      onclick={toggleSearchExpanded}
+    >
+      <SearchIcon size="14px" />
+    </button>
+  {/if}
+
+  <!-- List / Graph toggle -->
+  <div class="view-toggle">
+    <a href={basePath} class="toggle-btn">
+      <ListIcon size="14px" />
+    </a>
+    <a href={graphBasePath} class="toggle-btn active">
+      <NetworkIcon size="14px" />
+    </a>
+  </div>
+</div>
+
 <div class="graph-wrapper">
   <GraphContainer
     {seeds}
     statusFilter={selectedStatuses}
+    searchQuery={searchText}
     showSummary={false}
     layout="sidebar"
     {selectedGroupId}
     onSelectedGroupChange={handleSelectedGroupChange}
-    onRefreshAll={handleRefreshAll}
-    statusFilterOptions={STATUS_FILTER_OPTIONS}
-    onStatusToggle={toggleStatus}
-    onClearFilters={handleClearFilters}
     onSelectAll={() => goto(graphBasePath)}
     {hasUrlFilters}
     flushToolbar
     showTitle={false}
-    {showIsolatedResources}
-    onShowIsolatedChange={handleIsolatedChange}
+    showToolbar={false}
+    showIsolatedResources={!hideIsolated}
   />
 </div>
 
@@ -164,14 +357,14 @@
   {/if}
 </div>
 
-<RefreshConfirmDialog
+<RefreshAllSourcesAndModelsConfirmDialog
   bind:open={isConfirmDialogOpen}
   onRefresh={refreshAllSourcesAndModels}
 />
 
 <style lang="postcss">
   .graph-wrapper {
-    @apply flex flex-col w-full min-w-0 overflow-hidden;
+    @apply flex flex-col w-full min-w-0 overflow-hidden mt-3;
     height: 600px;
   }
 
@@ -181,6 +374,48 @@
     min-height: 0;
     flex: 1 1 0%;
   }
+
+  .filter-btn {
+    @apply flex items-center gap-1 p-1.5 rounded-sm border text-fg-secondary;
+  }
+  .filter-btn:hover {
+    @apply bg-surface-hover;
+  }
+  .filter-btn.active {
+    @apply bg-surface-hover text-fg-primary;
+  }
+
+  .filter-badge {
+    @apply text-[10px] font-semibold bg-primary-100 text-primary-600 rounded-full w-4 h-4 flex items-center justify-center;
+  }
+
+  .filter-pill {
+    @apply flex items-center gap-1 text-xs font-medium text-fg-secondary bg-surface-hover rounded-full px-2 py-0.5 whitespace-nowrap;
+  }
+  .filter-pill:hover {
+    @apply bg-gray-200 text-fg-primary;
+  }
+
+  .toolbar-icon-btn {
+    @apply p-1.5 rounded-sm text-fg-secondary;
+  }
+  .toolbar-icon-btn:hover {
+    @apply bg-surface-hover text-fg-primary;
+  }
+
+  .view-toggle {
+    @apply flex rounded-sm border border-gray-200 overflow-hidden shrink-0;
+  }
+  .toggle-btn {
+    @apply flex items-center p-1.5 text-fg-secondary no-underline;
+  }
+  .toggle-btn:hover {
+    @apply bg-surface-hover;
+  }
+  .toggle-btn.active {
+    @apply bg-primary-100 text-primary-600;
+  }
+
   .parse-errors {
     @apply pt-4 mt-2;
   }

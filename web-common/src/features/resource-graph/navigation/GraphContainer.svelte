@@ -38,6 +38,7 @@
   export let showTitle = true;
   export let showIsolatedResources = false;
   export let onShowIsolatedChange: ((value: boolean) => void) | null = null;
+  export let showToolbar = true;
 
   onMount(() => {
     graphCache.initialize();
@@ -118,6 +119,7 @@
   {hasUrlFilters}
   {flushToolbar}
   {showTitle}
+  {showToolbar}
   {showIsolatedResources}
   {onShowIsolatedChange}
 />

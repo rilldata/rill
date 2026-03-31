@@ -26,7 +26,7 @@
     getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
   import { onMount } from "svelte";
-  import Rocket from "svelte-radix/Rocket.svelte";
+  import { RocketIcon as Rocket } from "lucide-svelte";
   import { writable, get, derived } from "svelte/store";
   import { Button } from "../../../components/button";
 

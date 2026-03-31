@@ -10,18 +10,16 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import {
     ResourceKind,
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
-  import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import {
     createUrlFilterSync,
@@ -29,11 +27,21 @@
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
+  import {
+    FilterIcon,
+    ListIcon,
+    NetworkIcon,
+    SearchIcon,
+    XIcon,
+  } from "lucide-svelte";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
+
+  $: basePath = `/${$page.params.organization}/${$page.params.project}/-/status/resources`;
+  $: isGraphView = $page.route.id?.endsWith("/graph") ?? false;
 
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
@@ -42,11 +50,9 @@
   ]);
   filterSync.init($page.url);
 
-  export let showHeader = true;
-
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
-  let statusDropdownOpen = false;
+  let searchExpanded = false;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
   let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
@@ -81,18 +87,25 @@
     { label: "Errored", value: "errored" },
   ];
 
-  // Resource types available for filtering (excluding internal types)
-  const filterableTypes = [
-    ResourceKind.Source,
-    ResourceKind.Model,
-    ResourceKind.MetricsView,
-    ResourceKind.Explore,
-    ResourceKind.Canvas,
-    ResourceKind.Theme,
-    ResourceKind.Report,
-    ResourceKind.Alert,
-    ResourceKind.API,
-    ResourceKind.Connector,
+  // Resource types grouped by category
+  const filterSections: { label: string; types: string[] }[] = [
+    {
+      label: "Data",
+      types: [ResourceKind.Source, ResourceKind.Model, ResourceKind.Connector],
+    },
+    {
+      label: "Dashboards",
+      types: [
+        ResourceKind.MetricsView,
+        ResourceKind.Explore,
+        ResourceKind.Canvas,
+        ResourceKind.Theme,
+      ],
+    },
+    {
+      label: "Automation",
+      types: [ResourceKind.Report, ResourceKind.Alert, ResourceKind.API],
+    },
   ];
 
   $: resources = useResources(runtimeClient);
@@ -115,8 +128,6 @@
     isResourceReconciling,
   );
 
-  $: isRefreshButtonDisabled = hasReconcilingResources;
-
   // Filter resources by type, search text, and status
   $: filteredResources = filterResources(
     $resources.data?.resources,
@@ -124,6 +135,12 @@
     searchText,
     selectedStatuses,
   );
+
+  $: activeFilterCount = selectedTypes.length + selectedStatuses.length;
+  $: hasActiveFilters =
+    selectedTypes.length > 0 ||
+    selectedStatuses.length > 0 ||
+    searchText.length > 0;
 
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
@@ -145,6 +162,14 @@
     selectedTypes = [];
     selectedStatuses = [];
     searchText = "";
+    searchExpanded = false;
+  }
+
+  function toggleSearchExpanded() {
+    searchExpanded = !searchExpanded;
+    if (!searchExpanded) {
+      searchText = "";
+    }
   }
 
   function refreshAllSourcesAndModels() {
@@ -159,122 +184,150 @@
   }
 </script>
 
-<section class="flex flex-col gap-y-4">
-  {#if showHeader}
+<section class="flex flex-col gap-y-3">
+  <!-- Row 1: Resources + Refresh -->
+  <div class="flex items-center justify-between h-9">
     <h2 class="text-lg font-medium">Resources</h2>
-  {/if}
-
-  <!-- Search, Filter, and Action Controls -->
-  <div class="flex flex-row items-center gap-x-4 min-h-9">
-    <div class="flex-1 min-w-0 min-h-9">
-      <Search
-        bind:value={searchText}
-        placeholder="Search"
-        large
-        autofocus={false}
-        showBorderOnFocus={false}
-        retainValueOnMount
-      />
-    </div>
-
-    <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger
-        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
-          ? 'bg-gray-200'
-          : 'hover:bg-surface-hover'} px-2 py-1"
-      >
-        <span class="text-fg-secondary font-medium">
-          {#if selectedTypes.length === 0}
-            All types
-          {:else if selectedTypes.length === 1}
-            {prettyResourceKind(selectedTypes[0])}
-          {:else}
-            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length >
-            2
-              ? "s"
-              : ""}
-          {/if}
-        </span>
-        {#if filterDropdownOpen}
-          <CaretUpIcon size="12px" />
-        {:else}
-          <CaretDownIcon size="12px" />
-        {/if}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-48">
-        {#each filterableTypes as type}
-          <DropdownMenu.CheckboxItem
-            closeOnSelect={false}
-            checked={selectedTypes.includes(type)}
-            onCheckedChange={() => toggleType(type)}
-          >
-            {prettyResourceKind(type)}
-          </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    <DropdownMenu.Root bind:open={statusDropdownOpen}>
-      <DropdownMenu.Trigger
-        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
-          ? 'bg-gray-200'
-          : 'hover:bg-surface-hover'} px-2 py-1"
-      >
-        <span class="text-fg-secondary font-medium">
-          {#if selectedStatuses.length === 0}
-            All statuses
-          {:else if selectedStatuses.length === 1}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])
-              ?.label ?? selectedStatuses[0]}
-          {:else}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
-            +{selectedStatuses.length - 1} other{selectedStatuses.length > 2
-              ? "s"
-              : ""}
-          {/if}
-        </span>
-        {#if statusDropdownOpen}
-          <CaretUpIcon size="12px" />
-        {:else}
-          <CaretDownIcon size="12px" />
-        {/if}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-48">
-        {#each statusFilters as status}
-          <DropdownMenu.CheckboxItem
-            closeOnSelect={false}
-            checked={selectedStatuses.includes(status.value)}
-            onCheckedChange={() => toggleStatus(status.value)}
-          >
-            {status.label}
-          </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
-      <button
-        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        onclick={clearFilters}
-      >
-        Clear
-      </button>
-    {/if}
-
     <Button
       type="secondary"
-      large
+      small
       class="shrink-0 whitespace-nowrap"
       onClick={() => {
         isConfirmDialogOpen = true;
       }}
-      disabled={isRefreshButtonDisabled}
+      disabled={hasReconcilingResources}
     >
       <span class="hidden lg:inline">Refresh all sources and models</span>
       <span class="lg:hidden">Refresh all</span>
     </Button>
   </div>
 
+  <!-- Row 2: [Filter] [pills] ...spacer... [clear] [search] [List/Graph] -->
+  <div class="flex items-center gap-x-2 min-h-8">
+    <!-- Filter dropdown -->
+    <DropdownMenu.Root bind:open={filterDropdownOpen}>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <button
+            {...props}
+            class="filter-btn"
+            class:active={filterDropdownOpen || activeFilterCount > 0}
+          >
+            <FilterIcon size="14px" />
+            {#if activeFilterCount > 0}
+              <span class="filter-badge">{activeFilterCount}</span>
+            {/if}
+          </button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-52">
+        <DropdownMenu.Group>
+          <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+            >Status</DropdownMenu.Label
+          >
+          {#each statusFilters as status}
+            <DropdownMenu.CheckboxItem
+              closeOnSelect={false}
+              checked={selectedStatuses.includes(status.value)}
+              onCheckedChange={() => toggleStatus(status.value)}
+            >
+              {status.label}
+            </DropdownMenu.CheckboxItem>
+          {/each}
+        </DropdownMenu.Group>
+        <DropdownMenu.Separator />
+        {#each filterSections as section, i}
+          <DropdownMenu.Group>
+            <DropdownMenu.Label class="uppercase text-[10px] tracking-wide"
+              >{section.label}</DropdownMenu.Label
+            >
+            {#each section.types as type}
+              <DropdownMenu.CheckboxItem
+                closeOnSelect={false}
+                checked={selectedTypes.includes(type)}
+                onCheckedChange={() => toggleType(type)}
+              >
+                {prettyResourceKind(type)}
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          </DropdownMenu.Group>
+          {#if i < filterSections.length - 1}
+            <DropdownMenu.Separator />
+          {/if}
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+
+    <!-- Grouped filter pills -->
+    <div class="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
+      {#if selectedStatuses.length > 0}
+        <button
+          class="filter-pill"
+          onclick={() => (selectedStatuses = [])}
+        >
+          <span>Status = {selectedStatuses
+            .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
+            .join(", ")}</span>
+          <XIcon size="10px" />
+        </button>
+      {/if}
+      {#if selectedTypes.length > 0}
+        <button
+          class="filter-pill"
+          onclick={() => (selectedTypes = [])}
+        >
+          <span>Type = {selectedTypes.map(prettyResourceKind).join(", ")}</span>
+          <XIcon size="10px" />
+        </button>
+      {/if}
+    </div>
+
+    {#if hasActiveFilters}
+      <button
+        class="shrink-0 text-xs text-primary-500 hover:text-primary-600 whitespace-nowrap px-1"
+        onclick={clearFilters}
+      >
+        Clear all
+      </button>
+    {/if}
+
+    <!-- Search icon / expandable search -->
+    {#if searchExpanded}
+      <div class="flex items-center w-56 shrink-0">
+        <Search
+          bind:value={searchText}
+          placeholder="Search resources..."
+          autofocus={true}
+          showBorderOnFocus={false}
+        />
+        <button
+          class="ml-1 p-1 text-fg-muted hover:text-fg-primary"
+          onclick={toggleSearchExpanded}
+        >
+          <XIcon size="14px" />
+        </button>
+      </div>
+    {:else}
+      <button
+        class="toolbar-icon-btn"
+        onclick={toggleSearchExpanded}
+      >
+        <SearchIcon size="14px" />
+      </button>
+    {/if}
+
+    <!-- List / Graph toggle -->
+    <div class="view-toggle">
+      <a href={basePath} class="toggle-btn" class:active={!isGraphView}>
+        <ListIcon size="14px" />
+      </a>
+      <a href="{basePath}/graph" class="toggle-btn" class:active={isGraphView}>
+        <NetworkIcon size="14px" />
+      </a>
+    </div>
+  </div>
+
+  <!-- Content -->
   {#if $resources.isLoading}
     <DelayedSpinner isLoading={true} size="16px" />
   {:else if $resources.isError}
@@ -315,6 +368,47 @@
 />
 
 <style lang="postcss">
+  .filter-btn {
+    @apply flex items-center gap-1 p-1.5 rounded-sm border text-fg-secondary;
+  }
+  .filter-btn:hover {
+    @apply bg-surface-hover;
+  }
+  .filter-btn.active {
+    @apply bg-surface-hover text-fg-primary;
+  }
+
+  .filter-badge {
+    @apply text-[10px] font-semibold bg-primary-100 text-primary-600 rounded-full w-4 h-4 flex items-center justify-center;
+  }
+
+  .filter-pill {
+    @apply flex items-center gap-1 text-xs font-medium text-fg-secondary bg-surface-hover rounded-full px-2 py-0.5 whitespace-nowrap;
+  }
+  .filter-pill:hover {
+    @apply bg-gray-200 text-fg-primary;
+  }
+
+  .toolbar-icon-btn {
+    @apply p-1.5 rounded-sm text-fg-secondary;
+  }
+  .toolbar-icon-btn:hover {
+    @apply bg-surface-hover text-fg-primary;
+  }
+
+  .view-toggle {
+    @apply flex rounded-sm border border-gray-200 overflow-hidden shrink-0;
+  }
+  .toggle-btn {
+    @apply flex items-center p-1.5 text-fg-secondary no-underline;
+  }
+  .toggle-btn:hover {
+    @apply bg-surface-hover;
+  }
+  .toggle-btn.active {
+    @apply bg-primary-100 text-primary-600;
+  }
+
   .parse-errors {
     @apply pt-4 mt-2;
   }

@@ -7,8 +7,6 @@
   import RefreshConfirmDialog from "@rilldata/web-common/features/resource-graph/shared/RefreshConfirmDialog.svelte";
   import {
     deriveGraphState,
-    readIsolatedPreference,
-    writeIsolatedPreference,
     buildGroupChangeParams,
     STATUS_FILTER_OPTIONS,
   } from "@rilldata/web-common/features/resource-graph/shared/graph-page-utils";
@@ -24,11 +22,19 @@
   const triggerMutation =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  let showIsolatedResources = readIsolatedPreference();
+  // "Hide isolated" is enabled by default; URL param ?isolated=shown overrides
+  $: hideIsolated =
+    ($page.url.searchParams.get("isolated") ?? "hidden") === "hidden";
 
   function handleIsolatedChange(value: boolean) {
-    showIsolatedResources = value;
-    writeIsolatedPreference(value);
+    // value = new showIsolatedResources; hideIsolated is the inverse
+    const url = new URL($page.url);
+    if (value) {
+      url.searchParams.set("isolated", "shown");
+    } else {
+      url.searchParams.delete("isolated");
+    }
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
   setGraphNavigation({
@@ -94,6 +100,7 @@
     url.searchParams.delete("status");
     url.searchParams.delete("kind");
     url.searchParams.delete("resource");
+    url.searchParams.delete("isolated");
     goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
@@ -141,7 +148,7 @@
     onClearFilters={handleClearFilters}
     onSelectAll={() => goto("/graph")}
     {hasUrlFilters}
-    {showIsolatedResources}
+    showIsolatedResources={!hideIsolated}
     onShowIsolatedChange={handleIsolatedChange}
   />
 </div>

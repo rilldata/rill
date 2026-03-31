@@ -3,5 +3,5 @@
 </script>
 
 <div class="size-full min-h-[600px]">
-  <ProjectResources showHeader={false} />
+  <ProjectResources />
 </div>

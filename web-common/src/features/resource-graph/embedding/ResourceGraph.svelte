@@ -95,6 +95,7 @@
   export let hasUrlFilters = false;
   export let flushToolbar = false;
   export let showTitle = true;
+  export let showToolbar = true;
 
   type SummaryMemo = {
     connector: number;
@@ -851,20 +852,21 @@
 >
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
-    {#if showTitle}
-      <h2
-        class="graph-title"
+    {#if showToolbar}
+      {#if showTitle}
+        <h2
+          class="graph-title"
+          class:nav-collapsed={!$navigationOpen}
+          class:flush-toolbar={flushToolbar}
+        >
+          Resource Graph (DAG)
+        </h2>
+      {/if}
+      <div
+        class="graph-toolbar-bar"
         class:nav-collapsed={!$navigationOpen}
         class:flush-toolbar={flushToolbar}
       >
-        Resource Graph (DAG)
-      </h2>
-    {/if}
-    <div
-      class="graph-toolbar-bar"
-      class:nav-collapsed={!$navigationOpen}
-      class:flush-toolbar={flushToolbar}
-    >
       <!-- Search combo: input + resource dropdown -->
       <div
         class="search-combo"
@@ -1009,6 +1011,7 @@
         </Button>
       {/if}
     </div>
+    {/if}
     <div class="sidebar-main" bind:clientWidth={sidebarMainWidth}>
       {#if error}
         <div class="state error">

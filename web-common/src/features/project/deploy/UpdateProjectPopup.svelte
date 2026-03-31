@@ -8,7 +8,7 @@
   import { getUpdateProjectRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
-  import Rocket from "svelte-radix/Rocket.svelte";
+  import { RocketIcon as Rocket } from "lucide-svelte";
   import { getActiveResourceStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 
   export let open = false;

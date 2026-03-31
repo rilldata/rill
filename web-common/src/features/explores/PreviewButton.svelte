@@ -11,7 +11,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import Play from "svelte-radix/Play.svelte";
+  import { PlayIcon as Play } from "lucide-svelte";
 
   export let disabled: boolean;
   export let href: string | null;
