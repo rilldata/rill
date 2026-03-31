@@ -375,7 +375,7 @@
 
 <style lang="postcss">
   .filter-trigger {
-    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
+    @apply flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
   }
   .filter-trigger:hover {
     @apply bg-primary-100;
