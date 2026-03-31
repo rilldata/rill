@@ -287,6 +287,7 @@
   resource={specResource}
   {parentResourceKind}
   {parentResource}
+  allResources={data}
   on:view-component={async (e) => {
     const name = e.detail.componentName;
     try {

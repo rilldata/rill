@@ -28,6 +28,10 @@ const SKIP_KEYS = new Set([
   "partitionsResolverProperties",
   "stageProperties",
   "outputProperties",
+  // Canvas rows handled by flattenCanvasComponents
+  "rows",
+  // Noisy internal fields
+  "cacheKeyTtlSeconds",
   // Already shown in Metadata section
   "refreshedOn",
   "reconcileError",
@@ -38,7 +42,10 @@ const SKIP_KEYS = new Set([
 ]);
 
 // Fields that contain code and should render as multiline blocks
-const MULTILINE_KEYS = new Set(["sql", "expression", "watermarkExpression"]);
+const MULTILINE_KEYS = new Set(["sql", "watermarkExpression"]);
+
+// Array fields that should stay flat in the parent section (not promoted to cards)
+const FLAT_ARRAY_KEYS = new Set<string>([]);
 
 // Human-readable labels for common proto field names
 const LABEL_MAP: Record<string, string> = {
@@ -90,7 +97,10 @@ const LABEL_MAP: Record<string, string> = {
  * Extracts structured entries from any V1Resource by walking its spec and state.
  * No per-type components needed; new fields automatically appear.
  */
-export function mapResource(resource: V1Resource): DescribeEntry[] {
+export function mapResource(
+  resource: V1Resource,
+  allResources?: V1Resource[],
+): DescribeEntry[] {
   const entries: DescribeEntry[] = [];
 
   const kindKeys = [
@@ -115,13 +125,20 @@ export function mapResource(resource: V1Resource): DescribeEntry[] {
     if (w.spec) {
       flatten(entries, "Spec", w.spec as Record<string, unknown>);
     }
-    if (w.state) {
-      flatten(entries, "State", w.state as Record<string, unknown>);
-    }
 
-    if (!w.spec && !w.state) {
+    if (!w.spec) {
       flatten(entries, "Spec", w);
     }
+
+    // Canvas: extract components from rows into a "Components" section
+    if (key === "canvas") {
+      flattenCanvasComponents(
+        entries,
+        w.spec as Record<string, unknown>,
+        allResources,
+      );
+    }
+
     break;
   }
 
@@ -152,6 +169,111 @@ export function mapResource(resource: V1Resource): DescribeEntry[] {
   }
 
   return entries;
+}
+
+/** Extract canvas components from rows into a readable "Components" section */
+function flattenCanvasComponents(
+  entries: DescribeEntry[],
+  spec: Record<string, unknown> | undefined,
+  allResources?: V1Resource[],
+) {
+  if (!spec) return;
+  const rows = spec.rows as Array<Record<string, unknown>> | undefined;
+  if (!rows?.length) return;
+
+  // Build lookup for component resources by name
+  const componentMap = new Map<string, V1Resource>();
+  if (allResources) {
+    for (const r of allResources) {
+      if (
+        r.meta?.name?.name &&
+        (r.component || r.meta.name.kind === "rill.runtime.v1.Component")
+      ) {
+        componentMap.set(r.meta.name.name, r);
+      }
+    }
+  }
+
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    const items = row.items as Array<Record<string, unknown>> | undefined;
+    if (!items?.length) continue;
+
+    const height = row.height;
+    const heightUnit = row.heightUnit || "px";
+
+    for (const item of items) {
+      const name = (item.component as string) || `Row ${r + 1}`;
+      const group = name;
+      const section = "Components";
+
+      // Look up component resource for renderer and metrics info
+      const compResource = componentMap.get(name);
+      const compSpec = compResource?.component?.spec;
+
+      if (compSpec?.renderer) {
+        entries.push({
+          section,
+          label: "Renderer",
+          value: compSpec.renderer,
+          mono: true,
+          group,
+        });
+      }
+      if (compSpec?.rendererProperties) {
+        const props = compSpec.rendererProperties as Record<string, unknown>;
+        // Try both camelCase and snake_case for metrics view
+        const metricsView = props.metricsView ?? props.metrics_view;
+        if (metricsView) {
+          entries.push({
+            section,
+            label: "Metrics View",
+            value: String(metricsView),
+            mono: true,
+            group,
+          });
+        }
+        // Show other renderer properties (skip large content blobs)
+        const skipProps = new Set([
+          "metricsView",
+          "metrics_view",
+          "content",
+          "color",
+        ]);
+        for (const [pk, pv] of Object.entries(props)) {
+          if (skipProps.has(pk)) continue;
+          if (pv === undefined || pv === null || pv === "") continue;
+          if (typeof pv === "object") continue;
+          entries.push({
+            section,
+            label: prettyLabel(pk),
+            value: String(pv),
+            mono: shouldBeMono(pk),
+            group,
+          });
+        }
+      }
+
+      entries.push({ section, label: "Row", value: `${r + 1}`, group });
+      if (height) {
+        entries.push({
+          section,
+          label: "Row Height",
+          value: `${height}${heightUnit}`,
+          group,
+        });
+      }
+      if (item.width) {
+        const unit = (item.widthUnit as string) || "";
+        entries.push({
+          section,
+          label: "Width",
+          value: `${item.width}${unit}`,
+          group,
+        });
+      }
+    }
+  }
 }
 
 function flatten(
@@ -186,17 +308,42 @@ function flatten(
         continue;
       }
 
+      // Flat arrays stay in the parent section as indexed rows
+      if (FLAT_ARRAY_KEYS.has(key)) {
+        for (let i = 0; i < val.length; i++) {
+          const item = val[i];
+          if (typeof item === "object" && item !== null) {
+            flatten(
+              entries,
+              section,
+              item as Record<string, unknown>,
+              `${label}[${i}]`,
+            );
+          } else {
+            push(entries, section, `${label}[${i}]`, String(item), true);
+          }
+        }
+        continue;
+      }
+
+      // Promote arrays of objects to their own section with per-item groups
+      const arraySection = prefix ? `${prefix} > ${label}` : label;
       for (let i = 0; i < val.length; i++) {
         const item = val[i];
         if (typeof item === "object" && item !== null) {
-          flatten(
-            entries,
-            section,
-            item as Record<string, unknown>,
-            `${label}[${i}]`,
-          );
+          const obj = item as Record<string, unknown>;
+          const groupName =
+            (typeof obj.name === "string" && obj.name) ||
+            (typeof obj.displayName === "string" && obj.displayName) ||
+            "";
+          if (groupName) {
+            flattenGrouped(entries, arraySection, obj, groupName);
+          } else {
+            // No name — flatten directly into the section (no collapsible wrapper)
+            flatten(entries, arraySection, obj);
+          }
         } else {
-          push(entries, section, `${label}[${i}]`, String(item), true);
+          push(entries, arraySection, `${i + 1}`, String(item), true);
         }
       }
     } else if (typeof val === "object") {
@@ -206,7 +353,118 @@ function flatten(
     } else if (key.endsWith("On") || key === "refreshedOn") {
       push(entries, section, label, formatDate(String(val)));
     } else {
-      push(entries, section, label, String(val), shouldBeMono(key));
+      const formatted = formatValue(key, val);
+      if (formatted !== null) {
+        push(entries, section, label, formatted, shouldBeMono(key));
+      } else {
+        push(entries, section, label, String(val), shouldBeMono(key));
+      }
+    }
+  }
+}
+
+// Preferred field order for grouped items; unlisted keys appear before BOTTOM_KEYS
+const FIELD_ORDER = [
+  "name",
+  "displayName",
+  "column",
+  "expression",
+  "sql",
+  "renderer",
+  "type",
+  "smallestTimeGrain",
+  "description",
+  "label",
+  "formatPreset",
+  "formatD3",
+];
+const BOTTOM_KEYS = new Set(["unnest", "uri"]);
+
+/** Flatten an object's fields into grouped entries (for array items like measures/dimensions) */
+function flattenGrouped(
+  entries: DescribeEntry[],
+  section: string,
+  obj: Record<string, unknown>,
+  group: string,
+) {
+  const sortedKeys = Object.keys(obj).sort((a, b) => {
+    const aBottom = BOTTOM_KEYS.has(a);
+    const bBottom = BOTTOM_KEYS.has(b);
+    if (aBottom !== bBottom) return aBottom ? 1 : -1;
+    const aIdx = FIELD_ORDER.indexOf(a);
+    const bIdx = FIELD_ORDER.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return 0;
+  });
+
+  for (const key of sortedKeys) {
+    const val = obj[key];
+    if (val === undefined || val === null || val === "") continue;
+    if (SKIP_KEYS.has(key)) continue;
+
+    const label = prettyLabel(key);
+
+    if (MULTILINE_KEYS.has(key) && typeof val === "string") {
+      entries.push({
+        section,
+        label,
+        value: val,
+        mono: true,
+        multiline: true,
+        group,
+      });
+      continue;
+    }
+
+    if (Array.isArray(val)) {
+      if (val.length === 0) continue;
+      if (val.every((v) => typeof v !== "object" || v === null)) {
+        entries.push({
+          section,
+          label,
+          value: val.join(", "),
+          mono: true,
+          group,
+        });
+      }
+      // Skip nested arrays of objects within grouped items to avoid deep nesting
+      continue;
+    }
+
+    if (typeof val === "object") {
+      // Inline shallow nested objects as "Parent.Child" labels
+      for (const [subKey, subVal] of Object.entries(
+        val as Record<string, unknown>,
+      )) {
+        if (subVal === undefined || subVal === null || subVal === "") continue;
+        if (SKIP_KEYS.has(subKey)) continue;
+        entries.push({
+          section,
+          label: `${label}.${prettyLabel(subKey)}`,
+          value: String(subVal),
+          mono: shouldBeMono(subKey),
+          group,
+        });
+      }
+      continue;
+    }
+
+    if (typeof val === "boolean") {
+      entries.push({ section, label, value: val ? "Yes" : "No", group });
+    } else {
+      const formatted = formatValue(key, val);
+      const display = formatted !== null ? formatted : String(val);
+      if (display) {
+        entries.push({
+          section,
+          label,
+          value: display,
+          mono: shouldBeMono(key),
+          group,
+        });
+      }
     }
   }
 }
@@ -241,15 +499,72 @@ function formatDate(date: string | undefined): string {
 
 function cleanEnum(val: string | undefined): string {
   if (!val) return "";
-  return val
+  // Strip common proto enum prefixes
+  const cleaned = val
     .replace(/^[A-Z_]+_STATUS_/, "")
     .replace(/^[A-Z_]+_MODE_/, "")
     .replace(/^[A-Z_]+_GRAIN_/, "")
+    .replace(/^[A-Z_]+_TYPE_/, "");
+  // Hide "unspecified" values entirely
+  if (cleaned === "UNSPECIFIED") return "";
+  return cleaned
     .toLowerCase()
+    .replace(/_/g, " ")
     .replace(/^./, (s) => s.toUpperCase());
 }
 
+const DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/** Format values that need special handling based on field key */
+function formatValue(key: string, val: unknown): string | null {
+  const s = String(val);
+  if (key === "firstDayOfWeek") {
+    const idx = Number(val);
+    return DAY_NAMES[idx] ?? s;
+  }
+  if (key === "firstMonthOfYear") {
+    const idx = Number(val);
+    return MONTH_NAMES[idx] ?? s;
+  }
+  // Clean up proto enum values
+  if (typeof val === "string" && /^[A-Z_]{2,}_[A-Z_]+$/.test(val)) {
+    return cleanEnum(val) || null;
+  }
+  return null;
+}
+
 function shouldBeMono(key: string): boolean {
-  const monoKeys = ["sql", "connector", "table", "column", "name", "driver", "path", "resolver"];
+  const monoKeys = [
+    "sql",
+    "connector",
+    "table",
+    "column",
+    "name",
+    "driver",
+    "path",
+    "resolver",
+  ];
   return monoKeys.some((mk) => key.toLowerCase().includes(mk));
 }

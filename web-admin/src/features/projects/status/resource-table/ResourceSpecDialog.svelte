@@ -18,6 +18,7 @@
   // Track parent resource for back-navigation (e.g. canvas -> component)
   export let parentResourceKind = "";
   export let parentResource: V1Resource | undefined = undefined;
+  export let allResources: V1Resource[] = [];
 
   const dispatch = createEventDispatcher<{
     back: void;
@@ -91,7 +92,7 @@
       {#if !resource}
         <p class="text-sm text-fg-secondary">No resource data available</p>
       {:else}
-        <StructuredView {resource} />
+        <StructuredView {resource} {allResources} />
       {/if}
     </div>
   </Dialog.Content>
