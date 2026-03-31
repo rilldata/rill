@@ -25183,6 +25183,8 @@ func (m *GetCurrentUserResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Superuser
+
 	if len(errors) > 0 {
 		return GetCurrentUserResponseMultiError(errors)
 	}

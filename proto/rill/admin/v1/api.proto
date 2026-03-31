@@ -2375,6 +2375,7 @@ message GetCurrentUserRequest {}
 message GetCurrentUserResponse {
   User user = 1;
   UserPreferences preferences = 2;
+  bool superuser = 3;
 }
 
 message DeleteUserRequest {

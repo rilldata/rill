@@ -120,7 +120,8 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	}
 
 	return &adminv1.GetCurrentUserResponse{
-		User: s.userToPB(u, true),
+		User:      s.userToPB(u, true),
+		Superuser: claims.Superuser(ctx),
 		Preferences: &adminv1.UserPreferences{
 			TimeZone: &u.PreferenceTimeZone,
 		},

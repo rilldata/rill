@@ -5087,6 +5087,8 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+      superuser:
+        type: boolean
   v1GetDeploymentConfigResponse:
     type: object
     properties:
