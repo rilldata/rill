@@ -12,12 +12,16 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.rilldata.com/">Docs</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
+  <a href="https://docs.rilldata.com/">Docs</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
 </p>
 
 ---
 
-**Rill** is the fastest BI tool for humans and agents, powered by embedded OLAP engines (ClickHouse, DuckDB and more!).
+<p align="center">
+  <img src="https://docs.rilldata.com/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard" width="80%">
+</p>
+
+**Rill** is the fastest BI tool for humans and agents, powered by OLAP engines like ClickHouse and DuckDB.
 
 ## Get Started
 
@@ -29,9 +33,9 @@ rill start my-project            # create a project and open the UI
 ## Why Rill?
 
 - **Build with agents** — BI-as-code (YAML + SQL) means coding agents like Claude Code and Cursor can author projects, dashboards, and security policies end-to-end
-- **Semantic layer** — Single source of truth for dimensions, measures, and time grains — defined in YAML, materialized in your OLAP engine
-- **Explore with agents** — Conversational BI and [MCP server](https://docs.rilldata.com/explore/mcp) let business users and AI agents query your semantic layer in natural language
-- **Real-time performance** — Sub-second queries on billions of rows via embedded OLAP
+- **Semantic layer** — Single source of truth for dimensions, measures, and time grains — defined in YAML, generating SQL at query time against your OLAP engine
+- **Explore with agents** — Conversational BI lets business users query metrics in natural language; the [MCP server](https://docs.rilldata.com/explore/mcp) connects AI agents directly to your semantic layer
+- **Real-time performance** — Sub-second queries on billions of rows via ClickHouse, DuckDB, and other OLAP engines
 - **Embeddable** — Dashboards, APIs, and agent interfaces you can ship in your product
 
 ## Capabilities
@@ -39,17 +43,17 @@ rill start my-project            # create a project and open the UI
 ### Rill Developer (local)
 
 - [**Connectors**](https://docs.rilldata.com/build/connectors/) — S3, GCS, databases, and 20+ sources
-- [**Embedded OLAP**](https://docs.rilldata.com/build/olap-engines/) — Managed ClickHouse or DuckDB, or bring your own
+- [**OLAP Engines**](https://docs.rilldata.com/build/olap-engines/) — Managed ClickHouse or DuckDB included, or connect an external engine (ClickHouse Cloud, Druid, Pinot, MotherDuck)
 - [**SQL Models**](https://docs.rilldata.com/build/models/) — Transform raw data with SQL, join models together
 - [**Data Profiling**](https://docs.rilldata.com/build/models) — Instant column stats and distributions
-- [**Incremental Ingestion**](https://docs.rilldata.com/build/models/incremental-models) — Partitioned, incremental data loading
+- [**Incremental Ingestion**](https://docs.rilldata.com/build/models/incremental-models) — Load only new data on each run to keep large datasets current without full refreshes
 - [**Semantic Layer**](https://docs.rilldata.com/build/metrics-view/) — Dimensions, measures, and time grains in YAML
 - [**Row Access Policies**](https://docs.rilldata.com/build/metrics-view/security) — Per-user, per-group data access control
 - [**Local Dashboards**](https://docs.rilldata.com/build/dashboards) — Preview and explore dashboards locally
 
 ### Rill Cloud
 
-- [**Deploy**](https://docs.rilldata.com/deploy/deploy-dashboard/) — `rill deploy` or Git CI/CD
+- [**Deploy**](https://docs.rilldata.com/deploy/deploy-dashboard/) — Push to Rill Cloud with `rill deploy` or automate via Git-triggered CI/CD
 - [**Explore & Canvas Dashboards**](https://docs.rilldata.com/build/dashboards) — Interactive dashboards, embeddable in your product
 - [**Conversational BI**](https://docs.rilldata.com/explore/ai-chat) — Ask questions in natural language
 - [**MCP Server**](https://docs.rilldata.com/explore/mcp) — Connect Claude, ChatGPT, or any AI agent to your metrics
@@ -98,7 +102,7 @@ measures:
 rill deploy                      # push to Rill Cloud
 ```
 
-Dashboards, conversational BI, alerts, and APIs are live — no extra config.
+Your metrics view is immediately queryable on Rill Cloud — add YAML files to configure dashboards, alerts, and custom APIs.
 
 ## Production Examples
 
