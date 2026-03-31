@@ -122,7 +122,7 @@
 
 <div class="flex flex-col gap-6 pb-12">
   <!-- Billing Setup -->
-  <section class="p-5 rounded-lg border border-primary-200 bg-primary-50/50">
+  <section class="p-5 rounded-lg border">
     <h2 class="text-sm font-semibold text-fg-primary mb-1">Billing Setup</h2>
     <p class="text-sm text-fg-secondary mb-4">
       Generate a Stripe checkout page link for an organization to enter their

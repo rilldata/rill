@@ -184,13 +184,22 @@
               <div
                 class="flex items-center justify-between px-3 py-2 rounded bg-surface-subtle"
               >
-                <a
-                  href={`/${org.name}/${project.name}`}
-                  target="_blank"
-                  class="text-sm text-accent-primary-action hover:underline"
+                <button
+                  class="text-sm text-accent-primary-action hover:underline text-left"
+                  on:click={() => {
+                    const admin = $membersQuery.data?.members?.find(
+                      (m) => m.roleName === "admin",
+                    );
+                    const member = admin ?? $membersQuery.data?.members?.[0];
+                    if (member?.userEmail) {
+                      assumedUser.assume(member.userEmail, {
+                        redirect: `/${org.name}/${project.name}`,
+                      });
+                    }
+                  }}
                 >
                   {project.name}
-                </a>
+                </button>
                 <div class="flex gap-2">
                   <Button
                     large
