@@ -29,8 +29,8 @@
   import { onMount } from "svelte";
   import {
     FilterIcon,
+    LayoutGridIcon,
     ListIcon,
-    NetworkIcon,
     SearchIcon,
     XIcon,
   } from "lucide-svelte";
@@ -190,7 +190,7 @@
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
-      small
+      large
       class="shrink-0 whitespace-nowrap"
       onClick={() => {
         isConfirmDialogOpen = true;
@@ -202,7 +202,7 @@
     </Button>
   </div>
 
-  <!-- Row 2: [Filter] [pills] ...spacer... [clear] [search] [List/Graph] -->
+  <!-- Row 2: [Filter button] ...spacer... [search] [Grid/List] -->
   <div class="flex items-center gap-x-2 min-h-8">
     <!-- Filter dropdown -->
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
@@ -210,10 +210,10 @@
         {#snippet child({ props })}
           <button
             {...props}
-            class="filter-btn"
-            class:active={filterDropdownOpen || activeFilterCount > 0}
+            class="filter-trigger"
           >
             <FilterIcon size="14px" />
+            <span>Filter</span>
             {#if activeFilterCount > 0}
               <span class="filter-badge">{activeFilterCount}</span>
             {/if}
@@ -258,38 +258,7 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
 
-    <!-- Grouped filter pills -->
-    <div class="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
-      {#if selectedStatuses.length > 0}
-        <button
-          class="filter-pill"
-          onclick={() => (selectedStatuses = [])}
-        >
-          <span>Status = {selectedStatuses
-            .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
-            .join(", ")}</span>
-          <XIcon size="10px" />
-        </button>
-      {/if}
-      {#if selectedTypes.length > 0}
-        <button
-          class="filter-pill"
-          onclick={() => (selectedTypes = [])}
-        >
-          <span>Type = {selectedTypes.map(prettyResourceKind).join(", ")}</span>
-          <XIcon size="10px" />
-        </button>
-      {/if}
-    </div>
-
-    {#if hasActiveFilters}
-      <button
-        class="shrink-0 text-xs text-primary-500 hover:text-primary-600 whitespace-nowrap px-1"
-        onclick={clearFilters}
-      >
-        Clear all
-      </button>
-    {/if}
+    <div class="flex-1"></div>
 
     <!-- Search icon / expandable search -->
     {#if searchExpanded}
@@ -316,16 +285,52 @@
       </button>
     {/if}
 
-    <!-- List / Graph toggle -->
+    <!-- Grid / List toggle -->
     <div class="view-toggle">
+      <a href="{basePath}/graph" class="toggle-btn" class:active={isGraphView}>
+        <LayoutGridIcon size="14px" />
+      </a>
       <a href={basePath} class="toggle-btn" class:active={!isGraphView}>
         <ListIcon size="14px" />
       </a>
-      <a href="{basePath}/graph" class="toggle-btn" class:active={isGraphView}>
-        <NetworkIcon size="14px" />
-      </a>
     </div>
   </div>
+
+  <hr class="border-t border-gray-200 -my-1" />
+
+  <!-- Row 3: Filter pills + Clear all (only when filters active) -->
+  {#if activeFilterCount > 0}
+    <div class="filter-pills-row">
+      <div class="filter-pills-scroll">
+        {#if selectedStatuses.length > 0}
+          <button
+            class="filter-pill"
+            onclick={() => (selectedStatuses = [])}
+          >
+            <span>Status = {selectedStatuses
+              .map((s) => statusFilters.find((f) => f.value === s)?.label ?? s)
+              .join(", ")}</span>
+            <XIcon size="10px" />
+          </button>
+        {/if}
+        {#if selectedTypes.length > 0}
+          <button
+            class="filter-pill"
+            onclick={() => (selectedTypes = [])}
+          >
+            <span>Type = {selectedTypes.map(prettyResourceKind).join(", ")}</span>
+            <XIcon size="10px" />
+          </button>
+        {/if}
+      </div>
+      <button
+        class="filter-pills-clear"
+        onclick={clearFilters}
+      >
+        Clear all
+      </button>
+    </div>
+  {/if}
 
   <!-- Content -->
   {#if $resources.isLoading}
@@ -368,39 +373,48 @@
 />
 
 <style lang="postcss">
-  .filter-btn {
-    @apply flex items-center gap-1 p-1.5 rounded-sm border text-fg-secondary;
+  .filter-trigger {
+    @apply flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-primary-50 text-sm text-primary-600;
   }
-  .filter-btn:hover {
-    @apply bg-surface-hover;
-  }
-  .filter-btn.active {
-    @apply bg-surface-hover text-fg-primary;
+  .filter-trigger:hover {
+    @apply bg-primary-100;
   }
 
   .filter-badge {
-    @apply text-[10px] font-semibold bg-primary-100 text-primary-600 rounded-full w-4 h-4 flex items-center justify-center;
+    @apply text-[10px] font-semibold bg-primary-500 text-white rounded-full w-4 h-4 flex items-center justify-center;
+  }
+
+  .filter-pills-row {
+    @apply flex items-center min-h-7 relative;
+  }
+
+  .filter-pills-scroll {
+    @apply flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden;
+  }
+
+  .filter-pills-clear {
+    @apply shrink-0 text-xs text-fg-primary hover:underline whitespace-nowrap pl-4 pr-1 bg-gradient-to-l from-white from-70% to-transparent;
   }
 
   .filter-pill {
-    @apply flex items-center gap-1 text-xs font-medium text-fg-secondary bg-surface-hover rounded-full px-2 py-0.5 whitespace-nowrap;
+    @apply flex items-center gap-1.5 text-xs font-medium text-fg-primary border border-gray-300 rounded-sm px-2 py-1 whitespace-nowrap shrink-0;
   }
   .filter-pill:hover {
-    @apply bg-gray-200 text-fg-primary;
+    @apply bg-surface-hover;
   }
 
   .toolbar-icon-btn {
-    @apply p-1.5 rounded-sm text-fg-secondary;
+    @apply p-1.5 rounded-sm text-fg-primary;
   }
   .toolbar-icon-btn:hover {
-    @apply bg-surface-hover text-fg-primary;
+    @apply bg-surface-hover;
   }
 
   .view-toggle {
     @apply flex rounded-sm border border-gray-200 overflow-hidden shrink-0;
   }
   .toggle-btn {
-    @apply flex items-center p-1.5 text-fg-secondary no-underline;
+    @apply flex items-center p-1.5 text-fg-primary no-underline;
   }
   .toggle-btn:hover {
     @apply bg-surface-hover;
