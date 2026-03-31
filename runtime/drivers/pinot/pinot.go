@@ -229,6 +229,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		logQueries:    conf.LogQueries,
 		timeoutMS:     conf.TimeoutMS,
 		logger:        logger,
+		dialect:       newDialect(),
 	}
 	return conn, nil
 }
@@ -255,6 +256,7 @@ type connection struct {
 	logQueries    bool
 	timeoutMS     int64 // timeout in milliseconds for queries, 0 means use cluster default
 	logger        *zap.Logger
+	dialect       *dialect
 }
 
 // Ping implements drivers.Handle.

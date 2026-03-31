@@ -190,6 +190,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		configProp: cfg,
 		logger:     logger,
 		activity:   ac,
+		dialect:    newDialect(),
 	}
 
 	// Open database connection immediately in drivers.Open
@@ -217,6 +218,7 @@ type connection struct {
 	configProp *ConfigProperties
 	logger     *zap.Logger
 	activity   *activity.Client
+	dialect    *dialect
 
 	// db is initialized in drivers.Open
 	db *sqlx.DB

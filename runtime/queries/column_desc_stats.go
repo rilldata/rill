@@ -57,8 +57,8 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 
 	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 	var descriptiveStatisticsSQL string
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
+	switch olap.Dialect().String() {
+	case drivers.DialectNameDuckDB:
 		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
 			"min(%[1]s)::DOUBLE as min, "+
 			"approx_quantile(%[1]s, 0.25)::DOUBLE as q25, "+
@@ -70,7 +70,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			"FROM %[2]s WHERE NOT isinf(%[1]s) ",
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
-	case drivers.DialectClickHouse:
+	case drivers.DialectNameClickHouse:
 		descriptiveStatisticsSQL = fmt.Sprintf(`SELECT
 			min(%[1]s)::DOUBLE as min,
 			quantileTDigest(0.25)(%[1]s)::DOUBLE as q25,
@@ -82,7 +82,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			FROM %[2]s WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+``,
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
 			"CAST(min(%[1]s) AS DOUBLE) as min, "+

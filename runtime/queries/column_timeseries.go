@@ -93,7 +93,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
+	if olap.Dialect().String() != drivers.DialectNameDuckDB && olap.Dialect().String() != drivers.DialectNameClickHouse && olap.Dialect().String() != drivers.DialectNameStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -113,7 +113,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	// StarRocks uses a different approach: CTE-based query without temporary tables
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		return q.resolveStarRocks(ctx, olap, timeRange, priority)
 	}
 
@@ -131,10 +131,10 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 		var querySQL string
 		var args []any
-		switch olap.Dialect() {
-		case drivers.DialectDuckDB:
+		switch olap.Dialect().String() {
+		case drivers.DialectNameDuckDB:
 			querySQL, args = timeSeriesDuckDBSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
-		case drivers.DialectClickHouse:
+		case drivers.DialectNameClickHouse:
 			querySQL, args = timeSeriesClickHouseSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
 		default:
 			return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
@@ -305,7 +305,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 }
 
 func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
-	dateTruncSpecifier := drivers.DialectDuckDB.ConvertToDateTruncSpecifier(timeRange.Interval)
+	dateTruncSpecifier := drivers.ConvertToDateTruncSpecifierDuckDB(timeRange.Interval)
 	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 	filter := ""
 
@@ -661,8 +661,8 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest
 func getCoalesceStatementsMeasuresLast(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		switch dialect {
-		case drivers.DialectDuckDB:
+		switch dialect.String() {
+		case drivers.DialectNameDuckDB:
 			// "last" function of DuckDB returns non-deterministic results by default so requires an ORDER BY clause
 			// https://duckdb.org/docs/sql/functions/aggregates.html#order-by-clause-in-aggregate-functions
 			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, safeName(measure.SqlName))
@@ -726,8 +726,8 @@ func approxSize(c *ColumnTimeseriesResult) int64 {
 }
 
 func lastValue(dialect drivers.Dialect) string {
-	switch dialect {
-	case drivers.DialectClickHouse:
+	switch dialect.String() {
+	case drivers.DialectNameClickHouse:
 		return "last_value"
 	default:
 		return "last"
@@ -735,8 +735,8 @@ func lastValue(dialect drivers.Dialect) string {
 }
 
 func argMin(dialect drivers.Dialect) string {
-	switch dialect {
-	case drivers.DialectClickHouse:
+	switch dialect.String() {
+	case drivers.DialectNameClickHouse:
 		return "argMin"
 	default:
 		return "arg_min"
@@ -744,8 +744,8 @@ func argMin(dialect drivers.Dialect) string {
 }
 
 func argMax(dialect drivers.Dialect) string {
-	switch dialect {
-	case drivers.DialectClickHouse:
+	switch dialect.String() {
+	case drivers.DialectNameClickHouse:
 		return "argMax"
 	default:
 		return "arg_max"
@@ -753,8 +753,8 @@ func argMax(dialect drivers.Dialect) string {
 }
 
 func epochFromTimestamp(safeColName string, dialect drivers.Dialect) string {
-	switch dialect {
-	case drivers.DialectClickHouse:
+	switch dialect.String() {
+	case drivers.DialectNameClickHouse:
 		return `toUnixTimestamp(` + safeColName + `)`
 	default:
 		return `extract('epoch' from ` + safeColName + `)`

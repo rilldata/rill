@@ -731,5 +731,5 @@ func tempTableForDictionary(name string) string {
 }
 
 func safeSQLString(name string) string {
-	return drivers.DialectClickHouse.EscapeStringValue(name)
+	return newDialect().EscapeStringValue(name)
 }

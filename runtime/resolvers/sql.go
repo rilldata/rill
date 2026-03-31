@@ -82,7 +82,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}
 
 	// For DuckDB, we can do ref inference using the SQL AST (similar to the parser).
-	if olap.Dialect() == drivers.DialectDuckDB {
+	if olap.Dialect().String() == drivers.DialectNameDuckDB {
 		ast, err := duckdbsql.Parse(sql)
 		if err != nil {
 			return nil, err
@@ -120,7 +120,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 
 	// Wrap the SQL with an outer SELECT to apply the limit.
 	if limit > 0 {
-		if olap.Dialect() == drivers.DialectMySQL {
+		if olap.Dialect().String() == drivers.DialectNameMySQL {
 			// subqueries in MySQL require an alias
 			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", sql, limit)
 		} else {
@@ -144,7 +144,7 @@ func (r *sqlResolver) Close() error {
 }
 
 func (r *sqlResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	if r.olap.Dialect() == drivers.DialectDuckDB || r.olap.Dialect() == drivers.DialectClickHouse {
+	if r.olap.Dialect().String() == drivers.DialectNameDuckDB || r.olap.Dialect().String() == drivers.DialectNameClickHouse {
 		return []byte(r.sql), len(r.refs) != 0, nil
 	}
 	return nil, false, nil
@@ -183,13 +183,13 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 
 	filename := "api_export_" + time.Now().Format("2006-01-02T15-04-05.000Z")
 
-	switch r.olap.Dialect() {
-	case drivers.DialectDuckDB:
+	switch r.olap.Dialect().String() {
+	case drivers.DialectNameDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			return queries.DuckDBCopyExport(ctx, w, exportOpts, r.sql, nil, filename, r.olap, opts.Format)
 		}
 		return r.generalExport(ctx, w, filename, exportOpts)
-	case drivers.DialectDruid, drivers.DialectClickHouse:
+	case drivers.DialectNameDruid, drivers.DialectNameClickHouse:
 		return r.generalExport(ctx, w, filename, exportOpts)
 	default:
 		return fmt.Errorf("export not available for dialect %q", r.olap.Dialect().String())
@@ -278,7 +278,7 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 
 			// Return the escaped identifier
 			// TODO: As of now it is using `DialectDuckDB` in all cases since in certain cases like metrics_sql it is not possible to identify OLAP connector before template resolution.
-			return drivers.DialectDuckDB.EscapeIdentifier(ref.Name), nil
+			return drivers.EscapeIdentifierDuckDB(ref.Name), nil
 		},
 	}, false)
 	if err != nil {

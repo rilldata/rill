@@ -24,18 +24,18 @@ type TableHead struct {
 
 var _ runtime.Query = &TableHead{}
 
-var supportedTableHeadDialects = map[drivers.Dialect]bool{
-	drivers.DialectDuckDB:     true,
-	drivers.DialectClickHouse: true,
-	drivers.DialectDruid:      true,
-	drivers.DialectPinot:      true,
-	drivers.DialectBigQuery:   true,
-	drivers.DialectSnowflake:  true,
-	drivers.DialectAthena:     true,
-	drivers.DialectRedshift:   true,
-	drivers.DialectMySQL:      true,
-	drivers.DialectPostgres:   true,
-	drivers.DialectStarRocks:  true,
+var supportedTableHeadDialects = map[string]bool{
+	drivers.DialectNameDuckDB:     true,
+	drivers.DialectNameClickHouse: true,
+	drivers.DialectNameDruid:      true,
+	drivers.DialectNamePinot:      true,
+	drivers.DialectNameBigQuery:   true,
+	drivers.DialectNameSnowflake:  true,
+	drivers.DialectNameAthena:     true,
+	drivers.DialectNameRedshift:   true,
+	drivers.DialectNameMySQL:      true,
+	drivers.DialectNamePostgres:   true,
+	drivers.DialectNameStarRocks:  true,
 }
 
 func (q *TableHead) Key() string {
@@ -78,7 +78,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 	defer release()
 
-	if !supportedTableHeadDialects[olap.Dialect()] {
+	if !supportedTableHeadDialects[olap.Dialect().String()] {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -114,8 +114,8 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 	}
 	defer release()
 
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
+	switch olap.Dialect().String() {
+	case drivers.DialectNameDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			filename := q.TableName
 			sql, err := q.buildTableHeadSQL(ctx, olap)
@@ -131,15 +131,15 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 				return err
 			}
 		}
-	case drivers.DialectDruid:
+	case drivers.DialectNameDruid:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
-	case drivers.DialectClickHouse:
+	case drivers.DialectNameClickHouse:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}

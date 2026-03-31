@@ -622,5 +622,5 @@ func safeSQLName(name string) string {
 	if alphanumericUnderscoreRegexp.MatchString(name) {
 		return name
 	}
-	return drivers.DialectDuckDB.EscapeIdentifier(name)
+	return drivers.EscapeIdentifierDuckDB(name)
 }

@@ -15,7 +15,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectPostgres
+	return c.dialect
 }
 
 // Exec implements drivers.OLAPStore.

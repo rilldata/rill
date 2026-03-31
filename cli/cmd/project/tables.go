@@ -90,7 +90,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Get row count using SQL query
 				var rowCount string
-				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", drivers.DialectDuckDB.EscapeIdentifier(table.Name))
+				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", drivers.EscapeIdentifierDuckDB(table.Name))
 				queryRes, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 					InstanceId:         instanceID,
 					Resolver:           "sql",

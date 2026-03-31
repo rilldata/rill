@@ -21,7 +21,7 @@ var _ drivers.OLAPStore = &Connection{}
 
 // Dialect implements drivers.OLAPStore.
 func (c *Connection) Dialect() drivers.Dialect {
-	return drivers.DialectRedshift
+	return c.dialect
 }
 
 // Exec implements drivers.OLAPStore.

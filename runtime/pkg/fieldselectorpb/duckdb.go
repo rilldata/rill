@@ -25,7 +25,7 @@ func resolveDuckDBExpression(expr string, all []string) ([]string, error) {
 				ddl.WriteString(", ")
 			}
 			ddl.WriteString("1 AS ")
-			ddl.WriteString(drivers.DialectDuckDB.EscapeIdentifier(f))
+			ddl.WriteString(drivers.EscapeIdentifierDuckDB(f))
 		}
 
 		_, err := conn.ExecContext(ctx, ddl.String())

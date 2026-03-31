@@ -1839,7 +1839,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 			State: self.GetModel().State,
 		},
 		Resolve: func(ref parser.ResourceName) (string, error) {
-			if dialect == drivers.DialectUnspecified {
+			if dialect == nil {
 				return ref.Name, nil
 			}
 			return dialect.EscapeIdentifier(ref.Name), nil

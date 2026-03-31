@@ -29,7 +29,7 @@ const (
 var _ drivers.OLAPStore = &connection{}
 
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectDruid
+	return c.dialect
 }
 
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {

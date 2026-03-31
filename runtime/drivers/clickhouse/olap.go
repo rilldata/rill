@@ -36,7 +36,7 @@ var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
 var _ drivers.OLAPStore = &Connection{}
 
 func (c *Connection) Dialect() drivers.Dialect {
-	return drivers.DialectClickHouse
+	return c.dialect
 }
 
 func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {

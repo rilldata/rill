@@ -163,6 +163,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		config:        conf,
 		connectorName: connectorName,
 		logger:        logger,
+		dialect:       newDialect(),
 	}
 	return conn, nil
 }
@@ -231,6 +232,7 @@ type connection struct {
 	config        *configProperties
 	connectorName string
 	logger        *zap.Logger
+	dialect       *dialect
 }
 
 // Ping implements drivers.Handle.

@@ -57,8 +57,8 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	defer release()
 
 	var columnName string
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectStarRocks:
+	switch olap.Dialect().String() {
+	case drivers.DialectNameDuckDB, drivers.DialectNameClickHouse, drivers.DialectNameStarRocks:
 		columnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())

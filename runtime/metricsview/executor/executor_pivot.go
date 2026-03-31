@@ -57,10 +57,11 @@ func (e *Executor) rewriteQueryForPivot(qry *metricsview.Query) (*pivotAST, bool
 		}
 	}
 
-	// Determine dialect for the PIVOT (in practice, this currently always becomes DuckDB because it's the only OLAP that supports pivoting)
-	dialect := e.olap.Dialect()
-	if !dialect.CanPivot() {
-		dialect = drivers.DialectDuckDB
+	// Determine dialect for the PIVOT (in practice, this currently always becomes DuckDB because it's the only OLAP that supports pivoting).
+	// If the primary dialect doesn't support pivoting, we leave the dialect unset here and resolve it to DuckDB in executePivotExport where a context is available.
+	var dialect drivers.Dialect
+	if e.olap.Dialect().CanPivot() {
+		dialect = e.olap.Dialect()
 	}
 
 	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query)
@@ -131,11 +132,6 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		pivotConnector = "duckdb"
 		underlyingSQL = fmt.Sprintf("SELECT * FROM '%s'", path)
 		args = nil
-
-		// Check for consistency with rewriteQueryForPivot
-		if pivot.dialect != drivers.DialectDuckDB {
-			return "", fmt.Errorf("cannot execute pivot: the pivot AST fell back to dialect %q, not DuckDB", pivot.dialect.String())
-		}
 	}
 
 	// Unfortunately, DuckDB does not support passing args to a PIVOT query.
@@ -145,6 +141,12 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		return "", fmt.Errorf("failed to acquire OLAP for serving pivot: %w", err)
 	}
 	defer release()
+
+	// If the pivot dialect was not set in rewriteQueryForPivot (because the primary OLAP doesn't support pivoting),
+	// resolve it now from the acquired OLAP (which will be DuckDB).
+	if pivot.dialect == nil {
+		pivot.dialect = olap.Dialect()
+	}
 	var path string
 	err = olap.WithConnection(ctx, e.priority, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Stage the underlying data in a temporary table
