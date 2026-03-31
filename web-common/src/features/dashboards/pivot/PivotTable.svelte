@@ -48,6 +48,7 @@
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
   export let border = true;
+  export let fullWidth = false;
   export let overscan = 20;
   export let rounded = true;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
@@ -302,6 +303,8 @@
 <div
   class:border
   class:rounded-sm={rounded}
+  class:w-full={fullWidth}
+  class:w-fit={!fullWidth}
   class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
@@ -368,7 +371,7 @@
 
 <style lang="postcss">
   .table-wrapper {
-    @apply overflow-auto h-fit max-h-full w-fit max-w-full;
+    @apply overflow-auto h-fit max-h-full max-w-full;
     @apply z-40 select-none;
   }
 </style>
