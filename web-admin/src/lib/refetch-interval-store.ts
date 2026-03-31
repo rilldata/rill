@@ -91,14 +91,25 @@ export function createSmartRefetchInterval(
 
     const relevantResources = resources.filter(isRelevant);
 
-    // When no relevant resources exist, fall back to non-ProjectParser
-    // resources. If any are reconciling (models, sources being built),
-    // relevant resources may still appear as reconciliation progresses.
+    // When no relevant resources exist yet, we need to decide whether to
+    // keep polling (resources are still being built) or stop (project is
+    // genuinely empty). Three cases:
     //
-    // Additionally, if non-parser resources are all idle but the parser
-    // is still reconciling, include it: during wake-up the parser creates
-    // resources incrementally, so explores/canvases may not exist yet
-    // even though earlier resources (sources, models) have finished.
+    // 1. Relevant resources exist → only check those. This avoids
+    //    perpetual polling from ProjectParser, which stays RUNNING
+    //    indefinitely on dev/branch deployments (file watching).
+    //
+    // 2. No relevant resources, but non-parser resources are reconciling
+    //    or the parser is still creating resources → keep polling.
+    //    During startup the parser creates resources incrementally
+    //    (sources → models → explores), so explores may not exist yet.
+    //
+    // 3. Only ProjectParser exists (no non-parser resources yet) and
+    //    it's reconciling → poll at MAX_REFETCH_INTERVAL. We can't
+    //    distinguish "empty project" from "parser still creating
+    //    resources," so we poll conservatively. Once the parser creates
+    //    non-parser resources we move to case 2; if it finishes without
+    //    creating any, we stop.
     let toCheck: V1Resource[];
     if (relevantResources.length > 0) {
       toCheck = relevantResources;
@@ -107,7 +118,9 @@ export function createSmartRefetchInterval(
       const parserReconciling = resources.some(
         (r) => !!r.projectParser && isResourceReconciling(r),
       );
-      if (nonParser.length > 0 && parserReconciling) {
+      if (nonParser.length === 0 && parserReconciling) {
+        return MAX_REFETCH_INTERVAL;
+      } else if (nonParser.length > 0 && parserReconciling) {
         toCheck = resources;
       } else {
         toCheck = nonParser;

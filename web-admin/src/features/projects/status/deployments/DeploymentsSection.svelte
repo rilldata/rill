@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
   import {
     V1DeploymentStatus,
     createAdminServiceDeleteDeployment,
@@ -8,11 +9,7 @@
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceStartDeployment,
     createAdminServiceStopDeployment,
-    getAdminServiceGetProjectQueryKey,
-    getAdminServiceListDeploymentsQueryKey,
     type V1Deployment,
-    type V1GetProjectResponse,
-    type V1ListDeploymentsResponse,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
@@ -23,13 +20,16 @@
   import {
     deduplicateDeployments,
     isActiveDeployment,
-    invalidateDeployments,
     isProdDeployment,
   } from "@rilldata/web-admin/features/branches/deployment-utils";
   import {
     getStatusDotClass,
     getStatusLabel,
   } from "@rilldata/web-admin/features/projects/status/display-utils";
+  import {
+    optimisticallyRemoveDeployment,
+    optimisticallySetStatus,
+  } from "./deployment-actions";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -53,10 +53,9 @@
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
-  export let organization: string;
-  export let project: string;
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
   const TRANSIENT_STATUSES = new Set<V1DeploymentStatus>([
     V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
@@ -65,68 +64,73 @@
     V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING,
   ]);
 
-  const orgMembers = createAdminServiceListOrganizationMemberUsers(
-    organization,
-    { pageSize: 1000 },
+  let orgMembers = $derived(
+    createAdminServiceListOrganizationMemberUsers(organization, {
+      pageSize: 1000,
+    }),
   );
   // Uses empty params `{}` so the cache key matches BranchSelector's query.
-  const allDeployments = createAdminServiceListDeployments(
-    organization,
-    project,
-    {},
-    {
-      query: {
-        refetchInterval: (query) => {
-          const deployments = query.state.data?.deployments;
-          if (deployments?.some((d) => TRANSIENT_STATUSES.has(d.status!))) {
-            return 2000;
-          }
-          return false;
+  let allDeployments = $derived(
+    createAdminServiceListDeployments(
+      organization,
+      project,
+      {},
+      {
+        query: {
+          refetchInterval: (query) => {
+            const deployments = query.state.data?.deployments;
+            if (deployments?.some((d) => TRANSIENT_STATUSES.has(d.status!))) {
+              return 2000;
+            }
+            return false;
+          },
         },
       },
-    },
+    ),
   );
-  const deleteMutation = createAdminServiceDeleteDeployment();
+  let projectQuery = $derived(
+    createAdminServiceGetProject(organization, project),
+  );
   const startMutation = createAdminServiceStartDeployment();
   const stopMutation = createAdminServiceStopDeployment();
+  const deleteMutation = createAdminServiceDeleteDeployment();
 
-  $: projectQuery = createAdminServiceGetProject(organization, project);
+  let primaryBranch = $derived($projectQuery.data?.project?.primaryBranch);
+  let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
 
-  $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
-  $: activeBranch = extractBranchFromPath($page.url.pathname);
-  $: userNameMap = new Map(
-    ($orgMembers.data?.members ?? []).map((m) => [
-      m.userId,
-      m.userName || m.userEmail || "Unknown",
-    ]),
+  let userNameMap = $derived(
+    new Map(
+      ($orgMembers.data?.members ?? []).map((m) => [
+        m.userId,
+        m.userName || m.userEmail || "Unknown",
+      ]),
+    ),
   );
-  $: rawDeployments = $allDeployments.data?.deployments ?? [];
 
-  // Slot quotas (project-level); null means the API didn't return a value
-  $: prodSlots =
+  let prodSlots = $derived(
     $projectQuery.data?.project?.prodSlots != null
-      ? parseInt($projectQuery.data.project.prodSlots)
-      : null;
-  $: devSlots =
+      ? parseInt($projectQuery.data.project.prodSlots, 10)
+      : null,
+  );
+  let devSlots = $derived(
     $projectQuery.data?.project?.devSlots != null
-      ? parseInt($projectQuery.data.project.devSlots)
-      : null;
-
-  // Deduplicate by branch, excluding deleted deployments.
-  $: deduped = deduplicateDeployments(
-    rawDeployments,
-    (d) =>
-      d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED ||
-      deletedIds.has(d.id ?? ""),
+      ? parseInt($projectQuery.data.project.devSlots, 10)
+      : null,
   );
 
-  // Sort: production first, then by updatedOn desc
-  $: visibleDeployments = [...deduped].sort((a, b) => {
-    const aIsProd = isProdDeployment(a);
-    const bIsProd = isProdDeployment(b);
-    if (aIsProd && !bIsProd) return -1;
-    if (!aIsProd && bIsProd) return 1;
-    return (b.updatedOn ?? "").localeCompare(a.updatedOn ?? "");
+  let visibleDeployments = $derived.by(() => {
+    const deduped = deduplicateDeployments(
+      $allDeployments.data?.deployments ?? [],
+      (d: V1Deployment) =>
+        d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+    );
+    return [...deduped].sort((a, b) => {
+      const aIsProd = isProdDeployment(a);
+      const bIsProd = isProdDeployment(b);
+      if (aIsProd && !bIsProd) return -1;
+      if (!aIsProd && bIsProd) return 1;
+      return (b.updatedOn ?? "").localeCompare(a.updatedOn ?? "");
+    });
   });
 
   function ownerName(d: V1Deployment): string {
@@ -153,134 +157,56 @@
     return `/${organization}/${project}${branchPathPrefix(branch)}`;
   }
 
-  function handleNavClick() {
-    requestSkipBranchInjection();
-  }
+  let openDropdownId = $state("");
+  let pendingId = $state("");
+  let pendingDelete = $state<{ id: string; branch: string } | null>(null);
 
-  let openDropdownId = "";
-  let startingIds = new Set<string>();
-  let stoppingIds = new Set<string>();
-  let deletingIds = new Set<string>();
-  let deletedIds = new Set<string>();
-
-  /**
-   * Optimistically set a deployment's status in both the ListDeployments
-   * and GetProject caches, then mark both stale (without immediate refetch;
-   * transient-status polling picks up the real state).
-   */
-  function optimisticallySetStatus(
+  async function mutateDeployment(
     deploymentId: string,
     branch: string | undefined,
-    newStatus: V1DeploymentStatus,
+    optimisticStatus: V1DeploymentStatus,
+    mutateAsync: (args: {
+      deploymentId: string;
+      data: object;
+    }) => Promise<unknown>,
+    actionName: string,
   ) {
-    const listKey = getAdminServiceListDeploymentsQueryKey(
-      organization,
-      project,
-      {},
-    );
-    queryClient.setQueryData<V1ListDeploymentsResponse>(listKey, (old) => {
-      if (!old?.deployments) return old;
-      return {
-        ...old,
-        deployments: old.deployments.map((d) =>
-          d.id === deploymentId ? { ...d, status: newStatus } : d,
-        ),
-      };
-    });
-    void queryClient.invalidateQueries({
-      queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
-      refetchType: "none",
-    });
-
-    const projectQueryKey = getAdminServiceGetProjectQueryKey(
-      organization,
-      project,
-      branch ? { branch } : undefined,
-    );
-    queryClient.setQueryData<V1GetProjectResponse>(projectQueryKey, (old) => {
-      if (!old?.deployment) return old;
-      return {
-        ...old,
-        deployment: { ...old.deployment, status: newStatus },
-      };
-    });
-    void queryClient.invalidateQueries({
-      queryKey: getAdminServiceGetProjectQueryKey(organization, project),
-      refetchType: "none",
-    });
-  }
-
-  async function handleStart(deploymentId: string, branch: string | undefined) {
     openDropdownId = "";
-    startingIds.add(deploymentId);
-    startingIds = startingIds;
+    pendingId = deploymentId;
     try {
-      await $startMutation.mutateAsync({ deploymentId, data: {} });
+      await mutateAsync({ deploymentId, data: {} });
       optimisticallySetStatus(
+        organization,
+        project,
         deploymentId,
         branch,
-        V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+        optimisticStatus,
       );
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to start deployment: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to ${actionName} deployment: ${getRpcErrorMessage(err as any)}`,
       });
     } finally {
-      startingIds.delete(deploymentId);
-      startingIds = startingIds;
+      pendingId = "";
     }
   }
 
-  async function handleStop(deploymentId: string, branch: string | undefined) {
-    openDropdownId = "";
-    stoppingIds.add(deploymentId);
-    stoppingIds = stoppingIds;
-    try {
-      await $stopMutation.mutateAsync({ deploymentId, data: {} });
-      optimisticallySetStatus(
-        deploymentId,
-        branch,
-        V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
-      );
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to stop deployment: ${getRpcErrorMessage(err as any)}`,
-      });
-    } finally {
-      stoppingIds.delete(deploymentId);
-      stoppingIds = stoppingIds;
-    }
-  }
-
-  // Confirmation dialog state
-  let deleteConfirmOpen = false;
-  let pendingDeleteId = "";
-  let pendingDeleteBranch = "";
-
-  function requestDelete(deploymentId: string, branch: string | undefined) {
-    pendingDeleteId = deploymentId;
-    pendingDeleteBranch = branch ?? "";
-    deleteConfirmOpen = true;
+  function confirmDelete(deploymentId: string, branch: string | undefined) {
+    pendingDelete = { id: deploymentId, branch: branch ?? "" };
   }
 
   async function handleDelete() {
-    const deploymentId = pendingDeleteId;
-    const branch = pendingDeleteBranch;
-    deleteConfirmOpen = false;
-
-    deletingIds.add(deploymentId);
-    deletingIds = deletingIds;
+    if (!pendingDelete) return;
+    const { id: deploymentId, branch } = pendingDelete;
+    pendingDelete = null;
+    pendingId = deploymentId;
     try {
       await $deleteMutation.mutateAsync({ deploymentId });
-      deletedIds.add(deploymentId);
-      deletedIds = deletedIds;
-      void invalidateDeployments(organization, project);
-
+      optimisticallyRemoveDeployment(organization, project, deploymentId);
       if (branch && branch === activeBranch) {
         requestSkipBranchInjection();
-        window.location.href = `/${organization}/${project}/-/status/deployments`;
+        void goto(`/${organization}/${project}/-/status/deployments`);
       }
     } catch (err) {
       eventBus.emit("notification", {
@@ -288,8 +214,7 @@
         message: `Failed to delete deployment: ${getRpcErrorMessage(err as any)}`,
       });
     } finally {
-      deletingIds.delete(deploymentId);
-      deletingIds = deletingIds;
+      pendingId = "";
     }
   }
 </script>
@@ -334,21 +259,18 @@
       </div>
       {#each visibleDeployments as deployment (deployment.id)}
         {@const prod = isProdDeployment(deployment)}
-        {@const starting =
-          startingIds.has(deployment.id ?? "") ||
-          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-        {@const stopping =
-          stoppingIds.has(deployment.id ?? "") ||
-          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
-        {@const deleting =
-          deletingIds.has(deployment.id ?? "") ||
-          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING}
+        {@const id = deployment.id ?? ""}
+        {@const status =
+          deployment.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED}
+        {@const isPending = id === pendingId}
+        {@const isCurrent = prod
+          ? !activeBranch
+          : activeBranch === deployment.branch}
         {@const canStart =
           !prod &&
-          deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED &&
-          !starting}
-        {@const canStop = !prod && isActiveDeployment(deployment) && !stopping}
-        {@const id = deployment.id ?? ""}
+          status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED &&
+          !isPending}
+        {@const canStop = !prod && isActiveDeployment(deployment) && !isPending}
         <div class="data-row">
           <div class="pl-4 flex items-center gap-2 truncate">
             <span class="font-mono text-xs truncate">
@@ -357,7 +279,7 @@
             {#if prod}
               <span class="prod-badge">Production</span>
             {/if}
-            {#if isProdDeployment(deployment) ? !activeBranch : activeBranch === deployment.branch}
+            {#if isCurrent}
               <span class="current-badge">Current</span>
             {/if}
           </div>
@@ -367,16 +289,8 @@
             {ownerName(deployment)}
           </div>
           <div class="pl-4 flex items-center gap-2 text-sm">
-            <span
-              class="status-dot {getStatusDotClass(
-                deployment.status ??
-                  V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
-              )}"
-            ></span>
-            {getStatusLabel(
-              deployment.status ??
-                V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
-            )}
+            <span class="status-dot {getStatusDotClass(status)}"></span>
+            {getStatusLabel(status)}
           </div>
           <div class="pl-4 flex items-center text-sm text-fg-secondary">
             {deploymentSlots(deployment)}
@@ -402,7 +316,7 @@
                   href={prod
                     ? `/${organization}/${project}`
                     : previewUrl(deployment.branch)}
-                  onclick={handleNavClick}
+                  onclick={requestSkipBranchInjection}
                 >
                   <div class="flex items-center">
                     <EyeIcon size="12px" />
@@ -412,7 +326,14 @@
                 {#if canStart}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    onclick={() => handleStart(id, deployment.branch)}
+                    onclick={() =>
+                      mutateDeployment(
+                        id,
+                        deployment.branch,
+                        V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+                        $startMutation.mutateAsync,
+                        "start",
+                      )}
                   >
                     <div class="flex items-center">
                       <PlayIcon size="12px" />
@@ -423,7 +344,14 @@
                 {#if canStop}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    onclick={() => handleStop(id, deployment.branch)}
+                    onclick={() =>
+                      mutateDeployment(
+                        id,
+                        deployment.branch,
+                        V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
+                        $stopMutation.mutateAsync,
+                        "stop",
+                      )}
                   >
                     <div class="flex items-center">
                       <StopCircleIcon size="12px" />
@@ -434,14 +362,12 @@
                 {#if !prod}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    disabled={deleting}
-                    onclick={() => requestDelete(id, deployment.branch)}
+                    disabled={isPending}
+                    onclick={() => confirmDelete(id, deployment.branch)}
                   >
                     <div class="flex items-center">
                       <Trash2Icon size="12px" />
-                      <span class="ml-2"
-                        >{deleting ? "Deleting..." : "Delete"}</span
-                      >
+                      <span class="ml-2">Delete</span>
                     </div>
                   </DropdownMenu.Item>
                 {/if}
@@ -461,7 +387,12 @@
   {/if}
 </section>
 
-<AlertDialog bind:open={deleteConfirmOpen}>
+<AlertDialog
+  open={!!pendingDelete}
+  onOpenChange={(open) => {
+    if (!open) pendingDelete = null;
+  }}
+>
   <AlertDialogTrigger class="hidden" />
   <AlertDialogContent>
     <AlertDialogHeader>
@@ -469,7 +400,7 @@
       <AlertDialogDescription>
         <div class="mt-1">
           The deployment on branch <span class="font-mono text-xs font-medium"
-            >{pendingDeleteBranch || primaryBranch || "main"}</span
+            >{pendingDelete?.branch || primaryBranch || "main"}</span
           > will be deleted. Any unpushed changes will be lost.
         </div>
       </AlertDialogDescription>
@@ -478,7 +409,7 @@
       <Button
         type="tertiary"
         onClick={() => {
-          deleteConfirmOpen = false;
+          pendingDelete = null;
         }}
       >
         Cancel

@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
@@ -24,8 +26,14 @@
 
   const runtimeClient = useRuntimeClient();
 
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
+
   // Deployment
-  $: projectDeployment = useProjectDeployment(organization, project);
+  $: projectDeployment = useProjectDeployment(
+    organization,
+    project,
+    activeBranch,
+  );
   $: deployment = $projectDeployment.data;
   $: deploymentStatus =
     deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
@@ -109,10 +117,10 @@
       </div>
     {/if}
 
-    {#if isGithubConnected && primaryBranch}
+    {#if isGithubConnected && (deployment?.branch || primaryBranch)}
       <div class="info-row">
         <span class="info-label">Branch</span>
-        <span class="info-value">{primaryBranch}</span>
+        <span class="info-value">{deployment?.branch || primaryBranch}</span>
       </div>
     {/if}
 

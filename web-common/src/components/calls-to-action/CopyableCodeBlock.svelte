@@ -15,7 +15,7 @@
   }
 </script>
 
-<button class="command-box" title={code} on:click={handleCopy}>
+<button class="command-box" title={code} onclick={handleCopy}>
   <code class="text-xs truncate">{code}</code>
   <span class="text-fg-muted shrink-0">
     {#if copied}
