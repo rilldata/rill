@@ -32,6 +32,8 @@ const SKIP_KEYS = new Set([
   "rows",
   // Noisy internal fields
   "cacheKeyTtlSeconds",
+  "gapX",
+  "gapY",
   // Already shown in Metadata section
   "refreshedOn",
   "reconcileError",
