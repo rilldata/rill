@@ -22,32 +22,13 @@
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
   import { posthogIdentify } from "@rilldata/web-common/lib/analytics/posthog";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListSuperusers,
-  } from "../../client";
+  import { createAdminServiceGetCurrentUser } from "../../client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   const user = createAdminServiceGetCurrentUser();
-  // Fire ListSuperusers once per session to check if the avatar menu should
-  // show the "Superuser Console" link. Non-superusers get a single 403 that
-  // TanStack Query silently caches as an error (retry: false, staleTime: Infinity
-  // ensures no repeated requests across component remounts).
-  const superusers = createAdminServiceListSuperusers({
-    query: {
-      enabled: !!$user.data?.user?.email,
-      retry: false,
-      staleTime: Infinity,
-    },
-  });
-  $: isSuperuser =
-    $superusers.isSuccess &&
-    !!$user.data?.user?.email &&
-    ($superusers.data?.users ?? []).some(
-      (su) => su.email === $user.data?.user?.email,
-    );
+  $: isSuperuser = $user.data?.superuser ?? false;
 
   let imgContainer: HTMLElement;
   let primaryMenuOpen = false;
@@ -105,6 +86,13 @@
     <div bind:this={imgContainer} class="h-7 w-7"></div>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
+    {#if isSuperuser}
+      <DropdownMenu.Item href="/-/superuser"
+        >Superuser Console</DropdownMenu.Item
+      >
+      <DropdownMenu.Separator />
+    {/if}
+
     {#if params.organization && params.project}
       <ProjectAccessControls
         organization={params.organization}
@@ -146,13 +134,6 @@
           Reports
         </DropdownMenu.Item>
       {/if}
-    {/if}
-
-    {#if isSuperuser}
-      <DropdownMenu.Item href="/-/superuser"
-        >Superuser Console</DropdownMenu.Item
-      >
-      <DropdownMenu.Separator />
     {/if}
 
     <ThemeToggle />
