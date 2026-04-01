@@ -9,8 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -304,9 +302,9 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 			} else {
 				// Compare subsequent views with the first one
 				if firstDayOfWeek != mvSpec.FirstDayOfWeek {
-					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent first_day_of_week", firstViewName, mvName)
+					return fmt.Errorf("metrics views %q and %q have inconsistent first_day_of_week", firstViewName, mvName)
 				} else if firstMonthOfYear != mvSpec.FirstMonthOfYear {
-					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent first_month_of_year", firstViewName, mvName)
+					return fmt.Errorf("metrics views %q and %q have inconsistent first_month_of_year", firstViewName, mvName)
 				}
 			}
 		}

@@ -81,7 +81,8 @@ func GetPath(m map[string]any, path string) (any, bool) {
 	return cur, true
 }
 
-// GetPathString is a helper around GetPath for when the expected value is a string. It returns false if the path doesn't contain a string.
+// GetPathString is a helper around GetPath for when the expected value is a string.
+// It returns false if the path doesn't contain a string.
 func GetPathString(m map[string]any, path string) (string, bool) {
 	val, ok := GetPath(m, path)
 	if !ok {

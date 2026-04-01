@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -76,27 +74,19 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// Components require an extra layer of indirection to resolve their refs (see the docstring for resolveRefs for details).
-	// An error here usually means a ctx cancellation or renderer props being malformed, so we update state and return it immediately (not worth trying to apply StageChanges).
-	refs, err := r.resolveRefs(ctx, self.Meta.Refs, c.Spec.Renderer, c.Spec.RendererProperties.AsMap())
-	if err != nil {
-		err = r.updateState(ctx, self, nil, nil, err)
-		return runtime.ReconcileResult{Err: err}
-	}
-
 	// Validate all refs
-	validateErr := checkRefs(ctx, r.C, refs)
+	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
 
 	// Get valid metrics view refs.
 	// NOTE: The validateErr may be non-nil if a metrics view has a reconcile error, but the same metrics view may still be returned here if its ValidSpec is non-nil (e.g. it might be serving previously valid state).
-	mvs, validMetrics, dataRefreshedOn, err := r.referencedMetricsViews(ctx, refs)
+	mvs, allMetricsValid, dataRefreshedOn, err := r.referencedMetricsViews(ctx, self.Meta.Refs)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Validate the renderer properties (only if all metrics view refs have a ValidSpec).
 	var rendererErr error
-	if validMetrics {
+	if allMetricsValid {
 		rendererErr = r.validateRendererProperties(c.Spec.Renderer, c.Spec.RendererProperties.AsMap(), mvs)
 	} else {
 		rendererErr = errors.New("one or more referenced metrics views are invalid")
@@ -115,6 +105,7 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 
 	// Validation failed and we can't serve valid state.
+	// So we clear out the ValidSpec.
 	err = r.updateState(ctx, self, nil, nil, validateErr)
 	return runtime.ReconcileResult{Err: err}
 }
@@ -130,7 +121,7 @@ func (r *ComponentReconciler) ResolveTransitiveAccess(ctx context.Context, claim
 // If an error is provided, it will be returned after the state update, allowing simple returns.
 func (r *ComponentReconciler) updateState(ctx context.Context, self *runtimev1.Resource, validSpec *runtimev1.ComponentSpec, dataRefreshedOn *timestamppb.Timestamp, basedOnErr error) error {
 	// Don't update state for ctx errors.
-	if errors.Is(basedOnErr, ctx.Err()) {
+	if basedOnErr != nil && errors.Is(basedOnErr, ctx.Err()) {
 		return basedOnErr
 	}
 
@@ -147,52 +138,11 @@ func (r *ComponentReconciler) updateState(ctx context.Context, self *runtimev1.R
 	return basedOnErr
 }
 
-// resolveRefs returns the resource refs for the component, including any additional refs inferred from the renderer properties.
-// This is necessary because the stateless parser doesn't reliably extract all refs from the renderer properties, e.g. for metrics SQL queries that require binding.
-func (r *ComponentReconciler) resolveRefs(ctx context.Context, baseRefs []*runtimev1.ResourceName, renderer string, rendererProps map[string]any) ([]*runtimev1.ResourceName, error) {
-	// Discover refs from the renderer properties
-	rr := &rendererRefs{
-		rt:           r.C.Runtime,
-		instanceID:   r.C.InstanceID,
-		claims:       &runtime.SecurityClaims{SkipChecks: true},
-		metricsViews: make(map[string]bool),
-	}
-	err := rr.populateRendererRefs(ctx, renderer, rendererProps)
-	if err != nil {
-		return nil, err
-	}
-
-	// Extend baseRefs with any newly discovered refs (using a simple loop since the number of refs is usually very short)
-	refs := slices.Clone(baseRefs)
-	for _, r1 := range rr.result() {
-		found := false
-		for _, r2 := range refs {
-			if r1.Kind == r2.Kind && strings.EqualFold(r1.Name, r2.Name) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			refs = append(refs, r1)
-		}
-	}
-
-	// Sort refs for consistency
-	slices.SortFunc(refs, func(a, b *runtimev1.ResourceName) int {
-		if a.Kind != b.Kind {
-			return strings.Compare(a.Kind, b.Kind)
-		}
-		return strings.Compare(a.Name, b.Name)
-	})
-
-	return refs, nil
-}
-
 // referencedMetricsViews returns the valid metrics view specs for the given refs. If any referenced metrics view is invalid, it is not included in the result, and the returned boolean will be false.
 // It only returns an error if there was an issue checking the refs, not if a ref was simply invalid.
 func (r *ComponentReconciler) referencedMetricsViews(ctx context.Context, refs []*runtimev1.ResourceName) (map[string]*runtimev1.MetricsViewSpec, bool, *timestamppb.Timestamp, error) {
 	mvs := make(map[string]*runtimev1.MetricsViewSpec)
-	validMetrics := true
+	allMetricsValid := true
 	var dataRefreshedOn *timestamppb.Timestamp
 	for _, ref := range refs {
 		if ref.Kind != runtime.ResourceKindMetricsView {
@@ -202,6 +152,7 @@ func (r *ComponentReconciler) referencedMetricsViews(ctx context.Context, refs [
 		res, err := r.C.Get(ctx, ref, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
+				allMetricsValid = false
 				continue
 			}
 			return nil, false, nil, err
@@ -211,7 +162,7 @@ func (r *ComponentReconciler) referencedMetricsViews(ctx context.Context, refs [
 		if mv.State.ValidSpec != nil {
 			mvs[ref.Name] = mv.State.ValidSpec
 		} else {
-			validMetrics = false
+			allMetricsValid = false
 		}
 
 		t := res.GetMetricsView().State.DataRefreshedOn
@@ -221,14 +172,14 @@ func (r *ComponentReconciler) referencedMetricsViews(ctx context.Context, refs [
 			dataRefreshedOn = t
 		}
 	}
-	return mvs, validMetrics, dataRefreshedOn, nil
+	return mvs, allMetricsValid, dataRefreshedOn, nil
 }
 
 // validateRendererProperties validates the renderer properties for a component.
-// The provided metricsViews contains every valid metrics view referenced by the component (as determined by rendererRefs).
+// The provided metricsViews contains every valid metrics view referenced by the component (as determined in the parser).
 // If the renderer properties reference a metrics view not in metricsViews, assume the metrics view is invalid or does not exist (don't look it up separately in the catalog).
+// Note that metrics views referenced through markdown or metrics_sql cannot be validated here, and using rendererRefs to find them is not safe (because the parser doesn't add refs to them, so they may not have reconciled yet).
 func (r *ComponentReconciler) validateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	// TODO: Implement validation
 	switch renderer {
 	case "line_chart":
 		mvn, ok := pathutil.GetPathString(props, "metrics_view")
@@ -255,6 +206,42 @@ func (r *ComponentReconciler) validateRendererProperties(renderer string, props 
 		if !metricsViewHasMeasure(mv, yField) {
 			return fmt.Errorf("referenced y.field %q is not a measure in metrics view %q", yField, mvn)
 		}
+
+		// TODO: Any other validation for line charts?
+	case "stacked_bar":
+		// TODO: Implement
+	case "bar_chart":
+		// TODO: Implement
+	case "stacked_bar_normalized":
+		// TODO: Implement
+	case "area_chart":
+		// TODO: Implement
+	case "donut_chart":
+		// TODO: Implement
+	case "pie_chart":
+		// TODO: Implement
+	case "heatmap":
+		// TODO: Implement
+	case "funnel_chart":
+		// TODO: Implement
+	case "combo_chart":
+		// TODO: Implement
+	case "scatter_plot":
+		// TODO: Implement
+	case "markdown":
+		// TODO: Implement
+	case "kpi":
+		// TODO: Implement
+	case "kpi_grid":
+		// TODO: Implement
+	case "image":
+		// TODO: Implement
+	case "table":
+		// TODO: Implement
+	case "pivot":
+		// TODO: Implement
+	case "leaderboard":
+		// TODO: Implement
 	default:
 		return fmt.Errorf("unsupported renderer %q", renderer)
 	}

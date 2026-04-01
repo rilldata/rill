@@ -48,6 +48,10 @@ func (d dependencyError) Error() string {
 	return fmt.Sprintf("dependency error: %v", d.err)
 }
 
+func (d dependencyError) Unwrap() error {
+	return d.err
+}
+
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
 type Reconciler interface {

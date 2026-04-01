@@ -22,6 +22,7 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 		res, err := c.Get(ctx, ref, false)
 		if err != nil {
 			if !errors.Is(err, drivers.ErrResourceNotFound) {
+				// Return immediately for other errors (most likely a context cancellation).
 				return runtime.NewDependencyError(fmt.Errorf("failed to get resource %s/%s: %w", runtime.PrettifyResourceKind(ref.Kind), ref.Name, err))
 			}
 			errs = append(errs, fmt.Sprintf("resource %s/%s not found", runtime.PrettifyResourceKind(ref.Kind), ref.Name))
@@ -36,7 +37,8 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 		}
 		switch res.Meta.Name.Kind {
 		case runtime.ResourceKindComponent:
-			// For components, it is safe and useful to propagate the underlying error message.
+			// For components, we propagate the underlying error message to make canvas debugging easier (since components are usually defined inline in a canvas).
+			// This is safe since components are already end-user facing resources.
 			errs = append(errs, fmt.Sprintf("component %s has an error: %s", ref.Name, res.Meta.ReconcileError))
 		default:
 			// For other resources, we don't propagate errors for one of two reasons:
@@ -46,6 +48,7 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 		}
 	}
 
+	// Only return the full first error; truncate any additional errors.
 	if len(errs) == 1 {
 		return runtime.NewDependencyError(errors.New(errs[0]))
 	} else if len(errs) > 1 {
