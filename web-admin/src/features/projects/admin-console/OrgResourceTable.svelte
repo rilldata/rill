@@ -13,6 +13,7 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -194,8 +195,6 @@
     }
   }
 
-  $: sortIcon = sortAsc ? "↑" : "↓";
-
   $: sortedResources = [...filteredResources].sort((a, b) => {
     const dir = sortAsc ? 1 : -1;
     switch (sortKey) {
@@ -352,101 +351,150 @@
   </div>
 
   {#if sortedResources.length === 0}
-    <p class="text-fg-secondary text-sm py-8 text-center">
-      No resources match the current filters
-    </p>
+    <div class="table-container">
+      <div class="flex flex-col items-center gap-y-1 py-10">
+        <span class="text-fg-secondary font-semibold text-sm">
+          No resources match the current filters
+        </span>
+      </div>
+    </div>
   {:else}
-    <div class="overflow-x-auto border border-border rounded-sm">
-      <table class="w-full text-sm table-fixed">
-        <thead>
-          <tr class="border-b border-border bg-surface-subtle">
-            <th class="px-3 py-2 text-left text-xs w-[130px] sortable" on:click={() => toggleSort("type")}>
-              Type {sortKey === "type" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-left text-xs sortable" on:click={() => toggleSort("name")}>
-              Name {sortKey === "name" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-left text-xs w-[140px] sortable" on:click={() => toggleSort("project")}>
-              Project {sortKey === "project" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-center text-xs w-[80px] sortable" on:click={() => toggleSort("status")}>
-              Status {sortKey === "status" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-left text-xs w-[120px] sortable" on:click={() => toggleSort("updated")}>
-              Last refresh {sortKey === "updated" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 w-[56px]"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each sortedResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
-            {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
-            <tr class="border-b border-border last:border-b-0">
-              <td class="px-3 py-3">
-                <ResourceTypeBadge kind={resource.kind} />
-              </td>
-              <td class="px-3 py-3 truncate">
-                <NameCell name={resource.name} />
-              </td>
-              <td class="px-3 py-3 text-fg-secondary truncate text-xs">
-                {resource.projectName}
-              </td>
-              <td class="px-3 py-3">
-                <ResourceErrorMessage
-                  message={resource.reconcileError}
-                  status={resource.reconcileError
-                    ? V1ReconcileStatus.RECONCILE_STATUS_IDLE
-                    : mapReconcileStatus(resource.reconcileStatus)}
-                />
-              </td>
-              <td class="px-3 py-3">
-                <RefreshCell date={resource.stateUpdatedOn} />
-              </td>
-              <td class="px-3 py-3">
-                <DropdownMenu.Root
-                  open={openDropdownKey === resourceKey}
-                  onOpenChange={(isOpen) => {
-                    openDropdownKey = isOpen ? resourceKey : "";
-                  }}
+    <div
+      class="table-container"
+      style:--grid-template-columns="minmax(95px, 130px) minmax(100px, 3fr) minmax(80px, 2fr) 48px minmax(80px, 2fr) 56px"
+    >
+      <!-- Header -->
+      <div class="row bg-surface-subtle sticky top-0 z-10">
+        <button
+          class="header-cell pl-4"
+          on:click={() => toggleSort("type")}
+        >
+          <span class="truncate">Type</span>
+          {#if sortKey === "type"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button
+          class="header-cell pl-4"
+          on:click={() => toggleSort("name")}
+        >
+          <span class="truncate">Name</span>
+          {#if sortKey === "name"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button
+          class="header-cell pl-4"
+          on:click={() => toggleSort("project")}
+        >
+          <span class="truncate">Project</span>
+          {#if sortKey === "project"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button
+          class="header-cell pl-1"
+          on:click={() => toggleSort("status")}
+        >
+          <span class="truncate">Status</span>
+          {#if sortKey === "status"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button
+          class="header-cell pl-4"
+          on:click={() => toggleSort("updated")}
+        >
+          <span class="truncate">Last refresh</span>
+          {#if sortKey === "updated"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <div class="pl-4 py-2"></div>
+      </div>
+
+      <!-- Rows -->
+      {#each sortedResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
+        {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
+        <div class="row py-3">
+          <div class="pl-4 pr-1 flex items-center truncate">
+            <ResourceTypeBadge kind={resource.kind} />
+          </div>
+          <div class="pl-4 pr-1 flex items-center truncate">
+            <NameCell name={resource.name} />
+          </div>
+          <div class="pl-4 pr-1 flex items-center truncate text-fg-secondary text-xs">
+            {resource.projectName}
+          </div>
+          <div class="pl-1 pr-1 flex items-center truncate">
+            <ResourceErrorMessage
+              message={resource.reconcileError}
+              status={resource.reconcileError
+                ? V1ReconcileStatus.RECONCILE_STATUS_IDLE
+                : mapReconcileStatus(resource.reconcileStatus)}
+            />
+          </div>
+          <div class="pl-4 pr-1 flex items-center truncate">
+            <RefreshCell date={resource.stateUpdatedOn} />
+          </div>
+          <div class="pl-4 pr-1 flex items-center">
+            <DropdownMenu.Root
+              open={openDropdownKey === resourceKey}
+              onOpenChange={(isOpen) => {
+                openDropdownKey = isOpen ? resourceKey : "";
+              }}
+            >
+              <DropdownMenu.Trigger
+                class="flex-none"
+                aria-label="Resource actions"
+              >
+                <IconButton
+                  rounded
+                  active={openDropdownKey === resourceKey}
+                  size={20}
                 >
-                  <DropdownMenu.Trigger
-                    class="flex-none"
-                    aria-label="Resource actions"
-                  >
-                    <IconButton
-                      rounded
-                      active={openDropdownKey === resourceKey}
-                      size={20}
-                    >
-                      <ThreeDot size="16px" />
-                    </IconButton>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="start">
-                    <DropdownMenu.Item
-                      class="font-normal flex items-center"
-                      href="/{organization}/{resource.projectName}/-/status/resources?q={encodeURIComponent(resource.name)}"
-                    >
-                      <div class="flex items-center">
-                        <ExternalLinkIcon size="12px" />
-                        <span class="ml-2">View in project</span>
-                      </div>
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+                  <ThreeDot size="16px" />
+                </IconButton>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="start">
+                <DropdownMenu.Item
+                  class="font-normal flex items-center"
+                  href="/{organization}/{resource.projectName}/-/status/resources?q={encodeURIComponent(resource.name)}"
+                >
+                  <div class="flex items-center">
+                    <ExternalLinkIcon size="12px" />
+                    <span class="ml-2">View in project</span>
+                  </div>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+        </div>
+      {/each}
     </div>
   {/if}
 </div>
 
 <style lang="postcss">
-  .sortable {
-    @apply font-medium text-fg-secondary cursor-pointer select-none;
+  * {
+    @apply border-gray-200;
   }
-  .sortable:hover {
-    @apply text-fg-primary;
+
+  .table-container {
+    @apply flex flex-col border rounded-sm overflow-hidden;
+  }
+
+  .row {
+    @apply w-fit min-w-full;
+    display: grid;
+    grid-template-columns: var(--grid-template-columns);
+  }
+
+  .row:not(:last-child) {
+    @apply border-b;
+  }
+
+  .header-cell {
+    @apply py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm;
   }
 </style>
