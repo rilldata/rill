@@ -17,13 +17,10 @@
   }));
 </script>
 
-<section class="flex flex-col gap-y-4">
-  <h2 class="text-lg font-medium text-fg-primary">Resources</h2>
-  {#if $resourcesQuery.isLoading}
-    <p class="text-fg-secondary text-sm">Loading resources...</p>
-  {:else if $resourcesQuery.isError}
-    <p class="text-red-500 text-sm">Failed to load resources</p>
-  {:else}
-    <OrgResourceTable {resources} />
-  {/if}
-</section>
+{#if $resourcesQuery.isLoading}
+  <p class="text-fg-secondary text-sm">Loading resources...</p>
+{:else if $resourcesQuery.isError}
+  <p class="text-red-500 text-sm">Failed to load resources</p>
+{:else}
+  <OrgResourceTable {organization} {resources} />
+{/if}

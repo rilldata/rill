@@ -1,5 +1,15 @@
 <script lang="ts">
   import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
+  import { type ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { ExternalLinkIcon } from "lucide-svelte";
+
+  export let organization: string;
 
   type OrgResource = {
     projectName: string;
@@ -16,9 +26,7 @@
   let selectedProject = "";
   let selectedType = "";
 
-  $: projectNames = [
-    ...new Set(resources.map((r) => r.projectName)),
-  ].sort();
+  $: projectNames = [...new Set(resources.map((r) => r.projectName))].sort();
   $: resourceTypes = [...new Set(resources.map((r) => r.kind))].sort();
 
   $: filteredResources = resources.filter((r) => {
@@ -33,28 +41,16 @@
     return true;
   });
 
-  function getStatusDot(status: string): string {
+  function mapReconcileStatus(status: string): V1ReconcileStatus {
     switch (status) {
       case "RECONCILE_STATUS_IDLE":
-        return "bg-green-500";
+        return V1ReconcileStatus.RECONCILE_STATUS_IDLE;
       case "RECONCILE_STATUS_PENDING":
+        return V1ReconcileStatus.RECONCILE_STATUS_PENDING;
       case "RECONCILE_STATUS_RUNNING":
-        return "bg-yellow-500";
+        return V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
       default:
-        return "bg-red-500";
-    }
-  }
-
-  function getStatusLabel(status: string): string {
-    switch (status) {
-      case "RECONCILE_STATUS_IDLE":
-        return "OK";
-      case "RECONCILE_STATUS_PENDING":
-        return "Pending";
-      case "RECONCILE_STATUS_RUNNING":
-        return "Running";
-      default:
-        return "Error";
+        return V1ReconcileStatus.RECONCILE_STATUS_IDLE;
     }
   }
 
@@ -67,16 +63,17 @@
     return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
       hour: "numeric",
       minute: "2-digit",
     });
   }
+
+  let openDropdownKey = "";
 </script>
 
-<section class="flex flex-col gap-y-4">
-  <div class="flex flex-row items-center gap-x-4 min-h-9">
-    <div class="flex-1 min-w-0 min-h-9">
+<div class="flex flex-col gap-y-4">
+  <div class="flex flex-row items-center gap-x-3">
+    <div class="flex-1 min-w-0">
       <Search
         bind:value={searchText}
         placeholder="Search resources"
@@ -87,7 +84,7 @@
     </div>
 
     <select
-      class="min-h-9 rounded-sm border bg-input px-2 py-1 text-sm text-fg-secondary font-medium hover:bg-surface-hover"
+      class="h-9 rounded-sm border border-border bg-surface-base px-2 text-sm text-fg-secondary font-medium hover:bg-surface-hover"
       bind:value={selectedProject}
     >
       <option value="">All projects</option>
@@ -97,7 +94,7 @@
     </select>
 
     <select
-      class="min-h-9 rounded-sm border bg-input px-2 py-1 text-sm text-fg-secondary font-medium hover:bg-surface-hover"
+      class="h-9 rounded-sm border border-border bg-surface-base px-2 text-sm text-fg-secondary font-medium hover:bg-surface-hover"
       bind:value={selectedType}
     >
       <option value="">All types</option>
@@ -108,7 +105,7 @@
 
     {#if searchText || selectedProject || selectedType}
       <button
-        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
+        class="shrink-0 text-xs text-primary-500 hover:text-primary-600"
         on:click={() => {
           searchText = "";
           selectedProject = "";
@@ -125,62 +122,66 @@
       No resources match the current filters
     </p>
   {:else}
-    <div class="overflow-x-auto rounded-lg border border-border">
+    <div class="overflow-x-auto border border-border rounded-sm">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-border bg-surface-subtle">
-            <th class="px-4 py-3 text-left font-medium text-fg-secondary"
-              >Project</th
-            >
-            <th class="px-4 py-3 text-left font-medium text-fg-secondary"
-              >Type</th
-            >
-            <th class="px-4 py-3 text-left font-medium text-fg-secondary"
-              >Name</th
-            >
-            <th class="px-4 py-3 text-left font-medium text-fg-secondary"
-              >Status</th
-            >
-            <th class="px-4 py-3 text-left font-medium text-fg-secondary"
-              >Last Updated</th
-            >
+            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs">Type</th>
+            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs">Name</th>
+            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs">Project</th>
+            <th class="px-3 py-2 text-center font-medium text-fg-secondary text-xs w-12">Status</th>
+            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs">Last refresh</th>
+            <th class="px-3 py-2 w-10"></th>
           </tr>
         </thead>
         <tbody>
           {#each filteredResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
-            <tr
-              class="border-b border-border last:border-b-0 {resource.reconcileError
-                ? 'bg-red-50'
-                : ''}"
-            >
-              <td class="px-4 py-3 text-fg-primary font-medium">
-                {resource.projectName}
+            {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
+            <tr class="border-b border-border last:border-b-0 hover:bg-surface-hover">
+              <td class="px-3 py-3">
+                <ResourceTypeBadge kind={resource.kind} />
               </td>
-              <td class="px-4 py-3 text-fg-secondary">
-                {prettyKind(resource.kind)}
-              </td>
-              <td class="px-4 py-3 text-fg-primary font-mono text-xs">
+              <td class="px-3 py-3 text-fg-primary truncate max-w-[200px] font-mono text-xs">
                 {resource.name}
               </td>
-              <td class="px-4 py-3">
-                <span class="flex items-center gap-2">
-                  <span
-                    class="inline-block h-2 w-2 rounded-full {getStatusDot(
-                      resource.reconcileStatus,
-                    )}"
-                  ></span>
-                  <span class="text-fg-primary"
-                    >{getStatusLabel(resource.reconcileStatus)}</span
-                  >
-                </span>
-                {#if resource.reconcileError}
-                  <p class="text-xs text-red-600 mt-1 truncate max-w-xs">
-                    {resource.reconcileError}
-                  </p>
-                {/if}
+              <td class="px-3 py-3 text-fg-secondary truncate max-w-[160px]">
+                {resource.projectName}
               </td>
-              <td class="px-4 py-3 text-fg-secondary">
+              <td class="px-3 py-3">
+                <ResourceErrorMessage
+                  message={resource.reconcileError}
+                  status={resource.reconcileError
+                    ? V1ReconcileStatus.RECONCILE_STATUS_IDLE
+                    : mapReconcileStatus(resource.reconcileStatus)}
+                />
+              </td>
+              <td class="px-3 py-3 text-fg-secondary text-xs">
                 {formatDate(resource.stateUpdatedOn)}
+              </td>
+              <td class="px-3 py-3">
+                <DropdownMenu.Root
+                  open={openDropdownKey === resourceKey}
+                  onOpenChange={(isOpen) => {
+                    openDropdownKey = isOpen ? resourceKey : "";
+                  }}
+                >
+                  <DropdownMenu.Trigger class="flex-none" aria-label="Resource actions">
+                    <IconButton rounded active={openDropdownKey === resourceKey} size={20}>
+                      <ThreeDot size="16px" />
+                    </IconButton>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content align="start">
+                    <DropdownMenu.Item
+                      class="font-normal flex items-center"
+                      href="/{organization}/{resource.projectName}/-/status/resources"
+                    >
+                      <div class="flex items-center">
+                        <ExternalLinkIcon size="12px" />
+                        <span class="ml-2">View in project</span>
+                      </div>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
               </td>
             </tr>
           {/each}
@@ -188,4 +189,4 @@
       </table>
     </div>
   {/if}
-</section>
+</div>
