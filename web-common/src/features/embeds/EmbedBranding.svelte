@@ -3,7 +3,8 @@
 
   export let billingPlan: string | null;
 
-  $: showBranding = billingPlan === "free-plan" || billingPlan === "growth-plan";
+  $: showBranding =
+    billingPlan === "free-plan" || billingPlan === "growth-plan";
 </script>
 
 {#if showBranding}
