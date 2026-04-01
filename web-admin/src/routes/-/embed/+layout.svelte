@@ -60,7 +60,9 @@
           | ResourceKind.Canvas
           | undefined);
 
-  $: showTopBar = navigationEnabled || showDashboardChat;
+  $: showBranding =
+    billingPlan === "free-plan" || billingPlan === "growth-plan";
+  $: showTopBar = navigationEnabled || showDashboardChat || showBranding;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -140,6 +142,7 @@
         class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
         class:border-b={!onProjectPage}
       >
+        <EmbedBranding {billingPlan} />
         <EmbedHeader {activeResource} {navigationEnabled} />
       </div>
     {/if}
@@ -153,5 +156,4 @@
       {/if}
     </div>
   </RuntimeProvider>
-  <EmbedBranding {billingPlan} />
 {/if}

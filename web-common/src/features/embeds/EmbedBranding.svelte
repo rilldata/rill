@@ -11,9 +11,8 @@
     href="https://www.rilldata.com"
     target="_blank"
     rel="noopener noreferrer"
-    class="pointer-events-auto fixed bottom-3 right-6 z-50 flex items-center gap-1.5 rounded-full bg-surface-overlay/90 px-3 py-1.5 text-xs font-medium text-fg-secondary shadow-sm ring-1 ring-border/50 backdrop-blur-sm transition-colors hover:text-fg-primary hover:shadow"
+    class="grid place-content-center p-2"
   >
-    <RillFilled size="14" />
-    Made with <span class="font-semibold text-fg-primary">Rill</span>
+    <RillFilled size="16" />
   </a>
 {/if}
