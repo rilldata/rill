@@ -7,8 +7,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -87,7 +87,7 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	// Validate the renderer properties (only if all metrics view refs have a ValidSpec).
 	var rendererErr error
 	if allMetricsValid {
-		rendererErr = r.validateRendererProperties(c.Spec.Renderer, c.Spec.RendererProperties.AsMap(), mvs)
+		rendererErr = canvas.ValidateRendererProperties(c.Spec.Renderer, c.Spec.RendererProperties.AsMap(), mvs)
 	} else {
 		rendererErr = errors.New("one or more referenced metrics views are invalid")
 	}
@@ -173,98 +173,4 @@ func (r *ComponentReconciler) referencedMetricsViews(ctx context.Context, refs [
 		}
 	}
 	return mvs, allMetricsValid, dataRefreshedOn, nil
-}
-
-// validateRendererProperties validates the renderer properties for a component.
-// The provided metricsViews contains every valid metrics view referenced by the component (as determined in the parser).
-// If the renderer properties reference a metrics view not in metricsViews, assume the metrics view is invalid or does not exist (don't look it up separately in the catalog).
-// Note that metrics views referenced through markdown or metrics_sql cannot be validated here, and using rendererRefs to find them is not safe (because the parser doesn't add refs to them, so they may not have reconciled yet).
-func (r *ComponentReconciler) validateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	switch renderer {
-	case "line_chart":
-		mvn, ok := pathutil.GetPathString(props, "metrics_view")
-		if !ok {
-			return errors.New("renderer properties must include a string 'metrics_view' property")
-		}
-		mv := metricsViews[mvn]
-		if mv == nil {
-			return fmt.Errorf("referenced metrics view %q is invalid", mvn)
-		}
-
-		xField, ok := pathutil.GetPathString(props, "x.field")
-		if !ok {
-			return errors.New("renderer properties for line_chart must include a string 'x.field' property")
-		}
-		if !metricsViewHasDimension(mv, xField) {
-			return fmt.Errorf("referenced x.field %q is not a dimension in metrics view %q", xField, mvn)
-		}
-
-		yField, ok := pathutil.GetPathString(props, "y.field")
-		if !ok {
-			return errors.New("renderer properties for line_chart must include a string 'y.field' property")
-		}
-		if !metricsViewHasMeasure(mv, yField) {
-			return fmt.Errorf("referenced y.field %q is not a measure in metrics view %q", yField, mvn)
-		}
-
-		// TODO: Any other validation for line charts?
-	case "stacked_bar":
-		// TODO: Implement
-	case "bar_chart":
-		// TODO: Implement
-	case "stacked_bar_normalized":
-		// TODO: Implement
-	case "area_chart":
-		// TODO: Implement
-	case "donut_chart":
-		// TODO: Implement
-	case "pie_chart":
-		// TODO: Implement
-	case "heatmap":
-		// TODO: Implement
-	case "funnel_chart":
-		// TODO: Implement
-	case "combo_chart":
-		// TODO: Implement
-	case "scatter_plot":
-		// TODO: Implement
-	case "markdown":
-		// TODO: Implement
-	case "kpi":
-		// TODO: Implement
-	case "kpi_grid":
-		// TODO: Implement
-	case "image":
-		// TODO: Implement
-	case "table":
-		// TODO: Implement
-	case "pivot":
-		// TODO: Implement
-	case "leaderboard":
-		// TODO: Implement
-	default:
-		return fmt.Errorf("unsupported renderer %q", renderer)
-	}
-
-	return nil
-}
-
-// metricsViewHasDimension returns true if the metrics view has a dimension with the given name.
-func metricsViewHasDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
-	for _, d := range mv.Dimensions {
-		if d.Name == fieldName {
-			return true
-		}
-	}
-	return false
-}
-
-// metricsViewHasMeasure returns true if the metrics view has a measure with the given name.
-func metricsViewHasMeasure(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
-	for _, m := range mv.Measures {
-		if m.Name == fieldName {
-			return true
-		}
-	}
-	return false
 }

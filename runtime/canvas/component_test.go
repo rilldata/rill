@@ -1,4 +1,4 @@
-package reconcilers_test
+package canvas_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 )
 
-func TestComponentValidationLineChart(t *testing.T) {
+func TestValidateLineChart(t *testing.T) {
 	// Setup model and metrics
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
