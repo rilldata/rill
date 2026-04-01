@@ -34,11 +34,11 @@ export function isManagedPlan(planName: string) {
 }
 
 export function isFreePlan(planName: string) {
-  return planName === "free_plan";
+  return planName.toLowerCase().includes("free");
 }
 
 export function isGrowthPlan(planName: string) {
-  return planName === "growth_plan";
+  return planName.toLowerCase().includes("growth");
 }
 
 export function isBrandingRestricted(planName: string) {

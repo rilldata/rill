@@ -46,9 +46,9 @@ func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to get organization: %w", err)
 				}
-				plan := orgResp.Organization.GetBillingPlanName()
-				if plan == "free_plan" || plan == "growth_plan" {
-					return fmt.Errorf("custom branding is not available on your current plan (%s); please upgrade at https://ui.rilldata.com/%s/-/settings/billing", plan, ch.Org)
+				plan := strings.ToLower(orgResp.Organization.GetBillingPlanName())
+				if strings.Contains(plan, "free") || strings.Contains(plan, "growth") {
+					return fmt.Errorf("custom branding is not available on your current plan (%s); please upgrade at https://ui.rilldata.com/%s/-/settings/billing", orgResp.Organization.GetBillingPlanName(), ch.Org)
 				}
 			}
 

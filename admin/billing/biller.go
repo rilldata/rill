@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -88,7 +89,8 @@ const (
 // IsPlanBrandingRestricted returns true if the given plan name does not allow
 // custom branding features (logo, favicon, themes).
 func IsPlanBrandingRestricted(planName string) bool {
-	return planName == "free_plan" || planName == "growth_plan"
+	lower := strings.ToLower(planName)
+	return strings.Contains(lower, "free") || strings.Contains(lower, "growth")
 }
 
 type Plan struct {
