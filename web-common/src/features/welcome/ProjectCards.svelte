@@ -84,12 +84,12 @@
       onclick={() => unpackProject()}
       loading={selectedProjectName === EMPTY_PROJECT_TITLE}
       disabled={!!selectedProjectName}
-      label="Start with an empty project"
+      label="Start a blank project"
     >
       <svelte:fragment slot="icon">
         <AddCircleOutline size="16px" />
       </svelte:fragment>
-      <span>Start with an empty project</span>
+      <span>Start a blank project</span>
     </ProjectCard>
   </div>
 </section>

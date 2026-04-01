@@ -11,7 +11,6 @@ export const localFileSchema: MultiStepFormSchema = {
   "x-category": "fileStore",
   properties: {
     file: {
-      type: "object",
       title: "Path",
       description: "Local file path or glob (relative to project root)",
       "x-display": "file",
@@ -22,5 +21,5 @@ export const localFileSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
-  required: ["path", "name"],
+  required: ["file"],
 };

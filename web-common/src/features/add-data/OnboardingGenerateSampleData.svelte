@@ -78,7 +78,7 @@
 
 <style lang="postcss">
   .container {
-    @apply flex flex-col p-6 gap-4 w-96 h-[246px];
+    @apply flex flex-col p-6 gap-4 w-96 min-w-96 h-[246px];
     @apply border border-primary-200 rounded-lg;
     background: radial-gradient(
       302.11% 152.07% at 111.07% 104.65%,

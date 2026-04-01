@@ -1,11 +1,13 @@
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceGetInstanceQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
+  type V1GetInstanceResponse,
 } from "@rilldata/web-common/runtime-client";
 import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-project-initialized.ts";
 import {
@@ -240,6 +242,10 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
+const ConnectorUnsetCheckMaxRetries = 5;
+const ConnectorUnsetCheckIntervalConstant = 300;
+const ConnectorUnsetCheckIntervalMultiplier = 300;
+
 async function unsetOlapConnectorInRillYAML(
   runtimeClient: RuntimeClient,
   queryClient: QueryClient,
@@ -261,6 +267,38 @@ async function unsetOlapConnectorInRillYAML(
     path: "rill.yaml",
     blob: newBlob,
   });
+
+  // Wait for rill.yaml to be updated
+  let retryCount = 0;
+  while (retryCount < ConnectorUnsetCheckMaxRetries) {
+    try {
+      const runtimeInstanceResp =
+        queryClient.getQueryData<V1GetInstanceResponse>(
+          getRuntimeServiceGetInstanceQueryKey(runtimeClient.instanceId, {
+            sensitive: true,
+          }),
+        );
+
+      if (
+        !runtimeInstanceResp?.instance || // type safety
+        runtimeInstanceResp.instance.olapConnector === connectorName
+      ) {
+        // Connector is not changed yet
+        throw new Error("Connector not updated");
+      }
+      // Connector is removed from rill.yaml
+      break;
+    } catch {
+      retryCount++;
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          ConnectorUnsetCheckIntervalConstant +
+            retryCount * ConnectorUnsetCheckIntervalMultiplier,
+        ),
+      );
+    }
+  }
 }
 
 export function isPublicAuth(

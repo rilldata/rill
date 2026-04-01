@@ -16,7 +16,7 @@ test.describe("Default olap_connector behavior", () => {
   test("Should set default olap_connector to duckdb for empty project", async ({
     page,
   }) => {
-    await page.getByLabel("Start with an empty project").click();
+    await page.getByLabel("Start a blank project").click();
     await expect(
       page.getByText("Connect your data", { exact: true }),
     ).toBeVisible();
@@ -30,7 +30,7 @@ test.describe("Default olap_connector behavior", () => {
   test("Should set default olap_connector to duckdb for local file upload", async ({
     page,
   }) => {
-    await page.getByLabel("Start with an empty project").click();
+    await page.getByLabel("Start a blank project").click();
     await expect(
       page.getByText("Connect your data", { exact: true }),
     ).toBeVisible();

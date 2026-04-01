@@ -36,7 +36,7 @@
   export let yamlPreview: string;
   export let step: AddDataState;
   export let onSave: (() => void) | undefined = undefined;
-  export let onBack: () => void;
+  export let onBack: () => void | Promise<void>;
 
   $: ({ form, formId, tainted, submit, submitting, errors, enhance } =
     superFormsParams);
@@ -76,6 +76,8 @@
   $: isSaveButtonEnabled =
     connectorDriver.name !== "clickhouse" ||
     $form.deployment_type !== "playground";
+
+  let runningBackAction = false;
 
   function onStringInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -151,6 +153,12 @@
 
     return content;
   }
+
+  async function handleBack() {
+    runningBackAction = true;
+    await onBack();
+    runningBackAction = false;
+  }
 </script>
 
 <div class="flex flex-col size-full md:flex-row overflow-y-auto">
@@ -182,12 +190,17 @@
     <div
       class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      <Button onClick={onBack} type="secondary">Back</Button>
+      <Button
+        disabled={runningBackAction}
+        loading={runningBackAction}
+        onClick={() => void handleBack()}
+        type="secondary">Back</Button
+      >
 
       <div class="flex gap-2">
         {#if onSave && isSaveButtonEnabled}
           <Button
-            disabled={isSubmitDisabled}
+            disabled={isSubmitDisabled || runningBackAction}
             type="secondary"
             noStroke
             onClick={onSave}
@@ -198,7 +211,7 @@
         {/if}
 
         <Button
-          disabled={$submitting || isSubmitDisabled}
+          disabled={$submitting || isSubmitDisabled || runningBackAction}
           loading={$submitting}
           loadingCopy={labels.primaryLoadingCopy}
           form={$formId}

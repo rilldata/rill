@@ -90,7 +90,7 @@
   }
 
   .container-welcome {
-    @apply min-w-[430px] border-primary-200;
+    @apply border-primary-200;
     background: radial-gradient(
       94.8% 95.1% at 23.7% 14.73%,
       #d7e4ff 42.79%,
