@@ -237,9 +237,8 @@
                 />
               </td>
               <td class="px-3 py-3">
-                {@const errTotal = (project.parseErrorCount ?? 0) + (project.reconcileErrorCount ?? 0)}
-                {#if errTotal > 0}
-                  <span class="text-red-600 font-medium text-xs">{errTotal}</span>
+                {#if (project.parseErrorCount ?? 0) + (project.reconcileErrorCount ?? 0) > 0}
+                  <span class="text-red-600 font-medium text-xs">{(project.parseErrorCount ?? 0) + (project.reconcileErrorCount ?? 0)}</span>
                   <span class="text-fg-tertiary text-xs ml-1">({project.parseErrorCount ?? 0} parse, {project.reconcileErrorCount ?? 0} reconcile)</span>
                 {:else}
                   <span class="text-fg-tertiary">—</span>
