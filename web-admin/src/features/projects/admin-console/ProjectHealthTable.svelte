@@ -9,7 +9,27 @@
     name: string;
     status: V1DeploymentStatus;
     updatedOn: string | undefined;
+    parseErrorCount: number;
+    reconcileErrorCount: number;
   }>;
+
+  function hasResourceErrors(project: {
+    parseErrorCount: number;
+    reconcileErrorCount: number;
+  }): boolean {
+    return project.parseErrorCount > 0 || project.reconcileErrorCount > 0;
+  }
+
+  function shouldHighlight(project: {
+    status: V1DeploymentStatus;
+    parseErrorCount: number;
+    reconcileErrorCount: number;
+  }): boolean {
+    return (
+      project.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED ||
+      hasResourceErrors(project)
+    );
+  }
 </script>
 
 {#if projects.length === 0}
@@ -26,6 +46,9 @@
             >Status</th
           >
           <th class="px-4 py-3 text-left font-medium text-fg-secondary"
+            >Errors</th
+          >
+          <th class="px-4 py-3 text-left font-medium text-fg-secondary"
             >Last Updated</th
           >
         </tr>
@@ -33,8 +56,9 @@
       <tbody>
         {#each projects as project (project.name)}
           <tr
-            class="border-b border-border last:border-b-0 {project.status ===
-            V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED
+            class="border-b border-border last:border-b-0 {shouldHighlight(
+              project,
+            )
               ? 'bg-red-50'
               : ''}"
           >
@@ -55,6 +79,19 @@
                 ></span>
                 {getStatusLabel(project.status)}
               </span>
+            </td>
+            <td class="px-4 py-3">
+              {#if hasResourceErrors(project)}
+                <span class="text-red-600 font-medium">
+                  {project.parseErrorCount + project.reconcileErrorCount}
+                </span>
+                <span class="text-fg-tertiary text-xs ml-1">
+                  ({project.parseErrorCount} parse, {project.reconcileErrorCount}
+                  reconcile)
+                </span>
+              {:else}
+                <span class="text-fg-tertiary">—</span>
+              {/if}
             </td>
             <td class="px-4 py-3 text-fg-secondary">
               {#if project.updatedOn}
