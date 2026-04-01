@@ -25,7 +25,9 @@
   import {
     getStatusDotClass,
     getStatusLabel,
+    isTransitoryStatus,
   } from "@rilldata/web-admin/features/projects/status/display-utils";
+  import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
   import {
     optimisticallyRemoveDeployment,
     optimisticallySetStatus,
@@ -289,7 +291,11 @@
             {ownerName(deployment)}
           </div>
           <div class="pl-4 flex items-center gap-2 text-sm">
-            <span class="status-dot {getStatusDotClass(status)}"></span>
+            {#if isTransitoryStatus(status)}
+              <LoadingCircleOutline size="12px" />
+            {:else}
+              <span class="status-dot {getStatusDotClass(status)}"></span>
+            {/if}
             {getStatusLabel(status)}
           </div>
           <div class="pl-4 flex items-center text-sm text-fg-secondary">

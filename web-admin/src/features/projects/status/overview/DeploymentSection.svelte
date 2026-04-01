@@ -16,7 +16,9 @@
     getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
+    isTransitoryStatus,
   } from "../display-utils";
+  import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
@@ -89,7 +91,11 @@
     <div class="info-row">
       <span class="info-label">Status</span>
       <span class="info-value flex items-center gap-2">
-        <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+        {#if isTransitoryStatus(deploymentStatus)}
+          <LoadingCircleOutline size="12px" />
+        {:else}
+          <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+        {/if}
         {getStatusLabel(deploymentStatus)}
       </span>
     </div>
