@@ -13,6 +13,10 @@
     resourceKindStyleName,
     type ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    resourceIconMapping,
+    resourceLabelMapping,
+  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
   $: organization = $page.params.organization;
 
@@ -70,7 +74,7 @@
       {} as Record<string, number>,
     );
 
-  $: erroredProjects = projects.filter(hasErrors);
+  $: hasAnyErrors = Object.keys(erroredByKind).length > 0;
 </script>
 
 <div class="flex flex-col gap-6">
@@ -170,6 +174,9 @@
             href="/{organization}/-/console/resources?kind={encodeURIComponent(kind)}"
             class="chip {resourceKindStyleName(kind) ?? ''}"
           >
+            {#if resourceIconMapping[kind]}
+              <svelte:component this={resourceIconMapping[kind]} size="12px" />
+            {/if}
             <span class="font-medium">{count}</span>
             <span>{prettyResourceKind(kind)}</span>
           </a>
@@ -178,33 +185,30 @@
     {/if}
   </OverviewCard>
 
-  <OverviewCard title="Errors" viewAllHref="/{organization}/-/console/resources?status=error">
-    {#if $healthQuery.isLoading || $resourcesQuery.isLoading}
+  {#if $resourcesQuery.isLoading}
+    <OverviewCard title="Errors">
       <p class="text-sm text-fg-secondary">Loading...</p>
-    {:else if erroredProjects.length === 0 && Object.keys(erroredByKind).length === 0}
+    </OverviewCard>
+  {:else if !hasAnyErrors}
+    <OverviewCard title="Errors">
       <p class="text-sm text-fg-secondary">No errors found.</p>
-    {:else}
+    </OverviewCard>
+  {:else}
+    <a href="/{organization}/-/console/resources?status=error" class="error-card">
+      <h3 class="error-card-title">ERRORS</h3>
       <div class="chips">
-        {#if erroredProjects.length > 0}
-          <a href="/{organization}/-/console/projects?status=error" class="chip chip-red">
-            <span class="w-2 h-2 rounded-full bg-red-500"></span>
-            <span class="font-medium">{erroredProjects.length}</span>
-            <span class="text-fg-secondary">{erroredProjects.length === 1 ? "Project" : "Projects"}</span>
-          </a>
-        {/if}
         {#each Object.entries(erroredByKind).sort(([, a], [, b]) => b - a) as [kind, count]}
-          <a
-            href="/{organization}/-/console/resources?status=error&kind={encodeURIComponent(kind)}"
-            class="chip chip-red"
-          >
-            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+          <span class="chip chip-error-type {resourceKindStyleName(kind) ?? ''}">
+            {#if resourceIconMapping[kind]}
+              <svelte:component this={resourceIconMapping[kind]} size="12px" />
+            {/if}
             <span class="font-medium">{count}</span>
-            <span class="text-fg-secondary">{prettyResourceKind(kind)}</span>
-          </a>
+            <span>{prettyResourceKind(kind)}</span>
+          </span>
         {/each}
       </div>
-    {/if}
-  </OverviewCard>
+    </a>
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -234,5 +238,17 @@
   }
   .chip-red {
     @apply border-red-200;
+  }
+  .chip-error-type {
+    @apply border-transparent;
+  }
+  .error-card {
+    @apply block border border-red-300 bg-red-50 rounded-lg p-5 no-underline text-inherit;
+  }
+  .error-card:hover {
+    @apply border-red-400 bg-red-100/60;
+  }
+  .error-card-title {
+    @apply text-sm font-semibold text-red-700 uppercase tracking-wide mb-4;
   }
 </style>
