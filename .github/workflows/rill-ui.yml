@@ -69,6 +69,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          cache: 'npm'
 
       - name: Setup Env variables from Inputs for Prod
         if: ( github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'prod' )
@@ -93,7 +94,7 @@ jobs:
 
       - name: Build Cloud UI
         run: |-
-          npm install
+          npm ci
           npm run build -w web-admin
         env:
           RILL_UI_PUBLIC_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
