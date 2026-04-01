@@ -7,12 +7,11 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/sqldialect"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 type dialect struct {
-	sqldialect.Base
+	drivers.BaseDialect
 }
 
 func newDialect() *dialect {
@@ -124,7 +123,7 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 
 	var specifier string
 	if tz != "" {
-		specifier = sqldialect.DruidTimeFloorSpecifier(grain)
+		specifier = drivers.DruidTimeFloorSpecifier(grain)
 	} else {
 		specifier = d.ConvertToDateTruncSpecifier(grain)
 	}
@@ -187,7 +186,7 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 
 func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []any, error) {
 	for _, f := range result.Schema.Fields {
-		if !sqldialect.CheckTypeCompatibility(f) {
+		if !drivers.CheckTypeCompatibility(f) {
 			return "", nil, nil, fmt.Errorf("select inline: schema field type not supported %q: %w", f.Type.Code, drivers.ErrOptimizationFailure)
 		}
 	}

@@ -8,14 +8,13 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/sqldialect"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 var dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 
 type dialect struct {
-	sqldialect.Base
+	drivers.BaseDialect
 }
 
 func newDialect() *dialect {
@@ -40,7 +39,7 @@ func (d *dialect) SupportsILike() bool        { return false }
 func (d *dialect) GetCastExprForLike() string { return "::Nullable(TEXT)" }
 
 func (d *dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
-	return strings.ToLower(d.Base.ConvertToDateTruncSpecifier(grain))
+	return strings.ToLower(d.BaseDialect.ConvertToDateTruncSpecifier(grain))
 }
 
 func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
@@ -189,7 +188,7 @@ func (d *dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string,
 
 func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []any, error) {
 	for _, f := range result.Schema.Fields {
-		if !sqldialect.CheckTypeCompatibility(f) {
+		if !drivers.CheckTypeCompatibility(f) {
 			return "", nil, nil, fmt.Errorf("select inline: schema field type not supported %q: %w", f.Type.Code, drivers.ErrOptimizationFailure)
 		}
 	}

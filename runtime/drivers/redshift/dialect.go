@@ -5,11 +5,10 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/sqldialect"
 )
 
 type dialect struct {
-	sqldialect.Base
+	drivers.BaseDialect
 }
 
 func newDialect() *dialect {
