@@ -416,63 +416,65 @@
       </div>
 
       <!-- Rows -->
-      {#each sortedResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
-        {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
-        <div class="row py-3">
-          <div class="pl-4 pr-1 flex items-center truncate">
-            <ResourceTypeBadge kind={resource.kind} />
-          </div>
-          <div class="pl-4 pr-1 flex items-center truncate">
-            <NameCell name={resource.name} />
-          </div>
-          <div class="pl-4 pr-1 flex items-center truncate text-fg-secondary text-xs">
-            {resource.projectName}
-          </div>
-          <div class="pl-1 pr-1 flex items-center truncate">
-            <ResourceErrorMessage
-              message={resource.reconcileError}
-              status={resource.reconcileError
-                ? V1ReconcileStatus.RECONCILE_STATUS_IDLE
-                : mapReconcileStatus(resource.reconcileStatus)}
-            />
-          </div>
-          <div class="pl-4 pr-1 flex items-center truncate">
-            <RefreshCell date={resource.stateUpdatedOn} />
-          </div>
-          <div class="pl-4 pr-1 flex items-center">
-            <DropdownMenu.Root
-              open={openDropdownKey === resourceKey}
-              onOpenChange={(isOpen) => {
-                openDropdownKey = isOpen ? resourceKey : "";
-              }}
-            >
-              <DropdownMenu.Trigger
-                class="flex-none"
-                aria-label="Resource actions"
+      <div class="rows-scroll">
+        {#each sortedResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
+          {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
+          <div class="row py-3">
+            <div class="pl-4 pr-1 flex items-center truncate">
+              <ResourceTypeBadge kind={resource.kind} />
+            </div>
+            <div class="pl-4 pr-1 flex items-center truncate">
+              <NameCell name={resource.name} />
+            </div>
+            <div class="pl-4 pr-1 flex items-center truncate text-fg-secondary text-xs">
+              {resource.projectName}
+            </div>
+            <div class="pl-1 pr-1 flex items-center truncate">
+              <ResourceErrorMessage
+                message={resource.reconcileError}
+                status={resource.reconcileError
+                  ? V1ReconcileStatus.RECONCILE_STATUS_IDLE
+                  : mapReconcileStatus(resource.reconcileStatus)}
+              />
+            </div>
+            <div class="pl-4 pr-1 flex items-center truncate">
+              <RefreshCell date={resource.stateUpdatedOn} />
+            </div>
+            <div class="pl-4 pr-1 flex items-center">
+              <DropdownMenu.Root
+                open={openDropdownKey === resourceKey}
+                onOpenChange={(isOpen) => {
+                  openDropdownKey = isOpen ? resourceKey : "";
+                }}
               >
-                <IconButton
-                  rounded
-                  active={openDropdownKey === resourceKey}
-                  size={20}
+                <DropdownMenu.Trigger
+                  class="flex-none"
+                  aria-label="Resource actions"
                 >
-                  <ThreeDot size="16px" />
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start">
-                <DropdownMenu.Item
-                  class="font-normal flex items-center"
-                  href="/{organization}/{resource.projectName}/-/status/resources?q={encodeURIComponent(resource.name)}"
-                >
-                  <div class="flex items-center">
-                    <ExternalLinkIcon size="12px" />
-                    <span class="ml-2">View in project</span>
-                  </div>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                  <IconButton
+                    rounded
+                    active={openDropdownKey === resourceKey}
+                    size={20}
+                  >
+                    <ThreeDot size="16px" />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="start">
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    href="/{organization}/{resource.projectName}/-/status/resources?q={encodeURIComponent(resource.name)}"
+                  >
+                    <div class="flex items-center">
+                      <ExternalLinkIcon size="12px" />
+                      <span class="ml-2">View in project</span>
+                    </div>
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </div>
           </div>
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
   {/if}
 </div>
@@ -480,6 +482,12 @@
 <style lang="postcss">
   .table-container {
     @apply flex flex-col border border-gray-200 rounded-sm overflow-hidden;
+    max-height: 590px;
+  }
+
+  .rows-scroll {
+    @apply overflow-auto;
+    max-height: 550px;
   }
 
   .row {
