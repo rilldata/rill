@@ -27,7 +27,7 @@
 
   export let organization: string;
 
-  export type OrgResource = {
+  type OrgResource = {
     projectName: string;
     kind: string;
     name: string;

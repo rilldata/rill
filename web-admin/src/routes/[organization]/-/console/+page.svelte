@@ -7,6 +7,7 @@
   } from "@rilldata/web-admin/client";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
   import {
+    ResourceKind,
     prettyResourceKind,
     resourceKindStyleName,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -166,7 +167,7 @@
             href="/{organization}/-/console/resources?kind={encodeURIComponent(
               kind,
             )}"
-            class="chip {resourceKindStyleName(kind) ?? ''}"
+            class="chip {resourceKindStyleName(kind as ResourceKind) ?? ''}"
           >
             {#if resourceIconMapping[kind]}
               <svelte:component this={resourceIconMapping[kind]} size="12px" />
