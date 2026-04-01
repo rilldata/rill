@@ -305,8 +305,10 @@
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
           deltaAbsMap[measureName] < 0
-            ? "text-red-500"
-            : ""}
+            ? "text-kpi-negative"
+            : deltaAbsMap[measureName] !== null && deltaAbsMap[measureName] > 0
+              ? "text-kpi-positive"
+              : ""}
           truncate={true}
         />
       </LeaderboardCell>
