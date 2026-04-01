@@ -1,5 +1,5 @@
 <script lang="ts">
-  import RillFilled from "@rilldata/web-common/components/icons/RillFilled.svelte";
+  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
 
   export let billingPlan: string | null;
 
@@ -13,6 +13,6 @@
     rel="noopener noreferrer"
     class="grid place-content-center p-2"
   >
-    <RillFilled size="16" />
+    <Rill />
   </a>
 {/if}
