@@ -5,9 +5,9 @@
 </script>
 
 <div class="grid grid-cols-3 gap-4">
-  <div class="rounded-lg border border-gray-200 p-4">
-    <p class="text-sm text-gray-500">Total Projects</p>
-    <p class="text-3xl font-semibold text-gray-900">{totalProjects}</p>
+  <div class="rounded-lg border border-border bg-surface-base p-4">
+    <p class="text-sm text-fg-secondary">Total Projects</p>
+    <p class="text-3xl font-semibold text-fg-primary">{totalProjects}</p>
   </div>
   <div class="rounded-lg border border-green-200 bg-green-50 p-4">
     <p class="text-sm text-green-600">Healthy</p>

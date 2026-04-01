@@ -1028,6 +1028,13 @@ components:
                         $ref: '#/components/schemas/v1ProjectHealth'
                     type: array
             type: object
+        v1ListOrganizationResourcesResponse:
+            properties:
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1OrganizationResource'
+                    type: array
+            type: object
         v1ListOrganizationsResponse:
             properties:
                 nextPageToken:
@@ -1416,6 +1423,37 @@ components:
                     type: integer
                 storageLimitBytesPerDeployment:
                     format: int64
+                    type: string
+            type: object
+        v1OrganizationResource:
+            properties:
+                filePaths:
+                    items:
+                        type: string
+                    type: array
+                hidden:
+                    type: boolean
+                kind:
+                    title: resource kind e.g. "rill.runtime.v1.Source"
+                    type: string
+                name:
+                    title: resource name
+                    type: string
+                projectId:
+                    type: string
+                projectName:
+                    type: string
+                reconcileError:
+                    title: error message if any
+                    type: string
+                reconcileStatus:
+                    title: IDLE, PENDING, RUNNING
+                    type: string
+                specUpdatedOn:
+                    format: date-time
+                    type: string
+                stateUpdatedOn:
+                    format: date-time
                     type: string
             type: object
         v1OrganizationRole:
@@ -2854,6 +2892,36 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListOrganizationProjectsWithHealth lists projects in an organization with deployment health information.
+            tags:
+                - admin
+    /v1/organizations/{organization}/resources:
+        get:
+            operationId: AdminService_ListOrganizationResources
+            parameters:
+                - in: path
+                  name: organization
+                  required: true
+                  schema:
+                    type: string
+                - description: 'optional: filter by project name'
+                  in: query
+                  name: projectFilter
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListOrganizationResourcesResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListOrganizationResources lists resources across all projects in an organization.
             tags:
                 - admin
     /v1/orgs:

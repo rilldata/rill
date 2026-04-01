@@ -135,6 +135,16 @@ service AdminService {
     };
   }
 
+  // ListOrganizationResources lists resources across all projects in an organization.
+  rpc ListOrganizationResources(ListOrganizationResourcesRequest) returns (ListOrganizationResourcesResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organization}/resources"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "admin"
+    };
+  }
+
   // ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
   // This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
   rpc ListProjectsForFingerprint(ListProjectsForFingerprintRequest) returns (ListProjectsForFingerprintResponse) {
@@ -1468,6 +1478,28 @@ message DeleteDeploymentResponse {
 message ListProjectsForOrganizationResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
+}
+
+message ListOrganizationResourcesRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project_filter = 2; // optional: filter by project name
+}
+
+message ListOrganizationResourcesResponse {
+  repeated OrganizationResource resources = 1;
+}
+
+message OrganizationResource {
+  string project_name = 1;
+  string project_id = 2;
+  string kind = 3; // resource kind e.g. "rill.runtime.v1.Source"
+  string name = 4; // resource name
+  string reconcile_status = 5; // IDLE, PENDING, RUNNING
+  string reconcile_error = 6; // error message if any
+  google.protobuf.Timestamp spec_updated_on = 7;
+  google.protobuf.Timestamp state_updated_on = 8;
+  repeated string file_paths = 9;
+  bool hidden = 10;
 }
 
 message ListOrganizationProjectsWithHealthRequest {

@@ -399,6 +399,31 @@ paths:
           type: string
       tags:
         - admin
+  /v1/organizations/{organization}/resources:
+    get:
+      summary: ListOrganizationResources lists resources across all projects in an organization.
+      operationId: AdminService_ListOrganizationResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: projectFilter
+          description: 'optional: filter by project name'
+          in: query
+          required: false
+          type: string
+      tags:
+        - admin
   /v1/orgs:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -5483,6 +5508,14 @@ definitions:
           $ref: '#/definitions/v1ProjectHealth'
       nextPageToken:
         type: string
+  v1ListOrganizationResourcesResponse:
+    type: object
+    properties:
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1OrganizationResource'
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -5896,6 +5929,37 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+  v1OrganizationResource:
+    type: object
+    properties:
+      projectName:
+        type: string
+      projectId:
+        type: string
+      kind:
+        type: string
+        title: resource kind e.g. "rill.runtime.v1.Source"
+      name:
+        type: string
+        title: resource name
+      reconcileStatus:
+        type: string
+        title: IDLE, PENDING, RUNNING
+      reconcileError:
+        type: string
+        title: error message if any
+      specUpdatedOn:
+        type: string
+        format: date-time
+      stateUpdatedOn:
+        type: string
+        format: date-time
+      filePaths:
+        type: array
+        items:
+          type: string
+      hidden:
+        type: boolean
   v1OrganizationRole:
     type: object
     properties:

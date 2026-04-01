@@ -13,17 +13,19 @@
 </script>
 
 {#if projects.length === 0}
-  <p class="text-gray-500 text-sm py-8 text-center">No projects found</p>
+  <p class="text-fg-secondary text-sm py-8 text-center">No projects found</p>
 {:else}
-  <div class="overflow-x-auto rounded-lg border border-gray-200">
+  <div class="overflow-x-auto rounded-lg border border-border">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-gray-200 bg-gray-50">
-          <th class="px-4 py-3 text-left font-medium text-gray-600"
+        <tr class="border-b border-border bg-surface-subtle">
+          <th class="px-4 py-3 text-left font-medium text-fg-secondary"
             >Project Name</th
           >
-          <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
-          <th class="px-4 py-3 text-left font-medium text-gray-600"
+          <th class="px-4 py-3 text-left font-medium text-fg-secondary"
+            >Status</th
+          >
+          <th class="px-4 py-3 text-left font-medium text-fg-secondary"
             >Last Updated</th
           >
         </tr>
@@ -31,7 +33,7 @@
       <tbody>
         {#each projects as project (project.name)}
           <tr
-            class="border-b border-gray-100 last:border-b-0 {project.status ===
+            class="border-b border-border last:border-b-0 {project.status ===
             V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED
               ? 'bg-red-50'
               : ''}"
@@ -39,12 +41,12 @@
             <td class="px-4 py-3">
               <a
                 href="/{organization}/{project.name}/-/status"
-                class="text-primary-600 hover:underline font-medium"
+                class="text-primary-500 hover:text-primary-600 font-medium"
               >
                 {project.name}
               </a>
             </td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 text-fg-primary">
               <span class="flex items-center gap-2">
                 <span
                   class="inline-block h-2 w-2 rounded-full {getStatusDotClass(
@@ -54,7 +56,7 @@
                 {getStatusLabel(project.status)}
               </span>
             </td>
-            <td class="px-4 py-3 text-gray-500">
+            <td class="px-4 py-3 text-fg-secondary">
               {#if project.updatedOn}
                 {new Date(project.updatedOn).toLocaleDateString("en-US", {
                   month: "short",

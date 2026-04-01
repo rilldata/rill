@@ -240,6 +240,132 @@ func (s *Server) ListOrganizationProjectsWithHealth(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListOrganizationResources(ctx context.Context, req *adminv1.ListOrganizationResourcesRequest) (*adminv1.ListOrganizationResourcesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project_filter", req.ProjectFilter),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage projects")
+	}
+
+	// Fetch all projects in the org (paginated with a reasonable page size)
+	pageSize := 100
+	var allProjects []*database.Project
+	pageToken := ""
+	for {
+		projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID, pageToken, pageSize)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		allProjects = append(allProjects, projs...)
+		if len(projs) < pageSize {
+			break
+		}
+		pageToken = projs[len(projs)-1].Name
+	}
+
+	// Internal resource kinds to filter out
+	hiddenKinds := map[string]bool{
+		"rill.runtime.v1.ProjectParser":  true,
+		"rill.runtime.v1.RefreshTrigger": true,
+		"rill.runtime.v1.Component":      true,
+		"rill.runtime.v1.Migration":      true,
+	}
+
+	var result []*adminv1.OrganizationResource
+	for _, p := range allProjects {
+		// Apply project name filter if provided
+		if req.ProjectFilter != "" && !strings.Contains(strings.ToLower(p.Name), strings.ToLower(req.ProjectFilter)) {
+			continue
+		}
+
+		// Skip projects without a running primary deployment
+		if p.PrimaryDeploymentID == nil {
+			continue
+		}
+
+		depl, err := s.admin.DB.FindDeployment(ctx, *p.PrimaryDeploymentID)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				continue
+			}
+			s.logger.Warn("failed to find deployment for project", zap.String("project", p.Name), zap.Error(err))
+			continue
+		}
+
+		if depl.Status != database.DeploymentStatusRunning {
+			continue
+		}
+
+		resources, err := s.listProjectResources(ctx, depl, p.Name)
+		if err != nil {
+			continue
+		}
+
+		for _, r := range resources {
+			if r.Meta == nil || r.Meta.Name == nil {
+				continue
+			}
+
+			// Skip hidden kinds
+			if hiddenKinds[r.Meta.Name.Kind] {
+				continue
+			}
+
+			// Skip hidden resources
+			if r.Meta.Hidden {
+				continue
+			}
+
+			result = append(result, &adminv1.OrganizationResource{
+				ProjectName:     p.Name,
+				ProjectId:       p.ID,
+				Kind:            r.Meta.Name.Kind,
+				Name:            r.Meta.Name.Name,
+				ReconcileStatus: r.Meta.ReconcileStatus.String(),
+				ReconcileError:  r.Meta.ReconcileError,
+				SpecUpdatedOn:   r.Meta.SpecUpdatedOn,
+				StateUpdatedOn:  r.Meta.StateUpdatedOn,
+				FilePaths:       r.Meta.FilePaths,
+				Hidden:          r.Meta.Hidden,
+			})
+		}
+	}
+
+	return &adminv1.ListOrganizationResourcesResponse{
+		Resources: result,
+	}, nil
+}
+
+// listProjectResources opens a runtime client, lists resources, and closes the client.
+// It returns nil and logs a warning on any error.
+func (s *Server) listProjectResources(ctx context.Context, depl *database.Deployment, projectName string) ([]*runtimev1.Resource, error) {
+	rt, err := s.admin.OpenRuntimeClient(depl)
+	if err != nil {
+		s.logger.Warn("failed to open runtime client for project", zap.String("project", projectName), zap.Error(err))
+		return nil, err
+	}
+	defer rt.Close()
+
+	resp, err := rt.ListResources(ctx, &runtimev1.ListResourcesRequest{
+		InstanceId: depl.RuntimeInstanceID,
+	})
+	if err != nil {
+		s.logger.Warn("failed to list resources for project", zap.String("project", projectName), zap.Error(err))
+		return nil, err
+	}
+
+	return resp.Resources, nil
+}
+
 func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.ListProjectsForFingerprintRequest) (*adminv1.ListProjectsForFingerprintResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.directory_name", req.DirectoryName),

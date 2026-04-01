@@ -1028,6 +1028,13 @@ components:
                         $ref: '#/components/schemas/v1ProjectHealth'
                     type: array
             type: object
+        v1ListOrganizationResourcesResponse:
+            properties:
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1OrganizationResource'
+                    type: array
+            type: object
         v1ListOrganizationsResponse:
             properties:
                 nextPageToken:
@@ -1416,6 +1423,37 @@ components:
                     type: integer
                 storageLimitBytesPerDeployment:
                     format: int64
+                    type: string
+            type: object
+        v1OrganizationResource:
+            properties:
+                filePaths:
+                    items:
+                        type: string
+                    type: array
+                hidden:
+                    type: boolean
+                kind:
+                    title: resource kind e.g. "rill.runtime.v1.Source"
+                    type: string
+                name:
+                    title: resource name
+                    type: string
+                projectId:
+                    type: string
+                projectName:
+                    type: string
+                reconcileError:
+                    title: error message if any
+                    type: string
+                reconcileStatus:
+                    title: IDLE, PENDING, RUNNING
+                    type: string
+                specUpdatedOn:
+                    format: date-time
+                    type: string
+                stateUpdatedOn:
+                    format: date-time
                     type: string
             type: object
         v1OrganizationRole:
@@ -2386,6 +2424,7 @@ paths:
     /v1/magic-tokens/current: {}
     /v1/organization-for-domain/{domain}: {}
     /v1/organizations/{organization}/projects/health: {}
+    /v1/organizations/{organization}/resources: {}
     /v1/orgs:
         get:
             operationId: AdminService_ListOrganizations
