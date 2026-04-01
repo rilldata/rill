@@ -96,7 +96,11 @@
   onMount(runImport);
 </script>
 
-<div class="flex flex-col gap-4 p-6 mx-auto w-fit justify-center">
+<div
+  class="flex flex-col gap-4 p-6 mx-auto justify-center {hasErrored
+    ? 'w-full'
+    : 'w-fit mx-auto'}"
+>
   <div class="flex justify-center">
     {#if hasErrored}
       <AlertCircleOutline size="30px" className="text-destructive" />
@@ -137,17 +141,22 @@
     </div>
   {/if}
 
-  <div class="flex flex-row items-center gap-2 py-6 mx-auto">
+  <div
+    class="flex flex-row items-center gap-2 {hasErrored
+      ? 'w-full'
+      : 'py-6 mx-auto'}"
+  >
     {#if hasErrored}
-      <Button type="secondary" noStroke onClick={cleanupAndBack} large
-        >Back</Button
-      >
+      <Button type="secondary" noStroke onClick={cleanupAndBack} large gray>
+        Back
+      </Button>
+      <div class="grow"></div>
     {/if}
     <Button type="tertiary" href={currentFileRoute} onClick={onDone} large>
       Skip and view project
     </Button>
     {#if hasErrored}
-      <Button type="primary" onClick={rerunImport} large>Retry</Button>
+      <Button type="primary" onClick={rerunImport} large>Try again</Button>
     {/if}
   </div>
 </div>

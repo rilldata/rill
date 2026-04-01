@@ -23,6 +23,7 @@ import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte"
 import { File } from "lucide-svelte";
 import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
 import HTTPSIcon from "@rilldata/web-common/components/icons/connectors/HTTPSIcon.svelte";
+import SQLiteIcon from "@rilldata/web-common/components/icons/connectors/SQLiteIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -46,7 +47,7 @@ export const connectorIconMapping = {
   s3: AmazonS3Icon,
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
-  sqlite: RedshiftIcon,
+  sqlite: SQLiteIcon,
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
   local_file: File,
