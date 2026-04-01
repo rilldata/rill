@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import { onMount } from "svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import ResourceTypeCell from "@rilldata/web-common/features/entity-management/ResourceTypeCell.svelte";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import {
     ResourceKind,
     prettyResourceKind,
@@ -417,8 +417,8 @@
       {#each sortedResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
         {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
         <div class="row py-3">
-          <div class="flex items-center truncate">
-            <ResourceTypeCell kind={resource.kind} />
+          <div class="pl-4 pr-1 flex items-center truncate">
+            <ResourceTypeBadge kind={resource.kind} />
           </div>
           <div class="pl-4 pr-1 flex items-center truncate">
             <NameCell name={resource.name} />

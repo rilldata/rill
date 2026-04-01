@@ -1,6 +1,6 @@
 <script lang="ts">
   import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
-  import ResourceTypeCell from "@rilldata/web-common/features/entity-management/ResourceTypeCell.svelte";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     createRuntimeServiceCreateTriggerMutation,
@@ -146,12 +146,9 @@
       header: "Type",
       accessorFn: (row) => row.meta.name.kind,
       cell: ({ row }) =>
-        renderComponent(ResourceTypeCell, {
+        renderComponent(ResourceTypeBadge, {
           kind: row.original.meta.name.kind as ResourceKind,
         }),
-      meta: {
-        marginLeft: "0",
-      },
     },
     {
       accessorFn: (row) => row.meta.name.name,
