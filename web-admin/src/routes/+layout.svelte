@@ -29,7 +29,9 @@
   import "@rilldata/web-common/app.css";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { customThemesDisabled } from "@rilldata/web-common/features/themes/theme-gating";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
+  import { isBrandingRestricted } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { V1Organization } from "@rilldata/web-admin/client";
 
   export let data;
@@ -41,6 +43,9 @@
   } = data);
 
   $: organizationFaviconUrl = organizationObj?.faviconUrl;
+  $: $customThemesDisabled = isBrandingRestricted(
+    organizationObj?.billingPlanName ?? "",
+  );
   $: organizationLogoUrl = getThemedLogoUrl(
     $themeControl,
     organizationObj as V1Organization | undefined,

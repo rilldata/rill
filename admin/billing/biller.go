@@ -81,7 +81,15 @@ const (
 	TeamPlanType
 	ManagedPlanType
 	EnterprisePlanType
+	FreePlanType
+	GrowthPlanType
 )
+
+// IsPlanBrandingRestricted returns true if the given plan name does not allow
+// custom branding features (logo, favicon, themes).
+func IsPlanBrandingRestricted(planName string) bool {
+	return planName == "free_plan" || planName == "growth_plan"
+}
 
 type Plan struct {
 	ID              string // ID of the plan in the external billing system

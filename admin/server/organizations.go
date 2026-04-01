@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -188,6 +189,16 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
+	}
+
+	// Block branding updates for restricted plans (allow clearing)
+	if org.BillingPlanName != nil && billing.IsPlanBrandingRestricted(*org.BillingPlanName) {
+		isBrandingUpdate := (req.LogoAssetId != nil && *req.LogoAssetId != "") ||
+			(req.LogoDarkAssetId != nil && *req.LogoDarkAssetId != "") ||
+			(req.FaviconAssetId != nil && *req.FaviconAssetId != "")
+		if isBrandingUpdate {
+			return nil, status.Error(codes.PermissionDenied, "custom branding (logo, favicon) is not available on your current plan; please upgrade")
+		}
 	}
 
 	logoAssetID := org.LogoAssetID

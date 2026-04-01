@@ -12,6 +12,7 @@
 
   export let organization: string;
   export let organizationFaviconUrl: string | undefined;
+  export let disabled = false;
 
   const orgUpdater = createAdminServiceUpdateOrganization();
   $: ({ error, isPending: isLoading, mutateAsync } = $orgUpdater);
@@ -43,24 +44,42 @@
   }
 </script>
 
-<SettingsContainer title="Favicon" suppressFooter={!organizationFaviconUrl}>
+<SettingsContainer
+  title="Favicon"
+  suppressFooter={!organizationFaviconUrl}
+  titleIcon={disabled ? "info" : "none"}
+>
   <div slot="body" class="flex flex-col gap-y-2">
-    <div>
-      Click to upload your favicon and customize Rill for your organization.
-      Upload a square icon to get the best results.
+    {#if disabled}
+      <div class="text-sm text-fg-tertiary">
+        Custom favicons are not available on your current plan.
+        <a
+          href="/{organization}/-/settings/billing"
+          class="text-primary-500 hover:text-primary-600"
+        >
+          Please upgrade.
+        </a>
+      </div>
+    {:else}
+      <div>
+        Click to upload your favicon and customize Rill for your organization.
+        Upload a square icon to get the best results.
+      </div>
+    {/if}
+    <div class:opacity-50={disabled} class:pointer-events-none={disabled}>
+      <UploadImagePopover
+        imageUrl={organizationFaviconUrl}
+        accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
+        label="favicon"
+        {organization}
+        loading={isLoading}
+        error={getRpcErrorMessage(error)}
+        {onSave}
+        {onRemove}
+      >
+        <img src="/favicon.png" alt="favicon" class="h-10" />
+      </UploadImagePopover>
     </div>
-    <UploadImagePopover
-      imageUrl={organizationFaviconUrl}
-      accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-      label="favicon"
-      {organization}
-      loading={isLoading}
-      error={getRpcErrorMessage(error)}
-      {onSave}
-      {onRemove}
-    >
-      <img src="/favicon.png" alt="favicon" class="h-10" />
-    </UploadImagePopover>
   </div>
   <svelte:fragment slot="action">
     {#if organizationFaviconUrl}

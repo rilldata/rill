@@ -14,6 +14,7 @@
   export let organization: string;
   export let organizationLogoUrl: string | undefined;
   export let organizationLogoDarkUrl: string | undefined;
+  export let disabled = false;
 
   const logoUpdater = createAdminServiceUpdateOrganization({
     mutation: {
@@ -92,12 +93,32 @@
   $: hasAnyLogo = organizationLogoUrl || organizationLogoDarkUrl;
 </script>
 
-<SettingsContainer title="Logo" suppressFooter={!hasAnyLogo}>
+<SettingsContainer
+  title="Logo"
+  suppressFooter={!hasAnyLogo}
+  titleIcon={disabled ? "info" : "none"}
+>
   <div slot="body" class="flex flex-col gap-y-4">
-    <div>
-      Click to upload your logo and customize Rill for your organization.
-    </div>
-    <div class="flex flex-row gap-x-6 items-start">
+    {#if disabled}
+      <div class="text-sm text-fg-tertiary">
+        Custom logos are not available on your current plan.
+        <a
+          href="/{organization}/-/settings/billing"
+          class="text-primary-500 hover:text-primary-600"
+        >
+          Please upgrade.
+        </a>
+      </div>
+    {:else}
+      <div>
+        Click to upload your logo and customize Rill for your organization.
+      </div>
+    {/if}
+    <div
+      class="flex flex-row gap-x-6 items-start"
+      class:opacity-50={disabled}
+      class:pointer-events-none={disabled}
+    >
       <!-- Light Logo -->
       <div class="flex flex-col gap-y-2">
         <div class="text-sm font-medium">Light Logo</div>

@@ -25,6 +25,7 @@
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
 
   export let data: V1Resource[];
+  export let brandingRestricted = false;
 
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
@@ -167,11 +168,20 @@
           getStatusPriority(rowA.original.meta.reconcileStatus)
         );
       },
-      cell: ({ row }) =>
-        renderComponent(ResourceErrorMessage, {
+      cell: ({ row }) => {
+        const isTheme =
+          row.original.meta.name.kind === ResourceKind.Theme;
+        return renderComponent(ResourceErrorMessage, {
           message: row.original.meta.reconcileError,
           status: row.original.meta.reconcileStatus,
-        }),
+          testErrors:
+            isTheme && brandingRestricted
+              ? [
+                  "Themes are not available on your current plan. Please upgrade.",
+                ]
+              : [],
+        });
+      },
       meta: {
         marginLeft: "1",
       },
