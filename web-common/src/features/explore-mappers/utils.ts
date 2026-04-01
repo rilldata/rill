@@ -20,6 +20,7 @@ import {
 import {
   getQueryServiceMetricsViewAggregationQueryKey,
   getQueryServiceMetricsViewTimeRangeQueryKey,
+  getQueryServiceMetricsViewTimeRangesQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   queryServiceMetricsViewAggregation,
   queryServiceMetricsViewTimeRange,
@@ -28,6 +29,7 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
+  type V1MetricsViewTimeRangesResponse,
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -207,6 +209,7 @@ export async function getExplorePageUrlSearchParams(
 /**
  * Sync method to get explore page url search params if metrics view time range is present in cache.
  * Else the map will have to happen in the `/-/open-query` route.
+ * @param instanceId
  * @param exploreState
  * @param metricsViewSpec
  * @param exploreSpec
@@ -228,7 +231,6 @@ export function maybeGetExplorePageUrlSearchParams(
   const queryResp = queryClient.getQueryData<V1MetricsViewTimeRangeResponse>(
     metricsViewTimeRangeQueryKey,
   );
-  if (!queryResp) return null;
 
   // This is just for an initial redirect.
   // DashboardStateDataLoader will handle compression etc. during init
@@ -240,7 +242,11 @@ export function maybeGetExplorePageUrlSearchParams(
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
-      queryResp.timeRangeSummary,
+      queryResp?.timeRangeSummary ?? {
+        min: new Date(0).toISOString(),
+        watermark: new Date().toISOString(),
+        max: new Date().toISOString(),
+      },
       exploreState,
     ),
   );
