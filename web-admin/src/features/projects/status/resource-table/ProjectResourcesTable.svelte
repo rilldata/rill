@@ -169,8 +169,7 @@
         );
       },
       cell: ({ row }) => {
-        const isTheme =
-          row.original.meta.name.kind === ResourceKind.Theme;
+        const isTheme = row.original.meta.name.kind === ResourceKind.Theme;
         return renderComponent(ResourceErrorMessage, {
           message: row.original.meta.reconcileError,
           status: row.original.meta.reconcileStatus,
