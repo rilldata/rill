@@ -150,6 +150,46 @@
     selectedTypes.length > 0 ||
     searchText.length > 0;
 
+  // Sorting
+  type SortKey = "type" | "name" | "project" | "status" | "updated";
+  let sortKey: SortKey = "name";
+  let sortAsc = true;
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      sortAsc = !sortAsc;
+    } else {
+      sortKey = key;
+      sortAsc = true;
+    }
+  }
+
+  function sortIndicator(key: SortKey): string {
+    if (sortKey !== key) return "";
+    return sortAsc ? " ↑" : " ↓";
+  }
+
+  $: sortedResources = [...filteredResources].sort((a, b) => {
+    const dir = sortAsc ? 1 : -1;
+    switch (sortKey) {
+      case "type":
+        return dir * a.kind.localeCompare(b.kind);
+      case "name":
+        return dir * a.name.localeCompare(b.name);
+      case "project":
+        return dir * a.projectName.localeCompare(b.projectName);
+      case "status": {
+        const sa = a.reconcileError ? 1 : 0;
+        const sb = b.reconcileError ? 1 : 0;
+        return dir * (sa - sb);
+      }
+      case "updated":
+        return dir * (a.stateUpdatedOn ?? "").localeCompare(b.stateUpdatedOn ?? "");
+      default:
+        return 0;
+    }
+  });
+
   let openDropdownKey = "";
 </script>
 
@@ -248,7 +288,7 @@
     {/if}
   </div>
 
-  {#if filteredResources.length === 0}
+  {#if sortedResources.length === 0}
     <p class="text-fg-secondary text-sm py-8 text-center">
       No resources match the current filters
     </p>
@@ -257,16 +297,26 @@
       <table class="w-full text-sm table-fixed">
         <thead>
           <tr class="border-b border-border bg-surface-subtle">
-            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs w-[108px]">Type</th>
-            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs">Name</th>
-            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs w-[140px]">Project</th>
-            <th class="px-3 py-2 text-center font-medium text-fg-secondary text-xs w-[48px]">Status</th>
-            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs w-[120px]">Last refresh</th>
+            <th class="px-3 py-2 text-left text-xs w-[108px] sortable" on:click={() => toggleSort("type")}>
+              Type{sortIndicator("type")}
+            </th>
+            <th class="px-3 py-2 text-left text-xs sortable" on:click={() => toggleSort("name")}>
+              Name{sortIndicator("name")}
+            </th>
+            <th class="px-3 py-2 text-left text-xs w-[140px] sortable" on:click={() => toggleSort("project")}>
+              Project{sortIndicator("project")}
+            </th>
+            <th class="px-3 py-2 text-center text-xs w-[48px] sortable" on:click={() => toggleSort("status")}>
+              Status{sortIndicator("status")}
+            </th>
+            <th class="px-3 py-2 text-left text-xs w-[120px] sortable" on:click={() => toggleSort("updated")}>
+              Last refresh{sortIndicator("updated")}
+            </th>
             <th class="px-3 py-2 w-[56px]"></th>
           </tr>
         </thead>
         <tbody>
-          {#each filteredResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
+          {#each sortedResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
             {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
             <tr class="border-b border-border last:border-b-0">
               <td class="px-3 py-3">
@@ -328,3 +378,12 @@
     </div>
   {/if}
 </div>
+
+<style lang="postcss">
+  .sortable {
+    @apply font-medium text-fg-secondary cursor-pointer select-none;
+  }
+  .sortable:hover {
+    @apply text-fg-primary;
+  }
+</style>

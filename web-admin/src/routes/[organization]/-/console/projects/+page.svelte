@@ -6,17 +6,11 @@
     V1DeploymentStatus,
     type V1ProjectHealth,
   } from "@rilldata/web-admin/client";
-  import {
-    getStatusDotClass,
-    getStatusLabel,
-  } from "@rilldata/web-admin/features/projects/status/display-utils";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -57,7 +51,7 @@
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
     { label: "Healthy", value: "healthy" },
-    { label: "Erroring", value: "erroring" },
+    { label: "Error", value: "error" },
   ];
 
   const filterSync = createUrlFilterSync([
@@ -110,7 +104,7 @@
 
   $: filteredProjects = allProjects.filter((p) => {
     if (selectedStatuses.includes("healthy") && !isHealthy(p)) return false;
-    if (selectedStatuses.includes("erroring") && !hasErrors(p)) return false;
+    if (selectedStatuses.includes("error") && !hasErrors(p)) return false;
     if (
       searchText &&
       !(p.projectName ?? "").toLowerCase().includes(searchText.toLowerCase())
@@ -119,21 +113,12 @@
     return true;
   });
 
-  function projectReconcileStatus(
-    p: V1ProjectHealth,
-  ): V1ReconcileStatus {
-    if (hasErrors(p)) return V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-    return V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  }
-
   function projectErrorMessage(p: V1ProjectHealth): string {
     const errors: string[] = [];
     if (
       p.deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED
     ) {
-      errors.push(
-        p.deploymentStatusMessage ?? "Deployment error",
-      );
+      errors.push(p.deploymentStatusMessage ?? "Deployment error");
     }
     if ((p.parseErrorCount ?? 0) > 0)
       errors.push(`${p.parseErrorCount} parse error(s)`);
@@ -141,6 +126,46 @@
       errors.push(`${p.reconcileErrorCount} reconcile error(s)`);
     return errors.join("; ");
   }
+
+  // Sorting
+  type SortKey = "name" | "status" | "parse" | "reconcile" | "updated";
+  let sortKey: SortKey = "name";
+  let sortAsc = true;
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      sortAsc = !sortAsc;
+    } else {
+      sortKey = key;
+      sortAsc = true;
+    }
+  }
+
+  function sortIndicator(key: SortKey): string {
+    if (sortKey !== key) return "";
+    return sortAsc ? " ↑" : " ↓";
+  }
+
+  $: sortedProjects = [...filteredProjects].sort((a, b) => {
+    const dir = sortAsc ? 1 : -1;
+    switch (sortKey) {
+      case "name":
+        return dir * (a.projectName ?? "").localeCompare(b.projectName ?? "");
+      case "status": {
+        const sa = hasErrors(a) ? 2 : isHealthy(a) ? 0 : 1;
+        const sb = hasErrors(b) ? 2 : isHealthy(b) ? 0 : 1;
+        return dir * (sa - sb);
+      }
+      case "parse":
+        return dir * ((a.parseErrorCount ?? 0) - (b.parseErrorCount ?? 0));
+      case "reconcile":
+        return dir * ((a.reconcileErrorCount ?? 0) - (b.reconcileErrorCount ?? 0));
+      case "updated":
+        return dir * (a.updatedOn ?? "").localeCompare(b.updatedOn ?? "");
+      default:
+        return 0;
+    }
+  });
 
   let openDropdownProject = "";
 </script>
@@ -208,7 +233,7 @@
     <p class="text-sm text-fg-secondary">Loading projects...</p>
   {:else if $healthQuery.isError}
     <p class="text-red-500 text-sm">Failed to load projects</p>
-  {:else if filteredProjects.length === 0}
+  {:else if sortedProjects.length === 0}
     <p class="text-sm text-fg-secondary py-8 text-center">
       No projects match the current filters
     </p>
@@ -217,15 +242,26 @@
       <table class="w-full text-sm table-fixed">
         <thead>
           <tr class="border-b border-border bg-surface-subtle">
-            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs">Name</th>
-            <th class="px-3 py-2 text-center font-medium text-fg-secondary text-xs w-[48px]">Status</th>
-            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs w-[160px]">Errors</th>
-            <th class="px-3 py-2 text-left font-medium text-fg-secondary text-xs w-[120px]">Last Updated</th>
+            <th class="px-3 py-2 text-left text-xs sortable" on:click={() => toggleSort("name")}>
+              Name{sortIndicator("name")}
+            </th>
+            <th class="px-3 py-2 text-center text-xs w-[48px] sortable" on:click={() => toggleSort("status")}>
+              Status{sortIndicator("status")}
+            </th>
+            <th class="px-3 py-2 text-center text-xs w-[80px] sortable" on:click={() => toggleSort("parse")}>
+              Parse{sortIndicator("parse")}
+            </th>
+            <th class="px-3 py-2 text-center text-xs w-[100px] sortable" on:click={() => toggleSort("reconcile")}>
+              Reconcile{sortIndicator("reconcile")}
+            </th>
+            <th class="px-3 py-2 text-left text-xs w-[120px] sortable" on:click={() => toggleSort("updated")}>
+              Last Updated{sortIndicator("updated")}
+            </th>
             <th class="px-3 py-2 w-[56px]"></th>
           </tr>
         </thead>
         <tbody>
-          {#each filteredProjects as project (project.projectId)}
+          {#each sortedProjects as project (project.projectId)}
             <tr class="border-b border-border last:border-b-0">
               <td class="px-3 py-3 truncate">
                 <NameCell name={project.projectName ?? ""} />
@@ -233,13 +269,19 @@
               <td class="px-3 py-3">
                 <ResourceErrorMessage
                   message={projectErrorMessage(project)}
-                  status={projectReconcileStatus(project)}
+                  status={V1ReconcileStatus.RECONCILE_STATUS_IDLE}
                 />
               </td>
-              <td class="px-3 py-3">
-                {#if (project.parseErrorCount ?? 0) + (project.reconcileErrorCount ?? 0) > 0}
-                  <span class="text-red-600 font-medium text-xs">{(project.parseErrorCount ?? 0) + (project.reconcileErrorCount ?? 0)}</span>
-                  <span class="text-fg-tertiary text-xs ml-1">({project.parseErrorCount ?? 0} parse, {project.reconcileErrorCount ?? 0} reconcile)</span>
+              <td class="px-3 py-3 text-center">
+                {#if (project.parseErrorCount ?? 0) > 0}
+                  <span class="text-red-600 font-medium text-xs">{project.parseErrorCount}</span>
+                {:else}
+                  <span class="text-fg-tertiary">—</span>
+                {/if}
+              </td>
+              <td class="px-3 py-3 text-center">
+                {#if (project.reconcileErrorCount ?? 0) > 0}
+                  <span class="text-red-600 font-medium text-xs">{project.reconcileErrorCount}</span>
                 {:else}
                   <span class="text-fg-tertiary">—</span>
                 {/if}
@@ -286,3 +328,12 @@
     </div>
   {/if}
 </div>
+
+<style lang="postcss">
+  .sortable {
+    @apply font-medium text-fg-secondary cursor-pointer select-none;
+  }
+  .sortable:hover {
+    @apply text-fg-primary;
+  }
+</style>

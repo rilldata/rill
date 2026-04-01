@@ -112,10 +112,10 @@
           <span class="font-medium">{healthyCount}</span>
           <span class="text-fg-secondary">Healthy</span>
         </a>
-        <a href="/{organization}/-/console/projects?status=erroring" class="chip chip-red">
+        <a href="/{organization}/-/console/projects?status=error" class="chip chip-red">
           <span class="w-2 h-2 rounded-full bg-red-500"></span>
           <span class="font-medium">{errorCount}</span>
-          <span class="text-fg-secondary">Erroring</span>
+          <span class="text-fg-secondary">Error</span>
         </a>
       </div>
     {/if}
