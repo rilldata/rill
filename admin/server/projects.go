@@ -157,6 +157,89 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListOrganizationProjectsWithHealth(ctx context.Context, req *adminv1.ListOrganizationProjectsWithHealthRequest) (*adminv1.ListOrganizationProjectsWithHealthResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage projects")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	// TODO: deployment lookups below are N+1; consider adding a batch FindDeploymentsByIDs method
+	projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(projs) >= pageSize {
+		nextToken = marshalPageToken(projs[len(projs)-1].Name)
+	}
+
+	results := make([]*adminv1.ProjectHealth, len(projs))
+	for i, p := range projs {
+		ph := &adminv1.ProjectHealth{
+			ProjectId:     p.ID,
+			ProjectName:   p.Name,
+			OrgName:       org.Name,
+			Public:        p.Public,
+			Description:   p.Description,
+			GitRemote:     safeStr(p.GitRemote),
+			PrimaryBranch: p.PrimaryBranch,
+			CreatedOn:     timestamppb.New(p.CreatedOn),
+			UpdatedOn:     timestamppb.New(p.UpdatedOn),
+			FrontendUrl:   s.admin.URLs.Project(org.Name, p.Name),
+		}
+
+		// Fetch primary deployment for status
+		if p.PrimaryDeploymentID != nil {
+			depl, err := s.admin.DB.FindDeployment(ctx, *p.PrimaryDeploymentID)
+			if err != nil && !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Errorf(codes.Internal, "failed to find deployment for project %q: %s", p.Name, err)
+			}
+			if err == nil {
+				ph.DeploymentStatus = deploymentStatusToPB(depl.Status)
+				ph.DeploymentStatusMessage = depl.StatusMessage
+
+				// For running deployments, fetch runtime health for error counts
+				if depl.Status == database.DeploymentStatusRunning {
+					rt, err := s.admin.OpenRuntimeClient(depl)
+					if err == nil {
+						defer rt.Close()
+						resp, err := rt.InstanceHealth(ctx, &runtimev1.InstanceHealthRequest{
+							InstanceId: depl.RuntimeInstanceID,
+						})
+						if err == nil && resp.InstanceHealth != nil {
+							ph.ParseErrorCount = resp.InstanceHealth.ParseErrorCount
+							ph.ReconcileErrorCount = resp.InstanceHealth.ReconcileErrorCount
+						}
+					}
+				}
+			}
+		}
+
+		results[i] = ph
+	}
+
+	return &adminv1.ListOrganizationProjectsWithHealthResponse{
+		Projects:      results,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.ListProjectsForFingerprintRequest) (*adminv1.ListProjectsForFingerprintResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.directory_name", req.DirectoryName),
@@ -2300,31 +2383,32 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 	return id, nil
 }
 
-func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
-	var s adminv1.DeploymentStatus
-	switch d.Status {
+func deploymentStatusToPB(s database.DeploymentStatus) adminv1.DeploymentStatus {
+	switch s {
 	case database.DeploymentStatusUnspecified:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
 	case database.DeploymentStatusPending:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING
 	case database.DeploymentStatusUpdating:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING
 	case database.DeploymentStatusRunning:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING
 	case database.DeploymentStatusErrored:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED
 	case database.DeploymentStatusStopping:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING
 	case database.DeploymentStatusStopped:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED
 	case database.DeploymentStatusDeleting:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING
 	case database.DeploymentStatusDeleted:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED
+		return adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED
 	default:
-		panic(fmt.Errorf("unhandled deployment status %d", d.Status))
+		panic(fmt.Errorf("unhandled deployment status %d", s))
 	}
+}
 
+func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 	return &adminv1.Deployment{
 		Id:                d.ID,
 		ProjectId:         d.ProjectID,
@@ -2334,7 +2418,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		Editable:          d.Editable,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,
-		Status:            s,
+		Status:            deploymentStatusToPB(d.Status),
 		StatusMessage:     d.StatusMessage,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
 		UpdatedOn:         timestamppb.New(d.UpdatedOn),

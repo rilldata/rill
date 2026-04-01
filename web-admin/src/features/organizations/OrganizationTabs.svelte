@@ -22,6 +22,13 @@
       hasPermission: organizationPermissions.manageOrgMembers,
     },
     {
+      route: `/${organization}/-/console`,
+      label: "Console",
+      hasPermission:
+        organizationPermissions.manageOrg ||
+        organizationPermissions.manageProjects,
+    },
+    {
       route: `/${organization}/-/settings`,
       label: "Settings",
       hasPermission: organizationPermissions.manageOrg,
@@ -30,7 +37,8 @@
 
   $: showTabs =
     organizationPermissions.manageOrg ||
-    organizationPermissions.manageOrgMembers;
+    organizationPermissions.manageOrgMembers ||
+    organizationPermissions.manageProjects;
 
   $: selectedIndex = tabs?.findLastIndex((t) => pathname.startsWith(t.route));
 </script>

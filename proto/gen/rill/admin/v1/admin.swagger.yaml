@@ -370,6 +370,35 @@ paths:
           in: path
           required: true
           type: string
+  /v1/organizations/{organization}/projects/health:
+    get:
+      summary: ListOrganizationProjectsWithHealth lists projects in an organization with deployment health information.
+      operationId: AdminService_ListOrganizationProjectsWithHealth
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationProjectsWithHealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - admin
   /v1/orgs:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -5444,6 +5473,16 @@ definitions:
         title: Total number of members in the organization
       nextPageToken:
         type: string
+  v1ListOrganizationProjectsWithHealthResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectHealth'
+      nextPageToken:
+        type: string
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -5933,6 +5972,41 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectHealth:
+    type: object
+    properties:
+      projectId:
+        type: string
+      projectName:
+        type: string
+      orgName:
+        type: string
+      public:
+        type: boolean
+      description:
+        type: string
+      gitRemote:
+        type: string
+      primaryBranch:
+        type: string
+      deploymentStatus:
+        $ref: '#/definitions/v1DeploymentStatus'
+      deploymentStatusMessage:
+        type: string
+      parseErrorCount:
+        type: integer
+        format: int32
+      reconcileErrorCount:
+        type: integer
+        format: int32
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+      frontendUrl:
+        type: string
   v1ProjectInvite:
     type: object
     properties:

@@ -125,6 +125,16 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects-for-user"};
   }
 
+  // ListOrganizationProjectsWithHealth lists projects in an organization with deployment health information.
+  rpc ListOrganizationProjectsWithHealth(ListOrganizationProjectsWithHealthRequest) returns (ListOrganizationProjectsWithHealthResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organization}/projects/health"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "admin"
+    };
+  }
+
   // ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
   // This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
   rpc ListProjectsForFingerprint(ListProjectsForFingerprintRequest) returns (ListProjectsForFingerprintResponse) {
@@ -1457,6 +1467,17 @@ message DeleteDeploymentResponse {
 
 message ListProjectsForOrganizationResponse {
   repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
+message ListOrganizationProjectsWithHealthRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message ListOrganizationProjectsWithHealthResponse {
+  repeated ProjectHealth projects = 1;
   string next_page_token = 2;
 }
 
@@ -3237,6 +3258,23 @@ message Project {
   google.protobuf.Timestamp updated_on = 15;
   // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
   reserved 10, 11;
+}
+
+message ProjectHealth {
+  string project_id = 1;
+  string project_name = 2;
+  string org_name = 3;
+  bool public = 4;
+  string description = 5;
+  string git_remote = 6;
+  string primary_branch = 7;
+  DeploymentStatus deployment_status = 8;
+  string deployment_status_message = 9;
+  int32 parse_error_count = 10;
+  int32 reconcile_error_count = 11;
+  google.protobuf.Timestamp created_on = 12;
+  google.protobuf.Timestamp updated_on = 13;
+  string frontend_url = 14;
 }
 
 enum DeploymentStatus {

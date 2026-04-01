@@ -1460,6 +1460,98 @@ export class ListProjectsForOrganizationResponse extends Message<ListProjectsFor
 }
 
 /**
+ * @generated from message rill.admin.v1.ListOrganizationProjectsWithHealthRequest
+ */
+export class ListOrganizationProjectsWithHealthRequest extends Message<ListOrganizationProjectsWithHealthRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: uint32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListOrganizationProjectsWithHealthRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationProjectsWithHealthRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationProjectsWithHealthRequest {
+    return new ListOrganizationProjectsWithHealthRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationProjectsWithHealthRequest {
+    return new ListOrganizationProjectsWithHealthRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationProjectsWithHealthRequest {
+    return new ListOrganizationProjectsWithHealthRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationProjectsWithHealthRequest | PlainMessage<ListOrganizationProjectsWithHealthRequest> | undefined, b: ListOrganizationProjectsWithHealthRequest | PlainMessage<ListOrganizationProjectsWithHealthRequest> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationProjectsWithHealthRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListOrganizationProjectsWithHealthResponse
+ */
+export class ListOrganizationProjectsWithHealthResponse extends Message<ListOrganizationProjectsWithHealthResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.ProjectHealth projects = 1;
+   */
+  projects: ProjectHealth[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListOrganizationProjectsWithHealthResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationProjectsWithHealthResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "projects", kind: "message", T: ProjectHealth, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationProjectsWithHealthResponse {
+    return new ListOrganizationProjectsWithHealthResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationProjectsWithHealthResponse {
+    return new ListOrganizationProjectsWithHealthResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationProjectsWithHealthResponse {
+    return new ListOrganizationProjectsWithHealthResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationProjectsWithHealthResponse | PlainMessage<ListOrganizationProjectsWithHealthResponse> | undefined, b: ListOrganizationProjectsWithHealthResponse | PlainMessage<ListOrganizationProjectsWithHealthResponse> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationProjectsWithHealthResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListProjectsForOrganizationAndUserRequest
  */
 export class ListProjectsForOrganizationAndUserRequest extends Message<ListProjectsForOrganizationAndUserRequest> {
@@ -15730,6 +15822,121 @@ export class Project extends Message<Project> {
 
   static equals(a: Project | PlainMessage<Project> | undefined, b: Project | PlainMessage<Project> | undefined): boolean {
     return proto3.util.equals(Project, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ProjectHealth
+ */
+export class ProjectHealth extends Message<ProjectHealth> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string project_name = 2;
+   */
+  projectName = "";
+
+  /**
+   * @generated from field: string org_name = 3;
+   */
+  orgName = "";
+
+  /**
+   * @generated from field: bool public = 4;
+   */
+  public = false;
+
+  /**
+   * @generated from field: string description = 5;
+   */
+  description = "";
+
+  /**
+   * @generated from field: string git_remote = 6;
+   */
+  gitRemote = "";
+
+  /**
+   * @generated from field: string primary_branch = 7;
+   */
+  primaryBranch = "";
+
+  /**
+   * @generated from field: rill.admin.v1.DeploymentStatus deployment_status = 8;
+   */
+  deploymentStatus = DeploymentStatus.UNSPECIFIED;
+
+  /**
+   * @generated from field: string deployment_status_message = 9;
+   */
+  deploymentStatusMessage = "";
+
+  /**
+   * @generated from field: int32 parse_error_count = 10;
+   */
+  parseErrorCount = 0;
+
+  /**
+   * @generated from field: int32 reconcile_error_count = 11;
+   */
+  reconcileErrorCount = 0;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 12;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 13;
+   */
+  updatedOn?: Timestamp;
+
+  /**
+   * @generated from field: string frontend_url = 14;
+   */
+  frontendUrl = "";
+
+  constructor(data?: PartialMessage<ProjectHealth>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ProjectHealth";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "deployment_status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },
+    { no: 9, name: "deployment_status_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "parse_error_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 11, name: "reconcile_error_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 12, name: "created_on", kind: "message", T: Timestamp },
+    { no: 13, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 14, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectHealth {
+    return new ProjectHealth().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectHealth {
+    return new ProjectHealth().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectHealth {
+    return new ProjectHealth().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectHealth | PlainMessage<ProjectHealth> | undefined, b: ProjectHealth | PlainMessage<ProjectHealth> | undefined): boolean {
+    return proto3.util.equals(ProjectHealth, a, b);
   }
 }
 

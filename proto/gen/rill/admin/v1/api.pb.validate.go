@@ -3631,6 +3631,282 @@ var _ interface {
 } = ListProjectsForOrganizationResponseValidationError{}
 
 // Validate checks the field values on
+// ListOrganizationProjectsWithHealthRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ListOrganizationProjectsWithHealthRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ListOrganizationProjectsWithHealthRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// ListOrganizationProjectsWithHealthRequestMultiError, or nil if none found.
+func (m *ListOrganizationProjectsWithHealthRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListOrganizationProjectsWithHealthRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListOrganizationProjectsWithHealthRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListOrganizationProjectsWithHealthRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListOrganizationProjectsWithHealthRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListOrganizationProjectsWithHealthRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// ListOrganizationProjectsWithHealthRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListOrganizationProjectsWithHealthRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListOrganizationProjectsWithHealthRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListOrganizationProjectsWithHealthRequestMultiError) AllErrors() []error { return m }
+
+// ListOrganizationProjectsWithHealthRequestValidationError is the validation
+// error returned by ListOrganizationProjectsWithHealthRequest.Validate if the
+// designated constraints aren't met.
+type ListOrganizationProjectsWithHealthRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListOrganizationProjectsWithHealthRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListOrganizationProjectsWithHealthRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListOrganizationProjectsWithHealthRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListOrganizationProjectsWithHealthRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListOrganizationProjectsWithHealthRequestValidationError) ErrorName() string {
+	return "ListOrganizationProjectsWithHealthRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListOrganizationProjectsWithHealthRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListOrganizationProjectsWithHealthRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListOrganizationProjectsWithHealthRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListOrganizationProjectsWithHealthRequestValidationError{}
+
+// Validate checks the field values on
+// ListOrganizationProjectsWithHealthResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ListOrganizationProjectsWithHealthResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ListOrganizationProjectsWithHealthResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// ListOrganizationProjectsWithHealthResponseMultiError, or nil if none found.
+func (m *ListOrganizationProjectsWithHealthResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListOrganizationProjectsWithHealthResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetProjects() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListOrganizationProjectsWithHealthResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListOrganizationProjectsWithHealthResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListOrganizationProjectsWithHealthResponseValidationError{
+					field:  fmt.Sprintf("Projects[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListOrganizationProjectsWithHealthResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListOrganizationProjectsWithHealthResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// ListOrganizationProjectsWithHealthResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListOrganizationProjectsWithHealthResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListOrganizationProjectsWithHealthResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListOrganizationProjectsWithHealthResponseMultiError) AllErrors() []error { return m }
+
+// ListOrganizationProjectsWithHealthResponseValidationError is the validation
+// error returned by ListOrganizationProjectsWithHealthResponse.Validate if
+// the designated constraints aren't met.
+type ListOrganizationProjectsWithHealthResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListOrganizationProjectsWithHealthResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListOrganizationProjectsWithHealthResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListOrganizationProjectsWithHealthResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListOrganizationProjectsWithHealthResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListOrganizationProjectsWithHealthResponseValidationError) ErrorName() string {
+	return "ListOrganizationProjectsWithHealthResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListOrganizationProjectsWithHealthResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListOrganizationProjectsWithHealthResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListOrganizationProjectsWithHealthResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListOrganizationProjectsWithHealthResponseValidationError{}
+
+// Validate checks the field values on
 // ListProjectsForOrganizationAndUserRequest with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -42816,6 +43092,188 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ProjectValidationError{}
+
+// Validate checks the field values on ProjectHealth with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ProjectHealth) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectHealth with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ProjectHealthMultiError, or
+// nil if none found.
+func (m *ProjectHealth) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectHealth) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	// no validation rules for ProjectName
+
+	// no validation rules for OrgName
+
+	// no validation rules for Public
+
+	// no validation rules for Description
+
+	// no validation rules for GitRemote
+
+	// no validation rules for PrimaryBranch
+
+	// no validation rules for DeploymentStatus
+
+	// no validation rules for DeploymentStatusMessage
+
+	// no validation rules for ParseErrorCount
+
+	// no validation rules for ReconcileErrorCount
+
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProjectHealthValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProjectHealthValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProjectHealthValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProjectHealthValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProjectHealthValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProjectHealthValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for FrontendUrl
+
+	if len(errors) > 0 {
+		return ProjectHealthMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectHealthMultiError is an error wrapping multiple validation errors
+// returned by ProjectHealth.ValidateAll() if the designated constraints
+// aren't met.
+type ProjectHealthMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectHealthMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectHealthMultiError) AllErrors() []error { return m }
+
+// ProjectHealthValidationError is the validation error returned by
+// ProjectHealth.Validate if the designated constraints aren't met.
+type ProjectHealthValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectHealthValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectHealthValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectHealthValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectHealthValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectHealthValidationError) ErrorName() string { return "ProjectHealthValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ProjectHealthValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectHealth.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectHealthValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectHealthValidationError{}
 
 // Validate checks the field values on Deployment with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

@@ -28,6 +28,7 @@ const (
 	AdminService_UpdateOrganization_FullMethodName                     = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_ListProjectsForOrganization_FullMethodName            = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_ListProjectsForOrganizationAndUser_FullMethodName     = "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndUser"
+	AdminService_ListOrganizationProjectsWithHealth_FullMethodName     = "/rill.admin.v1.AdminService/ListOrganizationProjectsWithHealth"
 	AdminService_ListProjectsForFingerprint_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectsForFingerprint"
 	AdminService_GetProject_FullMethodName                             = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_ListProjectsForUserByName_FullMethodName              = "/rill.admin.v1.AdminService/ListProjectsForUserByName"
@@ -202,6 +203,8 @@ type AdminServiceClient interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(ctx context.Context, in *ListProjectsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListOrganizationProjectsWithHealth lists projects in an organization with deployment health information.
+	ListOrganizationProjectsWithHealth(ctx context.Context, in *ListOrganizationProjectsWithHealthRequest, opts ...grpc.CallOption) (*ListOrganizationProjectsWithHealthResponse, error)
 	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
 	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
 	ListProjectsForFingerprint(ctx context.Context, in *ListProjectsForFingerprintRequest, opts ...grpc.CallOption) (*ListProjectsForFingerprintResponse, error)
@@ -606,6 +609,16 @@ func (c *adminServiceClient) ListProjectsForOrganizationAndUser(ctx context.Cont
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListProjectsForOrganizationAndUserResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListProjectsForOrganizationAndUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListOrganizationProjectsWithHealth(ctx context.Context, in *ListOrganizationProjectsWithHealthRequest, opts ...grpc.CallOption) (*ListOrganizationProjectsWithHealthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOrganizationProjectsWithHealthResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListOrganizationProjectsWithHealth_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2107,6 +2120,8 @@ type AdminServiceServer interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListOrganizationProjectsWithHealth lists projects in an organization with deployment health information.
+	ListOrganizationProjectsWithHealth(context.Context, *ListOrganizationProjectsWithHealthRequest) (*ListOrganizationProjectsWithHealthResponse, error)
 	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
 	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
 	ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error)
@@ -2453,6 +2468,9 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Conte
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganizationAndUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ListOrganizationProjectsWithHealth(context.Context, *ListOrganizationProjectsWithHealthRequest) (*ListOrganizationProjectsWithHealthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationProjectsWithHealth not implemented")
 }
 func (UnimplementedAdminServiceServer) ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForFingerprint not implemented")
@@ -3074,6 +3092,24 @@ func _AdminService_ListProjectsForOrganizationAndUser_Handler(srv interface{}, c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListProjectsForOrganizationAndUser(ctx, req.(*ListProjectsForOrganizationAndUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListOrganizationProjectsWithHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationProjectsWithHealthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListOrganizationProjectsWithHealth(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListOrganizationProjectsWithHealth_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListOrganizationProjectsWithHealth(ctx, req.(*ListOrganizationProjectsWithHealthRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5766,6 +5802,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjectsForOrganizationAndUser",
 			Handler:    _AdminService_ListProjectsForOrganizationAndUser_Handler,
+		},
+		{
+			MethodName: "ListOrganizationProjectsWithHealth",
+			Handler:    _AdminService_ListOrganizationProjectsWithHealth_Handler,
 		},
 		{
 			MethodName: "ListProjectsForFingerprint",
