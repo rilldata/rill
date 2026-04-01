@@ -8,6 +8,11 @@
     type V1ProjectHealth,
   } from "@rilldata/web-admin/client";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
+  import {
+    prettyResourceKind,
+    resourceKindStyleName,
+    type ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   $: organization = $page.params.organization;
 
@@ -43,9 +48,29 @@
   $: healthyCount = projects.filter(isHealthy).length;
   $: errorCount = projects.filter(hasErrors).length;
 
-  $: totalResources = allResources.length;
-  $: healthyResources = allResources.filter((r) => !r.reconcileError).length;
-  $: errorResources = allResources.filter((r) => !!r.reconcileError).length;
+  // Group resources by kind
+  $: resourcesByKind = allResources.reduce(
+    (acc, r) => {
+      const kind = r.kind ?? "unknown";
+      acc[kind] = (acc[kind] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  // Group errored resources by kind
+  $: erroredByKind = allResources
+    .filter((r) => !!r.reconcileError)
+    .reduce(
+      (acc, r) => {
+        const kind = r.kind ?? "unknown";
+        acc[kind] = (acc[kind] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+  $: erroredProjects = projects.filter(hasErrors);
 </script>
 
 <div class="flex flex-col gap-6">
@@ -137,19 +162,46 @@
     {:else}
       <div class="chips">
         <a href="/{organization}/-/console/resources" class="chip">
-          <span class="font-medium">{totalResources}</span>
-          <span class="text-fg-secondary">{totalResources === 1 ? "Resource" : "Resources"}</span>
+          <span class="font-medium">{allResources.length}</span>
+          <span class="text-fg-secondary">Total</span>
         </a>
-        <a href="/{organization}/-/console/resources?status=healthy" class="chip chip-green">
-          <span class="w-2 h-2 rounded-full bg-green-500"></span>
-          <span class="font-medium">{healthyResources}</span>
-          <span class="text-fg-secondary">Healthy</span>
-        </a>
-        <a href="/{organization}/-/console/resources?status=error" class="chip chip-red">
-          <span class="w-2 h-2 rounded-full bg-red-500"></span>
-          <span class="font-medium">{errorResources}</span>
-          <span class="text-fg-secondary">Error</span>
-        </a>
+        {#each Object.entries(resourcesByKind).sort(([, a], [, b]) => b - a) as [kind, count]}
+          <a
+            href="/{organization}/-/console/resources?kind={encodeURIComponent(kind)}"
+            class="chip {resourceKindStyleName(kind) ?? ''}"
+          >
+            <span class="font-medium">{count}</span>
+            <span>{prettyResourceKind(kind)}</span>
+          </a>
+        {/each}
+      </div>
+    {/if}
+  </OverviewCard>
+
+  <OverviewCard title="Errors" viewAllHref="/{organization}/-/console/resources?status=error">
+    {#if $healthQuery.isLoading || $resourcesQuery.isLoading}
+      <p class="text-sm text-fg-secondary">Loading...</p>
+    {:else if erroredProjects.length === 0 && Object.keys(erroredByKind).length === 0}
+      <p class="text-sm text-fg-secondary">No errors found.</p>
+    {:else}
+      <div class="chips">
+        {#if erroredProjects.length > 0}
+          <a href="/{organization}/-/console/projects?status=error" class="chip chip-red">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+            <span class="font-medium">{erroredProjects.length}</span>
+            <span class="text-fg-secondary">{erroredProjects.length === 1 ? "Project" : "Projects"}</span>
+          </a>
+        {/if}
+        {#each Object.entries(erroredByKind).sort(([, a], [, b]) => b - a) as [kind, count]}
+          <a
+            href="/{organization}/-/console/resources?status=error&kind={encodeURIComponent(kind)}"
+            class="chip chip-red"
+          >
+            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+            <span class="font-medium">{count}</span>
+            <span class="text-fg-secondary">{prettyResourceKind(kind)}</span>
+          </a>
+        {/each}
       </div>
     {/if}
   </OverviewCard>

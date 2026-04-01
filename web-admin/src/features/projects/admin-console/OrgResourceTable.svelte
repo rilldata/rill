@@ -369,7 +369,7 @@
             <th class="px-3 py-2 text-left text-xs w-[140px] sortable" on:click={() => toggleSort("project")}>
               Project {sortKey === "project" ? sortIcon : ""}
             </th>
-            <th class="px-3 py-2 text-center text-xs w-[48px] sortable" on:click={() => toggleSort("status")}>
+            <th class="px-3 py-2 text-center text-xs w-[80px] sortable" on:click={() => toggleSort("status")}>
               Status {sortKey === "status" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-left text-xs w-[120px] sortable" on:click={() => toggleSort("updated")}>
