@@ -22,7 +22,7 @@
 
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
-  export let onClose: () => void;
+  export let onDone: () => void;
 
   const runtimeClient = useRuntimeClient();
   const initialAddDataStep = { ...importAddDataStep };
@@ -71,7 +71,7 @@
           }
         },
       );
-      onClose();
+      onDone();
       return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
@@ -99,7 +99,7 @@
 <div class="flex flex-col gap-4 p-6 mx-auto w-fit justify-center">
   <div class="flex justify-center">
     {#if hasErrored}
-      <AlertCircleOutline size="16px" className="text-destructive" />
+      <AlertCircleOutline size="30px" className="text-destructive" />
     {:else}
       <Spinner status={EntityStatus.Running} size="30px" />
     {/if}
@@ -108,7 +108,7 @@
     <div class="text-center font-semibold text-[18px]">
       Creating your dashboard
     </div>
-    <div class="flex flex-col gap-y-1">
+    <div class="flex flex-col gap-y-1 w-fit mx-auto">
       {#each steps as s (s.step)}
         <div class="flex flex-row items-center gap-2 text-fg-tertiary text-sm">
           {#if importStep > s.step}
@@ -132,20 +132,22 @@
   </div>
 
   {#if error}
-    <div class="w-96 mx-auto text-destructive">
+    <div class="w-96 mx-auto text-destructive text-center">
       <div class="text-sm mb-2">{error}</div>
     </div>
   {/if}
 
   <div class="flex flex-row items-center gap-2 py-6 mx-auto">
     {#if hasErrored}
-      <Button type="secondary" noStroke onClick={cleanupAndBack}>Back</Button>
+      <Button type="secondary" noStroke onClick={cleanupAndBack} large
+        >Back</Button
+      >
     {/if}
-    <Button type="tertiary" href={currentFileRoute} onClick={onClose} large>
+    <Button type="tertiary" href={currentFileRoute} onClick={onDone} large>
       Skip and view project
     </Button>
     {#if hasErrored}
-      <Button type="primary" onClick={rerunImport}>Retry</Button>
+      <Button type="primary" onClick={rerunImport} large>Retry</Button>
     {/if}
   </div>
 </div>

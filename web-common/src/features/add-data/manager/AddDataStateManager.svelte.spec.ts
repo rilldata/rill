@@ -184,11 +184,8 @@ describe("AddDataStateManager", () => {
       it(`Test forward transition ${title}`, () => {
         const doneStub = vi.fn();
         const closeStub = vi.fn();
-        const stateManager = new AddDataStateManager(
-          doneStub,
-          closeStub,
-          undefined,
-        );
+        const stateManager = new AddDataStateManager();
+        stateManager.setCallbacks(doneStub, closeStub, undefined);
 
         events.forEach(({ event, expectedStep }) => {
           expect(doneStub).not.toHaveBeenCalled();
@@ -207,11 +204,8 @@ describe("AddDataStateManager", () => {
       it(`Test back ${title}`, () => {
         const doneStub = vi.fn();
         const closeStub = vi.fn();
-        const stateManager = new AddDataStateManager(
-          doneStub,
-          closeStub,
-          undefined,
-        );
+        const stateManager = new AddDataStateManager();
+        stateManager.setCallbacks(doneStub, closeStub, undefined);
 
         for (let i = 0; i < events.length - 1; i++) {
           stateManager.transition(events[i].event);
@@ -234,11 +228,8 @@ describe("AddDataStateManager", () => {
   it("Lateral transition", () => {
     const doneStub = vi.fn();
     const closeStub = vi.fn();
-    const stateManager = new AddDataStateManager(
-      doneStub,
-      closeStub,
-      undefined,
-    );
+    const stateManager = new AddDataStateManager();
+    stateManager.setCallbacks(doneStub, closeStub, undefined);
 
     stateManager.transition({ type: TransitionEventType.Init });
     stateManager.transition({

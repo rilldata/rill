@@ -8,6 +8,8 @@
     AddDataStep,
     type ImportStepConfig,
     ImportDataStep,
+    type AddDataStepWithSchema,
+    type AddDataStepWithConnector,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ConnectorHeader from "@rilldata/web-common/features/add-data/manager/ConnectorHeader.svelte";
@@ -41,17 +43,20 @@
     onStepChange?: (step: AddDataStep) => void;
   } = $props();
 
-  const stateManager = $derived(
-    new AddDataStateManager(onDone, onClose, onStepChange),
-  );
+  const stateManager = new AddDataStateManager();
+  $effect(() => stateManager.setCallbacks(onDone, onClose, onStepChange));
   $effect(() => void init(initConnector, initSchema));
 
   const runtimeClient = useRuntimeClient();
 
   let stepState = $derived(stateManager.state);
 
-  let schema = $derived((stepState as any).schema as string | undefined);
-  let connector = $derived((stepState as any).connector as string | undefined);
+  let schema = $derived<string | undefined>(
+    (stepState as AddDataStepWithSchema).schema ?? undefined,
+  );
+  let connector = $derived<string | undefined>(
+    (stepState as AddDataStepWithConnector).connector ?? undefined,
+  );
 
   let sizeClass = $derived(getAddDataClass(stepState));
   let shouldShowHeader = $derived(
@@ -109,9 +114,7 @@
         connector,
         connectorFormValues,
       });
-    }
-
-    if (connectorFormValues["auth_method"] === "public") {
+    } else if (connectorFormValues["auth_method"] === "public") {
       const driver = getConnectorDriverForSchema(connector);
       if (!driver) return;
       stateManager.transition({
@@ -183,12 +186,12 @@
       stepState.config.importSteps[0] === ImportDataStep.CreateModel}
     {#if isImportOnlyStep}
       <!-- Special case for import only, we show additional options to handle success and failures. -->
-      <ImportDataStatus importAddDataStep={stepState} onClose={onDone} />
+      <ImportDataStatus importAddDataStep={stepState} {onDone} />
     {:else}
       <GenerateDashboardStatus
         importAddDataStep={stepState}
         {onBack}
-        onClose={onDone}
+        {onDone}
       />
     {/if}
   {/if}

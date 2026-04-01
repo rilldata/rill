@@ -21,8 +21,8 @@
   let searchText = "";
   $: filteredConnectors = $supportedConnectors.filter(
     (connector) =>
-      connector.name.includes(searchText) ||
-      connector.displayName.includes(searchText),
+      connector.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      connector.displayName.toLowerCase().includes(searchText.toLowerCase()),
   );
 </script>
 

@@ -31,6 +31,11 @@ export type AddDataState =
   | ExploreConnectorStep
   | ImportAddDataStep
   | DoneAddDataStep;
+export type AddDataStepWithSchema =
+  | CreateConnectorStep
+  | CreateModelStep
+  | ExploreConnectorStep;
+export type AddDataStepWithConnector = CreateModelStep | ExploreConnectorStep;
 
 /**
  * Individual steps for strong typing

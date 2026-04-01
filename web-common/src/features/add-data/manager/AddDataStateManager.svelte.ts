@@ -48,11 +48,19 @@ export class AddDataStateManager {
   public state = $state<AddDataState>({ step: AddDataStep.Init });
   public stateStack = $state<AddDataState[]>([]);
 
-  public constructor(
-    private readonly onDone: (() => void) | undefined,
-    private readonly onClose: (() => void) | undefined,
-    private readonly onStepChange: ((step: AddDataStep) => void) | undefined,
-  ) {}
+  private onDone: (() => void) | undefined = undefined;
+  private onClose: (() => void) | undefined = undefined;
+  private onStepChange: ((step: AddDataStep) => void) | undefined = undefined;
+
+  public setCallbacks(
+    onDone: (() => void) | undefined,
+    onClose: (() => void) | undefined,
+    onStepChange: ((step: AddDataStep) => void) | undefined,
+  ) {
+    this.onDone = onDone;
+    this.onClose = onClose;
+    this.onStepChange = onStepChange;
+  }
 
   public transition(event: TransitionEvent) {
     switch (this.state.step) {

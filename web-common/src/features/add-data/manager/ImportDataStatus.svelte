@@ -23,7 +23,7 @@
   import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
 
   export let importAddDataStep: ImportAddDataStep;
-  export let onClose: () => void;
+  export let onDone: () => void;
 
   const { ai, developerChat } = featureFlags;
 
@@ -64,7 +64,7 @@
   }
 
   async function generateMetrics() {
-    onClose();
+    onDone();
     if ($developerChat && $ai) {
       await createCanvasDashboardFromTableWithAgent(
         runtimeClient,
@@ -91,7 +91,7 @@
       {error}
     </div>
     <div class="footer">
-      <Button type="secondary" href={currentFileRoute} onClick={onClose}>
+      <Button type="secondary" href={currentFileRoute} onClick={onDone}>
         View YAML
       </Button>
     </div>
@@ -114,7 +114,7 @@
         {/if}
       </Button>
 
-      <Button type="secondary" href={currentFileRoute} onClick={onClose}>
+      <Button type="secondary" href={currentFileRoute} onClick={onDone}>
         View this source
       </Button>
     </div>
@@ -135,11 +135,11 @@
       </p>
     </div>
     <div class="footer">
-      <Button type="secondary" href={currentFileRoute} onClick={onClose}>
+      <Button type="secondary" href={currentFileRoute} onClick={onDone}>
         View this source
       </Button>
 
-      <Button onClick={onClose} type="primary">Close</Button>
+      <Button onClick={onDone} type="primary">Close</Button>
     </div>
   {/if}
 </div>

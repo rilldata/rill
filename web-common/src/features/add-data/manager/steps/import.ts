@@ -112,11 +112,6 @@ export async function cleanupImportStep(
   config: ImportStepConfig,
 ) {
   const importToConfig = config.importTo;
-  console.log(
-    "cleanupImportStep",
-    importToConfig,
-    fileArtifacts.hasFileArtifact(importToConfig.modelPath ?? ""),
-  );
 
   let envBlob: string | null = null;
   if (
