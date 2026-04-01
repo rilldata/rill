@@ -231,14 +231,14 @@ func (q *TableHead) latestBigQueryPartition(ctx context.Context, olap drivers.OL
 	}
 
 	sql := fmt.Sprintf(
-		"SELECT MAX(partition_id) FROM %s WHERE table_name = '%s' AND partition_id NOT IN ('__NULL__', '__UNPARTITIONED__')",
+		"SELECT MAX(partition_id) FROM %s WHERE table_name = ? AND partition_id NOT IN ('__NULL__', '__UNPARTITIONED__')",
 		infoSchemaTable,
-		q.TableName, // TableName is safe: BigQuery table names are alphanumeric + underscores
 	)
 
 	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		ExecutionTimeout: defaultExecutionTimeout,
+		Args:             []any{q.TableName},
 	})
 	if err != nil {
 		return time.Time{}, err

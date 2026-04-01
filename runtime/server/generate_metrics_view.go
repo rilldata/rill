@@ -273,7 +273,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
 	doc.Version = 1
 	doc.Type = "metrics_view"
-	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl)
+	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
 	for _, measure := range doc.Measures {
 		// Apply the default format preset to measures (the AI doesn't set the format preset).
@@ -425,7 +425,7 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isD
 		Version:       1,
 		Type:          "metrics_view",
 		DisplayName:   identifierToDisplayName(tbl.Name),
-		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl),
+		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(tbl.Schema),
 		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl),
 	}
@@ -448,8 +448,8 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isD
 	return marshalMetricsViewYAML(doc, false)
 }
 
-func generateMetricsViewYAMLSimpleTimeDimension(tbl *drivers.OlapTable) string {
-	for _, f := range tbl.Schema.Fields {
+func generateMetricsViewYAMLSimpleTimeDimension(schema *runtimev1.StructType) string {
+	for _, f := range schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE:
 			return f.Name
