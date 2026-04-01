@@ -651,6 +651,10 @@ func getPlanType(externalID string) PlanType {
 		return TeamPlanType
 	case "managed":
 		return ManagedPlanType
+	case "free":
+		return FreePlanType
+	case "growth":
+		return GrowthPlanType
 	default:
 		return EnterprisePlanType
 	}
@@ -664,6 +668,10 @@ func getPlanDisplayName(externalID string) string {
 		return "Team"
 	case "managed":
 		return "Managed"
+	case "free":
+		return "Free"
+	case "growth":
+		return "Growth"
 	default:
 		return "Enterprise"
 	}

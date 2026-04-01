@@ -81,6 +81,8 @@ const (
 	TeamPlanType
 	ManagedPlanType
 	EnterprisePlanType
+	FreePlanType
+	GrowthPlanType
 )
 
 type Plan struct {
