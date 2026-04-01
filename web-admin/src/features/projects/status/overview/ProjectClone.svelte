@@ -10,6 +10,7 @@
   export let project: string;
   export let gitRemote: string | undefined = undefined;
   export let managedGitId: string | undefined = undefined;
+  export let disabled: boolean = false;
 
   $: githubUrl = gitRemote ? getGitUrlFromRemote(gitRemote) : "";
   $: isGithubConnected = !!gitRemote && !managedGitId && !!githubUrl;
@@ -22,7 +23,7 @@
 <Popover.Root bind:open>
   <Popover.Trigger>
     {#snippet child({ props })}
-      <Button {...props} type="secondary">Download Project</Button>
+      <Button {...props} type="secondary" {disabled}>Download Project</Button>
     {/snippet}
   </Popover.Trigger>
 

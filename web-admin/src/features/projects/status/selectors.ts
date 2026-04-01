@@ -3,6 +3,7 @@ import {
   type V1Deployment,
 } from "@rilldata/web-admin/client";
 import {
+  createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   createRuntimeServicePing,
   type V1ListResourcesResponse,
@@ -12,7 +13,10 @@ import {
 import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  ResourceKind,
+  SingletonProjectParserName,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { derived, type Readable } from "svelte/store";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 
@@ -31,6 +35,29 @@ export function useProjectDeployment(
           // There may not be a deployment if the project is hibernating
           return data?.deployment;
         },
+      },
+    },
+  );
+}
+
+/**
+ * Returns the ProjectParser's reconcileError for the current runtime.
+ * Non-empty when the project failed to load (e.g. git branch not found).
+ */
+export function useParserReconcileError(client: RuntimeClient) {
+  return createRuntimeServiceGetResource(
+    client,
+    {
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
+    },
+    {
+      query: {
+        select: (data) => data.resource?.meta?.reconcileError ?? "",
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
       },
     },
   );
