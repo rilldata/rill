@@ -6,18 +6,13 @@
     V1DeploymentStatus,
     type V1ProjectHealth,
   } from "@rilldata/web-admin/client";
+  import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
-  import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { ExternalLinkIcon } from "lucide-svelte";
   import {
     createUrlFilterSync,
     parseArrayParam,
@@ -27,6 +22,11 @@
     isProjectHealthy,
     hasProjectErrors,
   } from "@rilldata/web-admin/features/projects/admin-console/project-health-utils";
+  import ErrorCountCell from "@rilldata/web-admin/features/projects/admin-console/ErrorCountCell.svelte";
+  import ProjectStatusCell from "@rilldata/web-admin/features/projects/admin-console/ProjectStatusCell.svelte";
+  import ProjectActionsCell from "@rilldata/web-admin/features/projects/admin-console/ProjectActionsCell.svelte";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
 
   $: organization = $page.params.organization;
 
@@ -115,44 +115,87 @@
     return errors.join("; ");
   }
 
-  // Sorting
-  type SortKey = "name" | "status" | "parse" | "reconcile" | "updated";
-  let sortKey: SortKey = "name";
-  let sortAsc = true;
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      sortAsc = !sortAsc;
-    } else {
-      sortKey = key;
-      sortAsc = true;
-    }
-  }
-
-  $: sortedProjects = [...filteredProjects].sort((a, b) => {
-    const dir = sortAsc ? 1 : -1;
-    switch (sortKey) {
-      case "name":
-        return dir * (a.projectName ?? "").localeCompare(b.projectName ?? "");
-      case "status": {
-        const sa = hasProjectErrors(a) ? 2 : isProjectHealthy(a) ? 0 : 1;
-        const sb = hasProjectErrors(b) ? 2 : isProjectHealthy(b) ? 0 : 1;
-        return dir * (sa - sb);
-      }
-      case "parse":
-        return dir * ((a.parseErrorCount ?? 0) - (b.parseErrorCount ?? 0));
-      case "reconcile":
-        return (
-          dir * ((a.reconcileErrorCount ?? 0) - (b.reconcileErrorCount ?? 0))
-        );
-      case "updated":
-        return dir * (a.updatedOn ?? "").localeCompare(b.updatedOn ?? "");
-      default:
-        return 0;
-    }
-  });
-
   let openDropdownProject = "";
+
+  const columns: ColumnDef<V1ProjectHealth, any>[] = [
+    {
+      accessorKey: "projectName",
+      header: "Name",
+      cell: ({ getValue }) =>
+        renderComponent(NameCell, {
+          name: (getValue() as string) ?? "",
+        }),
+    },
+    {
+      accessorFn: (row) => projectErrorMessage(row),
+      header: "Status",
+      sortingFn: (rowA, rowB) => {
+        const a = hasProjectErrors(rowA.original)
+          ? 2
+          : isProjectHealthy(rowA.original)
+            ? 0
+            : 1;
+        const b = hasProjectErrors(rowB.original)
+          ? 2
+          : isProjectHealthy(rowB.original)
+            ? 0
+            : 1;
+        return a - b;
+      },
+      cell: ({ row }) =>
+        renderComponent(ProjectStatusCell, {
+          message: projectErrorMessage(row.original),
+        }),
+      meta: {
+        marginLeft: "1",
+      },
+    },
+    {
+      accessorFn: (row) => row.parseErrorCount ?? 0,
+      header: "Parse",
+      cell: ({ getValue }) =>
+        renderComponent(ErrorCountCell, {
+          count: getValue() as number,
+        }),
+    },
+    {
+      accessorFn: (row) => row.reconcileErrorCount ?? 0,
+      header: "Reconcile",
+      cell: ({ getValue }) =>
+        renderComponent(ErrorCountCell, {
+          count: getValue() as number,
+        }),
+    },
+    {
+      accessorKey: "updatedOn",
+      header: "Last Updated",
+      sortDescFirst: true,
+      cell: (info) =>
+        renderComponent(RefreshCell, {
+          date: (info.getValue() as string) ?? "",
+        }),
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const projectId = row.original.projectId ?? "";
+        return renderComponent(ProjectActionsCell, {
+          href: `/${organization}/${row.original.projectName}/-/status`,
+          isDropdownOpen: openDropdownProject === projectId,
+          onDropdownOpenChange: (isOpen: boolean) => {
+            openDropdownProject = isOpen ? projectId : "";
+          },
+        });
+      },
+      enableSorting: false,
+      meta: {
+        widthPercent: 0,
+      },
+    },
+  ];
+
+  $: tableData = filteredProjects;
 </script>
 
 <div class="flex flex-col gap-y-4">
@@ -218,141 +261,13 @@
     <p class="text-sm text-fg-secondary">Loading projects...</p>
   {:else if $healthQuery.isError}
     <p class="text-red-500 text-sm">Failed to load projects</p>
-  {:else if sortedProjects.length === 0}
-    <p class="text-sm text-fg-secondary py-8 text-center">
-      No projects match the current filters
-    </p>
   {:else}
-    <div
-      class="table-container"
-      style:--grid-template-columns="minmax(100px, 3fr) 48px minmax(60px, 1fr)
-      minmax(80px, 1fr) minmax(100px, 2fr) 56px"
-    >
-      <!-- Header -->
-      <div class="row bg-surface-subtle sticky top-0 z-10">
-        <button class="header-cell pl-4" on:click={() => toggleSort("name")}>
-          <span class="truncate">Name</span>
-          {#if sortKey === "name"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button class="header-cell pl-1" on:click={() => toggleSort("status")}>
-          <span class="truncate">Status</span>
-          {#if sortKey === "status"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button class="header-cell pl-4" on:click={() => toggleSort("parse")}>
-          <span class="truncate">Parse</span>
-          {#if sortKey === "parse"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button
-          class="header-cell pl-4"
-          on:click={() => toggleSort("reconcile")}
-        >
-          <span class="truncate">Reconcile</span>
-          {#if sortKey === "reconcile"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button class="header-cell pl-4" on:click={() => toggleSort("updated")}>
-          <span class="truncate">Last Updated</span>
-          {#if sortKey === "updated"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <div class="pl-4 py-2"></div>
-      </div>
-
-      <!-- Rows -->
-      {#each sortedProjects as project (project.projectId)}
-        <div class="row py-3">
-          <div class="pl-4 pr-1 flex items-center truncate">
-            <NameCell name={project.projectName ?? ""} />
-          </div>
-          <div class="pl-1 pr-1 flex items-center truncate">
-            <ResourceErrorMessage
-              message={projectErrorMessage(project)}
-              status={V1ReconcileStatus.RECONCILE_STATUS_IDLE}
-            />
-          </div>
-          <div class="pl-4 pr-1 flex items-center truncate">
-            {#if (project.parseErrorCount ?? 0) > 0}
-              <span class="text-red-600 font-medium text-xs"
-                >{project.parseErrorCount}</span
-              >
-            {:else}
-              <span class="text-fg-tertiary">—</span>
-            {/if}
-          </div>
-          <div class="pl-4 pr-1 flex items-center truncate">
-            {#if (project.reconcileErrorCount ?? 0) > 0}
-              <span class="text-red-600 font-medium text-xs"
-                >{project.reconcileErrorCount}</span
-              >
-            {:else}
-              <span class="text-fg-tertiary">—</span>
-            {/if}
-          </div>
-          <div class="pl-4 pr-1 flex items-center truncate">
-            <RefreshCell date={project.updatedOn ?? ""} />
-          </div>
-          <div class="pl-4 pr-1 flex items-center">
-            <DropdownMenu.Root
-              open={openDropdownProject === project.projectId}
-              onOpenChange={(isOpen) => {
-                openDropdownProject = isOpen ? (project.projectId ?? "") : "";
-              }}
-            >
-              <DropdownMenu.Trigger
-                class="flex-none"
-                aria-label="Project actions"
-              >
-                <IconButton
-                  rounded
-                  active={openDropdownProject === project.projectId}
-                  size={20}
-                >
-                  <ThreeDot size="16px" />
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start">
-                <DropdownMenu.Item
-                  class="font-normal flex items-center"
-                  href="/{organization}/{project.projectName}/-/status"
-                >
-                  <div class="flex items-center">
-                    <ExternalLinkIcon size="12px" />
-                    <span class="ml-2">View project status</span>
-                  </div>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </div>
-        </div>
-      {/each}
-    </div>
+    <VirtualizedTable
+      data={tableData}
+      {columns}
+      columnLayout="minmax(100px, 3fr) 48px minmax(60px, 1fr) minmax(80px, 1fr) minmax(100px, 2fr) 56px"
+      containerHeight={550}
+      emptyText="No projects match the current filters"
+    />
   {/if}
 </div>
-
-<style lang="postcss">
-  .table-container {
-    @apply flex flex-col border border-gray-200 rounded-sm overflow-hidden;
-  }
-
-  .row {
-    @apply w-fit min-w-full;
-    display: grid;
-    grid-template-columns: var(--grid-template-columns);
-  }
-
-  .row:not(:last-child) {
-    @apply border-b border-gray-200;
-  }
-
-  .header-cell {
-    @apply py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm;
-  }
-</style>
