@@ -8,7 +8,9 @@
 
   $: navItems = [
     { label: "Overview", route: "", hasPermission: true },
+    { label: "Projects", route: "/projects", hasPermission: true },
     { label: "Resources", route: "/resources", hasPermission: true },
+    { label: "Analytics", route: "/analytics", hasPermission: true },
   ];
 </script>
 
