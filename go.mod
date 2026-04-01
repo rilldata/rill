@@ -141,6 +141,7 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go-v2/service/signin v1.0.5 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/docker/compose/v5 v5.1.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.3.3 // indirect
