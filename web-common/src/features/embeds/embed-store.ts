@@ -48,8 +48,19 @@ export class EmbedStore {
     this.navigationEnabled = url.searchParams.get("navigation") === "true";
     this.theme = url.searchParams.get("theme");
     this.themeMode = url.searchParams.get("theme_mode");
-    this.billingPlan = url.searchParams.get("billing_plan");
     this.embedId = `embed-${guidGenerator()}`;
+
+    // Decode billing_plan from the JWT access token's payload (attr field)
+    if (this.accessToken) {
+      try {
+        const payload = JSON.parse(atob(this.accessToken.split(".")[1]));
+        this.billingPlan = payload?.attr?.billing_plan ?? null;
+      } catch {
+        this.billingPlan = null;
+      }
+    } else {
+      this.billingPlan = null;
+    }
 
     if (!this.instanceId) {
       this.missingRequireParams.push("instance_id");
