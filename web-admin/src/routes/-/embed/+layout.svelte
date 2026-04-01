@@ -17,12 +17,14 @@
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import EmbedBranding from "@rilldata/web-common/features/embeds/EmbedBranding.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
   const {
+    billingPlan,
     instanceId,
     missingRequireParams,
     navigationEnabled,
@@ -151,4 +153,5 @@
       {/if}
     </div>
   </RuntimeProvider>
+  <EmbedBranding {billingPlan} />
 {/if}

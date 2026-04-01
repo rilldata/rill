@@ -825,6 +825,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Errorf(codes.Internal, "could not find organization: %s", err.Error())
 	}
 
+	// Pass billing plan name so the embed can show branding for certain plans
+	if org.BillingPlanName != nil && *org.BillingPlanName != "" {
+		iframeQuery["billing_plan"] = *org.BillingPlanName
+	}
+
 	iFrameURL, err := s.admin.URLs.WithCustomDomain(org.CustomDomain).Embed(iframeQuery)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())

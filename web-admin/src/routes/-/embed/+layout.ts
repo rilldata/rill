@@ -32,6 +32,7 @@ export const load = async ({ url }) => {
     missingRequireParams,
     navigationEnabled,
     visibleExplores,
+    billingPlan,
   } = embedStore;
 
   return {
@@ -41,5 +42,6 @@ export const load = async ({ url }) => {
     missingRequireParams,
     navigationEnabled,
     visibleExplores,
+    billingPlan,
   };
 };
