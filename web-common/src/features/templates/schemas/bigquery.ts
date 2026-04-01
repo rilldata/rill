@@ -4,7 +4,7 @@ export const bigquerySchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "BigQuery",
-  "x-category": "warehouse",
+  "x-category": "olap",
   properties: {
     google_application_credentials: {
       type: "string",

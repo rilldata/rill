@@ -192,6 +192,8 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 		res, err = e.resolveStarRocks(ctx, timeExpr)
 	case drivers.DialectSnowflake:
 		res, err = e.resolveSnowflake(ctx, timeExpr)
+	case drivers.DialectBigQuery:
+		res, err = e.resolveBigQuery(ctx, timeExpr)
 	default:
 		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}

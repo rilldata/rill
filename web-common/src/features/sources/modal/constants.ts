@@ -83,7 +83,6 @@ export const AZURE_AUTH_OPTIONS: {
 export const SOURCES = [
   "athena",
   "azure",
-  "bigquery",
   "delta",
   "gcs",
   "iceberg",
@@ -106,6 +105,7 @@ export const OLAP_ENGINES = [
   "druid",
   "pinot",
   "starrocks",
+  "bigquery",
 ];
 
 export const AI_CONNECTORS = ["claude", "openai", "gemini"];

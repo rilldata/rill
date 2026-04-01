@@ -273,7 +273,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
 	doc.Version = 1
 	doc.Type = "metrics_view"
-	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
+	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
 	for _, measure := range doc.Measures {
 		// Apply the default format preset to measures (the AI doesn't set the format preset).
@@ -425,7 +425,7 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isD
 		Version:       1,
 		Type:          "metrics_view",
 		DisplayName:   identifierToDisplayName(tbl.Name),
-		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema),
+		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(tbl.Schema),
 		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl),
 	}
@@ -448,8 +448,14 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isD
 	return marshalMetricsViewYAML(doc, false)
 }
 
-func generateMetricsViewYAMLSimpleTimeDimension(schema *runtimev1.StructType) string {
-	for _, f := range schema.Fields {
+func generateMetricsViewYAMLSimpleTimeDimension(tbl *drivers.OlapTable) string {
+	// Prefer the partition column; it's always a time column since it's only set for TimePartitioning.
+	if tbl.PartitionColumn != "" {
+		return tbl.PartitionColumn
+	}
+
+	// Fall back to the first timestamp/time/date column
+	for _, f := range tbl.Schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE:
 			return f.Name

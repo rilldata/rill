@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -180,9 +181,28 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStore) (string, error) {
-	columns, err := supportedColumns(ctx, olap, q.Database, q.DatabaseSchema, q.TableName)
+	tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
 	if err != nil {
 		return "", err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, olap.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	whereClause := ""
+	if olap.Dialect() == drivers.DialectBigQuery && tbl.PartitionColumn != "" {
+		latest, err := q.latestBigQueryPartition(ctx, olap)
+		if err == nil && !latest.IsZero() {
+			whereClause = fmt.Sprintf(
+				" WHERE %s >= TIMESTAMP_SUB(CAST('%s' AS TIMESTAMP), INTERVAL 3 DAY)",
+				olap.Dialect().EscapeIdentifier(tbl.PartitionColumn),
+				latest.UTC().Format(time.RFC3339),
+			)
+		}
+		// If fetching the latest partition fails or returns empty, proceed without a filter.
+		// For tables with require_partition_filter=true this will error at query time, which is acceptable.
 	}
 
 	limitClause := ""
@@ -190,23 +210,77 @@ func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStor
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
-	sql := fmt.Sprintf(
-		`SELECT %s FROM %s%s`,
-		strings.Join(columns, ","),
+	return fmt.Sprintf(
+		"SELECT %s FROM %s%s%s",
+		strings.Join(columns, ", "),
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		whereClause,
 		limitClause,
-	)
-	return sql, nil
+	), nil
 }
 
-func supportedColumns(ctx context.Context, olap drivers.OLAPStore, db, schema, tblName string) ([]string, error) {
-	tbl, err := olap.InformationSchema().Lookup(ctx, db, schema, tblName)
+// latestBigQueryPartition queries INFORMATION_SCHEMA.PARTITIONS to find the most recent
+// partition time for a table without scanning its data. This is safe to run even on tables
+// with require_partition_filter=true because INFORMATION_SCHEMA is metadata-only.
+func (q *TableHead) latestBigQueryPartition(ctx context.Context, olap drivers.OLAPStore) (time.Time, error) {
+	var infoSchemaTable string
+	if q.Database != "" {
+		infoSchemaTable = fmt.Sprintf("`%s.%s.INFORMATION_SCHEMA.PARTITIONS`", q.Database, q.DatabaseSchema)
+	} else {
+		infoSchemaTable = fmt.Sprintf("`%s.INFORMATION_SCHEMA.PARTITIONS`", q.DatabaseSchema)
+	}
+
+	sql := fmt.Sprintf(
+		"SELECT MAX(partition_id) FROM %s WHERE table_name = '%s' AND partition_id NOT IN ('__NULL__', '__UNPARTITIONED__')",
+		infoSchemaTable,
+		q.TableName, // TableName is safe: BigQuery table names are alphanumeric + underscores
+	)
+
+	rows, err := olap.Query(ctx, &drivers.Statement{
+		Query:            sql,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
 	if err != nil {
-		return nil, err
+		return time.Time{}, err
 	}
-	var columns []string
-	for _, field := range tbl.Schema.Fields {
-		columns = append(columns, olap.Dialect().EscapeIdentifier(field.Name))
+	defer rows.Close()
+
+	var partitionID *string
+	if rows.Next() {
+		if err := rows.Scan(&partitionID); err != nil {
+			return time.Time{}, err
+		}
 	}
-	return columns, nil
+	if err := rows.Err(); err != nil {
+		return time.Time{}, err
+	}
+	if partitionID == nil || *partitionID == "" {
+		return time.Time{}, nil
+	}
+
+	return parseBigQueryPartitionID(*partitionID)
+}
+
+// parseBigQueryPartitionID converts a BigQuery partition_id string (e.g. "20240315") to a time.Time.
+// BigQuery partition IDs use a fixed-width date format with no separators.
+func parseBigQueryPartitionID(id string) (time.Time, error) {
+	var format string
+	switch len(id) {
+	case 10:
+		format = "2006010215"
+	case 8:
+		format = "20060102"
+	case 6:
+		format = "200601"
+	case 4:
+		format = "2006"
+	default:
+		return time.Time{}, fmt.Errorf("unrecognized partition_id format: %q", id)
+	}
+
+	t, err := time.Parse(format, id)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse partition_id %q with format %q: %w", id, format, err)
+	}
+	return t, nil
 }

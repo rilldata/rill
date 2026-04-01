@@ -69,6 +69,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 	q := client.Query(stmt.Query)
 	q.Parameters = make([]bigquery.QueryParameter, len(stmt.Args))
+	q.MaxBytesBilled = 1024 * 1024 * 1024 // 1 GB, to prevent accidentally running large queries
 	for i, arg := range stmt.Args {
 		q.Parameters[i] = bigquery.QueryParameter{
 			Value: arg,
@@ -115,7 +116,18 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 // QuerySchema implements drivers.OLAPStore.
 func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	return nil, drivers.ErrNotImplemented
+	ctx, cancel := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
+	defer cancel()
+
+	res, err := c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query),
+		Args:  args,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	return res.Schema, nil
 }
 
 // WithConnection implements drivers.OLAPStore.
@@ -178,7 +190,7 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	if err != nil {
 		return nil, err
 	}
-	return &drivers.OlapTable{
+	tbl := &drivers.OlapTable{
 		Database:          db,
 		DatabaseSchema:    schema,
 		Name:              name,
@@ -186,7 +198,16 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		Schema:            runtimeSchema,
 		UnsupportedCols:   nil, // all columns are currently being mapped though may not be as specific as in BigQuery
 		PhysicalSizeBytes: 0,
-	}, nil
+	}
+	if meta.TimePartitioning != nil {
+		if meta.TimePartitioning.Field != "" {
+			tbl.PartitionColumn = meta.TimePartitioning.Field
+		} else {
+			// Ingestion-time partitioned: use the pseudo-column.
+			tbl.PartitionColumn = "_PARTITIONTIME"
+		}
+	}
+	return tbl, nil
 }
 
 type rows struct {
