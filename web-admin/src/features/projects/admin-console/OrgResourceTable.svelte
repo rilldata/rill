@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount } from "svelte";
+  import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import {
@@ -11,22 +12,22 @@
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { ExternalLinkIcon } from "lucide-svelte";
   import {
     createUrlFilterSync,
     parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
+  import OrgActionsCell from "./OrgActionsCell.svelte";
+  import ProjectNameCell from "./ProjectNameCell.svelte";
 
   export let organization: string;
 
-  type OrgResource = {
+  export type OrgResource = {
     projectName: string;
     kind: string;
     name: string;
@@ -63,25 +64,18 @@
   ];
 
   let statusDropdownOpen = false;
-
   let projectDropdownOpen = false;
   let typeDropdownOpen = false;
   let mounted = false;
 
-  // Sync URL → local state on external navigation
   $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
     filterSync.markSynced($page.url);
-    selectedProjects = parseArrayParam(
-      $page.url.searchParams.get("project"),
-    );
+    selectedProjects = parseArrayParam($page.url.searchParams.get("project"));
     selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-    selectedStatuses = parseArrayParam(
-      $page.url.searchParams.get("status"),
-    );
+    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
     searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
-  // Sync filter state → URL
   $: if (mounted) {
     filterSync.syncToUrl({
       project: selectedProjects,
@@ -183,42 +177,82 @@
     selectedStatuses.length > 0 ||
     searchText.length > 0;
 
-  // Sorting
-  type SortKey = "type" | "name" | "project" | "status" | "updated";
-  let sortKey: SortKey = "name";
-  let sortAsc = true;
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      sortAsc = !sortAsc;
-    } else {
-      sortKey = key;
-      sortAsc = true;
-    }
-  }
-
-  $: sortedResources = [...filteredResources].sort((a, b) => {
-    const dir = sortAsc ? 1 : -1;
-    switch (sortKey) {
-      case "type":
-        return dir * a.kind.localeCompare(b.kind);
-      case "name":
-        return dir * a.name.localeCompare(b.name);
-      case "project":
-        return dir * a.projectName.localeCompare(b.projectName);
-      case "status": {
-        const sa = a.reconcileError ? 1 : 0;
-        const sb = b.reconcileError ? 1 : 0;
-        return dir * (sa - sb);
-      }
-      case "updated":
-        return dir * (a.stateUpdatedOn ?? "").localeCompare(b.stateUpdatedOn ?? "");
-      default:
-        return 0;
-    }
-  });
-
   let openDropdownKey = "";
+
+  const columns: ColumnDef<OrgResource, any>[] = [
+    {
+      accessorKey: "kind",
+      header: "Type",
+      cell: ({ row }) =>
+        renderComponent(ResourceTypeBadge, {
+          kind: row.original.kind as ResourceKind,
+        }),
+    },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ getValue }) =>
+        renderComponent(NameCell, {
+          name: getValue() as string,
+        }),
+    },
+    {
+      accessorKey: "projectName",
+      header: "Project",
+      cell: ({ getValue }) =>
+        renderComponent(ProjectNameCell, {
+          name: getValue() as string,
+        }),
+    },
+    {
+      accessorFn: (row) => row.reconcileError,
+      header: "Status",
+      sortingFn: (rowA, rowB) => {
+        const a = rowA.original.reconcileError ? 1 : 0;
+        const b = rowB.original.reconcileError ? 1 : 0;
+        return a - b;
+      },
+      cell: ({ row }) =>
+        renderComponent(ResourceErrorMessage, {
+          message: row.original.reconcileError,
+          status: row.original.reconcileError
+            ? V1ReconcileStatus.RECONCILE_STATUS_IDLE
+            : mapReconcileStatus(row.original.reconcileStatus),
+        }),
+      meta: {
+        marginLeft: "1",
+      },
+    },
+    {
+      accessorKey: "stateUpdatedOn",
+      header: "Last refresh",
+      sortDescFirst: true,
+      cell: (info) =>
+        renderComponent(RefreshCell, {
+          date: (info.getValue() as string) ?? "",
+        }),
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const resourceKey = `${row.original.projectName}:${row.original.kind}:${row.original.name}`;
+        return renderComponent(OrgActionsCell, {
+          href: `/${organization}/${row.original.projectName}/-/status/resources?q=${encodeURIComponent(row.original.name)}`,
+          isDropdownOpen: openDropdownKey === resourceKey,
+          onDropdownOpenChange: (isOpen: boolean) => {
+            openDropdownKey = isOpen ? resourceKey : "";
+          },
+        });
+      },
+      enableSorting: false,
+      meta: {
+        widthPercent: 0,
+      },
+    },
+  ];
+
+  $: tableData = filteredResources;
 </script>
 
 <div class="flex flex-col gap-y-4">
@@ -283,8 +317,10 @@
           {:else if selectedTypes.length === 1}
             {prettyResourceKind(selectedTypes[0])}
           {:else}
-            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
-              1} other{selectedTypes.length > 2 ? "s" : ""}
+            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length >
+            2
+              ? "s"
+              : ""}
           {/if}
         </span>
         {#if typeDropdownOpen}
@@ -319,8 +355,8 @@
             {statusFilters.find((s) => s.value === selectedStatuses[0])
               ?.label ?? selectedStatuses[0]}
           {:else}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])
-              ?.label}, +{selectedStatuses.length - 1} other
+            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
+            +{selectedStatuses.length - 1} other
           {/if}
         </span>
         {#if statusDropdownOpen}
@@ -352,155 +388,11 @@
     {/if}
   </div>
 
-  {#if sortedResources.length === 0}
-    <div class="table-container">
-      <div class="flex flex-col items-center gap-y-1 py-10">
-        <span class="text-fg-secondary font-semibold text-sm">
-          No resources match the current filters
-        </span>
-      </div>
-    </div>
-  {:else}
-    <div
-      class="table-container"
-      style:--grid-template-columns="minmax(95px, 130px) minmax(100px, 3fr) minmax(80px, 2fr) 48px minmax(80px, 2fr) 56px"
-    >
-      <!-- Header -->
-      <div class="row bg-surface-subtle sticky top-0 z-10">
-        <button
-          class="header-cell pl-4"
-          on:click={() => toggleSort("type")}
-        >
-          <span class="truncate">Type</span>
-          {#if sortKey === "type"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button
-          class="header-cell pl-4"
-          on:click={() => toggleSort("name")}
-        >
-          <span class="truncate">Name</span>
-          {#if sortKey === "name"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button
-          class="header-cell pl-4"
-          on:click={() => toggleSort("project")}
-        >
-          <span class="truncate">Project</span>
-          {#if sortKey === "project"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button
-          class="header-cell pl-1"
-          on:click={() => toggleSort("status")}
-        >
-          <span class="truncate">Status</span>
-          {#if sortKey === "status"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <button
-          class="header-cell pl-4"
-          on:click={() => toggleSort("updated")}
-        >
-          <span class="truncate">Last refresh</span>
-          {#if sortKey === "updated"}
-            <ArrowDown flip={sortAsc} size="12px" />
-          {/if}
-        </button>
-        <div class="pl-4 py-2"></div>
-      </div>
-
-      <!-- Rows -->
-      <div class="rows-scroll">
-        {#each sortedResources as resource (`${resource.projectName}:${resource.kind}:${resource.name}`)}
-          {@const resourceKey = `${resource.projectName}:${resource.kind}:${resource.name}`}
-          <div class="row py-3">
-            <div class="pl-4 pr-1 flex items-center truncate">
-              <ResourceTypeBadge kind={resource.kind} />
-            </div>
-            <div class="pl-4 pr-1 flex items-center truncate">
-              <NameCell name={resource.name} />
-            </div>
-            <div class="pl-4 pr-1 flex items-center truncate text-fg-secondary text-xs">
-              {resource.projectName}
-            </div>
-            <div class="pl-1 pr-1 flex items-center truncate">
-              <ResourceErrorMessage
-                message={resource.reconcileError}
-                status={resource.reconcileError
-                  ? V1ReconcileStatus.RECONCILE_STATUS_IDLE
-                  : mapReconcileStatus(resource.reconcileStatus)}
-              />
-            </div>
-            <div class="pl-4 pr-1 flex items-center truncate">
-              <RefreshCell date={resource.stateUpdatedOn} />
-            </div>
-            <div class="pl-4 pr-1 flex items-center">
-              <DropdownMenu.Root
-                open={openDropdownKey === resourceKey}
-                onOpenChange={(isOpen) => {
-                  openDropdownKey = isOpen ? resourceKey : "";
-                }}
-              >
-                <DropdownMenu.Trigger
-                  class="flex-none"
-                  aria-label="Resource actions"
-                >
-                  <IconButton
-                    rounded
-                    active={openDropdownKey === resourceKey}
-                    size={20}
-                  >
-                    <ThreeDot size="16px" />
-                  </IconButton>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="start">
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    href="/{organization}/{resource.projectName}/-/status/resources?q={encodeURIComponent(resource.name)}"
-                  >
-                    <div class="flex items-center">
-                      <ExternalLinkIcon size="12px" />
-                      <span class="ml-2">View in project</span>
-                    </div>
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </div>
-          </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
+  <VirtualizedTable
+    data={tableData}
+    {columns}
+    columnLayout="minmax(95px, 130px) minmax(100px, 3fr) minmax(80px, 2fr) 48px minmax(80px, 2fr) 56px"
+    containerHeight={550}
+    emptyText="No resources match the current filters"
+  />
 </div>
-
-<style lang="postcss">
-  .table-container {
-    @apply flex flex-col border border-gray-200 rounded-sm overflow-hidden;
-    max-height: 590px;
-  }
-
-  .rows-scroll {
-    @apply overflow-auto;
-    max-height: 550px;
-  }
-
-  .row {
-    @apply w-fit min-w-full;
-    display: grid;
-    grid-template-columns: var(--grid-template-columns);
-  }
-
-  .row:not(:last-child) {
-    @apply border-b border-gray-200;
-  }
-
-  .header-cell {
-    @apply py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm;
-  }
-</style>

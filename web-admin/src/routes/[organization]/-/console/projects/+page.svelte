@@ -58,9 +58,7 @@
 
   $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
     filterSync.markSynced($page.url);
-    selectedStatuses = parseArrayParam(
-      $page.url.searchParams.get("status"),
-    );
+    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
     searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
@@ -88,8 +86,7 @@
     searchText = "";
   }
 
-  $: hasActiveFilters =
-    selectedStatuses.length > 0 || searchText.length > 0;
+  $: hasActiveFilters = selectedStatuses.length > 0 || searchText.length > 0;
 
   $: filteredProjects = allProjects.filter((p) => {
     if (selectedStatuses.length > 0) {
@@ -108,9 +105,7 @@
 
   function projectErrorMessage(p: V1ProjectHealth): string {
     const errors: string[] = [];
-    if (
-      p.deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED
-    ) {
+    if (p.deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED) {
       errors.push(p.deploymentStatusMessage ?? "Deployment error");
     }
     if ((p.parseErrorCount ?? 0) > 0)
@@ -147,7 +142,9 @@
       case "parse":
         return dir * ((a.parseErrorCount ?? 0) - (b.parseErrorCount ?? 0));
       case "reconcile":
-        return dir * ((a.reconcileErrorCount ?? 0) - (b.reconcileErrorCount ?? 0));
+        return (
+          dir * ((a.reconcileErrorCount ?? 0) - (b.reconcileErrorCount ?? 0))
+        );
       case "updated":
         return dir * (a.updatedOn ?? "").localeCompare(b.updatedOn ?? "");
       default:
@@ -184,8 +181,8 @@
             {statusFilters.find((s) => s.value === selectedStatuses[0])
               ?.label ?? selectedStatuses[0]}
           {:else}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])
-              ?.label}, +{selectedStatuses.length - 1} other
+            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
+            +{selectedStatuses.length - 1} other
           {/if}
         </span>
         {#if statusDropdownOpen}
@@ -228,7 +225,8 @@
   {:else}
     <div
       class="table-container"
-      style:--grid-template-columns="minmax(100px, 3fr) 48px minmax(60px, 1fr) minmax(80px, 1fr) minmax(100px, 2fr) 56px"
+      style:--grid-template-columns="minmax(100px, 3fr) 48px minmax(60px, 1fr)
+      minmax(80px, 1fr) minmax(100px, 2fr) 56px"
     >
       <!-- Header -->
       <div class="row bg-surface-subtle sticky top-0 z-10">
@@ -250,7 +248,10 @@
             <ArrowDown flip={sortAsc} size="12px" />
           {/if}
         </button>
-        <button class="header-cell pl-4" on:click={() => toggleSort("reconcile")}>
+        <button
+          class="header-cell pl-4"
+          on:click={() => toggleSort("reconcile")}
+        >
           <span class="truncate">Reconcile</span>
           {#if sortKey === "reconcile"}
             <ArrowDown flip={sortAsc} size="12px" />
@@ -279,14 +280,18 @@
           </div>
           <div class="pl-4 pr-1 flex items-center truncate">
             {#if (project.parseErrorCount ?? 0) > 0}
-              <span class="text-red-600 font-medium text-xs">{project.parseErrorCount}</span>
+              <span class="text-red-600 font-medium text-xs"
+                >{project.parseErrorCount}</span
+              >
             {:else}
               <span class="text-fg-tertiary">—</span>
             {/if}
           </div>
           <div class="pl-4 pr-1 flex items-center truncate">
             {#if (project.reconcileErrorCount ?? 0) > 0}
-              <span class="text-red-600 font-medium text-xs">{project.reconcileErrorCount}</span>
+              <span class="text-red-600 font-medium text-xs"
+                >{project.reconcileErrorCount}</span
+              >
             {:else}
               <span class="text-fg-tertiary">—</span>
             {/if}

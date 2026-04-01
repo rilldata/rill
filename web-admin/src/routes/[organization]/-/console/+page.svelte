@@ -115,7 +115,10 @@
     {/if}
   </OverviewCard>
 
-  <OverviewCard title="Projects" viewAllHref="/{organization}/-/console/projects">
+  <OverviewCard
+    title="Projects"
+    viewAllHref="/{organization}/-/console/projects"
+  >
     {#if $healthQuery.isLoading}
       <p class="text-sm text-fg-secondary">Loading projects...</p>
     {:else if projects.length === 0}
@@ -124,14 +127,22 @@
       <div class="chips">
         <a href="/{organization}/-/console/projects" class="chip">
           <span class="font-medium">{totalProjects}</span>
-          <span class="text-fg-secondary">{totalProjects === 1 ? "Project" : "Projects"}</span>
+          <span class="text-fg-secondary"
+            >{totalProjects === 1 ? "Project" : "Projects"}</span
+          >
         </a>
-        <a href="/{organization}/-/console/projects?status=healthy" class="chip chip-green">
+        <a
+          href="/{organization}/-/console/projects?status=healthy"
+          class="chip chip-green"
+        >
           <span class="w-2 h-2 rounded-full bg-green-500"></span>
           <span class="font-medium">{healthyCount}</span>
           <span class="text-fg-secondary">Healthy</span>
         </a>
-        <a href="/{organization}/-/console/projects?status=error" class="chip chip-red">
+        <a
+          href="/{organization}/-/console/projects?status=error"
+          class="chip chip-red"
+        >
           <span class="w-2 h-2 rounded-full bg-red-500"></span>
           <span class="font-medium">{errorCount}</span>
           <span class="text-fg-secondary">Error</span>
@@ -140,7 +151,10 @@
     {/if}
   </OverviewCard>
 
-  <OverviewCard title="Resources" viewAllHref="/{organization}/-/console/resources">
+  <OverviewCard
+    title="Resources"
+    viewAllHref="/{organization}/-/console/resources"
+  >
     {#if $resourcesQuery.isLoading}
       <p class="text-sm text-fg-secondary">Loading resources...</p>
     {:else if allResources.length === 0}
@@ -149,7 +163,9 @@
       <div class="chips">
         {#each Object.entries(resourcesByKind).sort(([, a], [, b]) => b - a) as [kind, count]}
           <a
-            href="/{organization}/-/console/resources?kind={encodeURIComponent(kind)}"
+            href="/{organization}/-/console/resources?kind={encodeURIComponent(
+              kind,
+            )}"
             class="chip {resourceKindStyleName(kind) ?? ''}"
           >
             {#if resourceIconMapping[kind]}
@@ -185,7 +201,9 @@
       <div class="section-header">
         <h3 class="section-title flex items-center gap-2">
           Errors
-          <span class="error-badge">{Object.values(erroredByKind).reduce((a, b) => a + b, 0)}</span>
+          <span class="error-badge"
+            >{Object.values(erroredByKind).reduce((a, b) => a + b, 0)}</span
+          >
         </h3>
       </div>
       <div class="error-chips">
