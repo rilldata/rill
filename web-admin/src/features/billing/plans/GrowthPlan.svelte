@@ -10,7 +10,7 @@
   export let plan: V1BillingPlan;
 </script>
 
-<SettingsContainer title={plan?.displayName ?? "Growth"}>
+<SettingsContainer title={plan?.displayName ?? "Growth Plan"}>
   <div slot="body">
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.

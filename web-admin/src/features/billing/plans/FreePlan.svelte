@@ -8,7 +8,7 @@
   export let plan: V1BillingPlan;
 </script>
 
-<SettingsContainer title={plan?.displayName ?? "Free"}>
+<SettingsContainer title={plan?.displayName ?? "Free Plan"}>
   <div slot="body">
     <div>
       You're on the Free plan.
