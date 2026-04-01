@@ -3,8 +3,7 @@
 
   export let billingPlan: string | null;
 
-  // TODO: restore plan check before merging: billingPlan === "free-plan" || billingPlan === "growth-plan"
-  $: showBranding = true;
+  $: showBranding = billingPlan === "free-plan" || billingPlan === "growth-plan";
 </script>
 
 {#if showBranding}
