@@ -22,6 +22,10 @@
     parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
+  import {
+    isProjectHealthy,
+    hasProjectErrors,
+  } from "@rilldata/web-admin/features/projects/admin-console/project-health-utils";
 
   $: organization = $page.params.organization;
 
@@ -31,22 +35,6 @@
   );
 
   $: allProjects = $healthQuery.data?.projects ?? [];
-
-  function isHealthy(p: V1ProjectHealth): boolean {
-    return (
-      p.deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
-      (p.parseErrorCount ?? 0) === 0 &&
-      (p.reconcileErrorCount ?? 0) === 0
-    );
-  }
-
-  function hasErrors(p: V1ProjectHealth): boolean {
-    return (
-      p.deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED ||
-      (p.parseErrorCount ?? 0) > 0 ||
-      (p.reconcileErrorCount ?? 0) > 0
-    );
-  }
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
@@ -103,8 +91,8 @@
     selectedStatuses.length > 0 || searchText.length > 0;
 
   $: filteredProjects = allProjects.filter((p) => {
-    if (selectedStatuses.includes("healthy") && !isHealthy(p)) return false;
-    if (selectedStatuses.includes("error") && !hasErrors(p)) return false;
+    if (selectedStatuses.includes("healthy") && !isProjectHealthy(p)) return false;
+    if (selectedStatuses.includes("error") && !hasProjectErrors(p)) return false;
     if (
       searchText &&
       !(p.projectName ?? "").toLowerCase().includes(searchText.toLowerCase())
@@ -149,8 +137,8 @@
       case "name":
         return dir * (a.projectName ?? "").localeCompare(b.projectName ?? "");
       case "status": {
-        const sa = hasErrors(a) ? 2 : isHealthy(a) ? 0 : 1;
-        const sb = hasErrors(b) ? 2 : isHealthy(b) ? 0 : 1;
+        const sa = hasProjectErrors(a) ? 2 : isProjectHealthy(a) ? 0 : 1;
+        const sb = hasProjectErrors(b) ? 2 : isProjectHealthy(b) ? 0 : 1;
         return dir * (sa - sb);
       }
       case "parse":

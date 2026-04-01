@@ -4,16 +4,17 @@
     createAdminServiceGetOrganization,
     createAdminServiceListOrganizationProjectsWithHealth,
     createAdminServiceListOrganizationResources,
-    V1DeploymentStatus,
-    type V1ProjectHealth,
   } from "@rilldata/web-admin/client";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
   import {
     prettyResourceKind,
     resourceKindStyleName,
-    type ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import {
+    isProjectHealthy,
+    hasProjectErrors,
+  } from "@rilldata/web-admin/features/projects/admin-console/project-health-utils";
 
   $: organization = $page.params.organization;
 
@@ -29,25 +30,9 @@
   $: resourcesQuery = createAdminServiceListOrganizationResources(organization);
   $: allResources = $resourcesQuery.data?.resources ?? [];
 
-  function isHealthy(p: V1ProjectHealth): boolean {
-    return (
-      p.deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
-      (p.parseErrorCount ?? 0) === 0 &&
-      (p.reconcileErrorCount ?? 0) === 0
-    );
-  }
-
-  function hasErrors(p: V1ProjectHealth): boolean {
-    return (
-      p.deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED ||
-      (p.parseErrorCount ?? 0) > 0 ||
-      (p.reconcileErrorCount ?? 0) > 0
-    );
-  }
-
   $: totalProjects = projects.length;
-  $: healthyCount = projects.filter(isHealthy).length;
-  $: errorCount = projects.filter(hasErrors).length;
+  $: healthyCount = projects.filter(isProjectHealthy).length;
+  $: errorCount = projects.filter(hasProjectErrors).length;
 
   // Group resources by kind
   $: resourcesByKind = allResources.reduce(
