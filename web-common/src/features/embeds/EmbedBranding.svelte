@@ -1,10 +1,10 @@
 <script lang="ts">
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
+  import { requiresEmbedBranding } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   export let billingPlan: string | null;
 
-  $: showBranding =
-    billingPlan === "free-plan" || billingPlan === "growth-plan";
+  $: showBranding = requiresEmbedBranding(billingPlan);
 </script>
 
 {#if showBranding}

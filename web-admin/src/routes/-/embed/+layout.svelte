@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import EmbedBranding from "@rilldata/web-common/features/embeds/EmbedBranding.svelte";
+  import { requiresEmbedBranding } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
@@ -60,8 +61,7 @@
           | ResourceKind.Canvas
           | undefined);
 
-  $: showBranding =
-    billingPlan === "free-plan" || billingPlan === "growth-plan";
+  $: showBranding = requiresEmbedBranding(billingPlan);
   $: showTopBar = navigationEnabled || showDashboardChat || showBranding;
 
   // Suppress browser back/forward
