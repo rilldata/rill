@@ -1,5 +1,8 @@
 <script lang="ts">
-  import type { V1BillingPlan, V1Subscription } from "@rilldata/web-admin/client";
+  import type {
+    V1BillingPlan,
+    V1Subscription,
+  } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
