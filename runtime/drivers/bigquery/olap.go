@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -67,9 +68,16 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
+	wrapMaxBytesBilledError := func(err error, maxBytesBilled int64) error {
+		if err != nil && maxBytesBilled >= 0 && strings.Contains(strings.ToLower(err.Error()), "query exceeded limit for bytes billed") {
+			return fmt.Errorf("bigquery query exceeds configured max_bytes_billed limit (%d bytes). Increase `max_bytes_billed` in connector config or set it to -1 to disable the limit: %w", maxBytesBilled, err)
+		}
+		return err
+	}
+
 	q := client.Query(stmt.Query)
 	q.Parameters = make([]bigquery.QueryParameter, len(stmt.Args))
-	q.MaxBytesBilled = 1024 * 1024 * 1024 // 1 GB, to prevent accidentally running large queries
+	q.MaxBytesBilled = c.config.MaxBytesBilled
 	for i, arg := range stmt.Args {
 		q.Parameters[i] = bigquery.QueryParameter{
 			Value: arg,
@@ -80,15 +88,15 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		// Can not use q.Read for dry run so must trigger the job and check status
 		j, err := q.Run(ctx)
 		if err != nil {
-			return nil, err
+			return nil, wrapMaxBytesBilledError(err, c.config.MaxBytesBilled)
 		}
 		// Dry run is not asynchronous so no need to call Wait
 		status := j.LastStatus()
-		return nil, status.Err()
+		return nil, wrapMaxBytesBilledError(status.Err(), c.config.MaxBytesBilled)
 	}
 	it, err := q.Read(ctx)
 	if err != nil {
-		return nil, err
+		return nil, wrapMaxBytesBilledError(err, c.config.MaxBytesBilled)
 	}
 
 	// We use query.Read which can also use fast path when results are small.
