@@ -3,6 +3,7 @@
   import {
     createAdminServiceGetOrganization,
     createAdminServiceListOrganizationProjectsWithHealth,
+    createAdminServiceListOrganizationResources,
     V1DeploymentStatus,
     type V1ProjectHealth,
   } from "@rilldata/web-admin/client";
@@ -18,6 +19,9 @@
     { pageSize: 50 },
   );
   $: projects = $healthQuery.data?.projects ?? [];
+
+  $: resourcesQuery = createAdminServiceListOrganizationResources(organization);
+  $: allResources = $resourcesQuery.data?.resources ?? [];
 
   function isHealthy(p: V1ProjectHealth): boolean {
     return (
@@ -38,6 +42,10 @@
   $: totalProjects = projects.length;
   $: healthyCount = projects.filter(isHealthy).length;
   $: errorCount = projects.filter(hasErrors).length;
+
+  $: totalResources = allResources.length;
+  $: healthyResources = allResources.filter((r) => !r.reconcileError).length;
+  $: errorResources = allResources.filter((r) => !!r.reconcileError).length;
 </script>
 
 <div class="flex flex-col gap-6">
@@ -115,6 +123,31 @@
         <a href="/{organization}/-/console/projects?status=error" class="chip chip-red">
           <span class="w-2 h-2 rounded-full bg-red-500"></span>
           <span class="font-medium">{errorCount}</span>
+          <span class="text-fg-secondary">Error</span>
+        </a>
+      </div>
+    {/if}
+  </OverviewCard>
+
+  <OverviewCard title="Resources" viewAllHref="/{organization}/-/console/resources">
+    {#if $resourcesQuery.isLoading}
+      <p class="text-sm text-fg-secondary">Loading resources...</p>
+    {:else if allResources.length === 0}
+      <p class="text-sm text-fg-secondary">No resources found.</p>
+    {:else}
+      <div class="chips">
+        <a href="/{organization}/-/console/resources" class="chip">
+          <span class="font-medium">{totalResources}</span>
+          <span class="text-fg-secondary">{totalResources === 1 ? "Resource" : "Resources"}</span>
+        </a>
+        <a href="/{organization}/-/console/resources?status=healthy" class="chip chip-green">
+          <span class="w-2 h-2 rounded-full bg-green-500"></span>
+          <span class="font-medium">{healthyResources}</span>
+          <span class="text-fg-secondary">Healthy</span>
+        </a>
+        <a href="/{organization}/-/console/resources?status=error" class="chip chip-red">
+          <span class="w-2 h-2 rounded-full bg-red-500"></span>
+          <span class="font-medium">{errorResources}</span>
           <span class="text-fg-secondary">Error</span>
         </a>
       </div>

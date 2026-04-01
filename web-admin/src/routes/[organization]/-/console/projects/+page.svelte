@@ -141,10 +141,7 @@
     }
   }
 
-  function sortIndicator(key: SortKey): string {
-    if (sortKey !== key) return "";
-    return sortAsc ? " ↑" : " ↓";
-  }
+  $: sortIcon = sortAsc ? "↑" : "↓";
 
   $: sortedProjects = [...filteredProjects].sort((a, b) => {
     const dir = sortAsc ? 1 : -1;
@@ -243,19 +240,19 @@
         <thead>
           <tr class="border-b border-border bg-surface-subtle">
             <th class="px-3 py-2 text-left text-xs sortable" on:click={() => toggleSort("name")}>
-              Name{sortIndicator("name")}
+              Name {sortKey === "name" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-center text-xs w-[48px] sortable" on:click={() => toggleSort("status")}>
-              Status{sortIndicator("status")}
+              Status {sortKey === "status" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-center text-xs w-[80px] sortable" on:click={() => toggleSort("parse")}>
-              Parse{sortIndicator("parse")}
+              Parse {sortKey === "parse" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-center text-xs w-[100px] sortable" on:click={() => toggleSort("reconcile")}>
-              Reconcile{sortIndicator("reconcile")}
+              Reconcile {sortKey === "reconcile" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-left text-xs w-[120px] sortable" on:click={() => toggleSort("updated")}>
-              Last Updated{sortIndicator("updated")}
+              Last Updated {sortKey === "updated" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 w-[56px]"></th>
           </tr>

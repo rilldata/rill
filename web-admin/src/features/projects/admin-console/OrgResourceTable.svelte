@@ -39,6 +39,7 @@
   const filterSync = createUrlFilterSync([
     { key: "project", type: "array" },
     { key: "kind", type: "array" },
+    { key: "status", type: "array" },
     { key: "q", type: "string" },
   ]);
   filterSync.init($page.url);
@@ -50,6 +51,17 @@
   let selectedTypes: string[] = parseArrayParam(
     $page.url.searchParams.get("kind"),
   );
+  let selectedStatuses: string[] = parseArrayParam(
+    $page.url.searchParams.get("status"),
+  );
+
+  type StatusFilter = { label: string; value: string };
+  const statusFilters: StatusFilter[] = [
+    { label: "Healthy", value: "healthy" },
+    { label: "Error", value: "error" },
+  ];
+
+  let statusDropdownOpen = false;
 
   let projectDropdownOpen = false;
   let typeDropdownOpen = false;
@@ -62,6 +74,9 @@
       $page.url.searchParams.get("project"),
     );
     selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+    selectedStatuses = parseArrayParam(
+      $page.url.searchParams.get("status"),
+    );
     searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
@@ -70,6 +85,7 @@
     filterSync.syncToUrl({
       project: selectedProjects,
       kind: selectedTypes,
+      status: selectedStatuses,
       q: searchText,
     });
   }
@@ -93,6 +109,14 @@
     ResourceKind.Connector,
   ];
 
+  function toggleStatus(status: string) {
+    if (selectedStatuses.includes(status)) {
+      selectedStatuses = selectedStatuses.filter((s) => s !== status);
+    } else {
+      selectedStatuses = [...selectedStatuses, status];
+    }
+  }
+
   $: filteredResources = resources.filter((r) => {
     if (
       selectedProjects.length > 0 &&
@@ -100,6 +124,10 @@
     )
       return false;
     if (selectedTypes.length > 0 && !selectedTypes.includes(r.kind))
+      return false;
+    if (selectedStatuses.includes("healthy") && r.reconcileError)
+      return false;
+    if (selectedStatuses.includes("error") && !r.reconcileError)
       return false;
     if (
       searchText &&
@@ -142,12 +170,14 @@
   function clearFilters() {
     selectedProjects = [];
     selectedTypes = [];
+    selectedStatuses = [];
     searchText = "";
   }
 
   $: hasActiveFilters =
     selectedProjects.length > 0 ||
     selectedTypes.length > 0 ||
+    selectedStatuses.length > 0 ||
     searchText.length > 0;
 
   // Sorting
@@ -164,10 +194,7 @@
     }
   }
 
-  function sortIndicator(key: SortKey): string {
-    if (sortKey !== key) return "";
-    return sortAsc ? " ↑" : " ↓";
-  }
+  $: sortIcon = sortAsc ? "↑" : "↓";
 
   $: sortedResources = [...filteredResources].sort((a, b) => {
     const dir = sortAsc ? 1 : -1;
@@ -278,6 +305,42 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
 
+    <DropdownMenu.Root bind:open={statusDropdownOpen}>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {#if selectedStatuses.length === 0}
+            All statuses
+          {:else if selectedStatuses.length === 1}
+            {statusFilters.find((s) => s.value === selectedStatuses[0])
+              ?.label ?? selectedStatuses[0]}
+          {:else}
+            {statusFilters.find((s) => s.value === selectedStatuses[0])
+              ?.label}, +{selectedStatuses.length - 1} other
+          {/if}
+        </span>
+        {#if statusDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-48">
+        {#each statusFilters as status}
+          <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
+            checked={selectedStatuses.includes(status.value)}
+            onCheckedChange={() => toggleStatus(status.value)}
+          >
+            {status.label}
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+
     {#if hasActiveFilters}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
@@ -298,19 +361,19 @@
         <thead>
           <tr class="border-b border-border bg-surface-subtle">
             <th class="px-3 py-2 text-left text-xs w-[108px] sortable" on:click={() => toggleSort("type")}>
-              Type{sortIndicator("type")}
+              Type {sortKey === "type" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-left text-xs sortable" on:click={() => toggleSort("name")}>
-              Name{sortIndicator("name")}
+              Name {sortKey === "name" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-left text-xs w-[140px] sortable" on:click={() => toggleSort("project")}>
-              Project{sortIndicator("project")}
+              Project {sortKey === "project" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-center text-xs w-[48px] sortable" on:click={() => toggleSort("status")}>
-              Status{sortIndicator("status")}
+              Status {sortKey === "status" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-left text-xs w-[120px] sortable" on:click={() => toggleSort("updated")}>
-              Last refresh{sortIndicator("updated")}
+              Last refresh {sortKey === "updated" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 w-[56px]"></th>
           </tr>
