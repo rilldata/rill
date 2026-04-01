@@ -449,12 +449,6 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isD
 }
 
 func generateMetricsViewYAMLSimpleTimeDimension(tbl *drivers.OlapTable) string {
-	// Prefer the partition column; it's always a time column since it's only set for TimePartitioning.
-	if tbl.PartitionColumn != "" {
-		return tbl.PartitionColumn
-	}
-
-	// Fall back to the first timestamp/time/date column
 	for _, f := range tbl.Schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE:
