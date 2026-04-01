@@ -10,7 +10,6 @@
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { ArrowUp } from "lucide-svelte";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -20,8 +19,6 @@
   export let inline = false;
 
   let value = "";
-
-  const runtimeClient = useRuntimeClient();
 
   $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
@@ -90,7 +87,6 @@
       extensions: getEditorPlugins({
         placeholder,
         onSubmit: () => void sendMessage(),
-        runtimeClient,
       }),
       content: "",
       editorProps: {
