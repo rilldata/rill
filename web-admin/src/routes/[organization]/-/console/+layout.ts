@@ -1,7 +1,7 @@
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
+import type { LayoutLoad } from "./$types";
 
-export const load: PageLoad = async ({ parent }) => {
+export const load: LayoutLoad = async ({ parent }) => {
   const { organizationPermissions } = await parent();
 
   if (

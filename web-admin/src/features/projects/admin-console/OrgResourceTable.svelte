@@ -126,10 +126,12 @@
       return false;
     if (selectedTypes.length > 0 && !selectedTypes.includes(r.kind))
       return false;
-    if (selectedStatuses.includes("healthy") && r.reconcileError)
-      return false;
-    if (selectedStatuses.includes("error") && !r.reconcileError)
-      return false;
+    if (selectedStatuses.length > 0) {
+      const matchesAny =
+        (selectedStatuses.includes("healthy") && !r.reconcileError) ||
+        (selectedStatuses.includes("error") && !!r.reconcileError);
+      if (!matchesAny) return false;
+    }
     if (
       searchText &&
       !r.name.toLowerCase().includes(searchText.toLowerCase()) &&
@@ -476,12 +478,8 @@
 </div>
 
 <style lang="postcss">
-  * {
-    @apply border-gray-200;
-  }
-
   .table-container {
-    @apply flex flex-col border rounded-sm overflow-hidden;
+    @apply flex flex-col border border-gray-200 rounded-sm overflow-hidden;
   }
 
   .row {
@@ -491,7 +489,7 @@
   }
 
   .row:not(:last-child) {
-    @apply border-b;
+    @apply border-b border-gray-200;
   }
 
   .header-cell {

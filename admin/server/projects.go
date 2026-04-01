@@ -216,17 +216,7 @@ func (s *Server) ListOrganizationProjectsWithHealth(ctx context.Context, req *ad
 
 				// For running deployments, fetch runtime health for error counts
 				if depl.Status == database.DeploymentStatusRunning {
-					rt, err := s.admin.OpenRuntimeClient(depl)
-					if err == nil {
-						defer rt.Close()
-						resp, err := rt.InstanceHealth(ctx, &runtimev1.InstanceHealthRequest{
-							InstanceId: depl.RuntimeInstanceID,
-						})
-						if err == nil && resp.InstanceHealth != nil {
-							ph.ParseErrorCount = resp.InstanceHealth.ParseErrorCount
-							ph.ReconcileErrorCount = resp.InstanceHealth.ReconcileErrorCount
-						}
-					}
+					s.fillProjectHealth(ctx, depl, ph)
 				}
 			}
 		}
@@ -238,6 +228,24 @@ func (s *Server) ListOrganizationProjectsWithHealth(ctx context.Context, req *ad
 		Projects:      results,
 		NextPageToken: nextToken,
 	}, nil
+}
+
+// fillProjectHealth opens a runtime client, fetches instance health, and populates error counts on ph.
+// The runtime client is closed before returning.
+func (s *Server) fillProjectHealth(ctx context.Context, depl *database.Deployment, ph *adminv1.ProjectHealth) {
+	rt, err := s.admin.OpenRuntimeClient(depl)
+	if err != nil {
+		return
+	}
+	defer rt.Close()
+
+	resp, err := rt.InstanceHealth(ctx, &runtimev1.InstanceHealthRequest{
+		InstanceId: depl.RuntimeInstanceID,
+	})
+	if err == nil && resp.InstanceHealth != nil {
+		ph.ParseErrorCount = resp.InstanceHealth.ParseErrorCount
+		ph.ReconcileErrorCount = resp.InstanceHealth.ReconcileErrorCount
+	}
 }
 
 func (s *Server) ListOrganizationResources(ctx context.Context, req *adminv1.ListOrganizationResourcesRequest) (*adminv1.ListOrganizationResourcesResponse, error) {

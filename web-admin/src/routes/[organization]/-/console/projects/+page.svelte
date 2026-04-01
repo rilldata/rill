@@ -13,6 +13,7 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -91,8 +92,12 @@
     selectedStatuses.length > 0 || searchText.length > 0;
 
   $: filteredProjects = allProjects.filter((p) => {
-    if (selectedStatuses.includes("healthy") && !isProjectHealthy(p)) return false;
-    if (selectedStatuses.includes("error") && !hasProjectErrors(p)) return false;
+    if (selectedStatuses.length > 0) {
+      const matchesAny =
+        (selectedStatuses.includes("healthy") && isProjectHealthy(p)) ||
+        (selectedStatuses.includes("error") && hasProjectErrors(p));
+      if (!matchesAny) return false;
+    }
     if (
       searchText &&
       !(p.projectName ?? "").toLowerCase().includes(searchText.toLowerCase())
@@ -128,8 +133,6 @@
       sortAsc = true;
     }
   }
-
-  $: sortIcon = sortAsc ? "↑" : "↓";
 
   $: sortedProjects = [...filteredProjects].sort((a, b) => {
     const dir = sortAsc ? 1 : -1;
@@ -223,102 +226,128 @@
       No projects match the current filters
     </p>
   {:else}
-    <div class="overflow-x-auto border border-border rounded-sm">
-      <table class="w-full text-sm table-fixed">
-        <thead>
-          <tr class="border-b border-border bg-surface-subtle">
-            <th class="px-3 py-2 text-left text-xs sortable" on:click={() => toggleSort("name")}>
-              Name {sortKey === "name" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-center text-xs w-[80px] sortable" on:click={() => toggleSort("status")}>
-              Status {sortKey === "status" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-center text-xs w-[80px] sortable" on:click={() => toggleSort("parse")}>
-              Parse {sortKey === "parse" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-center text-xs w-[100px] sortable" on:click={() => toggleSort("reconcile")}>
-              Reconcile {sortKey === "reconcile" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 text-left text-xs w-[120px] sortable" on:click={() => toggleSort("updated")}>
-              Last Updated {sortKey === "updated" ? sortIcon : ""}
-            </th>
-            <th class="px-3 py-2 w-[56px]"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each sortedProjects as project (project.projectId)}
-            <tr class="border-b border-border last:border-b-0">
-              <td class="px-3 py-3 truncate">
-                <NameCell name={project.projectName ?? ""} />
-              </td>
-              <td class="px-3 py-3">
-                <ResourceErrorMessage
-                  message={projectErrorMessage(project)}
-                  status={V1ReconcileStatus.RECONCILE_STATUS_IDLE}
-                />
-              </td>
-              <td class="px-3 py-3 text-center">
-                {#if (project.parseErrorCount ?? 0) > 0}
-                  <span class="text-red-600 font-medium text-xs">{project.parseErrorCount}</span>
-                {:else}
-                  <span class="text-fg-tertiary">—</span>
-                {/if}
-              </td>
-              <td class="px-3 py-3 text-center">
-                {#if (project.reconcileErrorCount ?? 0) > 0}
-                  <span class="text-red-600 font-medium text-xs">{project.reconcileErrorCount}</span>
-                {:else}
-                  <span class="text-fg-tertiary">—</span>
-                {/if}
-              </td>
-              <td class="px-3 py-3">
-                <RefreshCell date={project.updatedOn ?? ""} />
-              </td>
-              <td class="px-3 py-3">
-                <DropdownMenu.Root
-                  open={openDropdownProject === project.projectId}
-                  onOpenChange={(isOpen) => {
-                    openDropdownProject = isOpen ? (project.projectId ?? "") : "";
-                  }}
+    <div
+      class="table-container"
+      style:--grid-template-columns="minmax(100px, 3fr) 48px minmax(60px, 1fr) minmax(80px, 1fr) minmax(100px, 2fr) 56px"
+    >
+      <!-- Header -->
+      <div class="row bg-surface-subtle sticky top-0 z-10">
+        <button class="header-cell pl-4" on:click={() => toggleSort("name")}>
+          <span class="truncate">Name</span>
+          {#if sortKey === "name"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button class="header-cell pl-1" on:click={() => toggleSort("status")}>
+          <span class="truncate">Status</span>
+          {#if sortKey === "status"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button class="header-cell pl-4" on:click={() => toggleSort("parse")}>
+          <span class="truncate">Parse</span>
+          {#if sortKey === "parse"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button class="header-cell pl-4" on:click={() => toggleSort("reconcile")}>
+          <span class="truncate">Reconcile</span>
+          {#if sortKey === "reconcile"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <button class="header-cell pl-4" on:click={() => toggleSort("updated")}>
+          <span class="truncate">Last Updated</span>
+          {#if sortKey === "updated"}
+            <ArrowDown flip={sortAsc} size="12px" />
+          {/if}
+        </button>
+        <div class="pl-4 py-2"></div>
+      </div>
+
+      <!-- Rows -->
+      {#each sortedProjects as project (project.projectId)}
+        <div class="row py-3">
+          <div class="pl-4 pr-1 flex items-center truncate">
+            <NameCell name={project.projectName ?? ""} />
+          </div>
+          <div class="pl-1 pr-1 flex items-center truncate">
+            <ResourceErrorMessage
+              message={projectErrorMessage(project)}
+              status={V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+            />
+          </div>
+          <div class="pl-4 pr-1 flex items-center truncate">
+            {#if (project.parseErrorCount ?? 0) > 0}
+              <span class="text-red-600 font-medium text-xs">{project.parseErrorCount}</span>
+            {:else}
+              <span class="text-fg-tertiary">—</span>
+            {/if}
+          </div>
+          <div class="pl-4 pr-1 flex items-center truncate">
+            {#if (project.reconcileErrorCount ?? 0) > 0}
+              <span class="text-red-600 font-medium text-xs">{project.reconcileErrorCount}</span>
+            {:else}
+              <span class="text-fg-tertiary">—</span>
+            {/if}
+          </div>
+          <div class="pl-4 pr-1 flex items-center truncate">
+            <RefreshCell date={project.updatedOn ?? ""} />
+          </div>
+          <div class="pl-4 pr-1 flex items-center">
+            <DropdownMenu.Root
+              open={openDropdownProject === project.projectId}
+              onOpenChange={(isOpen) => {
+                openDropdownProject = isOpen ? (project.projectId ?? "") : "";
+              }}
+            >
+              <DropdownMenu.Trigger
+                class="flex-none"
+                aria-label="Project actions"
+              >
+                <IconButton
+                  rounded
+                  active={openDropdownProject === project.projectId}
+                  size={20}
                 >
-                  <DropdownMenu.Trigger
-                    class="flex-none"
-                    aria-label="Project actions"
-                  >
-                    <IconButton
-                      rounded
-                      active={openDropdownProject === project.projectId}
-                      size={20}
-                    >
-                      <ThreeDot size="16px" />
-                    </IconButton>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="start">
-                    <DropdownMenu.Item
-                      class="font-normal flex items-center"
-                      href="/{organization}/{project.projectName}/-/status"
-                    >
-                      <div class="flex items-center">
-                        <ExternalLinkIcon size="12px" />
-                        <span class="ml-2">View project status</span>
-                      </div>
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+                  <ThreeDot size="16px" />
+                </IconButton>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="start">
+                <DropdownMenu.Item
+                  class="font-normal flex items-center"
+                  href="/{organization}/{project.projectName}/-/status"
+                >
+                  <div class="flex items-center">
+                    <ExternalLinkIcon size="12px" />
+                    <span class="ml-2">View project status</span>
+                  </div>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+        </div>
+      {/each}
     </div>
   {/if}
 </div>
 
 <style lang="postcss">
-  .sortable {
-    @apply font-medium text-fg-secondary cursor-pointer select-none;
+  .table-container {
+    @apply flex flex-col border border-gray-200 rounded-sm overflow-hidden;
   }
-  .sortable:hover {
-    @apply text-fg-primary;
+
+  .row {
+    @apply w-fit min-w-full;
+    display: grid;
+    grid-template-columns: var(--grid-template-columns);
+  }
+
+  .row:not(:last-child) {
+    @apply border-b border-gray-200;
+  }
+
+  .header-cell {
+    @apply py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm;
   }
 </style>
