@@ -83,7 +83,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/prometheus/client_golang v1.23.2
-	github.com/redis/go-redis/v9 v9.6.3
+	github.com/redis/go-redis/v9 v9.8.0
 	github.com/riverqueue/river v0.19.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.19.0
 	github.com/riverqueue/river/rivertype v0.19.0
@@ -101,6 +101,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/azure v0.40.1-0.20260308104409-c4e345e97da5
 	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.40.1-0.20260308104409-c4e345e97da5
 	github.com/testcontainers/testcontainers-go/modules/compose v0.40.1-0.20260308104409-c4e345e97da5
+	github.com/testcontainers/testcontainers-go/modules/mssql v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/mysql v0.40.1-0.20260308104409-c4e345e97da5
 	github.com/xuri/excelize/v2 v2.7.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0
@@ -159,7 +160,10 @@ require (
 	github.com/go-openapi/swag/stringutils v0.25.3 // indirect
 	github.com/go-openapi/swag/typeutils v0.25.3 // indirect
 	github.com/go-openapi/swag/yamlutils v0.25.3 // indirect
+	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
+	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
+	github.com/microsoft/go-mssqldb v1.9.6
 	github.com/moby/moby/api v1.54.0 // indirect
 	github.com/moby/moby/client v0.3.0 // indirect
 	github.com/prometheus/otlptranslator v0.0.2 // indirect

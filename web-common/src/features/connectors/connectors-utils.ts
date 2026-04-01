@@ -15,6 +15,12 @@ export function makeFullyQualifiedTableName(
       return `${databaseSchema}.${table}`;
     case "duckdb":
       return `${database}.${databaseSchema}.${table}`;
+    case "oracle":
+    case "sqlserver":
+      if (databaseSchema) {
+        return `${databaseSchema}.${table}`;
+      }
+      return table;
     case "pinot":
       return table;
     // Non-OLAP connectors: use standard database.schema.table format
@@ -59,6 +65,13 @@ export function makeSufficientlyQualifiedTableName(
       // MySQL uses database.table format (no schema concept like PostgreSQL)
       if (database && database !== "default") {
         return `${database}.${table}`;
+      }
+      return table;
+    case "oracle":
+    case "sqlserver":
+      // Oracle/SQL Server use schema.table format (database is always empty)
+      if (databaseSchema && databaseSchema !== "default") {
+        return `${databaseSchema}.${table}`;
       }
       return table;
     // Non-OLAP connectors: use standard qualification logic

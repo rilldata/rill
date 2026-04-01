@@ -218,6 +218,7 @@ const (
 	DialectRedshift
 	DialectMySQL
 	DialectPostgres
+	DialectSQLServer
 )
 
 func (d Dialect) String() string {
@@ -246,6 +247,8 @@ func (d Dialect) String() string {
 		return "mysql"
 	case DialectPostgres:
 		return "postgres"
+	case DialectSQLServer:
+		return "sqlserver"
 	default:
 		panic("not implemented")
 	}

@@ -138,6 +138,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 ## Databases
 ### MySQL
 ### PostgreSQL
+### SQL Server
 ### SQLite
 ### Supabase
 
@@ -157,6 +158,14 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     link="/developers/build/connectors/data-source/postgres"
     linkLabel="Learn more"
     referenceLink="postgresql"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-SQLServer.svg" alt="SQL Server"  className="large-icon"/>}
+    header="SQL Server"
+    content="Connect to Microsoft SQL Server databases with support for encryption and various authentication methods."
+    link="/developers/build/connectors/data-source/sqlserver"
+    linkLabel="Learn more"
+    referenceLink="sql-server"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}
