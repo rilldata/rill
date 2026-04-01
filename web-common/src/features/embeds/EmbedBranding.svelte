@@ -11,9 +11,9 @@
     href="https://www.rilldata.com"
     target="_blank"
     rel="noopener noreferrer"
-    class="pointer-events-auto fixed bottom-3 right-6 z-50 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-gray-200/50 backdrop-blur-sm transition-colors hover:text-gray-900 hover:shadow"
+    class="pointer-events-auto fixed bottom-3 right-6 z-50 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-gray-200/50 backdrop-blur-sm transition-colors hover:text-gray-900 hover:shadow dark:bg-gray-800/90 dark:text-gray-400 dark:ring-gray-700/50 dark:hover:text-gray-200"
   >
     <RillFilled size="14" />
-    Made with <span class="font-semibold text-gray-900">Rill</span>
+    Made with <span class="font-semibold text-gray-900 dark:text-gray-100">Rill</span>
   </a>
 {/if}
