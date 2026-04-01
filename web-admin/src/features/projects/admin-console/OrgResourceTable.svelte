@@ -360,7 +360,7 @@
       <table class="w-full text-sm table-fixed">
         <thead>
           <tr class="border-b border-border bg-surface-subtle">
-            <th class="px-3 py-2 text-left text-xs w-[108px] sortable" on:click={() => toggleSort("type")}>
+            <th class="px-3 py-2 text-left text-xs w-[130px] sortable" on:click={() => toggleSort("type")}>
               Type {sortKey === "type" ? sortIcon : ""}
             </th>
             <th class="px-3 py-2 text-left text-xs sortable" on:click={() => toggleSort("name")}>

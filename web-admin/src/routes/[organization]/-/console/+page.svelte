@@ -13,10 +13,7 @@
     resourceKindStyleName,
     type ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    resourceIconMapping,
-    resourceLabelMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
   $: organization = $page.params.organization;
 
@@ -165,10 +162,6 @@
       <p class="text-sm text-fg-secondary">No resources found.</p>
     {:else}
       <div class="chips">
-        <a href="/{organization}/-/console/resources" class="chip">
-          <span class="font-medium">{allResources.length}</span>
-          <span class="text-fg-secondary">Total</span>
-        </a>
         {#each Object.entries(resourcesByKind).sort(([, a], [, b]) => b - a) as [kind, count]}
           <a
             href="/{organization}/-/console/resources?kind={encodeURIComponent(kind)}"
@@ -186,19 +179,33 @@
   </OverviewCard>
 
   {#if $resourcesQuery.isLoading}
-    <OverviewCard title="Errors">
+    <div class="section">
+      <div class="section-header">
+        <h3 class="section-title">Errors</h3>
+      </div>
       <p class="text-sm text-fg-secondary">Loading...</p>
-    </OverviewCard>
+    </div>
   {:else if !hasAnyErrors}
-    <OverviewCard title="Errors">
-      <p class="text-sm text-fg-secondary">No errors found.</p>
-    </OverviewCard>
+    <div class="section">
+      <div class="section-header">
+        <h3 class="section-title">Errors</h3>
+      </div>
+      <p class="text-sm text-fg-secondary">No errors detected.</p>
+    </div>
   {:else}
-    <a href="/{organization}/-/console/resources?status=error" class="error-card">
-      <h3 class="error-card-title">ERRORS</h3>
-      <div class="chips">
+    <a
+      href="/{organization}/-/console/resources?status=error"
+      class="section section-error section-clickable"
+    >
+      <div class="section-header">
+        <h3 class="section-title flex items-center gap-2">
+          Errors
+          <span class="error-badge">{Object.values(erroredByKind).reduce((a, b) => a + b, 0)}</span>
+        </h3>
+      </div>
+      <div class="error-chips">
         {#each Object.entries(erroredByKind).sort(([, a], [, b]) => b - a) as [kind, count]}
-          <span class="chip chip-error-type {resourceKindStyleName(kind) ?? ''}">
+          <span class="error-chip">
             {#if resourceIconMapping[kind]}
               <svelte:component this={resourceIconMapping[kind]} size="12px" />
             {/if}
@@ -239,16 +246,32 @@
   .chip-red {
     @apply border-red-200;
   }
-  .chip-error-type {
-    @apply border-transparent;
+  .section {
+    @apply block border border-border rounded-lg p-5 no-underline text-inherit;
   }
-  .error-card {
-    @apply block border border-red-300 bg-red-50 rounded-lg p-5 no-underline text-inherit;
+  .section-clickable {
+    @apply cursor-pointer;
   }
-  .error-card:hover {
-    @apply border-red-400 bg-red-100/60;
+  .section-error {
+    @apply border-red-500;
   }
-  .error-card-title {
-    @apply text-sm font-semibold text-red-700 uppercase tracking-wide mb-4;
+  .section-clickable:hover {
+    @apply border-red-600;
+  }
+  .section-header {
+    @apply flex items-center justify-between mb-4;
+  }
+  .section-title {
+    @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
+  }
+  .error-badge {
+    @apply text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 min-w-[20px] text-center;
+  }
+  .error-chips {
+    @apply flex flex-wrap gap-2;
+  }
+  .error-chip {
+    @apply flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md;
+    @apply border border-red-300 bg-red-50 text-red-700 no-underline;
   }
 </style>
