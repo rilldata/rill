@@ -31,11 +31,12 @@
   export let isTrial = false;
 
   // Free trials have no minimum; Growth+: 2 for Rill-managed, 4 for self-managed
-  $: minSlots = isTrial && isRillManaged
-    ? 1
-    : isRillManaged
-      ? DEFAULT_MANAGED_SLOTS
-      : DEFAULT_SELF_MANAGED_SLOTS;
+  $: minSlots =
+    isTrial && isRillManaged
+      ? 1
+      : isRillManaged
+        ? DEFAULT_MANAGED_SLOTS
+        : DEFAULT_SELF_MANAGED_SLOTS;
 
   let selectedSlots = currentSlots;
   $: if (open) {
@@ -106,13 +107,15 @@
     <Dialog.Header>
       <Dialog.Title>Manage Cluster Size</Dialog.Title>
       <Dialog.Description>
-        Choose the vCPU and memory allocation for your deployment.
-        Monthly estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/slot/hr.
+        Choose the vCPU and memory allocation for your deployment. Monthly
+        estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/slot/hr.
         {#if !isTrial}
           {#if isRillManaged}
-            Minimum {DEFAULT_MANAGED_SLOTS * 4}GiB / {DEFAULT_MANAGED_SLOTS}vCPU for Rill-managed deployments.
+            Minimum {DEFAULT_MANAGED_SLOTS * 4}GiB / {DEFAULT_MANAGED_SLOTS}vCPU
+            for Rill-managed deployments.
           {:else}
-            Minimum {DEFAULT_SELF_MANAGED_SLOTS * 4}GiB / {DEFAULT_SELF_MANAGED_SLOTS}vCPU for self-managed OLAP deployments.
+            Minimum {DEFAULT_SELF_MANAGED_SLOTS * 4}GiB / {DEFAULT_SELF_MANAGED_SLOTS}vCPU
+            for self-managed OLAP deployments.
           {/if}
         {/if}
       </Dialog.Description>
@@ -137,7 +140,9 @@
           >
             <span class="tier-cell tier-cell-wide">
               {tier.instance}
-              <span class="slot-label">({tier.slots} {tier.slots === 1 ? "slot" : "slots"})</span>
+              <span class="slot-label"
+                >({tier.slots} {tier.slots === 1 ? "slot" : "slots"})</span
+              >
               {#if tier.slots === currentSlots}
                 <span class="current-badge">current</span>
               {/if}

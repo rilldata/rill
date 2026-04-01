@@ -9,10 +9,7 @@
     isEnterprisePlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useProjectDeployment } from "../selectors";
-  import {
-    getStatusDotClass,
-    getStatusLabel,
-  } from "../display-utils";
+  import { getStatusDotClass, getStatusLabel } from "../display-utils";
   import {
     SLOT_RATE_PER_HR,
     HOURS_PER_MONTH,
@@ -54,11 +51,17 @@
 
   // Cluster info
   $: prodTier = SLOT_TIERS.find((t) => t.slots === prodSlots);
-  $: prodClusterLabel = prodTier?.instance ?? `${prodSlots * 4}GiB / ${prodSlots}vCPU`;
-  $: devClusterLabel = devSlots > 0 ? `${devSlots * 4}GiB / ${devSlots}vCPU` : "—";
-  $: prodMonthlyCost = Math.round(prodSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH);
+  $: prodClusterLabel =
+    prodTier?.instance ?? `${prodSlots * 4}GiB / ${prodSlots}vCPU`;
+  $: devClusterLabel =
+    devSlots > 0 ? `${devSlots * 4}GiB / ${devSlots}vCPU` : "—";
+  $: prodMonthlyCost = Math.round(
+    prodSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH,
+  );
   $: devMonthlyCost = Math.round(devSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH);
-  $: totalMonthlyCost = Math.round(totalSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH);
+  $: totalMonthlyCost = Math.round(
+    totalSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH,
+  );
 
   // Bar percentages
   $: prodPct = totalSlots > 0 ? (prodSlots / totalSlots) * 100 : 50;
@@ -77,8 +80,8 @@
       </div>
       <div class="page-header-right">
         <span class="total-cost">
-          {totalSlots} {totalSlots === 1 ? "slot" : "slots"} total
-          &middot; ~${totalMonthlyCost.toLocaleString()}/mo
+          {totalSlots}
+          {totalSlots === 1 ? "slot" : "slots"} total &middot; ~${totalMonthlyCost.toLocaleString()}/mo
         </span>
         <a href="/{organization}/-/settings/usage" class="pricing-link">
           See price breakdown
@@ -90,7 +93,10 @@
     <div class="alloc-bar-container">
       <div class="alloc-bar">
         {#if prodSlots > 0}
-          <div class="alloc-segment alloc-segment-prod" style="width: {prodPct}%">
+          <div
+            class="alloc-segment alloc-segment-prod"
+            style="width: {prodPct}%"
+          >
             <span class="alloc-segment-text">
               Prod &middot; {prodSlots}
             </span>
@@ -103,7 +109,10 @@
             </span>
           </div>
         {:else}
-          <div class="alloc-segment alloc-segment-dev-empty" style="width: {devPct > 0 ? devPct : 25}%">
+          <div
+            class="alloc-segment alloc-segment-dev-empty"
+            style="width: {devPct > 0 ? devPct : 25}%"
+          >
             <span class="alloc-segment-text alloc-segment-text-muted">
               Dev &middot; 0
             </span>
@@ -142,7 +151,9 @@
             </div>
             <div class="detail-row">
               <span class="detail-label">Est. cost</span>
-              <span class="detail-value">~${prodMonthlyCost.toLocaleString()}/mo</span>
+              <span class="detail-value"
+                >~${prodMonthlyCost.toLocaleString()}/mo</span
+              >
             </div>
             <div class="detail-row">
               <span class="detail-label">Rate</span>
@@ -160,11 +171,11 @@
             <h3 class="section-title">Development</h3>
           </div>
           {#if canManage && !$subscriptionQuery?.isLoading}
+            <!-- TODO: re-add on:click={() => (devModalOpen = true)} when dev slots are available -->
             <button
               class="section-manage-btn section-manage-btn-dev"
               disabled
               title="Dev slots coming soon"
-              on:click={() => (devModalOpen = true)}
             >
               Manage
             </button>
@@ -172,7 +183,9 @@
         </div>
         <div class="section-body">
           <div class="section-metric">
-            <span class="metric-value" class:metric-value-empty={devSlots === 0}>{devClusterLabel}</span>
+            <span class="metric-value" class:metric-value-empty={devSlots === 0}
+              >{devClusterLabel}</span
+            >
             <span class="metric-label">Cluster Size</span>
           </div>
           <div class="section-details">

@@ -23,6 +23,8 @@ function tier(slots: number, rate = SLOT_RATE_PER_HR): SlotTier {
 export const POPULAR_SLOTS = [2, 3, 4, 8, 16, 30];
 
 // All available slot values including intermediate sizes
-export const ALL_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 20, 24, 28, 30];
+export const ALL_SLOTS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 20, 24, 28, 30,
+];
 
 export const SLOT_TIERS: SlotTier[] = ALL_SLOTS.map((s) => tier(s));

@@ -84,7 +84,8 @@
   // Slots / Cluster size
   $: currentSlots = Number(projectData?.prodSlots) || 0;
   $: currentTier = SLOT_TIERS.find((t) => t.slots === currentSlots);
-  $: clusterLabel = currentTier?.instance ?? `${currentSlots * 4}GiB / ${currentSlots}vCPU`;
+  $: clusterLabel =
+    currentTier?.instance ?? `${currentSlots * 4}GiB / ${currentSlots}vCPU`;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
 
   // Billing plan detection
@@ -175,7 +176,9 @@
       <span class="info-value">
         {olapEngineLabel}
         {#if olapConnector}
-          <span class="text-fg-tertiary text-xs ml-1">({olapConnector.name})</span>
+          <span class="text-fg-tertiary text-xs ml-1"
+            >({olapConnector.name})</span
+          >
         {:else}
           <span class="text-fg-tertiary text-xs ml-1">(Rill Managed)</span>
         {/if}
@@ -187,7 +190,8 @@
       <span class="info-value">
         {#if aiConnector && aiConnector.name !== "admin"}
           {formatConnectorName(aiConnector.type)}
-          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span>
+          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
+          >
         {:else}
           Rill Managed
         {/if}
@@ -203,13 +207,14 @@
             class="slots-link"
           >
             <span class="slots-count">{clusterLabel}</span>
-            <span class="slots-secondary">({currentSlots} {currentSlots === 1 ? "slot" : "slots"})</span>
+            <span class="slots-secondary"
+              >({currentSlots} {currentSlots === 1 ? "slot" : "slots"})</span
+            >
             <span class="slots-detail">View details</span>
           </a>
         </span>
       </div>
     {/if}
-
   </div>
 </OverviewCard>
 
