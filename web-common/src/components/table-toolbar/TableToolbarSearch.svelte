@@ -4,10 +4,12 @@
   import { tick } from "svelte";
 
   let {
-    searchText = $bindable(""),
+    searchText = "",
+    onSearchChange,
     disabled = false,
   }: {
     searchText?: string;
+    onSearchChange?: (text: string) => void;
     disabled?: boolean;
   } = $props();
 
@@ -22,18 +24,18 @@
   }
 
   function close() {
-    searchText = "";
+    onSearchChange?.("");
     expanded = false;
+  }
+
+  function handleInput(e: Event) {
+    onSearchChange?.((e.target as HTMLInputElement).value);
   }
 
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       close();
     }
-  }
-
-  function handleInput(e: Event) {
-    searchText = (e.target as HTMLInputElement).value;
   }
 </script>
 

@@ -133,7 +133,8 @@
         <div class="flex flex-row gap-x-4 items-center">
           <div class="flex-1">
             <TableToolbar
-              bind:searchText
+              {searchText}
+              onSearchChange={(text) => (searchText = text)}
               searchDisabled={projectVariables.length === 0}
               {filterGroups}
               onFilterChange={handleFilterChange}

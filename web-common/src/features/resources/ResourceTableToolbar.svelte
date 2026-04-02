@@ -53,8 +53,11 @@
     mounted = true;
   });
 
-  // Sync search to TanStack global filter; untrack $table to avoid
-  // re-triggering when the store updates from setGlobalFilter
+  function onSearchChange(text: string) {
+    searchText = text;
+  }
+
+  // Sync search to TanStack global filter
   $effect(() => {
     const text = searchText;
     untrack(() => {
@@ -62,7 +65,7 @@
     });
   });
 
-  // Sync search to URL; untrack to avoid circular $page dependency
+  // Sync search to URL
   $effect(() => {
     const text = searchText;
     untrack(() => {
@@ -72,9 +75,7 @@
     });
   });
 
-  // Sync URL back to state on external navigation (back/forward);
-  // subscribe to $page reactively, but write searchText in untrack
-  // to avoid re-triggering the URL sync effect
+  // Sync URL back to state on external navigation (back/forward)
   $effect(() => {
     const url = $page.url;
     if (mounted && filterSync.hasExternalNavigation(url)) {
@@ -98,7 +99,8 @@
 </script>
 
 <TableToolbar
-  bind:searchText
+  {searchText}
+  {onSearchChange}
   {searchDisabled}
   {filterGroups}
   {onFilterChange}

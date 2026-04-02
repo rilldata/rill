@@ -7,7 +7,8 @@
   import type { FilterGroup, SortDirection, ViewMode } from "./types";
 
   let {
-    searchText = $bindable(""),
+    searchText = "",
+    onSearchChange,
     searchDisabled = false,
     filterGroups = [],
     onFilterChange,
@@ -20,6 +21,7 @@
     onViewModeChange,
   }: {
     searchText?: string;
+    onSearchChange?: (text: string) => void;
     searchDisabled?: boolean;
     filterGroups?: FilterGroup[];
     onFilterChange?: (key: string, value: string) => void;
@@ -31,6 +33,11 @@
     viewMode?: ViewMode;
     onViewModeChange?: (mode: ViewMode) => void;
   } = $props();
+
+  function handleSearchChange(text: string) {
+    searchText = text;
+    onSearchChange?.(text);
+  }
 </script>
 
 <div class="flex flex-col gap-y-0 w-full">
@@ -44,7 +51,11 @@
         <TableToolbarSort {sortDirection} {onSortToggle} />
       {/if}
 
-      <TableToolbarSearch bind:searchText disabled={searchDisabled} />
+      <TableToolbarSearch
+        {searchText}
+        onSearchChange={handleSearchChange}
+        disabled={searchDisabled}
+      />
 
       {#if showViewToggle}
         <TableToolbarViewToggle {viewMode} {onViewModeChange} />

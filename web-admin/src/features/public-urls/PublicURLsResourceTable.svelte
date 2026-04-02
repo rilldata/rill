@@ -82,7 +82,8 @@
 
 <div class="flex flex-col gap-y-3 w-full">
   <TableToolbar
-    bind:searchText
+    {searchText}
+    onSearchChange={(text) => (searchText = text)}
     searchDisabled={data.length === 0}
     {sortDirection}
     onSortToggle={handleSortToggle}
