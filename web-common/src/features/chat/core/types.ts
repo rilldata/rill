@@ -58,6 +58,7 @@ export const ToolName = {
 
   // Common tools
   NAVIGATE: "navigate",
+  REQUEST_CONNECTOR_FIELDS: "request_connector_fields",
 } as const;
 
 // =============================================================================

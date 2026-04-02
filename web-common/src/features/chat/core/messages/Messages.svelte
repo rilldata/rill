@@ -15,6 +15,7 @@
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
+  import RequestConnectorFieldsBlock from "@rilldata/web-common/features/chat/core/messages/request-connector-fields/RequestConnectorFieldsBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -147,6 +148,12 @@
         <FileDiffBlock {block} {tools} />
       {:else if block.type === "simple-tool-call-block"}
         <SimpleToolCallBlock {block} {tools} />
+      {:else if block.type === "request-connector-fields-block"}
+        <RequestConnectorFieldsBlock
+          conversation={currentConversation}
+          {block}
+          {tools}
+        />
       {/if}
     {/each}
   {/if}

@@ -76,6 +76,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &ListBuckets{Runtime: rt})
 	RegisterTool(r, &ListBucketObjects{Runtime: rt})
 
+	RegisterTool(r, &RequestConnectorFields{Runtime: rt})
 	RegisterTool(r, &Navigate{})
 
 	return r

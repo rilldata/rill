@@ -3,7 +3,7 @@ import { superForm, defaults } from "sveltekit-superforms";
 
 import { createSchemasafeValidator } from "./jsonSchemaValidator";
 import { getConnectorSchema } from "./connector-schemas";
-import type { AddDataFormType } from "./types";
+import type { AddDataFormType, JSONSchemaObject } from "./types";
 import { getSchemaInitialValues } from "../../templates/schema-utils";
 
 type FormData = Record<string, unknown>;
@@ -32,13 +32,16 @@ export function createConnectorForm(args: {
   schemaName: string;
   formType: AddDataFormType;
   onUpdate: (event: { form: { data: FormData; valid: boolean } }) => void;
+  schemaOverride?: JSONSchemaObject;
 }) {
-  const { schemaName, formType, onUpdate } = args;
-  const schema = getConnectorSchema(schemaName);
+  const { schemaName, formType, onUpdate, schemaOverride } = args;
+  const schema = schemaOverride ?? getConnectorSchema(schemaName);
 
   // Don't pass step filter - include defaults for ALL fields so multi-step
   // forms can track source/explorer fields even when starting on connector step
-  const adapter = getValidationSchemaForConnector(schemaName, formType);
+  const adapter = schemaOverride
+    ? createSchemasafeValidator(schemaOverride, formType)
+    : getValidationSchemaForConnector(schemaName, formType);
 
   // Get schema defaults (radio/tabs enums, explicit defaults)
   const schemaDefaults = schema ? getSchemaInitialValues(schema) : {};

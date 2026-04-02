@@ -9,6 +9,7 @@ import {
   FolderTree,
   Pencil,
   CornerDownRight,
+  Plug,
 } from "lucide-svelte";
 import type { ComponentType } from "svelte";
 import Chart from "../../../../../components/icons/Chart.svelte";
@@ -37,6 +38,7 @@ export const TOOL_ICONS: Record<string, ComponentType> = {
 
   // Common tools
   [ToolName.NAVIGATE]: CornerDownRight,
+  [ToolName.REQUEST_CONNECTOR_FIELDS]: Plug,
 };
 
 /**

@@ -31,6 +31,7 @@ import {
 } from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
+import type { RequestConnectorFieldsBlock } from "@rilldata/web-common/features/chat/core/messages/request-connector-fields/request-connector-fields-block.ts";
 
 // =============================================================================
 // TYPES
@@ -42,7 +43,8 @@ export type Block =
   | ChartBlock
   | FileDiffBlock
   | WorkingBlock
-  | SimpleToolCall;
+  | SimpleToolCall
+  | RequestConnectorFieldsBlock;
 
 export type {
   ChartBlock,
@@ -51,6 +53,7 @@ export type {
   ThinkingBlock,
   WorkingBlock,
   SimpleToolCall,
+  RequestConnectorFieldsBlock,
 };
 
 // =============================================================================
@@ -76,6 +79,7 @@ export function transformToBlocks(
 
   // Accumulator for messages going into the current thinking block
   let thinkingMessages: V1Message[] = [];
+  let requestConnectorBlocks: RequestConnectorFieldsBlock[] = [];
 
   function flushThinking(isComplete: boolean): void {
     if (thinkingMessages.length > 0) {
@@ -102,6 +106,10 @@ export function transformToBlocks(
         const feedback =
           msg.role === "assistant" ? feedbackMap.get(msg.id!) : undefined;
         blocks.push(createTextBlock(msg, feedback));
+        if (requestConnectorBlocks.length > 0) {
+          blocks.push(...requestConnectorBlocks);
+          requestConnectorBlocks = [];
+        }
         break;
       }
 
@@ -112,7 +120,10 @@ export function transformToBlocks(
       case "block": {
         flushThinking(true);
         const block = routing.config.createBlock?.(msg, resultMap.get(msg.id));
-        if (block) {
+        if (!block) break;
+        if (block.type === "request-connector-fields-block") {
+          requestConnectorBlocks.push(block);
+        } else {
           blocks.push(block);
         }
         break;
