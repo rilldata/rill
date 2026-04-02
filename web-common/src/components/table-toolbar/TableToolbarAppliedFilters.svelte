@@ -29,7 +29,7 @@
     <div class="flex flex-row items-center gap-2 flex-wrap">
       {#each appliedFilters as filter (filter.key)}
         <span
-          class="inline-flex items-center gap-x-1 h-7 px-2 rounded-sm border bg-white text-xs font-medium text-fg-primary"
+          class="inline-flex items-center gap-x-1 h-7 px-2 rounded-sm border bg-surface-background text-xs font-medium text-fg-primary"
         >
           {filter.label}
           <button
