@@ -1,6 +1,7 @@
 <script lang="ts">
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
+  import ResourceTableToolbar from "@rilldata/web-common/features/resources/ResourceTableToolbar.svelte";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
@@ -49,13 +50,6 @@
       id: "lastRun",
       accessorFn: (row) => row.alert.state.currentExecution?.executionTime,
     },
-    // {
-    //   id: "actions",
-    //   cell: ({ row }) =>
-    //     renderComponent(AlertsTableActionCell, {
-    //       title: row.original.name,
-    //     }),
-    // },
   ];
 
   const columnVisibility = {
@@ -64,7 +58,16 @@
   };
 </script>
 
-<ResourceList {columns} {data} {columnVisibility} kind="alert">
+<ResourceList
+  {columns}
+  {data}
+  {columnVisibility}
+  kind="alert"
+  initialSorting={[{ id: "lastRun", desc: true }]}
+>
+  <svelte:fragment slot="toolbar">
+    <ResourceTableToolbar sortColumnId="lastRun" />
+  </svelte:fragment>
   <ResourceListEmptyState
     slot="empty"
     icon={AlertIcon}

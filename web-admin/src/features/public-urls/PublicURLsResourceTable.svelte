@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
-  import { Search } from "@rilldata/web-common/components/search";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { SortDirection } from "@rilldata/web-common/components/table-toolbar/types";
   import { ExternalLinkIcon } from "lucide-svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
   import type { V1Expression } from "@rilldata/web-admin/client";
@@ -15,6 +16,7 @@
   export let onDelete: (deletedTokenId: string) => void;
 
   let searchText = "";
+  let sortDirection: SortDirection = "newest";
 
   $: filteredData = data.filter((row) => {
     if (!searchText) return true;
@@ -24,6 +26,16 @@
     const creator = String(row.attributes?.name || "").toLowerCase();
     return label.includes(q) || dashboard.includes(q) || creator.includes(q);
   });
+
+  $: sortedData = [...filteredData].sort((a, b) => {
+    const aTime = new Date(a.createdOn ?? 0).getTime();
+    const bTime = new Date(b.createdOn ?? 0).getTime();
+    return sortDirection === "newest" ? bTime - aTime : aTime - bTime;
+  });
+
+  function handleSortChange(direction: SortDirection) {
+    sortDirection = direction;
+  }
 
   function formatDate(value: string | undefined) {
     if (!value) return "—";
@@ -69,16 +81,14 @@
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
-  <Search
-    placeholder="Search"
-    bind:value={searchText}
-    large
-    autofocus={false}
-    showBorderOnFocus={false}
-    disabled={data.length === 0}
+  <TableToolbar
+    bind:searchText
+    searchDisabled={data.length === 0}
+    {sortDirection}
+    onSortChange={handleSortChange}
   />
 
-  {#if filteredData.length === 0 && data.length === 0}
+  {#if sortedData.length === 0 && data.length === 0}
     <div class="border rounded-lg bg-surface-background">
       <div class="text-center py-16">
         <ResourceListEmptyState
@@ -91,7 +101,7 @@
         </ResourceListEmptyState>
       </div>
     </div>
-  {:else if filteredData.length === 0}
+  {:else if sortedData.length === 0}
     <div class="border rounded-lg bg-surface-background">
       <div class="text-center py-16 text-fg-secondary text-sm font-semibold">
         No public URLs match your search
@@ -112,7 +122,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each filteredData as row (row.id)}
+          {#each sortedData as row (row.id)}
             {@const filters = getFilters(row.metricsViewFilters)}
             <tr class="table-row">
               <td class="table-cell font-medium">

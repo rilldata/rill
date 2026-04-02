@@ -9,18 +9,16 @@
   } from "@rilldata/web-admin/features/projects/environment-variables/types";
   import { getEnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/utils";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import { Search } from "@rilldata/web-common/components/search";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { SortDirection } from "@rilldata/web-common/components/table-toolbar/types";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
 
   let open = false;
   let searchText = "";
-  let isDropdownOpen = false;
   let filterByEnvironment: EnvironmentTypes = EnvironmentType.UNDEFINED;
+  let sortDirection: SortDirection = "newest";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -47,34 +45,36 @@
   );
 
   $: filteredVariables = searchedVariables.filter((variable) => {
-    // Show all variables
     if (filterByEnvironment === EnvironmentType.UNDEFINED) {
       return true;
     }
-    // Includes development
     if (filterByEnvironment === EnvironmentType.DEVELOPMENT) {
       return (
         variable.environment === EnvironmentType.DEVELOPMENT ||
         variable.environment === EnvironmentType.UNDEFINED
       );
     }
-    // Includes production
     if (filterByEnvironment === EnvironmentType.PRODUCTION) {
       return (
         variable.environment === EnvironmentType.PRODUCTION ||
         variable.environment === EnvironmentType.UNDEFINED
       );
     }
-    // No match
     return false;
   });
 
-  $: sortedVariables = filteredVariables.sort((a, b) => {
-    return new Date(b.updatedOn).getTime() - new Date(a.updatedOn).getTime();
+  $: sortedVariables = [...filteredVariables].sort((a, b) => {
+    const aTime = new Date(a.updatedOn).getTime();
+    const bTime = new Date(b.updatedOn).getTime();
+    return sortDirection === "newest" ? bTime - aTime : aTime - bTime;
   });
 
-  function handleFilterByEnvironment(environment: EnvironmentTypes) {
-    filterByEnvironment = environment;
+  function handleFilterChange(_key: string, value: string) {
+    filterByEnvironment = value as EnvironmentTypes;
+  }
+
+  function handleSortChange(direction: SortDirection) {
+    sortDirection = direction;
   }
 
   $: environmentLabel =
@@ -88,6 +88,19 @@
     filterByEnvironment === EnvironmentType.UNDEFINED
       ? "No environment variables"
       : `No environment variables for ${environmentLabel}`;
+
+  $: filterGroups = [
+    {
+      label: "Filter by environment",
+      key: "environment",
+      options: [
+        { value: EnvironmentType.UNDEFINED, label: "All environments" },
+        { value: EnvironmentType.PRODUCTION, label: "Production" },
+        { value: EnvironmentType.DEVELOPMENT, label: "Development" },
+      ],
+      selected: filterByEnvironment,
+    },
+  ];
 </script>
 
 <div class="flex flex-col w-full overflow-hidden">
@@ -112,64 +125,19 @@
             </a>
           </p>
         </div>
-        <div class="flex flex-row gap-x-4">
-          <Search
-            placeholder="Search"
-            bind:value={searchText}
-            large
-            autofocus={false}
-            showBorderOnFocus={false}
-            disabled={projectVariables.length === 0}
-          />
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger
-              class={`min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input  ${
-                isDropdownOpen ? "bg-gray-200" : "hover:bg-surface-hover"
-              } px-2 py-1 ${
-                projectVariables.length === 0
-                  ? "opacity-50 cursor-not-allowed pointer-events-none"
-                  : ""
-              }`}
-            >
-              <span class="text-fg-secondary font-medium"
-                >{environmentLabel}</span
-              >
-              {#if isDropdownOpen}
-                <CaretUpIcon size="12px" />
-              {:else}
-                <CaretDownIcon size="12px" />
-              {/if}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="start">
-              <DropdownMenu.Label class="uppercase"
-                >Filter by environment</DropdownMenu.Label
-              >
-              <DropdownMenu.CheckboxItem
-                checked={filterByEnvironment === EnvironmentType.UNDEFINED}
-                onclick={() =>
-                  handleFilterByEnvironment(EnvironmentType.UNDEFINED)}
-              >
-                All environments
-              </DropdownMenu.CheckboxItem>
-              <DropdownMenu.CheckboxItem
-                checked={filterByEnvironment === EnvironmentType.PRODUCTION}
-                onclick={() =>
-                  handleFilterByEnvironment(EnvironmentType.PRODUCTION)}
-              >
-                Production
-              </DropdownMenu.CheckboxItem>
-              <DropdownMenu.CheckboxItem
-                checked={filterByEnvironment === EnvironmentType.DEVELOPMENT}
-                onclick={() =>
-                  handleFilterByEnvironment(EnvironmentType.DEVELOPMENT)}
-              >
-                Development
-              </DropdownMenu.CheckboxItem>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+        <div class="flex flex-row gap-x-4 items-center">
+          <div class="flex-1">
+            <TableToolbar
+              bind:searchText
+              searchDisabled={projectVariables.length === 0}
+              {filterGroups}
+              onFilterChange={handleFilterChange}
+              {sortDirection}
+              onSortChange={handleSortChange}
+            />
+          </div>
           <Button type="primary" large onClick={() => (open = true)}>
             <Plus size="16px" />
-            <!-- <span>Add environment variable</span> -->
           </Button>
         </div>
         <EnvironmentVariablesTable
