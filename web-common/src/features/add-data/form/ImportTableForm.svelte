@@ -163,7 +163,7 @@
   id={FormId}
   class="flex flex-col h-full overflow-y-auto"
 >
-  <div class="flex flex-col gap-2 px-6 pt-6" class:pb-3={!supportsModeling}>
+  <div class="flex flex-col gap-2 px-6 pt-4" class:pb-3={!supportsModeling}>
     {#if supportsModeling}
       <div>Pick a table or input your SQL to power your first dashboard</div>
       <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
@@ -211,7 +211,7 @@
   {/if}
 
   <div class="flex flex-row px-6 py-4 gap-2 border-t">
-    <Button onClick={onBack} type="secondary">Back</Button>
+    <Button onClick={onBack} type="tertiary">Back</Button>
     <div class="grow"></div>
     <Button
       disabled={$submitting || isSubmitDisabled}

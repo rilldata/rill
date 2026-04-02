@@ -10,7 +10,7 @@
   $: isImportStep = addDataStep === AddDataStep.Import;
 </script>
 
-<div class:my-auto={isImportStep}>
+<div class="my-auto">
   {#if !isImportStep}
     <div class="text-base font-semibold text-fg-secondary">Getting started</div>
     <div class="text-3xl font-bold text-fg-accent">Connect your data</div>

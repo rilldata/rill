@@ -6,7 +6,7 @@
   import ConnectYourDataWidget from "@rilldata/web-common/features/add-data/ConnectYourDataWidget.svelte";
 </script>
 
-<div class="py-20">
+<div class="my-auto">
   <TitleContent />
 
   <div class="flex flex-col py-6 gap-y-[28px]">

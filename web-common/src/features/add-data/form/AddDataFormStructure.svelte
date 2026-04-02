@@ -194,8 +194,10 @@
         disabled={runningBackAction}
         loading={runningBackAction}
         onClick={() => void handleBack()}
-        type="secondary">Back</Button
+        type="tertiary"
       >
+        Back
+      </Button>
 
       <div class="flex gap-2">
         {#if onSave && isSaveButtonEnabled}
