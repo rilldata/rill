@@ -32,6 +32,7 @@
   export let measures: MeasureColumnProps;
   export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
+  export let fullWidth = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -160,7 +161,12 @@
     );
   }
 
-  function shouldShowHeaderRightBorder(header: any, index: number): boolean {
+  function shouldShowHeaderRightBorder(
+    header: any,
+    index: number,
+    total: number,
+  ): boolean {
+    if (index === total - 1) return false;
     const isMeasure = isMeasureColumn(header, index);
     if (!isMeasure) return true;
 
@@ -188,7 +194,8 @@
     }, "");
   }
 
-  function shouldShowRightBorder(index: number): boolean {
+  function shouldShowRightBorder(index: number, total: number): boolean {
+    if (index === total - 1) return false;
     let offset = 0;
     if (!hasRowDimension) offset = 1;
     return (index + offset) % measureCount === 0;
@@ -265,7 +272,8 @@
   class:with-totals-row={!!totalsRow}
   class:with-measures={hasMeasures}
   role="presentation"
-  style:width="{totalLength + rowDimensionWidth}px"
+  style:width={fullWidth ? "100%" : "{totalLength + rowDimensionWidth}px"}
+  style:min-width={fullWidth ? "{totalLength + rowDimensionWidth}px" : undefined}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
   onmouseleave={onTableLeave}
@@ -299,7 +307,7 @@
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
-              class:border-r={shouldShowHeaderRightBorder(header, i)}
+              class:border-r={shouldShowHeaderRightBorder(header, i, headerGroup.headers.length)}
               onclick={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
@@ -343,7 +351,7 @@
             class="ui-copy-number cell truncate group/cell"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
-            class:border-r={shouldShowRightBorder(i)}
+            class:border-r={shouldShowRightBorder(i, cells.length)}
             data-value={tooltipValue}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}

@@ -29,6 +29,7 @@
   export let dataRows: PivotDataRow[];
   export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
+  export let fullWidth = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -94,6 +95,9 @@
   }
 
   function hasBorderRight(columnId: string): boolean {
+    // Last column should not have a right border
+    if (headers.length > 0 && headers[headers.length - 1].column.id === columnId)
+      return false;
     if (!hasMeasureContextColumns) return true;
     const measureIndex = measures.findIndex((m) => m.name === columnId);
     if (measureIndex === -1) return true;
@@ -133,7 +137,8 @@
 
 <table
   role="presentation"
-  style:width="{totalLength}px"
+  style:width={fullWidth ? "100%" : "{totalLength}px"}
+  style:min-width={fullWidth ? "{totalLength}px" : undefined}
   class:with-measure={measures.length > 0}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
