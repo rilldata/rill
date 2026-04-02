@@ -3,6 +3,7 @@ import {
   createRuntimeServiceGetInstance,
   createRuntimeServiceListTemplates,
   type V1Connector,
+  type V1ConnectorDriver,
   type V1Template,
 } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
@@ -275,6 +276,40 @@ export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   return Object.values(schema.properties).some(
     (p) => p["x-step"] === "explorer",
   );
+}
+
+/**
+ * Map a connector category to its docs URL path segment.
+ */
+export function getDocsCategory(
+  category: ConnectorCategory | undefined,
+): string {
+  if (category === "ai") return "services";
+  if (category === "olap") return "olap";
+  return "data-source";
+}
+
+/**
+ * Build a V1ConnectorDriver-compatible object from a schema name.
+ */
+export function toConnectorDriver(
+  schemaName: string,
+): V1ConnectorDriver | null {
+  const schema = getConnectorSchema(schemaName);
+  if (!schema) return null;
+  const category = schema["x-category"];
+  const backendName = getBackendConnectorName(schemaName);
+  return {
+    name: backendName,
+    displayName: schema.title ?? schemaName,
+    docsUrl: `https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${backendName}`,
+    implementsObjectStore: category === "objectStore",
+    implementsOlap: category === "olap",
+    implementsSqlStore: category === "sqlStore",
+    implementsWarehouse: category === "warehouse",
+    implementsFileStore: category === "fileStore",
+    implementsAi: category === "ai",
+  };
 }
 
 /**
