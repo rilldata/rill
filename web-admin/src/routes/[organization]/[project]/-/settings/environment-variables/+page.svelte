@@ -130,7 +130,7 @@
             </a>
           </p>
         </div>
-        <div class="flex flex-row gap-x-4 items-center">
+        <div class="flex flex-row gap-x-4 items-start">
           <div class="flex-1">
             <TableToolbar
               {searchText}

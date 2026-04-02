@@ -16,7 +16,7 @@
 </script>
 
 <button
-  class="flex flex-row items-center gap-x-1.5 text-sm font-medium text-fg-secondary hover:text-fg-primary cursor-pointer"
+  class="flex flex-row items-center gap-x-1.5 text-sm font-medium text-fg-primary hover:text-fg-primary cursor-pointer"
   onclick={onSortToggle}
 >
   <span>{sortLabel}</span>

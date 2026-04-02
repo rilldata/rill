@@ -1,7 +1,6 @@
 <script lang="ts">
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
-  import ResourceTableToolbar from "@rilldata/web-common/features/resources/ResourceTableToolbar.svelte";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
@@ -11,6 +10,16 @@
   export let organization: string;
   export let project: string;
 
+  /**
+   * Table column definitions.
+   * - "composite": Renders all dashboard data in a single cell.
+   * - Others: Used for sorting and filtering but not displayed.
+   *
+   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
+   * Relevant issues:
+   * - https://github.com/TanStack/table/issues/4241
+   * - https://github.com/TanStack/table/issues/4302
+   */
   const columns: ColumnDef<V1Resource, string>[] = [
     {
       id: "composite",
@@ -40,6 +49,13 @@
       id: "lastRun",
       accessorFn: (row) => row.alert.state.currentExecution?.executionTime,
     },
+    // {
+    //   id: "actions",
+    //   cell: ({ row }) =>
+    //     renderComponent(AlertsTableActionCell, {
+    //       title: row.original.name,
+    //     }),
+    // },
   ];
 
   const columnVisibility = {
@@ -48,16 +64,7 @@
   };
 </script>
 
-<ResourceList
-  {columns}
-  {data}
-  {columnVisibility}
-  kind="alert"
-  initialSorting={[{ id: "lastRun", desc: true }]}
->
-  <svelte:fragment slot="toolbar">
-    <ResourceTableToolbar sortColumnId="lastRun" />
-  </svelte:fragment>
+<ResourceList {columns} {data} {columnVisibility} kind="alert">
   <ResourceListEmptyState
     slot="empty"
     icon={AlertIcon}

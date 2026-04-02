@@ -46,15 +46,15 @@
     </div>
 
     <div class="flex flex-row items-center gap-x-3">
-      {#if showSort}
-        <TableToolbarSort {sortDirection} {onSortToggle} />
-      {/if}
-
       <TableToolbarSearch
         {searchText}
         onSearchChange={handleSearchChange}
         disabled={searchDisabled}
       />
+
+      {#if showSort}
+        <TableToolbarSort {sortDirection} {onSortToggle} />
+      {/if}
 
       {#if showViewToggle}
         <TableToolbarViewToggle {viewMode} {onViewModeChange} />
