@@ -390,7 +390,7 @@
 <div
   role="grid"
   tabindex="0"
-  on:mouseleave={resetHighlight}
+  onmouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
   class="w-full relative h-full select-none pl-4 bg-surface-base"

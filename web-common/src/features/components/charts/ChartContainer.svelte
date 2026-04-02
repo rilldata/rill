@@ -18,6 +18,7 @@
   import { getContext, hasContext } from "svelte";
   import type { Readable, Writable } from "svelte/store";
   import { derived, readable } from "svelte/store";
+  import type { View } from "vega-typings";
   import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
@@ -38,6 +39,7 @@
   export let project: string | undefined = undefined;
 
   const client = useRuntimeClient();
+  let view: View;
 
   let chartProvider: ChartProvider;
   $: {
@@ -175,6 +177,7 @@
           {themeMode}
           theme={currentTheme}
           isCanvas={true}
+          bind:view
         />
       </div>
     </div>

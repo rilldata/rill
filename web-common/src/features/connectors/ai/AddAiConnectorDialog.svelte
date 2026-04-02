@@ -181,9 +181,10 @@
           {/if}
         </div>
         <SelectPrimitive.Root
-          selected={{ value: schemaName }}
-          onSelectedChange={(s) => {
-            if (s?.value) handleProviderChange(s.value);
+          type="single"
+          value={schemaName}
+          onValueChange={(val) => {
+            if (val) handleProviderChange(val);
           }}
         >
           <SelectPrimitive.Trigger
@@ -248,10 +249,12 @@
     </div>
 
     <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} type="secondary" disabled={saving}
-          >Cancel</Button
-        >
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <Button {...props} large type="secondary" disabled={saving}
+            >Cancel</Button
+          >
+        {/snippet}
       </AlertDialog.Cancel>
 
       <!-- Use a plain button instead of AlertDialog.Action to prevent

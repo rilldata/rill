@@ -1,4 +1,5 @@
 import { expect, type Locator } from "@playwright/test";
+import { clickPreviewButton } from "../utils/exploreHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
 
@@ -19,7 +20,7 @@ test.describe("leaderboard and dimension table sorting", () => {
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
     await page.waitForURL(new RegExp("/explore/AdBids_metrics_explore"));
 
     /**

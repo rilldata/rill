@@ -2,7 +2,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Progress as ProgressPrimitive } from "bits-ui";
 
-  type $$Props = ProgressPrimitive.Props;
+  type $$Props = ProgressPrimitive.RootProps;
 
   let className: $$Props["class"] = undefined;
   export let max: $$Props["max"] = 100;

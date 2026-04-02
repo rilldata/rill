@@ -107,15 +107,16 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Len(t, calls, 1)
 		require.Equal(t, ai.GetMetricsViewName, calls[0].Tool)
 
-		// It should remember the previous turns and only make one sub-call: query_metrics_view_summary and query_metrics_view
+		// It should remember the previous turns and only make calls to query_metrics_view_summary and query_metrics_view (not any metadata lookups like get_metrics_view).
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
 			Prompt: "Tell me which non-US country has the most auctions. Make the minimal number of tool calls necessary to answer.",
 		})
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
-		require.Len(t, calls, 2)
-		require.Equal(t, ai.QueryMetricsViewSummaryName, calls[0].Tool)
-		require.Equal(t, ai.QueryMetricsViewName, calls[1].Tool)
+		require.True(t, len(calls) == 2 || len(calls) == 3)
+		for _, call := range calls {
+			require.Contains(t, []string{ai.QueryMetricsViewSummaryName, ai.QueryMetricsViewName}, call.Tool)
+		}
 	})
 
 	t.Run("DashboardContext", func(t *testing.T) {

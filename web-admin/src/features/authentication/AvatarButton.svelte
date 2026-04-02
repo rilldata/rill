@@ -54,7 +54,9 @@
     };
   });
 
-  // Keep src in sync if the user query resolves or changes after mount
+  // Keep src in sync if the user query resolves or changes after mount.
+  // sharedImg is module-level (shared singleton); reactivity is driven by $user.data.
+  // svelte-ignore reactive_declaration_module_script_dependency
   $: if (
     sharedImg &&
     $user.data?.user?.photoUrl &&
@@ -80,9 +82,9 @@
 
 <DropdownMenu.Root bind:open={primaryMenuOpen}>
   <DropdownMenu.Trigger class="flex-none">
-    <div bind:this={imgContainer} class="h-7 w-7" />
+    <div bind:this={imgContainer} class="h-7 w-7"></div>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content>
+  <DropdownMenu.Content align="end">
     {#if params.organization && params.project}
       <ProjectAccessControls
         organization={params.organization}
@@ -91,7 +93,7 @@
         <svelte:fragment slot="manage-project">
           <DropdownMenu.Sub bind:open={subMenuOpen}>
             <DropdownMenu.SubTrigger
-              on:click={() => {
+              onclick={() => {
                 subMenuOpen = !subMenuOpen;
               }}
             >
@@ -143,9 +145,9 @@
     >
       Join us on Discord
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={handlePylon}>
+    <DropdownMenu.Item onclick={handlePylon}>
       Contact Rill support
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={redirectToLogout}>Logout</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={redirectToLogout}>Logout</DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

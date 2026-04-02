@@ -6,7 +6,6 @@
   - "block": Before output blocks like ChartBlock/FileDiffBlock (always complete)
 -->
 <script lang="ts">
-  import { builderActions, getAttrs } from "bits-ui";
   import CodeBlock from "../../../../../components/code-block/CodeBlock.svelte";
   import * as Collapsible from "../../../../../components/collapsible";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
@@ -75,40 +74,38 @@
     bind:open={isExpanded}
     class="tool-call {variant === 'block' ? 'block' : 'inline'}"
   >
-    <Collapsible.Trigger asChild let:builder>
-      <button
-        class="tool-button"
-        {...getAttrs([builder])}
-        use:builderActions={{ builders: [builder] }}
-      >
-        <div class="tool-icon">
-          {#if !hasResult && !isExpanded}
-            <LoadingSpinner size="14px" />
-          {:else if isExpanded}
-            <CaretDownIcon size="14" />
-          {:else}
-            <svelte:component this={ToolIcon} size="14" />
-          {/if}
-        </div>
-        <div class="tool-name">
-          {toolDisplayName}
-        </div>
-      </button>
+    <Collapsible.Trigger>
+      {#snippet child({ props })}
+        <button {...props} class="tool-button">
+          <div class="tool-icon">
+            {#if !hasResult && !isExpanded}
+              <LoadingSpinner size="14px" />
+            {:else if isExpanded}
+              <CaretDownIcon size="14" />
+            {:else}
+              <svelte:component this={ToolIcon} size="14" />
+            {/if}
+          </div>
+          <div class="tool-name">
+            {toolDisplayName}
+          </div>
+        </button>
+      {/snippet}
     </Collapsible.Trigger>
 
-    <Collapsible.Content transition={undefined} class="tool-content">
+    <Collapsible.Content class="tool-content">
       <div class="tool-tabs">
         <button
           class="tool-tab"
           class:active={activeTab === "request"}
-          on:click={() => (activeTab = "request")}
+          onclick={() => (activeTab = "request")}
         >
           Request
         </button>
         <button
           class="tool-tab"
           class:active={activeTab === "response"}
-          on:click={() => (activeTab = "response")}
+          onclick={() => (activeTab = "response")}
         >
           {isError ? "Error" : "Response"}
         </button>

@@ -1,18 +1,13 @@
 <script lang="ts">
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import type { Builder } from "bits-ui";
-  import { builderActions, getAttrs } from "bits-ui";
-
   export let active = false;
   export let disabled = false;
   export let label: string | undefined = undefined;
-  export let builders: Builder[] = [];
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 <button
-  {...getAttrs(builders)}
-  use:builderActions={{ builders }}
   {disabled}
   aria-label={label}
   class:bg-gray-200={active}
@@ -23,7 +18,7 @@
   max-content
   {$$slots['context'] ? 'max-content' : ''}
   {disabled ? '' : 'max-content'}"
-  on:click
+  {onclick}
 >
   {#if $$slots["icon"]}
     <span class="text-fg-secondary"><slot name="icon" /></span>

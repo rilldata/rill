@@ -153,7 +153,7 @@
       invalidateAll: false,
     },
   );
-  $: ({ form, errors, enhance, submitting, tainted, validate } =
+  $: ({ form, errors, enhance, submitting, submit, tainted, validate } =
     superFormInstance);
 
   $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
@@ -287,7 +287,16 @@
   }
 </script>
 
-<form autocomplete="off" class="flex flex-col gap-y-3" id={formId} use:enhance>
+<form
+  autocomplete="off"
+  class="flex flex-col gap-y-3"
+  id={formId}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
+  use:enhance
+>
   <DialogTitle
     class="px-6 py-4 text-fg-primary text-lg font-semibold leading-7 flex flex-row items-center justify-between"
   >
@@ -318,7 +327,7 @@
     </div>
   </DialogTabs.Root>
   <div class="px-6 py-3 flex items-center gap-x-2">
-    <div class="grow" />
+    <div class="grow"></div>
     {#if currentTabIndex === 0}
       <Button onClick={handleCancel} type="secondary">Cancel</Button>
     {:else}

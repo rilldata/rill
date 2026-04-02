@@ -311,7 +311,7 @@
   <regular-table
     class="w-full h-full tdd-table text-fg-muted bg-surface-base"
     bind:this={table}
-  />
+  ></regular-table>
 </div>
 
 <style lang="postcss">

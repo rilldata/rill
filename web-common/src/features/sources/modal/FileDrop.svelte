@@ -38,10 +38,10 @@
             olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
           });
 
-          // Race condition: invalidate("init") must be called before we navigate to
-          // `/files/${newFilePath}`. invalidate("init") is also called in the
+          // Race condition: invalidate("app:init") must be called before we navigate to
+          // `/files/${newFilePath}`. invalidate("app:init") is also called in the
           // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-          await invalidate("init");
+          await invalidate("app:init");
         }
 
         const yaml = compileLocalFileSourceYAML(filePath);
@@ -61,12 +61,30 @@
 <Overlay bg="rgba(0,0,0,.6)">
   <div
     class="w-screen h-screen grid place-content-center"
-    on:dragenter|preventDefault|stopPropagation
-    on:dragleave|preventDefault|stopPropagation
-    on:dragover|preventDefault|stopPropagation
-    on:drag|preventDefault|stopPropagation
-    on:drop|preventDefault|stopPropagation={handleSourceDrop}
-    on:mouseup|preventDefault|stopPropagation={() => {
+    ondragenter={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondragleave={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondragover={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondrag={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+    ondrop={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSourceDrop(e);
+    }}
+    onmouseup={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
       showDropOverlay = false;
     }}
     role="presentation"
