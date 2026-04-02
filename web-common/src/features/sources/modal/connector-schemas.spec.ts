@@ -316,5 +316,4 @@ describe("connector-schemas", () => {
       );
     });
   });
-
 });
