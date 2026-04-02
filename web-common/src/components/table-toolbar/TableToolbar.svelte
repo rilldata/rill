@@ -18,7 +18,7 @@
     onSortToggle,
     showSort = true,
     showViewToggle = false,
-    viewMode = $bindable("list"),
+    viewMode = "list" as ViewMode,
     onViewModeChange,
     children,
   }: {
@@ -36,10 +36,6 @@
     onViewModeChange?: (mode: ViewMode) => void;
     children?: Snippet;
   } = $props();
-
-  function handleSearchChange(text: string) {
-    onSearchChange?.(text);
-  }
 </script>
 
 <section class="flex flex-col gap-y-2 w-full">
@@ -49,15 +45,15 @@
     </div>
 
     <div class="flex flex-row items-center gap-x-3">
+      <TableToolbarSearch
+        {searchText}
+        {onSearchChange}
+        disabled={searchDisabled}
+      />
+
       {#if showSort}
         <TableToolbarSort {sortDirection} {onSortToggle} />
       {/if}
-
-      <TableToolbarSearch
-        {searchText}
-        onSearchChange={handleSearchChange}
-        disabled={searchDisabled}
-      />
 
       {#if showViewToggle}
         <TableToolbarViewToggle {viewMode} {onViewModeChange} />

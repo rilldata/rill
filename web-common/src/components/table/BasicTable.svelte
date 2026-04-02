@@ -20,6 +20,7 @@
   export let emptyText = "No data available";
   export let columnLayout = `repeat(${columns.length}, 1fr)`;
   export let rowPadding = "py-3";
+  export let enableSorting = true;
 
   let sorting: SortingState = [];
 
@@ -72,6 +73,7 @@
   const options = writable<TableOptions<any>>({
     data: safeData,
     columns: columns,
+    enableSorting,
     state: {
       sorting,
     },

@@ -25,7 +25,7 @@
     sortColumnId = "",
     showSort = true,
     showViewToggle = false,
-    viewMode = $bindable("list"),
+    viewMode = "list" as ViewMode,
     onViewModeChange,
   }: {
     searchDisabled?: boolean;
@@ -109,6 +109,6 @@
   onSortToggle={handleSortToggle}
   {showSort}
   {showViewToggle}
-  bind:viewMode
+  {viewMode}
   {onViewModeChange}
 />

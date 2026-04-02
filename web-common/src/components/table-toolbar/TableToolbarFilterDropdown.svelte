@@ -16,6 +16,7 @@
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
       class="flex flex-row items-center gap-x-1.5 text-sm font-medium text-fg-primary cursor-pointer"
+      aria-label="Filter options"
     >
       <FilterOutlined size="14" />
       <span>Filter</span>

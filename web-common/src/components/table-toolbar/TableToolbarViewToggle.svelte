@@ -15,7 +15,7 @@
 <div class="flex flex-row border rounded-sm overflow-hidden">
   <button
     class="flex items-center justify-center w-8 h-8 {viewMode === 'grid'
-      ? 'bg-gray-200'
+      ? 'bg-surface-hover'
       : 'bg-input hover:bg-surface-hover'}"
     onclick={() => onViewModeChange?.("grid")}
     aria-label="Grid view"
@@ -26,7 +26,7 @@
   <button
     class="flex items-center justify-center w-8 h-8 border-l {viewMode ===
     'list'
-      ? 'bg-gray-200'
+      ? 'bg-surface-hover'
       : 'bg-input hover:bg-surface-hover'}"
     onclick={() => onViewModeChange?.("list")}
     aria-label="List view"
