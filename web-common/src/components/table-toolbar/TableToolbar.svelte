@@ -35,7 +35,6 @@
   } = $props();
 
   function handleSearchChange(text: string) {
-    searchText = text;
     onSearchChange?.(text);
   }
 </script>
