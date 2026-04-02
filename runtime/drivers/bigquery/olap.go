@@ -220,6 +220,8 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 			// Ingestion-time partitioned: use the pseudo-column.
 			tbl.PartitionColumn = "_PARTITIONTIME"
 		}
+	} else if meta.RangePartitioning != nil {
+		tbl.RangePartitionColumn = meta.RangePartitioning.Field
 	}
 	return tbl, nil
 }

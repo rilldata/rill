@@ -203,6 +203,16 @@ func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStor
 		}
 		// If fetching the latest partition fails or returns empty, proceed without a filter.
 		// For tables with require_partition_filter=true this will error at query time, which is acceptable.
+	} else if olap.Dialect() == drivers.DialectBigQuery && tbl.RangePartitionColumn != "" {
+		maxID, ok, err := q.latestBigQueryRangePartition(ctx, olap)
+		if err == nil && ok {
+			whereClause = fmt.Sprintf(
+				" WHERE %s >= %d",
+				olap.Dialect().EscapeIdentifier(tbl.RangePartitionColumn),
+				maxID,
+			)
+		}
+		// Same as the time-partition case: proceed without a filter if the lookup fails.
 	}
 
 	limitClause := ""
@@ -259,6 +269,47 @@ func (q *TableHead) latestBigQueryPartition(ctx context.Context, olap drivers.OL
 	}
 
 	return parseBigQueryPartitionID(*partitionID)
+}
+
+// latestBigQueryRangePartition queries INFORMATION_SCHEMA.PARTITIONS to find the lower bound of the
+// most recent integer-range partition for the table. This is safe to run even on tables with
+// require_partition_filter=true because INFORMATION_SCHEMA is metadata-only.
+func (q *TableHead) latestBigQueryRangePartition(ctx context.Context, olap drivers.OLAPStore) (int64, bool, error) {
+	var infoSchemaTable string
+	if q.Database != "" {
+		infoSchemaTable = fmt.Sprintf("`%s.%s.INFORMATION_SCHEMA.PARTITIONS`", q.Database, q.DatabaseSchema)
+	} else {
+		infoSchemaTable = fmt.Sprintf("`%s.INFORMATION_SCHEMA.PARTITIONS`", q.DatabaseSchema)
+	}
+
+	sql := fmt.Sprintf(
+		"SELECT MAX(SAFE_CAST(partition_id AS INT64)) FROM %s WHERE table_name = ? AND partition_id NOT IN ('__NULL__', '__UNPARTITIONED__')",
+		infoSchemaTable,
+	)
+
+	rows, err := olap.Query(ctx, &drivers.Statement{
+		Query:            sql,
+		ExecutionTimeout: defaultExecutionTimeout,
+		Args:             []any{q.TableName},
+	})
+	if err != nil {
+		return 0, false, err
+	}
+	defer rows.Close()
+
+	var maxID *int64
+	if rows.Next() {
+		if err := rows.Scan(&maxID); err != nil {
+			return 0, false, err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, false, err
+	}
+	if maxID == nil {
+		return 0, false, nil
+	}
+	return *maxID, true, nil
 }
 
 // parseBigQueryPartitionID converts a BigQuery partition_id string (e.g. "20240315") to a time.Time.

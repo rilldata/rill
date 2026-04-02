@@ -641,7 +641,6 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 	}
 
 	// Store the time dimension's data type so it's available for downstream queries (e.g. Schema validation).
-	// Since this dimension is not in the dimensions list, we add it so LookupDimension can find it with the correct type.
 	e.metricsView.Dimensions = append(e.metricsView.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
 		Name:     e.metricsView.TimeDimension,
 		Column:   e.metricsView.TimeDimension,

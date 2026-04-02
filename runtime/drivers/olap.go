@@ -198,9 +198,10 @@ type OlapTable struct {
 	UnsupportedCols   map[string]string
 	PhysicalSizeBytes int64
 	DDL               string
-	// PartitionColumn is non-empty for time-partitioned tables (Implemented for Bigquery only as of writing).
-	// Note: It is not set if partition exists but it is not time-based.
+	// PartitionColumn is non-empty for time-partitioned tables (implemented for BigQuery only).
 	PartitionColumn string
+	// RangePartitionColumn is non-empty for integer-range-partitioned tables (implemented for BigQuery only).
+	RangePartitionColumn string
 }
 
 // Dialect enumerates OLAP query languages.
