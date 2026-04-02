@@ -16,7 +16,7 @@ test.describe.serial("Alerts", () => {
 
       await adminPage.getByRole("button", { name: "Create alert" }).click();
 
-      const alertForm = adminPage.locator("form#create-alert-form");
+      const alertForm = adminPage.locator("form");
 
       // Select "Last 6 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
@@ -159,7 +159,7 @@ test.describe.serial("Alerts", () => {
       // Edit the alert
       await adminPage.getByRole("button", { name: "Edit" }).click();
 
-      const alertForm = adminPage.locator("form#edit-alert-form");
+      const alertForm = adminPage.locator("form");
 
       // Select "Last 24 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
@@ -291,7 +291,7 @@ test.describe.serial("Alerts", () => {
 
       await adminPage.getByRole("button", { name: "Create alert" }).click();
 
-      const alertForm = adminPage.locator("form#create-alert-form");
+      const alertForm = adminPage.locator("form");
 
       // Select "App Site Name" as split by dimension
       await adminPage.getByLabel("Split by dimension", { exact: true }).click();
@@ -356,7 +356,7 @@ test.describe.serial("Alerts", () => {
       // Edit the alert
       await adminPage.getByRole("button", { name: "Edit" }).click();
 
-      const alertForm = adminPage.locator("form#edit-alert-form");
+      const alertForm = adminPage.locator("form");
 
       // Go to criteria tab
       await alertForm.getByRole("button", { name: "Next" }).click();

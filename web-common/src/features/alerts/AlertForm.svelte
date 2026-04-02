@@ -153,10 +153,9 @@
       invalidateAll: false,
     },
   );
-  $: ({ form, errors, enhance, submitting, submit, tainted, validate } =
+  $: ({ form, formId, errors, enhance, submitting, submit, tainted, validate } =
     superFormInstance);
 
-  $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
   $: dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
 
   const tabs = ["Data", "Criteria", "Delivery"];
@@ -290,7 +289,7 @@
 <form
   autocomplete="off"
   class="flex flex-col gap-y-3"
-  id={formId}
+  id={$formId}
   onsubmit={(e) => {
     e.preventDefault();
     submit(e);
@@ -336,7 +335,7 @@
     {#if currentTabIndex !== 2}
       <Button type="primary" onClick={handleNextTab}>Next</Button>
     {:else}
-      <Button type="primary" disabled={$submitting} form={formId} submitForm>
+      <Button type="primary" disabled={$submitting} form={$formId} submitForm>
         {isCreateForm ? "Create" : "Update"}
       </Button>
     {/if}
