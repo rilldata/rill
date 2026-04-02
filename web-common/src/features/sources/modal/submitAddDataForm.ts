@@ -14,7 +14,10 @@ import {
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
-import { updateRillYAMLWithOlapConnector } from "../../connectors/code-utils";
+import {
+  updateRillYAMLWithAiConnector,
+  updateRillYAMLWithOlapConnector,
+} from "../../connectors/code-utils";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
@@ -27,7 +30,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { sourceIngestionTracker } from "../sources-store";
-import { OLAP_ENGINES } from "./constants";
+import { AI_CONNECTORS, OLAP_ENGINES } from "./constants";
 import { generateTemplate, mergeEnvVars } from "./generate-template";
 
 interface AddDataFormValues {
