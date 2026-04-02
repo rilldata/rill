@@ -22,8 +22,8 @@
   }
 
   function close() {
-    expanded = false;
     searchText = "";
+    expanded = false;
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -31,14 +31,21 @@
       close();
     }
   }
+
+  function handleInput(e: Event) {
+    searchText = (e.target as HTMLInputElement).value;
+  }
 </script>
 
 {#if expanded}
-  <div class="flex flex-row items-center gap-x-1.5 h-9 border rounded-sm bg-input px-2 min-w-[200px]">
+  <div
+    class="flex flex-row items-center gap-x-1.5 h-9 border rounded-sm bg-input px-2 min-w-[200px]"
+  >
     <SearchIcon size="16" className="text-fg-secondary shrink-0" />
     <input
       bind:this={inputRef}
-      bind:value={searchText}
+      value={searchText}
+      oninput={handleInput}
       type="text"
       class="outline-none bg-transparent text-sm text-fg-primary placeholder-fg-secondary flex-1 min-w-0"
       placeholder="Search..."

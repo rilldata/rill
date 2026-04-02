@@ -22,15 +22,19 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       {#each filterGroups as group, i}
-        <DropdownMenu.Label class="uppercase">{group.label}</DropdownMenu.Label>
-        {#each group.options as option}
-          <DropdownMenu.CheckboxItem
-            checked={group.selected === option.value}
-            onclick={() => onFilterChange?.(group.key, option.value)}
+        <DropdownMenu.Group>
+          <DropdownMenu.Label class="uppercase"
+            >{group.label}</DropdownMenu.Label
           >
-            {option.label}
-          </DropdownMenu.CheckboxItem>
-        {/each}
+          {#each group.options as option}
+            <DropdownMenu.CheckboxItem
+              checked={group.selected === option.value}
+              onclick={() => onFilterChange?.(group.key, option.value)}
+            >
+              {option.label}
+            </DropdownMenu.CheckboxItem>
+          {/each}
+        </DropdownMenu.Group>
         {#if i < filterGroups.length - 1}
           <DropdownMenu.Separator />
         {/if}
