@@ -19,6 +19,7 @@ rill start [<path>] [flags]
       --pull-env                  Pull environment variables from Rill Cloud before starting the project (default true)
       --no-open                   Do not open browser
       --verbose                   Sets the log level to debug
+      --preview                   Start in dashboard-only view (no code editor)
       --port int                  Port for HTTP (default 9009)
       --port-grpc int             Port for gRPC (internal) (default 49009)
       --no-ui                     Serve only the backend
