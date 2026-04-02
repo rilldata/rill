@@ -25,9 +25,7 @@
 </script>
 
 {#if appliedFilters.length > 0}
-  <div
-    class="flex flex-row items-center justify-between gap-x-2 h-9"
-  >
+  <div class="flex flex-row items-center justify-between gap-x-2 h-9">
     <div class="flex flex-row items-center gap-2 flex-wrap">
       {#each appliedFilters as filter (filter.key)}
         <span

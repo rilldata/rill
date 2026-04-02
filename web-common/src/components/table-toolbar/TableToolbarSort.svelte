@@ -10,9 +10,7 @@
     onSortToggle?: () => void;
   } = $props();
 
-  const sortLabel = $derived(
-    sortDirection === "newest" ? "Newest" : "Oldest",
-  );
+  const sortLabel = $derived(sortDirection === "newest" ? "Newest" : "Oldest");
 </script>
 
 <button
