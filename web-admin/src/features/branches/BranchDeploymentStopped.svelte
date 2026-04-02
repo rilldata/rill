@@ -5,12 +5,13 @@
     V1DeploymentStatus,
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
-  import { invalidateDeployments } from "@rilldata/web-admin/features/edit-session/use-edit-session";
+  import { invalidateDeployments } from "./deployment-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
-  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   export let organization: string;
@@ -71,7 +72,9 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     {#if isStopping}
-      <LoadingSpinner />
+      <div class="h-16">
+        <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
+      </div>
       <CtaHeader variant="bold">Deployment is stopping...</CtaHeader>
     {:else}
       <CtaHeader variant="bold">Deployment stopped</CtaHeader>

@@ -1,37 +1,19 @@
-<script context="module" lang="ts">
-  const PollTimeWhenProjectDeploymentPending = 1000;
-  const PollTimeWhenProjectDeploymentError = 5000;
-  const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; // Proactively refetch the JWT before it expires
+<!--
+  Project layout: connects to the project's runtime when the deployment is running,
+  or shows a status page (building, error, stopped, hibernating) when it isn't.
 
-  const baseGetProjectQueryOptions: Partial<
-    CreateQueryOptions<V1GetProjectResponse, RpcStatus>
-  > = {
-    gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
-    refetchInterval: (query) => {
-      const status = query.state.data?.deployment?.status;
-      switch (status) {
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
-          return PollTimeWhenProjectDeploymentPending;
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
-          return PollTimeWhenProjectDeploymentError;
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
-          return PollTimeWhenProjectDeploymentOk;
-        default:
-          return false;
-      }
-    },
-    refetchIntervalInBackground: true, // Keep polling while the tab is hidden (e.g. deploy loader)
-    refetchOnMount: true,
-    refetchOnReconnect: true,
-    refetchOnWindowFocus: true,
-  };
-</script>
-
+  Five dimensions converge here:
+    1. Auth mode: cookie (logged-in), bearer token (public URL), or mock (View As)
+    2. Branch: production vs. feature branch (extracted from URL's @branch segment)
+    3. Deployment lifecycle: running, pending, errored, stopped, hibernating
+    4. Runtime connection: host, instanceId, JWT passed to RuntimeProvider
+    5. Navigation chrome: full header + tabs when running, slim header otherwise
+-->
 <script lang="ts">
-  import { beforeNavigate, goto, onNavigate } from "$app/navigation";
-  import { page } from "$app/stores";
+  import { beforeNavigate, goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { untrack } from "svelte";
+  import type { Snippet } from "svelte";
   import {
     branchPathPrefix,
     extractBranchFromPath,
@@ -44,8 +26,6 @@
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
     getAdminServiceListDeploymentsQueryKey,
-    type RpcStatus,
-    type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
   import {
     isEditPage,
@@ -58,6 +38,8 @@
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
+  import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
+  import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
@@ -68,111 +50,107 @@
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
-  import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
-  import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
-  import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
-  import { onDestroy } from "svelte";
 
-  const user = createAdminServiceGetCurrentUser();
+  let { children }: { children: Snippet } = $props();
 
-  $: ({
-    url: { pathname },
-    params: { organization, project, token },
-    data: pageData,
-  } = $page);
+  // --- Page state ---
 
-  // Branch selector: read from @branch path segment
-  $: activeBranch = extractBranchFromPath($page.url.pathname);
+  let organization = $derived(page.params.organization);
+  let project = $derived(page.params.project);
 
-  // Root layout data used by ProjectHeader / SlimProjectHeader
-  $: organizationPermissions = pageData?.organizationPermissions ?? {};
-  $: planDisplayName = pageData?.planDisplayName;
-  $: organizationLogoUrl = getThemedLogoUrl(
-    $themeControl,
-    pageData?.organization as V1Organization | undefined,
-  );
+  let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
+  let branchPrefix = $derived(branchPathPrefix(activeBranch));
 
-  // Initialize view-as store for this project scope (loads from sessionStorage)
-  $: if (organization && project) {
-    viewAsUserStore.initForProject(organization, project);
-  }
-
-  // Clear view-as state when navigating to a different project
-  onNavigate(({ from, to }) => {
-    const changedProject =
-      !from ||
-      !to ||
-      from.params?.organization !== to.params?.organization ||
-      from.params?.project !== to.params?.project;
-    if (changedProject) {
-      viewAsUserStore.clear();
-    }
-  });
-
+  // Inject the active branch segment into intra-project navigations
   beforeNavigate((nav) =>
     handleBranchNavigation(nav, activeBranch, organization, project, goto),
   );
 
-  // Clear view-as state when unmounting (e.g., navigating to org page)
-  onDestroy(() => {
-    viewAsUserStore.clear();
+  // Token: from route params, or from search params on report/alert pages
+  let token = $derived.by(() => {
+    if (isPublicReportPage(page) || isPublicAlertPage(page)) {
+      return page.url.searchParams.get("token") ?? page.params.token;
+    }
+    return page.params.token;
   });
 
-  $: branchPrefix = branchPathPrefix(activeBranch);
+  let onProjectPage = $derived(isProjectPage(page));
+  let onEditPage = $derived(isEditPage(page));
+  let onPublicURLPage = $derived(isPublicURLPage(page));
 
-  $: onProjectPage = isProjectPage($page);
-  $: onEditPage = isEditPage($page);
-  $: onPublicURLPage = isPublicURLPage($page);
-  $: onPublicReportOrAlertPage =
-    isPublicReportPage($page) || isPublicAlertPage($page);
-  $: if (onPublicReportOrAlertPage) {
-    token = $page.url.searchParams.get("token");
-  }
+  // From root layout; passed through to header components
+  let organizationPermissions = $derived(
+    page.data?.organizationPermissions ?? {},
+  );
+  let planDisplayName = $derived(page.data?.planDisplayName);
+  let organizationLogoUrl = $derived(
+    getThemedLogoUrl(
+      $themeControl,
+      page.data?.organization as V1Organization | undefined,
+    ),
+  );
+
+  // --- View As (admin impersonation of another user's permissions) ---
+
+  let mockedUserId = $derived($viewAsUserStore?.id);
+
+  // Initialize view-as store for current project scope; clear on scope change or unmount
+  $effect(() => {
+    if (organization && project) {
+      viewAsUserStore.initForProject(organization, project);
+    }
+    return () => {
+      viewAsUserStore.clear();
+    };
+  });
+
+  // --- Queries (three auth strategies; cookie and token are mutually exclusive,
+  //     mock is an overlay that runs in parallel when View As is active) ---
+
+  const user = createAdminServiceGetCurrentUser();
 
   /**
    * `GetProject` with default cookie-based auth.
-   * This returns the deployment credentials for the current logged-in user.
-   * When `activeBranch` is set, the branch param is passed to GetProject
-   * so the API returns the branch deployment instead of production.
+   * When `activeBranch` is set, the branch param is passed so the API
+   * returns the branch deployment instead of production.
    *
    * On the edit page, the edit layout manages its own readiness detection,
    * so we skip aggressive polling here to avoid unnecessary requests.
    */
-  $: cookieProjectQuery = createAdminServiceGetProject(
-    organization,
-    project,
-    activeBranch ? { branch: activeBranch } : undefined,
-    {
-      query: onEditPage ? {} : baseGetProjectQueryOptions,
-    },
+  let cookieProjectQuery = $derived(
+    createAdminServiceGetProject(
+      organization,
+      project,
+      activeBranch ? { branch: activeBranch } : undefined,
+      { query: onEditPage ? {} : baseGetProjectQueryOptions },
+    ),
   );
 
   /**
    * `GetProject` with token-based auth.
-   * This returns the deployment credentials for anonymous users who visit a Public URL.
-   * The token is provided via the `[organization]/[project]/-/share/[token]` URL.
+   * Returns deployment credentials for anonymous users visiting a Public URL.
    */
-  $: tokenProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    token,
-    undefined,
-    {
-      query: baseGetProjectQueryOptions,
-    },
+  let tokenProjectQuery = $derived(
+    createAdminServiceGetProjectWithBearerToken(
+      organization,
+      project,
+      token,
+      undefined,
+      { query: baseGetProjectQueryOptions },
+    ),
   );
 
-  $: projectQuery = onPublicURLPage ? tokenProjectQuery : cookieProjectQuery;
+  let projectQuery = $derived(
+    onPublicURLPage ? tokenProjectQuery : cookieProjectQuery,
+  );
 
   /**
-   * `GetDeploymentCredentials`
-   * This returns the deployment credentials for mocked/simulated users (aka the "View As" functionality).
+   * `GetDeploymentCredentials` for "View As" (mocked/simulated user).
    */
-  $: mockedUserId = $viewAsUserStore?.id;
-  $: mockedUserDeploymentCredentialsQuery =
+  let mockedUserDeploymentCredentialsQuery = $derived(
     createAdminServiceGetDeploymentCredentials(
       organization,
       project,
@@ -180,104 +158,92 @@
         userId: mockedUserId,
         ...(activeBranch ? { branch: activeBranch } : {}),
       },
-      {
-        query: {
-          enabled: !!mockedUserId,
-        },
-      },
-    );
-  $: ({ data: mockedUserDeploymentCredentials } =
-    $mockedUserDeploymentCredentialsQuery);
+      { query: { enabled: !!mockedUserId } },
+    ),
+  );
+  let mockedUserDeploymentCredentials = $derived(
+    $mockedUserDeploymentCredentialsQuery.data,
+  );
 
   /**
    * When "View As" is active, fetch the project using the mocked user's JWT.
-   * This returns the impersonated user's `projectPermissions` from the server.
+   * Returns the impersonated user's `projectPermissions` from the server.
    */
-  $: mockedUserProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    mockedUserDeploymentCredentials?.accessToken ?? "",
-    undefined,
-    {
-      query: {
-        enabled: !!mockedUserDeploymentCredentials?.accessToken,
+  let mockedUserProjectQuery = $derived(
+    createAdminServiceGetProjectWithBearerToken(
+      organization,
+      project,
+      mockedUserDeploymentCredentials?.accessToken ?? "",
+      undefined,
+      {
+        query: { enabled: !!mockedUserDeploymentCredentials?.accessToken },
       },
-    },
+    ),
   );
 
-  $: ({ data: projectData, error: projectError } = $projectQuery);
+  // --- Derived state (resolve effective runtime connection from whichever auth mode is active) ---
 
-  /**
-   * Compute effective project permissions.
-   * When "View As" is active, use the impersonated user's permissions (from server).
-   * Otherwise, use the actual user's permissions.
-   */
-  $: effectiveProjectPermissions =
-    mockedUserId && $mockedUserProjectQuery.data?.projectPermissions
-      ? $mockedUserProjectQuery.data.projectPermissions
-      : projectData?.projectPermissions;
+  let projectData = $derived($projectQuery.data);
+  let error = $derived($projectQuery.error as HTTPError);
 
-  $: deploymentStatus = projectData?.deployment?.status;
-  // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
-  $: isProjectAvailable =
+  let deploymentStatus = $derived(projectData?.deployment?.status);
+  let isProjectAvailable = $derived(
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+      deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING,
+  );
 
-  // Refetch list resource query when project query stops fetching.
-  // This needs to happen when deployment status changes from updating to running after a redeploy.
-  let prevDeploymentStatus: V1DeploymentStatus =
-    V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
-  $: if (prevDeploymentStatus !== deploymentStatus) {
-    prevDeploymentStatus = deploymentStatus;
-    if (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING) {
+  let mockUser = $derived(
+    mockedUserId && mockedUserDeploymentCredentials
+      ? {
+          credentials: mockedUserDeploymentCredentials,
+          permissions: $mockedUserProjectQuery.data?.projectPermissions,
+        }
+      : undefined,
+  );
+
+  let runtime = $derived(
+    resolveRuntimeConnection(projectData, mockUser, onPublicURLPage),
+  );
+
+  // --- Side effects (cache invalidation and telemetry) ---
+
+  // Track previous status so we invalidate only on *transitions*, not on every
+  // render where the status happens to be RUNNING.
+  let prevDeploymentStatus: V1DeploymentStatus | undefined = $state(
+    V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
+  );
+  $effect(() => {
+    const currentStatus = deploymentStatus;
+    const prevStatus = untrack(() => prevDeploymentStatus);
+    if (currentStatus === prevStatus) return;
+
+    prevDeploymentStatus = currentStatus;
+
+    if (currentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING) {
       void queryClient.invalidateQueries({
         queryKey: getRuntimeServiceListResourcesQueryKey(
-          projectData.deployment.runtimeInstanceId,
+          projectData?.deployment?.runtimeInstanceId,
         ),
       });
     }
-    // Keep BranchSelector's ListDeployments query in sync with deployment
-    // status changes detected by GetProject (which polls more aggressively).
-    // Using the base key (no params) invalidates all ListDeployments queries.
+
+    // Keep BranchSelector's ListDeployments query in sync
     void queryClient.invalidateQueries({
       queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
     });
-  }
+  });
 
-  $: error = projectError as HTTPError;
-
-  $: authContext = (
-    mockedUserId && mockedUserDeploymentCredentials
-      ? "mock"
-      : onPublicURLPage
-        ? "magic"
-        : "user"
-  ) as AuthContext;
-
-  // Derive effective runtime connection props
-  $: effectiveHost =
-    mockedUserId && mockedUserDeploymentCredentials
-      ? mockedUserDeploymentCredentials.runtimeHost
-      : projectData?.deployment?.runtimeHost;
-  $: effectiveInstanceId =
-    mockedUserId && mockedUserDeploymentCredentials
-      ? mockedUserDeploymentCredentials.instanceId
-      : projectData?.deployment?.runtimeInstanceId;
-  $: effectiveJwt =
-    mockedUserId && mockedUserDeploymentCredentials
-      ? mockedUserDeploymentCredentials.accessToken
-      : projectData?.jwt;
-
-  // Load telemetry client with relevant context
-  $: if (project && $user.data?.user?.id) {
-    metricsService?.loadCloudFields({
-      isDev: window.location.host.startsWith("localhost"),
-      projectId: project,
-      organizationId: organization,
-      userId: $user.data?.user?.id,
-      version: cloudVersion,
-    });
-  }
+  $effect(() => {
+    if (project && $user.data?.user?.id) {
+      metricsService?.loadCloudFields({
+        isDev: window.location.host.startsWith("localhost"),
+        projectId: project,
+        organizationId: organization,
+        userId: $user.data?.user?.id,
+        version: cloudVersion,
+      });
+    }
+  });
 </script>
 
 {#if error}
@@ -285,7 +251,7 @@
     {organization}
     {project}
     readProjects={organizationPermissions?.readProjects}
-    readDev={!!effectiveProjectPermissions?.readDev}
+    readDev={!!runtime.projectPermissions?.readDev}
     primaryBranch={projectData?.project?.primaryBranch}
     {planDisplayName}
     {organizationLogoUrl}
@@ -298,19 +264,21 @@
 {:else if projectData}
   {#if onEditPage}
     <!-- Edit layout manages its own runtime and header -->
-    <slot />
-  {:else if isProjectAvailable && effectiveHost != null && effectiveInstanceId}
-    {#key `${effectiveHost}::${effectiveInstanceId}`}
+    {@render children()}
+  {:else if isProjectAvailable && runtime.host != null && runtime.instanceId}
+    <!-- Re-key on host::instanceId to force RuntimeProvider to tear down and
+         reconnect when the deployment changes (e.g. branch switch, View As). -->
+    {#key `${runtime.host}::${runtime.instanceId}`}
       <RuntimeProvider
-        host={effectiveHost}
-        instanceId={effectiveInstanceId}
-        jwt={effectiveJwt}
-        {authContext}
+        host={runtime.host}
+        instanceId={runtime.instanceId}
+        jwt={runtime.jwt}
+        authContext={runtime.authContext}
       >
         <ProjectHeader
           {organization}
           {project}
-          projectPermissions={effectiveProjectPermissions}
+          projectPermissions={runtime.projectPermissions}
           manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
           manageOrgMembers={organizationPermissions?.manageOrgMembers}
           readProjects={organizationPermissions?.readProjects}
@@ -320,14 +288,14 @@
         />
         {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
           <ProjectTabs
-            projectPermissions={effectiveProjectPermissions}
+            projectPermissions={runtime.projectPermissions}
             {organization}
-            {pathname}
+            pathname={page.url.pathname}
             {project}
             {branchPrefix}
           />
         {/if}
-        <slot />
+        {@render children()}
       </RuntimeProvider>
     {/key}
   {:else}
@@ -335,7 +303,7 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!effectiveProjectPermissions?.readDev}
+      readDev={!!runtime.projectPermissions?.readDev}
       primaryBranch={projectData?.project?.primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
@@ -359,7 +327,7 @@
         {project}
         deploymentId={projectData.deployment.id}
         status={deploymentStatus}
-        canManage={!!effectiveProjectPermissions?.manageDev}
+        canManage={!!runtime.projectPermissions?.manageDev}
         branch={activeBranch}
       />
     {:else}

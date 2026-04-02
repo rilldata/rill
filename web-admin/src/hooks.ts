@@ -8,5 +8,5 @@ import { removeBranchFromPath } from "@rilldata/web-admin/features/branches/bran
  */
 export const reroute: Reroute = ({ url }) => {
   const stripped = removeBranchFromPath(url.pathname);
-  if (stripped !== url.pathname) return stripped;
+  return stripped !== url.pathname ? stripped : url.pathname;
 };

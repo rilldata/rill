@@ -1,45 +1,56 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
-    createAdminServiceTriggerRedeploy,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { useProjectDeployment, useRuntimeVersion } from "../selectors";
+  import {
+    useParserReconcileError,
+    useProjectDeployment,
+    useRuntimeVersion,
+  } from "../selectors";
   import {
     formatEnvironmentName,
     formatConnectorName,
     getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
+    isTransitoryStatus,
   } from "../display-utils";
+  import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
+  import Callout from "@rilldata/web-common/components/callout/Callout.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;
   export let project: string;
-  export let branch: string | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
-  const redeployMutation = createAdminServiceTriggerRedeploy();
+
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   // Deployment
-  $: projectDeployment = useProjectDeployment(organization, project, branch);
+  $: projectDeployment = useProjectDeployment(
+    organization,
+    project,
+    activeBranch,
+  );
   $: deployment = $projectDeployment.data;
   $: deploymentStatus =
     deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
 
+  // ProjectParser — detects project-level failures (e.g. git branch not found)
+  $: parserErrorQuery = useParserReconcileError(runtimeClient);
+  $: parserReconcileError = $parserErrorQuery.data ?? "";
+
   // Project
-  $: proj = createAdminServiceGetProject(
-    organization,
-    project,
-    branch ? { branch } : undefined,
-  );
+  $: proj = createAdminServiceGetProject(organization, project);
   $: projectData = $proj.data?.project;
   $: primaryBranch = projectData?.primaryBranch;
   // Last synced
@@ -74,23 +85,6 @@
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
-
-  async function handleSync() {
-    try {
-      await $redeployMutation.mutateAsync({
-        data: { org: organization, project, deploymentId: deployment?.id },
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: "Sync triggered",
-      });
-    } catch {
-      eventBus.emit("notification", {
-        type: "error",
-        message: "Failed to trigger sync",
-      });
-    }
-  }
 </script>
 
 <OverviewCard title="Deployment">
@@ -100,13 +94,18 @@
     {project}
     gitRemote={projectData?.gitRemote}
     managedGitId={projectData?.managedGitId}
+    disabled={!!parserReconcileError}
   />
 
   <div class="info-grid">
     <div class="info-row">
       <span class="info-label">Status</span>
       <span class="info-value flex items-center gap-2">
-        <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+        {#if isTransitoryStatus(deploymentStatus)}
+          <LoadingCircleOutline size="12px" />
+        {:else}
+          <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+        {/if}
         {getStatusLabel(deploymentStatus)}
       </span>
     </div>
@@ -141,52 +140,56 @@
       </div>
     {/if}
 
-    {#if lastUpdated}
+    {#if parserReconcileError}
+      <!-- Project failed to load: show the error instead of project-level details
+           (Last synced, OLAP, AI) which would be stale defaults -->
+      <div class="mt-2">
+        <Callout level="error">
+          <span class="text-sm">{parserReconcileError}</span>
+        </Callout>
+      </div>
+    {:else}
+      {#if lastUpdated}
+        <div class="info-row">
+          <span class="info-label">Last synced</span>
+          <span class="info-value">
+            {lastUpdated.toLocaleString(undefined, {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            })}
+          </span>
+        </div>
+      {/if}
+
+      {#if version}
+        <div class="info-row">
+          <span class="info-label">Runtime</span>
+          <span class="info-value">{version}</span>
+        </div>
+      {/if}
+
       <div class="info-row">
-        <span class="info-label">Last synced</span>
-        <span class="info-value flex items-center gap-2">
-          {lastUpdated.toLocaleString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          })}
-          <button
-            class="sync-button"
-            onclick={handleSync}
-            disabled={$redeployMutation.isPending}
-          >
-            {$redeployMutation.isPending ? "Syncing..." : "Sync now"}
-          </button>
+        <span class="info-label">OLAP Engine</span>
+        <span class="info-value">{olapEngineLabel}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">AI Connector</span>
+        <span class="info-value">
+          {#if aiConnector && aiConnector.name !== "admin"}
+            {formatConnectorName(aiConnector.type)}
+            <span class="text-fg-tertiary text-xs ml-1"
+              >({aiConnector.name})</span
+            >
+          {:else}
+            Rill Managed
+          {/if}
         </span>
       </div>
     {/if}
-
-    {#if version}
-      <div class="info-row">
-        <span class="info-label">Runtime</span>
-        <span class="info-value">{version}</span>
-      </div>
-    {/if}
-
-    <div class="info-row">
-      <span class="info-label">OLAP Engine</span>
-      <span class="info-value">{olapEngineLabel}</span>
-    </div>
-
-    <div class="info-row">
-      <span class="info-label">AI Connector</span>
-      <span class="info-value">
-        {#if aiConnector && aiConnector.name !== "admin"}
-          {formatConnectorName(aiConnector.type)}
-          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
-          >
-        {:else}
-          Rill Managed
-        {/if}
-      </span>
-    </div>
   </div>
 </OverviewCard>
 
@@ -214,8 +217,5 @@
   }
   .repo-link:hover {
     @apply underline;
-  }
-  .sync-button {
-    @apply text-xs text-primary-500 hover:text-primary-700 disabled:text-fg-muted cursor-pointer disabled:cursor-default;
   }
 </style>

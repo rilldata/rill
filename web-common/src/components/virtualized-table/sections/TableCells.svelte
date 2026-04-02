@@ -32,6 +32,7 @@
     return {
       value,
       formattedValue: rows[virtRow.index]["__formatted_" + columnName],
+      tooltipFormatter: column.tooltipFormatter,
       type: column.type,
       barValue: column.max ? value / column.max : 0,
       rowSelected: selectedIndex.findIndex((tgt) => virtRow.index === tgt) >= 0,

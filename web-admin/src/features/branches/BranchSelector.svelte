@@ -8,6 +8,7 @@
     removeBranchFromPath,
     requestSkipBranchInjection,
   } from "./branch-utils";
+  import { deduplicateDeployments, isProdDeployment } from "./deployment-utils";
   import { getStatusDotClass } from "../projects/status/display-utils";
   import {
     V1DeploymentStatus,
@@ -39,20 +40,7 @@
   );
 
   $: rawDeployments = $deploymentsQuery.data?.deployments ?? [];
-
-  // Deduplicate: keep only the most recently updated deployment per branch.
-  $: deployments = (() => {
-    const byBranch = new Map<string, V1Deployment>();
-    for (const d of rawDeployments) {
-      const branch = d.branch ?? "";
-      const existing = byBranch.get(branch);
-      // updatedOn is an ISO 8601 timestamp; lexicographic comparison is correct.
-      if (!existing || (d.updatedOn ?? "") > (existing.updatedOn ?? "")) {
-        byBranch.set(branch, d);
-      }
-    }
-    return [...byBranch.values()];
-  })();
+  $: deployments = deduplicateDeployments(rawDeployments);
 
   $: hasBranchDeployments = deployments.some(
     (d) => d.branch && d.branch !== primaryBranch,
@@ -62,8 +50,8 @@
 
   // Sort: production first, then alphabetically by branch name
   $: sortedDeployments = [...deployments].sort((a, b) => {
-    const aIsProd = a.branch === primaryBranch;
-    const bIsProd = b.branch === primaryBranch;
+    const aIsProd = isProdDeployment(a);
+    const bIsProd = isProdDeployment(b);
     if (aIsProd && !bIsProd) return -1;
     if (!aIsProd && bIsProd) return 1;
     return (a.branch ?? "").localeCompare(b.branch ?? "");
@@ -72,30 +60,26 @@
   // Current branch label for the trigger
   $: currentDeployment = isOnBranch
     ? deployments.find((d) => d.branch === activeBranch)
-    : deployments.find((d) => d.branch === primaryBranch);
+    : deployments.find(isProdDeployment);
   $: triggerLabel = isOnBranch
     ? truncateBranch(activeBranch ?? "")
     : truncateBranch(primaryBranch ?? "");
 
   function truncateBranch(branch: string): string {
-    if (branch.length <= 12) return branch;
-    return branch.slice(0, 11) + "…";
-  }
-
-  function isProd(deployment: V1Deployment): boolean {
-    return deployment.branch === primaryBranch || !deployment.branch;
+    if (branch.length <= 20) return branch;
+    return branch.slice(0, 19) + "…";
   }
 
   function getDeploymentHref(deployment: V1Deployment): string {
     const basePath = removeBranchFromPath($page.url.pathname);
-    if (isProd(deployment)) return basePath + $page.url.search;
+    if (isProdDeployment(deployment)) return basePath + $page.url.search;
     return (
       injectBranchIntoPath(basePath, deployment.branch!) + $page.url.search
     );
   }
 
   function handleClick(deployment: V1Deployment) {
-    if (isProd(deployment)) {
+    if (isProdDeployment(deployment)) {
       requestSkipBranchInjection();
     }
     open = false;
@@ -128,7 +112,7 @@
           <DropdownMenu.Label>All branches</DropdownMenu.Label>
         </DropdownMenu.Group>
         {#each sortedDeployments as deployment (deployment.id)}
-          {@const prod = isProd(deployment)}
+          {@const prod = isProdDeployment(deployment)}
           {@const isSelected = prod
             ? !isOnBranch
             : activeBranch === deployment.branch}
@@ -145,7 +129,7 @@
                 )}"
               ></span>
               <span class="truncate">
-                {deployment.branch ?? primaryBranch ?? ""}
+                {deployment.branch || primaryBranch || "main"}
               </span>
               {#if prod}
                 <span class="text-[10px] text-fg-muted flex-none">

@@ -64,8 +64,11 @@ export type LeaderboardItemData = {
 
 export const URI_DIMENSION_SUFFIX = "__rill_uri";
 
-const finiteOrNull = (v: unknown): number | null =>
-  Number.isFinite(v) ? (v as number) : null;
+const finiteOrNull = (v: unknown): number | null => {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
 
 export function cleanUpComparisonValue(
   v: V1MetricsViewAggregationResponseDataItem,

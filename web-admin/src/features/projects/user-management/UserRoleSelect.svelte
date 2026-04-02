@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { PROJECT_ROLES_OPTIONS } from "../constants";
+  import { PROJECT_ROLES_OPTIONS } from "./constants";
 
   export let value: string;
   export let width = "w-18";

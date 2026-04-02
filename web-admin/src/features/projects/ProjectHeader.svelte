@@ -5,7 +5,6 @@
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
@@ -19,10 +18,11 @@
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
+  import { createAdminServiceGetCurrentUser } from "../../client";
   import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeploymentCredentials,
-  } from "../../client";
+    useBreadcrumbOrgPaths,
+    useBreadcrumbProjectPaths,
+  } from "../navigation/breadcrumb-selectors";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
@@ -34,10 +34,6 @@
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
-  import {
-    useBreadcrumbOrgPaths,
-    useBreadcrumbProjectPaths,
-  } from "../navigation/breadcrumb-selectors";
   import {
     isCanvasDashboardPage,
     isMetricsExplorerPage,
@@ -78,40 +74,7 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
 
-  // When "View As" is active, fetch deployment credentials for the mocked user.
-  $: mockedUserId = $viewAsUserStore?.id;
   $: activeBranch = extractBranchFromPath($page.url.pathname);
-
-  $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
-    organization,
-    project,
-    { userId: mockedUserId, ...(activeBranch ? { branch: activeBranch } : {}) },
-    {
-      query: {
-        enabled: !!mockedUserId && !!organization && !!project,
-      },
-    },
-  );
-
-  $: mockedProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    $mockedCredentialsQuery.data?.accessToken ?? "",
-    undefined,
-    {
-      query: {
-        enabled: !!$mockedCredentialsQuery.data?.accessToken,
-      },
-    },
-  );
-
-  // Use effective permissions when "View As" is active (from server)
-  $: effectiveManageProjectMembers =
-    $mockedProjectQuery.data?.projectPermissions?.manageProjectMembers ??
-    projectPermissions.manageProjectMembers;
-  $: effectiveCreateMagicAuthTokens =
-    $mockedProjectQuery.data?.projectPermissions?.createMagicAuthTokens ??
-    projectPermissions.createMagicAuthTokens;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -242,7 +205,7 @@
       {#if onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
-      {#if onProjectPage && effectiveManageProjectMembers}
+      {#if onProjectPage && projectPermissions.manageProjectMembers}
         <ShareProjectPopover
           {organization}
           {project}
@@ -282,7 +245,7 @@
                 <CreateAlert />
               {/if}
               <ShareDashboardPopover
-                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+                createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
               />
             {/if}
           </StateManagersProvider>
@@ -294,13 +257,13 @@
       {#if projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
+      {#if $dashboardChat && !onPublicURLPage}
+        <ChatToggle />
+      {/if}
       {#if hasUserAccess}
-        {#if $dashboardChat && !onPublicURLPage}
-          <ChatToggle />
-        {/if}
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />
         <ShareDashboardPopover
-          createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+          createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
         />
       {/if}
     {/if}

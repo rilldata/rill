@@ -265,10 +265,7 @@ describe("branch-utils", () => {
     const proj = "analytics";
     const branch = "staging";
 
-    function makeNav(
-      pathname: string,
-      type: BeforeNavigate["type"] = "link",
-    ): { nav: BeforeNavigate; navigateFn: ReturnType<typeof vi.fn> } {
+    function makeNav(pathname: string, type: BeforeNavigate["type"] = "link") {
       const nav = {
         from: null,
         to: {
@@ -281,7 +278,10 @@ describe("branch-utils", () => {
         complete: Promise.resolve(),
         cancel: vi.fn(),
       } as unknown as BeforeNavigate;
-      return { nav, navigateFn: vi.fn().mockResolvedValue(undefined) };
+      const navigateFn = vi
+        .fn<(url: string) => Promise<void>>()
+        .mockResolvedValue(undefined);
+      return { nav, navigateFn };
     }
 
     beforeEach(() => {

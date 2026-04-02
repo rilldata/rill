@@ -171,15 +171,16 @@ describe("createSmartRefetchInterval", () => {
     expect(refetchInterval(q)).toBe(INITIAL_REFETCH_INTERVAL);
   });
 
-  it("stops polling when only ProjectParser is reconciling and no relevant resources", () => {
-    // Truly empty project: parser is running but no other resources
+  it("polls slowly when only ProjectParser is reconciling and no relevant resources", () => {
+    // Can't distinguish "empty project" from "parser still creating
+    // resources during startup," so we poll conservatively.
     const q = makeQuery([
       makeResource({
         projectParser: {},
         reconcileStatus: "RECONCILE_STATUS_RUNNING",
       } as any),
     ]);
-    expect(refetchInterval(q)).toBe(false);
+    expect(refetchInterval(q)).toBe(MAX_REFETCH_INTERVAL);
   });
 
   it("keeps polling when non-parser resources are idle but parser is still reconciling", () => {
