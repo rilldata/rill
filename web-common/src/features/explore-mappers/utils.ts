@@ -20,7 +20,6 @@ import {
 import {
   getQueryServiceMetricsViewAggregationQueryKey,
   getQueryServiceMetricsViewTimeRangeQueryKey,
-  getQueryServiceMetricsViewTimeRangesQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   queryServiceMetricsViewAggregation,
   queryServiceMetricsViewTimeRange,
@@ -29,11 +28,11 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  type V1MetricsViewTimeRangesResponse,
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
 // We are manually sending in duration, offset and round to grain for previous complete ranges.
 // This is to map back that split
 const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
