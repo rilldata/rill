@@ -130,23 +130,20 @@
             </a>
           </p>
         </div>
-        <div class="flex flex-row gap-x-4 items-start">
-          <div class="flex-1">
-            <TableToolbar
-              {searchText}
-              onSearchChange={(text) => (searchText = text)}
-              searchDisabled={projectVariables.length === 0}
-              {filterGroups}
-              onFilterChange={handleFilterChange}
-              onClearAllFilters={handleClearAllFilters}
-              {sortDirection}
-              onSortToggle={handleSortToggle}
-            />
-          </div>
+        <TableToolbar
+          {searchText}
+          onSearchChange={(text) => (searchText = text)}
+          searchDisabled={projectVariables.length === 0}
+          {filterGroups}
+          onFilterChange={handleFilterChange}
+          onClearAllFilters={handleClearAllFilters}
+          {sortDirection}
+          onSortToggle={handleSortToggle}
+        >
           <Button type="primary" large onClick={() => (open = true)}>
             <Plus size="16px" />
           </Button>
-        </div>
+        </TableToolbar>
         <EnvironmentVariablesTable
           data={sortedVariables}
           emptyText={emptyTextWhenNoVariables}

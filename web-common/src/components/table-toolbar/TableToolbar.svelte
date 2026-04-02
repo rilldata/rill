@@ -5,6 +5,7 @@
   import TableToolbarSort from "./TableToolbarSort.svelte";
   import TableToolbarViewToggle from "./TableToolbarViewToggle.svelte";
   import type { FilterGroup, SortDirection, ViewMode } from "./types";
+  import type { Snippet } from "svelte";
 
   let {
     searchText = "",
@@ -19,6 +20,7 @@
     showViewToggle = false,
     viewMode = $bindable("list"),
     onViewModeChange,
+    children,
   }: {
     searchText?: string;
     onSearchChange?: (text: string) => void;
@@ -32,6 +34,7 @@
     showViewToggle?: boolean;
     viewMode?: ViewMode;
     onViewModeChange?: (mode: ViewMode) => void;
+    children?: Snippet;
   } = $props();
 
   function handleSearchChange(text: string) {
@@ -40,25 +43,27 @@
 </script>
 
 <div class="flex flex-col gap-y-0 w-full">
-  <div class="flex flex-row items-center justify-between h-9">
+  <div class="flex flex-row items-center justify-between h-9 gap-x-4">
     <div class="flex flex-row items-center">
       <TableToolbarFilterDropdown {filterGroups} {onFilterChange} />
     </div>
 
     <div class="flex flex-row items-center gap-x-3">
+      {#if showSort}
+        <TableToolbarSort {sortDirection} {onSortToggle} />
+      {/if}
+
       <TableToolbarSearch
         {searchText}
         onSearchChange={handleSearchChange}
         disabled={searchDisabled}
       />
 
-      {#if showSort}
-        <TableToolbarSort {sortDirection} {onSortToggle} />
-      {/if}
-
       {#if showViewToggle}
         <TableToolbarViewToggle {viewMode} {onViewModeChange} />
       {/if}
+
+      {@render children?.()}
     </div>
   </div>
 

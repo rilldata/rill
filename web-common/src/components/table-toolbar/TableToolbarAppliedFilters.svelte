@@ -25,11 +25,13 @@
 </script>
 
 {#if appliedFilters.length > 0}
-  <div class="flex flex-row items-center justify-between gap-x-2 h-9">
+  <div
+    class="flex flex-row items-center justify-between gap-x-2 h-9 border-t"
+  >
     <div class="flex flex-row items-center gap-2 flex-wrap">
       {#each appliedFilters as filter (filter.key)}
         <span
-          class="inline-flex items-center gap-x-1 h-7 px-2 rounded-sm border bg-white text-xs text-fg-primary"
+          class="inline-flex items-center gap-x-1 h-7 px-2 rounded-sm border bg-white text-xs font-medium text-fg-primary"
         >
           {filter.label}
           <button
