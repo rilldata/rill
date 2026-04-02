@@ -269,7 +269,7 @@
       });
 
       if (props.mode === "edit") {
-        await queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
             name: {
               name: reportName,
@@ -279,7 +279,7 @@
         });
       }
 
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
       });
 

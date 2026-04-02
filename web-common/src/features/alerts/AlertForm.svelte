@@ -227,7 +227,7 @@
         }),
       });
     }
-    await queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
     });
     onClose();
