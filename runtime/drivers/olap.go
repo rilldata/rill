@@ -591,9 +591,10 @@ func (d Dialect) JoinOnExpression(lhs, rhs string, isFullJoin bool) string {
 	if d == DialectStarRocks {
 		return fmt.Sprintf("%s <=> %s", lhs, rhs)
 	}
-	// BigQuery requires plain equality for FULL joins
 	if d == DialectBigQuery && isFullJoin {
-		return fmt.Sprintf("%s = %s", lhs, rhs)
+		// BigQuery requires plain equality for FULL joins
+		// TODO: find a better way to handle this
+		return fmt.Sprintf("coalesce(CAST(%s AS STRING), '__rill_sentinel__') = coalesce(CAST(%s AS STRING), '__rill_sentinel__')", lhs, rhs)
 	}
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
