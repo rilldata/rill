@@ -47,7 +47,7 @@ const connectorSubmissions = new Map<
   }
 >();
 
-async function beforeSubmitForm(
+export async function beforeSubmitForm(
   client: RuntimeClient,
   connector?: V1ConnectorDriver,
 ) {
@@ -75,10 +75,10 @@ async function beforeSubmitForm(
       olap: olapEngine, // Explicitly set OLAP based on connector type
     });
 
-    // Race condition: invalidate("init") must be called before we navigate to
-    // `/files/${newFilePath}`. invalidate("init") is also called in the
+    // Race condition: invalidate("app:init") must be called before we navigate to
+    // `/files/${newFilePath}`. invalidate("app:init") is also called in the
     // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-    await invalidate("init");
+    await invalidate("app:init");
   }
 }
 
@@ -117,6 +117,23 @@ async function setOlapConnectorInRillYAML(
   await runtimeServicePutFile(client, {
     path: "rill.yaml",
     blob: await updateRillYAMLWithOlapConnector(
+      client,
+      queryClient,
+      newConnectorName,
+    ),
+    create: true,
+    createOnly: false,
+  });
+}
+
+async function setAiConnectorInRillYAML(
+  queryClient: QueryClient,
+  client: RuntimeClient,
+  newConnectorName: string,
+): Promise<void> {
+  await runtimeServicePutFile(client, {
+    path: "rill.yaml",
+    blob: await updateRillYAMLWithAiConnector(
       client,
       queryClient,
       newConnectorName,
@@ -170,6 +187,10 @@ async function saveConnectorWithoutTest(
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
+  }
+
+  if (AI_CONNECTORS.includes(connector.name as string)) {
+    await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
   }
 
   // Go to the new connector file
@@ -318,6 +339,10 @@ export async function submitAddConnectorForm(
 
       if (OLAP_ENGINES.includes(connector.name as string)) {
         await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
+      }
+
+      if (AI_CONNECTORS.includes(connector.name as string)) {
+        await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
       }
 
       // Go to the new connector file

@@ -180,7 +180,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	var incrementalStateResolverProps *structpb.Struct
 	if tmp.State != nil {
 		var refs []ResourceName
-		incrementalStateResolver, incrementalStateResolverProps, refs, err = p.parseDataYAML(tmp.State, outputConnector)
+		incrementalStateResolver, incrementalStateResolverProps, refs, err = p.parseDataYAML(node.Paths, tmp.State, outputConnector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "state": %w`, err)
 		}
@@ -198,7 +198,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 	if tmp.Partitions != nil {
 		var refs []ResourceName
-		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(tmp.Partitions, inputConnector)
+		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(node.Paths, tmp.Partitions, inputConnector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "partitions": %w`, err)
 		}
@@ -216,7 +216,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	var modelTests []*runtimev1.ModelTest
 	for i := range tmp.Tests {
 		t := tmp.Tests[i]
-		modelTest, refs, err := p.parseModelTest(t.Name, &t.DataYAML, outputConnector, node.Name, t.Assert)
+		modelTest, refs, err := p.parseModelTest(node.Paths, t.Name, &t.DataYAML, outputConnector, node.Name, t.Assert)
 		if err != nil {
 			return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
 		}
@@ -283,7 +283,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 }
 
 // parseModelTests parses the model tests from the YAML file
-func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelName, assert string) (*runtimev1.ModelTest, []ResourceName, error) {
+func (p *Parser) parseModelTest(paths []string, name string, data *DataYAML, connector, modelName, assert string) (*runtimev1.ModelTest, []ResourceName, error) {
 	// Validate required name field
 	if name == "" {
 		return nil, nil, fmt.Errorf(`test must have a "name" defined`)
@@ -304,7 +304,7 @@ func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelNam
 		data.SQL = fmt.Sprintf("SELECT * FROM %s WHERE NOT (%s)", modelName, assert)
 	}
 
-	resolver, props, refs, err := p.parseDataYAML(data, connector)
+	resolver, props, refs, err := p.parseDataYAML(paths, data, connector)
 	if err != nil {
 		return nil, nil, err
 	}

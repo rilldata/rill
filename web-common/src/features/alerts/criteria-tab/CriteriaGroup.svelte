@@ -46,7 +46,7 @@
       <div class="flex flex-col gap-2">
         <div class="flex flex-row items-center">
           <div class="w-full text-lg">{index + 1}</div>
-          <button class="mr-2" on:click={() => handleDeleteCriteria(index)}>
+          <button class="mr-2" onclick={() => handleDeleteCriteria(index)}>
             <Trash2Icon size="16px" />
           </button>
         </div>

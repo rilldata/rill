@@ -20,7 +20,6 @@ rill project deploy [<path>] [flags]
       --description string      Project description
       --public                  Make dashboards publicly accessible
       --provisioner string      Project provisioner
-      --prod-version string     Rill version (default: the latest release version) (default "latest")
       --primary-branch string   Git branch to deploy from (default: the default Git branch)
       --push-env                Push local .env file to Rill Cloud (default true)
 ```

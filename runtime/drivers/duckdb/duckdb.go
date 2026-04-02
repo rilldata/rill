@@ -504,6 +504,25 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
+	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
+	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
+	if !c.config.AllowHostAccess {
+		extensionDir, err := extensions.ExtensionsDir()
+		if err != nil {
+			return err
+		}
+
+		secretDir, err := c.storage.DataDir("secrets")
+		if err != nil {
+			return err
+		}
+		dbInitQueries = append(dbInitQueries,
+			"SET GLOBAL preserve_insertion_order TO false",
+			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
+			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)), // should be set before `InitSQL` is set because it can have secrets
+		)
+	}
+
 	if c.driverName == "motherduck" || c.config.isMotherduck() {
 		dbInitQueries = append(dbInitQueries,
 			"INSTALL 'motherduck'",
@@ -545,25 +564,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	dataDir, err := c.storage.DataDir()
 	if err != nil {
 		return err
-	}
-
-	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
-	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
-	if !c.config.AllowHostAccess {
-		extensionDir, err := extensions.ExtensionsDir()
-		if err != nil {
-			return err
-		}
-
-		secretDir, err := c.storage.DataDir("secrets")
-		if err != nil {
-			return err
-		}
-		dbInitQueries = append(dbInitQueries,
-			"SET GLOBAL preserve_insertion_order TO false",
-			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
-			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
-		)
 	}
 
 	// Add init SQL if provided

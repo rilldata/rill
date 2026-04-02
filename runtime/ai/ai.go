@@ -32,7 +32,7 @@ import (
 
 // maxMessageSizeBytes is the maximum allowed size of a message's contents.
 // Exceeding it will result in an error.
-const maxMessageSizeBytes = 10 * 1024 // 10 KB
+const maxMessageSizeBytes = 100 * 1024 // 100 KB
 
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")

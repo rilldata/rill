@@ -7226,6 +7226,8 @@ definitions:
         $ref: '#/definitions/v1CharLocation'
       external:
         type: boolean
+      warning:
+        type: boolean
   v1PingResponse:
     type: object
     properties:

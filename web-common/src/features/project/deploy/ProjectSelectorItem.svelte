@@ -17,13 +17,13 @@
   class="flex flex-row items-center justify-between w-full text-xs text-fg-primary text-left font-medium p-1 pl-2"
   class:hover:bg-surface-background={!selected}
   class:bg-primary-100={selected}
-  on:click={onClick}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
+  onclick={onClick}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
 >
   <div class="flex flex-row items-center gap-x-2 w-full">
     {#if isManaged}
-      <Tooltip.Root portal="body">
+      <Tooltip.Root>
         <Tooltip.Trigger>
           <RillFilled size="14" />
         </Tooltip.Trigger>
@@ -35,7 +35,7 @@
     <span class="w-full">{project.orgName}/{project.name}</span>
   </div>
   {#if hovered}
-    <Tooltip.Root portal="body">
+    <Tooltip.Root>
       <Tooltip.Trigger>
         <a
           target="_blank"

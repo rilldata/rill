@@ -141,7 +141,7 @@
         <h1 class="text-fg-primary text-lg font-bold" aria-label="Alert name">
           {alertSpec.displayName}
         </h1>
-        <div class="grow" />
+        <div class="grow"></div>
         {#if !$isAlertCreatedByCode.data}
           <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>
@@ -151,7 +151,7 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item on:click={handleDeleteAlert}>
+              <DropdownMenu.Item onclick={handleDeleteAlert}>
                 Delete Alert
               </DropdownMenu.Item>
             </DropdownMenu.Content>

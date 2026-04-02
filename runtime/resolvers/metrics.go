@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -125,7 +126,13 @@ func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *metricsResolver) Validate(ctx context.Context) error {
-	return r.executor.ValidateQuery(r.query)
+	if len(r.query.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
+			Name:   "metrics",
+			Fields: maps.Keys(r.query.UnusedFields),
+		}
+	}
+	return nil
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {

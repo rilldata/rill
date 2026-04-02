@@ -104,9 +104,9 @@
         class="flex flex-row items-center gap-x-1"
         role="button"
         tabindex="0"
-        on:mouseenter={() => (hovered = true)}
-        on:focus={() => (hovered = true)}
-        on:blur={() => (hovered = false)}
+        onmouseenter={() => (hovered = true)}
+        onfocus={() => (hovered = true)}
+        onblur={() => (hovered = false)}
       >
         <span class="text-xs text-fg-secondary">
           {usersCount} user{usersCount === 1 ? "" : "s"}

@@ -3,12 +3,11 @@
   import PartitionsTable from "@rilldata/web-common/features/models/partitions/PartitionsTable.svelte";
   import PartitionsFilter from "@rilldata/web-common/features/models/partitions/PartitionsFilter.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import type { Selected } from "bits-ui";
   import {
     shouldFilterByErrored,
     shouldFilterByPending,
     type PartitionFilterType,
-  } from "./utils";
+  } from "@rilldata/web-common/features/projects/status/tables/utils";
 
   export let open = false;
   export let resource: V1Resource | null = null;
@@ -16,9 +15,9 @@
 
   let selectedFilter: PartitionFilterType = "all";
 
-  function onFilterChange(newSelection: Selected<string>) {
-    if (newSelection?.value) {
-      selectedFilter = newSelection.value as PartitionFilterType;
+  function onFilterChange(newValue: string) {
+    if (newValue) {
+      selectedFilter = newValue as PartitionFilterType;
     }
   }
 

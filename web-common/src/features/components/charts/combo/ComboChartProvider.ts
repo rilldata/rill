@@ -21,6 +21,7 @@ import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -83,7 +84,9 @@ export class ComboChartProvider {
   createChartDataQuery(
     client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
     const measures: V1MetricsViewAggregationMeasure[] = [];
@@ -100,10 +103,11 @@ export class ComboChartProvider {
     const dimensionName = config.x?.field;
 
     const xAxisQueryOptionsStore = derived(
-      timeAndFilterStore,
-      ($timeAndFilterStore) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!dimensionName &&
           config?.x?.type === "nominal" &&
@@ -150,13 +154,14 @@ export class ComboChartProvider {
     const xAxisQuery = createQuery(xAxisQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, xAxisQuery],
-      ([$timeAndFilterStore, $xAxisQuery]) => {
+      [timeAndFilterStore, xAxisQuery, visibleStore],
+      ([$timeAndFilterStore, $xAxisQuery, $visible]) => {
         const { timeRange, where, timeGrain, hasTimeSeries } =
           $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
 
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)

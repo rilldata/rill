@@ -819,7 +819,13 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery[k] = v
 	}
 
-	iFrameURL, err := s.admin.URLs.Embed(iframeQuery)
+	// Fetch the org to apply its custom domain (if any) to the embed URL
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not find organization: %s", err.Error())
+	}
+
+	iFrameURL, err := s.admin.URLs.WithCustomDomain(org.CustomDomain).Embed(iframeQuery)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
 	}
@@ -887,7 +893,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
 		UsesArchive: proj.ArchiveAssetID != nil,
 	}
-	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
+	vars, err := s.admin.ResolveVariables(ctx, depl)
 	if err != nil {
 		return nil, err
 	}

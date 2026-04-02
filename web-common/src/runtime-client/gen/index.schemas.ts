@@ -2091,6 +2091,7 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: V1CharLocation;
   external?: boolean;
+  warning?: boolean;
 }
 
 export interface V1PingResponse {

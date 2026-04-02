@@ -217,6 +217,10 @@ describe("connector-schemas", () => {
       expect(isMultiStepConnector(getConnectorSchema("mysql"))).toBe(false);
     });
 
+    it("returns false for AI connectors", () => {
+      expect(isMultiStepConnector(getConnectorSchema("claude"))).toBe(false);
+    });
+
     it("returns false for null schema", () => {
       expect(isMultiStepConnector(null)).toBe(false);
     });
@@ -237,6 +241,10 @@ describe("connector-schemas", () => {
 
     it("returns false for object store connectors", () => {
       expect(hasExplorerStep(getConnectorSchema("s3"))).toBe(false);
+    });
+
+    it("returns false for AI connectors", () => {
+      expect(hasExplorerStep(getConnectorSchema("claude"))).toBe(false);
     });
 
     it("returns false for null schema", () => {
@@ -308,4 +316,5 @@ describe("connector-schemas", () => {
       );
     });
   });
+
 });

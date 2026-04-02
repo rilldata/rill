@@ -26,23 +26,27 @@ test.describe("Save connector feature", () => {
 
     // Save button should be visible on the connector step
     const saveButton = page.getByRole("button", { name: "Save", exact: true });
+    await saveButton.scrollIntoViewIfNeeded();
     await expect(saveButton).toBeVisible();
 
     // Click "Save" button to save connector without testing connection
     await saveButton.click();
 
-    // Wait for navigation to connector file, then for the editor to appear
+    // Wait for navigation to connector file, then for the editor to appear.
+    // Use generous timeouts: invalidate("app:init") re-runs the root layout
+    // load, which can briefly unmount and remount the editor component.
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {
-      // Allow extra time for the file to be written and navigation to occur on slower CI
-      timeout: 6_000,
+      timeout: 10_000,
     });
     const codeEditor = page
       .getByLabel("codemirror editor")
       .getByRole("textbox");
-    await expect(codeEditor).toBeVisible({ timeout: 5000 });
-
-    await expect(codeEditor).toBeVisible();
-    await expect(codeEditor).toContainText("type: connector");
-    await expect(codeEditor).toContainText("driver: clickhouse");
+    await expect(codeEditor).toBeVisible({ timeout: 10_000 });
+    await expect(codeEditor).toContainText("type: connector", {
+      timeout: 10_000,
+    });
+    await expect(codeEditor).toContainText("driver: clickhouse", {
+      timeout: 10_000,
+    });
   });
 });

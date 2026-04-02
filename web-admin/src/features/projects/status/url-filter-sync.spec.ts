@@ -4,7 +4,7 @@ import {
   parseStringParam,
   parseEnumParam,
   createUrlFilterSync,
-} from "./url-filter-sync";
+} from "@rilldata/web-common/lib/url-filter-sync";
 
 // vi.hoisted runs before vi.mock factories and before imports resolve
 const { gotoMock, pageStore } = vi.hoisted(() => {

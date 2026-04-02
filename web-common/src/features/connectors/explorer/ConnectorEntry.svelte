@@ -38,7 +38,7 @@
       <button
         class="connector-entry-header text-fg-primary"
         aria-label={connector.name}
-        on:click={() => {
+        onclick={() => {
           store.toggleItem(connectorName);
         }}
       >
