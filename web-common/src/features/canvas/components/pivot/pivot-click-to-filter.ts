@@ -17,6 +17,7 @@ import {
   cellKey,
   columnHeaderKey,
   createEmptyClickSelectionState,
+  dimKeyFromDimValues,
   dimKeyFromRow,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
 import {
@@ -483,7 +484,6 @@ export function createPivotClickToFilter(
     const $data = get(pivotDataStore);
     if (!$config || !$data?.data) return;
 
-    const dk = dimKeyFromRow(rowData, $config.rowDimensionNames);
     const $clickSelection = get(clickSelectionStore);
 
     // In nested mode, row data stores all values under rowDimensions[0],
@@ -496,6 +496,14 @@ export function createPivotClickToFilter(
           ),
         )
       : captureDimValues(rowData, $config.rowDimensionNames);
+
+    // For nested child rows (depth > 0), build dimKey from the fully-resolved
+    // dimValues (which include parent dimension values); dimKeyFromRow only
+    // sees rowDimensions[0] and would produce identical keys across parents.
+    const isNestedChild = isNested && rowId.includes(".");
+    const dk = isNestedChild
+      ? dimKeyFromDimValues(dimValues, $config.rowDimensionNames)
+      : dimKeyFromRow(rowData, $config.rowDimensionNames);
 
     // Determine if this click is deselecting a previously selected element
     const isDeselect = isRowHeader

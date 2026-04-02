@@ -6,17 +6,56 @@
  * indices, so they remain stable across sorting and data refreshes.
  */
 
+import type { Row } from "tanstack-table-8-svelte-5";
 import type { PivotDataRow } from "./types";
 
 /**
  * Produces a stable string key from a row's dimension values.
  * Uses NUL as separator since dimension values won't contain it.
+ *
+ * WARNING: In nested tables, rows only store their own value under
+ * rowDimensionNames[0], so this function will NOT include parent
+ * dimension values. Use dimKeyFromDimValues instead for nested tables.
  */
 export function dimKeyFromRow(
   rowData: PivotDataRow,
   rowDimensionNames: string[],
 ): string {
   return rowDimensionNames.map((d) => String(rowData[d] ?? "")).join("\0");
+}
+
+/**
+ * Produces a stable string key from resolved dimension name→value pairs.
+ * For nested tables, callers should resolve all ancestor values first
+ * (e.g. via getDimensionValuesForRow) so the key is unique across
+ * different parents.
+ */
+export function dimKeyFromDimValues(
+  dimValues: Record<string, string | null>,
+  rowDimensionNames: string[],
+): string {
+  return rowDimensionNames.map((d) => String(dimValues[d] ?? "")).join("\0");
+}
+
+/**
+ * Produces a stable dimKey for a TanStack Row in a nested table by
+ * walking the parent chain. Each row at depth N stores its value under
+ * rowDimensionNames[0]; the actual dimension is rowDimensionNames[depth].
+ * Returns a NUL-separated key incorporating all ancestor values.
+ */
+export function nestedDimKeyFromRow(
+  row: Row<PivotDataRow>,
+  rowDimensionNames: string[],
+): string {
+  const firstDim = rowDimensionNames[0];
+  // Collect values from root to current row
+  const ancestors = row.getParentRows();
+  const chain = [...ancestors, row];
+  const values = rowDimensionNames.map((_, i) => {
+    const r = chain[i];
+    return r ? String(r.original[firstDim] ?? "") : "";
+  });
+  return values.join("\0");
 }
 
 export function cellKey(dimKey: string, columnId: string) {

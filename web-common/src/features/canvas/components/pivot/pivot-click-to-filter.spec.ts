@@ -1,4 +1,7 @@
-import { getFiltersForColumnHeader } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
+import {
+  getFiltersForColumnHeader,
+  getFiltersForRowHeader,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
 import {
   getFiltersForCell,
   getFiltersFromRow,
@@ -16,7 +19,10 @@ import {
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
 import { describe, expect, it, vi } from "vitest";
-import { dimKeyFromRow } from "../../../dashboards/pivot/pivot-click-selection";
+import {
+  dimKeyFromDimValues,
+  dimKeyFromRow,
+} from "../../../dashboards/pivot/pivot-click-selection";
 import type { FilterManager } from "../../stores/filter-manager";
 import { createPivotClickToFilter } from "./pivot-click-to-filter";
 
@@ -29,8 +35,18 @@ vi.mock(
     ...(await vi.importActual(
       "@rilldata/web-common/features/dashboards/pivot/pivot-utils",
     )),
-    getFiltersFromRow: vi.fn(() => ({ filters: undefined, timeRange: null })),
-    getFiltersForCell: vi.fn(() => ({ filters: undefined, timeRange: null })),
+    getFiltersFromRow: vi.fn(
+      (): PivotFilter => ({
+        filters: undefined,
+        timeRange: { start: undefined, end: undefined },
+      }),
+    ),
+    getFiltersForCell: vi.fn(
+      (): PivotFilter => ({
+        filters: undefined,
+        timeRange: { start: undefined, end: undefined },
+      }),
+    ),
   }),
 );
 
@@ -40,18 +56,24 @@ vi.mock(
     ...(await vi.importActual(
       "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection",
     )),
-    getFiltersForRowData: vi.fn(() => ({
-      filters: undefined,
-      timeRange: null,
-    })),
-    getFiltersForRowHeader: vi.fn(() => ({
-      filters: undefined,
-      timeRange: null,
-    })),
-    getFiltersForColumnHeader: vi.fn(() => ({
-      filters: undefined,
-      timeRange: null,
-    })),
+    getFiltersForRowData: vi.fn(
+      (): PivotFilter => ({
+        filters: undefined,
+        timeRange: { start: undefined, end: undefined },
+      }),
+    ),
+    getFiltersForRowHeader: vi.fn(
+      (): PivotFilter => ({
+        filters: undefined,
+        timeRange: { start: undefined, end: undefined },
+      }),
+    ),
+    getFiltersForColumnHeader: vi.fn(
+      (): PivotFilter => ({
+        filters: undefined,
+        timeRange: { start: undefined, end: undefined },
+      }),
+    ),
   }),
 );
 
@@ -136,6 +158,20 @@ function nestedConfig() {
     colDimensionNames: [],
     measureNames: ["revenue"],
     isFlat: false,
+  } as unknown as PivotDataStoreConfig;
+}
+
+function nestedConfigTwoDims() {
+  return {
+    rowDimensionNames: ["outer", "inner"],
+    colDimensionNames: [],
+    measureNames: ["revenue"],
+    isFlat: false,
+    time: {
+      timeDimension: "",
+      timeStart: undefined,
+      timeEnd: undefined,
+    },
   } as unknown as PivotDataStoreConfig;
 }
 
@@ -423,6 +459,163 @@ describe("pivot-click-to-filter: nested table multi-select", () => {
     expect(sel.isCellSelected(row0DimKey, "revenue")).toBe(true);
     expect(sel.isCellSelected(row0DimKey, "other_measure")).toBe(true);
     expect(sel.cellSelections.size).toBe(2);
+
+    result.destroy();
+  });
+});
+
+describe("pivot-click-to-filter: nested table cross-parent selection isolation", () => {
+  // Two outer rows A and B, each with inner row X.
+  // Clicking on X under A should NOT highlight X under B.
+  //
+  // pivotDataStore.data does NOT include the totals row (TanStack prepends it).
+  // getValuesForExpandedKey adjusts indices[0] by -1 to map TanStack rowIds
+  // back to this array.
+  //
+  // TanStack rowIds: "0" → totals, "1" → A, "2" → B, "1.0" → X-under-A, "2.0" → X-under-B
+  // After adjustment: "1" maps to data[0]=A, "2" maps to data[1]=B
+  const nestedTwoDimData: PivotDataRow[] = [
+    {
+      outer: "A",
+      revenue: 100,
+      subRows: [{ outer: "X", inner: "X", revenue: 50 }],
+    },
+    {
+      outer: "B",
+      revenue: 200,
+      subRows: [{ outer: "X", inner: "X", revenue: 75 }],
+    },
+  ];
+
+  // The inner row data as the component sees it (value mapped to first dim)
+  const innerRowXUnderA = nestedTwoDimData[0].subRows![0];
+
+  function setupNestedTwoDims() {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    // For nested cell clicks, getFiltersForCell is called
+    vi.mocked(getFiltersForCell).mockImplementation(
+      (_config, rowId, _colId, _axes, _data) => {
+        // Return filters based on which inner row was clicked
+        if (rowId === "1.0") {
+          return makeMultiDimPivotFilter([
+            { name: "outer", values: ["A"] },
+            { name: "inner", values: ["X"] },
+          ]);
+        }
+        if (rowId === "2.0") {
+          return makeMultiDimPivotFilter([
+            { name: "outer", values: ["B"] },
+            { name: "inner", values: ["X"] },
+          ]);
+        }
+        return {
+          filters: undefined,
+          timeRange: { start: undefined, end: undefined },
+        };
+      },
+    );
+
+    // For nested row header clicks
+    vi.mocked(getFiltersForRowHeader).mockImplementation(
+      (_config, rowId, _data) => {
+        if (rowId === "1.0") {
+          return makeMultiDimPivotFilter([
+            { name: "outer", values: ["A"] },
+            { name: "inner", values: ["X"] },
+          ]);
+        }
+        if (rowId === "2.0") {
+          return makeMultiDimPivotFilter([
+            { name: "outer", values: ["B"] },
+            { name: "inner", values: ["X"] },
+          ]);
+        }
+        return {
+          filters: undefined,
+          timeRange: { start: undefined, end: undefined },
+        };
+      },
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(
+          nestedConfigTwoDims(),
+        ) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(nestedTwoDimData),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    return { result, filterClass, selfFilteredDimensions };
+  }
+
+  it("should produce distinct dimKeys for same inner value under different parents", () => {
+    // Verify that dimKeyFromDimValues produces different keys
+    const dkA = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
+      "outer",
+      "inner",
+    ]);
+    const dkB = dimKeyFromDimValues({ outer: "B", inner: "X" }, [
+      "outer",
+      "inner",
+    ]);
+    expect(dkA).not.toBe(dkB);
+    expect(dkA).toBe("A\0X");
+    expect(dkB).toBe("B\0X");
+  });
+
+  it("should NOT select X under B when clicking X under A", () => {
+    const { result } = setupNestedTwoDims();
+
+    // Click on cell in inner row X under parent A (rowId "1.0")
+    result.handleCellClickToFilter("1.0", "revenue", false, innerRowXUnderA);
+
+    const sel = get(result.clickSelection);
+
+    // X under A should be selected
+    const dkA = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
+      "outer",
+      "inner",
+    ]);
+    expect(sel.isCellSelected(dkA, "revenue")).toBe(true);
+
+    // X under B should NOT be selected
+    const dkB = dimKeyFromDimValues({ outer: "B", inner: "X" }, [
+      "outer",
+      "inner",
+    ]);
+    expect(sel.isCellSelected(dkB, "revenue")).toBe(false);
+
+    expect(sel.cellSelections.size).toBe(1);
+
+    result.destroy();
+  });
+
+  it("should NOT select row header X under B when clicking row header X under A", () => {
+    const { result } = setupNestedTwoDims();
+
+    // Click on row header for inner row X under parent A
+    result.handleCellClickToFilter("1.0", "outer", true, innerRowXUnderA);
+
+    const sel = get(result.clickSelection);
+
+    const dkA = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
+      "outer",
+      "inner",
+    ]);
+    const dkB = dimKeyFromDimValues({ outer: "B", inner: "X" }, [
+      "outer",
+      "inner",
+    ]);
+
+    expect(sel.isRowHeaderSelected(dkA)).toBe(true);
+    expect(sel.isRowHeaderSelected(dkB)).toBe(false);
+    expect(sel.rowHeaderSelections.size).toBe(1);
 
     result.destroy();
   });

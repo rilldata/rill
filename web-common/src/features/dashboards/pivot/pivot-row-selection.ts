@@ -28,10 +28,15 @@ export interface PivotRowSelectionState {
   hasActiveSelection: boolean;
   /**
    * Check if a row is selected based on current filters.
-   * For nested tables, pass the row's depth so the value under
-   * rowDimensions[0] is checked against the correct dimension filter.
+   * For nested tables, pass the row's depth and parentRows so the value
+   * under rowDimensions[0] is checked against the correct dimension filter
+   * and all ancestor dimensions are also verified.
    */
-  isRowSelected: (rowData: PivotDataRow, depth?: number) => boolean;
+  isRowSelected: (
+    rowData: PivotDataRow,
+    depth?: number,
+    parentRows?: PivotDataRow[],
+  ) => boolean;
   /** Highest row dimension index with an active selection filter, or -1 */
   maxFilteredDimensionIndex: number;
 }
@@ -213,7 +218,11 @@ export function computePivotRowSelection(
   return {
     hasActiveSelection: true,
     maxFilteredDimensionIndex,
-    isRowSelected: (rowData: PivotDataRow, depth?: number) => {
+    isRowSelected: (
+      rowData: PivotDataRow,
+      depth?: number,
+      parentRows?: PivotDataRow[],
+    ) => {
       // In nested mode, all rows store their value under rowDimensions[0]
       // but the actual dimension is rowDimensionNames[depth]. When depth
       // is provided, use it for correct dimension mapping.
@@ -226,8 +235,21 @@ export function computePivotRowSelection(
         if (!strValue) return false;
 
         const selectedSet = dimensionFilters.get(actualDim);
-        if (!selectedSet) return true; // dimension not filtered; doesn't block
-        return selectedSet.has(strValue);
+        if (selectedSet && !selectedSet.has(strValue)) return false;
+
+        // Also verify all ancestor dimensions match their filters.
+        // parentRows[i] is at depth i and stores its value under firstDim.
+        if (parentRows) {
+          for (let i = 0; i < parentRows.length; i++) {
+            const ancestorDim = config.rowDimensionNames[i];
+            const ancestorSet = dimensionFilters.get(ancestorDim);
+            if (!ancestorSet) continue;
+            const ancestorValue = String(parentRows[i][firstDim] ?? "");
+            if (!ancestorValue || !ancestorSet.has(ancestorValue)) return false;
+          }
+        }
+
+        return true;
       }
 
       const rowDimValues = getDimensionValuesFromRowData(config, rowData);

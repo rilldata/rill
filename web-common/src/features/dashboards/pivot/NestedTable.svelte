@@ -18,6 +18,7 @@
   import {
     type PivotClickSelectionState,
     dimKeyFromRow,
+    nestedDimKeyFromRow,
   } from "./pivot-click-selection";
   import {
     getRowNestedLabel,
@@ -444,15 +445,25 @@
       {@const cells = rows[row.index].getVisibleCells()}
       {@const rowId = rows[row.index].id}
       {@const rowData = rows[row.index].original}
-      {@const dk = dimKeyFromRow(rowData, rowDimensionNames)}
+      {@const dk =
+        rows[row.index].depth > 0
+          ? nestedDimKeyFromRow(rows[row.index], rowDimensionNames)
+          : dimKeyFromRow(rowData, rowDimensionNames)}
       {@const isTotalsRow = !!totalsRow && rowId === "0"}
-      {@const isSelected =
-        rowSelectionState?.isRowSelected(rowData, rows[row.index].depth) ??
-        false}
+      {@const filterSelected =
+        rowSelectionState?.isRowSelected(
+          rowData,
+          rows[row.index].depth,
+          rows[row.index].getParentRows().map((r) => r.original),
+        ) ?? false}
       {@const isRowHeaderSelected =
         clickSelection?.isRowHeaderSelected(dk) ?? false}
       {@const hasClickedCell =
         clickSelection?.hasSelectedCellInRow(dk) ?? false}
+      {@const isSelected =
+        rows[row.index].depth > 0 && clickSelection?.hasAnySelection
+          ? filterSelected && (isRowHeaderSelected || hasClickedCell)
+          : filterSelected}
       {@const isAncestorOfSelectedHeader =
         ancestorRowIdsOfSelectedHeaders.has(rowId)}
       {@const rs = nestedRowState({

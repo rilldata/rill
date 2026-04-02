@@ -7,7 +7,7 @@
 
 import type { HeaderGroup, Row } from "tanstack-table-8-svelte-5";
 import type { PivotClickSelectionState } from "./pivot-click-selection";
-import { dimKeyFromRow } from "./pivot-click-selection";
+import { dimKeyFromRow, nestedDimKeyFromRow } from "./pivot-click-selection";
 import type { PivotDataRow } from "./types";
 
 /**
@@ -75,7 +75,10 @@ export function computeAncestorRowIds(
   if (!clickSelection?.hasAnySelection) return new Set();
   const ancestorIds = new Set<string>();
   for (const row of rows) {
-    const dk = dimKeyFromRow(row.original, rowDimensionNames);
+    const dk =
+      row.depth > 0
+        ? nestedDimKeyFromRow(row, rowDimensionNames)
+        : dimKeyFromRow(row.original, rowDimensionNames);
     if (
       clickSelection.isRowHeaderSelected(dk) ||
       clickSelection.hasSelectedCellInRow(dk)
