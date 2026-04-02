@@ -20,6 +20,7 @@
   export let emptyText = "No data available";
   export let columnLayout = `repeat(${columns.length}, 1fr)`;
   export let rowPadding = "py-3";
+  export let externalSort = false;
 
   let sorting: SortingState = [];
 
@@ -51,6 +52,15 @@
         data: safeData,
       }));
     }
+  }
+
+  // When external sort is active, clear internal sorting (hides arrows)
+  $: if (externalSort) {
+    sorting = [];
+    options.update((old) => ({
+      ...old,
+      state: { ...old.state, sorting: [] },
+    }));
   }
 
   const setSorting: OnChangeFn<SortingState> = (updater) => {

@@ -64,4 +64,5 @@
   emptyIcon={KeyIcon}
   {emptyText}
   columnLayout="minmax(170px, 1.75fr) 2fr minmax(84px, 1fr) 56px"
+  externalSort
 />
