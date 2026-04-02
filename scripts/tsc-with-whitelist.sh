@@ -5,6 +5,7 @@ web-admin/src/features/alerts/selectors.ts: error TS18048
 web-admin/src/features/billing/issues/getMessageForTrialPlan.ts: error TS18048
 web-admin/src/features/dashboards/listing/selectors.ts: error TS18048
 web-admin/src/features/scheduled-reports/selectors.ts: error TS18048
+web-admin/src/routes/[organization]/-/console/+layout.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/+layout.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/+page.ts: error TS2307
