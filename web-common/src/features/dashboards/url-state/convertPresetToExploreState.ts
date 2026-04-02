@@ -105,6 +105,13 @@ export function convertPresetToExploreState(
   Object.assign(partialExploreState, pivotPartialState);
   errors.push(...pivotErrors);
 
+  if (preset.chartDynamicYAxis !== undefined) {
+    partialExploreState.dynamicYAxisScale = preset.chartDynamicYAxis;
+  }
+  if (preset.chartForceLine !== undefined) {
+    partialExploreState.forceLineChart = preset.chartForceLine;
+  }
+
   return { partialExploreState, errors };
 }
 
