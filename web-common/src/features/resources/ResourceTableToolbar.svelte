@@ -12,8 +12,8 @@
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import type { Table } from "tanstack-table-8-svelte-5";
-  import { getContext, onMount } from "svelte";
-  import type { Readable } from "svelte/store";
+  import { getContext, onMount, untrack } from "svelte";
+  import { get, type Readable } from "svelte/store";
 
   const table = getContext<Readable<Table<unknown>>>("table");
 
@@ -41,9 +41,11 @@
 
   // URL sync for search
   const filterSync = createUrlFilterSync([{ key: "q", type: "string" }]);
-  filterSync.init($page.url);
+  filterSync.init(get(page).url);
 
-  let searchText = $state(parseStringParam($page.url.searchParams.get("q")));
+  let searchText = $state(
+    parseStringParam(get(page).url.searchParams.get("q")),
+  );
   let sortDirection = $state<SortDirection>("newest");
   let mounted = $state(false);
 
@@ -51,30 +53,42 @@
     mounted = true;
   });
 
-  // Sync search to TanStack global filter
+  // Sync search to TanStack global filter; untrack $table to avoid
+  // re-triggering when the store updates from setGlobalFilter
   $effect(() => {
-    $table.setGlobalFilter(searchText);
+    const text = searchText;
+    untrack(() => {
+      get(table).setGlobalFilter(text);
+    });
   });
 
-  // Sync search to URL
+  // Sync search to URL; untrack to avoid circular $page dependency
   $effect(() => {
-    if (mounted) {
-      filterSync.syncToUrl({ q: searchText });
-    }
+    const text = searchText;
+    untrack(() => {
+      if (mounted) {
+        filterSync.syncToUrl({ q: text });
+      }
+    });
   });
 
-  // Sync URL back to state on external navigation (back/forward)
+  // Sync URL back to state on external navigation (back/forward);
+  // subscribe to $page reactively, but write searchText in untrack
+  // to avoid re-triggering the URL sync effect
   $effect(() => {
-    if (mounted && filterSync.hasExternalNavigation($page.url)) {
-      filterSync.markSynced($page.url);
-      searchText = parseStringParam($page.url.searchParams.get("q"));
+    const url = $page.url;
+    if (mounted && filterSync.hasExternalNavigation(url)) {
+      filterSync.markSynced(url);
+      untrack(() => {
+        searchText = parseStringParam(url.searchParams.get("q"));
+      });
     }
   });
 
   function handleSortToggle() {
     sortDirection = sortDirection === "newest" ? "oldest" : "newest";
     if (sortColumnId) {
-      $table.setSorting([
+      get(table).setSorting([
         { id: sortColumnId, desc: sortDirection === "newest" },
       ]);
     }
