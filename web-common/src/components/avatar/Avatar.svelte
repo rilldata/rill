@@ -1,27 +1,31 @@
 <script lang="ts">
-  import { Avatar } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
-  let loadingStatus: Avatar.RootProps["loadingStatus"] = undefined;
   export let src: string | null = null;
   export let alt: string | null = null;
   export let avatarSize: string = "h-12 w-12";
   export let fontSize: string = "text-xs";
   export let bgColor: string = "bg-blue-500";
 
+  let imageError = false;
+
+  // Reset error state when src changes
+  $: if (src) {
+    imageError = false;
+  }
+
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
   }
+
+  $: showImage = src && !imageError;
 </script>
 
-<Avatar.Root
-  onLoadingStatusChange={(status) => {
-    loadingStatus = status;
-  }}
+<div
   class={cn(
     avatarSize,
     "rounded-full",
-    loadingStatus === "loaded" ? "border-foreground" : "border-transparent",
+    showImage ? "border-foreground" : "border-transparent",
     "text-[17px]",
     "font-medium",
     "uppercase",
@@ -31,28 +35,40 @@
   <div
     class={cn(
       avatarSize,
-      `flex items-center justify-center overflow-hidden rounded-full border`,
+      `flex items-center justify-center overflow-hidden rounded-full border relative`,
       {
         "border-dashed bg-transparent border-gray-400": !src && !alt,
         [`border-transparent ${bgColor}`]:
-          (!src && alt) || (loadingStatus === "error" && alt),
+          (!src && alt) || (imageError && alt),
       },
     )}
   >
     {#if src}
-      <Avatar.Image {src} {alt} />
+      <img
+        {src}
+        {alt}
+        class={cn("absolute inset-0 h-full w-full object-cover", {
+          invisible: imageError,
+        })}
+        on:error={() => {
+          imageError = true;
+        }}
+      />
       {#if alt}
-        <!-- Show a fallback if the image fails to load -->
-        <Avatar.Fallback class={cn(fontSize, "text-white")}>
-          {getInitials(alt ?? "")}
-        </Avatar.Fallback>
+        <span
+          class={cn(fontSize, "text-white", {
+            invisible: !imageError,
+          })}
+        >
+          {getInitials(alt)}
+        </span>
       {/if}
     {:else if alt}
-      <Avatar.Fallback class={cn(fontSize, "text-white")}>
+      <span class={cn(fontSize, "text-white")}>
         {getInitials(alt)}
-      </Avatar.Fallback>
+      </span>
     {:else}
-      <Avatar.Fallback class={cn(fontSize, "text-fg-secondary")}>
+      <span class={cn(fontSize, "text-fg-secondary")}>
         <svg
           class="mt-[6px]"
           width="24"
@@ -70,7 +86,7 @@
             fill="#94A3B8"
           />
         </svg>
-      </Avatar.Fallback>
+      </span>
     {/if}
   </div>
-</Avatar.Root>
+</div>
