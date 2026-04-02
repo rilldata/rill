@@ -16,4 +16,6 @@ export interface FilterGroup {
   options: FilterOption[];
   /** Currently selected value */
   selected: string;
+  /** Default value; when selected === defaultValue, no chip is shown */
+  defaultValue: string;
 }

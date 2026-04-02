@@ -11,16 +11,6 @@
   export let organization: string;
   export let project: string;
 
-  /**
-   * Table column definitions.
-   * - "composite": Renders all dashboard data in a single cell.
-   * - Others: Used for sorting and filtering but not displayed.
-   *
-   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
-   * Relevant issues:
-   * - https://github.com/TanStack/table/issues/4241
-   * - https://github.com/TanStack/table/issues/4302
-   */
   const columns: ColumnDef<V1Resource, string>[] = [
     {
       id: "composite",

@@ -73,8 +73,12 @@
     filterByEnvironment = value as EnvironmentTypes;
   }
 
-  function handleSortChange(direction: SortDirection) {
-    sortDirection = direction;
+  function handleSortToggle() {
+    sortDirection = sortDirection === "newest" ? "oldest" : "newest";
+  }
+
+  function handleClearAllFilters() {
+    filterByEnvironment = EnvironmentType.UNDEFINED;
   }
 
   $: environmentLabel =
@@ -99,6 +103,7 @@
         { value: EnvironmentType.DEVELOPMENT, label: "Development" },
       ],
       selected: filterByEnvironment,
+      defaultValue: EnvironmentType.UNDEFINED,
     },
   ];
 </script>
@@ -132,8 +137,9 @@
               searchDisabled={projectVariables.length === 0}
               {filterGroups}
               onFilterChange={handleFilterChange}
+              onClearAllFilters={handleClearAllFilters}
               {sortDirection}
-              onSortChange={handleSortChange}
+              onSortToggle={handleSortToggle}
             />
           </div>
           <Button type="primary" large onClick={() => (open = true)}>

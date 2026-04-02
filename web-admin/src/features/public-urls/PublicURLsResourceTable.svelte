@@ -33,8 +33,8 @@
     return sortDirection === "newest" ? bTime - aTime : aTime - bTime;
   });
 
-  function handleSortChange(direction: SortDirection) {
-    sortDirection = direction;
+  function handleSortToggle() {
+    sortDirection = sortDirection === "newest" ? "oldest" : "newest";
   }
 
   function formatDate(value: string | undefined) {
@@ -85,7 +85,7 @@
     bind:searchText
     searchDisabled={data.length === 0}
     {sortDirection}
-    onSortChange={handleSortChange}
+    onSortToggle={handleSortToggle}
   />
 
   {#if sortedData.length === 0 && data.length === 0}
