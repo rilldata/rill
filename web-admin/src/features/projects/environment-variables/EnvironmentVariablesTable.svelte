@@ -35,7 +35,6 @@
     },
     {
       header: "Activity",
-      sortDescFirst: true,
       accessorFn: (row) => row.createdOn,
       cell: ({ row }) => {
         return renderComponent(ActivityCell, {
@@ -65,5 +64,4 @@
   emptyIcon={KeyIcon}
   {emptyText}
   columnLayout="minmax(170px, 1.75fr) 2fr minmax(84px, 1fr) 56px"
-  enableSorting={false}
 />

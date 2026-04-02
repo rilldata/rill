@@ -63,11 +63,13 @@
     </div>
   </div>
 
-  <hr class="border-t" />
+  {#if filterGroups.length > 0}
+    <hr class="border-t" />
 
-  <TableToolbarAppliedFilters
-    {filterGroups}
-    {onFilterChange}
-    {onClearAllFilters}
-  />
+    <TableToolbarAppliedFilters
+      {filterGroups}
+      {onFilterChange}
+      {onClearAllFilters}
+    />
+  {/if}
 </section>
