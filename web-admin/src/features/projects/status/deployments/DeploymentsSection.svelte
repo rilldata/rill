@@ -59,13 +59,6 @@
   let { organization, project }: { organization: string; project: string } =
     $props();
 
-  const TRANSIENT_STATUSES = new Set<V1DeploymentStatus>([
-    V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING,
-    V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
-    V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
-    V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING,
-  ]);
-
   let orgMembers = $derived(
     createAdminServiceListOrganizationMemberUsers(organization, {
       pageSize: 1000,
@@ -81,7 +74,7 @@
         query: {
           refetchInterval: (query) => {
             const deployments = query.state.data?.deployments;
-            if (deployments?.some((d) => TRANSIENT_STATUSES.has(d.status!))) {
+            if (deployments?.some((d) => isTransitoryStatus(d.status!))) {
               return 2000;
             }
             return false;
@@ -259,7 +252,7 @@
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm"></div>
       </div>
-      {#each visibleDeployments as deployment (deployment.id)}
+      {#each visibleDeployments as deployment, i (deployment.id ?? i)}
         {@const prod = isProdDeployment(deployment)}
         {@const id = deployment.id ?? ""}
         {@const status =
@@ -448,7 +441,7 @@
   }
 
   .data-row {
-    @apply w-full py-3 border-t border-gray-200;
+    @apply w-full py-3 border-t border-border;
   }
 
   .prod-badge {

@@ -34,7 +34,6 @@
   const runtimeClient = useRuntimeClient();
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
-  $: basePage = `/${organization}/${project}/-/status`;
 
   // Deployment
   $: projectDeployment = useProjectDeployment(
