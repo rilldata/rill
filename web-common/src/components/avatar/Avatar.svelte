@@ -38,8 +38,7 @@
       `flex items-center justify-center overflow-hidden rounded-full border relative`,
       {
         "border-dashed bg-transparent border-gray-400": !src && !alt,
-        [`border-transparent ${bgColor}`]:
-          (!src && alt) || (imageError && alt),
+        [`border-transparent ${bgColor}`]: (!src && alt) || (imageError && alt),
       },
     )}
   >
