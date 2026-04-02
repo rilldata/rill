@@ -94,7 +94,6 @@
     expressionFunctions,
     colorMapping: stableColorMapping,
     hasComparison: stableHasComparison,
-    useExpressionInterpreter: false,
   });
 
   const onError = (e: Error) => {

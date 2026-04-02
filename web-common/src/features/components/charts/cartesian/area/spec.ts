@@ -36,7 +36,9 @@ export function generateVLAreaChartSpec(
     data,
   );
 
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  const xEncoding = createPositionEncoding(config.x, data);
+  xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
+  spec.encoding = { x: xEncoding };
 
   const inner: UnitSpec<Field>[] = [
     { mark: "area" },
