@@ -182,7 +182,7 @@ export function toConnectorDriver(
     implementsObjectStore: category === "objectStore",
     implementsOlap: category === "olap",
     implementsSqlStore: category === "sqlStore",
-    implementsWarehouse: category === "warehouse",
+    implementsWarehouse: category === "warehouse" || hasExplorerStep(schema),
     implementsFileStore: category === "fileStore",
     implementsAi: category === "ai",
   };
