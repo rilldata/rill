@@ -5,9 +5,13 @@ sidebar_label: Delta Lake
 sidebar_position: 12
 ---
 
+import WrongOLAP from '@site/src/components/WrongOLAP';
+
+<WrongOLAP engine="duckdb" link="/developers/build/connectors/data-source/clickhouse/delta-lake" />
+
 ## Overview
 
-[Delta Lake](https://delta.io/) is an open-source storage framework that brings ACID transactions to data lakes. Rill supports reading Delta tables directly from object storage through compatible query engine integrations. Today, this is powered by DuckDB's [Delta extension](https://duckdb.org/docs/stable/core_extensions/delta).
+[Delta Lake](https://delta.io/) is an open-source storage framework that brings ACID transactions to data lakes. Rill supports reading Delta tables directly from object storage through both [DuckDB](/developers/build/connectors/olap/duckdb) and [ClickHouse](/developers/build/connectors/olap/clickhouse). This page covers the DuckDB integration using its [Delta extension](https://duckdb.org/docs/stable/core_extensions/delta).
 
 :::note Direct file access only
 Rill reads Delta tables by scanning the table's transaction log and data files directly from object storage. Catalog-based access (e.g., through Unity Catalog) is not currently supported.
@@ -95,7 +99,6 @@ Ensure your storage connector credentials are configured in your Rill Cloud proj
 ## Limitations
 
 - **Direct file access only**: Rill reads Delta transaction logs and data files directly from storage. Catalog integrations (e.g., Unity Catalog) are not supported.
-- **DuckDB engine**: Delta support is currently provided through DuckDB's Delta extension. Additional engine support is planned.
-- **No GCS support**: Google Cloud Storage is not yet supported by the Delta extension.
+- **No GCS support**: Google Cloud Storage is not yet supported by the DuckDB Delta extension.
 - **Read-only**: Rill reads from Delta tables but does not write to them.
 - **Experimental**: The DuckDB Delta extension is currently marked as experimental.

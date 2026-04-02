@@ -8,11 +8,11 @@ sidebar_position: 40
 import WrongOLAP from '@site/src/components/WrongOLAP';
 import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
 
-<WrongOLAP engine="clickhouse" solo />
+<WrongOLAP engine="clickhouse" link="/developers/build/connectors/data-source/duckdb/delta" />
 
 ## Overview
 
-[Delta Lake](https://delta.io/) is an open-source storage layer that brings ACID transactions to data lakes. ClickHouse can read Delta Lake tables directly from object storage using its [`deltaLake()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/deltalake).
+[Delta Lake](https://delta.io/) is an open-source storage layer that brings ACID transactions to data lakes. Rill supports reading Delta tables through both ClickHouse and [DuckDB](/developers/build/connectors/data-source/duckdb/delta). This page covers the ClickHouse integration using its [`deltaLake()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/deltalake).
 
 <ClickHousePrereq />
 
