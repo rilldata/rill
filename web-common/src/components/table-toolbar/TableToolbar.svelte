@@ -67,6 +67,8 @@
     </div>
   </div>
 
+  <hr class="border-t" />
+
   <TableToolbarAppliedFilters
     {filterGroups}
     {onFilterChange}
