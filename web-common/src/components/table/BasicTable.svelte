@@ -20,7 +20,8 @@
   export let emptyText = "No data available";
   export let columnLayout = `repeat(${columns.length}, 1fr)`;
   export let rowPadding = "py-3";
-  export let externalSort = false;
+  /** Pass a changing value (e.g. sortDirection) to clear column arrows when external sort changes */
+  export let externalSortKey: string | undefined = undefined;
 
   let sorting: SortingState = [];
 
@@ -54,8 +55,9 @@
     }
   }
 
-  // When external sort is active, clear internal sorting (hides arrows)
-  $: if (externalSort) {
+  // When external sort key changes, clear internal sorting (hides column arrows)
+  $: if (externalSortKey !== undefined) {
+    void externalSortKey;
     sorting = [];
     options.update((old) => ({
       ...old,
