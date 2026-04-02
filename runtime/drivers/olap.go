@@ -527,9 +527,12 @@ func (d Dialect) MaxDimensionExpression(expr string) string {
 	return fmt.Sprintf("MAX(%s)", expr)
 }
 
-func (d Dialect) GetTimeDimensionParameter() string {
+func (d Dialect) GetTimeDimensionParameter(typeCode runtimev1.Type_Code) string {
 	if d == DialectPinot {
 		return "CAST(? AS TIMESTAMP)"
+	}
+	if d == DialectBigQuery && typeCode == runtimev1.Type_CODE_DATE {
+		return "DATE(?)"
 	}
 	return "?"
 }
@@ -580,13 +583,17 @@ func (d Dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
-func (d Dialect) JoinOnExpression(lhs, rhs string) string {
+func (d Dialect) JoinOnExpression(lhs, rhs string, isFullJoin bool) string {
 	if d == DialectClickHouse {
 		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
 	}
 	// StarRocks uses MySQL's NULL-safe equal operator
 	if d == DialectStarRocks {
 		return fmt.Sprintf("%s <=> %s", lhs, rhs)
+	}
+	// BigQuery requires plain equality for FULL joins
+	if d == DialectBigQuery && isFullJoin {
+		return fmt.Sprintf("%s = %s", lhs, rhs)
 	}
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
@@ -730,6 +737,10 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 		return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', date_trunc('%s', CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP) + INTERVAL '%s') - INTERVAL '%s')", tz, specifier, tz, expr, shift, shift), nil
 	case DialectBigQuery:
 		// BigQuery: TIMESTAMP_TRUNC(expr, SPECIFIER [, 'timezone'])
+		// For DATE columns, explicitly cast to TIMESTAMP first to ensure the result is TIMESTAMP (not DATETIME).
+		if dim.DataType != nil && dim.DataType.Code == runtimev1.Type_CODE_DATE {
+			expr = fmt.Sprintf("TIMESTAMP(%s)", expr)
+		}
 		if tz == "" {
 			if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
 				offset := 8 - firstDayOfWeek
@@ -770,7 +781,10 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	case DialectSnowflake:
 		return fmt.Sprintf("DATEDIFF('%s', CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectBigQuery:
-		// TIMESTAMP_DIFF(ts_end, ts_start, part) → ts_end - ts_start
+		// TIMESTAMP_DIFF does not support WEEK; use DATE_DIFF for that grain.
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK {
+			return fmt.Sprintf("DATE_DIFF(DATE('%s'), DATE('%s'), %s)", t2.Format(time.RFC3339), t1.Format(time.RFC3339), unit), nil
+		}
 		return fmt.Sprintf("TIMESTAMP_DIFF(CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP), %s)", t2.Format(time.RFC3339), t1.Format(time.RFC3339), unit), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
@@ -786,6 +800,10 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	case DialectSnowflake:
 		return fmt.Sprintf("DATEADD('%s', -1 * (%s), %s::TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	case DialectBigQuery:
+		// TIMESTAMP_SUB does not support WEEK; convert to days.
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK {
+			return fmt.Sprintf("TIMESTAMP_SUB(%s, INTERVAL ((%s) * 7) DAY)", tsExpr, unitExpr), nil
+		}
 		return fmt.Sprintf("TIMESTAMP_SUB(%s, INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)

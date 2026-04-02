@@ -189,7 +189,13 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
 
-	table := client.Dataset(schema).Table(name)
+	var table *bigquery.Table
+	if db != "" {
+		table = client.DatasetInProject(db, schema).Table(name)
+	} else {
+		table = client.Dataset(schema).Table(name)
+	}
+
 	meta, err := table.Metadata(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get table metadata: %w", err)
@@ -385,11 +391,11 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	case bigquery.TimestampFieldType:
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case bigquery.DateTimeFieldType:
-		t.Code = runtimev1.Type_CODE_STRING
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case bigquery.TimeFieldType:
 		t.Code = runtimev1.Type_CODE_STRING
 	case bigquery.DateFieldType:
-		t.Code = runtimev1.Type_CODE_STRING
+		t.Code = runtimev1.Type_CODE_DATE
 	case bigquery.BooleanFieldType:
 		t.Code = runtimev1.Type_CODE_BOOL
 	case bigquery.IntegerFieldType:
@@ -447,11 +453,11 @@ func convertUnitType(field *bigquery.FieldSchema, value bigquery.Value) (any, er
 	case bigquery.TimestampFieldType:
 		return convertBasicType[time.Time](field, value)
 	case bigquery.DateFieldType:
-		return convertStringerType[civil.Date](field, value)
+		return convertCivilType(field, value)
 	case bigquery.TimeFieldType:
 		return convertStringerType[civil.Time](field, value)
 	case bigquery.DateTimeFieldType:
-		return convertStringerType[civil.DateTime](field, value)
+		return convertCivilType(field, value)
 	case bigquery.NumericFieldType:
 		return convertRationalType(field, value, bigquery.NumericString)
 	case bigquery.BigNumericFieldType:
@@ -542,6 +548,23 @@ func convertStringerType[T fmt.Stringer](field *bigquery.FieldSchema, value bigq
 		return nil, &unexpectedTypeError{
 			FieldType: field.Type,
 			Expected:  reflect.TypeFor[T](),
+			Actual:    val,
+		}
+	}
+}
+
+func convertCivilType(field *bigquery.FieldSchema, value bigquery.Value) (any, error) {
+	switch val := value.(type) {
+	case nil:
+		return nil, nil
+	case civil.Date:
+		return val.In(time.UTC), nil
+	case civil.DateTime:
+		return val.In(time.UTC), nil
+	default:
+		return nil, &unexpectedTypeError{
+			FieldType: field.Type,
+			Expected:  reflect.TypeFor[civil.Date](),
 			Actual:    val,
 		}
 	}
