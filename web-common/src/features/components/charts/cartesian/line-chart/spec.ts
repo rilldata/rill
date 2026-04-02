@@ -17,8 +17,8 @@ import {
   MeasureKeyField,
 } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
 import { createVegaTransformPivotConfig } from "../util";
 

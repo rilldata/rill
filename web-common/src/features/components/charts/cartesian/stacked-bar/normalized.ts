@@ -18,10 +18,10 @@ import {
 } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { Transform } from "vega-lite/build/src/transform";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
+import type { Transform } from "vega-lite/types_unstable/transform.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
 import { createVegaTransformPivotConfig } from "../util";
 
