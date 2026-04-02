@@ -86,7 +86,6 @@ export const SOURCES = [
   "bigquery",
   "delta",
   "gcs",
-  "hudi",
   "iceberg",
   "kafka",
   "mongodb",
