@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { ListFilter } from "lucide-svelte";
+  import FilterOutlined from "@rilldata/web-common/components/icons/FilterOutlined.svelte";
   import type { FilterGroup } from "./types";
 
   let {
@@ -17,7 +17,7 @@
     <DropdownMenu.Trigger
       class="flex flex-row items-center gap-x-1.5 text-sm font-medium text-fg-primary cursor-pointer"
     >
-      <ListFilter size={14} />
+      <FilterOutlined size="14" />
       <span>Filter</span>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
