@@ -50,7 +50,7 @@ export function generateVLStackedBarNormalizedSpec(
       scale: {
         zero: false,
         // Add padding at the top for hover space since normalized charts go to 100%
-        domainMax: 1.05,
+        domainMax: 1.1,
       },
       axis: {
         ...(!config.y.showAxisTitle && { title: null }),
