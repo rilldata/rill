@@ -3,7 +3,7 @@ import {
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGenerateFile,
   runtimeServiceGetFile,
-} from "../../../runtime-client";
+} from "../../../runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "../../../runtime-client/v2";
 import { replaceOrAddEnvVariable } from "../../connectors/code-utils";
 import { OLAP_ENGINES } from "./constants";
