@@ -44,13 +44,10 @@ test.describe("Athena connector", () => {
     });
 
     // Aws data catalog is visible in explorer
-    const awsDataCatalogNode = page.getByLabel("Node: awsdatacatalog, level 0");
-    await expect(awsDataCatalogNode).toBeVisible();
-    await awsDataCatalogNode.click();
-
-    await expect(page.getByLabel("Node: default, level 1")).toBeVisible();
     await expect(
-      page.getByLabel("Node: integration_test, level 1"),
+      page
+        .getByLabel("Import Table Form")
+        .getByLabel("awsdatacatalog.integration_test"),
     ).toBeVisible();
   });
 });

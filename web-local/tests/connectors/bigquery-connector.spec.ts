@@ -103,8 +103,12 @@ test.describe("BigQuery connector", () => {
       ),
     ).toBeVisible();
 
-    // rilldata folder is visible in the tree.
-    await expect(page.getByLabel("Node: rilldata, level 0")).toBeVisible();
+    // rilldata/integration_test folder is visible in the tree.
+    await expect(
+      page
+        .getByLabel("Import Table Form")
+        .getByLabel("rilldata.integration_test"),
+    ).toBeVisible();
 
     // Skip creation, it can be heavy on gcs usage.
     await page.keyboard.press("Escape");

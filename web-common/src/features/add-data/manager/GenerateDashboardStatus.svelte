@@ -159,7 +159,7 @@
       onClick={onDone}
       large
     >
-      Skip and view project ({currentFileRoute})
+      Skip and view project
     </Button>
     {#if hasErrored}
       <Button type="primary" onClick={rerunImport} large>Try again</Button>

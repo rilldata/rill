@@ -275,18 +275,22 @@ test.describe("Postgres connector", () => {
       await page.getByLabel("Create model for postgres").click();
 
       // ad_bids from 1st connector is showing.
-      await page.getByLabel("Node: postgres, level 0").click();
-      await page.getByLabel("Node: public, level 1").click();
-      await page.getByLabel("Node: ad_bids, level 2").click();
+      await page.getByRole("dialog").getByLabel("postgres.public").click();
+      await page
+        .getByRole("dialog")
+        .getByLabel("postgres-postgres.public.ad_bids")
+        .click();
 
       // Select the second postgres connector
       await page.getByLabel("Select connector").click();
       await page.getByRole("option", { name: "postgres_1" }).click();
 
       // Select `ad_impressions` from the second connector
-      await page.getByLabel("Node: postgres, level 0").click();
-      await page.getByLabel("Node: public, level 1").click();
-      await page.getByLabel("Node: ad_impressions, level 2").click();
+      await page.getByRole("dialog").getByLabel("postgres.public").click();
+      await page
+        .getByRole("dialog")
+        .getByLabel("postgres_1-postgres.public.ad_impressions")
+        .click();
 
       // Click import data button
       await page
@@ -357,9 +361,14 @@ async function selectAdBidsAndSubmit(page: Page, modelOnly: boolean) {
   ).toBeVisible();
 
   // Select ad_bids table
-  await page.getByLabel("Node: postgres, level 0").click();
-  await page.getByLabel("Node: public, level 1").click();
-  await page.getByLabel("Node: ad_bids, level 2").click();
+  await page
+    .getByLabel("Import Table Form")
+    .getByLabel("postgres.public")
+    .click();
+  await page
+    .getByLabel("Import Table Form")
+    .getByLabel("postgres-postgres.public.ad_bids")
+    .click();
 
   // Click generate dashboard button
   await page

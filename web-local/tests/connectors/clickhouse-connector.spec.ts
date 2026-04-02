@@ -235,16 +235,29 @@ test.describe("ClickHouse connector", () => {
       await page.getByLabel("Create metrics view for ClickHouse").click();
 
       // ad_bids from 1st connector is showing.
-      await page.getByLabel("Node: default, level 0").click();
-      await expect(page.getByLabel("Node: ad_bids, level 1")).toBeVisible();
+      await page
+        .getByLabel("Import Table Form")
+        .getByLabel("default.default")
+        .click();
+      await expect(
+        page
+          .getByLabel("Import Table Form")
+          .getByLabel("clickhouse-default.ad_bids"),
+      ).toBeVisible();
 
       // Select the second clickhouse connector
       await page.getByLabel("Select connector").click();
       await page.getByRole("option", { name: "clickhouse_1" }).click();
 
       // Select `ad_impressions` from the second connector
-      await page.getByLabel("Node: default, level 0").click();
-      await page.getByLabel("Node: ad_impressions, level 1").click();
+      await page
+        .getByLabel("Import Table Form")
+        .getByLabel("default.default")
+        .click();
+      await page
+        .getByLabel("Import Table Form")
+        .getByLabel("clickhouse_1-default.ad_impressions")
+        .click();
 
       // Click generate dashboard button
       await page
@@ -444,8 +457,14 @@ async function selectAdBidsAndSubmit(page: Page, metricsViewOnly: boolean) {
   ).toBeVisible();
 
   // Select ad_bids table
-  await page.getByLabel("Node: default, level 0").click();
-  await page.getByLabel("Node: ad_bids, level 1").click();
+  await page
+    .getByLabel("Import Table Form")
+    .getByLabel("default.default")
+    .click();
+  await page
+    .getByLabel("Import Table Form")
+    .getByLabel("clickhouse-default.ad_bids")
+    .click();
 
   // Click generate dashboard button
   await page
@@ -483,8 +502,14 @@ async function selectAdImpressionsAndSubmit(page: Page) {
   ).toBeVisible();
 
   // Select `ad_impressions` from the second connector
-  await page.getByLabel("Node: default, level 0").click();
-  await page.getByLabel("Node: ad_impressions, level 1").click();
+  await page
+    .getByLabel("Import Table Form")
+    .getByLabel("default.default")
+    .click();
+  await page
+    .getByLabel("Import Table Form")
+    .getByLabel(`clickhouse_1-default.ad_impressions`)
+    .click();
 
   // Click generate dashboard button
   await page

@@ -19,8 +19,6 @@
     type ImportFromConfig,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import ConnectorExplorer from "@rilldata/web-common/features/add-data/explorer/ConnectorExplorer.svelte";
-  import type { ConnectorExplorerEntry } from "@rilldata/web-common/features/add-data/explorer/tree.ts";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import { generateImportToConfig } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
@@ -28,6 +26,8 @@
     getConnectorDriverForSchema,
     getImportStepsForConnector,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import DatabaseExplorer from "@rilldata/web-common/features/connectors/explorer/DatabaseExplorer.svelte";
+  import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
 
   export let config: AddDataConfig;
   export let step: ExploreConnectorStep;
@@ -139,19 +139,23 @@
 
   $: sourceFormLabels = getLabelsForSource(importSteps);
 
-  function handleTableChange({
-    database,
-    databaseSchema,
-    table,
-  }: ConnectorExplorerEntry) {
-    if (!table) return;
-    form.update((f) => {
-      f.database = database;
-      f.schema = databaseSchema;
-      f.table = table;
-      return f;
-    });
-  }
+  const connectorExplorerStore = new ConnectorExplorerStore(
+    {
+      allowContextMenu: false,
+      allowNavigateToTable: false,
+      allowSelectTable: false,
+      allowShowSchema: false,
+    },
+    (_, database, schema, table) => {
+      if (!database || !schema || !table) return;
+      form.update((f) => {
+        f.database = database;
+        f.schema = schema;
+        f.table = table;
+        return f;
+      });
+    },
+  );
 </script>
 
 <form
@@ -162,6 +166,7 @@
   }}
   id={FormId}
   class="flex flex-col h-full overflow-y-auto"
+  aria-label="Import Table Form"
 >
   <div class="flex flex-col gap-2 px-6 pt-4" class:pb-3={!supportsModeling}>
     {#if supportsModeling}
@@ -178,10 +183,10 @@
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
       <div class="flex flex-row size-full overflow-hidden border-t">
-        <div class="flex-grow border-r px-6 py-2">
-          <ConnectorExplorer
-            connectorName={step.connector}
-            onSelect={handleTableChange}
+        <div class="flex-grow border-r pr-6 py-2">
+          <DatabaseExplorer
+            connector={analyzedConnector}
+            store={connectorExplorerStore}
           />
         </div>
         <ResizableSidebar
