@@ -198,7 +198,7 @@ export async function maybeDeleteConnector(
   await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
 }
 
-async function maybeInitProject(
+export async function maybeInitProject(
   client: RuntimeClient,
   connector: V1ConnectorDriver,
 ) {

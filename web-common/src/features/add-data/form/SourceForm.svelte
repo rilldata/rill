@@ -28,6 +28,7 @@
     getConnectorDriverForSchema,
     getImportStepsForSource,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
 
   export let config: AddDataConfig;
   export let step: CreateModelStep;
@@ -90,6 +91,8 @@
     if (!connectorDriver) {
       throw new Error("Connector driver not found for: " + step.connector);
     }
+
+    await maybeInitProject(runtimeClient, connectorDriver);
 
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connectorDriver,

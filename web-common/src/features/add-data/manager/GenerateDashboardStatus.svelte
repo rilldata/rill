@@ -152,8 +152,14 @@
       </Button>
       <div class="grow"></div>
     {/if}
-    <Button type="tertiary" href={currentFileRoute} onClick={onDone} large>
-      Skip and view project
+    <Button
+      disabled={!currentFileRoute}
+      type="tertiary"
+      href={currentFileRoute}
+      onClick={onDone}
+      large
+    >
+      Skip and view project ({currentFileRoute})
     </Button>
     {#if hasErrored}
       <Button type="primary" onClick={rerunImport} large>Try again</Button>
