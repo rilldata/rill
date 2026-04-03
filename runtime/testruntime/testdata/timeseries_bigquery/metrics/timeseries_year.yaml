@@ -1,0 +1,24 @@
+version: 1
+type: metrics_view
+
+display_name: Year time series
+table: timeseries_year
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+
+dimensions:
+  - name: device
+    column: device
+  - name: publisher
+    column: publisher
+  - name: country
+    column: country
+
+measures:
+  - name: max_clicks
+    expression: "max(clicks)"
+  - name: count
+    expression: "count(*)"
+  - name: sum_clicks
+    expression: "sum(clicks)"

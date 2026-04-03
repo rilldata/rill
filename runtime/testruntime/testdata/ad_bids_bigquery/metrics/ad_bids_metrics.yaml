@@ -1,0 +1,47 @@
+version: 1
+type: metrics_view
+
+display_name: Ad Bids
+table: ad_bids
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+
+dimensions:
+  - name: pub
+    display_name: Publisher
+    column: publisher
+    uri: CONCAT('http://localhost/', publisher)
+  - name: dom
+    display_name: Domain
+    column: domain
+  - name: nolabel_pub
+    column: publisher
+  - name: space_label
+    display_name: Space Label
+    expression: "publisher"
+  - name: null_publisher
+    display_name: Null Publisher
+    expression: "case when publisher is null then true else false end"
+  - name: event_date
+    display_name: Event Date
+    expression: "DATE(timestamp)"
+
+measures:
+  - display_name: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: humanize
+  - display_name: "Average bid price"
+    expression: avg(bid_price)
+    description: ""
+    format_preset: humanize
+  - name: m1
+    expression: avg(bid_price)
+    description: ""
+    format_preset: humanize
+  - name: bid_price
+    display_name: Avg Bid Price
+    expression: avg(bid_price)
+    description: ""
+    format_preset: humanize

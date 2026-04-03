@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
@@ -566,7 +567,7 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB || d == DialectStarRocks {
+	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery {
 		res += " NULLS LAST"
 	}
 	return res
@@ -578,7 +579,7 @@ func (d Dialect) OrderByAliasExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB || d == DialectStarRocks {
+	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery {
 		res += " NULLS LAST"
 	}
 	return res
@@ -746,22 +747,24 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 		if tz == "" {
 			if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
 				offset := 8 - firstDayOfWeek
-				return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d DAY), 'UTC'), %s), INTERVAL %d DAY), 'UTC')", expr, offset, specifier, offset), nil
+				return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s), INTERVAL %d DAY)", expr, offset, specifier, offset), nil
 			}
 			if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
 				offset := 13 - firstMonthOfYear
-				return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, offset), nil
+				// TIMESTAMP_ADD/TIMESTAMP_SUB don't support MONTH; wrap TIMESTAMP_TRUNC result in DATETIME() before DATETIME_SUB.
+				return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s), 'UTC'), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, offset), nil
 			}
 			return fmt.Sprintf("TIMESTAMP_TRUNC(%s, %s)", expr, specifier), nil
 		}
 		// TIMESTAMP_TRUNC natively accepts a timezone argument.
 		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
 			offset := 8 - firstDayOfWeek
-			return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d DAY), 'UTC'), %s, '%s'), INTERVAL %d DAY), 'UTC')", expr, offset, specifier, tz, offset), nil
+			return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s, '%s'), INTERVAL %d DAY)", expr, offset, specifier, tz, offset), nil
 		}
 		if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
 			offset := 13 - firstMonthOfYear
-			return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s, '%s'), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, tz, offset), nil
+			// TIMESTAMP_ADD/TIMESTAMP_SUB don't support MONTH; wrap TIMESTAMP_TRUNC result in DATETIME() before DATETIME_SUB.
+			return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s, '%s'), 'UTC'), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, tz, offset), nil
 		}
 		return fmt.Sprintf("TIMESTAMP_TRUNC(%s, %s, '%s')", expr, specifier, tz), nil
 	default:
@@ -936,7 +939,18 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			prefix += "SELECT "
 		}
 
-		dimVals = append(dimVals, values[0])
+		dimVal := values[0]
+		if d == DialectBigQuery && len(result.Schema.Fields) > 0 {
+			// BigQuery converts time.Time type to TIMESTAMP which is not compatible with DATE type dimensions
+			// so we need to convert it back to civil.Date if the dimension type is DATE
+			// TODO: remove conversion of civil.Date in the rill driver and handle it wherever required and remove this conversion here
+			if result.Schema.Fields[0].Type.Code == runtimev1.Type_CODE_DATE {
+				if t, ok := dimVal.(time.Time); ok {
+					dimVal = civil.DateOf(t)
+				}
+			}
+		}
+		dimVals = append(dimVals, dimVal)
 		for i, v := range values {
 			if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 				if i == 0 {
@@ -990,8 +1004,12 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 				}
 				prefix += expr
 			} else {
-				prefix += fmt.Sprintf("%s AS %s", "?", d.EscapeIdentifier(result.Schema.Fields[i].Name))
-				args = append(args, v)
+				argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+				}
+				prefix += fmt.Sprintf("%s AS %s", argExpr, d.EscapeIdentifier(result.Schema.Fields[i].Name))
+				args = append(args, argVal)
 			}
 		}
 

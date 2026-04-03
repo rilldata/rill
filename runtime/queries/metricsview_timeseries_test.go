@@ -111,6 +111,51 @@ func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
 }
 
+func TestMetricsViewsTimeseriesAgainstBigQuery(t *testing.T) {
+	testmode.Expensive(t)
+	rt, instanceID := testruntime.NewInstanceWithBigQueryTimeseriesProject(t)
+	t.Run("testMetricsViewsTimeseries_month_grain", func(t *testing.T) { testMetricsViewsTimeseries_month_grain(t, rt, instanceID) })
+	t.Run("testMetricsViewsTimeseries_month_grain_IST", func(t *testing.T) { testMetricsViewsTimeseries_month_grain_IST(t, rt, instanceID) })
+	t.Run("testMetricsViewsTimeseries_quarter_grain_IST", func(t *testing.T) { testMetricsViewsTimeseries_quarter_grain_IST(t, rt, instanceID) })
+	t.Run("testMetricsViewsTimeseries_year_grain_IST", func(t *testing.T) { testMetricsViewsTimeseries_year_grain_IST(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSaturday", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSaturday(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily", func(t *testing.T) { testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, true, rt, instanceID)
+	})
+	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
+}
+
 func testMetricsViewsTimeseries_month_grain(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"max_clicks"},
