@@ -56,7 +56,7 @@ export function createContainsAllExpression(
  * AND of same-ident single-value INs, or OR of same-ident single-value NINs.
  */
 export function isContainsAllExpression(expr: V1Expression): boolean {
-  if (!expr.cond?.exprs?.length || expr.cond.exprs.length < 2) return false;
+  if (!expr.cond?.exprs?.length) return false;
 
   const op = expr.cond.op;
   const expectedChildOp =
@@ -238,10 +238,11 @@ export function forEachIdentifier(
   expr: V1Expression,
   cb: (e: V1Expression, ident: string) => void,
 ) {
-  forEachExpression(expr, (e) => {
-    // Handle contains-all expressions: call cb with the whole expression and its ident,
-    // rather than descending into children (which would call cb per child)
-    if (isContainsAllExpression(e)) {
+  forEachExpression(expr, (e, depth) => {
+    // Skip the top-level AND/OR wrapper (depth 0); only match contains-all
+    // at depth 1+ to avoid confusing the whereFilter wrapper with a real
+    // contains-all expression.
+    if (depth > 0 && isContainsAllExpression(e)) {
       const ident = getIdentFromContainsAllExpression(e);
       if (ident !== undefined) {
         cb(e, ident);
