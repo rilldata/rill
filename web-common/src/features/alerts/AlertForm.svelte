@@ -61,7 +61,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { X } from "lucide-svelte";
-  import { defaults, superForm } from "sveltekit-superforms";
+  import {
+    defaults,
+    superForm,
+    type SuperForm,
+  } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
 
   export let onClose: () => void;
@@ -138,17 +142,17 @@
         ));
   $: ({ selectedComparisonTimeRange } = timeControls);
 
-  // Create superForm once; recreating it breaks use:enhance since the action
-  // only binds on mount and a new instance's enhance never gets applied to the DOM.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let superFormInstance: any;
-  let form: any,
-    errors: any,
-    enhance: any,
-    submit: any,
-    submitting: any,
-    tainted: any,
-    validate: any;
+  // Create superForm once; recreating it in a $: block breaks use:enhance
+  // since the action only binds on mount and a new instance's enhance never
+  // gets applied to the DOM.
+  let superFormInstance: SuperForm<AlertFormValues> | undefined;
+  let form: SuperForm<AlertFormValues>["form"];
+  let errors: SuperForm<AlertFormValues>["errors"];
+  let enhance: SuperForm<AlertFormValues>["enhance"];
+  let submit: SuperForm<AlertFormValues>["submit"];
+  let submitting: SuperForm<AlertFormValues>["submitting"];
+  let tainted: SuperForm<AlertFormValues>["tainted"];
+  let validate: SuperForm<AlertFormValues>["validate"];
 
   $: if (!superFormInstance && initialValues) {
     superFormInstance = superForm(

@@ -40,7 +40,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { get } from "svelte/store";
-  import { defaults, superForm } from "sveltekit-superforms";
+  import { defaults, superForm, type SuperForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
   import { array, object, string, boolean } from "yup";
   import { Button } from "../../components/button";
@@ -189,15 +189,18 @@
           aggregationRequest,
         );
 
-  // Create superForm once; recreating it breaks use:enhance since the action
-  // only binds on mount and a new instance's enhance never gets applied to the DOM.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let form: any, errors: any, enhance: any, submit: any, submitting: any;
-  let _superFormInitialized = false;
+  // Create superForm once; recreating it in a $: block breaks use:enhance
+  // since the action only binds on mount and a new instance's enhance never
+  // gets applied to the DOM.
+  let _superFormInit: SuperForm<ReportValues> | undefined;
+  let form: SuperForm<ReportValues>["form"];
+  let errors: SuperForm<ReportValues>["errors"];
+  let enhance: SuperForm<ReportValues>["enhance"];
+  let submit: SuperForm<ReportValues>["submit"];
+  let submitting: SuperForm<ReportValues>["submitting"];
 
-  $: if (!_superFormInitialized && initialValues) {
-    _superFormInitialized = true;
-    ({ form, errors, enhance, submit, submitting } = superForm(
+  $: if (!_superFormInit && initialValues) {
+    _superFormInit = superForm(
       defaults(initialValues, schema),
       {
         id: FORM_ID,
@@ -208,10 +211,14 @@
           const values = form.data;
           return handleSubmit(values);
         },
+        // We need to run the 1st validation only after a submit.
+        // But successive validations should be on input.
+        // Here, "auto" achieves this.
         validationMethod: "auto",
         invalidateAll: false,
       },
-    ));
+    );
+    ({ form, errors, enhance, submit, submitting } = _superFormInit);
   }
 
   $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
@@ -312,7 +319,7 @@
   <Dialog.Content class="min-w-[900px]" escapeKeydownBehavior="ignore">
     <Dialog.Title>Schedule report</Dialog.Title>
 
-    {#if _superFormInitialized}
+    {#if _superFormInit}
       <BaseScheduledReportForm
         formId={FORM_ID}
         data={form}
