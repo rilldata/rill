@@ -16,9 +16,9 @@
     THEME_STORE_CONTEXT_KEY,
   } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { getContext, hasContext } from "svelte";
+  import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
   import { derived, readable } from "svelte/store";
-  import type { View } from "vega-typings";
   import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
