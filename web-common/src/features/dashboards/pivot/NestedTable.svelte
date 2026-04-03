@@ -1,8 +1,3 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-  const measureLengths = writable(new Map<string, number>());
-</script>
-
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -21,7 +16,10 @@
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
   import { isShowMoreRow } from "./pivot-utils";
+  import { writable } from "svelte/store";
   import type { PivotDataRow } from "./types";
+
+  const measureLengths = writable(new Map<string, number>());
 
   // State props
   export let hasColumnDimension: boolean;
