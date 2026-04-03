@@ -39,7 +39,7 @@
     {/if}
   </div>
   <div
-    class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"
+    class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden pl-[22px]"
   >
     <span class="shrink-0">{name}</span>
     {#if lastRefreshedDate}
