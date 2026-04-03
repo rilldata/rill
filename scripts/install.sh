@@ -38,8 +38,7 @@ checkDependencies() {
     fi
     if ! [ -x "$(command -v git)" ]; then
         publishSyftEvent git_missing
-        printf "Git could not be found, Rill depends on it, please install and try again.\n"
-        printf "Helpful instructions: https://github.com/git-guides/install-git\n"
+        printf "'git' could not be found, this script depends on it, please install and try again (see instructions at https://github.com/git-guides/install-git).\n"
         MISSING=true
     fi
     if ! [ -x "$(command -v shasum)" ] && ! [ -x "$(command -v sha256sum)" ]; then
