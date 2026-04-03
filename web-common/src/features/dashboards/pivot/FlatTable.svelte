@@ -27,6 +27,7 @@
   export let dataRows: PivotDataRow[];
   export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
+  export let fullWidth = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -134,7 +135,8 @@
 
 <table
   role="presentation"
-  style:width="{totalLength}px"
+  style:width={fullWidth ? "100%" : "{totalLength}px"}
+  style:min-width={fullWidth ? "{totalLength}px" : undefined}
   class:with-measure={measures.length > 0}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
@@ -144,7 +146,7 @@
     {#each headers as header (header.id)}
       {@const length =
         $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
-      <col style:width="{length}px" style:max-width="{length}px" />
+      <col style:width="{length}px" style:max-width={fullWidth ? undefined : "{length}px"} />
     {/each}
   </colgroup>
 

@@ -325,6 +325,7 @@
       {totalRowSize}
       {canShowDataViewer}
       {hasMeasureContextColumns}
+      {fullWidth}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
@@ -347,6 +348,7 @@
       {dataRows}
       {measures}
       {canShowDataViewer}
+      {fullWidth}
       activeCell={$pivotState.activeCell}
       {assembled}
       {scrollLeft}

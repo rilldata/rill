@@ -30,6 +30,7 @@
   export let measures: MeasureColumnProps;
   export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
+  export let fullWidth = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -279,14 +280,14 @@
     {#if rowDimensionName && rowDimensionWidth}
       <col
         style:width="{rowDimensionWidth}px"
-        style:max-width="{rowDimensionWidth}px"
+        style:max-width={fullWidth ? undefined : "{rowDimensionWidth}px"}
       />
     {/if}
 
     {#each measureGroups as { subHeaders }, i (i)}
       {#each subHeaders as { column: { columnDef: { name } } } (name)}
         {@const length = $measureLengths.get(name)}
-        <col style:width="{length}px" style:max-width="{length}px" />
+        <col style:width="{length}px" style:max-width={fullWidth ? undefined : "{length}px"} />
       {/each}
     {/each}
   </colgroup>
