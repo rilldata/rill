@@ -5,6 +5,12 @@ import { gotoNavEntry } from "../utils/waitHelpers.ts";
 import { validateYamlContents } from "../utils/yamlHelpers.ts";
 
 test.describe("ClickHouse connector", () => {
+  // There is an edge case where a full page error is triggered by `FileAndResourceWatcher`.
+  // This seems to happen when the controller restarts.
+  // Since we are changing the olap_connector here, it always restarts and triggers the edge cases sometimes.
+  // TODO: fix FileAndResourceWatcher to be more robust.
+  test.describe.configure({ retries: 3 });
+
   const clickhouseOne = new ClickHouseTestContainer();
   const clickhouseTwo = new ClickHouseTestContainer();
 

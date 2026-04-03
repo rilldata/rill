@@ -17,7 +17,7 @@ test.describe("Athena connector", () => {
       );
     }
 
-    await page.getByLabel("Connect your data").click();
+    await page.getByLabel("See more connectors").click();
     await page.getByLabel("Connect to athena").click();
 
     await page

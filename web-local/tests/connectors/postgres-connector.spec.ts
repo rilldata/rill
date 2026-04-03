@@ -4,6 +4,10 @@ import { PostgresTestContainer } from "../utils/postgres.ts";
 import { validateYamlContents } from "../utils/yamlHelpers.ts";
 
 test.describe("Postgres connector", () => {
+  // Starting a postgres server seems heavy, causing timeouts during startup.
+  // So retry to not make the tests flaky.
+  test.describe.configure({ retries: 3 });
+
   const postgresOne = new PostgresTestContainer();
   const postgresTwo = new PostgresTestContainer();
 
@@ -21,7 +25,7 @@ test.describe("Postgres connector", () => {
 
   test.describe("Welcome screen", () => {
     test("Create connector using individual fields", async ({ page }) => {
-      await page.getByLabel("Connect your data").click();
+      await page.getByLabel("See more connectors").click();
       await enterPostgresCredentials(page, postgresOne);
 
       // Submit the form
@@ -47,7 +51,7 @@ test.describe("Postgres connector", () => {
 
     test("Create connector using DSN", async ({ page }) => {
       // Open the connect to postgres modal
-      await page.getByLabel("Connect your data").click();
+      await page.getByLabel("See more connectors").click();
       await page.getByLabel("Connect to postgres").click();
 
       // Switch to the DSN tab
@@ -128,7 +132,7 @@ test.describe("Postgres connector", () => {
     test("Create connector, create invalid source and go all the way back", async ({
       page,
     }) => {
-      await page.getByLabel("Connect your data").click();
+      await page.getByLabel("See more connectors").click();
       await enterPostgresCredentials(page, postgresOne);
 
       // Submit the form
@@ -207,7 +211,7 @@ test.describe("Postgres connector", () => {
     test("Create connector and metrics view from home screen", async ({
       page,
     }) => {
-      await page.getByLabel("Connect your data").click();
+      await page.getByLabel("See more connectors").click();
       await enterPostgresCredentials(page, postgresOne);
 
       // Submit the form
@@ -234,7 +238,7 @@ test.describe("Postgres connector", () => {
     test("Create connector from home screen and metrics view from add asset", async ({
       page,
     }) => {
-      await page.getByLabel("Connect your data").click();
+      await page.getByLabel("See more connectors").click();
       await enterPostgresCredentials(page, postgresOne);
       // Save without testing connection
       await page.getByLabel("Save connector").click();

@@ -7,7 +7,7 @@ test.describe("Test Connection", () => {
   test("Azure connector - auth method specific required fields", async ({
     page,
   }) => {
-    await page.getByLabel("Connect your data").click();
+    await page.getByLabel("See more connectors").click();
     await page.getByLabel("Connect to azure").click();
 
     const button = page.getByRole("dialog").getByRole("button", {

@@ -6,7 +6,7 @@ test.describe("Azure connector form reset", () => {
 
   test("clears connection string after submit and reopen", async ({ page }) => {
     // Open Add Data modal and pick Azure.
-    await page.getByLabel("Connect your data").click();
+    await page.getByLabel("See more connectors").click();
     await page.getByLabel("Connect to azure").click();
 
     const connectionString = page.getByRole("textbox", {

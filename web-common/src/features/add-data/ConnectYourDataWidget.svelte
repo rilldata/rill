@@ -36,7 +36,7 @@
 
     <div class="grow"></div>
 
-    <div class="see-more-container">
+    <div class="see-more-container" aria-label="See more connectors">
       <span class="grow"></span>
       <div class="see-more">
         <span>See more connectors</span>
