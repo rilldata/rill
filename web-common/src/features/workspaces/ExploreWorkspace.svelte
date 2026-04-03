@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -63,7 +63,6 @@
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
     ?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
@@ -119,8 +118,9 @@
 
       <WorkspaceEditorContainer
         slot="body"
-        error={parseError?.message ?? rootCauseReconcileError}
-        showError={!!$remoteContent && selectedView === "code"}
+        resource={exploreResource ?? metricsViewResource}
+        {parseError}
+        remoteContent={$remoteContent}
       >
         {#if selectedView === "code"}
           <ExploreEditor

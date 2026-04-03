@@ -22,7 +22,12 @@ import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte"
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
+import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
+import { File } from "lucide-svelte";
+import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
+import HTTPSIcon from "@rilldata/web-common/components/icons/connectors/HTTPSIcon.svelte";
+import SQLiteIcon from "@rilldata/web-common/components/icons/connectors/SQLiteIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -48,11 +53,25 @@ export const connectorIconMapping = {
   s3: AmazonS3Icon,
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
+  sqlite: SQLiteIcon,
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
+  local_file: File,
+  https: HTTPSIcon,
+};
+
+export const connectorClassMapping = {
+  local_file: "text-slate-300",
+  https: "text-slate-300",
 };
 
 export const connectorLabelMapping = {
   duckdb: "DuckDB",
   clickhouse: "ClickHouse",
+  motherduck: "MotherDuck",
+  s3: "S3",
+  gcs: "GCS",
+  snowflake: "Snowflake",
+  druid: "Druid",
+  starrocks: "StarRocks",
 };
