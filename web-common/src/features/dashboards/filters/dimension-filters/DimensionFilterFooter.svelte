@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 
   export let mode: DimensionFilterMode;
@@ -14,31 +13,62 @@
   export let onToggleAndMode: (() => void) | undefined = undefined;
   export let onToggleSelectAll: () => void;
   export let onApply: () => void;
+
+  const includeExcludeOptions = [
+    { value: "include", label: "Include" },
+    { value: "exclude", label: "Exclude" },
+  ];
+
+  const andOrOptions = [
+    {
+      value: "or",
+      label: "Match any",
+      description: "Array contains any selected value",
+    },
+    {
+      value: "and",
+      label: "Match all",
+      description: "Array contains every selected value",
+    },
+  ];
+
+  $: includeExcludeValue = excludeMode ? "exclude" : "include";
+  $: andOrValue = andMode ? "and" : "or";
+
+  function handleIncludeExcludeChange(value: string) {
+    const newExclude = value === "exclude";
+    if (newExclude !== excludeMode) {
+      onToggleExcludeMode();
+    }
+  }
+
+  function handleAndOrChange(value: string) {
+    const newAnd = value === "and";
+    if (newAnd !== andMode) {
+      onToggleAndMode?.();
+    }
+  }
 </script>
 
 <footer>
-  <div class="flex items-center gap-x-3">
-    <div class="flex items-center gap-x-1.5">
-      <Switch
-        checked={excludeMode}
-        id="include-exclude"
-        small
-        onclick={onToggleExcludeMode}
-        label="Include exclude toggle"
-      />
-      <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
-    </div>
+  <div class="flex items-center gap-x-2">
+    <Select
+      id="include-exclude-mode"
+      value={includeExcludeValue}
+      options={includeExcludeOptions}
+      onChange={handleIncludeExcludeChange}
+      size="sm"
+      minWidth={82}
+    />
     {#if isUnnest && onToggleAndMode}
-      <div class="flex items-center gap-x-1.5">
-        <Switch
-          checked={andMode}
-          id="and-or-mode"
-          small
-          onclick={onToggleAndMode}
-          label="Match all toggle"
-        />
-        <Label class="font-normal text-xs" for="and-or-mode">Match all</Label>
-      </div>
+      <Select
+        id="and-or-mode"
+        value={andOrValue}
+        options={andOrOptions}
+        onChange={handleAndOrChange}
+        size="sm"
+        minWidth={92}
+      />
     {/if}
   </div>
   <div class="flex gap-2">
