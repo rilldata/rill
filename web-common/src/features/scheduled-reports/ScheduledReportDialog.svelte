@@ -200,24 +200,21 @@
   let submitting: SuperForm<ReportValues>["submitting"];
 
   $: if (!_superFormInit && initialValues) {
-    _superFormInit = superForm(
-      defaults(initialValues, schema),
-      {
-        id: FORM_ID,
-        SPA: true,
-        validators: schema,
-        async onUpdate({ form }) {
-          if (!form.valid) return;
-          const values = form.data;
-          return handleSubmit(values);
-        },
-        // We need to run the 1st validation only after a submit.
-        // But successive validations should be on input.
-        // Here, "auto" achieves this.
-        validationMethod: "auto",
-        invalidateAll: false,
+    _superFormInit = superForm(defaults(initialValues, schema), {
+      id: FORM_ID,
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+        return handleSubmit(values);
       },
-    );
+      // We need to run the 1st validation only after a submit.
+      // But successive validations should be on input.
+      // Here, "auto" achieves this.
+      validationMethod: "auto",
+      invalidateAll: false,
+    });
     ({ form, errors, enhance, submit, submitting } = _superFormInit);
   }
 

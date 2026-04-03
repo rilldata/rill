@@ -61,11 +61,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { X } from "lucide-svelte";
-  import {
-    defaults,
-    superForm,
-    type SuperForm,
-  } from "sveltekit-superforms";
+  import { defaults, superForm, type SuperForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
 
   export let onClose: () => void;
