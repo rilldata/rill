@@ -284,19 +284,19 @@ export const getAllDimensionFilterItems = (
       dimensionIdMap.has(dashData.dashboard.temporaryFilterName) &&
       dashData.validExplore?.metricsView
     ) {
+      const tempDim = dimensionIdMap.get(
+        dashData.dashboard.temporaryFilterName,
+      )!;
       allDimensionFilterItem.push({
         name: dashData.dashboard.temporaryFilterName,
-        label: getDimensionDisplayName(
-          dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
-        ),
+        label: getDimensionDisplayName(tempDim),
         mode: DimensionFilterMode.Select,
         selectedValues: [],
         isInclude: true,
+        isAndMode: false,
+        isUnnest: !!tempDim.unnest,
         dimensions: new Map<string, MetricsViewSpecDimension>([
-          [
-            dashData.validExplore?.metricsView,
-            dimensionIdMap.get(dashData.dashboard.temporaryFilterName)!,
-          ],
+          [dashData.validExplore?.metricsView, tempDim],
         ]),
         pinned: false,
       });

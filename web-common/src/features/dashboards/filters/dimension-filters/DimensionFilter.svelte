@@ -63,7 +63,6 @@
   let curSearchText = filterData.inputText ?? "";
   let curExcludeMode = filterData.isInclude === false;
   let curAndMode = filterData.isAndMode ?? false;
-  let isUnnest = filterData.isUnnest ?? false;
   let inListTooLong = false;
   let selectedValuesProxy: string[] = filterData.selectedValues ?? [];
   let searchedBulkValues: string[] =
@@ -83,7 +82,10 @@
     isInclude,
     dimensions,
     pinned,
+    isUnnest: unnestFromData,
   } = filterData);
+
+  $: isUnnest = unnestFromData ?? false;
 
   $: if (!open && filterData.mode !== curMode) {
     resyncFilterData(filterData);
@@ -412,7 +414,6 @@
     curSearchText = filterData.inputText ?? "";
     curExcludeMode = filterData.isInclude === false;
     curAndMode = filterData.isAndMode ?? false;
-    isUnnest = filterData.isUnnest ?? false;
     selectedValuesProxy = filterData.selectedValues ?? [];
     searchedBulkValues =
       filterData.mode === DimensionFilterMode.InList
