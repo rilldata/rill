@@ -58,7 +58,8 @@
     {#if !lastTrigger}
       <span class="shrink-0">Hasn't been checked yet</span>
     {:else}
-      <span class="shrink-0">Last checked {timeAgo(new Date(lastTrigger))}</span>
+      <span class="shrink-0">Last checked {timeAgo(new Date(lastTrigger))}</span
+      >
     {/if}
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">

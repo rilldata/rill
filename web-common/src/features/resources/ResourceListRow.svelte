@@ -9,10 +9,7 @@
   export let errorMessage: string | undefined = undefined;
 </script>
 
-<a
-  {href}
-  class="flex items-center group px-4 py-2.5 w-full h-full"
->
+<a {href} class="flex items-center group px-4 py-2.5 w-full h-full">
   <div class="flex flex-col gap-y-1 min-w-0 flex-1">
     <div class="flex gap-x-2 items-center min-h-[20px]">
       <svelte:component this={icon} size={iconSize} />
