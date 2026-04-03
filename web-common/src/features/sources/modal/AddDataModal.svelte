@@ -25,7 +25,6 @@
     getFormWidth,
     ICONS,
     isMultiStepConnector as isMultiStepConnectorSchema,
-    toConnectorDriver as toConnectorDriverFromSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { resetConnectorStep } from "./connectorStepStore";
