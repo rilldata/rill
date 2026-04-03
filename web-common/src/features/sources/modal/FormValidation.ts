@@ -1,5 +1,5 @@
 import type { ValidationAdapter } from "sveltekit-superforms/adapters";
-import { superForm, defaults } from "sveltekit-superforms";
+import { superForm, defaults, type SuperValidated } from "sveltekit-superforms";
 
 import { createSchemasafeValidator } from "./jsonSchemaValidator";
 import { getConnectorSchema } from "./connector-schemas";
@@ -31,10 +31,15 @@ export function getValidationSchemaForConnector(
 export function createConnectorForm(args: {
   schemaName: string;
   formType: AddDataFormType;
-  onUpdate: (event: { form: { data: FormData; valid: boolean } }) => void;
+  onUpdate: (event: {
+    form: SuperValidated<FormData, string, FormData>;
+  }) => void | Promise<void>;
+  additionalDefaults?: Partial<FormData>;
   schemaOverride?: JSONSchemaObject;
 }) {
-  const { schemaName, formType, onUpdate, schemaOverride } = args;
+  const { schemaName, formType, onUpdate, additionalDefaults, schemaOverride } =
+    args;
+  const schema = getConnectorSchema(schemaName);
   const schema = schemaOverride ?? getConnectorSchema(schemaName);
 
   // Don't pass step filter - include defaults for ALL fields so multi-step
@@ -61,17 +66,28 @@ export function createConnectorForm(args: {
 
   // Merge: all fields as empty strings, then schema defaults on top
   const initialValues = { ...allFields, ...schemaDefaults };
+  if (additionalDefaults) {
+    Object.entries(additionalDefaults).forEach(([key, value]) => {
+      if (key in initialValues) {
+        initialValues[key] = value;
+      }
+    });
+  }
 
   const formDefaults = defaults<FormData, string, FormData>(
     initialValues as Partial<FormData>,
     adapter,
   );
 
-  return superForm<FormData, string, FormData>(formDefaults, {
+  const form = superForm<FormData, string, FormData>(formDefaults, {
     SPA: true,
     validators: adapter,
     onUpdate,
+    onError: ({ result }) => {
+      form.message.set((result.error as any).details || result.error.message);
+    },
     resetForm: false,
     validationMethod: "onsubmit",
   });
+  return form;
 }
