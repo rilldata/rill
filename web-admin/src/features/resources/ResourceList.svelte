@@ -128,31 +128,14 @@
 
   .resource-list-item,
   .resource-list-item-empty {
-    @apply block w-full border bg-surface-background;
+    @apply block w-full border-b border-x-0 border-t-0;
+  }
+
+  .resource-list-item:first-child {
+    @apply border-t;
   }
 
   .resource-list-item.fixed-height {
     @apply h-[60px];
-  }
-
-  /* Remove top border on non-first items to avoid double borders */
-  .resource-list-item + .resource-list-item {
-    @apply border-t-0;
-  }
-
-  /* Rounded corners on first and last items */
-  .resource-list-item:first-child,
-  .resource-list-item-empty:first-child {
-    @apply rounded-t-lg;
-  }
-
-  .resource-list-item:last-child,
-  .resource-list-item-empty:last-child {
-    @apply rounded-b-lg;
-  }
-
-  /* Hover effect on list items */
-  .resource-list-item:hover {
-    @apply bg-surface-hover;
   }
 </style>
