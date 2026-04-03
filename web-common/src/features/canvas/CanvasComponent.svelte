@@ -87,11 +87,7 @@
     onmousedown={onMouseDown}
   >
     {#if component}
-      {#if component.type === "custom_chart"}
-        <svelte:component this={component.component} {component} {editable} />
-      {:else}
-        <svelte:component this={component.component} {component} />
-      {/if}
+      <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />
