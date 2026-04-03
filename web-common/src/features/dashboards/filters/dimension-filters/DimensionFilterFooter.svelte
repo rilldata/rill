@@ -22,13 +22,13 @@
   const andOrOptions = [
     {
       value: "or",
-      label: "Match any",
-      description: "Array contains any selected value",
+      label: "OR",
+      description: "Match any selected value",
     },
     {
       value: "and",
-      label: "Match all",
-      description: "Array contains every selected value",
+      label: "AND",
+      description: "Match all selected values",
     },
   ];
 
