@@ -15,20 +15,17 @@
   const placeholderSpec = `Your Vega-Lite spec should look like this:
 {
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-  "description": "A simple bar chart with embedded data.",
-  "data": {
-    "values": [
-      {"a": "A", "b": 28},
-      {"a": "B", "b": 55},
-      {"a": "C", "b": 43}
-    ]
-  },
+  "data": {"name": "query1"},
   "mark": "bar",
   "encoding": {
-    "x": {"field": "a", "type": "nominal", "axis": {"labelAngle": 0}},
-    "y": {"field": "b", "type": "quantitative"}
+    "x": {"field": "dimension", "type": "nominal"},
+    "y": {"field": "measure", "type": "quantitative"}
   }
-}`;
+}
+
+Data comes from your Metrics SQL queries. The first query is
+available as {"name": "query1"}, the second as {"name": "query2"},
+and so on.`;
 
   onMount(() => {
     specEditor = new EditorView({
