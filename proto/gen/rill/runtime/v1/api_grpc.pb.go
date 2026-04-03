@@ -40,7 +40,6 @@ const (
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
 	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
 	RuntimeService_GenerateCanvasFile_FullMethodName      = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
-	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
 	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
 	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
 	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
@@ -125,8 +124,6 @@ type RuntimeServiceClient interface {
 	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(ctx context.Context, in *GenerateCanvasFileRequest, opts ...grpc.CallOption) (*GenerateCanvasFileResponse, error)
-	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
-	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -420,16 +417,6 @@ func (c *runtimeServiceClient) GenerateCanvasFile(ctx context.Context, in *Gener
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenerateCanvasFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GenerateCanvasFile_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateResolverResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateResolver_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -824,8 +811,6 @@ type RuntimeServiceServer interface {
 	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error)
-	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
-	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -968,9 +953,6 @@ func (UnimplementedRuntimeServiceServer) GenerateMetricsViewFile(context.Context
 }
 func (UnimplementedRuntimeServiceServer) GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateCanvasFile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateResolver not implemented")
 }
 func (UnimplementedRuntimeServiceServer) QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryResolver not implemented")
@@ -1453,24 +1435,6 @@ func _RuntimeService_GenerateCanvasFile_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GenerateCanvasFile(ctx, req.(*GenerateCanvasFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_GenerateResolver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateResolverRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateResolver(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GenerateResolver_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateResolver(ctx, req.(*GenerateResolverRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2098,10 +2062,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateCanvasFile",
 			Handler:    _RuntimeService_GenerateCanvasFile_Handler,
-		},
-		{
-			MethodName: "GenerateResolver",
-			Handler:    _RuntimeService_GenerateResolver_Handler,
 		},
 		{
 			MethodName: "QueryResolver",
