@@ -703,8 +703,7 @@ export class FilterManager {
         const filterClass = this.metricsViewFilters.get(name);
 
         if (!filterClass) return;
-        const string =
-          filterClass.toggleDimensionFilterAndMode(dimensionName);
+        const string = filterClass.toggleDimensionFilterAndMode(dimensionName);
 
         if (!string) return;
 

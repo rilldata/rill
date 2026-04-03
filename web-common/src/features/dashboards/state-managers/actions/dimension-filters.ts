@@ -95,8 +95,11 @@ export function toggleMultipleDimensionValueSelections(
       },
     });
     if (isAndMode) {
-      dashboard.whereFilter.cond!.exprs![exprIdx] =
-        createContainsAllExpression(dimensionName, dimensionValues, isExclude);
+      dashboard.whereFilter.cond!.exprs![exprIdx] = createContainsAllExpression(
+        dimensionName,
+        dimensionValues,
+        isExclude,
+      );
     } else {
       dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
         dimensionName,
@@ -130,8 +133,11 @@ export function toggleMultipleDimensionValueSelections(
         dashboard.temporaryFilterName = dimensionName;
       }
     } else {
-      dashboard.whereFilter.cond!.exprs![exprIdx] =
-        createContainsAllExpression(dimensionName, existingValues, isExclude);
+      dashboard.whereFilter.cond!.exprs![exprIdx] = createContainsAllExpression(
+        dimensionName,
+        existingValues,
+        isExclude,
+      );
     }
     return;
   }
@@ -232,8 +238,11 @@ export function toggleDimensionFilterMode(
     // For contains-all: rebuild with negated child operations
     const values = getValuesInExpression(expr);
     const newExclude = !exclude;
-    dashboard.whereFilter.cond.exprs[exprIdx] =
-      createContainsAllExpression(dimensionName, values, newExclude);
+    dashboard.whereFilter.cond.exprs[exprIdx] = createContainsAllExpression(
+      dimensionName,
+      values,
+      newExclude,
+    );
   } else {
     dashboard.whereFilter.cond.exprs[exprIdx] = negateExpression(expr);
   }
@@ -267,12 +276,18 @@ export function toggleDimensionFilterAndMode(
 
   if (newAndMode) {
     // Convert from IN to contains-all
-    dashboard.whereFilter.cond.exprs[exprIdx] =
-      createContainsAllExpression(dimensionName, values, isExclude);
+    dashboard.whereFilter.cond.exprs[exprIdx] = createContainsAllExpression(
+      dimensionName,
+      values,
+      isExclude,
+    );
   } else {
     // Convert from contains-all to IN
-    dashboard.whereFilter.cond.exprs[exprIdx] =
-      createInExpression(dimensionName, values, isExclude);
+    dashboard.whereFilter.cond.exprs[exprIdx] = createInExpression(
+      dimensionName,
+      values,
+      isExclude,
+    );
   }
 }
 

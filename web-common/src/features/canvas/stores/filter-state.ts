@@ -252,8 +252,8 @@ export class FilterState {
     } = get(this.parsed);
 
     if (!wf.cond?.exprs) return;
-    const exprIdx = wf.cond.exprs.findIndex(
-      (e) => matchExpressionByName(e, dimensionName),
+    const exprIdx = wf.cond.exprs.findIndex((e) =>
+      matchExpressionByName(e, dimensionName),
     );
     if (exprIdx === -1) return;
 
@@ -263,8 +263,11 @@ export class FilterState {
       // Detect current mode from child op
       const childOp = expr.cond?.exprs?.[0]?.cond?.op;
       const wasExclude = childOp === V1Operation.OPERATION_NIN;
-      wf.cond.exprs[exprIdx] =
-        createContainsAllExpression(dimensionName, values, !wasExclude);
+      wf.cond.exprs[exprIdx] = createContainsAllExpression(
+        dimensionName,
+        values,
+        !wasExclude,
+      );
     } else {
       wf.cond.exprs[exprIdx] = negateExpression(expr);
     }
@@ -284,8 +287,8 @@ export class FilterState {
     } = get(this.parsed);
 
     if (!wf.cond?.exprs) return;
-    const exprIdx = wf.cond.exprs.findIndex(
-      (e) => matchExpressionByName(e, dimensionName),
+    const exprIdx = wf.cond.exprs.findIndex((e) =>
+      matchExpressionByName(e, dimensionName),
     );
     if (exprIdx === -1) return;
 
@@ -306,12 +309,18 @@ export class FilterState {
 
     if (wasAndMode) {
       // Convert from contains-all to IN
-      wf.cond.exprs[exprIdx] =
-        createInExpression(dimensionName, values, isExclude);
+      wf.cond.exprs[exprIdx] = createInExpression(
+        dimensionName,
+        values,
+        isExclude,
+      );
     } else {
       // Convert from IN to contains-all
-      wf.cond.exprs[exprIdx] =
-        createContainsAllExpression(dimensionName, values, isExclude);
+      wf.cond.exprs[exprIdx] = createContainsAllExpression(
+        dimensionName,
+        values,
+        isExclude,
+      );
     }
 
     return getFilterParam(

@@ -50,7 +50,10 @@
     {/if}
   {:else}
     {#if operator}
-      <span class="text-fg-secondary text-[10px] uppercase font-semibold flex-none">{operator}</span>
+      <span
+        class="text-fg-secondary text-[10px] uppercase font-semibold flex-none"
+        >{operator}</span
+      >
     {/if}
     {#if !smallChip}
       {#each values.slice(0, show) as value (value)}

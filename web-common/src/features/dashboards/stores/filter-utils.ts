@@ -45,9 +45,7 @@ export function createContainsAllExpression(
   vals: any[],
   negate = false,
 ): V1Expression {
-  const children = vals.map((val) =>
-    createInExpression(ident, [val], negate),
-  );
+  const children = vals.map((val) => createInExpression(ident, [val], negate));
   return negate ? createOrExpression(children) : createAndExpression(children);
 }
 
@@ -83,9 +81,7 @@ export function isContainsAllExpression(expr: V1Expression): boolean {
  * Extracts values from a "contains all" expression.
  * Each child is IN(dim, singleValue) or NIN(dim, singleValue).
  */
-export function getValuesInContainsAllExpression(
-  expr: V1Expression,
-): any[] {
+export function getValuesInContainsAllExpression(expr: V1Expression): any[] {
   if (!expr.cond?.exprs) return [];
   return expr.cond.exprs.map((child) => child.cond?.exprs?.[1]?.val);
 }

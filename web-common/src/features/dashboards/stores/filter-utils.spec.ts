@@ -230,9 +230,7 @@ describe("contains-all expressions", () => {
 
       // Should have removed the tags filter
       expect(result?.cond?.exprs).toHaveLength(1);
-      expect(result?.cond?.exprs?.[0]?.cond?.exprs?.[0]?.ident).toBe(
-        "country",
-      );
+      expect(result?.cond?.exprs?.[0]?.cond?.exprs?.[0]?.ident).toBe("country");
     });
   });
 

@@ -1,7 +1,10 @@
 import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
-import { andModeFromFilters, includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+import {
+  andModeFromFilters,
+  includeExcludeModeFromFilters,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";

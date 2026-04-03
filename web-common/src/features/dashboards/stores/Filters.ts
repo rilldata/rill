@@ -106,9 +106,7 @@ export class Filters {
     this.dimensionFilterExcludeMode = writable(
       new Map(dimensionFilterExcludeMode),
     );
-    this.dimensionFilterAndMode = writable(
-      new Map(dimensionFilterAndMode),
-    );
+    this.dimensionFilterAndMode = writable(new Map(dimensionFilterAndMode));
     this.temporaryFilterName = writable(null);
 
     // -------------------------------
@@ -360,8 +358,11 @@ export class Filters {
           this.setTemporaryFilterName(dimensionName);
         }
       } else {
-        wf.cond!.exprs![exprIndex] =
-          createContainsAllExpression(dimensionName, existingValues, isExclude);
+        wf.cond!.exprs![exprIndex] = createContainsAllExpression(
+          dimensionName,
+          existingValues,
+          isExclude,
+        );
       }
     } else {
       dimensionValues.forEach((dimensionValue) => {
@@ -450,8 +451,11 @@ export class Filters {
     const expr = wf.cond.exprs[exprIdx];
     if (isContainsAllExpression(expr)) {
       const values = getValuesInExpression(expr);
-      wf.cond.exprs[exprIdx] =
-        createContainsAllExpression(dimensionName, values, newExclude);
+      wf.cond.exprs[exprIdx] = createContainsAllExpression(
+        dimensionName,
+        values,
+        newExclude,
+      );
     } else {
       wf.cond.exprs[exprIdx] = negateExpression(expr);
     }
@@ -477,11 +481,17 @@ export class Filters {
     const isExclude = !!excludeMode.get(dimensionName);
 
     if (newAndMode) {
-      wf.cond.exprs[exprIdx] =
-        createContainsAllExpression(dimensionName, values, isExclude);
+      wf.cond.exprs[exprIdx] = createContainsAllExpression(
+        dimensionName,
+        values,
+        isExclude,
+      );
     } else {
-      wf.cond.exprs[exprIdx] =
-        createInExpression(dimensionName, values, isExclude);
+      wf.cond.exprs[exprIdx] = createInExpression(
+        dimensionName,
+        values,
+        isExclude,
+      );
     }
     this.whereFilter.set(wf);
   };

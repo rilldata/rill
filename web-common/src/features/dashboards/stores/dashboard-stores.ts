@@ -80,9 +80,7 @@ export function includeExcludeModeFromFilters(
   return map;
 }
 
-export function andModeFromFilters(
-  filters: V1Expression | undefined,
-) {
+export function andModeFromFilters(filters: V1Expression | undefined) {
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e) => {
