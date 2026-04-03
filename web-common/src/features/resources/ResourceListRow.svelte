@@ -1,6 +1,5 @@
 <script lang="ts">
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import type { ComponentType } from "svelte";
 
   export let href: string;
@@ -33,10 +32,13 @@
       <slot name="subtitle" />
     </div>
   </div>
-  <button
-    class="shrink-0 text-fg-secondary hover:text-fg-primary grid place-items-center rounded-sm p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <div
+    class="shrink-0"
     on:click|preventDefault|stopPropagation={() => {}}
+    role="menu"
+    tabindex="-1"
   >
-    <ThreeDot size="16px" />
-  </button>
+    <slot name="actions" />
+  </div>
 </a>
