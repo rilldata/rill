@@ -1,9 +1,9 @@
 <script lang="ts">
+  import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
 
   export let name: string;
@@ -23,14 +23,12 @@
     ? `/-/embed/${dashboardSlug}/${name}`
     : `/${organization}/${project}/${dashboardSlug}/${name}`;
 
-  $: resourceKind = isMetricsExplorer
-    ? ResourceKind.Explore
-    : ResourceKind.Canvas;
+  $: icon = isMetricsExplorer ? ExploreIcon : CanvasIcon;
 </script>
 
 <a class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full" {href}>
   <div class="flex gap-x-2 items-center min-h-[20px]">
-    <ResourceTypeBadge kind={resourceKind} />
+    <svelte:component this={icon} size="14px" />
     <span
       class="text-fg-secondary text-sm font-semibold group-hover:text-accent-primary-action truncate"
     >
