@@ -39,7 +39,7 @@
       <span class="italic">({matchedCount} of {values.length})</span>
     {/if}
   {:else}
-    {#if andMode && values.length > 0}
+    {#if andMode === true && values.length > 0}
       <span class="text-fg-secondary text-[10px] uppercase font-semibold flex-none">all of</span>
     {/if}
     {#if !smallChip}

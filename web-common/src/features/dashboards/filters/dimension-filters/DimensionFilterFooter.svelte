@@ -33,7 +33,7 @@
   ];
 
   $: includeExcludeValue = excludeMode ? "exclude" : "include";
-  $: andOrValue = andMode ? "and" : "or";
+  $: andOrValue = andMode === true ? "and" : "or";
 
   function handleIncludeExcludeChange(value: string) {
     const newExclude = value === "exclude";
