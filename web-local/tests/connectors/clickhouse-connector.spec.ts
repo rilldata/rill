@@ -293,7 +293,7 @@ test.describe("ClickHouse connector", () => {
       // Submit the form
       await page.getByRole("button", { name: "Test and Connect" }).click();
 
-      await selectAdImpressionsAndSubmit(page);
+      await selectAdImpressionsAndSubmit(page, "clickhouse_1");
 
       // Open the connectors folder
       await page.getByLabel("/connectors").click();
@@ -343,7 +343,7 @@ test.describe("ClickHouse connector", () => {
       // Submit the form
       await page.getByRole("button", { name: "Test and Connect" }).click();
 
-      await selectAdImpressionsAndSubmit(page);
+      await selectAdImpressionsAndSubmit(page, "clickhouse");
 
       // Open the connectors folder
       await page.getByLabel("/connectors").click();
@@ -495,7 +495,7 @@ async function selectAdBidsAndSubmit(page: Page, metricsViewOnly: boolean) {
   });
 }
 
-async function selectAdImpressionsAndSubmit(page: Page) {
+async function selectAdImpressionsAndSubmit(page: Page, connectorName: string) {
   // Wait for pick a table screen
   await expect(
     page.getByText("Pick a table to power your first dashboard"),
@@ -508,7 +508,7 @@ async function selectAdImpressionsAndSubmit(page: Page) {
     .click();
   await page
     .getByLabel("Import Table Form")
-    .getByLabel(`clickhouse_1-default.ad_impressions`)
+    .getByLabel(`${connectorName}-default.ad_impressions`)
     .click();
 
   // Click generate dashboard button

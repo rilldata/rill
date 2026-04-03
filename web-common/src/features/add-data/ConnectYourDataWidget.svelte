@@ -13,20 +13,6 @@
   const runtimeClient = useRuntimeClient();
   const topConnectors = getSupportedTopConnectors(runtimeClient);
 
-  let suppressJitter = false;
-  let suppressJitterTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  function handleSuppressJitter() {
-    suppressJitter = true;
-    if (suppressJitterTimeout) clearTimeout(suppressJitterTimeout);
-    suppressJitterTimeout = setTimeout(clearSuppressJitter, 250);
-  }
-  function clearSuppressJitter() {
-    suppressJitter = false;
-    if (suppressJitterTimeout) clearTimeout(suppressJitterTimeout);
-    suppressJitterTimeout = null;
-  }
-
   function selectConnector(e: MouseEvent, connector: string) {
     e.preventDefault();
     e.stopPropagation();
@@ -35,61 +21,57 @@
   }
 </script>
 
-<button
+<div
   class="container {onWelcomeScreen ? 'container-welcome' : 'container-home'}"
-  onclick={() => startConnectorSelection(null)}
-  class:jitter-suppress={suppressJitter}
-  aria-label="Connect your data"
 >
-  <div class="header">
-    <DatabaseIcon class="h-[18px]" />
-    <span>Connect your data</span>
-  </div>
-
-  <div
-    class="primary-connectors"
-    onmouseleave={clearSuppressJitter}
-    role="group"
+  <button
+    class="all-connectors"
+    onclick={() => startConnectorSelection(null)}
+    aria-label="Connect your data"
   >
+    <div class="header">
+      <DatabaseIcon class="h-[18px]" />
+      <span>Connect your data</span>
+    </div>
+
+    <div class="grow"></div>
+
+    <div class="see-more-container">
+      <span class="grow"></span>
+      <div class="see-more">
+        <span>See more connectors</span>
+        <ArrowRightIcon class="w-4 h-4" />
+      </div>
+    </div>
+  </button>
+
+  <div class="primary-connectors" role="group">
     {#each $topConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
       {@const label = connectorLabelMapping[connector] ?? connector}
-      <div
+      <button
         class="primary-connector-entry"
         onclick={(e) => selectConnector(e, connector)}
-        onkeydown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            startConnectorSelection(connector);
-          }
-        }}
-        onmouseleave={handleSuppressJitter}
         aria-label={`Connect to ${connector}`}
-        role="button"
-        tabindex="-1"
       >
         <svelte:component this={icon} />
         <span>{label}</span>
-      </div>
+      </button>
     {/each}
   </div>
-
-  <div class="see-more-container">
-    <span class="grow"></span>
-    <div class="see-more">
-      <span>See more connectors</span>
-      <ArrowRightIcon class="w-4 h-4" />
-    </div>
-  </div>
-</button>
+</div>
 
 <style lang="postcss">
   .container {
-    @apply flex flex-col p-6 gap-4 w-96 min-w-96 h-[246px];
+    @apply relative w-96 min-w-96 h-[246px];
+  }
+
+  .all-connectors {
+    @apply flex flex-col p-6 gap-4 w-full h-full;
     @apply border rounded-lg;
   }
 
-  .container-welcome {
+  .container-welcome .all-connectors {
     @apply border-primary-200;
     background: radial-gradient(
       94.8% 95.1% at 23.7% 14.73%,
@@ -97,7 +79,7 @@
       #eaecff 96.63%
     );
   }
-  :global(.dark) .container-welcome {
+  :global(.dark) .container-welcome .all-connectors {
     background: radial-gradient(
       94.8% 95.1% at 23.7% 14.73%,
       #31497d 22.12%,
@@ -105,19 +87,15 @@
     );
   }
 
-  .container-home {
+  .container-home .all-connectors {
     @apply bg-surface-overlay;
   }
 
   /* We need to toggle off hover when primary connector is hovered */
-  .container-welcome:hover:not(:has(.primary-connector-entry:hover)):not(
-      .jitter-suppress
-    ) {
+  .container-welcome .all-connectors:hover {
     @apply border-accent-primary-action shadow-lg cursor-pointer;
   }
-  .container-home:hover:not(:has(.primary-connector-entry:hover)):not(
-      .jitter-suppress
-    ) {
+  .container-home .all-connectors:hover {
     @apply bg-surface-hover;
   }
 
@@ -127,7 +105,8 @@
   }
 
   .primary-connectors {
-    @apply grid grid-cols-2 gap-3 grow;
+    @apply grid grid-cols-2 gap-3 w-[335px];
+    @apply absolute bottom-20 left-6;
   }
 
   .primary-connector-entry {

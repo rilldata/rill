@@ -94,10 +94,6 @@
     );
   }
 
-  .container:hover {
-    @apply border-accent-primary-action shadow-lg;
-  }
-
   .header {
     @apply flex flex-row items-center gap-2;
     @apply text-lg text-fg-primary font-semibold;
@@ -106,7 +102,7 @@
   .prompt-input {
     @apply w-full p-2 min-h-28 h-full;
     @apply border border-gray-300 rounded-[2px];
-    @apply text-sm leading-relaxed;
+    @apply text-sm leading-relaxed resize-none;
   }
 
   .prompt-input.empty::before {
