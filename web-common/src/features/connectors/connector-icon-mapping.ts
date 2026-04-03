@@ -69,3 +69,10 @@ export const connectorLabelMapping = {
   druid: "Druid",
   starrocks: "StarRocks",
 };
+
+export const connectorKeywordMapping = {
+  athena: ["aws", "amazon"],
+  redshift: ["amazon", "aws"],
+  s3: ["aws", "amazon"],
+  gcs: ["google"],
+};

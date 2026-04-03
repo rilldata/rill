@@ -19,10 +19,15 @@
   const supportedConnectors = getSupportedConnectorInfos(runtimeClient, config);
 
   let searchText = "";
+  $: searchTextLowerCase = searchText.toLowerCase();
   $: filteredConnectors = $supportedConnectors.filter(
     (connector) =>
-      connector.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      connector.displayName.toLowerCase().includes(searchText.toLowerCase()),
+      connector.name.toLowerCase().includes(searchTextLowerCase) ||
+      connector.displayName.toLowerCase().includes(searchTextLowerCase) ||
+      connector.category.toLowerCase().includes(searchTextLowerCase) ||
+      connector.keywords.some((keyword) =>
+        keyword.toLowerCase().includes(searchTextLowerCase),
+      ),
   );
 </script>
 
