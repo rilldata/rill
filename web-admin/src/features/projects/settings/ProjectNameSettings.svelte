@@ -116,7 +116,10 @@
   <form
     slot="body"
     id="project-update-form"
-    on:submit|preventDefault={submit}
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
     class="update-project-form"
     use:enhance
   >

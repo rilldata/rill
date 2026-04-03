@@ -72,8 +72,10 @@
   </div>
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <NavigateOrDropdown resources={dashboards} {builder} />
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <NavigateOrDropdown {...props} resources={dashboards} />
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Group>
@@ -91,7 +93,7 @@
         {/each}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (resource?.meta?.name?.name) {
               // Use developer agent if enabled, otherwise fall back to RPC
               if ($developerChat) {
@@ -112,7 +114,7 @@
           Generate Canvas Dashboard{$ai ? " with AI" : ""}
         </DropdownMenu.Item>
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (resource)
               await createAndPreviewExplore(
                 runtimeClient,

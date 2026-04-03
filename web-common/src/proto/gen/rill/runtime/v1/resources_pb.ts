@@ -3171,6 +3171,18 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotRowLimit?: number;
 
+  /**
+   * Chart display settings (frontend-only; persisted in URL state)
+   *
+   * @generated from field: optional bool chart_dynamic_y_axis = 35;
+   */
+  chartDynamicYAxis?: boolean;
+
+  /**
+   * @generated from field: optional bool chart_force_line = 36;
+   */
+  chartForceLine?: boolean;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3210,6 +3222,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 36, name: "chart_force_line", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {

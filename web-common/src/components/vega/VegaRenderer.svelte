@@ -1,5 +1,6 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
@@ -8,6 +9,7 @@
     type View,
     type VisualizationSpec,
   } from "svelte-vega";
+  import type { Config } from "vega-lite";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
@@ -21,9 +23,12 @@
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
   export let canvasDashboard = false;
+  export let config: Config | undefined = undefined;
   export let renderer: "canvas" | "svg" = "canvas";
   export let theme: "light" | "dark" = "light";
+  export let hasComparison: boolean = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
+  export let colorMapping: ColorMapping = [];
   export let view: View;
   export let isScrubbing: boolean;
 
@@ -31,7 +36,7 @@
   let tooltipHandler: VegaLiteTooltipHandler | null = null;
 
   $: width = contentRect.width;
-  $: height = contentRect.height * 0.95 - 80;
+  $: height = contentRect.height - 10;
 
   let tooltipTimer: number | null = null;
   const TOOLTIP_DELAY = 200;
@@ -68,20 +73,31 @@
     void view.runAsync();
   }
 
+  // Memoize colorMapping/hasComparison so they don't cause options to change
+  // (which triggers svelte-vega to recreate the entire view, losing brush state).
+  let stableColorMapping: ColorMapping = [];
+  let stableHasComparison = false;
+  $: if (JSON.stringify(colorMapping) !== JSON.stringify(stableColorMapping)) {
+    stableColorMapping = colorMapping;
+  }
+  $: if (hasComparison !== stableHasComparison) {
+    stableHasComparison = hasComparison;
+  }
+
   $: options = createEmbedOptions({
     client: runtimeClient,
-    canvasDashboard,
     width,
     height,
+    config,
     renderer,
     themeMode: theme,
-    colorMapping: [],
     expressionFunctions,
-    useExpressionInterpreter: false,
+    colorMapping: stableColorMapping,
+    hasComparison: stableHasComparison,
   });
 
-  const onError = (e: CustomEvent<{ error: Error }>) => {
-    error = e.detail.error.message;
+  const onError = (e: Error) => {
+    error = e.message;
   };
 
   const handleMouseLeave = () => {
@@ -108,10 +124,9 @@
 <div
   bind:contentRect
   role="presentation"
-  class:px-4={canvasDashboard}
-  class:pb-2={canvasDashboard}
+  class:px-2={canvasDashboard}
   class="rill-vega-container overflow-hidden size-full flex flex-col items-center justify-center"
-  on:mouseleave={handleMouseLeave}
+  onmouseleave={handleMouseLeave}
 >
   {#if error}
     <div
@@ -121,13 +136,6 @@
       {error}
     </div>
   {:else}
-    <Vega
-      {data}
-      {spec}
-      {signalListeners}
-      {options}
-      bind:view
-      on:onError={onError}
-    />
+    <Vega {data} {spec} {signalListeners} {options} bind:view {onError} />
   {/if}
 </div>

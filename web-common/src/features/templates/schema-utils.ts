@@ -175,6 +175,7 @@ export function isDisabledForValues(
 ): boolean {
   const prop = schema.properties?.[key];
   if (!prop) return false;
+  if (prop["x-disabled"]) return true;
   const conditions = prop["x-disabled-if"];
   if (!conditions) return false;
 

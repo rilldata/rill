@@ -5589,6 +5589,14 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotRowLimit
 	}
 
+	if m.ChartDynamicYAxis != nil {
+		// no validation rules for ChartDynamicYAxis
+	}
+
+	if m.ChartForceLine != nil {
+		// no validation rules for ChartForceLine
+	}
+
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)
 	}

@@ -11,8 +11,10 @@
 </script>
 
 <Alert.Root bind:open>
-  <Alert.Trigger asChild>
-    <div class="hidden"></div>
+  <Alert.Trigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </Alert.Trigger>
   <Alert.Content class="min-w-[600px]">
     <Alert.Header>

@@ -9,7 +9,6 @@ import { getRillTheme } from "./vega-config";
 
 export interface CreateEmbedOptionsParams {
   client: RuntimeClient;
-  canvasDashboard: boolean;
   width: number;
   height: number;
   config?: Config;
@@ -23,7 +22,6 @@ export interface CreateEmbedOptionsParams {
 
 export function createEmbedOptions({
   client,
-  canvasDashboard,
   width,
   height,
   config,
@@ -37,7 +35,7 @@ export function createEmbedOptions({
   const jwt = client.getJwt();
 
   return {
-    config: config || getRillTheme(canvasDashboard, themeMode === "dark"),
+    config: config || getRillTheme(themeMode === "dark"),
     renderer,
     tooltip: {
       theme: themeMode,
@@ -47,8 +45,8 @@ export function createEmbedOptions({
     },
     actions: false,
     logLevel: 0, // only show errors
-    width: canvasDashboard ? width : undefined,
-    height: canvasDashboard ? height : undefined,
+    width,
+    height,
     ...(useExpressionInterpreter && {
       // Add interpreter so that vega expressions are CSP compliant
       ast: true,
