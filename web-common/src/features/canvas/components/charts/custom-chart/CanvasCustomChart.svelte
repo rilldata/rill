@@ -1,10 +1,16 @@
 <script lang="ts">
   import CustomChartRenderer from "@rilldata/web-common/features/components/charts/agentic/CustomChartRenderer.svelte";
+  import { onDestroy } from "svelte";
   import AgenticChartPrompt from "./AgenticChartPrompt.svelte";
+  import { clearComponentConversation } from "./chart-ai-agent";
   import type { CustomChartComponent } from "./index";
 
   export let component: CustomChartComponent;
   export let editable: boolean = false;
+
+  onDestroy(() => {
+    clearComponentConversation(component.id);
+  });
 
   $: ({ specStore, timeAndFilterStore } = component);
 

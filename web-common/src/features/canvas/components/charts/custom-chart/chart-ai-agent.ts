@@ -1,13 +1,16 @@
-import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation";
+import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import type { CustomChartComponent } from "./index";
 import { derived, get, type Readable } from "svelte/store";
+import type { CustomChartComponent } from "./index";
 
-// Track the conversation associated with each component so we can continue rather than start fresh
 const componentConversations = new Map<string, Conversation>();
+
+export function clearComponentConversation(componentId: string): void {
+  componentConversations.delete(componentId);
+}
 
 /**
  * Build a prompt with enough context for the dev agent to locate and edit the component.
