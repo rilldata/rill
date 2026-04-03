@@ -1,7 +1,6 @@
 <script lang="ts">
-  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
-  import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+  import ResourceListRow from "@rilldata/web-common/features/resources/ResourceListRow.svelte";
   import cronstrue from "cronstrue";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import { formatRunDate } from "../tableUtils";
@@ -20,28 +19,13 @@
   const humanReadableFrequency = cronstrue.toString(frequency);
 </script>
 
-<a
+<ResourceListRow
   href={`reports/${id}`}
-  class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full"
+  {title}
+  icon={ReportIcon}
+  errorMessage={lastRunErrorMessage}
 >
-  <div class="flex gap-x-2 items-center min-h-[20px]">
-    <ReportIcon size={"14px"} />
-    <span
-      class="text-fg-primary text-sm font-semibold group-hover:text-accent-primary-action truncate"
-    >
-      {title}
-    </span>
-    {#if lastRun}
-      {#if lastRunErrorMessage}
-        <CancelCircleInverse className="text-red-500 shrink-0" />
-      {:else}
-        <CheckCircleOutline className="text-primary-500 shrink-0" />
-      {/if}
-    {/if}
-  </div>
-  <div
-    class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
-  >
+  <svelte:fragment slot="subtitle">
     {#if !lastRun}
       <span class="shrink-0">Hasn't run yet</span>
     {:else}
@@ -55,5 +39,5 @@
         <ReportOwnerBullet {organization} {project} {ownerId} />
       </svelte:fragment>
     </ProjectAccessControls>
-  </div>
-</a>
+  </svelte:fragment>
+</ResourceListRow>

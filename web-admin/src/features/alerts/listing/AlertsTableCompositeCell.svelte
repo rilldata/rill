@@ -1,7 +1,6 @@
 <script lang="ts">
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
-  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
-  import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
+  import ResourceListRow from "@rilldata/web-common/features/resources/ResourceListRow.svelte";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import AlertOwnerBullet from "./AlertOwnerBullet.svelte";
@@ -15,33 +14,17 @@
   export let lastTriggerErrorMessage: string | undefined;
 </script>
 
-<a
+<ResourceListRow
   href={`alerts/${id}`}
-  class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full"
+  {title}
+  icon={AlertIcon}
+  errorMessage={lastTriggerErrorMessage}
 >
-  <div class="flex gap-x-2 items-center min-h-[20px]">
-    <AlertIcon size="14px" />
-    <span
-      class="text-fg-primary text-sm font-semibold group-hover:text-accent-primary-action truncate"
-    >
-      {title}
-    </span>
-    {#if lastTrigger}
-      {#if lastTriggerErrorMessage}
-        <CancelCircleInverse className="text-red-500 shrink-0" />
-      {:else}
-        <CheckCircleOutline className="text-primary-500 shrink-0" />
-      {/if}
-    {/if}
-  </div>
-  <div
-    class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
-  >
+  <svelte:fragment slot="subtitle">
     {#if !lastTrigger}
       <span class="shrink-0">Hasn't been checked yet</span>
     {:else}
-      <span class="shrink-0">Last checked {timeAgo(new Date(lastTrigger))}</span
-      >
+      <span class="shrink-0">Last checked {timeAgo(new Date(lastTrigger))}</span>
     {/if}
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
@@ -49,5 +32,5 @@
         <AlertOwnerBullet {organization} {project} {ownerId} />
       </svelte:fragment>
     </ProjectAccessControls>
-  </div>
-</a>
+  </svelte:fragment>
+</ResourceListRow>
