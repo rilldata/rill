@@ -15,7 +15,7 @@
 {#if filterGroups.length > 0}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
-      class="flex flex-row items-center gap-x-1.5 text-sm font-medium text-fg-primary cursor-pointer"
+      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer"
       aria-label="Filter options"
     >
       <FilterOutlined size="14" />

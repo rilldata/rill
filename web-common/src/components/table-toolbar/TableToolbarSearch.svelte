@@ -63,7 +63,7 @@
   </div>
 {:else}
   <button
-    class="flex items-center justify-center h-9 w-9 text-fg-primary hover:text-fg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+    class="flex items-center justify-center h-9 w-4 text-fg-primary hover:text-fg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
     onclick={open}
     aria-label="Search"
     {disabled}
