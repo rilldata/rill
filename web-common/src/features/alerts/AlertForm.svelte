@@ -138,23 +138,37 @@
         ));
   $: ({ selectedComparisonTimeRange } = timeControls);
 
-  $: superFormInstance = superForm(
-    defaults(initialValues, alertFormValidationSchema),
-    {
-      SPA: true,
-      validators: alertFormValidationSchema,
-      dataType: "json",
-      async onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
-        return handleSubmit(values);
+  // Create superForm once; recreating it breaks use:enhance since the action
+  // only binds on mount and a new instance's enhance never gets applied to the DOM.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let superFormInstance: any;
+  let form: any,
+    errors: any,
+    enhance: any,
+    submit: any,
+    submitting: any,
+    tainted: any,
+    validate: any;
+
+  $: if (!superFormInstance && initialValues) {
+    superFormInstance = superForm(
+      defaults(initialValues, alertFormValidationSchema),
+      {
+        SPA: true,
+        validators: alertFormValidationSchema,
+        dataType: "json",
+        async onUpdate({ form }) {
+          if (!form.valid) return;
+          const values = form.data;
+          return handleSubmit(values);
+        },
+        validationMethod: "oninput",
+        invalidateAll: false,
       },
-      validationMethod: "oninput",
-      invalidateAll: false,
-    },
-  );
-  $: ({ form, errors, enhance, submit, submitting, tainted, validate } =
-    superFormInstance);
+    );
+    ({ form, errors, enhance, submit, submitting, tainted, validate } =
+      superFormInstance);
+  }
 
   $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
   $: dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
@@ -287,58 +301,64 @@
   }
 </script>
 
-<form
-  autocomplete="off"
-  class="flex flex-col gap-y-3"
-  id={formId}
-  onsubmit={(e) => {
-    e.preventDefault();
-    submit(e);
-  }}
-  use:enhance
->
-  <DialogTitle
-    class="px-6 py-4 text-fg-primary text-lg font-semibold leading-7 flex flex-row items-center justify-between"
+{#if superFormInstance}
+  <form
+    autocomplete="off"
+    class="flex flex-col gap-y-3"
+    id={formId}
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
+    use:enhance
   >
-    <div>{dialogTitle}</div>
-    <Button type="link" noStroke compact onClick={handleCancel}>
-      <X strokeWidth={3} size={16} class="text-fg-secondary" />
-    </Button>
-  </DialogTitle>
-  <DialogTabs.Root value={tabs[currentTabIndex]}>
-    <DialogTabs.List class="border-t">
-      {#each tabs as tab, i (i)}
-        <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
-        <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">
-          {tab}
-        </DialogTabs.Trigger>
-      {/each}
-    </DialogTabs.List>
-    <div class="p-3 bg-surface-subtle h-[600px] overflow-auto">
-      <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
-      </DialogTabs.Content>
-      <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
-        <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
-      </DialogTabs.Content>
-      <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
-        <AlertDialogDeliveryTab {superFormInstance} {exploreName} />
-      </DialogTabs.Content>
-    </div>
-  </DialogTabs.Root>
-  <div class="px-6 py-3 flex items-center gap-x-2">
-    <div class="grow"></div>
-    {#if currentTabIndex === 0}
-      <Button onClick={handleCancel} type="secondary">Cancel</Button>
-    {:else}
-      <Button onClick={handleBack} type="secondary">Back</Button>
-    {/if}
-    {#if currentTabIndex !== 2}
-      <Button type="primary" onClick={handleNextTab}>Next</Button>
-    {:else}
-      <Button type="primary" disabled={$submitting} form={formId} submitForm>
-        {isCreateForm ? "Create" : "Update"}
+    <DialogTitle
+      class="px-6 py-4 text-fg-primary text-lg font-semibold leading-7 flex flex-row items-center justify-between"
+    >
+      <div>{dialogTitle}</div>
+      <Button type="link" noStroke compact onClick={handleCancel}>
+        <X strokeWidth={3} size={16} class="text-fg-secondary" />
       </Button>
-    {/if}
-  </div>
-</form>
+    </DialogTitle>
+    <DialogTabs.Root value={tabs[currentTabIndex]}>
+      <DialogTabs.List class="border-t">
+        {#each tabs as tab, i (i)}
+          <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
+          <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">
+            {tab}
+          </DialogTabs.Trigger>
+        {/each}
+      </DialogTabs.List>
+      <div class="p-3 bg-surface-subtle h-[600px] overflow-auto">
+        <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
+          <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
+        </DialogTabs.Content>
+        <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
+          <AlertDialogCriteriaTab
+            {superFormInstance}
+            {filters}
+            {timeControls}
+          />
+        </DialogTabs.Content>
+        <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
+          <AlertDialogDeliveryTab {superFormInstance} {exploreName} />
+        </DialogTabs.Content>
+      </div>
+    </DialogTabs.Root>
+    <div class="px-6 py-3 flex items-center gap-x-2">
+      <div class="grow"></div>
+      {#if currentTabIndex === 0}
+        <Button onClick={handleCancel} type="secondary">Cancel</Button>
+      {:else}
+        <Button onClick={handleBack} type="secondary">Back</Button>
+      {/if}
+      {#if currentTabIndex !== 2}
+        <Button type="primary" onClick={handleNextTab}>Next</Button>
+      {:else}
+        <Button type="primary" disabled={$submitting} form={formId} submitForm>
+          {isCreateForm ? "Create" : "Update"}
+        </Button>
+      {/if}
+    </div>
+  </form>
+{/if}

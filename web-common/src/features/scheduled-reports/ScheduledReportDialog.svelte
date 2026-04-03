@@ -189,24 +189,30 @@
           aggregationRequest,
         );
 
-  $: ({ form, errors, enhance, submit, submitting } = superForm(
-    defaults(initialValues, schema),
-    {
-      id: FORM_ID,
-      SPA: true,
-      validators: schema,
-      async onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
-        return handleSubmit(values);
+  // Create superForm once; recreating it breaks use:enhance since the action
+  // only binds on mount and a new instance's enhance never gets applied to the DOM.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let form: any, errors: any, enhance: any, submit: any, submitting: any;
+  let _superFormInitialized = false;
+
+  $: if (!_superFormInitialized && initialValues) {
+    _superFormInitialized = true;
+    ({ form, errors, enhance, submit, submitting } = superForm(
+      defaults(initialValues, schema),
+      {
+        id: FORM_ID,
+        SPA: true,
+        validators: schema,
+        async onUpdate({ form }) {
+          if (!form.valid) return;
+          const values = form.data;
+          return handleSubmit(values);
+        },
+        validationMethod: "auto",
+        invalidateAll: false,
       },
-      // We need to run the 1st validation only after a submit.
-      // But successive validations should be on input.
-      // Here, "auto" achieves this.
-      validationMethod: "auto",
-      invalidateAll: false,
-    },
-  ));
+    ));
+  }
 
   $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
 
@@ -306,32 +312,34 @@
   <Dialog.Content class="min-w-[900px]" escapeKeydownBehavior="ignore">
     <Dialog.Title>Schedule report</Dialog.Title>
 
-    <BaseScheduledReportForm
-      formId={FORM_ID}
-      data={form}
-      {errors}
-      {submit}
-      {enhance}
-      exploreName={exploreName ?? ""}
-      {filters}
-      {timeControls}
-    />
+    {#if _superFormInitialized}
+      <BaseScheduledReportForm
+        formId={FORM_ID}
+        data={form}
+        {errors}
+        {submit}
+        {enhance}
+        exploreName={exploreName ?? ""}
+        {filters}
+        {timeControls}
+      />
 
-    {#if generalErrors}
-      <div class="text-red-500">{generalErrors}</div>
+      {#if generalErrors}
+        <div class="text-red-500">{generalErrors}</div>
+      {/if}
+      <div class="flex items-center gap-x-2 mt-5">
+        <div class="grow"></div>
+        <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
+        <Button
+          disabled={$submitting}
+          form={FORM_ID}
+          submitForm
+          type="primary"
+          label={props.mode === "create" ? "Create report" : "Save report"}
+        >
+          {props.mode === "create" ? "Create" : "Save"}
+        </Button>
+      </div>
     {/if}
-    <div class="flex items-center gap-x-2 mt-5">
-      <div class="grow"></div>
-      <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
-      <Button
-        disabled={$submitting}
-        form={FORM_ID}
-        submitForm
-        type="primary"
-        label={props.mode === "create" ? "Create report" : "Save report"}
-      >
-        {props.mode === "create" ? "Create" : "Save"}
-      </Button>
-    </div>
   </Dialog.Content>
 </Dialog.Root>
