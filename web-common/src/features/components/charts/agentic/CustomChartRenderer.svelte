@@ -5,6 +5,7 @@
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
     createRuntimeServiceQueryResolver,
@@ -104,8 +105,8 @@
   $: tableColumns = $combinedResults[selectedTable]?.tableSchema;
 </script>
 
-<div class="flex flex-col gap-2 h-full pt-1">
-  {#if showDataTable}
+<div class="flex flex-col gap-2 h-full">
+  {#if showDataTable && !error && !queryError && spec}
     <div class="flex flex-row items-center gap-2 p-1">
       <FieldSwitcher
         fields={viewOptions}
@@ -127,17 +128,11 @@
     {#if selectedView === 0}
       <div class="size-full">
         {#if !spec}
-          <div class="text-red-500 items-center justify-center">
-            No spec provided
-          </div>
+          <ComponentError error="No spec provided" />
         {:else if error}
-          <div class="text-red-500 items-center justify-center">
-            {error}
-          </div>
+          <ComponentError {error} />
         {:else if queryError}
-          <div class="text-red-500 items-center justify-center">
-            {queryError.message || "Error loading data"}
-          </div>
+          <ComponentError error={queryError.message || "Error loading data"} />
         {:else if rows && parsedSpec}
           <VegaLiteRenderer
             {renderer}
@@ -161,10 +156,10 @@
         {:else if $combinedResults[selectedTable]?.isLoading}
           <ReconcilingSpinner />
         {:else if $combinedResults[selectedTable]?.error}
-          <div class="text-red-500">
-            {$combinedResults[selectedTable].error?.message ||
+          <ComponentError
+            error={$combinedResults[selectedTable].error?.message ||
               "Error loading data"}
-          </div>
+          />
         {/if}
       </div>
     {/if}

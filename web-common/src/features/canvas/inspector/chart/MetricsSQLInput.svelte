@@ -5,7 +5,8 @@
   import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
   import { DuckDBSQL } from "@rilldata/web-common/components/editor/presets/duckDBDialect";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import { onDestroy, tick } from "svelte";
+  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
+  import { tick } from "svelte";
 
   export let key: string;
   export let label: string | undefined;
@@ -13,71 +14,61 @@
   export let value: string[] = [];
   export let onChange: (updatedSQLs: string[]) => void;
 
-  // Ensure at least one editor is always shown
-  if (!value || value.length === 0) value = [""];
+  // Each entry is a stable { id, sql } pair so Svelte keys by id, not index.
+  type Entry = { id: number; sql: string };
+  let nextId = 0;
 
-  let editorContainers: HTMLElement[] = [];
-  let editors: EditorView[] = [];
+  function toEntries(sqls: string[]): Entry[] {
+    return sqls.map((s) => ({ id: nextId++, sql: s }));
+  }
 
-  function createEditor(container: HTMLElement, idx: number) {
+  let entries: Entry[] = toEntries(!value || value.length === 0 ? [""] : value);
+
+  function initEditor(node: HTMLElement, entry: Entry) {
     const editor = new EditorView({
       state: EditorState.create({
-        doc: value[idx] || "",
+        doc: entry.sql,
         extensions: [
           baseExtensions(),
           sql({ dialect: DuckDBSQL }),
           placeholder("SELECT * FROM metrics"),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
-              updateSQL(idx, update.state.doc.toString());
+              updateSQL(entry.id, update.state.doc.toString());
             }
           }),
           EditorView.theme({
-            "&": { maxHeight: "150px" },
+            "&": { height: "150px" },
             ".cm-scroller": { overflow: "auto" },
           }),
         ],
       }),
-      parent: container,
+      parent: node,
     });
-    editors[idx] = editor;
-  }
-
-  function initEditor(node: HTMLElement, idx: number) {
-    editorContainers[idx] = node;
-    createEditor(node, idx);
 
     return {
       destroy() {
-        editors[idx]?.destroy();
+        editor.destroy();
       },
     };
   }
 
-  function updateSQL(idx: number, newSQL: string) {
-    const updated = value.slice();
-    updated[idx] = newSQL;
-    onChange(updated);
+  function updateSQL(id: number, newSQL: string) {
+    entries = entries.map((e) => (e.id === id ? { ...e, sql: newSQL } : e));
+    onChange(entries.map((e) => e.sql));
   }
 
   async function addQuery() {
-    onChange([...value, ""]);
+    entries = [...entries, { id: nextId++, sql: "" }];
+    onChange(entries.map((e) => e.sql));
     await tick();
   }
 
-  function removeQuery(idx: number) {
-    if (value.length === 1) return;
-    // Destroy all editors; they'll be re-created by the action directive
-    editors.forEach((e) => e?.destroy());
-    editors = [];
-    const updated = value.slice();
-    updated.splice(idx, 1);
-    onChange(updated);
+  function removeQuery(id: number) {
+    if (entries.length === 1) return;
+    entries = entries.filter((e) => e.id !== id);
+    onChange(entries.map((e) => e.sql));
   }
-
-  onDestroy(() => {
-    editors.forEach((e) => e?.destroy());
-  });
 </script>
 
 <div class="sql-input-container">
@@ -86,28 +77,21 @@
   {/if}
 
   <div class="queries">
-    {#each value as _sql, idx (idx)}
+    {#each entries as entry, idx (entry.id)}
       <div class="query-block">
-        {#if value.length > 1}
+        {#if entries.length > 1}
           <div class="query-header">
             <span class="query-number">Query {idx + 1}</span>
             <button
               class="remove-btn"
-              on:click={() => removeQuery(idx)}
+              on:click={() => removeQuery(entry.id)}
               aria-label="Remove query {idx + 1}"
             >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M4 8h8"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
+              <Trash size="14px" />
             </button>
           </div>
         {/if}
-        <div class="editor-wrapper" use:initEditor={idx}></div>
+        <div class="editor-wrapper" use:initEditor={entry}></div>
       </div>
     {/each}
   </div>
@@ -147,16 +131,12 @@
   }
 
   .remove-btn {
-    @apply p-0.5 rounded text-gray-300 bg-transparent border-none cursor-pointer;
-    @apply opacity-0 transition-all duration-150;
-  }
-
-  .query-block:hover .remove-btn {
-    @apply opacity-100;
+    @apply p-1 rounded text-gray-400 bg-transparent border-none cursor-pointer;
+    @apply transition-colors duration-150;
   }
 
   .remove-btn:hover {
-    @apply text-red-400 bg-red-50;
+    @apply text-red-500 bg-red-50;
   }
 
   .editor-wrapper {
@@ -169,8 +149,10 @@
   }
 
   :global(.editor-wrapper .cm-editor) {
+    height: 84px;
     min-height: 48px;
-    max-height: 150px;
+    resize: vertical;
+    overflow: hidden;
   }
 
   :global(.editor-wrapper .cm-editor .cm-scroller) {

@@ -28,8 +28,8 @@
 
   // Track collapsed state for collapsible sections (metrics_sql, vega_spec)
   let collapsedSections: Record<string, boolean> = {
-    metrics_sql: true,
-    vega_spec: true,
+    metrics_sql: false,
+    vega_spec: false,
   };
 
   function toggleSection(key: string) {
