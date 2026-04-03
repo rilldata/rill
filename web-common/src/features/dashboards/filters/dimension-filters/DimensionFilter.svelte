@@ -91,6 +91,11 @@
     resyncFilterData(filterData);
   }
 
+  // Sync AND mode when not editing
+  $: if (!open) {
+    curAndMode = filterData.isAndMode === true ? true : false;
+  }
+
   // Sync proxy when selectedValues changes (for Select mode)
   $: if (!open && mode === DimensionFilterMode.Select) {
     selectedValuesProxy = structuredClone(filterData.selectedValues) ?? [];
