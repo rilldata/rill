@@ -16,6 +16,7 @@
   export let inputText: string | undefined;
   export let isInclude: boolean;
   export let isAndMode: boolean = false;
+  export let isUnnest: boolean = false;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let pinned = false;
@@ -82,6 +83,7 @@
     slot="body"
     label={effectiveLabel}
     andMode={isAndMode}
+    {isUnnest}
     values={mode === DimensionFilterMode.InList
       ? values
       : effectiveSelectedValues}

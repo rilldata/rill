@@ -467,6 +467,7 @@
             label={curExcludeMode ? `Exclude ${label}` : label}
             show={1}
             {smallChip}
+            {isUnnest}
             andMode={curAndMode}
             values={curMode === DimensionFilterMode.InList
               ? searchedBulkValues

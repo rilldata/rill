@@ -8,12 +8,14 @@
   export let search: string | undefined = undefined;
   export let loading: boolean | undefined = undefined;
   export let andMode: boolean = false;
+  export let isUnnest: boolean = false;
   export let show = 1;
   export let smallChip = false;
   export let labelMaxWidth = "160px";
   export let valueMaxWidth = "320px";
 
   $: whatsLeft = values.length - show;
+  $: operator = isUnnest ? (andMode === true ? "AND" : "OR") : undefined;
 </script>
 
 <div class="flex gap-x-2 items-center truncate">
@@ -39,8 +41,8 @@
       <span class="italic">({matchedCount} of {values.length})</span>
     {/if}
   {:else}
-    {#if andMode === true && values.length > 0}
-      <span class="text-fg-secondary text-[10px] uppercase font-semibold flex-none">all of</span>
+    {#if operator}
+      <span class="text-fg-secondary text-[10px] uppercase font-semibold flex-none">{operator}</span>
     {/if}
     {#if !smallChip}
       {#each values.slice(0, show) as value (value)}
