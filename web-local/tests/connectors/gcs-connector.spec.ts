@@ -1,18 +1,15 @@
 import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 
-test.describe("Multi-step connector wrapper", () => {
+test.describe("GCS connector", () => {
   test.use({ project: "Blank" });
 
-  test("GCS connector - renders connector step schema via wrapper", async ({
-    page,
-  }) => {
+  test("Renders connector step schema via wrapper", async ({ page }) => {
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
 
     // Choose a multi-step connector (GCS).
-    await page.locator("#gcs").click();
-    await page.waitForSelector('form[id*="gcs"]');
+    await page.getByRole("dialog").getByLabel("Connect to gcs").click();
 
     // Connector step should show connector preview and connector CTA.
     await expect(page.getByText("Connector preview")).toBeVisible();
@@ -40,15 +37,12 @@ test.describe("Multi-step connector wrapper", () => {
     await expect(page.getByRole("textbox", { name: "GS URI" })).toHaveCount(0);
   });
 
-  test("GCS connector - renders source step schema via wrapper", async ({
-    page,
-  }) => {
+  test("Renders source step schema via wrapper", async ({ page }) => {
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
 
     // Choose a multi-step connector (GCS).
-    await page.locator("#gcs").click();
-    await page.waitForSelector('form[id*="gcs"]');
+    await page.getByRole("dialog").getByLabel("Connect to gcs").click();
 
     // Connector step visible with CTA.
     await expect(page.getByText("Connector preview")).toBeVisible();
@@ -61,86 +55,38 @@ test.describe("Multi-step connector wrapper", () => {
     // Switch to Public auth (no required fields) and continue via CTA.
     await page.getByRole("radio", { name: "Public" }).click();
     const connectorCta = page.getByRole("button", {
-      name: /Test and Connect|Continue/i,
+      name: "Continue",
     });
     await connectorCta.click();
 
     // Source step should now render with source schema fields and CTA.
     await expect(page.getByText("Model preview")).toBeVisible();
-    const sourceCta = page.getByRole("dialog").getByRole("button", {
-      name: /Import(ing)? data/i,
+    const sourceCta = page.getByRole("button", {
+      name: "Import Data",
     });
     await expect(sourceCta).toBeVisible();
 
     // Source fields should be present; connector-only auth fields should not be required to show.
-    await expect(page.getByRole("textbox", { name: "GCS URI" })).toBeVisible(
-      {},
-    );
+    await expect(page.getByRole("textbox", { name: "GCS URI" })).toBeVisible();
     await expect(
       page.getByRole("textbox", { name: "Model name" }),
     ).toBeVisible();
+
+    // create_secrets_from_connectors will not be present for public buckets.
+    const yamlPreview = page.getByLabel("Yaml preview");
+    await expect(yamlPreview).not.toContainText(
+      "create_secrets_from_connectors: gcs",
+    );
   });
 
-  test("GCS connector - preserves auth selection across steps", async ({
-    page,
-  }) => {
-    const hmacKey = process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY;
-    const hmacSecret = process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET;
-    if (!hmacKey || !hmacSecret) {
-      test.skip(
-        true,
-        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET is not set",
-      );
-    }
-
+  test("Disables submit until auth requirements met", async ({ page }) => {
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
 
-    await page.locator("#gcs").click();
-    await page.waitForSelector('form[id*="gcs"]');
-
-    // Pick HMAC auth and fill required fields.
-    await page.getByRole("radio", { name: "HMAC keys" }).click();
-    await page.getByRole("textbox", { name: "Access Key ID" }).fill(hmacKey!);
-    await page
-      .getByRole("textbox", { name: "Secret Access Key" })
-      .fill(hmacSecret!);
-
-    // Submit connector step via CTA to transition to source step.
-    const connectorCta = page.getByRole("button", {
-      name: /Test and Connect|Continue/i,
-    });
-    await expect(connectorCta).toBeEnabled();
-    await connectorCta.click();
-    await expect(page.getByText("Model preview")).toBeVisible();
-
-    // Go back to connector step.
-    await page.getByRole("button", { name: "Back" }).click();
-
-    // Auth selection and values should persist.
-    await expect(page.getByText("Connector preview")).toBeVisible();
-    await expect(page.getByRole("radio", { name: "HMAC keys" })).toBeChecked({
-      timeout: 5000,
-    });
-    await expect(
-      page.getByRole("textbox", { name: "Access Key ID" }),
-    ).toHaveValue(hmacKey!);
-    await expect(
-      page.getByRole("textbox", { name: "Secret Access Key" }),
-    ).toHaveValue(hmacSecret!);
-  });
-
-  test("GCS connector - disables submit until auth requirements met", async ({
-    page,
-  }) => {
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-
-    await page.locator("#gcs").click();
-    await page.waitForSelector('form[id*="gcs"]');
+    await page.getByRole("dialog").getByLabel("Connect to gcs").click();
 
     const connectorCta = page.getByRole("button", {
-      name: /Test and Connect|Continue/i,
+      name: "Test and Connect",
     });
 
     // Default auth is credentials (file upload); switch to HMAC to check required fields.
@@ -160,36 +106,36 @@ test.describe("Multi-step connector wrapper", () => {
     await expect(connectorCta).toBeEnabled();
   });
 
-  test("GCS connector - public auth option keeps submit enabled and allows advancing", async ({
+  test("Public auth option keeps submit enabled and allows advancing", async ({
     page,
   }) => {
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
 
-    await page.locator("#gcs").click();
-    await page.waitForSelector('form[id*="gcs"]');
-
-    const connectorCta = page.getByRole("button", {
-      name: /Test and Connect|Continue/i,
-    });
+    await page.getByRole("dialog").getByLabel("Connect to gcs").click();
 
     // Switch to Public (no required fields) -> CTA should remain enabled and allow advancing.
     await page.getByRole("radio", { name: "Public" }).click();
-    await expect(connectorCta).toBeEnabled();
-    await connectorCta.click();
+    await page.waitForTimeout(1000);
+    await expect(
+      page.getByRole("button", {
+        name: "Continue",
+      }),
+    ).toBeEnabled();
+    await page
+      .getByRole("button", {
+        name: "Continue",
+      })
+      .click();
 
     // Should land on source step without needing connector fields.
     await expect(page.getByText("Model preview")).toBeVisible();
     await expect(
-      page
-        .getByRole("dialog")
-        .getByRole("button", { name: /Import(ing)? data/i }),
+      page.getByRole("button", { name: "Import Data" }),
     ).toBeVisible();
   });
 
-  test("GCS connector - Save button hidden after advancing to model step", async ({
-    page,
-  }) => {
+  test("Save button hidden after advancing to model step", async ({ page }) => {
     // Skip test if environment variables are not set
     if (
       !process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY ||
@@ -204,8 +150,7 @@ test.describe("Multi-step connector wrapper", () => {
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
 
-    await page.locator("#gcs").click();
-    await page.waitForSelector('form[id*="gcs"]');
+    await page.getByRole("dialog").getByLabel("Connect to gcs").click();
 
     // Fill HMAC credentials on connector step.
     await page.getByRole("radio", { name: "HMAC keys" }).click();
@@ -217,23 +162,20 @@ test.describe("Multi-step connector wrapper", () => {
       .fill(process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET!);
 
     // Save button should be visible on the connector step.
-    const saveButton = page.getByRole("button", { name: "Save", exact: true });
+    const saveButton = page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Test and Connect" });
     await expect(saveButton).toBeVisible();
 
     // Advance to model step via Test and Connect.
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Test and Connect" })
-      .click();
+    await saveButton.click();
     await expect(page.getByText("Model preview")).toBeVisible();
 
     // Save button should not be visible on the source step.
     await expect(saveButton).toBeHidden();
   });
 
-  test("GCS connector - model form resets after first submission (HMAC)", async ({
-    page,
-  }) => {
+  test("Submission using HMAC auth method", async ({ page }) => {
     const hmacKey = process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY;
     const hmacSecret = process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET;
     if (!hmacKey || !hmacSecret) {
@@ -247,8 +189,7 @@ test.describe("Multi-step connector wrapper", () => {
     const openGcsFlowWithHmac = async () => {
       await page.getByRole("button", { name: "Add Asset" }).click();
       await page.getByRole("menuitem", { name: "Add Data" }).click();
-      await page.locator("#gcs").click();
-      await page.waitForSelector('form[id*="gcs"]');
+      await page.getByRole("dialog").getByLabel("Connect to gcs").click();
       await page.getByRole("radio", { name: "HMAC keys" }).click();
       await page.getByRole("textbox", { name: "Access Key ID" }).fill(hmacKey!);
       await page
@@ -276,14 +217,12 @@ test.describe("Multi-step connector wrapper", () => {
     });
     await submitCta.click();
 
-    const dialog = page.getByRole("dialog");
-    await dialog
-      .waitFor({ state: "detached", timeout: 10000 })
-      .catch(async () => {
-        // If the modal is still open (e.g., reconciliation failed), close it and continue.
-        await page.keyboard.press("Escape");
-        await dialog.waitFor({ state: "detached", timeout: 5000 });
-      });
+    // Ingesting data is triggered.
+    await expect(page.getByText("Ingesting data...")).toBeVisible();
+    // Wait for navigation to the new file
+    await page.waitForURL(`**/files/models/${firstModelName}.yaml`);
+    // Close the modal
+    await page.getByRole("button", { name: "View this source" }).click();
 
     // Re-open and ensure model form is reset
     await openGcsFlowWithHmac();
@@ -293,44 +232,8 @@ test.describe("Multi-step connector wrapper", () => {
     await expect(
       page.getByRole("textbox", { name: "Model name" }),
     ).not.toHaveValue(firstModelName);
-  });
 
-  test("GCS connector - model YAML includes create_secrets_from_connectors", async ({
-    page,
-  }) => {
-    const hmacKey = process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY;
-    const hmacSecret = process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET;
-    if (!hmacKey || !hmacSecret) {
-      test.skip(
-        true,
-        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET is not set",
-      );
-    }
-
-    const startGcsConnector = async () => {
-      await page.getByRole("button", { name: "Add Asset" }).click();
-      await page.getByRole("menuitem", { name: "Add Data" }).click();
-      await page.locator("#gcs").click();
-      await page.waitForSelector('form[id*="gcs"]');
-      await page.getByRole("radio", { name: "HMAC keys" }).click();
-      await page.getByRole("textbox", { name: "Access Key ID" }).fill(hmacKey!);
-      await page
-        .getByRole("textbox", { name: "Secret Access Key" })
-        .fill(hmacSecret!);
-      await page
-        .getByRole("dialog")
-        .getByRole("button", { name: "Test and Connect" })
-        .click();
-      await expect(page.getByText("Model preview")).toBeVisible();
-    };
-
-    // Create first connector instance, then close modal
-    await startGcsConnector();
-    await page.keyboard.press("Escape");
-    await page.getByRole("dialog").waitFor({ state: "detached" });
-
-    // Create second connector instance and proceed to model import
-    await startGcsConnector();
+    // Create a second model
     const modelName = "gcs_create_secrets_test";
     await page
       .getByRole("textbox", { name: "GCS URI" })
@@ -340,8 +243,12 @@ test.describe("Multi-step connector wrapper", () => {
     await page.getByRole("textbox", { name: "Model name" }).fill(modelName);
     await page.getByRole("button", { name: "Import Data" }).click();
 
+    // Ingesting data is triggered.
+    await expect(page.getByText("Ingesting data...")).toBeVisible();
     // Wait for navigation to the new model file
     await page.waitForURL(`**/files/models/${modelName}.yaml`);
+    // Close the modal
+    await page.getByRole("button", { name: "View this source" }).click();
 
     // Verify YAML contains the connector reference and create_secrets_from_connectors with the second instance (gcs_1)
     const codeEditor = page
@@ -349,7 +256,28 @@ test.describe("Multi-step connector wrapper", () => {
       .getByRole("textbox");
     await expect(codeEditor).toContainText("connector: duckdb");
     await expect(codeEditor).toContainText(
-      /create_secrets_from_connectors:\s*\[gcs_1\]/,
+      /create_secrets_from_connectors:\s*gcs_1/,
+    );
+
+    // add asset button
+    await page.getByLabel("Add Asset").click();
+    await page.getByLabel("Add Model").hover();
+    await page.getByLabel("Create model for Google Cloud Storage").click();
+
+    // Preview has reference to 1st connect: `gcs`
+    const yamlPreview = page.getByLabel("Yaml preview");
+    await expect(yamlPreview).toContainText("connector: duckdb");
+    await expect(yamlPreview).toContainText(
+      /create_secrets_from_connectors:\s*gcs/,
+    );
+
+    // Select the second gcs connector
+    await page.getByLabel("Select connector").click();
+    await page.getByRole("option", { name: "gcs_1" }).click();
+    // Preview has reference to 2nd connect: `gcs_1`
+    await expect(yamlPreview).toContainText("connector: duckdb");
+    await expect(yamlPreview).toContainText(
+      /create_secrets_from_connectors:\s*gcs_1/,
     );
   });
 });

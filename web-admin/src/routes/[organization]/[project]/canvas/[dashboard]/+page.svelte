@@ -13,7 +13,7 @@
   const runtimeClient = useRuntimeClient();
 </script>
 
-{#key runtimeClient.instanceId}
+{#key `${runtimeClient.instanceId}::${canvasName}`}
   <CanvasProvider
     {canvasName}
     instanceId={runtimeClient.instanceId}

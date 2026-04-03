@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -847,7 +848,7 @@ func evaluateConditions(r *runtimev1.Resource, expression string, kinds []string
 	if len(kinds) > 0 || len(resources) > 0 {
 		matches := slices.Contains(kinds, r.Meta.Name.Kind) ||
 			slices.ContainsFunc(resources, func(res *runtimev1.ResourceName) bool {
-				return res.Kind == r.Meta.Name.Kind && res.Name == r.Meta.Name.Name
+				return res.Kind == r.Meta.Name.Kind && strings.EqualFold(res.Name, r.Meta.Name.Name)
 			})
 		resourceMatches = &matches
 	}

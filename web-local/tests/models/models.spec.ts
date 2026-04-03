@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 import {
   deleteFile,
@@ -7,7 +8,7 @@ import {
   wrapRetryAssertion,
 } from "../utils/commonHelpers";
 import { createModel, modelHasError } from "../utils/modelHelpers";
-import { createSource } from "../utils/sourceHelpers";
+import { createSourceV2 } from "../utils/sourceHelpers";
 import { fileNotPresent, waitForFileNavEntry } from "../utils/waitHelpers";
 
 test.describe("models", () => {
@@ -15,7 +16,12 @@ test.describe("models", () => {
 
   test("Create and edit model", async ({ page }) => {
     // Add the AdBids source
-    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await expect
+      .poll(() => page.getByLabel("Column profile for AdBids").isVisible(), {
+        timeout: 30_000,
+      })
+      .toBeTruthy();
 
     // Create a "Hello world" model named AdBids_model.sql
     await createModel(page, "AdBids_model.sql");

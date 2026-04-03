@@ -1,4 +1,4 @@
-import type { View } from "vega-typings";
+import type { View } from "svelte-vega";
 
 /**
  * Programmatically sets the hover highlight on a Vega chart view.

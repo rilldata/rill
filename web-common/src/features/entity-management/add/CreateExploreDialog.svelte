@@ -1,11 +1,11 @@
 <script lang="ts">
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Button from "../../../components/button/Button.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { createResourceAndNavigate } from "../file-explorer/new-files";
-  import { useRuntimeClient } from "../../runtime-client/v2";
-  import { ResourceKind } from "./resource-selectors";
+  import { createResourceAndNavigate } from "./new-files.ts";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { ResourceKind } from "../resource-selectors.ts";
 
   export let open = false;
   export let metricsViews: V1Resource[];

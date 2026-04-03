@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
@@ -11,11 +10,10 @@
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
-  export let type: "init" | "home" | "modal";
+  export let type: "home" | "modal";
   export let open = false;
 
   const runtimeClient = useRuntimeClient();
-  const initializeProject = type === "init";
 
   const { developerChat } = featureFlags;
 
@@ -36,7 +34,7 @@
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
-      void generateSampleData(runtimeClient, initializeProject, values.prompt);
+      void generateSampleData(runtimeClient, false, values.prompt);
       open = false;
     },
     invalidateAll: false,
@@ -55,24 +53,13 @@
   <Dialog.Root bind:open>
     <Dialog.Trigger>
       {#snippet child({ props })}
-        {#if type === "init"}
-          <Button {...props} type="secondary" large>
+        {#if type === "home"}
+          <button class="button-home" {...props}>
             <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
             <span>Generate sample data</span>
-          </Button>
-        {:else if type === "home"}
-          <Button
-            {...props}
-            class="button-home"
-            type="tertiary"
-            large
-            forcedStyle="height: 3rem;"
-          >
-            <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-            <span>Generate sample data</span>
-          </Button>
+          </button>
         {:else}
-          <div {...props} class="hidden"></div>
+          <div class="hidden"></div>
         {/if}
       {/snippet}
     </Dialog.Trigger>
@@ -133,5 +120,13 @@
 
   .error {
     @apply text-xs text-red-600 font-normal pb-2;
+  }
+
+  .button-home {
+    @apply flex flex-row gap-2 items-center justify-center p-2;
+    @apply text-sm bg-surface-overlay rounded-md border;
+  }
+  .button-home:hover {
+    @apply bg-surface-hover;
   }
 </style>

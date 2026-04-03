@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
+  import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -19,7 +20,6 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let dataType: string;
   export let borderTop = false;
   export let borderBottom = false;
   export let isBeingCompared: boolean;
@@ -39,6 +39,10 @@
     isExclusiveFilter?: boolean | undefined,
   ) => void;
   export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
+  export let tooltipFormatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
@@ -201,7 +205,6 @@
   </td>
   <LeaderboardCell
     value={dimensionValue}
-    {dataType}
     cellType="dimension"
     className={dimensionCellClass}
     background={dimensionGradients}
@@ -240,7 +243,11 @@
   {#each leaderboardMeasureNames as measureName, i (i)}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
-      dataType="INTEGER"
+      tooltipValue={values[measureName] != null
+        ? (tooltipFormatters[measureName]?.(values[measureName]) ??
+          values[measureName]?.toString() ??
+          "")
+        : ""}
       cellType="measure"
       background={leaderboardMeasureNames.length === 1
         ? measureGradients
@@ -263,7 +270,11 @@
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
-        dataType="INTEGER"
+        tooltipValue={pctOfTotals[measureName] != null
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(pctOfTotals[measureName]),
+            )
+          : ""}
         cellType="comparison"
       >
         <PercentageChange
@@ -279,7 +290,11 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaAbsMap[measureName]?.toString() || ""}
-        dataType="INTEGER"
+        tooltipValue={deltaAbsMap[measureName] != null
+          ? (tooltipFormatters[measureName]?.(deltaAbsMap[measureName]) ??
+            deltaAbsMap[measureName]?.toString() ??
+            "")
+          : ""}
         cellType="comparison"
       >
         <FormattedDataType
@@ -290,8 +305,10 @@
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
           deltaAbsMap[measureName] < 0
-            ? "text-red-500"
-            : ""}
+            ? "text-kpi-negative"
+            : deltaAbsMap[measureName] !== null && deltaAbsMap[measureName] > 0
+              ? "text-kpi-positive"
+              : ""}
           truncate={true}
         />
       </LeaderboardCell>
@@ -300,7 +317,11 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaRels[measureName]?.toString() || ""}
-        {dataType}
+        tooltipValue={deltaRels[measureName] != null
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(deltaRels[measureName]),
+            )
+          : ""}
         cellType="comparison"
       >
         <PercentageChange

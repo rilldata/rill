@@ -1,8 +1,8 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { UnitSpec } from "vega-lite/build/src/spec";
-import type { Transform } from "vega-lite/build/src/transform";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
+import type { Transform } from "vega-lite/types_unstable/transform.js";
 import {
   createConfig,
   createDefaultTooltipEncoding,

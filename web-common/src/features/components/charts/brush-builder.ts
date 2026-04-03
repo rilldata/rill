@@ -1,9 +1,9 @@
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { VegaLiteSpec, VegaSpec, VisualizationSpec } from "svelte-vega";
+import type { Signal } from "vega";
 import { compile } from "vega-lite";
-import type { SelectionParameter } from "vega-lite/build/src/selection";
-import type { Signal } from "vega-typings";
+import type { SelectionParameter } from "vega-lite/types_unstable/selection.js";
 
 /**
  * Creates a Vega-Lite brush parameter for interval selection on the x-axis.
