@@ -56,7 +56,7 @@ export function createContainsAllExpression(
  * AND of same-ident single-value INs, or OR of same-ident single-value NINs.
  */
 export function isContainsAllExpression(expr: V1Expression): boolean {
-  if (!expr.cond?.exprs?.length || expr.cond.exprs.length < 1) return false;
+  if (!expr.cond?.exprs?.length || expr.cond.exprs.length < 2) return false;
 
   const op = expr.cond.op;
   const expectedChildOp =
