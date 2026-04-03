@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import OnboardingGenerateSampleData from "@rilldata/web-common/features/add-data/OnboardingGenerateSampleData.svelte";
@@ -11,11 +10,7 @@
 
   <div class="flex flex-col py-6 gap-y-[28px]">
     <div class="flex flex-row gap-x-12">
-      <ConnectYourDataWidget
-        startConnectorSelection={(name) =>
-          void goto("/welcome/add-data" + (name ? `?schema=${name}` : ""))}
-        onWelcomeScreen
-      />
+      <ConnectYourDataWidget onWelcomeScreen />
       <OnboardingGenerateSampleData />
     </div>
 
