@@ -164,6 +164,20 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return res, err
 	}
 
+	// Validate rollup tables
+	allDimNames := make([]string, 0, len(mv.Dimensions))
+	for _, d := range mv.Dimensions {
+		allDimNames = append(allDimNames, d.Name)
+	}
+	allMeasureNames := make([]string, 0, len(mv.Measures))
+	for _, m := range mv.Measures {
+		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
+			continue
+		}
+		allMeasureNames = append(allMeasureNames, m.Name)
+	}
+	e.validateRollupTables(ctx, mv, allDimNames, allMeasureNames, res)
+
 	// Pinot does not have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
@@ -252,6 +266,107 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	}
 
 	return res, nil
+}
+
+// validateRollupTables validates that rollup tables exist and contain the expected columns.
+func (e *Executor) validateRollupTables(ctx context.Context, mv *runtimev1.MetricsViewSpec, allDimensions, allMeasures []string, res *ValidateMetricsViewResult) {
+	for i, rollup := range mv.Rollups {
+		// Resolve dimension selector
+		var err error
+		rollup.Dimensions, err = fieldselectorpb.ResolveFields(rollup.Dimensions, rollup.DimensionsSelector, allDimensions)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid dimensions: %w", i, err))
+			continue
+		}
+		rollup.DimensionsSelector = nil
+
+		// Resolve measure selector
+		rollup.Measures, err = fieldselectorpb.ResolveFields(rollup.Measures, rollup.MeasuresSelector, allMeasures)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid measures: %w", i, err))
+			continue
+		}
+		rollup.MeasuresSelector = nil
+
+		// Default time_grain to smallest_time_grain
+		if rollup.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			if mv.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				rollup.TimeGrain = mv.SmallestTimeGrain
+			} else {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain is required (no smallest_time_grain set on the metrics view)", i))
+				continue
+			}
+		}
+
+		if rollup.Table == "" {
+			continue
+		}
+
+		t, err := e.olap.InformationSchema().Lookup(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: table %q does not exist", i, rollup.Table))
+			continue
+		}
+
+		cols := make(map[string]bool, len(t.Schema.Fields))
+		for _, f := range t.Schema.Fields {
+			cols[strings.ToLower(f.Name)] = true
+		}
+
+		// Check time dimension column exists
+		if mv.TimeDimension != "" {
+			if !cols[strings.ToLower(mv.TimeDimension)] {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time dimension column %q not found in table %q", i, mv.TimeDimension, rollup.Table))
+			}
+		}
+
+		// Check dimension columns exist
+		for _, dim := range rollup.Dimensions {
+			colName := dim
+			for _, d := range mv.Dimensions {
+				if strings.EqualFold(d.Name, dim) {
+					if d.Column != "" {
+						colName = d.Column
+					}
+					break
+				}
+			}
+			if !cols[strings.ToLower(colName)] {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: dimension column %q not found in table %q", i, colName, rollup.Table))
+			}
+		}
+
+		// Validate measure expressions with a dry-run query using base MV expressions
+		var measureExprs []string
+		for _, mName := range rollup.Measures {
+			for _, specM := range mv.Measures {
+				if strings.EqualFold(specM.Name, mName) {
+					if specM.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || specM.Window != nil {
+						break // skip non-simple measures
+					}
+					if specM.Expression != "" {
+						measureExprs = append(measureExprs, "("+specM.Expression+")")
+					}
+					break
+				}
+			}
+		}
+		if len(measureExprs) > 0 {
+			query := fmt.Sprintf(
+				"SELECT 1, %s FROM %s GROUP BY 1",
+				strings.Join(measureExprs, ", "),
+				e.olap.Dialect().EscapeTable(rollup.Database, rollup.DatabaseSchema, rollup.Table),
+			)
+			err := e.olap.Exec(ctx, &drivers.Statement{
+				Query:           query,
+				DryRun:          true,
+				QueryAttributes: e.queryAttributes,
+			})
+			if err != nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid measure expression(s): %w", i, err))
+			}
+		}
+	}
 }
 
 // resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.

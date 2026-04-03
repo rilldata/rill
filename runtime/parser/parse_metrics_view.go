@@ -82,6 +82,17 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
+	Rollups []*struct {
+		Model             string             `yaml:"model"`
+		Connector         string             `yaml:"connector"`
+		Database          string             `yaml:"database"`
+		DatabaseSchema    string             `yaml:"database_schema"`
+		TimeGrain         string             `yaml:"time_grain"`
+		Timezone          string             `yaml:"timezone"`
+		WatermarkCacheTTL string             `yaml:"watermark_cache_ttl"`
+		Dimensions        *FieldSelectorYAML `yaml:"dimensions"`
+		Measures          *FieldSelectorYAML `yaml:"measures"`
+	} `yaml:"rollups"`
 	Security        *SecurityPolicyYAML
 	QueryAttributes map[string]string `yaml:"query_attributes"`
 	Cache           struct {
@@ -733,6 +744,51 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// Validate and add rollup tables as refs
+	for i, rollup := range tmp.Rollups {
+		if rollup == nil {
+			return fmt.Errorf(`rollup[%d]: empty rollup configuration`, i)
+		}
+		if rollup.Model == "" {
+			return fmt.Errorf(`rollup[%d]: "model" is required`, i)
+		}
+		if rollup.TimeGrain != "" {
+			if _, err := parseTimeGrain(rollup.TimeGrain); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "time_grain": %w`, i, err)
+			}
+		}
+		if rollup.Timezone != "" {
+			if _, err := time.LoadLocation(rollup.Timezone); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "timezone" %q: %w`, i, rollup.Timezone, err)
+			}
+		}
+		if rollup.WatermarkCacheTTL != "" {
+			if _, err := time.ParseDuration(rollup.WatermarkCacheTTL); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "watermark_cache_ttl": %w`, i, err)
+			}
+		}
+		// Validate dimensions if they resolve to a static list
+		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
+			for _, dimName := range resolved {
+				nameType, ok := names[strings.ToLower(dimName)]
+				if !ok || nameType != nameIsDimension {
+					return fmt.Errorf(`rollup[%d]: dimension %q does not exist in the metrics view`, i, dimName)
+				}
+			}
+		}
+		// Validate measures if they resolve to a static list
+		if resolved, ok := rollup.Measures.TryResolve(); ok {
+			for _, mName := range resolved {
+				nameType, ok := names[strings.ToLower(mName)]
+				if !ok || nameType != nameIsMeasure {
+					return fmt.Errorf(`rollup[%d]: measure %q does not exist in the metrics view`, i, mName)
+				}
+			}
+		}
+
+		node.Refs = append(node.Refs, ResourceName{Name: rollup.Model})
+	}
+
 	securityRefs, err := inferRefsFromSecurityRules(securityRules)
 	if err != nil {
 		return err
@@ -818,6 +874,49 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Connector:        annotation.Connector,
 			Measures:         annotationMeasures,
 			MeasuresSelector: annotationMeasuresSelector,
+		})
+	}
+
+	// Convert rollups to proto
+	for _, rollup := range tmp.Rollups {
+		var tg runtimev1.TimeGrain
+		if rollup.TimeGrain != "" {
+			tg, _ = parseTimeGrain(rollup.TimeGrain) // already validated above
+		}
+		var wmCacheTTLSeconds int64
+		if rollup.WatermarkCacheTTL != "" {
+			d, _ := time.ParseDuration(rollup.WatermarkCacheTTL) // already validated above
+			wmCacheTTLSeconds = int64(d.Seconds())
+		}
+
+		var dims []string
+		var dimsSelector *runtimev1.FieldSelector
+		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
+			dims = resolved
+		} else {
+			dimsSelector = rollup.Dimensions.Proto()
+		}
+
+		var measures []string
+		var measSelector *runtimev1.FieldSelector
+		if resolved, ok := rollup.Measures.TryResolve(); ok {
+			measures = resolved
+		} else {
+			measSelector = rollup.Measures.Proto()
+		}
+
+		spec.Rollups = append(spec.Rollups, &runtimev1.MetricsViewSpec_RollupTable{
+			Connector:                rollup.Connector,
+			Database:                 rollup.Database,
+			DatabaseSchema:           rollup.DatabaseSchema,
+			Model:                    rollup.Model,
+			TimeGrain:                tg,
+			Timezone:                 rollup.Timezone,
+			Dimensions:               dims,
+			DimensionsSelector:       dimsSelector,
+			Measures:                 measures,
+			MeasuresSelector:         measSelector,
+			WatermarkCacheTtlSeconds: wmCacheTTLSeconds,
 		})
 	}
 

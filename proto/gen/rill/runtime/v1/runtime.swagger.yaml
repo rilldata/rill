@@ -3846,6 +3846,48 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
+  MetricsViewSpecRollupTable:
+    type: object
+    properties:
+      connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
+      table:
+        type: string
+      model:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
+      dimensions:
+        type: array
+        items:
+          type: string
+        description: Resolved list of dimensions present in the rollup table. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+      measures:
+        type: array
+        items:
+          type: string
+        description: Resolved list of measures present in the rollup table. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      timezone:
+        type: string
+        title: IANA timezone the rollup was aggregated in; defaults to UTC
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      watermarkCacheTtlSeconds:
+        type: string
+        format: int64
+        description: TTL in seconds for caching this rollup table's watermarks (min/max time). Defaults to 1800 (30 minutes) if unset.
+    description: |-
+      Pre-aggregated rollup tables that can be used to accelerate queries.
+      The system automatically routes queries to a rollup table when the query can be satisfied from the pre-aggregated data.
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -6469,6 +6511,11 @@ definitions:
         description: |-
           Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
           Keys and values are stored as templates and will be resolved at query time.
+      rollups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecRollupTable'
   v1MetricsViewSpecAnnotation:
     type: object
     properties:

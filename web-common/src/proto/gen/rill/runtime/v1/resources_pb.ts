@@ -1508,6 +1508,11 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   queryAttributes: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.RollupTable rollups = 34;
+   */
+  rollups: MetricsViewSpec_RollupTable[] = [];
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1540,6 +1545,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_RollupTable, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -2110,6 +2116,126 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
 
   static equals(a: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined, b: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_Annotation, a, b);
+  }
+}
+
+/**
+ * Pre-aggregated rollup tables that can be used to accelerate queries.
+ * The system automatically routes queries to a rollup table when the query can be satisfied from the pre-aggregated data.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.RollupTable
+ */
+export class MetricsViewSpec_RollupTable extends Message<MetricsViewSpec_RollupTable> {
+  /**
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string database = 2;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 3;
+   */
+  databaseSchema = "";
+
+  /**
+   * @generated from field: string table = 4;
+   */
+  table = "";
+
+  /**
+   * @generated from field: string model = 5;
+   */
+  model = "";
+
+  /**
+   * Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
+   */
+  timeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * Resolved list of dimensions present in the rollup table. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+   *
+   * @generated from field: repeated string dimensions = 7;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * Resolved list of measures present in the rollup table. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+   *
+   * @generated from field: repeated string measures = 8;
+   */
+  measures: string[] = [];
+
+  /**
+   * IANA timezone the rollup was aggregated in; defaults to UTC
+   *
+   * @generated from field: string timezone = 9;
+   */
+  timezone = "";
+
+  /**
+   * Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 10;
+   */
+  dimensionsSelector?: FieldSelector;
+
+  /**
+   * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 11;
+   */
+  measuresSelector?: FieldSelector;
+
+  /**
+   * TTL in seconds for caching this rollup table's watermarks (min/max time). Defaults to 1800 (30 minutes) if unset.
+   *
+   * @generated from field: int64 watermark_cache_ttl_seconds = 12;
+   */
+  watermarkCacheTtlSeconds = protoInt64.zero;
+
+  constructor(data?: PartialMessage<MetricsViewSpec_RollupTable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.RollupTable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 7, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "dimensions_selector", kind: "message", T: FieldSelector },
+    { no: 11, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 12, name: "watermark_cache_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_RollupTable {
+    return new MetricsViewSpec_RollupTable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_RollupTable {
+    return new MetricsViewSpec_RollupTable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_RollupTable {
+    return new MetricsViewSpec_RollupTable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_RollupTable | PlainMessage<MetricsViewSpec_RollupTable> | undefined, b: MetricsViewSpec_RollupTable | PlainMessage<MetricsViewSpec_RollupTable> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_RollupTable, a, b);
   }
 }
 
