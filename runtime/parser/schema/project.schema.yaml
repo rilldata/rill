@@ -3029,15 +3029,6 @@ definitions:
             $ref: '#/definitions/chart_properties'
           stacked_bar_chart:
             $ref: '#/definitions/chart_properties'
-          vega_lite:
-            type: object
-            properties:
-              spec:
-                type: string
-                description: Vega-Lite specification as a string
-            required:
-              - spec
-            additionalProperties: false
           kpi:
             $ref: '#/definitions/kpi_properties'
           table:
