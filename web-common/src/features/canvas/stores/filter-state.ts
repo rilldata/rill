@@ -7,11 +7,14 @@ import {
 import { toggleDimensionFilterValue } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters.ts";
 import {
   createAndExpression,
+  createContainsAllExpression,
   createInExpression,
   createLikeExpression,
   forEachIdentifier,
   getValuesInExpression,
+  isContainsAllExpression,
   isExpressionUnsupported,
+  matchExpressionByName,
   negateExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -250,10 +253,66 @@ export class FilterState {
 
     if (!wf.cond?.exprs) return;
     const exprIdx = wf.cond.exprs.findIndex(
-      (e) => e.cond?.exprs?.[0].ident === dimensionName,
+      (e) => matchExpressionByName(e, dimensionName),
     );
     if (exprIdx === -1) return;
-    wf.cond.exprs[exprIdx] = negateExpression(wf.cond.exprs[exprIdx]);
+
+    const expr = wf.cond.exprs[exprIdx];
+    if (isContainsAllExpression(expr)) {
+      const values = getValuesInExpression(expr);
+      // Detect current mode from child op
+      const childOp = expr.cond?.exprs?.[0]?.cond?.op;
+      const wasExclude = childOp === V1Operation.OPERATION_NIN;
+      wf.cond.exprs[exprIdx] =
+        createContainsAllExpression(dimensionName, values, !wasExclude);
+    } else {
+      wf.cond.exprs[exprIdx] = negateExpression(expr);
+    }
+
+    return getFilterParam(
+      wf,
+      dimensionThresholdFilters,
+      dimensionsWithInListFilter,
+    );
+  };
+
+  toggleDimensionFilterAndMode = (dimensionName: string) => {
+    const {
+      dimensionsWithInListFilter,
+      dimensionFilter: wf,
+      dimensionThresholdFilters,
+    } = get(this.parsed);
+
+    if (!wf.cond?.exprs) return;
+    const exprIdx = wf.cond.exprs.findIndex(
+      (e) => matchExpressionByName(e, dimensionName),
+    );
+    if (exprIdx === -1) return;
+
+    const expr = wf.cond.exprs[exprIdx];
+    const values = getValuesInExpression(expr);
+    if (values.length === 0) return;
+
+    const wasAndMode = isContainsAllExpression(expr);
+
+    // Detect exclude mode from the expression
+    let isExclude: boolean;
+    if (wasAndMode) {
+      const childOp = expr.cond?.exprs?.[0]?.cond?.op;
+      isExclude = childOp === V1Operation.OPERATION_NIN;
+    } else {
+      isExclude = expr.cond?.op === V1Operation.OPERATION_NIN;
+    }
+
+    if (wasAndMode) {
+      // Convert from contains-all to IN
+      wf.cond.exprs[exprIdx] =
+        createInExpression(dimensionName, values, isExclude);
+    } else {
+      // Convert from IN to contains-all
+      wf.cond.exprs[exprIdx] =
+        createContainsAllExpression(dimensionName, values, isExclude);
+    }
 
     return getFilterParam(
       wf,
@@ -543,6 +602,29 @@ export function getDimensionFilterItemsMap(
     }
     addedDimension.add(ident);
 
+    const isUnnest = !!dim.unnest;
+
+    // Check for contains-all (AND mode) expression first
+    if (isContainsAllExpression(e)) {
+      const isInListMode = dimensionsWithInlistFilter.includes(ident);
+      const childOp = e.cond?.exprs?.[0]?.cond?.op;
+      filteredDimensions.set(ident, {
+        name: ident,
+        label: getDimensionDisplayName(dim),
+        dimensions: new Map([[metricsViewName, dim]]),
+        mode: isInListMode
+          ? DimensionFilterMode.InList
+          : DimensionFilterMode.Select,
+        selectedValues: getValuesInExpression(e),
+        isInclude: childOp === V1Operation.OPERATION_IN,
+        isAndMode: true,
+        isUnnest,
+        inputText: undefined,
+        pinned: false,
+      });
+      return;
+    }
+
     const op = e.cond?.op;
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
       const isInListMode = dimensionsWithInlistFilter.includes(ident);
@@ -555,6 +637,8 @@ export function getDimensionFilterItemsMap(
           : DimensionFilterMode.Select,
         selectedValues: getValuesInExpression(e),
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+        isAndMode: false,
+        isUnnest,
         inputText: undefined,
         pinned: false,
       });
@@ -569,6 +653,7 @@ export function getDimensionFilterItemsMap(
         selectedValues: [],
         inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
         isInclude: e.cond?.op === V1Operation.OPERATION_LIKE,
+        isUnnest,
         dimensions: new Map([[metricsViewName, dim]]),
         pinned: false,
       });

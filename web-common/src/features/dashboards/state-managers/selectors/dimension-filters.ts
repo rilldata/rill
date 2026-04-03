@@ -6,6 +6,7 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import {
   forEachIdentifier,
   getValuesInExpression,
+  isContainsAllExpression,
   isExpressionUnsupported,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -49,6 +50,16 @@ export const selectedDimensionValues = (
       // No filter present. So selected values are empty
       data: [],
     });
+
+  // Handle contains-all expressions (AND of single-value INs or OR of single-value NINs)
+  if (isContainsAllExpression(dimExpr)) {
+    return readable({
+      isFetching: false,
+      isLoading: false,
+      error: null,
+      data: [...new Set(getValuesInExpression(dimExpr) as string[])],
+    });
+  }
 
   if (
     dimExpr.cond.op === V1Operation.OPERATION_IN ||
@@ -139,6 +150,8 @@ export type DimensionFilterItem = {
   selectedValues?: string[];
   inputText?: string;
   isInclude?: boolean;
+  isAndMode?: boolean;
+  isUnnest?: boolean;
   pinned?: boolean;
 };
 
@@ -172,6 +185,31 @@ export function getDimensionFiltersMap(
     }
     addedDimension.add(ident);
 
+    const isUnnest = !!dim.unnest;
+
+    // Check for contains-all (AND mode) expression first
+    if (isContainsAllExpression(e)) {
+      const isInListMode = dimensionsWithInlistFilter.includes(ident);
+      const childOp = e.cond?.exprs?.[0]?.cond?.op;
+      filteredDimensions.set(ident, {
+        name: ident,
+        label: getDimensionDisplayName(dim),
+        mode: isInListMode
+          ? DimensionFilterMode.InList
+          : DimensionFilterMode.Select,
+        selectedValues: getValuesInExpression(e),
+        isInclude: childOp === V1Operation.OPERATION_IN,
+        isAndMode: true,
+        isUnnest,
+        inputText: undefined,
+        pinned: false,
+        dimensions: new Map<string, MetricsViewSpecDimension>([
+          [metricsViewName, dim],
+        ]),
+      });
+      return;
+    }
+
     const op = e.cond?.op;
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
       const isInListMode = dimensionsWithInlistFilter.includes(ident);
@@ -183,6 +221,8 @@ export function getDimensionFiltersMap(
           : DimensionFilterMode.Select,
         selectedValues: getValuesInExpression(e),
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+        isAndMode: false,
+        isUnnest,
         inputText: undefined,
         pinned: false,
 
@@ -201,6 +241,7 @@ export function getDimensionFiltersMap(
         selectedValues: [],
         inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
         isInclude: e.cond?.op === V1Operation.OPERATION_LIKE,
+        isUnnest,
         dimensions: new Map<string, MetricsViewSpecDimension>([
           [metricsViewName, dim],
         ]),
@@ -301,12 +342,25 @@ export const hasAtLeastOneDimensionFilter = (
   return whereFilter.cond?.exprs?.length && whereFilter.cond.exprs.length > 0;
 };
 
+export const isFilterAndMode = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+): ((dimName: string) => boolean) => {
+  return (dimName: string) =>
+    dashData.dashboard.dimensionFilterAndMode?.get(dimName) ?? false;
+};
+
 export const dimensionFilterSelectors = {
   /**
    * Returns a function that can be used to get whether the specified
    * dimension is in exclude mode.
    */
   isFilterExcludeMode,
+
+  /**
+   * Returns a function that can be used to get whether the specified
+   * dimension is in AND (contains all) mode.
+   */
+  isFilterAndMode,
 
   /**
    * Check if a dimension has any filter

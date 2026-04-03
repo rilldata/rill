@@ -130,8 +130,18 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
 	switch cond.Operator {
 	case OperatorOr:
+		// Optimization: OR(dim NIN ('v1'), dim NIN ('v2'), ...) on an unnest dimension
+		// rewrites to NOT list_has_all / NOT hasAll for efficiency.
+		if ok, err := b.tryWriteArrayContainsAll(cond.Expressions, OperatorNin); ok || err != nil {
+			return err
+		}
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
 	case OperatorAnd:
+		// Optimization: AND(dim IN ('v1'), dim IN ('v2'), ...) on an unnest dimension
+		// rewrites to list_has_all / hasAll for efficiency.
+		if ok, err := b.tryWriteArrayContainsAll(cond.Expressions, OperatorIn); ok || err != nil {
+			return err
+		}
 		return b.writeJoinedExpressions(cond.Expressions, " AND ")
 	case OperatorCast:
 		return b.writeCast(cond)
@@ -680,6 +690,99 @@ func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Exp
 	b.writeString(", [")
 	// not handling NULL values separately as clickhouse hasAny function takes care of it however, duckdb ignores null values in the list_has_any function, but there is no reliable way to make it work,
 	// but even using leftExpr IS NULL does not solve the issue as it checks for null array rather than null values in the array.
+	for i, val := range vals {
+		if i > 0 {
+			b.writeByte(',')
+		}
+		b.writeString("?")
+		b.args = append(b.args, val)
+	}
+	b.writeString("])")
+	b.writeByte(')')
+
+	return nil
+}
+
+// tryWriteArrayContainsAll detects a pattern of multiple single-value IN (or NIN) conditions
+// on the same unnest dimension and rewrites them into a single list_has_all/hasAll call.
+//
+// For OperatorIn:  AND(dim IN ('v1'), dim IN ('v2')) -> list_has_all(dim, ['v1','v2'])
+// For OperatorNin: OR(dim NIN ('v1'), dim NIN ('v2')) -> NOT list_has_all(dim, ['v1','v2'])
+//
+// Returns (true, nil) if the optimization was applied and SQL was written.
+// Returns (false, nil) if the pattern was not matched (caller should fall through).
+// Returns (false, err) if an error occurred during analysis.
+func (b *sqlExprBuilder) tryWriteArrayContainsAll(exprs []*Expression, expectedOp Operator) (bool, error) {
+	if len(exprs) < 2 || !b.ast.Dialect.RequiresArrayContainsForInOperator() {
+		return false, nil
+	}
+
+	// All sub-expressions must be single-value IN/NIN on the same unnest dimension name.
+	var dimName string
+	var vals []any
+	for _, e := range exprs {
+		if e.Condition == nil || e.Condition.Operator != expectedOp || len(e.Condition.Expressions) != 2 {
+			return false, nil
+		}
+		innerExprs := e.Condition.Expressions
+		nameExpr := innerExprs[0]
+		valExpr := innerExprs[1]
+
+		if nameExpr.Name == "" || valExpr.Value == nil {
+			return false, nil
+		}
+
+		// The value must be a single scalar or a single-element list.
+		switch v := valExpr.Value.(type) {
+		case []any:
+			if len(v) != 1 {
+				return false, nil
+			}
+			vals = append(vals, v[0])
+		default:
+			vals = append(vals, v)
+		}
+
+		if dimName == "" {
+			dimName = nameExpr.Name
+		} else if dimName != nameExpr.Name {
+			return false, nil
+		}
+	}
+
+	// Verify the dimension is actually an unnest dimension (not already in the query's dim fields).
+	leftExpr, unnest, _, err := b.sqlForName(dimName)
+	if err != nil {
+		return false, err
+	}
+	if !unnest {
+		return false, nil
+	}
+
+	return true, b.writeArrayContainsAllCondition(leftExpr, vals, expectedOp == OperatorNin)
+}
+
+// writeArrayContainsAllCondition writes a list_has_all/hasAll expression.
+// If not is true, it wraps the expression with NOT (for the NIN/OR case).
+func (b *sqlExprBuilder) writeArrayContainsAllCondition(leftExpr string, vals []any, not bool) error {
+	if len(vals) == 0 {
+		if not {
+			b.writeString("TRUE")
+		} else {
+			b.writeString("FALSE")
+		}
+		return nil
+	}
+
+	b.writeByte('(')
+	if not {
+		b.writeString("NOT ")
+	}
+
+	b.writeString(b.ast.Dialect.GetArrayContainsAllFunction())
+	b.writeByte('(')
+	b.writeParenthesizedString(leftExpr)
+	b.writeString(", [")
 	for i, val := range vals {
 		if i > 0 {
 			b.writeByte(',')

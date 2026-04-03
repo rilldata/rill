@@ -48,6 +48,7 @@ export function getRillDefaultExploreState(
     dimensionThresholdFilters: [],
     dimensionsWithInlistFilter: [],
     dimensionFilterExcludeMode: new Map(),
+    dimensionFilterAndMode: new Map(),
     temporaryFilterName: null,
 
     ...getRillDefaultExploreTimeState(

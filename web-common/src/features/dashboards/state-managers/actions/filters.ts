@@ -13,6 +13,7 @@ export function clearAllFilters({ dashboard }: DashboardMutables) {
   dashboard.dimensionThresholdFilters = [];
   dashboard.temporaryFilterName = null;
   dashboard.dimensionFilterExcludeMode.clear();
+  dashboard.dimensionFilterAndMode?.clear();
   dashboard.tdd.pinIndex = -1;
 }
 

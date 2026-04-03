@@ -855,6 +855,7 @@ export function getCleanMetricsExploreForAssertion() {
   delete cleanedState.name;
   delete cleanedState.proto;
   delete cleanedState.dimensionFilterExcludeMode;
+  delete cleanedState.dimensionFilterAndMode;
   delete cleanedState.temporaryFilterName;
   delete cleanedState.contextColumnWidths;
   if (cleanedState.selectedTimeRange) {

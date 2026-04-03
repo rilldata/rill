@@ -71,6 +71,7 @@
         applyDimensionContainsMode,
         removeDimensionFilter,
         toggleDimensionFilterMode,
+        toggleDimensionFilterAndMode,
       },
 
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
@@ -537,6 +538,8 @@
               toggleDimensionFilterMode={async (name) => {
                 toggleDimensionFilterMode(name);
               }}
+              toggleDimensionFilterAndMode={async (name, _metricsViewNames) =>
+                toggleDimensionFilterAndMode(name)}
               toggleDimensionValueSelections={async (name, values) =>
                 toggleMultipleDimensionValueSelections(name, values, true)}
               applyDimensionInListMode={async (name, values) =>

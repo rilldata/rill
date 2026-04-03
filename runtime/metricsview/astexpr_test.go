@@ -224,3 +224,283 @@ func TestArrayContainsCondition(t *testing.T) {
 		})
 	}
 }
+
+func TestArrayContainsAllCondition(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table:     "test_table",
+		Database:  "",
+		Connector: "",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "id", Column: "id"},
+			{Name: "tags", Column: "tags", Unnest: true},
+			{Name: "city", Column: "city"},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	sec := skipMetricsViewSecurity{}
+
+	tests := []struct {
+		name     string
+		dialect  drivers.Dialect
+		dims     []Dimension
+		where    *Expression
+		wantSQL  string
+		wantArgs []any
+	}{
+		{
+			name:    "duckdb: AND of single-value INs on unnest dim uses list_has_all",
+			dialect: drivers.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"a"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"b"}},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `(list_has_all(("tags"), [?,?]))`,
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "duckdb: AND of single-value INs on unnest dim with scalar values",
+			dialect: drivers.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: "a"},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: "b"},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `(list_has_all(("tags"), [?,?]))`,
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "clickhouse: AND of single-value INs on unnest dim uses hasAll",
+			dialect: drivers.DialectClickHouse,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"x"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"y"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"z"}},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `(hasAll(("tags"), [?,?,?]))`,
+			wantArgs: []any{"x", "y", "z"},
+		},
+		{
+			name:    "duckdb: OR of single-value NINs on unnest dim uses NOT list_has_all",
+			dialect: drivers.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorOr,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorNin,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"a"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorNin,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"b"}},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `(NOT list_has_all(("tags"), [?,?]))`,
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "clickhouse: OR of single-value NINs on unnest dim uses NOT hasAll",
+			dialect: drivers.DialectClickHouse,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorOr,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorNin,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"a"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorNin,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"b"}},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `(NOT hasAll(("tags"), [?,?]))`,
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "duckdb: AND of INs on non-unnest dim does not optimize",
+			dialect: drivers.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "city"},
+							{Value: []any{"NYC"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "city"},
+							{Value: []any{"LA"}},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `((("city") IN (?)) AND (("city") IN (?)))`,
+			wantArgs: []any{"NYC", "LA"},
+		},
+		{
+			name:    "duckdb: AND with mixed dims does not optimize",
+			dialect: drivers.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"a"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "city"},
+							{Value: []any{"NYC"}},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `((list_has_any(("tags"), [?])) AND (("city") IN (?)))`,
+			wantArgs: []any{"a", "NYC"},
+		},
+		{
+			name:    "duckdb: AND with multi-value IN does not optimize",
+			dialect: drivers.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"a", "b"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"c"}},
+						},
+					}},
+				},
+			}},
+			wantSQL:  `((list_has_any(("tags"), [?,?])) AND (list_has_any(("tags"), [?])))`,
+			wantArgs: []any{"a", "b", "c"},
+		},
+		{
+			name:    "duckdb: AND of single-value INs on unnest dim already in select does not optimize",
+			dialect: drivers.DialectDuckDB,
+			dims:    []Dimension{{Name: "tags"}},
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"a"}},
+						},
+					}},
+					{Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: "tags"},
+							{Value: []any{"b"}},
+						},
+					}},
+				},
+			}},
+			// When tags is in the query dimensions, it's already unnested; the optimization does not apply.
+			wantSQL:  `((("t0"."tags") IN (?)) AND (("t0"."tags") IN (?)))`,
+			wantArgs: []any{"a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qry := &Query{
+				MetricsView: "test",
+				Dimensions:  tt.dims,
+				Measures:    []Measure{{Name: "count"}},
+				Where:       tt.where,
+			}
+
+			ast, err := NewAST(mv, sec, qry, tt.dialect)
+			require.NoError(t, err)
+
+			sql, args, err := ast.SQLForExpression(tt.where, nil, false, false)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantSQL, sql)
+			require.Equal(t, tt.wantArgs, args)
+		})
+	}
+}

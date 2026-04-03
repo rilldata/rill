@@ -482,6 +482,16 @@ func (d Dialect) GetArrayContainsFunction() string {
 	panic(fmt.Sprintf("unsupported dialect %q for array contains function", d))
 }
 
+func (d Dialect) GetArrayContainsAllFunction() string {
+	if d == DialectDuckDB {
+		return "list_has_all"
+	}
+	if d == DialectClickHouse {
+		return "hasAll"
+	}
+	panic(fmt.Sprintf("unsupported dialect %q for array contains all function", d))
+}
+
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
 	if dimension.LookupTable != "" {
 		var keyExpr string

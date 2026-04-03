@@ -70,6 +70,8 @@ export function getNewAlertInitialFiltersFormValues(
     dimensionThresholdFilters: exploreState.dimensionThresholdFilters ?? [],
     dimensionFilterExcludeMode:
       exploreState.dimensionFilterExcludeMode ?? new Map<string, boolean>(),
+    dimensionFilterAndMode:
+      exploreState.dimensionFilterAndMode ?? new Map<string, boolean>(),
   });
   const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange: exploreState.selectedTimeRange,

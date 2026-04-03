@@ -1,9 +1,11 @@
 import { page } from "$app/stores";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
+  createContainsAllExpression,
   createInExpression,
   createLikeExpression,
   getValuesInExpression,
+  isContainsAllExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -46,11 +48,18 @@ export function toggleMultipleDimensionValueSelections(
   }
 
   const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const isAndMode = !!dashboard.dimensionFilterAndMode?.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
-    dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, dimensionValues, isExclude),
-    );
+    if (isAndMode) {
+      dashboard.whereFilter.cond?.exprs?.push(
+        createContainsAllExpression(dimensionName, dimensionValues, isExclude),
+      );
+    } else {
+      dashboard.whereFilter.cond?.exprs?.push(
+        createInExpression(dimensionName, dimensionValues, isExclude),
+      );
+    }
     return;
   }
 
@@ -85,11 +94,45 @@ export function toggleMultipleDimensionValueSelections(
         href: get(page).url.href,
       },
     });
-    dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
-      dimensionName,
-      dimensionValues,
-      isExclude,
-    );
+    if (isAndMode) {
+      dashboard.whereFilter.cond!.exprs![exprIdx] =
+        createContainsAllExpression(dimensionName, dimensionValues, isExclude);
+    } else {
+      dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
+        dimensionName,
+        dimensionValues,
+        isExclude,
+      );
+    }
+    return;
+  }
+
+  // For AND mode, rebuild the contains-all expression by toggling values
+  if (isAndMode || isContainsAllExpression(expr)) {
+    const existingValues = getValuesInExpression(expr);
+    dimensionValues.forEach((v) => {
+      const idx = existingValues.indexOf(v);
+      if (idx === -1) {
+        if (!isExclusiveFilter) {
+          existingValues.push(v);
+        } else {
+          existingValues.length = 0;
+          existingValues.push(v);
+        }
+      } else {
+        existingValues.splice(idx, 1);
+      }
+    });
+
+    if (existingValues.length === 0) {
+      dashboard.whereFilter.cond?.exprs?.splice(exprIdx, 1);
+      if (keepPillVisible) {
+        dashboard.temporaryFilterName = dimensionName;
+      }
+    } else {
+      dashboard.whereFilter.cond!.exprs![exprIdx] =
+        createContainsAllExpression(dimensionName, existingValues, isExclude);
+    }
     return;
   }
 
@@ -128,7 +171,10 @@ export function applyDimensionInListMode(
   if (!dashboard.whereFilter.cond?.exprs) return;
 
   const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
-  const expr = createInExpression(dimensionName, values, isExclude);
+  const isAndMode = !!dashboard.dimensionFilterAndMode?.get(dimensionName);
+  const expr = isAndMode
+    ? createContainsAllExpression(dimensionName, values, isExclude)
+    : createInExpression(dimensionName, values, isExclude);
   if (!dashboard.dimensionsWithInlistFilter.includes(dimensionName)) {
     dashboard.dimensionsWithInlistFilter.push(dimensionName);
   }
@@ -176,15 +222,58 @@ export function toggleDimensionFilterMode(
     return;
   }
 
-  const exprIdx = dashboard.whereFilter.cond.exprs.findIndex(
-    (e) => e.cond?.exprs?.[0].ident === dimensionName,
-  );
-  if (exprIdx === -1) {
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
     return;
   }
-  dashboard.whereFilter.cond.exprs[exprIdx] = negateExpression(
-    dashboard.whereFilter.cond.exprs[exprIdx],
-  );
+
+  const expr = dashboard.whereFilter.cond.exprs[exprIdx];
+  if (isContainsAllExpression(expr)) {
+    // For contains-all: rebuild with negated child operations
+    const values = getValuesInExpression(expr);
+    const newExclude = !exclude;
+    dashboard.whereFilter.cond.exprs[exprIdx] =
+      createContainsAllExpression(dimensionName, values, newExclude);
+  } else {
+    dashboard.whereFilter.cond.exprs[exprIdx] = negateExpression(expr);
+  }
+}
+
+export function toggleDimensionFilterAndMode(
+  { dashboard }: DashboardMutables,
+  dimensionName: string,
+) {
+  if (!dashboard.dimensionFilterAndMode) {
+    dashboard.dimensionFilterAndMode = new Map();
+  }
+  const andMode = dashboard.dimensionFilterAndMode.get(dimensionName);
+  const newAndMode = !andMode;
+  dashboard.dimensionFilterAndMode.set(dimensionName, newAndMode);
+
+  if (!dashboard.whereFilter?.cond?.exprs) {
+    return;
+  }
+
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    return;
+  }
+
+  const expr = dashboard.whereFilter.cond.exprs[exprIdx];
+  const values = getValuesInExpression(expr);
+  if (values.length === 0) return;
+
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
+
+  if (newAndMode) {
+    // Convert from IN to contains-all
+    dashboard.whereFilter.cond.exprs[exprIdx] =
+      createContainsAllExpression(dimensionName, values, isExclude);
+  } else {
+    // Convert from contains-all to IN
+    dashboard.whereFilter.cond.exprs[exprIdx] =
+      createInExpression(dimensionName, values, isExclude);
+  }
 }
 
 export function removeDimensionFilter(
@@ -199,6 +288,7 @@ export function removeDimensionFilter(
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) return;
   dashboard.whereFilter?.cond?.exprs?.splice(exprIdx, 1);
+  dashboard.dimensionFilterAndMode?.delete(dimensionName);
 }
 
 export function selectItemsInFilter(
@@ -311,6 +401,7 @@ export const dimensionFilterActions = {
   applyDimensionInListMode,
   applyDimensionContainsMode,
   toggleDimensionFilterMode,
+  toggleDimensionFilterAndMode,
   removeDimensionFilter,
   selectItemsInFilter,
   deselectItemsInFilter,

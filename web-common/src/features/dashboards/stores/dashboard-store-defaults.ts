@@ -13,6 +13,7 @@ export function getFullInitExploreState(
     // fields filled here are the ones that are not stored and loaded to/from URL
     name,
     dimensionFilterExcludeMode: new Map(),
+    dimensionFilterAndMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
     temporaryFilterName: null,

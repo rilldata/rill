@@ -38,6 +38,7 @@
         actions: {
           toggleDimensionValueSelections,
           toggleDimensionFilterMode,
+          toggleDimensionFilterAndMode,
           applyDimensionInListMode,
           addTemporaryFilter,
           applyDimensionContainsMode,
@@ -239,6 +240,7 @@
           expressionMap={$filterMapStore}
           {removeDimensionFilter}
           {toggleDimensionFilterMode}
+          {toggleDimensionFilterAndMode}
           {toggleDimensionValueSelections}
           {applyDimensionInListMode}
           {applyDimensionContainsMode}

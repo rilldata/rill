@@ -691,6 +691,28 @@ export class FilterManager {
 
       await this.applyFiltersToUrl(newFilters, true);
     },
+    toggleDimensionFilterAndMode: async (
+      dimensionName: string,
+      metricsViewNames: string[],
+    ) => {
+      this.checkTemporaryFilter(dimensionName, metricsViewNames);
+
+      const map = new Map<string, string | null>();
+
+      metricsViewNames.forEach((name) => {
+        const filterClass = this.metricsViewFilters.get(name);
+
+        if (!filterClass) return;
+        const string =
+          filterClass.toggleDimensionFilterAndMode(dimensionName);
+
+        if (!string) return;
+
+        map.set(name, string);
+      });
+
+      await this.applyFiltersToUrl(map);
+    },
     toggleFilterPin: (name: string, metricsViewNames: string[]) => {
       this.pinnedFilterKeysStore.update((pinned) => {
         const key = getLookupKey(metricsViewNames, name);

@@ -48,6 +48,9 @@
   export let toggleDimensionValueSelections: Actions["toggleDimensionValueSelections"];
   export let applyDimensionContainsMode: Actions["applyDimensionContainsMode"];
   export let toggleDimensionFilterMode: Actions["toggleDimensionFilterMode"];
+  export let toggleDimensionFilterAndMode:
+    | Actions["toggleDimensionFilterAndMode"]
+    | undefined = undefined;
   export let toggleFilterPin: Actions["toggleFilterPin"] | undefined =
     undefined;
   export let isUrlTooLongAfterInListFilter: (
@@ -59,6 +62,8 @@
   let curMode = filterData.mode;
   let curSearchText = filterData.inputText ?? "";
   let curExcludeMode = filterData.isInclude === false;
+  let curAndMode = filterData.isAndMode ?? false;
+  let isUnnest = filterData.isUnnest ?? false;
   let inListTooLong = false;
   let selectedValuesProxy: string[] = filterData.selectedValues ?? [];
   let searchedBulkValues: string[] =
@@ -288,6 +293,10 @@
     curExcludeMode = !curExcludeMode;
   }
 
+  function handleToggleAndMode() {
+    curAndMode = !curAndMode;
+  }
+
   function onToggleSelectAll() {
     if (curMode === DimensionFilterMode.Select) {
       // Update proxy for select all/deselect all
@@ -324,8 +333,13 @@
         await applySelectModeChanges();
         if (close) open = false;
         break;
-      case DimensionFilterMode.InList:
+      case DimensionFilterMode.InList: {
         if (searchedBulkValues.length === 0) return;
+        const andModeChangedInList =
+          curAndMode !== (filterData.isAndMode ?? false);
+        if (andModeChangedInList && toggleDimensionFilterAndMode) {
+          await toggleDimensionFilterAndMode(name, metricsViewNames);
+        }
         await applyDimensionInListMode(
           name,
           searchedBulkValues,
@@ -335,6 +349,7 @@
           await toggleDimensionFilterMode(name, metricsViewNames);
         if (close) open = false;
         break;
+      }
       case DimensionFilterMode.Contains:
         if (curSearchText.length === 0) return;
         await applyDimensionContainsMode(name, curSearchText, metricsViewNames);
@@ -346,6 +361,12 @@
   }
 
   async function applySelectModeChanges() {
+    // Handle AND mode toggle first (before value changes)
+    const andModeChanged = curAndMode !== (filterData.isAndMode ?? false);
+    if (andModeChanged && toggleDimensionFilterAndMode) {
+      await toggleDimensionFilterAndMode(name, metricsViewNames);
+    }
+
     // Find values that were added or removed
     const currentValues = new Set(selectedValues);
     const proxyValues = new Set(selectedValuesProxy);
@@ -390,6 +411,8 @@
     curMode = filterData.mode;
     curSearchText = filterData.inputText ?? "";
     curExcludeMode = filterData.isInclude === false;
+    curAndMode = filterData.isAndMode ?? false;
+    isUnnest = filterData.isUnnest ?? false;
     selectedValuesProxy = filterData.selectedValues ?? [];
     searchedBulkValues =
       filterData.mode === DimensionFilterMode.InList
@@ -438,6 +461,7 @@
             label={curExcludeMode ? `Exclude ${label}` : label}
             show={1}
             {smallChip}
+            andMode={curAndMode}
             values={curMode === DimensionFilterMode.InList
               ? searchedBulkValues
               : effectiveSelectedValues}
@@ -608,9 +632,14 @@
     <DimensionFilterFooter
       mode={curMode}
       excludeMode={curExcludeMode}
+      andMode={curAndMode}
+      {isUnnest}
       {allSelected}
       {disableApplyButton}
       onToggleExcludeMode={handleToggleExcludeMode}
+      onToggleAndMode={toggleDimensionFilterAndMode
+        ? handleToggleAndMode
+        : undefined}
       {onToggleSelectAll}
       {onApply}
     />

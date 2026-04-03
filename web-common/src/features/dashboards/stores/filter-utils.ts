@@ -35,6 +35,70 @@ export function createInExpression(
   };
 }
 
+/**
+ * Creates an expression for "contains all" (AND mode) semantics on unnest dimensions.
+ * Include: AND(IN(dim, v1), IN(dim, v2), ...)
+ * Exclude: OR(NIN(dim, v1), NIN(dim, v2), ...)
+ */
+export function createContainsAllExpression(
+  ident: string,
+  vals: any[],
+  negate = false,
+): V1Expression {
+  const children = vals.map((val) =>
+    createInExpression(ident, [val], negate),
+  );
+  return negate ? createOrExpression(children) : createAndExpression(children);
+}
+
+/**
+ * Detects the "contains all" expression pattern:
+ * AND of same-ident single-value INs, or OR of same-ident single-value NINs.
+ */
+export function isContainsAllExpression(expr: V1Expression): boolean {
+  if (!expr.cond?.exprs?.length || expr.cond.exprs.length < 1) return false;
+
+  const op = expr.cond.op;
+  const expectedChildOp =
+    op === V1Operation.OPERATION_AND
+      ? V1Operation.OPERATION_IN
+      : op === V1Operation.OPERATION_OR
+        ? V1Operation.OPERATION_NIN
+        : undefined;
+  if (!expectedChildOp) return false;
+
+  const firstIdent = expr.cond.exprs[0]?.cond?.exprs?.[0]?.ident;
+  if (!firstIdent) return false;
+
+  return expr.cond.exprs.every((child) => {
+    if (child.cond?.op !== expectedChildOp) return false;
+    if (child.cond?.exprs?.[0]?.ident !== firstIdent) return false;
+    // Must be single-value IN/NIN
+    if (child.cond.exprs.length !== 2) return false;
+    return true;
+  });
+}
+
+/**
+ * Extracts values from a "contains all" expression.
+ * Each child is IN(dim, singleValue) or NIN(dim, singleValue).
+ */
+export function getValuesInContainsAllExpression(
+  expr: V1Expression,
+): any[] {
+  if (!expr.cond?.exprs) return [];
+  return expr.cond.exprs.map((child) => child.cond?.exprs?.[1]?.val);
+}
+
+/**
+ * Gets the identifier from a "contains all" expression.
+ */
+export function getIdentFromContainsAllExpression(
+  expr: V1Expression,
+): string | undefined {
+  return expr.cond?.exprs?.[0]?.cond?.exprs?.[0]?.ident;
+}
+
 export function createAndExpression(exprs: V1Expression[]): V1Expression {
   return {
     cond: {
@@ -175,6 +239,15 @@ export function forEachIdentifier(
   cb: (e: V1Expression, ident: string) => void,
 ) {
   forEachExpression(expr, (e) => {
+    // Handle contains-all expressions: call cb with the whole expression and its ident,
+    // rather than descending into children (which would call cb per child)
+    if (isContainsAllExpression(e)) {
+      const ident = getIdentFromContainsAllExpression(e);
+      if (ident !== undefined) {
+        cb(e, ident);
+      }
+      return;
+    }
     const ident = e.cond?.exprs?.[0]?.ident;
     if (ident === undefined) {
       return;
@@ -290,7 +363,15 @@ export function filterIdentifiers(
     if (e.subquery?.dimension) {
       return cb(e, e.subquery.dimension);
     }
-    const ident = e.cond?.exprs?.[0].ident;
+    // Handle contains-all expressions where ident is nested
+    if (isContainsAllExpression(e)) {
+      const ident = getIdentFromContainsAllExpression(e);
+      if (ident !== undefined) {
+        return cb(e, ident);
+      }
+      return true;
+    }
+    const ident = e.cond?.exprs?.[0]?.ident;
     if (ident === undefined) {
       return true;
     }
@@ -306,13 +387,20 @@ export function getValueIndexInExpression(
 }
 
 export function getValuesInExpression(expr?: V1Expression): any[] {
-  return expr
-    ? (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []).flat()
-    : [];
+  if (!expr) return [];
+  if (isContainsAllExpression(expr)) {
+    return getValuesInContainsAllExpression(expr);
+  }
+  return (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []).flat();
 }
 
 export const matchExpressionByName = (e: V1Expression, name: string) => {
-  return e.cond?.exprs?.[0].ident === name;
+  if (e.cond?.exprs?.[0]?.ident === name) return true;
+  // Also match contains-all expressions where the ident is nested
+  if (isContainsAllExpression(e)) {
+    return getIdentFromContainsAllExpression(e) === name;
+  }
+  return false;
 };
 
 export const sanitiseExpression = (
@@ -420,6 +508,10 @@ export function isExpressionUnsupported(expression: V1Expression) {
   }
 
   for (const expr of expression.cond.exprs) {
+    // Accept contains-all expressions (AND of same-ident single-value INs,
+    // or OR of same-ident single-value NINs)
+    if (isContainsAllExpression(expr)) continue;
+
     if (!expr.cond?.op || !SupportedOperations.has(expr.cond.op)) return true;
 
     const subqueryExpr = expr.cond?.exprs?.[1];

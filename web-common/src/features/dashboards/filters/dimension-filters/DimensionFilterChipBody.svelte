@@ -7,6 +7,7 @@
   export let matchedCount: number | undefined = undefined;
   export let search: string | undefined = undefined;
   export let loading: boolean | undefined = undefined;
+  export let andMode: boolean = false;
   export let show = 1;
   export let smallChip = false;
   export let labelMaxWidth = "160px";
@@ -38,6 +39,9 @@
       <span class="italic">({matchedCount} of {values.length})</span>
     {/if}
   {:else}
+    {#if andMode && values.length > 0}
+      <span class="text-fg-secondary text-[10px] uppercase font-semibold flex-none">all of</span>
+    {/if}
     {#if !smallChip}
       {#each values.slice(0, show) as value (value)}
         <span class="truncate" style:max-width={valueMaxWidth}>

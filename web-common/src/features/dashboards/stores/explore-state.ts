@@ -95,6 +95,13 @@ export interface ExploreState {
   dimensionFilterExcludeMode: Map<string, boolean>;
 
   /**
+   * stores whether an unnest dimension filter uses AND (contains all) semantics
+   * false/absence = OR (match any), true = AND (match all)
+   * Only meaningful for dimensions with unnest: true in the metrics view spec
+   */
+  dimensionFilterAndMode: Map<string, boolean>;
+
+  /**
    * Used to add a dropdown for newly added dimension/measure filters.
    * Such filter will not have an entry in where/having expression objects.
    */

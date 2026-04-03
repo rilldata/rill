@@ -6,6 +6,7 @@ import {
   createAndExpression,
   filterExpressions,
   forEachIdentifier,
+  isContainsAllExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
@@ -60,12 +61,36 @@ export function includeExcludeModeFromFilters(
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e, ident) => {
+    if (isContainsAllExpression(e)) {
+      // For contains-all, check the child operation
+      const childOp = e.cond?.exprs?.[0]?.cond?.op;
+      if (childOp === V1Operation.OPERATION_NIN) {
+        map.set(ident, true);
+      }
+      return;
+    }
     if (
       e.cond?.op === V1Operation.OPERATION_NIN ||
       e.cond?.op === V1Operation.OPERATION_NLIKE ||
       e.cond?.op === V1Operation.OPERATION_NEQ
     ) {
       map.set(ident, true);
+    }
+  });
+  return map;
+}
+
+export function andModeFromFilters(
+  filters: V1Expression | undefined,
+) {
+  const map = new Map<string, boolean>();
+  if (!filters) return map;
+  forEachIdentifier(filters, (e) => {
+    if (isContainsAllExpression(e)) {
+      const ident = e.cond?.exprs?.[0]?.cond?.exprs?.[0]?.ident;
+      if (ident) {
+        map.set(ident, true);
+      }
     }
   });
   return map;
@@ -168,6 +193,9 @@ const metricsViewReducers = {
       initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
         initState.whereFilter,
       );
+      initState.dimensionFilterAndMode = andModeFromFilters(
+        initState.whereFilter,
+      );
       state.entities[name] = structuredClone(initState);
       state.entities[name].name = name;
 
@@ -199,6 +227,9 @@ const metricsViewReducers = {
       exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
         partial.whereFilter,
       );
+      exploreState.dimensionFilterAndMode = andModeFromFilters(
+        partial.whereFilter,
+      );
       correctExploreState(metricsView, exploreState);
     });
   },
@@ -219,6 +250,9 @@ const metricsViewReducers = {
         exploreState.showTimeComparison = false;
       }
       exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
+        partialExploreState.whereFilter,
+      );
+      exploreState.dimensionFilterAndMode = andModeFromFilters(
         partialExploreState.whereFilter,
       );
       // Partial comes from getMergedExploreState and is already corrected
