@@ -64,6 +64,7 @@ class FeatureFlags {
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
   stickyDashboardState = new FeatureFlag("user", false);
+  unnestAndFilter = new FeatureFlag("user", false);
 
   private flagsUnsub?: () => void;
 

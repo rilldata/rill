@@ -1,6 +1,9 @@
 <script lang="ts">
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+
+  const { unnestAndFilter } = featureFlags;
 
   export let label: string;
   export let values: string[];
@@ -15,7 +18,12 @@
   export let valueMaxWidth = "320px";
 
   $: whatsLeft = values.length - show;
-  $: operator = isUnnest ? (andMode === true ? "AND" : "OR") : undefined;
+  $: operator =
+    $unnestAndFilter && isUnnest
+      ? andMode === true
+        ? "AND"
+        : "OR"
+      : undefined;
 </script>
 
 <div class="flex gap-x-2 items-center truncate">

@@ -2,6 +2,9 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+
+  const { unnestAndFilter } = featureFlags;
 
   export let mode: DimensionFilterMode;
   export let excludeMode: boolean;
@@ -60,7 +63,7 @@
       size="sm"
       minWidth={82}
     />
-    {#if isUnnest && onToggleAndMode}
+    {#if $unnestAndFilter && isUnnest && onToggleAndMode}
       <Select
         id="and-or-mode"
         value={andOrValue}
