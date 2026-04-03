@@ -24,20 +24,18 @@ var _ Tool[*RequestConnectorFieldsArgs, *RequestConnectorFieldsResult] = (*Reque
 // RequestConnectorFieldsArgs is filled by the LLM. The runtime does not derive missing fields from JSON Schema;
 // the client uses this payload to show connector forms (e.g. secrets to .env).
 type RequestConnectorFieldsArgs struct {
-	Driver        string         `json:"driver" jsonschema:"Connector driver name (e.g. clickhouse, s3, postgres)."`
-	EnteredFields map[string]any `json:"entered_fields,omitempty" jsonschema:"Optional YAML property keys already provided by the user (e.g. username, password)."`
-	MissingFields []string       `json:"missing_fields" jsonschema:"YAML property keys still needed from the user (e.g. username, password)."`
-	Message       string         `json:"message,omitempty" jsonschema:"Optional short explanation for the end user."`
-	ResourceName  string         `json:"resource_name,omitempty" jsonschema:"Optional connector resource name if known (filename stem without path)."`
+	Driver        string   `json:"driver" jsonschema:"Connector driver name (e.g. clickhouse, s3, postgres)."`
+	MissingFields []string `json:"missing_fields" jsonschema:"YAML property keys still needed from the user (e.g. username, password)."`
+	Message       string   `json:"message,omitempty" jsonschema:"Optional short explanation for the end user."`
+	ConnectorPath string   `json:"connector_path,omitempty" jsonschema:"Optional connector resource path if known."`
 }
 
 // RequestConnectorFieldsResult echoes the handoff for the Rill UI and tests.
 type RequestConnectorFieldsResult struct {
-	Driver        string         `json:"driver"`
-	EnteredFields map[string]any `json:"entered_fields,omitempty"`
-	MissingFields []string       `json:"missing_fields"`
-	Message       string         `json:"message,omitempty"`
-	ResourceName  string         `json:"resource_name,omitempty"`
+	Driver        string   `json:"driver"`
+	MissingFields []string `json:"missing_fields"`
+	Message       string   `json:"message,omitempty"`
+	ConnectorPath string   `json:"connector_path,omitempty"`
 }
 
 func (t *RequestConnectorFields) Spec() *mcp.Tool {
@@ -90,9 +88,8 @@ func (t *RequestConnectorFields) Handler(ctx context.Context, args *RequestConne
 
 	return &RequestConnectorFieldsResult{
 		Driver:        driver,
-		EnteredFields: args.EnteredFields,
 		MissingFields: missing,
 		Message:       strings.TrimSpace(args.Message),
-		ResourceName:  strings.TrimSpace(args.ResourceName),
+		ConnectorPath: strings.TrimSpace(args.ConnectorPath),
 	}, nil
 }

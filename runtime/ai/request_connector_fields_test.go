@@ -25,18 +25,15 @@ func TestRequestConnectorFields(t *testing.T) {
 				" password ",
 				"username",
 			},
-			Message:       "Need credentials for localhost:9000",
-			RelatedErrors: []string{" auth failed ", "auth failed"},
-			ResourceName:  "clickhouse_local",
+			Message:      "Need credentials for localhost:9000",
+			ResourceName: "clickhouse_local",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
-		require.Equal(t, "connector_fields", res.HandoffKind)
 		require.Equal(t, "clickhouse", res.Driver)
 		require.Equal(t, []string{"username", "password"}, res.MissingFields)
 		require.Equal(t, "Need credentials for localhost:9000", res.Message)
 		require.Equal(t, "clickhouse_local", res.ResourceName)
-		require.Equal(t, []string{"auth failed"}, res.RelatedErrors)
 	})
 
 	t.Run("missing driver", func(t *testing.T) {

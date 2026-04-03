@@ -49,6 +49,7 @@ export async function createConnector({
   formValues,
   validate,
   existingEnvBlob,
+  pathOverride,
 }: {
   runtimeClient: RuntimeClient;
   queryClient: QueryClient;
@@ -57,6 +58,7 @@ export async function createConnector({
   formValues: Record<string, unknown>;
   validate: boolean;
   existingEnvBlob: string | null;
+  pathOverride?: string;
 }) {
   await maybeInitProject(runtimeClient, connectorDriver);
 
@@ -72,10 +74,9 @@ export async function createConnector({
     : [];
 
   // Create connector file path outside try block for cleanup
-  const newConnectorFilePath = getFileAPIPathFromNameAndType(
-    connectorName,
-    EntityType.Connector,
-  );
+  const newConnectorFilePath =
+    pathOverride ??
+    getFileAPIPathFromNameAndType(connectorName, EntityType.Connector);
 
   try {
     // Capture original .env and compute updated contents up front

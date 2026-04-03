@@ -50,7 +50,7 @@ Pass:
 
 - **`driver`**: the connector driver (e.g. `clickhouse`).
 - **`missing_fields`**: snake_case YAML property keys the user still must supply (e.g. `username`, `password`), inferred from this document, the user’s request, and error messages—not from inventing new keys.
-- Optionally **`message`**, **`related_errors`** (short excerpts from tool errors), and **`resource_name`** if known.
+- Optionally **`message`**, **`related_errors`** (short excerpts from tool errors), and **`connector_path`** if known.
 
 The UI may intercept this tool call to show forms and write secrets to `.env` using `{{ .env.KEY }}` placeholders in the connector YAML. Prefer this over asking for passwords in plain chat text when credentials are required.
 

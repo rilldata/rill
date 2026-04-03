@@ -26,6 +26,9 @@ import {
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
 import { getDocsCategory } from "../sources/modal/connector-schemas";
+import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
+import type { SchemaFieldMeta } from "@rilldata/web-common/features/templates/schema-utils.ts";
+import type { JSONSchemaField } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 function yamlModelTemplate(driverName: string) {
   return `# Model YAML
@@ -264,7 +267,8 @@ driver: ${driverName}`;
       }
 
       const isSecretProperty = secretPropertyKeys.includes(key);
-      if (isSecretProperty) {
+      const isValueSecret = typeof value === "string" && value.startsWith("{{");
+      if (isSecretProperty && !isValueSecret) {
         const envVarName = makeEnvVarKey(
           connector.name as string,
           key,
@@ -292,6 +296,22 @@ driver: ${driverName}`;
 
   // Return the compiled YAML
   return `${topOfFile}\n` + compiledKeyValues;
+}
+
+export function decompileConnectorYAML(
+  yaml: string,
+  fields: SchemaFieldMeta[],
+) {
+  const record: Record<string, unknown> = {};
+
+  const doc = parseDocument(yaml);
+
+  fields.forEach((field) => {
+    if (!doc.has(field.key)) return;
+    record[field.key] = doc.get(field.key)?.toString() ?? ""; // TODO: other types
+  });
+
+  return record;
 }
 
 const EnvTemplateRegex = /{{\s*\.env\.([^.\s]+)\s*}}/g;

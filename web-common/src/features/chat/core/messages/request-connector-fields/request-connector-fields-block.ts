@@ -1,16 +1,32 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
-import type {
-  RequestConnectorFieldsCallData,
-  RequestConnectorFieldsResultData,
-} from "./request-connector-fields-data.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+import {
+  getMessage,
+  MessageSelectors,
+} from "@rilldata/web-common/features/chat/core/messages/message-selectors.ts";
+import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 
-export type {
-  RequestConnectorFieldsCallData,
-  RequestConnectorFieldsResultData,
-} from "./request-connector-fields-data.ts";
+// =============================================================================
+// BACKEND TYPES (mirror runtime/ai request_connector_fields tool definitions)
+// =============================================================================
+
+/** Arguments for the request_connector_fields tool call */
+export interface RequestConnectorFieldsCallData {
+  driver: string;
+  missing_fields: string[];
+  message?: string;
+  connector_path?: string;
+}
+
+/** Result from the request_connector_fields tool */
+export interface RequestConnectorFieldsResultData {
+  driver: string;
+  missing_fields: string[];
+  message?: string;
+  connector_path?: string;
+}
 
 /**
  * Block for the `request_connector_fields` tool: shows the tool call/result and
@@ -23,13 +39,16 @@ export type RequestConnectorFieldsBlock = {
   resultMessage: V1Message;
   llmMessage: string | undefined;
   schemaName: string;
+  connectorPath: string;
   schema: MultiStepFormSchema;
-  enteredFields: Record<string, any>;
+  filteredSchema: MultiStepFormSchema;
+  hasSubmitted: boolean;
 };
 
 export function createRequestConnectorFieldsBlock(
   message: V1Message,
   resultMessage: V1Message | undefined,
+  allMessages: V1Message[],
 ): RequestConnectorFieldsBlock | null {
   if (!resultMessage) return null;
   if (resultMessage.contentType === MessageContentType.ERROR) return null;
@@ -47,12 +66,21 @@ export function createRequestConnectorFieldsBlock(
       return null;
     }
 
-    const schema = structuredClone(getConnectorSchema(resultData.driver));
+    const schema = getConnectorSchema(resultData.driver);
     if (!schema?.properties) return null;
-    schema.properties = Object.fromEntries(
+    const filteredSchema = structuredClone(schema);
+    filteredSchema.properties = Object.fromEntries(
       Object.keys(schema.properties)
         .filter((k) => resultData.missing_fields.includes(k))
         .map((k) => [k, schema.properties![k]]),
+    );
+
+    const resultIndex = allMessages.findIndex((m) => m.id === resultMessage.id);
+    if (resultIndex === -1) return null;
+    const userMessageAfterResult = getMessage(
+      allMessages,
+      [MessageSelectors.ByRoleName("user")],
+      resultIndex,
     );
 
     return {
@@ -63,7 +91,11 @@ export function createRequestConnectorFieldsBlock(
       llmMessage: resultData.message,
       schemaName: resultData.driver,
       schema,
-      enteredFields: resultData.entered_fields ?? {},
+      filteredSchema,
+      connectorPath: resultData.connector_path
+        ? addLeadingSlash(resultData.connector_path)
+        : "",
+      hasSubmitted: !!userMessageAfterResult,
     };
   } catch {
     return null;

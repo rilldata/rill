@@ -39,7 +39,6 @@ export function createConnectorForm(args: {
 }) {
   const { schemaName, formType, onUpdate, additionalDefaults, schemaOverride } =
     args;
-  const schema = getConnectorSchema(schemaName);
   const schema = schemaOverride ?? getConnectorSchema(schemaName);
 
   // Don't pass step filter - include defaults for ALL fields so multi-step

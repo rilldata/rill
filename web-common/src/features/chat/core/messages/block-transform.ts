@@ -119,7 +119,11 @@ export function transformToBlocks(
 
       case "block": {
         flushThinking(true);
-        const block = routing.config.createBlock?.(msg, resultMap.get(msg.id));
+        const block = routing.config.createBlock?.(
+          msg,
+          resultMap.get(msg.id),
+          messages,
+        );
         if (!block) break;
         if (block.type === "request-connector-fields-block") {
           requestConnectorBlocks.push(block);

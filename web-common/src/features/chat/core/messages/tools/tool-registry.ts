@@ -62,6 +62,7 @@ export interface ToolConfig {
   createBlock?: (
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
+    allMessages: V1Message[],
   ) => ToolBlockType | null;
 
   /** Used to process any UI action or side effects from tool calls. */
@@ -121,6 +122,11 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   [ToolName.REQUEST_CONNECTOR_FIELDS]: {
     renderMode: "block",
     createBlock: createRequestConnectorFieldsBlock,
+  },
+
+  // Invoked when the user submits the connector form; LLM runs server-side — hide raw tool UI
+  [ToolName.CONNECTOR_FORM_SUBMITTED]: {
+    renderMode: "hidden",
   },
 
   // All other tools default to "inline" (shown in thinking blocks)
