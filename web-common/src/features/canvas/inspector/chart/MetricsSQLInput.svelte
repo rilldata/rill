@@ -84,7 +84,7 @@
             <span class="query-number">Query {idx + 1}</span>
             <button
               class="remove-btn"
-              on:click={() => removeQuery(entry.id)}
+              onclick={() => removeQuery(entry.id)}
               aria-label="Remove query {idx + 1}"
             >
               <Trash size="14px" />
@@ -96,7 +96,7 @@
     {/each}
   </div>
 
-  <button class="add-query-btn" on:click={addQuery}>
+  <button class="add-query-btn" onclick={addQuery}>
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
       <path
         d="M8 3v10M3 8h10"
