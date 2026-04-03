@@ -18,13 +18,10 @@ export type ComponentWithMetricsView =
   | TableSpec
   | KPISpec
   | KPIGridSpec
-  | LeaderboardSpec;
-
-export type ComponentSpec =
-  | ComponentWithMetricsView
-  | ImageSpec
-  | MarkdownSpec
+  | LeaderboardSpec
   | CustomChart;
+
+export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
 
 export interface ComponentCommonProperties {
   title?: string;
