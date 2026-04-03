@@ -196,7 +196,7 @@ func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStor
 		latest, err := q.latestBigQueryPartition(ctx, olap)
 		if err == nil && !latest.IsZero() {
 			whereClause = fmt.Sprintf(
-				" WHERE %s >= TIMESTAMP_SUB(CAST('%s' AS TIMESTAMP), INTERVAL 3 DAY)",
+				" WHERE %s >= TIMESTAMP(DATETIME_SUB(DATETIME(CAST('%s' AS TIMESTAMP), 'UTC'), INTERVAL 3 DAY), 'UTC')",
 				olap.Dialect().EscapeIdentifier(tbl.PartitionColumn),
 				latest.UTC().Format(time.RFC3339),
 			)

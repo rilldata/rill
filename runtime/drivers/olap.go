@@ -746,22 +746,22 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 		if tz == "" {
 			if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
 				offset := 8 - firstDayOfWeek
-				return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s), INTERVAL %d DAY)", expr, offset, specifier, offset), nil
+				return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d DAY), 'UTC'), %s), INTERVAL %d DAY), 'UTC')", expr, offset, specifier, offset), nil
 			}
 			if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
 				offset := 13 - firstMonthOfYear
-				return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d MONTH), %s), INTERVAL %d MONTH)", expr, offset, specifier, offset), nil
+				return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, offset), nil
 			}
 			return fmt.Sprintf("TIMESTAMP_TRUNC(%s, %s)", expr, specifier), nil
 		}
 		// TIMESTAMP_TRUNC natively accepts a timezone argument.
 		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
 			offset := 8 - firstDayOfWeek
-			return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s, '%s'), INTERVAL %d DAY)", expr, offset, specifier, tz, offset), nil
+			return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d DAY), 'UTC'), %s, '%s'), INTERVAL %d DAY), 'UTC')", expr, offset, specifier, tz, offset), nil
 		}
 		if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
 			offset := 13 - firstMonthOfYear
-			return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d MONTH), %s, '%s'), INTERVAL %d MONTH)", expr, offset, specifier, tz, offset), nil
+			return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s, '%s'), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, tz, offset), nil
 		}
 		return fmt.Sprintf("TIMESTAMP_TRUNC(%s, %s, '%s')", expr, specifier, tz), nil
 	default:
@@ -783,11 +783,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	case DialectSnowflake:
 		return fmt.Sprintf("DATEDIFF('%s', CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectBigQuery:
-		// TIMESTAMP_DIFF does not support WEEK; use DATE_DIFF for that grain.
-		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK {
-			return fmt.Sprintf("DATE_DIFF(DATE('%s'), DATE('%s'), %s)", t2.Format(time.RFC3339), t1.Format(time.RFC3339), unit), nil
-		}
-		return fmt.Sprintf("TIMESTAMP_DIFF(CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP), %s)", t2.Format(time.RFC3339), t1.Format(time.RFC3339), unit), nil
+		return fmt.Sprintf("DATETIME_DIFF(DATETIME(CAST('%s' AS TIMESTAMP), 'UTC'), DATETIME(CAST('%s' AS TIMESTAMP), 'UTC'), %s)", t2.Format(time.RFC3339), t1.Format(time.RFC3339), unit), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -802,11 +798,7 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	case DialectSnowflake:
 		return fmt.Sprintf("DATEADD('%s', -1 * (%s), %s::TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	case DialectBigQuery:
-		// TIMESTAMP_SUB does not support WEEK; convert to days.
-		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK {
-			return fmt.Sprintf("TIMESTAMP_SUB(%s, INTERVAL ((%s) * 7) DAY)", tsExpr, unitExpr), nil
-		}
-		return fmt.Sprintf("TIMESTAMP_SUB(%s, INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
+		return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(%s, 'UTC'), INTERVAL (%s) %s), 'UTC')", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}

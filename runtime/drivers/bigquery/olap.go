@@ -77,6 +77,9 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 	q := client.Query(stmt.Query)
 	q.Parameters = make([]bigquery.QueryParameter, len(stmt.Args))
+	q.ConnectionProperties = []*bigquery.ConnectionProperty{
+		{Key: "time_zone", Value: "UTC"},
+	}
 	q.MaxBytesBilled = c.config.MaxBytesBilled
 	for i, arg := range stmt.Args {
 		q.Parameters[i] = bigquery.QueryParameter{
