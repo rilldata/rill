@@ -196,3 +196,29 @@ export async function invalidateComponentData(
     type: "active",
   });
 }
+
+export async function invalidateConnectorQueries(
+  queryClient: QueryClient,
+  instanceId: string,
+  connector: string,
+) {
+  return queryClient.resetQueries({
+    predicate: (query) => {
+      const queryKey = query.queryKey;
+      // Format: ["QueryService", "oLAPGetTable" or "listDatabaseSchemas" or "listTables", instanceId, { connector, ... }]
+      if (queryKey[0] !== "ConnectorService" || queryKey[2] !== instanceId)
+        return false;
+      const isConnectorQuery =
+        queryKey[1] === "oLAPGetTable" ||
+        queryKey[1] === "listDatabaseSchemas" ||
+        queryKey[1] === "listTables";
+      if (!isConnectorQuery) return false;
+      const request = queryKey[3];
+      return (
+        typeof request === "object" &&
+        request !== null &&
+        (request as Record<string, unknown>).connector === connector
+      );
+    },
+  });
+}
