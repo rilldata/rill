@@ -141,7 +141,7 @@
           onSortToggle={handleSortToggle}
         >
           <Button type="primary" large onClick={() => (open = true)}>
-            <Plus size="16px" />
+            <Plus size="16px" /> New key
           </Button>
         </TableToolbar>
         <EnvironmentVariablesTable
