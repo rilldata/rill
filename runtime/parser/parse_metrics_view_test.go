@@ -492,8 +492,8 @@ func TestValidateQueryAttributes(t *testing.T) {
 
 func TestMetricsViewRollups(t *testing.T) {
 	files := map[string]string{
-		`rill.yaml`: ``,
-		`models/m1.sql`: `SELECT 1 AS id, 'a' AS publisher, 'b' AS domain`,
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher, 'b' AS domain`,
 		`models/rollup_daily.sql`: `SELECT 1 AS id`,
 		`metrics_views/mv1.yaml`: `
 type: metrics_view
@@ -591,8 +591,8 @@ rollups:
 
 func TestMetricsViewRollupsStarSelector(t *testing.T) {
 	files := map[string]string{
-		`rill.yaml`: ``,
-		`models/m1.sql`: `SELECT 1 AS id, 'a' AS publisher`,
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
 		`models/rollup_daily.sql`: `SELECT 1 AS id`,
 		`metrics_views/mv1.yaml`: `
 type: metrics_view
@@ -638,8 +638,8 @@ rollups:
 
 func TestMetricsViewRollupsExcludeSelector(t *testing.T) {
 	files := map[string]string{
-		`rill.yaml`: ``,
-		`models/m1.sql`: `SELECT 1 AS id, 'a' AS publisher`,
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
 		`models/rollup_daily.sql`: `SELECT 1 AS id`,
 		`metrics_views/mv1.yaml`: `
 type: metrics_view
@@ -689,8 +689,8 @@ rollups:
 
 func TestMetricsViewRollupsOptionalTimeGrain(t *testing.T) {
 	files := map[string]string{
-		`rill.yaml`: ``,
-		`models/m1.sql`: `SELECT 1 AS id, 'a' AS publisher`,
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
 		`models/rollup_daily.sql`: `SELECT 1 AS id`,
 		`metrics_views/mv1.yaml`: `
 type: metrics_view
@@ -863,9 +863,9 @@ rollups:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			files := map[string]string{
-				`rill.yaml`:               ``,
-				`models/m1.sql`:           `SELECT 1 AS id`,
-				`metrics_views/mv1.yaml`:  tt.yaml,
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: tt.yaml,
 			}
 			ctx := context.Background()
 			repo := makeRepo(t, files)
