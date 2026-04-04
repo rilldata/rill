@@ -74,10 +74,6 @@ func (d *dialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(" %s", tbl)
 }
 
-func (d *dialect) SanitizeQueryForLogging(sql string) string {
-	return dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
-}
-
 func (d *dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
 	if typ == runtimev1.Type_CODE_DATE {
 		t, ok := val.(time.Time)
@@ -87,14 +83,6 @@ func (d *dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, err
 		return "toDate(?)", t.Format(time.DateOnly), nil
 	}
 	return "?", val, nil
-}
-
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
-}
-
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("toDate('%s')", t.Format(time.DateOnly))
 }
 
 func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
@@ -175,17 +163,6 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	return sb.String(), args, nil
 }
 
-func (d *dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
-	if lookupDefaultExpression != "" {
-		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
-	}
-	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
-}
-
-func (d *dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
-	return fmt.Sprintf("SELECT %s FROM %s", d.EscapeIdentifier(lookupKeyColumn), d.EscapeQualifiedIdentifier(lookupTable)), nil
-}
-
 func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []any, error) {
 	for _, f := range result.Schema.Fields {
 		if !drivers.CheckTypeCompatibility(f) {
@@ -246,4 +223,28 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	suffix += ")"
 	return prefix + suffix, args, dimVals, nil
+}
+
+func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
+}
+
+func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("toDate('%s')", t.Format(time.DateOnly))
+}
+
+func (d *dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
+	if lookupDefaultExpression != "" {
+		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
+	}
+	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
+}
+
+func (d *dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
+	return fmt.Sprintf("SELECT %s FROM %s", d.EscapeIdentifier(lookupKeyColumn), d.EscapeQualifiedIdentifier(lookupTable)), nil
+}
+
+func (d *dialect) SanitizeQueryForLogging(sql string) string {
+	// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
+	return dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
 }

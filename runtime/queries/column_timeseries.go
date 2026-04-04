@@ -305,7 +305,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 }
 
 func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
-	dateTruncSpecifier := drivers.ConvertToDateTruncSpecifierDuckDB(timeRange.Interval)
+	dateTruncSpecifier := dialect.ConvertToDateTruncSpecifier(timeRange.Interval)
 	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 	filter := ""
 
