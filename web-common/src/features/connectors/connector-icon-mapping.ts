@@ -14,6 +14,7 @@ import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
+import OracleIcon from "../../components/icons/connectors/OracleIcon.svelte";
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
@@ -40,6 +41,7 @@ export const connectorIconMapping = {
   gcs: GoogleCloudStorageIcon,
   iceberg: ApacheIcebergIcon,
   mysql: MySqlIcon,
+  oracle: OracleIcon,
   openai: OpenAIIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,
