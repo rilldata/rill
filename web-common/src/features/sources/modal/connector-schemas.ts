@@ -30,7 +30,7 @@ import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
 import { supabaseSchema } from "../../templates/schemas/supabase";
 import { SOURCES, OLAP_ENGINES, AI_CONNECTORS } from "./constants";
-import { connectorKeywordMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+import { connectorKeywordMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,

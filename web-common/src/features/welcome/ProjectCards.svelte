@@ -13,7 +13,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
-  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
 
   const runtimeClient = useRuntimeClient();
@@ -59,7 +59,7 @@
 </script>
 
 <section class="flex flex-col items-center">
-  <div class="flex flex-row gap-4">
+  <div class="flex md:flex-row flex-col gap-4">
     {#each EXAMPLES as example (example.name)}
       {@const icon = connectorIconMapping[example.connector]}
       {@const loading = selectedProjectName === example.name}

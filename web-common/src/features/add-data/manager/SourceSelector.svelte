@@ -2,7 +2,7 @@
   import {
     connectorClassMapping,
     connectorIconMapping,
-  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import type { AddDataConfig } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
@@ -84,7 +84,7 @@
   }
 
   .source-selector-grid {
-    @apply grid grid-cols-3 grid-rows-7 gap-2;
+    @apply grid md:grid-cols-3 grid-cols-2 grid-rows-7 gap-2;
   }
 
   .source-label {
