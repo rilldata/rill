@@ -642,8 +642,8 @@ export class CanvasEntity {
           throw new Error("No component found: " + componentName);
         }
 
-        const newType = newResource.component?.state?.validSpec
-          ?.renderer as CanvasComponentType;
+        const newType = (newResource.component?.state?.validSpec?.renderer ??
+          newResource.component?.spec?.renderer) as CanvasComponentType;
         const existingClass =
           this.componentsStore.getNonReactive(componentName);
         const path = constructPath(rowIndex, columnIndex, newType);

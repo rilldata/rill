@@ -36,8 +36,12 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		return nil, ErrForbidden
 	}
 
-	// Exit early if the canvas is not valid
+	// Use the valid spec if available, otherwise fall back to the unvalidated spec.
+	// Falling back allows Rill Developer to keep the canvas accessible while the user is mid-edit.
 	spec := res.GetCanvas().State.ValidSpec
+	if spec == nil {
+		spec = res.GetCanvas().Spec
+	}
 	if spec == nil {
 		return &ResolveCanvasResult{
 			Canvas: res,
@@ -72,6 +76,9 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 	metricsViews := make(map[string]bool)
 	for _, cmp := range components {
 		validSpec := cmp.GetComponent().State.ValidSpec
+		if validSpec == nil {
+			validSpec = cmp.GetComponent().Spec
+		}
 		if validSpec == nil || validSpec.RendererProperties == nil {
 			continue
 		}

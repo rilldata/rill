@@ -144,11 +144,13 @@
         });
       }
 
-      const validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
+      const canvasSpec =
+        fetchedCanvas?.canvas?.canvas?.state?.validSpec ??
+        fetchedCanvas?.canvas?.canvas?.spec;
 
-      if (validSpec) {
+      if (canvasSpec) {
         const processed = {
-          canvas: fetchedCanvas?.canvas?.canvas?.state?.validSpec,
+          canvas: canvasSpec,
           components: fetchedCanvas?.resolvedComponents,
           metricsViews,
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],

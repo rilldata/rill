@@ -56,8 +56,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   pivotState: Writable<PivotState>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
-    const type = resource.component?.state?.validSpec
-      ?.renderer as CanvasComponentType;
+    const type = (resource.component?.state?.validSpec?.renderer ??
+      resource.component?.spec?.renderer) as CanvasComponentType;
 
     if (type !== "table" && type !== "pivot") {
       throw new Error(

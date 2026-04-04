@@ -109,7 +109,9 @@ export function useCanvas(
           }
 
           return {
-            canvas: data.canvas?.canvas?.state?.validSpec,
+            canvas:
+              data.canvas?.canvas?.state?.validSpec ??
+              data.canvas?.canvas?.spec,
             components: data.resolvedComponents,
             metricsViews,
             filePath: data.canvas?.meta?.filePaths?.[0],
