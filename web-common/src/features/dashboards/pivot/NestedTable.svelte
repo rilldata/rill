@@ -271,7 +271,9 @@
   class:with-measures={hasMeasures}
   role="presentation"
   style:width={fullWidth ? "100%" : "{totalLength + rowDimensionWidth}px"}
-  style:min-width={fullWidth ? "{totalLength + rowDimensionWidth}px" : undefined}
+  style:min-width={fullWidth
+    ? "{totalLength + rowDimensionWidth}px"
+    : undefined}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
   onmouseleave={onTableLeave}
@@ -287,7 +289,10 @@
     {#each measureGroups as { subHeaders }, i (i)}
       {#each subHeaders as { column: { columnDef: { name } } } (name)}
         {@const length = $measureLengths.get(name)}
-        <col style:width="{length}px" style:max-width={fullWidth ? undefined : "{length}px"} />
+        <col
+          style:width="{length}px"
+          style:max-width={fullWidth ? undefined : "{length}px"}
+        />
       {/each}
     {/each}
   </colgroup>
@@ -305,7 +310,11 @@
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
-              class:border-r={shouldShowHeaderRightBorder(header, i, headerGroup.headers.length)}
+              class:border-r={shouldShowHeaderRightBorder(
+                header,
+                i,
+                headerGroup.headers.length,
+              )}
               onclick={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}

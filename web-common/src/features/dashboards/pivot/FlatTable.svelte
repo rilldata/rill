@@ -94,7 +94,10 @@
 
   function hasBorderRight(columnId: string): boolean {
     // Last column should not have a right border
-    if (headers.length > 0 && headers[headers.length - 1].column.id === columnId)
+    if (
+      headers.length > 0 &&
+      headers[headers.length - 1].column.id === columnId
+    )
       return false;
     if (!hasMeasureContextColumns) return true;
     const measureIndex = measures.findIndex((m) => m.name === columnId);
@@ -146,7 +149,10 @@
     {#each headers as header (header.id)}
       {@const length =
         $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
-      <col style:width="{length}px" style:max-width={fullWidth ? undefined : "{length}px"} />
+      <col
+        style:width="{length}px"
+        style:max-width={fullWidth ? undefined : "{length}px"}
+      />
     {/each}
   </colgroup>
 
