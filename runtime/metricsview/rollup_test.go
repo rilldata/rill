@@ -136,19 +136,19 @@ func TestTimeRangeAligned(t *testing.T) {
 		{
 			"week aligned Monday",
 			time.Date(2024, 1, 1, 0, 0, 0, 0, utc), // Monday
-			time.Date(2024, 1, 8, 0, 0, 0, 0, utc),  // Monday
+			time.Date(2024, 1, 8, 0, 0, 0, 0, utc), // Monday
 			runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, true,
 		},
 		{
 			"week not aligned Monday",
 			time.Date(2024, 1, 2, 0, 0, 0, 0, utc), // Tuesday
-			time.Date(2024, 1, 8, 0, 0, 0, 0, utc),  // Monday
+			time.Date(2024, 1, 8, 0, 0, 0, 0, utc), // Monday
 			runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, false,
 		},
 		{
 			"week aligned Sunday (fdow=7)",
 			time.Date(2023, 12, 31, 0, 0, 0, 0, utc), // Sunday
-			time.Date(2024, 1, 7, 0, 0, 0, 0, utc),    // Sunday
+			time.Date(2024, 1, 7, 0, 0, 0, 0, utc),   // Sunday
 			runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 7, true,
 		},
 		{
