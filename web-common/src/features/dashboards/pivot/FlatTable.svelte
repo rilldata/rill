@@ -108,15 +108,20 @@
 </script>
 
 <div
-  class="w-full absolute top-0 z-50 flex pointer-events-none"
-  style:width="{totalLength}px"
+  class="absolute top-0 z-50 flex pointer-events-none"
+  style:width={fullWidth ? "100%" : "{totalLength}px"}
+  style:min-width={fullWidth ? "{totalLength}px" : undefined}
   style:height="{totalRowSize + HEADER_HEIGHT + headerGroups.length}px"
 >
   {#each headers as header, i (header.id)}
     {@const length =
       $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
     {@const last = i === headers.length - 1}
-    <div style:width="{length}px" class="h-full relative">
+    <div
+      style:width="{length}px"
+      style:flex={fullWidth ? "1 1 {length}px" : undefined}
+      class="h-full relative"
+    >
       <Resizer
         side="right"
         direction="EW"

@@ -203,8 +203,11 @@
 </script>
 
 <div
-  class="w-full absolute top-0 z-50 flex pointer-events-none"
-  style:width="{totalLength + rowDimensionWidth}px"
+  class="absolute top-0 z-50 flex pointer-events-none"
+  style:width={fullWidth ? "100%" : "{totalLength + rowDimensionWidth}px"}
+  style:min-width={fullWidth
+    ? "{totalLength + rowDimensionWidth}px"
+    : undefined}
   style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
 >
   <div style:width="{rowDimensionWidth}px" class="sticky left-0 flex-none flex">
@@ -228,13 +231,21 @@
   </div>
 
   {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
-    <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
+    <div
+      class="h-full z-50 flex"
+      style:width="{totalMeasureWidth}px"
+      style:flex={fullWidth ? "1 1 {totalMeasureWidth}px" : undefined}
+    >
       {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
         {@const length = $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
         {@const last =
           i === subHeaders.length - 1 &&
           groupIndex === measureGroups.length - 1}
-        <div style:width="{length}px" class="h-full relative">
+        <div
+          style:width="{length}px"
+          style:flex={fullWidth ? "1 1 {length}px" : undefined}
+          class="h-full relative"
+        >
           <Resizer
             side="right"
             direction="EW"
