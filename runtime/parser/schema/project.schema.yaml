@@ -2247,6 +2247,39 @@ definitions:
                             required:
                               - name
                             additionalProperties: false
+          rollups:
+            type: array
+            description: Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table.
+            items:
+              type: object
+              properties:
+                model:
+                  type: string
+                  description: Refers to the model powering the rollup table (required)
+                connector:
+                  type: string
+                  description: Refers to the connector to use for the rollup table
+                database:
+                  type: string
+                  description: Refers to the database to use in the OLAP engine
+                database_schema:
+                  type: string
+                  description: Refers to the schema to use in the OLAP engine
+                time_grain:
+                  type: string
+                  description: 'The time grain of the rollup table. Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+                timezone:
+                  type: string
+                  description: IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches.
+                watermark_cache_ttl:
+                  type: string
+                  description: 'Duration for caching the rollup table watermark (min/max timestamps). Defaults to 5 minutes. Example: 10m, 1h'
+                dimensions:
+                  $ref: '#/definitions/field_selector_properties'
+                measures:
+                  $ref: '#/definitions/field_selector_properties'
+              required:
+                - model
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
