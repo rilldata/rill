@@ -1,3 +1,30 @@
+// Rollup routing decides whether a metrics query can be served from a
+// pre-aggregated rollup table instead of the base table.
+//
+// Routing decision:
+//
+//  1. Quick disqualification: raw-row queries and comparison time ranges
+//     are never routed to rollups.
+//
+//  2. Eligibility (per rollup): a rollup is eligible only if all of these hold:
+//     a. Query time grain is derivable from the rollup grain (e.g. month from day).
+//     b. For day+ grains, the query timezone matches the rollup timezone.
+//     c. Query time range boundaries are aligned to the rollup grain.
+//     d. All queried dimensions (including WHERE filter dimensions) are present in the rollup.
+//     e. All queried measures are present; computed measures (count, count_distinct) are rejected.
+//
+//  3. Time coverage: an eligible rollup must cover the requested time range.
+//     For explicit time ranges, the query range is clamped to the base table's
+//     actual data range first. For no-time-range queries ("all data"), the rollup
+//     must cover the base table's full min/max range. If the base table's
+//     watermarks can't be fetched, rollups are skipped (safe fallback).
+//
+//  4. Selection: among eligible rollups, prefer the coarsest grain (fewer rows to scan).
+//     On ties, prefer the rollup with the smallest data range (tighter coverage).
+//
+// The selected rollup is returned as a synthetic MetricsViewSpec that points to
+// the rollup table. The caller uses this spec to build the query AST, so the
+// rest of the query pipeline is unaware of the rewrite.
 package executor
 
 import (

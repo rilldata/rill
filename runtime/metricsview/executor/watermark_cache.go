@@ -51,6 +51,7 @@ func setWatermark(key string, minTime, maxTime time.Time) {
 
 // fetchRollupWatermark returns the min/max time of the rollup table, using a cache with TTL.
 // Returns ok=false on errors (caller should skip the rollup).
+// Prone to thundering herd issue but keeping it simple for now.
 func (e *Executor) fetchRollupWatermark(ctx context.Context, rollup *runtimev1.MetricsViewSpec_RollupTable) (minTime, maxTime time.Time, ok bool) {
 	ttl := defaultWatermarkCacheTTL
 	if rollup.WatermarkCacheTtlSeconds > 0 {
@@ -72,6 +73,7 @@ func (e *Executor) fetchRollupWatermark(ctx context.Context, rollup *runtimev1.M
 
 // fetchBaseWatermark returns the min/max time of the base table, using the shared watermark cache.
 // Returns ok=false on errors (caller should proceed without base timestamps).
+// Prone to thundering herd issue but keeping it simple for now.
 func (e *Executor) fetchBaseWatermark(ctx context.Context) (minTime, maxTime time.Time, ok bool) {
 	key := watermarkCacheKey(e.instanceID, e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 	if wm, hit := getWatermark(key, defaultWatermarkCacheTTL); hit {
