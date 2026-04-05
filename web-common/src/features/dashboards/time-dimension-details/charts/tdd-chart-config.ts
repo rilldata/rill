@@ -35,13 +35,14 @@ export function createTDDCartesianSpec(
   comparisonDimension?: string,
   selectedValues?: (string | null)[],
   dimensionData?: DimensionSeriesData[],
+  showTimeDimensionDetail = true,
 ): CartesianChartSpec {
   const spec: CartesianChartSpec = {
     metrics_view: metricsViewName,
     x: {
       field: timeDimension,
       type: "temporal",
-      axisOrient: "top",
+      axisOrient: showTimeDimensionDetail ? "top" : "none",
     },
     y: {
       field: measureName,

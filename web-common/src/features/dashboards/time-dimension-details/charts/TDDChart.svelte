@@ -44,6 +44,7 @@
   export let dimensionValues: (string | null)[] = [];
   export let dimensionData: DimensionSeriesData[] = [];
   export let showComparison: boolean = false;
+  export let showTimeDimensionDetail: boolean = true;
   export let chartType: TDDChart;
   export let isScrubbing: boolean;
   export let onChartHover: (
@@ -75,6 +76,7 @@
     comparisonDimension,
     dimensionValues,
     dimensionData,
+    showTimeDimensionDetail,
   );
 
   $: componentChartType = TDD_TO_COMPONENT_CHART_TYPE[chartType];

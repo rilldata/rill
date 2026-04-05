@@ -313,6 +313,7 @@
         {dimensionValues}
         {dimensionData}
         {showComparison}
+        {showTimeDimensionDetail}
         isScrubbing={tddIsScrubbing}
         onChartHover={handleTddHover}
         onChartBrush={handleTddBrush}
