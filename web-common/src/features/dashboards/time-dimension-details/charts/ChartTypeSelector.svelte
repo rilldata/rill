@@ -10,8 +10,17 @@
   export let exploreName: string;
   export let chartType: TDDChart;
   export let hasComparison: boolean;
+  export let onChartTypeChange: ((type: TDDChart) => void) | undefined =
+    undefined;
 
   const comparisonCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
+
+  const comparisonChartFallbacks: Record<TDDChart, TDDChart> = {
+    [TDDChart.STACKED_AREA]: TDDChart.DEFAULT,
+    [TDDChart.STACKED_BAR]: TDDChart.GROUPED_BAR,
+    [TDDChart.DEFAULT]: TDDChart.DEFAULT,
+    [TDDChart.GROUPED_BAR]: TDDChart.GROUPED_BAR,
+  };
 
   const chartTypeTabs = [
     {
@@ -38,12 +47,21 @@
 
   function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
     if (isDisabled) return;
-    metricsExplorerStore.setTDDChartType(exploreName, type);
+    if (onChartTypeChange) {
+      onChartTypeChange(type);
+    } else {
+      metricsExplorerStore.setTDDChartType(exploreName, type);
+    }
   }
 
-  // switch to default if current selected chart is not available
+  // switch to non-comparison fallback if current selected chart is not available
   $: if (!hasComparison && comparisonCharts.includes(chartType)) {
-    metricsExplorerStore.setTDDChartType(exploreName, TDDChart.DEFAULT);
+    const fallback = comparisonChartFallbacks[chartType];
+    if (onChartTypeChange) {
+      onChartTypeChange(fallback);
+    } else {
+      metricsExplorerStore.setTDDChartType(exploreName, fallback);
+    }
   }
 </script>
 

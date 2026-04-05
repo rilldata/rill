@@ -343,6 +343,13 @@
         onDynamicYAxisScaleChange={(v) =>
           metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
       />
+      <ChartTypeSelector
+        hasComparison={Boolean(
+          showComparison || includedValuesForDimension.length,
+        )}
+        {exploreName}
+        chartType={tddChartType}
+      />
 
       {#if !hideStartPivotButton}
         <div class="grow"></div>
@@ -403,9 +410,7 @@
             {measure}
             {scrubController}
             {connectNulls}
-            tddChartType={showTimeDimensionDetail
-              ? (tddChartType ?? TDDChart.DEFAULT)
-              : TDDChart.DEFAULT}
+            tddChartType={tddChartType ?? TDDChart.DEFAULT}
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}
