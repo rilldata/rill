@@ -6,6 +6,7 @@
   import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import type { ComponentType, SvelteComponent } from "svelte";
 
   export let exploreName: string;
   export let chartType: TDDChart;
@@ -15,6 +16,20 @@
 
   const comparisonCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
 
+  let buttonEls: HTMLElement[] = [];
+  let indicatorLeft = 0;
+  let indicatorWidth = 0;
+  let ready = false;
+
+  $: activeIndex = chartTypeTabs.findIndex((t) => t.id === chartType);
+
+  $: if (buttonEls[activeIndex]) {
+    const el = buttonEls[activeIndex];
+    indicatorLeft = el.offsetLeft;
+    indicatorWidth = el.offsetWidth;
+    ready = true;
+  }
+
   const comparisonChartFallbacks: Record<TDDChart, TDDChart> = {
     [TDDChart.STACKED_AREA]: TDDChart.DEFAULT,
     [TDDChart.STACKED_BAR]: TDDChart.GROUPED_BAR,
@@ -22,7 +37,11 @@
     [TDDChart.GROUPED_BAR]: TDDChart.GROUPED_BAR,
   };
 
-  const chartTypeTabs = [
+  const chartTypeTabs: {
+    label: string;
+    id: TDDChart;
+    Icon: ComponentType<SvelteComponent>;
+  }[] = [
     {
       label: "Line",
       id: TDDChart.DEFAULT,
@@ -66,24 +85,36 @@
 </script>
 
 <div class="chart-type-selector">
-  {#each chartTypeTabs as { label, id, Icon } (label)}
+  {#if ready}
+    <div
+      class="indicator"
+      style:left="{indicatorLeft}px"
+      style:width="{indicatorWidth}px"
+    ></div>
+  {/if}
+  {#each chartTypeTabs as { label, id, Icon }, i (id)}
     {@const active = chartType === id}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
-    <div class:bg-theme-100={active} class="chart-icon-wrapper">
+    <div bind:this={buttonEls[i]} class="chart-icon-wrapper" class:disabled>
       <IconButton
         {disabled}
         disableHover
         tooltipLocation="top"
         onclick={() => handleChartTypeChange(id, disabled)}
+        ariaPressed={active}
       >
         <Icon
           primaryColor={disabled
-            ? "var(--color-gray-400)"
-            : "var(--color-theme-700)"}
-          secondaryColor={disabled
             ? "var(--color-gray-300)"
-            : "var(--color-theme-300)"}
-          size="20px"
+            : active
+              ? "var(--color-theme-600)"
+              : "var(--color-gray-500)"}
+          secondaryColor={disabled
+            ? "var(--color-gray-200)"
+            : active
+              ? "var(--color-theme-300)"
+              : "var(--color-gray-300)"}
+          size="18px"
         />
         <svelte:fragment slot="tooltip-content">
           {disabled ? `Add comparison values to use ${label} chart` : label}
@@ -95,14 +126,27 @@
 
 <style lang="postcss">
   .chart-type-selector {
-    @apply flex ml-auto overflow-hidden;
-    @apply border border-theme-300 divide-x divide-theme-300 rounded-sm;
-  }
-  .chart-icon-wrapper {
-    @apply p-1;
+    @apply relative flex items-center gap-x-1;
+    @apply bg-surface-muted rounded p-0.5;
+    @apply border border-slate-200;
   }
 
-  .chart-icon-wrapper:hover {
-    @apply bg-theme-100;
+  .indicator {
+    @apply absolute rounded bg-white;
+    @apply top-0.5 bottom-0.5;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.08),
+      0 0 0 1px rgb(0 0 0 / 0.04);
+    transition:
+      left 150ms cubic-bezier(0.4, 0, 0.2, 1),
+      width 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .chart-icon-wrapper {
+    @apply relative z-10;
+  }
+
+  .chart-icon-wrapper.disabled {
+    @apply opacity-40;
   }
 </style>
