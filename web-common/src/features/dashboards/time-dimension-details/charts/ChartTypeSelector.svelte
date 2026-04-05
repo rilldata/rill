@@ -147,6 +147,6 @@
   }
 
   .chart-icon-wrapper.disabled {
-    @apply opacity-40;
+    @apply opacity-80;
   }
 </style>

@@ -268,9 +268,7 @@
         <BackToExplore />
         <div class="flex items-center mr-4 gap-x-1">
           <ChartTypeSelector
-            hasComparison={Boolean(
-              showComparison || includedValuesForDimension.length,
-            )}
+            hasComparison={Boolean(includedValuesForDimension.length)}
             {exploreName}
             chartType={tddChartType}
           />
@@ -344,9 +342,7 @@
           metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
       />
       <ChartTypeSelector
-        hasComparison={Boolean(
-          showComparison || includedValuesForDimension.length,
-        )}
+        hasComparison={Boolean(includedValuesForDimension.length)}
         {exploreName}
         chartType={tddChartType}
       />
