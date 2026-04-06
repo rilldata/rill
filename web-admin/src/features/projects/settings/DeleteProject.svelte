@@ -58,8 +58,8 @@
     error={deleteProjectResult.error?.message}
     onConfirm={deleteProject}
   >
-    <svelte:fragment let:builder>
-      <Button builders={[builder]} type="destructive">Delete Project</Button>
+    <svelte:fragment>
+      <Button type="destructive">Delete Project</Button>
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
 </SettingsContainer>

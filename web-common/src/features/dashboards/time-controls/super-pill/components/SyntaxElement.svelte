@@ -10,7 +10,7 @@
   class:dark
   role={onClick ? "button" : undefined}
   class="element"
-  on:click={() => onClick?.(range)}
+  onclick={() => onClick?.(range)}
 >
   {range}
 </svelte:element>

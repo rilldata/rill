@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -533,8 +534,8 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 
 // ResolveVariables resolves the project's variables for the given environment.
 // It fetches the variable specific to the environment plus the default variables not set exclusively for the environment.
-func (s *Service) ResolveVariables(ctx context.Context, projectID, environment string) (map[string]string, error) {
-	vars, err := s.DB.FindProjectVariables(ctx, projectID, &environment)
+func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deployment) (map[string]string, error) {
+	vars, err := s.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
 	if err != nil {
 		return nil, err
 	}
@@ -542,5 +543,9 @@ func (s *Service) ResolveVariables(ctx context.Context, projectID, environment s
 	for _, v := range vars {
 		res[v.Name] = v.Value
 	}
+
+	// preset variables enforced for the instance
+	// repo should only be watched for editable deployments
+	res["rill.watch_repo"] = strconv.FormatBool(depl.Editable)
 	return res, nil
 }

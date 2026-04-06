@@ -2,7 +2,7 @@
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
-  import { timeAgo } from "../../dashboards/listing/utils";
+  import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import AlertOwnerBullet from "./AlertOwnerBullet.svelte";
 

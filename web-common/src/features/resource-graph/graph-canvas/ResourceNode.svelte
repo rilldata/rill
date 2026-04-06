@@ -117,10 +117,10 @@
   style:--node-accent={color}
   style:width={width ? `${width}px` : undefined}
   data-kind={kind}
-  on:click={handleClick}
+  onclick={handleClick}
   role="button"
   tabindex="0"
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleClick();
@@ -172,7 +172,10 @@
       class="toolbar-open-btn"
       aria-label="Open in code"
       title={`Open ${artifact?.path}`}
-      on:click|stopPropagation={openFile}
+      onclick={(e) => {
+        e.stopPropagation();
+        openFile(e);
+      }}
     >
       <ExternalLink size="12px" />
       <span>Open</span>
@@ -188,14 +191,20 @@
             <a
               href={`/files${artifact.path}`}
               class="error-open"
-              on:click|stopPropagation={openFile}
+              onclick={(e) => {
+                e.stopPropagation();
+                openFile(e);
+              }}
               title={`Open ${artifact.path}`}>Open YAML</a
             >
           {/if}
           <button
             class="error-close"
             aria-label="Close error"
-            on:click|stopPropagation={() => (showError = false)}
+            onclick={(e) => {
+              e.stopPropagation();
+              showError = false;
+            }}
           >
             ✕
           </button>

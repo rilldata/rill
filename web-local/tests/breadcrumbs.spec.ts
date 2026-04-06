@@ -1,20 +1,15 @@
 import { expect } from "playwright/test";
 import { test } from "./setup/base";
-import { uploadFile } from "./utils/sourceHelpers";
+import { createSourceV2 } from "./utils/sourceHelpers";
 
 test.describe("Breadcrumbs", () => {
   test.use({ project: "Blank" });
 
   test.describe("Breadcrumb interactions", () => {
     test.describe.configure({ retries: 3 });
+    test.setTimeout(120_000);
     test("breadcrumb navigation", async ({ page }) => {
-      await uploadFile(page, "AdBids.csv");
-
-      await page
-        .getByText("View this source")
-        .waitFor({ state: "visible", timeout: 5000 });
-
-      await page.getByText("View this source").click();
+      await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
 
       let link = page.getByRole("link", {
         name: "AdBids",

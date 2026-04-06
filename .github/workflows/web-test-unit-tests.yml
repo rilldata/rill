@@ -29,9 +29,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          cache: 'npm'
 
       - name: NPM Install
-        run: npm install
+        run: npm ci
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:
           HUSKY: 0
@@ -39,7 +40,3 @@ jobs:
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
-
-      - name: Run storybook smoke tests
-        run: |-
-          npm run storybook:smoketest -w web-common

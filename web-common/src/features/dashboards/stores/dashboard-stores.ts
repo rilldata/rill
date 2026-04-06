@@ -23,7 +23,7 @@ import type {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
-import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
+import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
 import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import {
@@ -604,6 +604,18 @@ const metricsViewReducers = {
         outermostRowLimit: limit,
         activeCell: null,
       };
+    });
+  },
+
+  setDynamicYAxisScale(name: string, value: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.dynamicYAxisScale = value;
+    });
+  },
+
+  setForceLineChart(name: string, value: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.forceLineChart = value;
     });
   },
 };

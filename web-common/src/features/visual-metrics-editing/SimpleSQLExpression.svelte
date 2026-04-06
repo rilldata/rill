@@ -70,7 +70,7 @@
   <div class="rounded-sm option-wrapper flex h-6 text-sm w-fit mb-1">
     {#each fields as field (field)}
       <button
-        on:click={() => {
+        onclick={() => {
           viewingSimple = field === "Simple";
           if (parsedFunction && parsedColumn) {
             const props = createProperties(parsedFunction, parsedColumn);

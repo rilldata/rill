@@ -26,8 +26,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
-import type { TimeUnit } from "vega-lite/build/src/timeunit";
-import type { ColorScheme } from "vega-typings";
+import type { ColorScheme } from "vega";
+import type { TimeUnit } from "vega-lite/types_unstable/timeunit.js";
 
 export type ChartProvider =
   | CartesianChartProvider
@@ -148,6 +148,8 @@ interface NominalFieldConfig {
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;
+  /** Explicit dimension values to use (skips topN query) */
+  values?: string[];
 }
 
 interface MarkFieldConfig {
@@ -170,6 +172,7 @@ interface BaseFieldConfig {
   field: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
+  axisOrient?: "top" | "bottom" | "left" | "right";
   fields?: string[]; // To support multi metric chart variants
 }
 

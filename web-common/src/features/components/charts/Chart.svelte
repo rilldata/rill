@@ -1,7 +1,13 @@
 <script lang="ts">
   import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+  import {
+    resolveSignalField,
+    resolveSignalIntervalField,
+    resolveSignalTimeField,
+  } from "@rilldata/web-common/components/vega/vega-signals";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
+  import VegaRenderer from "@rilldata/web-common/components/vega/VegaRenderer.svelte";
   import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -11,10 +17,16 @@
     humanizeDataType,
   } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
+  import type { SignalListeners, VegaSpec, View } from "svelte-vega";
   import type { Readable } from "svelte/store";
-  import type { View } from "vega-typings";
   import { getChroma } from "../../themes/theme-utils";
+  import {
+    compileToBrushedVegaSpec,
+    createAdaptiveScrubHandler,
+  } from "./brush-builder";
   import type { ChartDataResult, ChartType } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
 
@@ -30,7 +42,21 @@
   export let theme: Record<string, string> | undefined = undefined;
   export let isCanvas: boolean;
 
-  let viewVL: View;
+  export let isScrubbing: boolean = false;
+  export let temporalField: string | undefined = undefined;
+  export let onBrush: ((interval: TimeRange) => void) | undefined = undefined;
+  export let onBrushEnd: ((interval: TimeRange) => void) | undefined =
+    undefined;
+  export let onBrushClear: (() => void) | undefined = undefined;
+  export let onHover:
+    | ((dimension: string | null | undefined, time: Date | undefined) => void)
+    | undefined = undefined;
+
+  export let view: View;
+
+  let vegaSpec: VegaSpec | undefined = undefined;
+  let prevVlSpec: unknown = undefined;
+  let compileGeneration = 0;
 
   $: ({ data, domainValues, hasComparison, isFetching, error } = $chartData);
 
@@ -52,6 +78,26 @@
     : $chartData;
 
   $: spec = generateSpec(chartType, chartSpec, chartDataWithTheme);
+
+  // Compile VL spec to Vega spec when brush is enabled.
+  // Memoize with deep equality to avoid recompilation on store re-emissions
+  // that produce the same spec, which would reset brush selection state.
+  $: useBrush = "isInteractive" in chartSpec && !!chartSpec.isInteractive;
+  $: {
+    if (
+      useBrush &&
+      spec &&
+      JSON.stringify(spec) !== JSON.stringify(prevVlSpec)
+    ) {
+      prevVlSpec = spec;
+      const gen = ++compileGeneration;
+      void compileToBrushedVegaSpec(spec, isThemeModeDark, theme).then(
+        (compiled) => {
+          if (gen === compileGeneration) vegaSpec = compiled;
+        },
+      );
+    }
+  }
 
   // TODO: Move this to a central cached store
   $: measureFormatters = measures.reduce(
@@ -88,6 +134,59 @@
     domainValues,
     isThemeModeDark,
   );
+
+  const scrubHandler = createAdaptiveScrubHandler((interval) =>
+    onBrush?.(interval),
+  );
+  onDestroy(() => scrubHandler.destroy());
+
+  // Signal listeners for brush and hover events
+  $: signalListeners = buildSignalListeners(
+    useBrush && !!vegaSpec,
+    !!onHover,
+    temporalField,
+  );
+
+  function buildSignalListeners(
+    brushEnabled: boolean,
+    hoverEnabled: boolean,
+    timeField?: string,
+  ): SignalListeners {
+    const listeners: SignalListeners = {};
+
+    if (hoverEnabled) {
+      listeners.hover = (_name: string, value: unknown) => {
+        const dimension = resolveSignalField(value, "dimension");
+        const ts = resolveSignalTimeField(value, timeField);
+        onHover?.(dimension, ts);
+      };
+    }
+
+    if (brushEnabled) {
+      listeners.brush = (_name: string, value: unknown) => {
+        const interval = resolveSignalIntervalField(value);
+        // Trigger async rendering to prevent race condition
+        void view?.runAsync();
+        if (interval) scrubHandler.update(interval);
+      };
+
+      listeners.brush_end = (_name: string, value: unknown) => {
+        const interval = resolveSignalIntervalField(value);
+        if (interval) {
+          onBrushEnd?.(interval);
+        } else {
+          // Brush was cleared by clicking outside the selection
+          onBrushClear?.();
+        }
+      };
+
+      listeners.brush_clear = (_name: string, value: unknown) => {
+        if (value) onBrushClear?.();
+      };
+    }
+
+    return listeners;
+  }
 </script>
 
 {#if isFetching || measures.length === 0}
@@ -102,17 +201,31 @@
   >
     No Data to Display
   </div>
+{:else if useBrush && vegaSpec}
+  <VegaRenderer
+    bind:view
+    data={{ "metrics-view": data }}
+    {isScrubbing}
+    spec={vegaSpec}
+    {colorMapping}
+    theme={themeMode}
+    {signalListeners}
+    renderer="svg"
+    {expressionFunctions}
+    {hasComparison}
+  />
 {:else}
   <VegaLiteRenderer
-    bind:viewVL
+    bind:viewVL={view}
     canvasDashboard={isCanvas}
     data={{ "metrics-view": data }}
     {themeMode}
     {spec}
     {colorMapping}
+    {signalListeners}
     renderer="canvas"
     {expressionFunctions}
     {hasComparison}
-    config={getRillTheme(true, isThemeModeDark, theme)}
+    config={getRillTheme(isThemeModeDark, theme)}
   />
 {/if}
