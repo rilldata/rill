@@ -42,7 +42,9 @@
     }
   });
 
-  let displayName = $derived((rillYaml.display_name ?? rillYaml.title ?? "") as string);
+  let displayName = $derived(
+    (rillYaml.display_name ?? rillYaml.title ?? "") as string,
+  );
   let description = $derived((rillYaml.description ?? "") as string);
   let aiInstructions = $derived((rillYaml.ai_instructions ?? "") as string);
 
@@ -134,7 +136,9 @@
 
   // Resources for overview
   const resourcesQuery = createRuntimeServiceListResources(runtimeClient, {});
-  let allResources = $derived(($resourcesQuery.data?.resources ?? []) as V1Resource[]);
+  let allResources = $derived(
+    ($resourcesQuery.data?.resources ?? []) as V1Resource[],
+  );
   let resourceCounts = $derived(countByKind(allResources));
 
   // Parse errors
@@ -155,7 +159,8 @@
   let erroredResources = $derived(
     allResources.filter(
       (r) =>
-        !!r.meta?.reconcileError && r.meta?.name?.kind !== ResourceKind.Component,
+        !!r.meta?.reconcileError &&
+        r.meta?.name?.kind !== ResourceKind.Component,
     ),
   );
   let errorsByKind = $derived(groupErrorsByKind(erroredResources));

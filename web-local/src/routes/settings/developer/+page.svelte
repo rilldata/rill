@@ -27,7 +27,9 @@
     }
   });
 
-  let savedFeatures = $derived((rillYaml.features ?? {}) as Record<string, boolean>);
+  let savedFeatures = $derived(
+    (rillYaml.features ?? {}) as Record<string, boolean>,
+  );
   let hasFeaturesKey = $derived("features" in rillYaml);
 
   // Feature flag definitions with snake_case keys matching rill.yaml/runtime
@@ -261,8 +263,8 @@
 
   {#if featuresEnabled}
     <div class="disclaimer">
-      Modifying feature flags can change the behavior of dashboards and
-      AI features. Flags not explicitly set will use their default values.
+      Modifying feature flags can change the behavior of dashboards and AI
+      features. Flags not explicitly set will use their default values.
     </div>
 
     <div class="flags-list">

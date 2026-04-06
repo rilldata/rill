@@ -31,8 +31,12 @@
   filterSync.init($page.url);
 
   let searchText = $state(parseStringParam($page.url.searchParams.get("q")));
-  let selectedTypes = $state(parseArrayParam($page.url.searchParams.get("kind")));
-  let selectedStatuses = $state(parseArrayParam($page.url.searchParams.get("status")));
+  let selectedTypes = $state(
+    parseArrayParam($page.url.searchParams.get("kind")),
+  );
+  let selectedStatuses = $state(
+    parseArrayParam($page.url.searchParams.get("status")),
+  );
   let mounted = $state(false);
 
   $effect(() => {
@@ -71,8 +75,10 @@
       (r) =>
         (r.meta?.name?.kind === ResourceKind.Source ||
           r.meta?.name?.kind === ResourceKind.Model) &&
-        (r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-          r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_RUNNING),
+        (r.meta?.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+          r.meta?.reconcileStatus ===
+            V1ReconcileStatus.RECONCILE_STATUS_RUNNING),
     ),
   );
 
