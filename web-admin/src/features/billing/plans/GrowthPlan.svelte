@@ -8,9 +8,15 @@
   import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
 
-  export let organization: string;
-  export let subscription: V1Subscription;
-  export let plan: V1BillingPlan;
+  let {
+    organization,
+    subscription,
+    plan,
+  }: {
+    organization: string;
+    subscription: V1Subscription;
+    plan: V1BillingPlan;
+  } = $props();
 </script>
 
 <SettingsContainer title={plan?.displayName ?? "Growth Plan"}>
