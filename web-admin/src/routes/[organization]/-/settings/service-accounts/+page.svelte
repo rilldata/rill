@@ -24,7 +24,7 @@
 </script>
 
 <SettingsContainer title="Service Accounts">
-  {#snippet body()}
+  <svelte:fragment slot="body">
     <div class="flex flex-col gap-y-4">
       <div class="flex items-center justify-between">
         <p class="text-sm text-fg-tertiary">
@@ -57,7 +57,7 @@
         />
       {/if}
     </div>
-  {/snippet}
+  </svelte:fragment>
 </SettingsContainer>
 
 <CreateServiceDialog bind:open={isCreateDialogOpen} />
