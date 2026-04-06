@@ -1,10 +1,10 @@
 import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
+import type { ExprRef, SignalRef } from "vega";
 import type { Config } from "vega-lite";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { ExprRef, SignalRef } from "vega-typings";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import {
   createColorEncoding,
   createConfigWithLegend,

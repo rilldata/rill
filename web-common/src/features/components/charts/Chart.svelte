@@ -20,9 +20,8 @@
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
-  import type { SignalListeners, VegaSpec } from "svelte-vega";
+  import type { SignalListeners, VegaSpec, View } from "svelte-vega";
   import type { Readable } from "svelte/store";
-  import type { View } from "vega-typings";
   import { getChroma } from "../../themes/theme-utils";
   import {
     compileToBrushedVegaSpec,

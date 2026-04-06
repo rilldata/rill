@@ -10,11 +10,11 @@ import type {
   Field,
   NumericMarkPropDef,
   OffsetDef,
-} from "vega-lite/build/src/channeldef";
-import type { Encoding } from "vega-lite/build/src/encoding";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { Transform } from "vega-lite/build/src/transform";
+} from "vega-lite/types_unstable/channeldef.js";
+import type { Encoding } from "vega-lite/types_unstable/encoding.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
+import type { Transform } from "vega-lite/types_unstable/transform.js";
 import {
   buildHoverPointOverlay,
   buildHoverRuleLayer,
