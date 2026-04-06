@@ -5,9 +5,8 @@
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import {
-    isTrialPlan,
-    // isGrowthPlan,
-    isEnterprisePlan,
+    isFreePlan,
+    isGrowthPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
@@ -82,15 +81,14 @@
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: isFree = isTrialPlan(planName);
-  $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
+  $: showSlots = isFreePlan(planName) || isGrowthPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
   <div slot="header-right" class="flex items-center gap-3">
-    {#if canManage && isFree && !$subscriptionQuery?.isLoading}
+    {#if canManage && isFreePlan(planName) && !$subscriptionQuery?.isLoading}
       <a class="upgrade-link" href="/{organization}/-/settings/billing">
-        Upgrade to Teams
+        Upgrade to Growth
       </a>
     {/if}
     <ProjectClone
@@ -182,7 +180,7 @@
       </span>
     </div>
 
-    {#if !$subscriptionQuery?.isLoading && !isEnterprise}
+    {#if !$subscriptionQuery?.isLoading && showSlots}
       <div class="info-row">
         <span class="info-label">Rill Slots</span>
         <span class="slots-count">{currentSlots}</span>
