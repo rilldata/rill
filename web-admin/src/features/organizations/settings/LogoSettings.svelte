@@ -23,7 +23,7 @@
 
   const logoUpdater = createAdminServiceUpdateOrganization({
     mutation: {
-      mutationKey: ["updateOrganization", "logo", organization],
+      mutationKey: ["updateOrganization", "logo"],
     },
   });
   let {
@@ -34,7 +34,7 @@
 
   const logoDarkUpdater = createAdminServiceUpdateOrganization({
     mutation: {
-      mutationKey: ["updateOrganization", "logoDark", organization],
+      mutationKey: ["updateOrganization", "logoDark"],
     },
   });
   let {

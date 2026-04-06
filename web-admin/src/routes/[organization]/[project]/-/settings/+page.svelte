@@ -21,19 +21,19 @@
 
 <ProjectNameSettings {organization} {project} />
 
-<SettingsContainer title="GitHub">
+{#snippet githubAction()}
+  <GithubConnectionDialog {organization} {project} />
+{/snippet}
+
+<SettingsContainer
+  title="GitHub"
+  action={isGithubConnected ? undefined : githubAction}
+>
   {#snippet body()}
     <div>
       <ProjectGithubConnection {organization} {project} />
     </div>
   {/snippet}
-  {#if !isGithubConnected}
-    {#snippet action()}
-      <div>
-        <GithubConnectionDialog {organization} {project} />
-      </div>
-    {/snippet}
-  {/if}
 </SettingsContainer>
 
 <div class="danger-zone-section">
