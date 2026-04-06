@@ -16,21 +16,45 @@ import (
 
 // checkRefs checks that all refs exist, are idle, and have no errors.
 func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName) error {
+	// Look up the refs and collect any errors we find.
+	var errs []string
 	for _, ref := range refs {
 		res, err := c.Get(ctx, ref, false)
 		if err != nil {
-			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return runtime.NewDependencyError(fmt.Errorf("resource %q (%s) not found", ref.Name, ref.Kind))
+			if !errors.Is(err, drivers.ErrResourceNotFound) {
+				// Return immediately for other errors (most likely a context cancellation).
+				return runtime.NewDependencyError(fmt.Errorf("failed to get resource %s/%s: %w", runtime.PrettifyResourceKind(ref.Kind), ref.Name, err))
 			}
-			return runtime.NewDependencyError(fmt.Errorf("failed to get resource %q (%s): %w", ref.Name, ref.Kind, err))
+			errs = append(errs, fmt.Sprintf("resource %s/%s not found", runtime.PrettifyResourceKind(ref.Kind), ref.Name))
+			continue
 		}
 		if res.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
-			return runtime.NewDependencyError(fmt.Errorf("resource %q (%s) is not idle", ref.Name, ref.Kind))
+			errs = append(errs, fmt.Sprintf("resource %s/%s is not idle", runtime.PrettifyResourceKind(ref.Kind), ref.Name))
+			continue
 		}
-		if res.Meta.ReconcileError != "" {
-			return runtime.NewDependencyError(fmt.Errorf("resource %q (%s) has an error", ref.Name, ref.Kind))
+		if res.Meta.ReconcileError == "" {
+			continue
+		}
+		switch res.Meta.Name.Kind {
+		case runtime.ResourceKindComponent:
+			// For components, we propagate the underlying error message to make canvas debugging easier (since components are usually defined inline in a canvas).
+			// This is safe since components are already end-user facing resources.
+			errs = append(errs, fmt.Sprintf("component %s has an error: %s", ref.Name, res.Meta.ReconcileError))
+		default:
+			// For other resources, we don't propagate errors for one of two reasons:
+			// 1. In some cases, such as models, the error message may contain sensitive information that non-admins shouldn't see.
+			// 2. In other cases, it's sufficient to reference the underlying resource, which the admin can investigate separately. This prevents an error from getting multiplied in logs and UIs.
+			errs = append(errs, fmt.Sprintf("resource %s/%s has an error", runtime.PrettifyResourceKind(ref.Kind), ref.Name))
 		}
 	}
+
+	// Only return the full first error; truncate any additional errors.
+	if len(errs) == 1 {
+		return runtime.NewDependencyError(errors.New(errs[0]))
+	} else if len(errs) > 1 {
+		return runtime.NewDependencyError(fmt.Errorf("%s; %d other refs also have errors", errs[0], len(errs)-1))
+	}
+
 	return nil
 }
 
