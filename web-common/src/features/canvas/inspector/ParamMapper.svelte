@@ -127,7 +127,7 @@
               checked={config.meta?.invertBoolean
                 ? !$specStore[key]
                 : $specStore[key]}
-              on:click={() => {
+              onclick={() => {
                 component.updateProperty(key, !localParamValues[key]);
               }}
               small
@@ -147,11 +147,11 @@
               class="w-full p-2 border border-gray-300 rounded-sm"
               rows="8"
               bind:value={$specStore[key]}
-              on:blur={() => {
+              onblur={() => {
                 component.updateProperty(key, localParamValues[key]);
               }}
               placeholder={config.label ?? key}
-            />
+            ></textarea>
           </div>
 
           <!-- SELECT DROPDOWN -->

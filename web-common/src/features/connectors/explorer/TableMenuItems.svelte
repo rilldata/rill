@@ -103,7 +103,7 @@
 </script>
 
 {#if isModelingSupported || showGenerateModel}
-  <NavigationMenuItem on:click={handleCreateModelFromTable}>
+  <NavigationMenuItem onclick={handleCreateModelFromTable}>
     <Model slot="icon" />
     Create model
   </NavigationMenuItem>

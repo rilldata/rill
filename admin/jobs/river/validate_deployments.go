@@ -41,6 +41,7 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 			defer wg.Done()
 			// Read projects from shared channel
 			for proj := range ch {
+				w.admin.Logger.Info("validate deployments: validating project deployments", zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
 				err := w.validateDeploymentsForProject(ctx, proj)
 				if err != nil {
 					// We log the error, but continue to the next project

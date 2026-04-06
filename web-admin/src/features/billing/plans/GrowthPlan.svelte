@@ -24,12 +24,19 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { DateTime } from "luxon";
 
-  export let organization: string;
-  export let subscription: V1Subscription;
-  export let plan: V1BillingPlan;
-  export let billingPortalUrl: string | undefined;
+  let {
+    organization,
+    subscription,
+    plan,
+    billingPortalUrl,
+  }: {
+    organization: string;
+    subscription: V1Subscription;
+    plan: V1BillingPlan;
+    billingPortalUrl: string | undefined;
+  } = $props();
 
-  $: planCanceller = createAdminServiceCancelBillingSubscription();
+  let planCanceller = $derived(createAdminServiceCancelBillingSubscription());
   async function handleCancelPlan() {
     await $planCanceller.mutateAsync({
       org: organization,
@@ -44,12 +51,14 @@
     open = false;
   }
 
-  let open = false;
+  let open = $state(false);
 
-  $: error = getErrorForMutation($planCanceller);
-  $: currentBillingCycleEndDate = DateTime.fromJSDate(
-    new Date(subscription.currentBillingCycleEndDate ?? ""),
-  ).toLocaleString(DateTime.DATE_MED);
+  let error = $derived(getErrorForMutation($planCanceller));
+  let currentBillingCycleEndDate = $derived(
+    DateTime.fromJSDate(
+      new Date(subscription.currentBillingCycleEndDate ?? ""),
+    ).toLocaleString(DateTime.DATE_MED),
+  );
 </script>
 
 <SettingsContainer title={plan?.displayName || "Growth plan"}>

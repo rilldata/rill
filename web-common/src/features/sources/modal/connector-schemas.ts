@@ -61,6 +61,8 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
 
 /**
  * Connector information derived from JSON schemas.
+ * TODO: Consolidate with V1ConnectorDriver since this is an intermediate representation.
+ *       We use V1ConnectorDriver to show connector form and transitions.
  */
 export interface ConnectorInfo {
   name: string;
@@ -85,12 +87,18 @@ export const connectors: ConnectorInfo[] = [
       category: schema["x-category"] as ConnectorCategory,
     };
   });
+/**
+ * Map of connector names to ConnectorInfo objects.
+ * We need connector info by name in a lot of places, so we have a map to optimize lookups.
+ */
+export const connectorInfoMap = new Map<string, ConnectorInfo>(
+  connectors.map((connector) => [connector.name, connector]),
+);
 
 export function getConnectorSchema(
   connectorName: string,
 ): MultiStepFormSchema | null {
-  const schema =
-    multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
+  const schema = multiStepFormSchemas[connectorName];
   return schema?.properties ? schema : null;
 }
 
@@ -145,11 +153,13 @@ export function isMultiStepConnector(
 
 /**
  * Determine if a connector supports explorer mode (SQL query interface).
- * SQL stores and warehouses can browse tables and write custom queries.
+ * Detected by the presence of fields tagged with x-step: "explorer".
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
-  const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse";
+  if (!schema?.properties) return false;
+  return Object.values(schema.properties).some(
+    (p) => p["x-step"] === "explorer",
+  );
 }
 
 /**

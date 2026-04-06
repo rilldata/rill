@@ -86,10 +86,10 @@ export async function beforeSubmitForm(
       olap: olapEngine, // Explicitly set OLAP based on connector type
     });
 
-    // Race condition: invalidate("init") must be called before we navigate to
-    // `/files/${newFilePath}`. invalidate("init") is also called in the
+    // Race condition: invalidate("app:init") must be called before we navigate to
+    // `/files/${newFilePath}`. invalidate("app:init") is also called in the
     // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-    await invalidate("init");
+    await invalidate("app:init");
   }
 }
 
@@ -416,10 +416,10 @@ export async function submitAddConnectorForm(
         await rollbackChanges(client, newConnectorFilePath, originalEnvBlob);
       }
 
-      const errorDetails = (error as any).details;
-      if (errorDetails && errorDetails !== (error as any).message) {
+      const errorDetails = error.details;
+      if (errorDetails && errorDetails !== error.message) {
         throw {
-          message: (error as any).message || "Unable to establish a connection",
+          message: error.message || "Unable to establish a connection",
           details: errorDetails,
         };
       }
@@ -525,7 +525,7 @@ export async function submitAddSourceForm(
     // The source file was already created, so we need to delete it
     sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
     await rollbackChanges(client, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    const errorDetails = error.details;
 
     throw {
       message: error.message || "Unable to establish a connection",

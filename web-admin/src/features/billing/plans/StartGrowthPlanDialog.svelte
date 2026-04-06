@@ -29,16 +29,24 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
-  export let organization: string;
-  export let open = false;
-  export let endDate = "";
-  export let type: GrowthPlanDialogTypes;
+  let {
+    organization,
+    open = $bindable(false),
+    endDate = "",
+    type,
+  }: {
+    organization: string;
+    open?: boolean;
+    endDate?: string;
+    type: GrowthPlanDialogTypes;
+  } = $props();
 
-  let title: string;
-  let description: string;
-  let buttonText = "Upgrade to Growth";
-  function setCopyBasedOnType(t: GrowthPlanDialogTypes) {
-    switch (t) {
+  let title = $state("Upgrade to Growth");
+  let description = $state("");
+  let buttonText = $state("Upgrade to Growth");
+
+  $effect(() => {
+    switch (type) {
       case "base":
         title = "Upgrade to Growth";
         description =
@@ -66,23 +74,22 @@
         buttonText = "Continue";
         break;
     }
-  }
-  $: setCopyBasedOnType(type);
+  });
 
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-  $: paymentIssues = $categorisedIssues.data?.payment;
-  $: redirect = $page.url.searchParams.get("redirect");
+  let categorisedIssues = $derived(useCategorisedOrganizationBillingIssues(organization));
+  let paymentIssues = $derived($categorisedIssues.data?.payment);
+  let redirect = $derived($page.url.searchParams.get("redirect"));
 
-  let loading = false;
-  let fetchError: string | null = null;
+  let loading = $state(false);
+  let fetchError = $state<string | null>(null);
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
-  $: allStatus = mergedQueryStatus([
+  let allStatus = $derived(mergedQueryStatus([
     categorisedIssues,
     planUpdater,
     planRenewer,
-  ]);
+  ]));
 
   async function handleUpgradePlan() {
     loading = true;

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Database } from "lucide-svelte";
   import { slide } from "svelte/transition";
+  import { Database } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
@@ -32,9 +32,10 @@
 <li aria-label={database} class="database-entry">
   {#if database}
     <button
+      type="button"
       class="database-entry-header"
       class:open={expanded}
-      on:click={() => store.toggleItem(connectorName, database)}
+      onclick={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
         className="transform transition-transform text-fg-secondary {expanded

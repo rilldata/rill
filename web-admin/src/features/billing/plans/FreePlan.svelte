@@ -12,27 +12,35 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
 
-  export let organization: string;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  export let subscription: V1Subscription;
-  export let creditInfo: V1BillingCreditInfo | undefined;
-  export let plan: V1BillingPlan;
-  export let showUpgradeDialog: boolean;
+  let {
+    organization,
+    subscription,
+    creditInfo,
+    plan,
+    showUpgradeDialog,
+  }: {
+    organization: string;
+    subscription: V1Subscription;
+    creditInfo: V1BillingCreditInfo | undefined;
+    plan: V1BillingPlan;
+    showUpgradeDialog: boolean;
+  } = $props();
 
-  $: remaining = creditInfo?.remainingCredit ?? 0;
-  $: total = creditInfo?.totalCredit ?? 250;
-  $: pctUsed = total > 0 ? Math.round(((total - remaining) / total) * 100) : 0;
-  $: burnRate = creditInfo?.burnRatePerDay ?? 0;
-  $: daysRemaining =
-    burnRate > 0 ? Math.ceil(remaining / burnRate) : undefined;
+  let remaining = $derived(creditInfo?.remainingCredit ?? 0);
+  let total = $derived(creditInfo?.totalCredit ?? 250);
+  let pctUsed = $derived(total > 0 ? Math.round(((total - remaining) / total) * 100) : 0);
+  let burnRate = $derived(creditInfo?.burnRatePerDay ?? 0);
+  let daysRemaining = $derived(
+    burnRate > 0 ? Math.ceil(remaining / burnRate) : undefined,
+  );
 
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-  $: creditExhausted = !!$categorisedIssues.data?.creditExhausted;
+  let categorisedIssues = $derived(useCategorisedOrganizationBillingIssues(organization));
+  let creditExhausted = $derived(!!$categorisedIssues.data?.creditExhausted);
 
-  let dialogOpen = showUpgradeDialog;
-  $: dialogType = (
-    creditExhausted ? "credit-exhausted" : pctUsed >= 80 ? "credit-low" : "base"
-  ) as GrowthPlanDialogTypes;
+  let dialogOpen = $state(showUpgradeDialog);
+  let dialogType = $derived(
+    (creditExhausted ? "credit-exhausted" : pctUsed >= 80 ? "credit-low" : "base") as GrowthPlanDialogTypes,
+  );
 </script>
 
 <SettingsContainer title={plan?.displayName || "Free plan"}>

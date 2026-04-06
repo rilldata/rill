@@ -22,38 +22,44 @@
   } from "../overview/slots-utils";
   import ManageSlotsModal from "../overview/ManageSlotsModal.svelte";
 
-  export let organization: string;
-  export let project: string;
+  let {
+    organization,
+    project,
+  }: {
+    organization: string;
+    project: string;
+  } = $props();
 
   // Deployment
-  $: projectDeployment = useProjectDeployment(organization, project);
-  $: deployment = $projectDeployment.data;
-  $: deploymentStatus =
-    deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
+  let projectDeployment = $derived(useProjectDeployment(organization, project));
+  let deployment = $derived($projectDeployment.data);
+  let deploymentStatus = $derived(
+    deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
+  );
 
   // Project
-  $: proj = createAdminServiceGetProject(organization, project);
-  $: projectData = $proj.data?.project;
+  let proj = $derived(createAdminServiceGetProject(organization, project));
+  let projectData = $derived($proj.data?.project);
 
   // Slots
-  $: currentSlots = Number(projectData?.prodSlots) || 0;
-  $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
+  let currentSlots = $derived(Number(projectData?.prodSlots) || 0);
+  let canManage = $derived($proj.data?.projectPermissions?.manageProject ?? false);
   // Self-managed: any non-DuckDB OLAP connector (ClickHouse, MotherDuck, Druid, Pinot, StarRocks)
-  $: olapType = projectData?.olapConnector ?? "";
-  $: isRillManaged = olapType === "" || olapType === "duckdb";
-  let slotsModalOpen = false;
+  let olapType = $derived(projectData?.olapConnector ?? "");
+  let isRillManaged = $derived(olapType === "" || olapType === "duckdb");
+  let slotsModalOpen = $state(false);
 
   // Billing
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: isTrial = isTrialPlan(planName);
-  $: isTeam = isTeamPlan(planName);
-  $: isFree = isFreePlan(planName);
-  $: isGrowth = isGrowthPlan(planName);
-  $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
+  let subscriptionQuery = $derived(createAdminServiceGetBillingSubscription(organization));
+  let planName = $derived($subscriptionQuery?.data?.subscription?.plan?.name ?? "");
+  let isTrial = $derived(isTrialPlan(planName));
+  let isTeam = $derived(isTeamPlan(planName));
+  let isFree = $derived(isFreePlan(planName));
+  let isGrowth = $derived(isGrowthPlan(planName));
+  let isEnterprise = $derived(planName !== "" && isEnterprisePlan(planName));
 
   // Estimated costs
-  $: rillMonthlyCost = Math.round(currentSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH);
+  let rillMonthlyCost = $derived(Math.round(currentSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH));
 </script>
 
 {#if !isEnterprise}
@@ -69,7 +75,7 @@
       {#if canManage && !$subscriptionQuery?.isLoading}
         <button
           class="manage-btn"
-          on:click={() => (slotsModalOpen = true)}
+          onclick={() => (slotsModalOpen = true)}
         >
           Manage Slots
         </button>

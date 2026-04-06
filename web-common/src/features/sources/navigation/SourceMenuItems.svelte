@@ -186,19 +186,19 @@
   }
 </script>
 
-<NavigationMenuItem on:click={viewGraph}>
+<NavigationMenuItem onclick={viewGraph}>
   <GitBranch slot="icon" size="14px" />
   View DAG graph
 </NavigationMenuItem>
 
-<NavigationMenuItem on:click={handleCreateModel}>
+<NavigationMenuItem onclick={handleCreateModel}>
   <Model slot="icon" />
   Create new model
 </NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createMetricsViewFromTable}
+  onclick={createMetricsViewFromTable}
 >
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -219,7 +219,7 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={onGenerateCanvasDashboard}
+  onclick={onGenerateCanvasDashboard}
 >
   <CanvasIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -240,7 +240,7 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createExploreFromTable}
+  onclick={createExploreFromTable}
 >
   <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -259,13 +259,13 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
-<NavigationMenuItem on:click={onRefreshSource}>
+<NavigationMenuItem onclick={onRefreshSource}>
   <RefreshIcon slot="icon" />
   Refresh source
 </NavigationMenuItem>
 
 {#if isLocalFileConnector}
-  <NavigationMenuItem on:click={onReplaceSource}>
+  <NavigationMenuItem onclick={onReplaceSource}>
     <Import slot="icon" />
     Replace source with uploaded file
   </NavigationMenuItem>

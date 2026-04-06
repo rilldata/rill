@@ -92,3 +92,18 @@ dark:
     color-sequential-5: "hsl(180deg 50% 50%)"
     color-sequential-9: "hsl(180deg 60% 70%)"
 ```
+
+```yaml
+# Example: Theme with KPI delta colors (green for positive, red for negative)
+type: theme
+light:
+    primary: "#6366f1"
+    secondary: "#8b5cf6"
+    kpi-positive: "#16a34a" # Green for positive deltas (default: gray)
+    kpi-negative: "#dc2626" # Red for negative deltas (default: red)
+dark:
+    primary: "#818cf8"
+    secondary: "#a78bfa"
+    kpi-positive: "#4ade80" # Brighter green for dark mode
+    kpi-negative: "#f87171" # Brighter red for dark mode
+```

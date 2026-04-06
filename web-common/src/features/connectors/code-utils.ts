@@ -172,7 +172,18 @@ export function compileConnectorYAML(
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
-    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    schema?: {
+      properties?: Record<
+        string,
+        {
+          "x-env-var-name"?: string;
+          default?: string | number | boolean;
+          type?: string;
+          "x-yaml-value"?: string | number | boolean;
+          "x-advanced"?: boolean;
+        }
+      >;
+    };
     existingEnvBlob?: string;
   },
 ) {
@@ -222,11 +233,27 @@ driver: ${driverName}`;
         value === false
       )
         return false;
+      // For advanced fields, skip values that match the field's effective default.
+      const schemaProp = options?.schema?.properties?.[property.key];
+      if (schemaProp?.["x-advanced"]) {
+        const typeDefault =
+          schemaProp.type === "boolean"
+            ? false
+            : schemaProp.type === "number" || schemaProp.type === "integer"
+              ? 0
+              : schemaProp.type === "string"
+                ? ""
+                : undefined;
+        const effectiveDefault =
+          schemaProp.default !== undefined ? schemaProp.default : typeDefault;
+        if (effectiveDefault !== undefined && value === effectiveDefault)
+          return false;
+      }
       return true;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       if (key === "headers") {
         return formatHeadersAsYamlMap(
@@ -247,6 +274,12 @@ driver: ${driverName}`;
         return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
       }
 
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false
+      const schemaPropForMap = options?.schema?.properties?.[key];
+      if (schemaPropForMap?.["x-yaml-value"] !== undefined && value === true) {
+        return `${key}: ${schemaPropForMap["x-yaml-value"]}`;
+      }
+
       const isStringProperty = stringPropertyKeys.includes(key);
       if (isStringProperty) {
         return `${key}: "${value}"`;
@@ -259,6 +292,39 @@ driver: ${driverName}`;
 
   // Return the compiled YAML
   return `${topOfFile}\n` + compiledKeyValues;
+}
+
+const EnvTemplateRegex = /{{\s*\.env\.([^.\s]+)\s*}}/g;
+
+export function getEnvVarsFromConnectorYAML(yaml: string) {
+  const envVars: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = EnvTemplateRegex.exec(yaml)) !== null) {
+    envVars.push(match[1]);
+  }
+  return envVars;
+}
+
+export async function unsetResourceEnvVars(
+  runtimeClient: RuntimeClient,
+  queryClient: QueryClient,
+  yaml: string,
+) {
+  const envBlob = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
+      path: ".env",
+    }),
+    queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
+  });
+
+  // Get the existing env and remove the resource's env vars
+  let blob = envBlob?.blob ?? "";
+  const envVars = getEnvVarsFromConnectorYAML(yaml);
+  envVars.forEach((envVar) => {
+    blob = deleteEnvVariable(blob, envVar);
+  });
+
+  return blob;
 }
 
 export async function updateDotEnvWithSecrets(
@@ -547,6 +613,18 @@ export function replaceOlapConnectorInYAML(
   } else {
     return `${blob}${blob !== "" ? "\n" : ""}olap_connector: ${newConnector}\n`;
   }
+}
+
+export function maybeUnsetOlapConnectorInYaml(
+  blob: string,
+  connectorName: string,
+): [boolean, string] {
+  const olapConnectorRegex = new RegExp(
+    `^\\s*olap_connector:\\s+${connectorName}\\s*$`,
+    "m",
+  );
+  if (!olapConnectorRegex.test(blob)) return [false, blob];
+  return [true, blob.replace(olapConnectorRegex, "")];
 }
 
 export async function updateRillYAMLWithAiConnector(

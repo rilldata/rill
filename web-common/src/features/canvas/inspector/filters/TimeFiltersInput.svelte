@@ -83,7 +83,7 @@
     />
     <Switch
       checked={localFiltersEnabled}
-      on:click={() => {
+      onclick={() => {
         if (localFiltersEnabled) {
           clearAll();
         } else {
