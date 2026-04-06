@@ -61,7 +61,11 @@
   // Ensure the current slot count always appears in the popular list
   let popularSlotsWithExtras = $derived.by(() => {
     let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
-    if (currentSlots >= minSlots && !slots.includes(currentSlots) && ALL_SLOTS.includes(currentSlots)) {
+    if (
+      currentSlots >= minSlots &&
+      !slots.includes(currentSlots) &&
+      ALL_SLOTS.includes(currentSlots)
+    ) {
       slots.push(currentSlots);
     }
     return slots.sort((a, b) => a - b);
@@ -109,8 +113,8 @@
     <Dialog.Header>
       <Dialog.Title>Manage Slots</Dialog.Title>
       <Dialog.Description>
-        All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr.
-        Monthly estimates assume ~{HOURS_PER_MONTH} hours/month.
+        All deployments are billed at ${SLOT_RATE_PER_HR}/slot/hr. Monthly
+        estimates assume ~{HOURS_PER_MONTH} hours/month.
         {#if !isTrial}
           {#if isRillManaged}
             Minimum {DEFAULT_MANAGED_SLOTS} slots for Rill-managed deployments.
@@ -156,10 +160,7 @@
         {/each}
       </div>
     </div>
-    <button
-      class="show-all-btn"
-      onclick={() => (showAllSizes = !showAllSizes)}
-    >
+    <button class="show-all-btn" onclick={() => (showAllSizes = !showAllSizes)}>
       {showAllSizes ? "Show popular sizes" : "Show all sizes"}
     </button>
 

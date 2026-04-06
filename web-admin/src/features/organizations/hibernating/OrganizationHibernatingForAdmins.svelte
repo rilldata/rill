@@ -18,11 +18,8 @@
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
   $: billingCTAHandler = new BillingCTAHandler(organization);
-  $: ({
-    showStartGrowthPlanDialog,
-    startGrowthPlanType,
-    wakingProjects,
-  } = billingCTAHandler);
+  $: ({ showStartGrowthPlanDialog, startGrowthPlanType, wakingProjects } =
+    billingCTAHandler);
   let issueForHibernation: BillingIssueMessage;
   $: if ($billingIssueMessage.data) {
     if ($billingIssueMessage.data.type === "error") {

@@ -7,16 +7,13 @@ import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/i
 export function getCreditIssue(issues: V1BillingIssue[]) {
   return {
     creditLow: issues.find(
-      (i) =>
-        i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_CREDIT_LOW,
+      (i) => i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_CREDIT_LOW,
     ),
     creditCritical: issues.find(
-      (i) =>
-        i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_CREDIT_CRITICAL,
+      (i) => i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_CREDIT_CRITICAL,
     ),
     creditExhausted: issues.find(
-      (i) =>
-        i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED,
+      (i) => i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_CREDIT_EXHAUSTED,
     ),
   };
 }
@@ -63,7 +60,8 @@ export function getMessageForCreditIssue(
         iconType: "alert",
         title:
           "Your free credit is exhausted and your projects have been hibernated.",
-        description: "Upgrade to Growth to wake your projects and resume access.",
+        description:
+          "Upgrade to Growth to wake your projects and resume access.",
         cta: {
           type: "upgrade",
           text: "Upgrade to Growth",

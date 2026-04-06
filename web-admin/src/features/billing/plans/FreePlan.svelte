@@ -28,18 +28,26 @@
 
   let remaining = $derived(creditInfo?.remainingCredit ?? 0);
   let total = $derived(creditInfo?.totalCredit ?? 250);
-  let pctUsed = $derived(total > 0 ? Math.round(((total - remaining) / total) * 100) : 0);
+  let pctUsed = $derived(
+    total > 0 ? Math.round(((total - remaining) / total) * 100) : 0,
+  );
   let burnRate = $derived(creditInfo?.burnRatePerDay ?? 0);
   let daysRemaining = $derived(
     burnRate > 0 ? Math.ceil(remaining / burnRate) : undefined,
   );
 
-  let categorisedIssues = $derived(useCategorisedOrganizationBillingIssues(organization));
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
   let creditExhausted = $derived(!!$categorisedIssues.data?.creditExhausted);
 
   let dialogOpen = $state(showUpgradeDialog);
   let dialogType = $derived(
-    (creditExhausted ? "credit-exhausted" : pctUsed >= 80 ? "credit-low" : "base") as GrowthPlanDialogTypes,
+    (creditExhausted
+      ? "credit-exhausted"
+      : pctUsed >= 80
+        ? "credit-low"
+        : "base") as GrowthPlanDialogTypes,
   );
 </script>
 
@@ -83,5 +91,9 @@
 </SettingsContainer>
 
 {#if !$categorisedIssues.isLoading}
-  <StartGrowthPlanDialog bind:open={dialogOpen} {organization} type={dialogType} />
+  <StartGrowthPlanDialog
+    bind:open={dialogOpen}
+    {organization}
+    type={dialogType}
+  />
 {/if}

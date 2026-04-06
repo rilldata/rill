@@ -12,14 +12,8 @@
     isEnterprisePlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useProjectDeployment } from "../selectors";
-  import {
-    getStatusDotClass,
-    getStatusLabel,
-  } from "../display-utils";
-  import {
-    SLOT_RATE_PER_HR,
-    HOURS_PER_MONTH,
-  } from "../overview/slots-utils";
+  import { getStatusDotClass, getStatusLabel } from "../display-utils";
+  import { SLOT_RATE_PER_HR, HOURS_PER_MONTH } from "../overview/slots-utils";
   import ManageSlotsModal from "../overview/ManageSlotsModal.svelte";
 
   let {
@@ -43,15 +37,21 @@
 
   // Slots
   let currentSlots = $derived(Number(projectData?.prodSlots) || 0);
-  let canManage = $derived($proj.data?.projectPermissions?.manageProject ?? false);
+  let canManage = $derived(
+    $proj.data?.projectPermissions?.manageProject ?? false,
+  );
   // Self-managed: any non-DuckDB OLAP connector (ClickHouse, MotherDuck, Druid, Pinot, StarRocks)
   let olapType = $derived(projectData?.olapConnector ?? "");
   let isRillManaged = $derived(olapType === "" || olapType === "duckdb");
   let slotsModalOpen = $state(false);
 
   // Billing
-  let subscriptionQuery = $derived(createAdminServiceGetBillingSubscription(organization));
-  let planName = $derived($subscriptionQuery?.data?.subscription?.plan?.name ?? "");
+  let subscriptionQuery = $derived(
+    createAdminServiceGetBillingSubscription(organization),
+  );
+  let planName = $derived(
+    $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
+  );
   let isTrial = $derived(isTrialPlan(planName));
   let isTeam = $derived(isTeamPlan(planName));
   let isFree = $derived(isFreePlan(planName));
@@ -59,7 +59,9 @@
   let isEnterprise = $derived(planName !== "" && isEnterprisePlan(planName));
 
   // Estimated costs
-  let rillMonthlyCost = $derived(Math.round(currentSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH));
+  let rillMonthlyCost = $derived(
+    Math.round(currentSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH),
+  );
 </script>
 
 {#if !isEnterprise}
@@ -73,10 +75,7 @@
         </span>
       </div>
       {#if canManage && !$subscriptionQuery?.isLoading}
-        <button
-          class="manage-btn"
-          onclick={() => (slotsModalOpen = true)}
-        >
+        <button class="manage-btn" onclick={() => (slotsModalOpen = true)}>
           Manage Slots
         </button>
       {/if}
@@ -88,19 +87,13 @@
         <span class="slot-card-label">Rill Slots</span>
         <span class="slot-card-value">{currentSlots}</span>
         <span class="slot-card-sub">
-          @ ${SLOT_RATE_PER_HR}/slot/hr
-          (~${rillMonthlyCost.toLocaleString()}/mo)
+          @ ${SLOT_RATE_PER_HR}/slot/hr (~${rillMonthlyCost.toLocaleString()}/mo)
         </span>
-        <a
-          href="/{organization}/-/settings/usage"
-          class="pricing-link"
-        >
+        <a href="/{organization}/-/settings/usage" class="pricing-link">
           See price breakdown
         </a>
       </div>
-
     </div>
-
   </div>
 
   <ManageSlotsModal
@@ -176,5 +169,4 @@
   .section-title {
     @apply text-sm font-semibold text-fg-primary uppercase tracking-wide mb-4;
   }
-
 </style>

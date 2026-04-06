@@ -65,7 +65,11 @@
   <div slot="body">
     <div>
       Usage-based billing, no base fee. Next billing cycle starts on
-      <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate ?? "")}</b>.
+      <b
+        >{getNextBillingCycleDate(
+          subscription.currentBillingCycleEndDate ?? "",
+        )}</b
+      >.
     </div>
     {#if billingPortalUrl}
       <a

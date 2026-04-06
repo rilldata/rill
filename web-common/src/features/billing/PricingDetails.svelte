@@ -11,7 +11,8 @@
   {:else if mode === "managed"}
     Pure usage-based billing with no base fee.
   {:else}
-    Cluster Slots are auto-calculated from your OLAP cluster. Add Rill Slots for extra performance.
+    Cluster Slots are auto-calculated from your OLAP cluster. Add Rill Slots for
+    extra performance.
   {/if}
   <ul class="mt-5 ml-5 list-disc">
     {#if mode === "legacy"}
@@ -22,7 +23,9 @@
       <li>$1/GB/month storage above 1GB included</li>
       <li>Minimum 2 slots once over 1GB</li>
     {:else}
-      <li>Cluster Slots: $0.06/slot/hr (auto-calculated from your OLAP cluster)</li>
+      <li>
+        Cluster Slots: $0.06/slot/hr (auto-calculated from your OLAP cluster)
+      </li>
       <li>Rill Slots: $0.15/slot/hr (user-controlled, starts at 0)</li>
     {/if}
   </ul>

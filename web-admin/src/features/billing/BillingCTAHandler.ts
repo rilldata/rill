@@ -2,9 +2,7 @@ import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/g
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
 import { fetchOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
-import type {
-  GrowthPlanDialogTypes,
-} from "@rilldata/web-admin/features/billing/plans/types";
+import type { GrowthPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import {
   BillingBannerID,

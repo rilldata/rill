@@ -76,7 +76,9 @@
     }
   });
 
-  let categorisedIssues = $derived(useCategorisedOrganizationBillingIssues(organization));
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
   let paymentIssues = $derived($categorisedIssues.data?.payment);
   let redirect = $derived($page.url.searchParams.get("redirect"));
 
@@ -85,11 +87,9 @@
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
-  let allStatus = $derived(mergedQueryStatus([
-    categorisedIssues,
-    planUpdater,
-    planRenewer,
-  ]));
+  let allStatus = $derived(
+    mergedQueryStatus([categorisedIssues, planUpdater, planRenewer]),
+  );
 
   async function handleUpgradePlan() {
     loading = true;
@@ -98,12 +98,10 @@
     try {
       growthPlan = await fetchGrowthPlan();
       if (paymentIssues?.length) {
-        const returnUrl = getBillingUpgradeUrl($page, organization) + "?upgradeToGrowth=true";
+        const returnUrl =
+          getBillingUpgradeUrl($page, organization) + "?upgradeToGrowth=true";
         window.open(
-          await fetchPaymentsPortalURL(
-            organization,
-            returnUrl,
-          ),
+          await fetchPaymentsPortalURL(organization, returnUrl),
           "_self",
         );
         return;

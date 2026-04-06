@@ -117,10 +117,7 @@
 <OverviewCard title="Deployment">
   <div slot="header-right" class="flex items-center gap-3">
     {#if canManage && isFree && !$subscriptionQuery?.isLoading}
-      <a
-        class="upgrade-link"
-        href="/{organization}/-/settings/billing"
-      >
+      <a class="upgrade-link" href="/{organization}/-/settings/billing">
         Upgrade to Growth
       </a>
     {/if}
@@ -257,7 +254,6 @@
     {/if}
   </div>
 </OverviewCard>
-
 
 <style lang="postcss">
   .info-grid {

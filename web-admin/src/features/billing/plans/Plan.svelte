@@ -49,7 +49,13 @@
 {#if neverSubbed}
   <!-- TODO: once mocks are in. Right now we just disable the routes. -->
 {:else if subIsFreePlan || isTrial}
-  <FreePlan {organization} {subscription} {creditInfo} {showUpgradeDialog} {plan} />
+  <FreePlan
+    {organization}
+    {subscription}
+    {creditInfo}
+    {showUpgradeDialog}
+    {plan}
+  />
 {:else if subIsGrowthPlan}
   <GrowthPlan {organization} {subscription} {plan} {billingPortalUrl} />
 {:else if subHasEnded}

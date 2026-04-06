@@ -31,4 +31,3 @@
   <Payment {organization} />
   <BillingContactSetting {organization} />
 {/if}
-
