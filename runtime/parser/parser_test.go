@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"maps"
 	"reflect"
@@ -1752,33 +1751,15 @@ theme:
 }
 
 func TestComponentsAndCanvas(t *testing.T) {
-	vegaLiteSpec := normalizeJSON(t, `
-  {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "description": "A simple bar chart with embedded data.",
-    "mark": "bar",
-    "data": {
-      "name": "table"
-    },
-    "encoding": {
-      "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
-      "y": {"field": "total_sales", "type": "quantitative"}
-    }
-  }`)
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
-		`components/c1.yaml`: fmt.Sprintf(`
+		`components/c1.yaml`: `
 type: component
-vega_lite:
-  spec: '%s'
-`, vegaLiteSpec),
-		`components/c2.yaml`: fmt.Sprintf(`
-type: component
-vega_lite:
-  spec: '%s'
-`, vegaLiteSpec),
-		`components/c3.yaml`: `
+kpi:
+  metrics_view: foo
+`,
+		`components/c2.yaml`: `
 type: component
 kpi:
   metrics_view: foo
@@ -1823,27 +1804,19 @@ rows:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
 			Paths: []string{"/components/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				DisplayName:        "C1",
-				Renderer:           "vega_lite",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo"})),
 			},
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
 			Paths: []string{"/components/c2.yaml"},
-			ComponentSpec: &runtimev1.ComponentSpec{
-				DisplayName:        "C2",
-				Renderer:           "vega_lite",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
-			Paths: []string{"/components/c3.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				DisplayName:        "C3",
+				DisplayName:        "C2",
 				Renderer:           "kpi",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo", "measure": "bar", "time_range": "P1W"})),
 			},
@@ -2577,14 +2550,6 @@ func asPtr[T any](val T) *T {
 	return &val
 }
 
-func normalizeJSON(t *testing.T, s string) string {
-	var v interface{}
-	require.NoError(t, json.Unmarshal([]byte(s), &v))
-	b, err := json.Marshal(v)
-	require.NoError(t, err)
-	return string(b)
-}
-
 func TestThemeValidation(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -2691,6 +2656,24 @@ dark:
 						"surface-subtle": "black",
 						"fg-primary":     "white",
 						"fg-secondary":   "white",
+					},
+				},
+			},
+		},
+		{
+			name: "kpi semantic variables are accepted",
+			yaml: `
+type: theme
+light:
+  kpi-positive: "#16a34a"
+  kpi-negative: "#dc2626"
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"kpi-positive": "#16a34a",
+						"kpi-negative": "#dc2626",
 					},
 				},
 			},

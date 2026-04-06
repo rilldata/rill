@@ -538,6 +538,10 @@ message ExplorePreset {
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
   optional int32 pivot_row_limit = 33;
+
+  // Chart display settings (frontend-only; persisted in URL state)
+  optional bool chart_dynamic_y_axis = 35;
+  optional bool chart_force_line = 36;
 }
 
 enum ExploreComparisonMode {
