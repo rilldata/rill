@@ -5,11 +5,8 @@
   import { onMount } from "svelte";
   import type { V1Message } from "../../../../../runtime-client";
   import { extractMessageText } from "../../utils";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let message: V1Message;
-
-  const runtimeClient = useRuntimeClient();
 
   let element: HTMLDivElement;
   let editor: Editor;
@@ -26,7 +23,6 @@
       extensions: getEditorPlugins({
         placeholder: "",
         onSubmit: () => {},
-        runtimeClient,
       }),
       content,
     });
