@@ -3,7 +3,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { PivotDataRow } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import type { Row } from "@tanstack/svelte-table";
+  import type { Row } from "tanstack-table-8-svelte-5";
 
   export let row: Row<PivotDataRow>;
   export let value: string;

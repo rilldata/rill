@@ -114,7 +114,10 @@
 
 <form
   id="user-invite-form"
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
   class="w-full"
   use:enhance
 >

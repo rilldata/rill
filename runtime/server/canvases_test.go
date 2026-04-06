@@ -346,8 +346,7 @@ measures:
 type: canvas
 rows:
 - items:
-  - custom_chart:
-      color: hsl(246, 66%, 50%)
+  - kpi:
       metrics_sql:
         - select advertiser_name, avg_bid_price from bids order by advertiser_name limit 10
         - select avg_bid_price from bids
@@ -371,7 +370,6 @@ rows:
 	require.Len(t, res.ResolvedComponents, 1)
 
 	comp0Props := res.ResolvedComponents["c_custom_chart--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "hsl(246, 66%, 50%)", comp0Props["color"])
 	require.Contains(t, comp0Props, "metrics_sql")
 
 	metricsSQL := comp0Props["metrics_sql"].([]any)

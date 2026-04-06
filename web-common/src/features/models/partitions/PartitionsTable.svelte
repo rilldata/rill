@@ -7,7 +7,8 @@
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
-  } from "@tanstack/svelte-table";
+    renderComponent,
+  } from "tanstack-table-8-svelte-5";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
   import {
@@ -56,7 +57,7 @@
     {
       accessorKey: "data",
       header: "Data",
-      cell: ({ row }) => flexRender(DataCell, { data: row.original.data }),
+      cell: ({ row }) => renderComponent(DataCell, { data: row.original.data }),
       meta: {
         widthPercent: 30,
       },
@@ -108,7 +109,8 @@
     {
       accessorKey: "error",
       header: "Error",
-      cell: ({ row }) => flexRender(ErrorCell, { error: row.original.error }),
+      cell: ({ row }) =>
+        renderComponent(ErrorCell, { error: row.original.error }),
       meta: {
         widthPercent: 25,
       },
@@ -123,7 +125,7 @@
               widthPercent: 10,
             },
             cell: ({ row }) =>
-              flexRender(TriggerPartition, {
+              renderComponent(TriggerPartition, {
                 partitionKey: (row as Row<V1ModelPartition>).original
                   .key as string,
                 resource,
@@ -251,7 +253,7 @@
             </td>
           </tr>
         {:else}
-          <tr style:height="{paddingTop}px" />
+          <tr style:height="{paddingTop}px"></tr>
           {#each virtualRows as virtualRow (virtualRow.index)}
             <tr>
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
@@ -266,7 +268,7 @@
               {/each}
             </tr>
           {/each}
-          <tr style:height="{paddingBottom}px" />
+          <tr style:height="{paddingBottom}px"></tr>
         {/if}
       </tbody>
     </table>

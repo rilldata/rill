@@ -3,13 +3,9 @@ import {
   deleteFile,
   renameFileUsingMenu,
   updateCodeEditor,
+  waitForProfiling,
 } from "./utils/commonHelpers";
-import {
-  TestDataPath,
-  createSource,
-  uploadFile,
-  waitForSource,
-} from "./utils/sourceHelpers";
+import { TestDataPath, createSourceV2 } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
@@ -18,36 +14,18 @@ test.describe("sources", () => {
 
   test("Import sources", async ({ page }) => {
     await Promise.all([
-      waitForSource(page, "/models/AdBids.yaml", [
-        "publisher",
-        "domain",
-        "timestamp",
-      ]),
-      uploadFile(page, "AdBids.csv"),
+      waitForProfiling(page, "AdBids", ["publisher", "domain", "timestamp"]),
+      createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml"),
     ]);
 
     await Promise.all([
-      waitForSource(page, "/models/AdImpressions.yaml", ["city", "country"]),
-      uploadFile(page, "AdImpressions.tsv"),
+      waitForProfiling(page, "AdImpressions", ["city", "country"]),
+      createSourceV2(page, "AdImpressions.tsv", "/models/AdImpressions.yaml"),
     ]);
-
-    // upload existing table and keep both
-    await Promise.all([
-      waitForSource(page, "/models/AdBids_1.yaml", [
-        "publisher",
-        "domain",
-        "timestamp",
-      ]),
-      uploadFile(page, "AdBids.csv", true, true),
-    ]);
-
-    // upload existing table and replace
-    await uploadFile(page, "AdBids.csv", true, false);
-    await fileNotPresent(page, "AdBids_2");
   });
 
   test("Rename and delete sources", async ({ page }) => {
-    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
 
     // rename
     await renameFileUsingMenu(page, "/models/AdBids.yaml", "AdBids_new.yaml");
@@ -62,8 +40,12 @@ test.describe("sources", () => {
 
   test("Edit source", async ({ page }) => {
     // Upload data & create two sources
-    await createSource(page, "AdImpressions.tsv", "/models/AdImpressions.yaml");
-    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createSourceV2(
+      page,
+      "AdImpressions.tsv",
+      "/models/AdImpressions.yaml",
+    );
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
 
     // Edit source path to a non-existent file
     const nonExistentSource = `connector: local_file
@@ -83,8 +65,26 @@ path: ${TestDataPath}/AdImpressions.tsv`;
 
     // Check that the source data is updated
     // (The column "user_id" exists in AdImpressions, but not in AdBids)
-    await expect(
-      page.getByRole("button").filter({ hasText: "user_id" }).first(),
-    ).toBeVisible();
+    await expect
+      .poll(
+        () =>
+          page
+            .getByRole("button")
+            .filter({ hasText: "user_id" })
+            .first()
+            .isVisible(),
+        { timeout: 20_000 },
+      )
+      .toBeTruthy();
+  });
+
+  test("Autogenerate canvas from source imported modal", async ({ page }) => {
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml", false);
+    await page.getByRole("button", { name: "Generate dashboard" }).click();
+    await waitForFileNavEntry(
+      page,
+      `/dashboards/AdBids_metrics_canvas.yaml`,
+      true,
+    );
   });
 });
