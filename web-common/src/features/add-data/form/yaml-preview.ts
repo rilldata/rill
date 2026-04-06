@@ -11,7 +11,12 @@ import {
   compileSourceYAML,
   prepareSourceFormData,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+import {
+  getConnectorSchema,
+  templateNameMap,
+} from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+import { runtimeServiceGenerateFile } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export function getConnectorYamlPreview({
   connector,
@@ -94,4 +99,32 @@ export function getSourceYamlPreview({
     formValues: rewrittenFormValues,
     existingEnvBlob,
   });
+}
+
+/**
+ * Generate a YAML preview using the GenerateFile RPC for template-based connectors.
+ * Returns the rendered model YAML from the backend template.
+ */
+export async function getTemplateYamlPreview(
+  client: RuntimeClient,
+  driverName: string,
+  formValues: Record<string, unknown>,
+  connectorName?: string,
+): Promise<string> {
+  const templateName = templateNameMap.get(driverName);
+  if (!templateName) return "";
+
+  try {
+    const resp = await runtimeServiceGenerateFile(client, {
+      templateName,
+      output: "model",
+      properties: formValues as Record<string, unknown>,
+      connectorName: connectorName ?? "",
+      preview: true,
+    });
+    const modelFile = resp.files?.find((f) => f.blob);
+    return modelFile?.blob ?? "";
+  } catch {
+    return "";
+  }
 }

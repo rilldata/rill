@@ -22,9 +22,9 @@
   import { onDestroy } from "svelte";
   import {
     getConnectorSchema,
-    ICONS,
     shouldShowSkipLink as checkShouldShowSkipLink,
   } from "./connector-schemas";
+  import { ICONS } from "./icons";
   import {
     getRequiredFieldsForValues,
     getSchemaButtonLabels,

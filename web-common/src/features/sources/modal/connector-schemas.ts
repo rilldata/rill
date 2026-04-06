@@ -103,6 +103,34 @@ export function getConnectorSchema(
 }
 
 /**
+ * Maps driver names to their full template names (e.g. "kafka" → "kafka-clickhouse").
+ * Populated when templates are registered from the ListTemplates API.
+ */
+export const templateNameMap = new Map<string, string>();
+
+/**
+ * Register a template schema dynamically. Called when templates are fetched
+ * from the ListTemplates API so that connectors not in the static schema map
+ * (e.g. kafka, hudi for ClickHouse) work in the form flow.
+ * Also updates connectorInfoMap so getConnectorDriverForSchema resolves.
+ */
+export function registerTemplateSchema(
+  driverName: string,
+  templateName: string,
+  schema: MultiStepFormSchema,
+  displayName: string,
+) {
+  multiStepFormSchemas[driverName] = schema;
+  templateNameMap.set(driverName, templateName);
+  const category = (schema["x-category"] ?? "sourceOnly") as ConnectorCategory;
+  connectorInfoMap.set(driverName, {
+    name: driverName,
+    displayName,
+    category,
+  });
+}
+
+/**
  * Get the backend driver name for a given schema name.
  * Returns x-driver if specified, otherwise returns the schema name.
  */

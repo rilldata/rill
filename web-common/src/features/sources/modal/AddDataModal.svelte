@@ -3,6 +3,8 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { derived } from "svelte/store";
   import { onMount } from "svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
@@ -11,6 +13,12 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { useRuntimeClient } from "../../../runtime-client/v2";
+  import {
+    createRuntimeServiceGetInstance,
+    createRuntimeServiceListTemplates,
+    getRuntimeServiceListTemplatesQueryOptions,
+  } from "../../../runtime-client/v2/gen/runtime-service";
+  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
@@ -18,20 +26,59 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
-    connectorIconMapping,
-    createConnectorSchemas,
-    getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
-    ICONS,
     isMultiStepConnector as isMultiStepConnectorSchema,
+    toConnectorDriver as toConnectorDriverFromSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
+  import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   const runtimeClient = useRuntimeClient();
-  const { connectors: connectorsStore } = createConnectorSchemas(runtimeClient);
+
+  // Fetch instance to get the active OLAP driver
+  const instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
+
+  // Fetch source templates filtered by the active OLAP driver.
+  // Uses derived query options so TanStack re-fetches when olapDriver changes.
+  const sourceTemplatesQueryOptions = derived(
+    [instanceQuery],
+    ([$instance]) => {
+      const olap = $instance.data?.instance?.olapConnector || "";
+      return getRuntimeServiceListTemplatesQueryOptions(
+        runtimeClient,
+        { tags: ["source", olap] },
+        { query: { enabled: !!olap } },
+      );
+    },
+  );
+  const sourceTemplatesQuery = createQuery(sourceTemplatesQueryOptions);
+
+  // Fetch OLAP templates
+  const olapTemplatesQuery = createRuntimeServiceListTemplates(runtimeClient, {
+    tags: ["olap"],
+  });
+
+  // Map templates to ConnectorInfo for the UI
+  $: sourceConnectors = ($sourceTemplatesQuery.data?.templates ?? []).map(
+    (t): ConnectorInfo => ({
+      name: t.driver ?? t.name ?? "",
+      displayName: t.displayName ?? t.name ?? "",
+      category: "source" as any,
+    }),
+  );
+
+  $: olapConnectors = ($olapTemplatesQuery.data?.templates ?? []).map(
+    (t): ConnectorInfo => ({
+      name: t.driver ?? t.name ?? "",
+      displayName: t.displayName ?? t.name ?? "",
+      category: "olap" as any,
+    }),
+  );
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -41,14 +88,11 @@
   let requestConnector = false;
   let isSubmittingForm = false;
 
-  // Filter connectors by category from API-served schemas
-  $: sourceConnectors = $connectorsStore.filter((c) => c.category !== "olap");
-  $: olapConnectors = $connectorsStore.filter((c) => c.category === "olap");
-
-  // Get the form width class for the selected connector (selectedSchema declared below)
-  $: formWidthClass = getFormWidth(
-    selectedSchemaName ? getConnectorSchema(selectedSchemaName) : null,
-  );
+  // Get the form width class for the selected connector
+  $: selectedSchema = selectedSchemaName
+    ? getConnectorSchema(selectedSchemaName)
+    : null;
+  $: formWidthClass = getFormWidth(selectedSchema);
 
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
@@ -56,20 +100,7 @@
    * Uses x-driver for the name when specified.
    */
   function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
-    const schema = getConnectorSchema(info.name);
-    const category = schema?.["x-category"];
-    const backendName = getBackendConnectorName(info.name);
-
-    return {
-      name: backendName,
-      displayName: info.displayName,
-      docsUrl: info.docsUrl,
-      implementsObjectStore: category === "objectStore",
-      implementsOlap: category === "olap",
-      implementsSqlStore: category === "sqlStore",
-      implementsWarehouse: category === "warehouse",
-      implementsFileStore: category === "fileStore",
-    };
+    return toConnectorDriverFromSchema(info.name) ?? { name: info.name };
   }
 
   onMount(() => {
@@ -107,8 +138,9 @@
 
   // Handle pending connector name when connectors finish loading
   // When connector is provided via Import Data button, ensure step stays at 2
-  $: if (pendingConnectorName && $connectorsStore.length > 0) {
-    const found = $connectorsStore.find((c) => c.name === pendingConnectorName);
+  $: allConnectors = [...sourceConnectors, ...olapConnectors];
+  $: if (pendingConnectorName && allConnectors.length > 0) {
+    const found = allConnectors.find((c) => c.name === pendingConnectorName);
     if (found) {
       selectedConnector = toConnectorDriver(found);
       selectedSchemaName = pendingConnectorName;
@@ -201,15 +233,16 @@
     useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
-  $: selectedSchema = getConnectorSchema(
-    selectedSchemaName ?? selectedConnector?.name ?? "",
-  );
+  // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
     selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
-    selectedConnector?.implementsWarehouse ||
-    isMultiStepConnectorSchema(selectedSchema);
+    (selectedConnector?.implementsWarehouse &&
+      selectedConnector?.name !== "salesforce") ||
+    isMultiStepConnectorSchema(
+      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
+    );
 </script>
 
 {#if step >= 1 || $duplicateSourceName}

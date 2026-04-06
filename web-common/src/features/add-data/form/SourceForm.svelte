@@ -1,9 +1,15 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+  import {
+    getConnectorSchema,
+    templateNameMap,
+  } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { onMount } from "svelte";
-  import { getSourceYamlPreview } from "./yaml-preview.ts";
+  import {
+    getSourceYamlPreview,
+    getTemplateYamlPreview,
+  } from "./yaml-preview.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { prepareSourceFormData } from "@rilldata/web-common/features/sources/sourceUtils.ts";
@@ -75,15 +81,38 @@
   $: ({ form } = superFormsParams);
 
   $: schema = getConnectorSchema(step.schema);
-  $: yamlPreview = connectorDriver
-    ? getSourceYamlPreview({
-        connectorName: step.connector,
-        connector: connectorDriver,
-        formValues: $form,
-        schema,
-        existingEnvBlob,
+
+  // Use template-based preview for connectors registered from templates;
+  // fall back to the static preview for DuckDB-era connectors.
+  $: hasTemplate = templateNameMap.has(step.schema);
+  let yamlPreview = "";
+  $: console.log(
+    "[SourceForm] step.schema:",
+    step.schema,
+    "hasTemplate:",
+    hasTemplate,
+    "templateNameMap keys:",
+    [...templateNameMap.keys()],
+  );
+  $: if (hasTemplate) {
+    getTemplateYamlPreview(runtimeClient, step.schema, $form, step.connector)
+      .then((preview) => {
+        console.log(
+          "[SourceForm] template preview:",
+          preview.substring(0, 100),
+        );
+        yamlPreview = preview;
       })
-    : "";
+      .catch((e) => console.error("[SourceForm] template preview error:", e));
+  } else if (connectorDriver) {
+    yamlPreview = getSourceYamlPreview({
+      connectorName: step.connector,
+      connector: connectorDriver,
+      formValues: $form,
+      schema,
+      existingEnvBlob,
+    });
+  }
 
   $: sourceFormLabels = getLabelsForSource(importSteps);
 
@@ -128,13 +157,25 @@
         );
       }
     }
-    const yaml = getSourceYamlPreview({
-      connectorName: step.connector,
-      connector: connectorDriver,
-      formValues,
-      schema,
-      existingEnvBlob,
-    });
+
+    // Use template-based YAML for template connectors, static preview otherwise
+    let yaml: string;
+    if (templateNameMap.has(step.schema)) {
+      yaml = await getTemplateYamlPreview(
+        runtimeClient,
+        step.schema,
+        formValues,
+        step.connector,
+      );
+    } else {
+      yaml = getSourceYamlPreview({
+        connectorName: step.connector,
+        connector: connectorDriver,
+        formValues,
+        schema,
+        existingEnvBlob,
+      });
+    }
 
     const importFrom: ImportFromConfig = {
       from: "yaml",

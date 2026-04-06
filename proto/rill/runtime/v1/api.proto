@@ -157,6 +157,27 @@ service RuntimeService {
     };
   }
 
+  // GenerateTemplate generates a connector or model YAML file from structured form data
+  rpc GenerateTemplate(GenerateTemplateRequest) returns (GenerateTemplateResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/generate/template",
+      body: "*"
+    };
+  }
+
+  // ListTemplates returns available template definitions for generating project files
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {
+    option (google.api.http) = {get: "/v1/templates"};
+  }
+
+  // GenerateFile renders a template with properties and optionally writes the resulting files
+  rpc GenerateFile(GenerateFileRequest) returns (GenerateFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/generate/file",
+      body: "*"
+    };
+  }
+
   // QueryResolver queries a resolver with the given properties and arguments
   rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
     option (google.api.http) = {
@@ -720,6 +741,82 @@ message GenerateCanvasFileRequest {
 message GenerateCanvasFileResponse {
   // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
   bool ai_succeeded = 1;
+}
+
+message GenerateTemplateRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string resource_type = 2 [(validate.rules).string = {in: ["connector", "model"]}];
+  string driver = 3 [(validate.rules).string = {pattern: "^[a-z][a-z0-9_]*$"}];
+  google.protobuf.Struct properties = 4;
+  string connector_name = 5;
+}
+
+message GenerateTemplateResponse {
+  string blob = 1;
+  map<string, string> env_vars = 2;
+  // Actual resource type used; may differ from request when driver is rewritten
+  string resource_type = 3;
+  // Actual driver used; may differ from request when rewritten to duckdb
+  string driver = 4;
+}
+
+// Template describes a declarative template for generating project files.
+message Template {
+  string name = 1;
+  string display_name = 2;
+  string driver = 3;
+  string olap = 4;
+  repeated string tags = 5;
+  repeated TemplateFile files = 6;
+  // JSON Schema for form generation and property metadata.
+  google.protobuf.Struct json_schema = 7;
+  // Short description of the template.
+  string description = 8;
+  // Link to documentation.
+  string docs_url = 9;
+  // Icon component name for full-size display.
+  string icon = 10;
+  // Icon component name for small display.
+  string small_icon = 11;
+}
+
+// TemplateFile describes a single output file within a template.
+message TemplateFile {
+  string name = 1;
+  string path_pattern = 2;
+}
+
+message ListTemplatesRequest {
+  // Optional tag filter; only templates matching ALL tags are returned.
+  repeated string tags = 1;
+}
+
+message ListTemplatesResponse {
+  repeated Template templates = 1;
+}
+
+message GenerateFileRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Template name (e.g. "s3", "s3-duckdb", "iceberg-duckdb")
+  string template_name = 2 [(validate.rules).string.min_len = 1];
+  // Output filter: "connector", "model", or empty for all files
+  string output = 3;
+  google.protobuf.Struct properties = 4;
+  // Connector name reference (for model outputs that reference a connector)
+  string connector_name = 5;
+  // If true, render without writing files (for YAML preview)
+  bool preview = 6;
+}
+
+message GenerateFileResponse {
+  repeated GeneratedFile files = 1;
+  map<string, string> env_vars = 2;
+}
+
+// GeneratedFile is a single rendered output file.
+message GeneratedFile {
+  string path = 1;
+  string blob = 2;
 }
 
 message QueryResolverRequest {
