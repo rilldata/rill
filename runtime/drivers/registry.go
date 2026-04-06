@@ -178,7 +178,6 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		DownloadLimitBytes:                   int64(datasize.MB * 128),
 		InteractiveSQLRowLimit:               10_000,
 		StageChanges:                         true,
-		WatchRepo:                            i.Environment == "dev",
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
 		ModelConcurrentExecutionLimit:        5,

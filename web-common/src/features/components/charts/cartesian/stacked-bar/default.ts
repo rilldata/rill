@@ -15,8 +15,8 @@ import {
   createComparisonXOffsetEncoding,
 } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import { type CartesianChartSpec } from "../CartesianChartProvider";
 import { createVegaTransformPivotConfig } from "../util";
 
