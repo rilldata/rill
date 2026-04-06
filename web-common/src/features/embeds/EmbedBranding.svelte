@@ -2,9 +2,9 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import { requiresEmbedBranding } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
-  export let billingPlan: string | null;
+  let { billingPlan }: { billingPlan: string | null } = $props();
 
-  $: showBranding = requiresEmbedBranding(billingPlan);
+  let showBranding = $derived(requiresEmbedBranding(billingPlan));
 </script>
 
 {#if showBranding}
