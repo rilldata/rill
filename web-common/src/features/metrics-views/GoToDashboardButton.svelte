@@ -22,7 +22,6 @@
   const runtimeClient = useRuntimeClient();
   const { ai, developerChat } = featureFlags;
 
-  $: ({ instanceId } = runtimeClient);
   $: dashboardsQuery = useGetExploresForMetricsView(
     runtimeClient,
     resource?.meta?.name?.name ?? "",
