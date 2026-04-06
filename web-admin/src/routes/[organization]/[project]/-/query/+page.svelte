@@ -9,8 +9,8 @@
   const { dashboardChat } = featureFlags;
   const chatConfig = createQueryChatConfig();
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  let organization = $derived($page.params.organization);
+  let project = $derived($page.params.project);
 </script>
 
 <div class="flex size-full overflow-hidden">

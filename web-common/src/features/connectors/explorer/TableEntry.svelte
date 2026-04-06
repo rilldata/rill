@@ -15,22 +15,36 @@
     makeTablePreviewHref,
   } from "../connectors-utils";
 
-  export let driver: string;
-  export let connector: string;
-  export let database: string; // The backend interprets an empty string as the default database
-  export let databaseSchema: string; // The backend interprets an empty string as the default schema
-  export let table: string;
-  export let store: ConnectorExplorerStore;
-  export let showGenerateMetricsAndDashboard: boolean = false;
-  export let showGenerateModel: boolean = false;
-  export let isOlapConnector: boolean = false;
+  let {
+    driver,
+    connector,
+    database,
+    databaseSchema,
+    table,
+    store,
+    showGenerateMetricsAndDashboard = false,
+    showGenerateModel = false,
+    isOlapConnector = false,
+  }: {
+    driver: string;
+    connector: string;
+    database: string; // The backend interprets an empty string as the default database
+    databaseSchema: string; // The backend interprets an empty string as the default schema
+    table: string;
+    store: ConnectorExplorerStore;
+    showGenerateMetricsAndDashboard?: boolean;
+    showGenerateModel?: boolean;
+    isOlapConnector?: boolean;
+  } = $props();
 
-  let contextMenuOpen = false;
+  let contextMenuOpen = $state(false);
 
   const client = useRuntimeClient();
 
-  $: expandedStore = store.getItem(connector, database, databaseSchema, table);
-  $: showSchema = $expandedStore;
+  let expandedStore = $derived(
+    store.getItem(connector, database, databaseSchema, table),
+  );
+  let showSchema = $derived($expandedStore);
 
   const {
     allowContextMenu,
@@ -39,41 +53,40 @@
     onInsertTable,
     selectedTableStore,
   } = store;
-  $: ({
-    connector: selectedConnector,
-    database: selectedDatabase,
-    schema: selectedSchema,
-    table: selectedTable,
-  } = $selectedTableStore);
-  $: isSelected =
+  let selectedTableState = $derived($selectedTableStore);
+  let selectedConnector = $derived(selectedTableState.connector);
+  let selectedDatabase = $derived(selectedTableState.database);
+  let selectedSchema = $derived(selectedTableState.schema);
+  let selectedTable = $derived(selectedTableState.table);
+  let isSelected = $derived(
     selectedConnector === connector &&
-    selectedDatabase === database &&
-    selectedSchema === databaseSchema &&
-    selectedTable === table;
-
-  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    client,
-    connector,
+      selectedDatabase === database &&
+      selectedSchema === databaseSchema &&
+      selectedTable === table,
   );
-  $: isModelingSupported = $isModelingSupportedForConnector.data;
 
-  $: fullyQualifiedTableName = makeFullyQualifiedTableName(
-    driver,
-    database,
-    databaseSchema,
-    table,
+  let isModelingSupportedForConnector = $derived(
+    useIsModelingSupportedForConnector(client, connector),
   );
-  $: tableId = `${connector}-${fullyQualifiedTableName}`;
+  let isModelingSupported = $derived($isModelingSupportedForConnector.data);
+
+  let fullyQualifiedTableName = $derived(
+    makeFullyQualifiedTableName(driver, database, databaseSchema, table),
+  );
+  let tableId = $derived(`${connector}-${fullyQualifiedTableName}`);
 
   // Generate preview href for any connector that supports preview routes
-  $: href =
+  let href = $derived(
     makeTablePreviewHref(driver, connector, database, databaseSchema, table) ||
-    undefined;
+      undefined,
+  );
 
-  $: open = isSelected || (href ? $page.url.pathname === href : false);
+  let open = $derived(
+    isSelected || (href ? $page.url.pathname === href : false),
+  );
 
   // Allow navigation when a preview href is available
-  $: element = allowNavigateToTable && href ? "a" : "button";
+  let element = $derived(allowNavigateToTable && href ? "a" : "button");
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>

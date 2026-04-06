@@ -17,44 +17,55 @@
     type: string;
   }
 
-  export let filePath: string;
-  export let schema: V1StructType | null;
-  export let rowCount: number;
-  export let executionTimeMs: number | null;
-
-  /** When set, shows table schema for the selected table instead of query results */
-  export let selectedTable: {
-    connector: string;
-    database: string;
-    databaseSchema: string;
-    objectName: string;
-  } | null = null;
+  let {
+    filePath,
+    schema,
+    rowCount,
+    executionTimeMs,
+    selectedTable = null,
+  }: {
+    filePath: string;
+    schema: V1StructType | null;
+    rowCount: number;
+    executionTimeMs: number | null;
+    /** When set, shows table schema for the selected table instead of query results */
+    selectedTable?: {
+      connector: string;
+      database: string;
+      databaseSchema: string;
+      objectName: string;
+    } | null;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
   // Fetch table schema when a table is selected from the data explorer
   // Always call useGetTable; it disables itself when table is empty
-  $: tableQuery = useGetTable(
-    runtimeClient,
-    selectedTable?.connector ?? "",
-    selectedTable?.database ?? "",
-    selectedTable?.databaseSchema ?? "",
-    selectedTable?.objectName ?? "",
+  let tableQuery = $derived(
+    useGetTable(
+      runtimeClient,
+      selectedTable?.connector ?? "",
+      selectedTable?.database ?? "",
+      selectedTable?.databaseSchema ?? "",
+      selectedTable?.objectName ?? "",
+    ),
   );
 
-  $: tableColumns = toColumnEntries($tableQuery?.data?.schema);
-  $: tableLoading = $tableQuery?.isLoading ?? false;
-  $: tableError = $tableQuery?.error;
+  let tableColumns = $derived(toColumnEntries($tableQuery?.data?.schema));
+  let tableLoading = $derived($tableQuery?.isLoading ?? false);
+  let tableError = $derived($tableQuery?.error);
 
-  let showColumns = true;
-  let showTableColumns = true;
+  let showColumns = $state(true);
+  let showTableColumns = $state(true);
 
-  $: fields = schema?.fields ?? [];
-  $: resultColumns = fields.map((f) => ({
-    name: f.name ?? "",
-    type: prettyPrintType(f.type?.code),
-  }));
-  $: columnCount = fields.length;
+  let fields = $derived(schema?.fields ?? []);
+  let resultColumns = $derived(
+    fields.map((f) => ({
+      name: f.name ?? "",
+      type: prettyPrintType(f.type?.code),
+    })),
+  );
+  let columnCount = $derived(fields.length);
 
   function toColumnEntries(
     tableSchema: Record<string, unknown> | undefined | null,

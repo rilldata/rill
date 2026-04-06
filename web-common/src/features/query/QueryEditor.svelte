@@ -5,16 +5,18 @@
   import { EditorView } from "@codemirror/view";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { DuckDBSQL } from "../../components/editor/presets/duckDBDialect";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
 
-  export let initialValue = "";
+  let {
+    initialValue = "",
+    onChange = (_value: string) => {},
+  }: {
+    initialValue?: string;
+    onChange?: (value: string) => void;
+  } = $props();
 
-  const dispatch = createEventDispatcher<{
-    change: string;
-  }>();
-
-  let parent: HTMLElement;
-  let editor: EditorView | null = null;
+  let parent: HTMLElement = $state(undefined as unknown as HTMLElement);
+  let editor: EditorView | null = $state(null);
 
   const autocompleteCompartment = new Compartment();
 
@@ -35,7 +37,7 @@
           autocompleteCompartment.of(makeAutocompleteConfig()),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
-              dispatch("change", update.state.doc.toString());
+              onChange(update.state.doc.toString());
             }
           }),
         ],

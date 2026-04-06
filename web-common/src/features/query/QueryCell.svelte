@@ -9,7 +9,6 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
-  import { createEventDispatcher } from "svelte";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import ConnectorSelector from "./ConnectorSelector.svelte";
   import QueryEditor from "./QueryEditor.svelte";
@@ -18,17 +17,25 @@
   import { downloadResultsAsCSV, downloadResultsAsJSON } from "./query-export";
   import { formatExecutionTime } from "./query-utils";
 
-  const dispatch = createEventDispatcher<{ focus: void; run: void }>();
-
-  export let cellId: string;
-  export let notebook: NotebookStore;
-  export let cellCount: number;
+  let {
+    cellId,
+    notebook,
+    cellCount,
+    onfocus,
+    onrun,
+  }: {
+    cellId: string;
+    notebook: NotebookStore;
+    cellCount: number;
+    onfocus?: () => void;
+    onrun?: () => void;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
-  let editorRef: QueryEditor;
-  let editorHeight = 180;
-  let resultsHeight = 250;
+  let editorRef: QueryEditor = $state(undefined as unknown as QueryEditor);
+  let editorHeight = $state(180);
+  let resultsHeight = $state(250);
 
   /** Called externally (e.g. from data explorer) to set the editor content */
   export function setEditorContent(text: string) {
@@ -40,33 +47,35 @@
     editorRef?.insertAtCursor(text);
   }
 
-  $: cell = $notebook.cells.find((c) => c.id === cellId);
-  $: isFocused = $notebook.focusedCellId === cellId;
-  $: canDelete = cellCount > 1;
+  let cell = $derived($notebook.cells.find((c) => c.id === cellId));
+  let isFocused = $derived($notebook.focusedCellId === cellId);
+  let canDelete = $derived(cellCount > 1);
 
-  $: schema = cell?.result?.schema ?? null;
-  $: data = cell?.result?.data ?? null;
-  $: hasExecuted = cell?.hasExecuted ?? false;
-  $: rowCount = hasExecuted
-    ? (cell?.result?.data?.length ?? 0)
-    : (cell?.lastRowCount ?? 0);
-  $: hasSql = (cell?.sql ?? "").trim().length > 0;
-  $: hasResults = (data?.length ?? 0) > 0 && (schema?.fields?.length ?? 0) > 0;
+  let schema = $derived(cell?.result?.schema ?? null);
+  let data = $derived(cell?.result?.data ?? null);
+  let hasExecuted = $derived(cell?.hasExecuted ?? false);
+  let rowCount = $derived(
+    hasExecuted ? (cell?.result?.data?.length ?? 0) : (cell?.lastRowCount ?? 0),
+  );
+  let hasSql = $derived((cell?.sql ?? "").trim().length > 0);
+  let hasResults = $derived(
+    (data?.length ?? 0) > 0 && (schema?.fields?.length ?? 0) > 0,
+  );
 
   function handleRunButton() {
     if (!cell || cell.isExecuting) return;
     notebook.setFocusedCell(cellId);
     const selected = editorRef?.getSelectedText();
     notebook.executeCellQuery(cellId, runtimeClient, selected);
-    dispatch("run");
+    onrun?.();
   }
 
   function handleStopButton() {
     notebook.cancelCellQuery(cellId);
   }
 
-  function handleChange(e: CustomEvent<string>) {
-    notebook.setCellSql(cellId, e.detail);
+  function handleChange(value: string) {
+    notebook.setCellSql(cellId, value);
   }
 
   function handleConnectorChange(newConnector: string) {
@@ -88,7 +97,7 @@
 
   function handleFocus() {
     notebook.setFocusedCell(cellId);
-    dispatch("focus");
+    onfocus?.();
     if (!cell?.collapsed) {
       editorRef?.focus();
     }
@@ -96,19 +105,19 @@
 </script>
 
 {#if cell}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div class="query-cell" class:focused={isFocused} on:click={handleFocus}>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="query-cell" class:focused={isFocused} onclick={handleFocus}>
     <!-- Cell Header -->
     <div
       class="cell-header"
-      on:click|stopPropagation
+      onclick={(e) => e.stopPropagation()}
       role="toolbar"
       tabindex="-1"
     >
       <button
         class="collapse-toggle"
-        on:click={() => notebook.toggleCellCollapsed(cellId)}
+        onclick={() => notebook.toggleCellCollapsed(cellId)}
         aria-label={cell.collapsed ? "Expand cell" : "Collapse cell"}
       >
         <CaretDownIcon
@@ -133,7 +142,7 @@
           value={cell.limit ?? ""}
           placeholder="None"
           min="1"
-          on:change={handleLimitChange}
+          onchange={handleLimitChange}
         />
       </div>
 
@@ -209,7 +218,10 @@
         {#if canDelete}
           <button
             class="delete-button"
-            on:click|stopPropagation={() => notebook.removeCell(cellId)}
+            onclick={(e) => {
+              e.stopPropagation();
+              notebook.removeCell(cellId);
+            }}
             aria-label="Delete cell"
           >
             ×
@@ -226,15 +238,15 @@
             <QueryEditor
               bind:this={editorRef}
               initialValue={cell.sql}
-              on:change={handleChange}
+              onChange={handleChange}
             />
           </WorkspaceEditorContainer>
         </div>
 
         {#if cell.error}
-          <!-- svelte-ignore a11y-click-events-have-key-events -->
-          <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <div class="cell-error" on:click|stopPropagation>
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="cell-error" onclick={(e) => e.stopPropagation()}>
             <CancelCircle className="text-destructive flex-none" />
             <span>{cell.error}</span>
           </div>

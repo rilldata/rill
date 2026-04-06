@@ -22,21 +22,31 @@
 
   const WORKSPACE_KEY = "__query_console__";
 
-  export let projectId = "";
+  let {
+    projectId = "",
+  }: {
+    projectId?: string;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
   // Get default OLAP connector for new cells (sensitive: true required to include olapConnector)
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
-    sensitive: true,
-  });
-  $: olapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
+  let instanceQuery = $derived(
+    createRuntimeServiceGetInstance(runtimeClient, {
+      sensitive: true,
+    }),
+  );
+  let olapConnector = $derived(
+    $instanceQuery.data?.instance?.olapConnector ?? "",
+  );
 
   // Create notebook store once we have the default connector
-  let notebook: NotebookStore | null = null;
-  $: if (olapConnector && !notebook) {
-    notebook = createNotebook(olapConnector, projectId);
-  }
+  let notebook: NotebookStore | null = $state(null);
+  $effect(() => {
+    if (olapConnector && !notebook) {
+      notebook = createNotebook(olapConnector, projectId);
+    }
+  });
 
   onDestroy(() => notebook?.destroy());
 
@@ -46,10 +56,10 @@
     database: string;
     databaseSchema: string;
     objectName: string;
-  } | null = null;
+  } | null = $state(null);
 
   // Refs to cell editors for programmatic content setting
-  let cellRefs: Record<string, QueryCell> = {};
+  let cellRefs: Record<string, QueryCell> = $state({});
 
   // Data explorer sidebar
   const explorerStore = new ConnectorExplorerStore(
@@ -93,8 +103,8 @@
     },
   );
 
-  let sidebarWidth = 260;
-  let showSchemaPanel = true;
+  let sidebarWidth = $state(260);
+  let showSchemaPanel = $state(true);
 
   // Fallback stores for when notebook is null (Svelte can't auto-subscribe nullable stores)
   const EMPTY_NOTEBOOK = readable<NotebookState>({
@@ -105,21 +115,25 @@
   const ZERO_READABLE = readable<number>(0);
 
   // Always-valid store references for $-prefix subscriptions
-  $: nb = notebook ?? EMPTY_NOTEBOOK;
-  $: cells = $nb.cells;
+  let nb = $derived(notebook ?? EMPTY_NOTEBOOK);
+  let cells = $derived($nb.cells);
 
   // Clean up stale refs when cells change
-  $: {
+  $effect(() => {
     const cellIds = new Set(cells.map((c) => c.id));
     for (const id of Object.keys(cellRefs)) {
       if (!cellIds.has(id)) delete cellRefs[id];
     }
-  }
+  });
 
   // Derived stores for the focused cell (forwarded to inspector)
-  $: focusedSchemaStore = notebook?.focusedSchema ?? NULL_READABLE;
-  $: focusedRowCountStore = notebook?.focusedRowCount ?? ZERO_READABLE;
-  $: focusedTimeMsStore = notebook?.focusedExecutionTimeMs ?? NULL_READABLE;
+  let focusedSchemaStore = $derived(notebook?.focusedSchema ?? NULL_READABLE);
+  let focusedRowCountStore = $derived(
+    notebook?.focusedRowCount ?? ZERO_READABLE,
+  );
+  let focusedTimeMsStore = $derived(
+    notebook?.focusedExecutionTimeMs ?? NULL_READABLE,
+  );
 
   function handleAddCell() {
     notebook?.addCell(olapConnector);
@@ -186,12 +200,12 @@
               cellId={cell.id}
               {notebook}
               cellCount={cells.length}
-              on:focus={handleCellFocus}
-              on:run={handleCellRun}
+              onfocus={handleCellFocus}
+              onrun={handleCellRun}
             />
           {/each}
 
-          <button class="add-cell-button" on:click={handleAddCell}>
+          <button class="add-cell-button" onclick={handleAddCell}>
             <PlusIcon size="14px" />
             Add Cell
           </button>

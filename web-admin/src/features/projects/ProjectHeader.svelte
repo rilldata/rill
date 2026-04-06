@@ -40,14 +40,25 @@
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
 
-  export let organization: string;
-  export let project: string;
-  export let projectPermissions: V1ProjectPermissions;
-  export let manageOrgAdmins: boolean;
-  export let manageOrgMembers: boolean;
-  export let readProjects: boolean;
-  export let planDisplayName: string | undefined;
-  export let organizationLogoUrl: string | undefined;
+  let {
+    organization,
+    project,
+    projectPermissions,
+    manageOrgAdmins,
+    manageOrgMembers,
+    readProjects,
+    planDisplayName,
+    organizationLogoUrl,
+  }: {
+    organization: string;
+    project: string;
+    projectPermissions: V1ProjectPermissions;
+    manageOrgAdmins: boolean;
+    manageOrgMembers: boolean;
+    readProjects: boolean;
+    planDisplayName: string | undefined;
+    organizationLogoUrl: string | undefined;
+  } = $props();
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
@@ -58,36 +69,36 @@
     stickyDashboardState,
   } = featureFlags;
 
-  $: ({
-    params: { dashboard, alert, report },
-  } = $page);
+  let dashboard = $derived($page.params.dashboard);
+  let alert = $derived($page.params.alert);
+  let report = $derived($page.params.report);
 
-  $: onAlertPage = !!alert;
-  $: onReportPage = !!report;
-  $: onProjectPage = isProjectPage($page);
-  $: onMetricsExplorerPage = isMetricsExplorerPage($page);
-  $: onCanvasDashboardPage = isCanvasDashboardPage($page);
-  $: onPublicURLPage = isPublicURLPage($page);
-  $: onQueryPage = isQueryPage($page);
+  let onAlertPage = $derived(!!alert);
+  let onReportPage = $derived(!!report);
+  let onProjectPage = $derived(isProjectPage($page));
+  let onMetricsExplorerPage = $derived(isMetricsExplorerPage($page));
+  let onCanvasDashboardPage = $derived(isCanvasDashboardPage($page));
+  let onPublicURLPage = $derived(isPublicURLPage($page));
+  let onQueryPage = $derived(isQueryPage($page));
 
-  $: loggedIn = !!$user.data?.user;
-  $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
+  let loggedIn = $derived(!!$user.data?.user);
+  let rillLogoHref = $derived(!loggedIn ? "https://www.rilldata.com" : "/");
 
-  $: orgPathsQuery = useBreadcrumbOrgPaths(
-    loggedIn,
-    organization,
-    planDisplayName,
+  let orgPathsQuery = $derived(
+    useBreadcrumbOrgPaths(loggedIn, organization, planDisplayName),
   );
-  $: projectPathsQuery = useBreadcrumbProjectPaths(organization, readProjects);
-  $: visualizationsQuery = useDashboards(runtimeClient);
-  $: alertsQuery = useAlerts(runtimeClient, onAlertPage);
-  $: reportsQuery = useReports(runtimeClient, onReportPage);
+  let projectPathsQuery = $derived(
+    useBreadcrumbProjectPaths(organization, readProjects),
+  );
+  let visualizationsQuery = $derived(useDashboards(runtimeClient));
+  let alertsQuery = $derived(useAlerts(runtimeClient, onAlertPage));
+  let reportsQuery = $derived(useReports(runtimeClient, onReportPage));
 
-  $: visualizations = $visualizationsQuery.data ?? [];
-  $: alerts = $alertsQuery.data?.resources ?? [];
-  $: reports = $reportsQuery.data?.resources ?? [];
+  let visualizations = $derived($visualizationsQuery.data ?? []);
+  let alerts = $derived($alertsQuery.data?.resources ?? []);
+  let reports = $derived($reportsQuery.data?.resources ?? []);
 
-  $: visualizationPaths = {
+  let visualizationPaths = $derived({
     options: [...visualizations]
       .sort((a, b) => {
         const aIsCanvas = !!a?.canvas;
@@ -112,9 +123,9 @@
         });
       }, new Map<string, PathOption>()),
     carryOverSearchParams: $stickyDashboardState,
-  };
+  });
 
-  $: alertPaths = {
+  let alertPaths = $derived({
     options: alerts.reduce((map, alert) => {
       const name = alert.meta.name.name;
       return map.set(name.toLowerCase(), {
@@ -122,9 +133,9 @@
         section: "-/alerts",
       });
     }, new Map<string, PathOption>()),
-  };
+  });
 
-  $: reportPaths = {
+  let reportPaths = $derived({
     options: reports.reduce((map, report) => {
       const name = report.meta.name.name;
       return map.set(name.toLowerCase(), {
@@ -132,37 +143,52 @@
         section: "-/reports",
       });
     }, new Map<string, PathOption>()),
-  };
+  });
 
-  $: pathParts = [
+  let pathParts = $derived([
     { options: $orgPathsQuery.data ?? new Map() },
     { options: $projectPathsQuery.data ?? new Map() },
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
-  ];
+  ]);
 
-  $: exploreQuery = useExplore(runtimeClient, dashboard, {
-    enabled:
-      !!runtimeClient.instanceId && !!dashboard && !!onMetricsExplorerPage,
-  });
-  $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
-  $: isDashboardValid = !!exploreSpec;
-  $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;
+  let exploreQuery = $derived(
+    useExplore(runtimeClient, dashboard, {
+      enabled:
+        !!runtimeClient.instanceId && !!dashboard && !!onMetricsExplorerPage,
+    }),
+  );
+  let exploreSpec = $derived(
+    $exploreQuery.data?.explore?.explore?.state?.validSpec,
+  );
+  let isDashboardValid = $derived(!!exploreSpec);
+  let hasUserAccess = $derived(
+    $user.isSuccess && $user.data.user && !onPublicURLPage,
+  );
 
-  $: canvasQuery = useCanvas(runtimeClient, dashboard, {
-    enabled:
-      !!runtimeClient.instanceId &&
-      !!dashboard &&
-      !!onCanvasDashboardPage &&
-      !!onPublicURLPage,
-  });
+  let canvasQuery = $derived(
+    useCanvas(runtimeClient, dashboard, {
+      enabled:
+        !!runtimeClient.instanceId &&
+        !!dashboard &&
+        !!onCanvasDashboardPage &&
+        !!onPublicURLPage,
+    }),
+  );
 
-  $: publicURLDashboardTitle = onCanvasDashboardPage
-    ? $canvasQuery.data?.canvas?.displayName || dashboard
-    : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
-      dashboard;
+  let publicURLDashboardTitle = $derived(
+    onCanvasDashboardPage
+      ? $canvasQuery.data?.canvas?.displayName || dashboard
+      : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+          dashboard,
+  );
 
-  $: currentPath = [organization, project, dashboard, report || alert];
+  let currentPath = $derived([
+    organization,
+    project,
+    dashboard,
+    report || alert,
+  ]);
 </script>
 
 <Header borderBottom={!onProjectPage}>

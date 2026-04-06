@@ -7,11 +7,17 @@
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { prettyPrintType } from "./query-utils";
 
-  export let schema: V1StructType | null;
-  export let data: V1QueryResolverResponseDataItem[] | null;
-  export let hasExecuted = false;
+  let {
+    schema,
+    data,
+    hasExecuted = false,
+  }: {
+    schema: V1StructType | null;
+    data: V1QueryResolverResponseDataItem[] | null;
+    hasExecuted?: boolean;
+  } = $props();
 
-  $: columns = schemaToColumns(schema);
+  let columns = $derived(schemaToColumns(schema));
 
   function schemaToColumns(
     schema: V1StructType | null,
