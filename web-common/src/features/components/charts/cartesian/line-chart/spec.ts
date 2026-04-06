@@ -17,8 +17,8 @@ import {
   MeasureKeyField,
 } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
 import { createVegaTransformPivotConfig } from "../util";
 
@@ -43,7 +43,9 @@ export function generateVLLineChartSpec(
     data,
   );
 
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  const xEncoding = createPositionEncoding(config.x, data);
+  xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
+  spec.encoding = { x: xEncoding };
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
