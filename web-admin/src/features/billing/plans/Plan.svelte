@@ -11,27 +11,40 @@
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 
-  export let organization: string;
-  export let showUpgradeDialog: boolean;
-  export let billingPortalUrl: string | undefined;
+  let {
+    organization,
+    showUpgradeDialog,
+    billingPortalUrl,
+  }: {
+    organization: string;
+    showUpgradeDialog: boolean;
+    billingPortalUrl: string | undefined;
+  } = $props();
 
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: subscription = $subscriptionQuery?.data?.subscription;
-  $: hasPayment = !!$subscriptionQuery?.data?.organization?.paymentCustomerId;
-  $: plan = subscription?.plan;
+  let subscriptionQuery = $derived(
+    createAdminServiceGetBillingSubscription(organization),
+  );
+  let subscription = $derived($subscriptionQuery?.data?.subscription);
+  let hasPayment = $derived(
+    !!$subscriptionQuery?.data?.organization?.paymentCustomerId,
+  );
+  let plan = $derived(subscription?.plan);
 
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
 
   // fresh orgs will have a never subscribed issue associated with it
-  $: neverSubbed = !!$categorisedIssues.data?.neverSubscribed;
+  let neverSubbed = $derived(!!$categorisedIssues.data?.neverSubscribed);
   // trial plan will have a trial issue associated with it
-  $: isTrial = !!$categorisedIssues.data?.trial;
+  let isTrial = $derived(!!$categorisedIssues.data?.trial);
   // ended subscription will have a cancelled issue associated with it
-  $: subHasEnded = !!$categorisedIssues.data?.cancelled;
-  $: subIsTeamPlan = plan && isTeamPlan(plan.name);
-  $: subIsManagedPlan = plan && isManagedPlan(plan.name);
-  $: subIsEnterprisePlan =
-    plan && !isTrial && !subIsTeamPlan && !subIsManagedPlan;
+  let subHasEnded = $derived(!!$categorisedIssues.data?.cancelled);
+  let subIsTeamPlan = $derived(plan && isTeamPlan(plan.name));
+  let subIsManagedPlan = $derived(plan && isManagedPlan(plan.name));
+  let subIsEnterprisePlan = $derived(
+    plan && !isTrial && !subIsTeamPlan && !subIsManagedPlan,
+  );
 </script>
 
 {#if neverSubbed}

@@ -1,27 +1,34 @@
 <!-- ORG SETTINGS -->
 
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import type { PageData } from "./$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
 
-  export let data: PageData;
+  let {
+    data,
+    children,
+  }: {
+    data: PageData;
+    children: Snippet;
+  } = $props();
 
-  $: ({ neverSubscribed } = data);
+  let neverSubscribed = $derived(data.neverSubscribed);
 
-  $: organization = $page.params.organization;
-  $: basePage = `/${organization}/-/settings`;
-  $: hideBillingSettings = neverSubscribed;
+  let organization = $derived($page.params.organization);
+  let basePage = $derived(`/${organization}/-/settings`);
+  let hideBillingSettings = $derived(neverSubscribed);
 
-  $: navItems = [
+  let navItems = $derived([
     { label: "General", route: "", hasPermission: true },
     {
       label: "Billing",
       route: "/billing",
       hasPermission: !hideBillingSettings,
     },
-  ];
+  ]);
 </script>
 
 <ContentContainer title="Organization settings" maxWidth={1100}>
@@ -33,7 +40,7 @@
       minWidth="180px"
     />
     <div class="flex flex-col gap-y-6 w-full">
-      <slot />
+      {@render children()}
     </div>
   </div>
 </ContentContainer>

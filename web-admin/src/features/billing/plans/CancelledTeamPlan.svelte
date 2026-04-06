@@ -9,24 +9,35 @@
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
   import { DateTime } from "luxon";
 
-  export let organization: string;
-  export let plan: V1BillingPlan;
-  export let showUpgradeDialog: boolean;
-  export let billingPortalUrl: string | undefined;
+  let {
+    organization,
+    plan,
+    showUpgradeDialog,
+    billingPortalUrl,
+  }: {
+    organization: string;
+    plan: V1BillingPlan;
+    showUpgradeDialog: boolean;
+    billingPortalUrl: string | undefined;
+  } = $props();
 
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-  $: cancelledSubIssue = $categorisedIssues.data?.cancelled;
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
+  let cancelledSubIssue = $derived($categorisedIssues.data?.cancelled);
 
-  let willEndOnText = "";
-  $: if (cancelledSubIssue?.metadata.subscriptionCancelled?.endDate) {
-    const endDate = DateTime.fromJSDate(
-      new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
-    );
-    if (endDate.isValid && endDate.toMillis() > Date.now())
-      willEndOnText = endDate.toLocaleString(DateTime.DATE_MED);
-  }
+  let willEndOnText = $derived.by(() => {
+    if (cancelledSubIssue?.metadata.subscriptionCancelled?.endDate) {
+      const endDate = DateTime.fromJSDate(
+        new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
+      );
+      if (endDate.isValid && endDate.toMillis() > Date.now())
+        return endDate.toLocaleString(DateTime.DATE_MED);
+    }
+    return "";
+  });
 
-  let open = showUpgradeDialog;
+  let open = $state(showUpgradeDialog);
 </script>
 
 <SettingsContainer title={plan?.displayName || "Team plan"}>

@@ -11,14 +11,18 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { PageData } from "./$types";
 
-  export let data: PageData;
+  let { data }: { data: PageData } = $props();
 
-  $: ({ organization, showUpgradeDialog, billingPortalUrl } = data);
+  let organization = $derived(data.organization);
+  let showUpgradeDialog = $derived(data.showUpgradeDialog);
+  let billingPortalUrl = $derived(data.billingPortalUrl);
 
-  $: allStatus = mergedQueryStatus([
-    createAdminServiceGetBillingSubscription(organization),
-    createAdminServiceListOrganizationBillingIssues(organization),
-  ]);
+  let allStatus = $derived(
+    mergedQueryStatus([
+      createAdminServiceGetBillingSubscription(organization),
+      createAdminServiceListOrganizationBillingIssues(organization),
+    ]),
+  );
 </script>
 
 <!-- Both the queries are used in both Plan and Payment.

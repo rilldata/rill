@@ -6,12 +6,19 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
 
-  export let organization: string;
-  export let hasPayment: boolean;
-  export let plan: V1BillingPlan;
-  export let billingPortalUrl: string | undefined;
+  let {
+    organization,
+    hasPayment,
+    plan,
+    billingPortalUrl,
+  }: {
+    organization: string;
+    hasPayment: boolean;
+    plan: V1BillingPlan;
+    billingPortalUrl: string | undefined;
+  } = $props();
 
-  let open = false;
+  let open = $state(false);
 </script>
 
 <SettingsContainer title={plan?.displayName}>
