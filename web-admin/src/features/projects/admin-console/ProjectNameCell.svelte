@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let name: string;
+  let { name }: { name: string } = $props();
 </script>
 
 <span class="text-fg-secondary text-xs truncate">{name}</span>

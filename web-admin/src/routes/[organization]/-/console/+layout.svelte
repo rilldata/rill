@@ -1,16 +1,19 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
-  $: organization = $page.params.organization;
-  $: basePage = `/${organization}/-/console`;
+  let { children }: { children: Snippet } = $props();
 
-  $: navItems = [
+  let organization = $derived($page.params.organization);
+  let basePage = $derived(`/${organization}/-/console`);
+
+  let navItems = $derived([
     { label: "Overview", route: "", hasPermission: true },
     { label: "Projects", route: "/projects", hasPermission: true },
     { label: "Resources", route: "/resources", hasPermission: true },
-  ];
+  ]);
 </script>
 
 <svelte:head>
@@ -26,7 +29,7 @@
       minWidth="180px"
     />
     <div class="flex flex-col gap-y-6 w-full">
-      <slot />
+      {@render children()}
     </div>
   </div>
 </ContentContainer>

@@ -17,47 +17,54 @@
     hasProjectErrors,
   } from "@rilldata/web-admin/features/projects/admin-console/project-health-utils";
 
-  $: organization = $page.params.organization;
+  let organization = $derived($page.params.organization);
 
-  $: orgQuery = createAdminServiceGetOrganization(organization);
-  $: org = $orgQuery.data?.organization;
+  let orgQuery = $derived(createAdminServiceGetOrganization(organization));
+  let org = $derived($orgQuery.data?.organization);
 
-  $: healthQuery = createAdminServiceListOrganizationProjectsWithHealth(
-    organization,
-    { pageSize: 50 },
+  let healthQuery = $derived(
+    createAdminServiceListOrganizationProjectsWithHealth(organization, {
+      pageSize: 50,
+    }),
   );
-  $: projects = $healthQuery.data?.projects ?? [];
+  let projects = $derived($healthQuery.data?.projects ?? []);
 
-  $: resourcesQuery = createAdminServiceListOrganizationResources(organization);
-  $: allResources = $resourcesQuery.data?.resources ?? [];
+  let resourcesQuery = $derived(
+    createAdminServiceListOrganizationResources(organization),
+  );
+  let allResources = $derived($resourcesQuery.data?.resources ?? []);
 
-  $: totalProjects = projects.length;
-  $: healthyCount = projects.filter(isProjectHealthy).length;
-  $: errorCount = projects.filter(hasProjectErrors).length;
+  let totalProjects = $derived(projects.length);
+  let healthyCount = $derived(projects.filter(isProjectHealthy).length);
+  let errorCount = $derived(projects.filter(hasProjectErrors).length);
 
   // Group resources by kind
-  $: resourcesByKind = allResources.reduce(
-    (acc, r) => {
-      const kind = r.kind ?? "unknown";
-      acc[kind] = (acc[kind] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  // Group errored resources by kind
-  $: erroredByKind = allResources
-    .filter((r) => !!r.reconcileError)
-    .reduce(
+  let resourcesByKind = $derived(
+    allResources.reduce(
       (acc, r) => {
         const kind = r.kind ?? "unknown";
         acc[kind] = (acc[kind] ?? 0) + 1;
         return acc;
       },
       {} as Record<string, number>,
-    );
+    ),
+  );
 
-  $: hasAnyErrors = Object.keys(erroredByKind).length > 0;
+  // Group errored resources by kind
+  let erroredByKind = $derived(
+    allResources
+      .filter((r) => !!r.reconcileError)
+      .reduce(
+        (acc, r) => {
+          const kind = r.kind ?? "unknown";
+          acc[kind] = (acc[kind] ?? 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+  );
+
+  let hasAnyErrors = $derived(Object.keys(erroredByKind).length > 0);
 </script>
 
 <div class="flex flex-col gap-6">
@@ -170,7 +177,8 @@
             class="chip {resourceKindStyleName(kind as ResourceKind) ?? ''}"
           >
             {#if resourceIconMapping[kind]}
-              <svelte:component this={resourceIconMapping[kind]} size="12px" />
+              {@const Icon = resourceIconMapping[kind]}
+              <Icon size="12px" />
             {/if}
             <span class="font-medium">{count}</span>
             <span>{prettyResourceKind(kind)}</span>
@@ -211,7 +219,8 @@
         {#each Object.entries(erroredByKind).sort(([, a], [, b]) => b - a) as [kind, count]}
           <span class="error-chip">
             {#if resourceIconMapping[kind]}
-              <svelte:component this={resourceIconMapping[kind]} size="12px" />
+              {@const Icon = resourceIconMapping[kind]}
+              <Icon size="12px" />
             {/if}
             <span class="font-medium">{count}</span>
             <span>{prettyResourceKind(kind)}</span>

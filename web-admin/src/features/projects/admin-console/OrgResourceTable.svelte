@@ -25,8 +25,6 @@
   import OrgActionsCell from "./OrgActionsCell.svelte";
   import ProjectNameCell from "./ProjectNameCell.svelte";
 
-  export let organization: string;
-
   type OrgResource = {
     projectName: string;
     kind: string;
@@ -36,7 +34,13 @@
     stateUpdatedOn: string;
   };
 
-  export let resources: OrgResource[];
+  let {
+    organization,
+    resources,
+  }: {
+    organization: string;
+    resources: OrgResource[];
+  } = $props();
 
   const filterSync = createUrlFilterSync([
     { key: "project", type: "array" },
@@ -46,15 +50,17 @@
   ]);
   filterSync.init($page.url);
 
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let selectedProjects: string[] = parseArrayParam(
-    $page.url.searchParams.get("project"),
+  let searchText = $state(
+    parseStringParam($page.url.searchParams.get("q")),
   );
-  let selectedTypes: string[] = parseArrayParam(
-    $page.url.searchParams.get("kind"),
+  let selectedProjects: string[] = $state(
+    parseArrayParam($page.url.searchParams.get("project")),
   );
-  let selectedStatuses: string[] = parseArrayParam(
-    $page.url.searchParams.get("status"),
+  let selectedTypes: string[] = $state(
+    parseArrayParam($page.url.searchParams.get("kind")),
+  );
+  let selectedStatuses: string[] = $state(
+    parseArrayParam($page.url.searchParams.get("status")),
   );
 
   type StatusFilter = { label: string; value: string };
@@ -63,33 +69,43 @@
     { label: "Error", value: "error" },
   ];
 
-  let statusDropdownOpen = false;
-  let projectDropdownOpen = false;
-  let typeDropdownOpen = false;
-  let mounted = false;
+  let statusDropdownOpen = $state(false);
+  let projectDropdownOpen = $state(false);
+  let typeDropdownOpen = $state(false);
+  let mounted = $state(false);
 
-  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
-    filterSync.markSynced($page.url);
-    selectedProjects = parseArrayParam($page.url.searchParams.get("project"));
-    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-    searchText = parseStringParam($page.url.searchParams.get("q"));
-  }
+  $effect(() => {
+    if (mounted && filterSync.hasExternalNavigation($page.url)) {
+      filterSync.markSynced($page.url);
+      selectedProjects = parseArrayParam(
+        $page.url.searchParams.get("project"),
+      );
+      selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+      selectedStatuses = parseArrayParam(
+        $page.url.searchParams.get("status"),
+      );
+      searchText = parseStringParam($page.url.searchParams.get("q"));
+    }
+  });
 
-  $: if (mounted) {
-    filterSync.syncToUrl({
-      project: selectedProjects,
-      kind: selectedTypes,
-      status: selectedStatuses,
-      q: searchText,
-    });
-  }
+  $effect(() => {
+    if (mounted) {
+      filterSync.syncToUrl({
+        project: selectedProjects,
+        kind: selectedTypes,
+        status: selectedStatuses,
+        q: searchText,
+      });
+    }
+  });
 
   onMount(() => {
     mounted = true;
   });
 
-  $: projectNames = [...new Set(resources.map((r) => r.projectName))].sort();
+  let projectNames = $derived(
+    [...new Set(resources.map((r) => r.projectName))].sort(),
+  );
 
   const filterableTypes = [
     ResourceKind.Source,
@@ -112,28 +128,30 @@
     }
   }
 
-  $: filteredResources = resources.filter((r) => {
-    if (
-      selectedProjects.length > 0 &&
-      !selectedProjects.includes(r.projectName)
-    )
-      return false;
-    if (selectedTypes.length > 0 && !selectedTypes.includes(r.kind))
-      return false;
-    if (selectedStatuses.length > 0) {
-      const matchesAny =
-        (selectedStatuses.includes("healthy") && !r.reconcileError) ||
-        (selectedStatuses.includes("error") && !!r.reconcileError);
-      if (!matchesAny) return false;
-    }
-    if (
-      searchText &&
-      !r.name.toLowerCase().includes(searchText.toLowerCase()) &&
-      !r.projectName.toLowerCase().includes(searchText.toLowerCase())
-    )
-      return false;
-    return true;
-  });
+  let filteredResources = $derived(
+    resources.filter((r) => {
+      if (
+        selectedProjects.length > 0 &&
+        !selectedProjects.includes(r.projectName)
+      )
+        return false;
+      if (selectedTypes.length > 0 && !selectedTypes.includes(r.kind))
+        return false;
+      if (selectedStatuses.length > 0) {
+        const matchesAny =
+          (selectedStatuses.includes("healthy") && !r.reconcileError) ||
+          (selectedStatuses.includes("error") && !!r.reconcileError);
+        if (!matchesAny) return false;
+      }
+      if (
+        searchText &&
+        !r.name.toLowerCase().includes(searchText.toLowerCase()) &&
+        !r.projectName.toLowerCase().includes(searchText.toLowerCase())
+      )
+        return false;
+      return true;
+    }),
+  );
 
   function mapReconcileStatus(status: string): V1ReconcileStatus {
     switch (status) {
@@ -171,13 +189,14 @@
     searchText = "";
   }
 
-  $: hasActiveFilters =
+  let hasActiveFilters = $derived(
     selectedProjects.length > 0 ||
-    selectedTypes.length > 0 ||
-    selectedStatuses.length > 0 ||
-    searchText.length > 0;
+      selectedTypes.length > 0 ||
+      selectedStatuses.length > 0 ||
+      searchText.length > 0,
+  );
 
-  let openDropdownKey = "";
+  let openDropdownKey = $state("");
 
   const columns: ColumnDef<OrgResource, any>[] = [
     {
@@ -252,7 +271,7 @@
     },
   ];
 
-  $: tableData = filteredResources;
+  let tableData = $derived(filteredResources);
 </script>
 
 <div class="flex flex-col gap-y-4">
@@ -381,7 +400,7 @@
     {#if hasActiveFilters}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>

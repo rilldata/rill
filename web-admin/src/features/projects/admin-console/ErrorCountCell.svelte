@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let count: number;
+  let { count }: { count: number } = $props();
 </script>
 
 {#if count > 0}

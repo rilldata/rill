@@ -2,7 +2,7 @@
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 
-  export let message: string;
+  let { message }: { message: string } = $props();
 </script>
 
 <ResourceErrorMessage

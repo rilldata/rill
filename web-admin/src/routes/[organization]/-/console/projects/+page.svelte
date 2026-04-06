@@ -28,14 +28,15 @@
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
 
-  $: organization = $page.params.organization;
+  let organization = $derived($page.params.organization);
 
-  $: healthQuery = createAdminServiceListOrganizationProjectsWithHealth(
-    organization,
-    { pageSize: 50 },
+  let healthQuery = $derived(
+    createAdminServiceListOrganizationProjectsWithHealth(organization, {
+      pageSize: 50,
+    }),
   );
 
-  $: allProjects = $healthQuery.data?.projects ?? [];
+  let allProjects = $derived($healthQuery.data?.projects ?? []);
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
@@ -49,25 +50,33 @@
   ]);
   filterSync.init($page.url);
 
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let selectedStatuses: string[] = parseArrayParam(
-    $page.url.searchParams.get("status"),
+  let searchText = $state(
+    parseStringParam($page.url.searchParams.get("q")),
   );
-  let statusDropdownOpen = false;
-  let mounted = false;
+  let selectedStatuses: string[] = $state(
+    parseArrayParam($page.url.searchParams.get("status")),
+  );
+  let statusDropdownOpen = $state(false);
+  let mounted = $state(false);
 
-  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
-    filterSync.markSynced($page.url);
-    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-    searchText = parseStringParam($page.url.searchParams.get("q"));
-  }
+  $effect(() => {
+    if (mounted && filterSync.hasExternalNavigation($page.url)) {
+      filterSync.markSynced($page.url);
+      selectedStatuses = parseArrayParam(
+        $page.url.searchParams.get("status"),
+      );
+      searchText = parseStringParam($page.url.searchParams.get("q"));
+    }
+  });
 
-  $: if (mounted) {
-    filterSync.syncToUrl({
-      status: selectedStatuses,
-      q: searchText,
-    });
-  }
+  $effect(() => {
+    if (mounted) {
+      filterSync.syncToUrl({
+        status: selectedStatuses,
+        q: searchText,
+      });
+    }
+  });
 
   onMount(() => {
     mounted = true;
@@ -86,22 +95,28 @@
     searchText = "";
   }
 
-  $: hasActiveFilters = selectedStatuses.length > 0 || searchText.length > 0;
+  let hasActiveFilters = $derived(
+    selectedStatuses.length > 0 || searchText.length > 0,
+  );
 
-  $: filteredProjects = allProjects.filter((p) => {
-    if (selectedStatuses.length > 0) {
-      const matchesAny =
-        (selectedStatuses.includes("healthy") && isProjectHealthy(p)) ||
-        (selectedStatuses.includes("error") && hasProjectErrors(p));
-      if (!matchesAny) return false;
-    }
-    if (
-      searchText &&
-      !(p.projectName ?? "").toLowerCase().includes(searchText.toLowerCase())
-    )
-      return false;
-    return true;
-  });
+  let filteredProjects = $derived(
+    allProjects.filter((p) => {
+      if (selectedStatuses.length > 0) {
+        const matchesAny =
+          (selectedStatuses.includes("healthy") && isProjectHealthy(p)) ||
+          (selectedStatuses.includes("error") && hasProjectErrors(p));
+        if (!matchesAny) return false;
+      }
+      if (
+        searchText &&
+        !(p.projectName ?? "")
+          .toLowerCase()
+          .includes(searchText.toLowerCase())
+      )
+        return false;
+      return true;
+    }),
+  );
 
   function projectErrorMessage(p: V1ProjectHealth): string {
     const errors: string[] = [];
@@ -115,7 +130,7 @@
     return errors.join("; ");
   }
 
-  let openDropdownProject = "";
+  let openDropdownProject = $state("");
 
   const columns: ColumnDef<V1ProjectHealth, any>[] = [
     {
@@ -195,7 +210,7 @@
     },
   ];
 
-  $: tableData = filteredProjects;
+  let tableData = $derived(filteredProjects);
 </script>
 
 <div class="flex flex-col gap-y-4">
@@ -250,7 +265,7 @@
     {#if hasActiveFilters}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        on:click={clearFilters}
+        onclick={clearFilters}
       >
         Clear
       </button>

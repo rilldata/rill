@@ -4,9 +4,15 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ExternalLinkIcon } from "lucide-svelte";
 
-  export let href: string;
-  export let isDropdownOpen: boolean;
-  export let onDropdownOpenChange: (isOpen: boolean) => void;
+  let {
+    href,
+    isDropdownOpen,
+    onDropdownOpenChange,
+  }: {
+    href: string;
+    isDropdownOpen: boolean;
+    onDropdownOpenChange: (isOpen: boolean) => void;
+  } = $props();
 </script>
 
 <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>

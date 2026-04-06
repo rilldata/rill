@@ -3,18 +3,24 @@
   import { createAdminServiceListOrganizationResources } from "@rilldata/web-admin/client";
   import OrgResourceTable from "@rilldata/web-admin/features/projects/admin-console/OrgResourceTable.svelte";
 
-  $: organization = $page.params.organization;
+  let organization = $derived($page.params.organization);
 
-  $: resourcesQuery = createAdminServiceListOrganizationResources(organization);
+  let resourcesQuery = $derived(
+    createAdminServiceListOrganizationResources(organization),
+  );
 
-  $: resources = ($resourcesQuery.data?.resources ?? []).map((r) => ({
-    projectName: r.projectName ?? "",
-    kind: r.kind ?? "",
-    name: r.name ?? "",
-    reconcileStatus: r.reconcileError ? "ERROR" : (r.reconcileStatus ?? ""),
-    reconcileError: r.reconcileError ?? "",
-    stateUpdatedOn: r.stateUpdatedOn ?? "",
-  }));
+  let resources = $derived(
+    ($resourcesQuery.data?.resources ?? []).map((r) => ({
+      projectName: r.projectName ?? "",
+      kind: r.kind ?? "",
+      name: r.name ?? "",
+      reconcileStatus: r.reconcileError
+        ? "ERROR"
+        : (r.reconcileStatus ?? ""),
+      reconcileError: r.reconcileError ?? "",
+      stateUpdatedOn: r.stateUpdatedOn ?? "",
+    })),
+  );
 </script>
 
 {#if $resourcesQuery.isLoading}
