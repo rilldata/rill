@@ -16,7 +16,6 @@
   <p class="text-gray-500">Usage analytics are not available.</p>
 {/if}
 
-
 <style lang="postcss">
   .iframe {
     @apply w-full border-0 rounded-sm;
