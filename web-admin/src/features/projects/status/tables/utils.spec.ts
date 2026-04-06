@@ -12,7 +12,7 @@ import {
   shouldFilterByPending,
   splitTablesByModel,
   applyTableFilters,
-} from "./utils";
+} from "@rilldata/web-common/features/projects/status/tables/utils";
 import type {
   V1OlapTableInfo,
   V1Resource,

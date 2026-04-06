@@ -121,11 +121,13 @@
   {/if}
 
   <SelectPrimitive.Root
-    selected={{ value }}
-    onSelectedChange={(s) => handleChange(s?.value)}
+    type="single"
+    {value}
+    onValueChange={(val) => handleChange(val)}
   >
     <SelectPrimitive.Trigger
       class="flex h-auto w-full items-center justify-between rounded-[2px] border bg-transparent px-2 py-1.5 text-sm ring-offset-background focus:outline-none focus:border-primary-400"
+      aria-label={label}
     >
       {#if selectedOption}
         <div class="flex items-center gap-2">
@@ -160,6 +162,7 @@
         {@const disabledReason = disabledOptions[option.value]}
         <Select.Item
           value={option.value}
+          label={option.label}
           class="py-2 {disabledReason ? 'cursor-not-allowed' : ''}"
           disabled={!!disabledReason}
         >

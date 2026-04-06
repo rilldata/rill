@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          cache: 'npm'
 
       # - name: Filter modified codepaths
       #   uses: dorny/paths-filter@v3
@@ -38,7 +39,7 @@ jobs:
 
       - name: Build docs
         run: |-
-          npm install -w docs
+          npm ci -w docs
           npm run build -w docs
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:

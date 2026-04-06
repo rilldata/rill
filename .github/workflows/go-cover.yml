@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "0 5 * * 1,4"
   workflow_dispatch:
 name: Go tests with coverage and race detector
 jobs:

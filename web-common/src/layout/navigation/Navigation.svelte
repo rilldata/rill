@@ -15,7 +15,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { writable } from "svelte/store";
   import ConnectorExplorer from "../../features/connectors/explorer/ConnectorExplorer.svelte";
-  import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
+  import AddAssetButton from "../../features/entity-management/add/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
   import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH, MAX_NAV_WIDTH, MIN_NAV_WIDTH } from "../config";
@@ -61,8 +61,8 @@
 </script>
 
 <svelte:window
-  on:resize={handleResize}
-  on:keydown={(e) => {
+  onresize={handleResize}
+  onkeydown={(e) => {
     const isMac = window.navigator.userAgent.includes("Macintosh");
 
     if (e[isMac ? "metaKey" : "ctrlkey"] && e.key === "b") {
@@ -116,7 +116,7 @@
             {/if}
 
             <button
-              on:click={() => {
+              onclick={() => {
                 const open = showConnectors;
 
                 if (!open) showConnectors = true;

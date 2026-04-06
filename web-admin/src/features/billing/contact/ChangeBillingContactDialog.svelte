@@ -66,8 +66,10 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Trigger asChild>
-    <div class="hidden"></div>
+  <Dialog.Trigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </Dialog.Trigger>
   <Dialog.Content class="w-[520px]" noClose>
     <Dialog.Header>

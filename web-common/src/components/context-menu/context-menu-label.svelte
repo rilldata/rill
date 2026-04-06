@@ -2,7 +2,7 @@
   import { ContextMenu as ContextMenuPrimitive } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
-  type $$Props = ContextMenuPrimitive.LabelProps & {
+  type $$Props = ContextMenuPrimitive.GroupHeadingProps & {
     inset?: boolean;
   };
 
@@ -11,7 +11,7 @@
   export { className as class };
 </script>
 
-<ContextMenuPrimitive.Label
+<ContextMenuPrimitive.GroupHeading
   class={cn(
     "px-2 py-1.5 text-sm font-semibold text-fg-primary",
     inset && "pl-8",
@@ -20,4 +20,4 @@
   {...$$restProps}
 >
   <slot />
-</ContextMenuPrimitive.Label>
+</ContextMenuPrimitive.GroupHeading>

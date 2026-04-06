@@ -6,7 +6,7 @@ import type { V1Resource } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "../entity-management/file-artifacts";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import { createResourceFile } from "../file-explorer/new-files";
+import { createResourceFile } from "../entity-management/add/new-files.ts";
 
 export async function createAndPreviewExplore(
   client: RuntimeClient,

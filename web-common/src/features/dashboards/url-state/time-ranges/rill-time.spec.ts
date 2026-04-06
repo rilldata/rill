@@ -12,7 +12,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 import nearley from "nearley";
 import { describe, expect, it } from "vitest";
-import grammar from "./rill-time.cjs";
+import grammar from "./rill-time.js";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
