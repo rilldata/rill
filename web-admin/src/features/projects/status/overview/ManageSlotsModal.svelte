@@ -23,36 +23,50 @@
     return SLOT_TIERS.find((t) => t.slots === slots);
   }
 
-  export let open = false;
-  export let organization: string;
-  export let project: string;
-  export let currentSlots: number;
-  export let isRillManaged = true;
-  export let isTrial = false;
+  let {
+    open = $bindable(false),
+    organization,
+    project,
+    currentSlots,
+    isRillManaged = true,
+    isTrial = false,
+  }: {
+    open?: boolean;
+    organization: string;
+    project: string;
+    currentSlots: number;
+    isRillManaged?: boolean;
+    isTrial?: boolean;
+  } = $props();
 
   // Free trials have no minimum; Growth+: 2 for Rill-managed, 4 for self-managed
-  $: minSlots =
+  let minSlots = $derived(
     isTrial && isRillManaged
       ? 1
       : isRillManaged
         ? DEFAULT_MANAGED_SLOTS
-        : DEFAULT_SELF_MANAGED_SLOTS;
+        : DEFAULT_SELF_MANAGED_SLOTS,
+  );
 
-  let selectedSlots = currentSlots;
-  $: if (open) {
-    selectedSlots = currentSlots;
-    showAllSizes = false;
-  }
+  let selectedSlots = $state(currentSlots);
+  let showAllSizes = $state(false);
 
-  let showAllSizes = false;
+  $effect(() => {
+    if (open) {
+      selectedSlots = currentSlots;
+      showAllSizes = false;
+    }
+  });
 
   const updateProject = createAdminServiceUpdateProject();
 
   // Filter tiers to only show slots >= minimum
-  $: availableTiers = SLOT_TIERS.filter((t) => t.slots >= minSlots);
+  let availableTiers = $derived(
+    SLOT_TIERS.filter((t) => t.slots >= minSlots),
+  );
 
   // Ensure the current slot count always appears in the popular list
-  $: popularSlotsWithExtras = (() => {
+  let popularSlotsWithExtras = $derived((() => {
     let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
     if (
       currentSlots >= minSlots &&
@@ -62,13 +76,17 @@
       slots.push(currentSlots);
     }
     return slots.sort((a, b) => a - b);
-  })();
+  })());
 
-  $: visibleTiers = showAllSizes
-    ? availableTiers
-    : availableTiers.filter((t) => popularSlotsWithExtras.includes(t.slots));
+  let visibleTiers = $derived(
+    showAllSizes
+      ? availableTiers
+      : availableTiers.filter((t) =>
+          popularSlotsWithExtras.includes(t.slots),
+        ),
+  );
 
-  $: hasChanged = selectedSlots !== currentSlots;
+  let hasChanged = $derived(selectedSlots !== currentSlots);
 
   async function applySlotChange() {
     try {
@@ -134,7 +152,7 @@
             class:tier-active={tier.slots === currentSlots}
             class:tier-selected={tier.slots === selectedSlots &&
               tier.slots !== currentSlots}
-            on:click={() => {
+            onclick={() => {
               selectedSlots = tier.slots;
             }}
           >
@@ -157,7 +175,7 @@
     </div>
     <button
       class="show-all-btn"
-      on:click={() => (showAllSizes = !showAllSizes)}
+      onclick={() => (showAllSizes = !showAllSizes)}
     >
       {showAllSizes ? "Show popular sizes" : "Show all sizes"}
     </button>
@@ -168,7 +186,7 @@
       <a
         href="/{organization}/{project}/-/settings"
         class="hibernate-link"
-        on:click={() => (open = false)}
+        onclick={() => (open = false)}
       >
         Hibernate this project
       </a>
@@ -176,13 +194,13 @@
     </p>
 
     <div class="footer">
-      <button class="cancel-btn" on:click={() => (open = false)}>
+      <button class="cancel-btn" onclick={() => (open = false)}>
         Cancel
       </button>
       <button
         class="apply-btn"
         disabled={!hasChanged || $updateProject.isPending}
-        on:click={applySlotChange}
+        onclick={applySlotChange}
       >
         {#if $updateProject.isPending}
           Updating...

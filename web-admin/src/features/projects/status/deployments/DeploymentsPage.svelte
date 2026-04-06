@@ -17,55 +17,77 @@
   } from "../overview/slots-utils";
   import ManageSlotsModal from "../overview/ManageSlotsModal.svelte";
 
-  export let organization: string;
-  export let project: string;
+  let {
+    organization,
+    project,
+  }: {
+    organization: string;
+    project: string;
+  } = $props();
 
   // Deployment
-  $: projectDeployment = useProjectDeployment(organization, project);
-  $: deployment = $projectDeployment.data;
-  $: deploymentStatus =
-    deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
+  let projectDeployment = $derived(
+    useProjectDeployment(organization, project),
+  );
+  let deployment = $derived($projectDeployment.data);
+  let deploymentStatus = $derived(
+    deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
+  );
 
   // Project
-  $: proj = createAdminServiceGetProject(organization, project);
-  $: projectData = $proj.data?.project;
+  let proj = $derived(createAdminServiceGetProject(organization, project));
+  let projectData = $derived($proj.data?.project);
 
   // Slots
-  $: currentSlots = Number(projectData?.prodSlots) || 0;
-  $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
+  let currentSlots = $derived(Number(projectData?.prodSlots) || 0);
+  let canManage = $derived(
+    $proj.data?.projectPermissions?.manageProject ?? false,
+  );
   // Self-managed: any non-DuckDB OLAP connector (ClickHouse, MotherDuck, Druid, Pinot, StarRocks)
-  $: olapType = (projectData as any)?.olapConnector ?? "";
-  $: isRillManaged = olapType === "" || olapType === "duckdb";
-  let prodModalOpen = false;
+  let olapType = $derived((projectData as any)?.olapConnector ?? "");
+  let isRillManaged = $derived(olapType === "" || olapType === "duckdb");
+  let prodModalOpen = $state(false);
 
   // Billing
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: isTrial = isTrialPlan(planName);
-  $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
+  let subscriptionQuery = $derived(
+    createAdminServiceGetBillingSubscription(organization),
+  );
+  let planName = $derived(
+    $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
+  );
+  let isTrial = $derived(isTrialPlan(planName));
+  let isEnterprise = $derived(planName !== "" && isEnterprisePlan(planName));
 
   // Slot types
-  $: prodSlots = currentSlots;
-  $: devSlots = 2; // TODO: wire to project data when dev slots are available
-  $: totalSlots = prodSlots + devSlots;
+  let prodSlots = $derived(currentSlots);
+  let devSlots = $derived(2); // TODO: wire to project data when dev slots are available
+  let totalSlots = $derived(prodSlots + devSlots);
 
   // Cluster info
-  $: prodTier = SLOT_TIERS.find((t) => t.slots === prodSlots);
-  $: prodClusterLabel =
-    prodTier?.instance ?? `${prodSlots * 4}GiB / ${prodSlots}vCPU`;
-  $: devClusterLabel =
-    devSlots > 0 ? `${devSlots * 4}GiB / ${devSlots}vCPU` : "—";
-  $: prodMonthlyCost = Math.round(
-    prodSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH,
+  let prodTier = $derived(SLOT_TIERS.find((t) => t.slots === prodSlots));
+  let prodClusterLabel = $derived(
+    prodTier?.instance ?? `${prodSlots * 4}GiB / ${prodSlots}vCPU`,
   );
-  $: devMonthlyCost = Math.round(devSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH);
-  $: totalMonthlyCost = Math.round(
-    totalSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH,
+  let devClusterLabel = $derived(
+    devSlots > 0 ? `${devSlots * 4}GiB / ${devSlots}vCPU` : "\u2014",
+  );
+  let prodMonthlyCost = $derived(
+    Math.round(prodSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH),
+  );
+  let devMonthlyCost = $derived(
+    Math.round(devSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH),
+  );
+  let totalMonthlyCost = $derived(
+    Math.round(totalSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH),
   );
 
   // Bar percentages
-  $: prodPct = totalSlots > 0 ? (prodSlots / totalSlots) * 100 : 50;
-  $: devPct = totalSlots > 0 ? (devSlots / totalSlots) * 100 : 50;
+  let prodPct = $derived(
+    totalSlots > 0 ? (prodSlots / totalSlots) * 100 : 50,
+  );
+  let devPct = $derived(
+    totalSlots > 0 ? (devSlots / totalSlots) * 100 : 50,
+  );
 </script>
 
 {#if !isEnterprise}
@@ -133,7 +155,7 @@
           {#if canManage && !$subscriptionQuery?.isLoading}
             <button
               class="section-manage-btn"
-              on:click={() => (prodModalOpen = true)}
+              onclick={() => (prodModalOpen = true)}
             >
               Manage
             </button>
