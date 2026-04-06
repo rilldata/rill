@@ -95,7 +95,20 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		}
 		// Dry run is not asynchronous so no need to call Wait
 		status := j.LastStatus()
-		return nil, wrapMaxBytesBilledError(status.Err(), c.config.MaxBytesBilled)
+		stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics)
+		if !ok {
+			return nil, fmt.Errorf("unexpected statistics type")
+		}
+
+		// extract schema
+		schema, err := fromBQSchema(stats.Schema)
+		if err != nil {
+			return nil, err
+		}
+		res := &drivers.Result{
+			Schema: schema,
+		}
+		return res, wrapMaxBytesBilledError(status.Err(), c.config.MaxBytesBilled)
 	}
 	it, err := q.Read(ctx)
 	if err != nil {
@@ -131,8 +144,9 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 	defer cancel()
 
 	res, err := c.Query(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query),
-		Args:  args,
+		Query:  query,
+		Args:   args,
+		DryRun: true,
 	})
 	if err != nil {
 		return nil, err

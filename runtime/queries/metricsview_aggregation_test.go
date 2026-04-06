@@ -114,7 +114,7 @@ func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
 func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
 	testmode.Expensive(t)
 
-	rt, instanceID := testruntime.NewInstanceWithBigQueryProject(t)
+	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	// TODO: BigQuery rejects "Timestamp (day)"/"Timestamp (hour)" as column names
@@ -5275,4 +5275,78 @@ func testMetricsViewsAggregation_like_nullable(t *testing.T, rt *runtime.Runtime
 	}
 	require.True(t, publishers["Microsoft"])
 	require.True(t, publishers["null"])
+}
+
+func newBigQueryInstance(t testruntime.TestingT) (*runtime.Runtime, string) {
+	return testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"bigquery"},
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: bigquery",
+			"metrics/ad_bids_metrics.yaml": `version: 1
+type: metrics_view
+
+display_name: Ad Bids
+table: ad_bids
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+
+dimensions:
+  - name: pub
+    display_name: Publisher
+    column: publisher
+    uri: CONCAT('http://localhost/', publisher)
+  - name: dom
+    display_name: Domain
+    column: domain
+  - name: nolabel_pub
+    column: publisher
+  - name: space_label
+    display_name: Space Label
+    expression: "publisher"
+  - name: null_publisher
+    display_name: Null Publisher
+    expression: "case when publisher is null then true else false end"
+  - name: event_date
+    display_name: Event Date
+    expression: "DATE(timestamp)"
+
+measures:
+  - display_name: "Number of bids"
+    expression: count(*)
+  - display_name: "Average bid price"
+    expression: avg(bid_price)
+  - name: m1
+    expression: avg(bid_price)
+  - name: bid_price
+    display_name: Avg Bid Price
+    expression: avg(bid_price)
+`,
+			"metrics/ad_bids_metrics_view.yaml": `version: 1
+type: metrics_view
+
+display_name: Ad Bids
+table: ad_bids
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+
+dimensions:
+  - name: publisher
+    display_name: Publisher
+    column: publisher
+  - name: domain
+    display_name: Domain
+    column: domain
+
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+  - name: bid_price_sum
+    display_name: Sum of Bid Price
+    expression: SUM(bid_price)
+`,
+		},
+	})
 }

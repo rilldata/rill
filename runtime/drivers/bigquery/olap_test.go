@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -299,6 +300,63 @@ func TestScan(t *testing.T) {
 		require.Contains(t, structVal, `"b":"test"`)
 		require.Equal(t, "[1,2,3]", arrayVal)
 	})
+}
+
+func TestQuerySchema(t *testing.T) {
+	testmode.Expensive(t)
+	_, olap := acquireTestBigQuery(t)
+
+	schema, err := olap.QuerySchema(t.Context(), "SELECT * FROM `rilldata.integration_test.all_datatypes`", nil)
+	require.NoError(t, err)
+	require.NotNil(t, schema)
+	require.Len(t, schema.Fields, 34)
+
+	type fieldExpectation struct {
+		name string
+		code runtimev1.Type_Code
+	}
+	expected := []fieldExpectation{
+		{"int_col", runtimev1.Type_CODE_INT64},
+		{"float_col", runtimev1.Type_CODE_FLOAT64},
+		{"numeric_col", runtimev1.Type_CODE_STRING},
+		{"bignumeric_col", runtimev1.Type_CODE_STRING},
+		{"bool_col", runtimev1.Type_CODE_BOOL},
+		{"string_col", runtimev1.Type_CODE_STRING},
+		{"bytes_col", runtimev1.Type_CODE_BYTES},
+		{"date_col", runtimev1.Type_CODE_DATE},
+		{"datetime_col", runtimev1.Type_CODE_TIMESTAMP},
+		{"time_col", runtimev1.Type_CODE_STRING},
+		{"timestamp_col", runtimev1.Type_CODE_TIMESTAMP},
+		{"json_col", runtimev1.Type_CODE_JSON},
+		{"geography_col", runtimev1.Type_CODE_STRING},
+		{"range_date_col", runtimev1.Type_CODE_STRING},
+		{"range_datetime_col", runtimev1.Type_CODE_STRING},
+		{"range_timestamp_col", runtimev1.Type_CODE_STRING},
+		{"array_int_col", runtimev1.Type_CODE_ARRAY},
+		{"array_float_col", runtimev1.Type_CODE_ARRAY},
+		{"array_numeric_col", runtimev1.Type_CODE_ARRAY},
+		{"array_bignumeric_col", runtimev1.Type_CODE_ARRAY},
+		{"array_bool_col", runtimev1.Type_CODE_ARRAY},
+		{"array_string_col", runtimev1.Type_CODE_ARRAY},
+		{"array_bytes_col", runtimev1.Type_CODE_ARRAY},
+		{"array_date_col", runtimev1.Type_CODE_ARRAY},
+		{"array_datetime_col", runtimev1.Type_CODE_ARRAY},
+		{"array_time_col", runtimev1.Type_CODE_ARRAY},
+		{"array_timestamp_col", runtimev1.Type_CODE_ARRAY},
+		{"array_json_col", runtimev1.Type_CODE_ARRAY},
+		{"array_geography_col", runtimev1.Type_CODE_ARRAY},
+		{"array_range_date_col", runtimev1.Type_CODE_ARRAY},
+		{"array_range_datetime_col", runtimev1.Type_CODE_ARRAY},
+		{"array_range_timestamp_col", runtimev1.Type_CODE_ARRAY},
+		{"array_struct_col", runtimev1.Type_CODE_ARRAY},
+		{"struct_col", runtimev1.Type_CODE_JSON},
+	}
+
+	for i, e := range expected {
+		f := schema.Fields[i]
+		require.Equal(t, e.name, f.Name, "field %d name mismatch", i)
+		require.Equal(t, e.code, f.Type.Code, "field %d (%s) type mismatch", i, e.name)
+	}
 }
 
 func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {

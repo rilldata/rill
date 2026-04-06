@@ -156,7 +156,10 @@ func (r *Result) Err() error {
 // Close wraps rows.Close and calls the Result's cleanup function (if it is set).
 // Close should be idempotent.
 func (r *Result) Close() error {
-	firstErr := r.Rows.Close()
+	var firstErr error
+	if r.Rows != nil {
+		firstErr = r.Rows.Close()
+	}
 	if r.cleanupFn != nil {
 		err := r.cleanupFn()
 		if firstErr == nil {
@@ -585,7 +588,7 @@ func (d Dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
-func (d Dialect) JoinOnExpression(lhs, rhs string, isFullJoin bool) string {
+func (d Dialect) JoinOnExpression(lhs, rhs string) string {
 	if d == DialectClickHouse {
 		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
 	}
@@ -593,9 +596,8 @@ func (d Dialect) JoinOnExpression(lhs, rhs string, isFullJoin bool) string {
 	if d == DialectStarRocks {
 		return fmt.Sprintf("%s <=> %s", lhs, rhs)
 	}
-	if d == DialectBigQuery && isFullJoin {
+	if d == DialectBigQuery {
 		// BigQuery requires plain equality for FULL joins
-		// TODO: find a better way to handle this
 		return fmt.Sprintf("coalesce(CAST(%s AS STRING), '__rill_sentinel__') = coalesce(CAST(%s AS STRING), '__rill_sentinel__')", lhs, rhs)
 	}
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
@@ -871,17 +873,24 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		}
 		return sb.String(), nil, nil
 	case DialectBigQuery:
-		// BigQuery uses UNION ALL for generating time series
-		var sb strings.Builder
-		first := true
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
-			if !first {
-				sb.WriteString(" UNION ALL ")
-			}
-			fmt.Fprintf(&sb, "SELECT CAST('%s' AS TIMESTAMP) AS %s", t.Format(time.RFC3339), d.EscapeAlias(alias))
-			first = false
+		startStr := start.Format(time.RFC3339)
+		endStr := end.Format(time.RFC3339)
+		tzStr := tz.String()
+		switch grain {
+		case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
+			runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+			runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
+			runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+			return fmt.Sprintf(
+				"SELECT ts AS %s FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '%s', TIMESTAMP '%s', INTERVAL 1 %s)) AS ts WHERE ts < TIMESTAMP '%s'",
+				d.EscapeAlias(alias), startStr, endStr, d.ConvertToDateTruncSpecifier(grain), endStr,
+			), nil, nil
+		default:
+			return fmt.Sprintf(
+				"SELECT TIMESTAMP(d, '%s') AS %s FROM UNNEST(GENERATE_DATE_ARRAY(DATE(TIMESTAMP '%s', '%s'), DATE(TIMESTAMP '%s', '%s'), INTERVAL 1 %s)) AS d WHERE TIMESTAMP(d, '%s') < TIMESTAMP '%s'",
+				tzStr, d.EscapeAlias(alias), startStr, tzStr, endStr, tzStr, d.ConvertToDateTruncSpecifier(grain), tzStr, endStr,
+			), nil, nil
 		}
-		return sb.String(), nil, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", d)
 	}

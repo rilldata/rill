@@ -278,7 +278,7 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		lhs := b.ast.Dialect.EscapeMemberAlias(baseSelect.Alias, f.Name)
 		rhs := b.ast.Dialect.EscapeMemberAlias(joinSelect.Alias, f.Name)
 		b.out.WriteByte('(')
-		b.out.WriteString(b.ast.Dialect.JoinOnExpression(lhs, rhs, joinType == JoinTypeFull))
+		b.out.WriteString(b.ast.Dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')
 	}
 	return nil

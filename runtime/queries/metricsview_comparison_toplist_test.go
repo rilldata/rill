@@ -125,7 +125,7 @@ func TestMetricsViewsComparisonAgainstStarRocks(t *testing.T) {
 func TestMetricsViewsComparisonAgainstBigQuery(t *testing.T) {
 	testmode.Expensive(t)
 
-	rt, instanceID := testruntime.NewInstanceWithBigQueryProject(t)
+	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist", func(t *testing.T) {
 		testMetricsViewsComparisonBigQuery_dim_order_comparison_toplist_vs_general_toplist(t, rt, instanceID)
 	})

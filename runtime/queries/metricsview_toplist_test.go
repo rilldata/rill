@@ -22,7 +22,7 @@ func TestMetricsViewsToplistAgainstClickHouse(t *testing.T) {
 
 func TestMetricsViewsToplistAgainstBigQuery(t *testing.T) {
 	testmode.Expensive(t)
-	rt, instanceID := testruntime.NewInstanceWithBigQueryProject(t)
+	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testBigQueryMetricsViewsToplist_measure_filters", func(t *testing.T) {
 		testBigQueryMetricsViewsToplist_measure_filters(t, rt, instanceID)
 	})

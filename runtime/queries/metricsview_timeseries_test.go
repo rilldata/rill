@@ -113,7 +113,131 @@ func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
 
 func TestMetricsViewsTimeseriesAgainstBigQuery(t *testing.T) {
 	testmode.Expensive(t)
-	rt, instanceID := testruntime.NewInstanceWithBigQueryTimeseriesProject(t)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"bigquery"},
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: bigquery",
+			"metrics/timeseries_dst_backwards.yaml": `version: 1
+type: metrics_view
+
+display_name: timeseries_dst
+table: timeseries_dst_backwards
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+first_day_of_week: 7
+
+measures:
+  - display_name: Total records
+    expression: count(*)
+    name: total_records
+    description: Total number of records present
+    valid_percent_of_total: true
+
+dimensions:
+  - name: label
+    column: label
+`,
+			"metrics/timeseries_dst_backwards_fdow6.yaml": `version: 1
+type: metrics_view
+
+display_name: timeseries_dst
+table: timeseries_dst_backwards
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+first_day_of_week: 6
+
+measures:
+  - display_name: Total records
+    expression: count(*)
+    name: total_records
+    description: Total number of records present
+    valid_percent_of_total: true
+
+dimensions:
+  - name: label
+    column: label
+`,
+			"metrics/timeseries_dst_forwards.yaml": `version: 1
+type: metrics_view
+
+display_name: timeseries_dst
+table: timeseries_dst_forwards
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+first_day_of_week: 7
+
+measures:
+  - display_name: Total records
+    expression: count(*)
+    name: total_records
+    description: Total number of records present
+    valid_percent_of_total: true
+
+dimensions:
+  - name: label
+    column: label
+`,
+			"metrics/timeseries_gaps.yaml": `version: 1
+type: metrics_view
+
+display_name: Time series gaps
+table: timeseries_gaps
+database: rilldata
+database_schema: integration_test
+timeseries: time
+
+dimensions:
+  - name: device
+    column: device
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+  - name: latitude
+    column: latitude
+  - name: country
+    column: country
+
+measures:
+  - name: max_clicks
+    expression: "max(clicks)"
+  - name: count
+    expression: "count(*)"
+  - name: sum_imps
+    expression: "sum(imps)"
+  - name: sum_clicks
+    expression: "sum(clicks)"
+`,
+			"metrics/timeseries_year.yaml": `version: 1
+type: metrics_view
+
+display_name: Year time series
+table: timeseries_year
+database: rilldata
+database_schema: integration_test
+timeseries: timestamp
+
+dimensions:
+  - name: device
+    column: device
+  - name: publisher
+    column: publisher
+  - name: country
+    column: country
+
+measures:
+  - name: max_clicks
+    expression: "max(clicks)"
+  - name: count
+    expression: "count(*)"
+  - name: sum_clicks
+    expression: "sum(clicks)"
+`,
+		},
+	})
 	t.Run("testMetricsViewsTimeseries_month_grain", func(t *testing.T) { testMetricsViewsTimeseries_month_grain(t, rt, instanceID) })
 	t.Run("testMetricsViewsTimeseries_month_grain_IST", func(t *testing.T) { testMetricsViewsTimeseries_month_grain_IST(t, rt, instanceID) })
 	t.Run("testMetricsViewsTimeseries_quarter_grain_IST", func(t *testing.T) { testMetricsViewsTimeseries_quarter_grain_IST(t, rt, instanceID) })
