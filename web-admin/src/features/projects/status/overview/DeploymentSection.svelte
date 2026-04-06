@@ -182,6 +182,7 @@
             <a
               href="/{organization}/{project}/-/status/tables"
               class="usage-pill-link"
+              aria-label="Data usage"
             >
               <span class="usage-pill">
                 <span
