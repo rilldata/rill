@@ -366,10 +366,10 @@ export async function submitAddConnectorForm(
         await rollbackChanges(client, newConnectorFilePath, originalEnvBlob);
       }
 
-      const errorDetails = (error as any).details;
-      if (errorDetails && errorDetails !== (error as any).message) {
+      const errorDetails = error.details;
+      if (errorDetails && errorDetails !== error.message) {
         throw {
-          message: (error as any).message || "Unable to establish a connection",
+          message: error.message || "Unable to establish a connection",
           details: errorDetails,
         };
       }
@@ -446,7 +446,7 @@ export async function submitAddSourceForm(
     // The source file was already created, so we need to delete it
     sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
     await rollbackChanges(client, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    const errorDetails = error.details;
 
     throw {
       message: error.message || "Unable to establish a connection",

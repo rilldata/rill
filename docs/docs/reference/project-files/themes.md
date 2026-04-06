@@ -99,11 +99,11 @@ type: theme
 light:
     primary: "#6366f1"
     secondary: "#8b5cf6"
-    kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
-    kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
+    kpi-positive: "#16a34a" # Green for positive deltas (default: gray)
+    kpi-negative: "#dc2626" # Red for negative deltas (default: red)
 dark:
     primary: "#818cf8"
     secondary: "#a78bfa"
-    kpi-positive: "#4ade80"  # Brighter green for dark mode
-    kpi-negative: "#f87171"  # Brighter red for dark mode
+    kpi-positive: "#4ade80" # Brighter green for dark mode
+    kpi-negative: "#f87171" # Brighter red for dark mode
 ```

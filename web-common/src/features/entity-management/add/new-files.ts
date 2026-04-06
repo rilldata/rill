@@ -1,10 +1,10 @@
 import { goto } from "$app/navigation";
-import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import {
   ResourceKind,
   type UserFacingResourceKinds,
-} from "@rilldata/web-common/features/entity-management/resource-selectors";
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import {
   runtimeServicePutFile,
   type V1Resource,

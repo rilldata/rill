@@ -3,7 +3,7 @@ import type { MultiStepFormSchema } from "./types";
 export const icebergSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
-  title: "Apache Iceberg",
+  title: "Iceberg",
   "x-category": "fileStore",
   "x-form-height": "tall",
   properties: {

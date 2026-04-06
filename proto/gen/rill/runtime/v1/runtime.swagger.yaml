@@ -1163,148 +1163,6 @@ paths:
           type: boolean
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/generate/file:
-    post:
-      summary: GenerateFile renders a template with properties and optionally writes the resulting files
-      operationId: RuntimeService_GenerateFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              templateName:
-                type: string
-                title: Template name (e.g. "s3", "s3-duckdb", "iceberg-duckdb")
-              output:
-                type: string
-                title: 'Output filter: "connector", "model", or empty for all files'
-              properties:
-                type: object
-              connectorName:
-                type: string
-                title: Connector name reference (for model outputs that reference a connector)
-              preview:
-                type: boolean
-                title: If true, render without writing files (for YAML preview)
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate/renderer:
-    post:
-      summary: GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-      operationId: RuntimeService_GenerateRenderer
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateRendererResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              resolver:
-                type: string
-              resolverProperties:
-                type: object
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate/resolver:
-    post:
-      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
-      operationId: RuntimeService_GenerateResolver
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateResolverResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              connector:
-                type: string
-                description: Both connector and table must be specified if metrics_view is not.
-              table:
-                type: string
-              metricsView:
-                type: string
-                description: table and connector should not be provided if metrics_view is provided.
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate/template:
-    post:
-      summary: GenerateTemplate generates a connector or model YAML file from structured form data
-      operationId: RuntimeService_GenerateTemplate
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateTemplateResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              resourceType:
-                type: string
-              driver:
-                type: string
-              properties:
-                type: object
-              connectorName:
-                type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/git/branches:
     get:
       operationId: RuntimeService_ListGitBranches
@@ -3709,30 +3567,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/templates:
-    get:
-      summary: ListTemplates returns available template definitions for generating project files
-      operationId: RuntimeService_ListTemplates
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListTemplatesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: tags
-          description: Optional tag filter; only templates matching ALL tags are returned.
-          in: query
-          required: false
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
-      tags:
-        - RuntimeService
 definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
@@ -5260,6 +5094,11 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      chartDynamicYAxis:
+        type: boolean
+        title: Chart display settings (frontend-only; persisted in URL state)
+      chartForceLine:
+        type: boolean
   v1ExploreSortType:
     type: string
     enum:
@@ -5471,18 +5310,6 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateCanvasFile
-  v1GenerateFileResponse:
-    type: object
-    properties:
-      files:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1GeneratedFile'
-      envVars:
-        type: object
-        additionalProperties:
-          type: string
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
@@ -5490,43 +5317,6 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
-  v1GenerateRendererResponse:
-    type: object
-    properties:
-      renderer:
-        type: string
-      rendererProperties:
-        type: object
-  v1GenerateResolverResponse:
-    type: object
-    properties:
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
-  v1GenerateTemplateResponse:
-    type: object
-    properties:
-      blob:
-        type: string
-      envVars:
-        type: object
-        additionalProperties:
-          type: string
-      resourceType:
-        type: string
-        title: Actual resource type used; may differ from request when driver is rewritten
-      driver:
-        type: string
-        title: Actual driver used; may differ from request when rewritten to duckdb
-  v1GeneratedFile:
-    type: object
-    properties:
-      path:
-        type: string
-      blob:
-        type: string
-    description: GeneratedFile is a single rendered output file.
   v1GetAIMessageResponse:
     type: object
     properties:
@@ -5923,14 +5713,6 @@ definitions:
           $ref: '#/definitions/v1TableInfo'
       nextPageToken:
         type: string
-  v1ListTemplatesResponse:
-    type: object
-    properties:
-      templates:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Template'
   v1ListToolsResponse:
     type: object
     properties:
@@ -7991,52 +7773,6 @@ definitions:
         type: array
         items:
           type: object
-  v1Template:
-    type: object
-    properties:
-      name:
-        type: string
-      displayName:
-        type: string
-      driver:
-        type: string
-      olap:
-        type: string
-      tags:
-        type: array
-        items:
-          type: string
-      files:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1TemplateFile'
-      jsonSchema:
-        type: object
-        description: |-
-          JSON Schema for form generation and property metadata.
-          Present for self-contained templates; absent for legacy templates that use DriverSpec.
-      description:
-        type: string
-        description: Short description of the template.
-      docsUrl:
-        type: string
-        description: Link to documentation.
-      icon:
-        type: string
-        description: Icon component name for full-size display (e.g. add-data grid).
-      smallIcon:
-        type: string
-        description: Icon component name for small display (e.g. nav, cards, dialog headers).
-    description: Template describes a declarative template for generating project files.
-  v1TemplateFile:
-    type: object
-    properties:
-      name:
-        type: string
-      pathPattern:
-        type: string
-    description: TemplateFile describes a single output file within a template.
   v1Theme:
     type: object
     properties:
