@@ -305,6 +305,7 @@
   class:rounded-sm={rounded}
   class:w-full={fullWidth}
   class:w-fit={!fullWidth}
+  class:auto-hide-scrollbar={fullWidth}
   class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
@@ -375,5 +376,29 @@
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full max-w-full;
     @apply z-40 select-none;
+  }
+
+  .auto-hide-scrollbar {
+    scrollbar-gutter: stable;
+  }
+
+  .auto-hide-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+  }
+
+  .auto-hide-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  .auto-hide-scrollbar:hover::-webkit-scrollbar-thumb,
+  .auto-hide-scrollbar:active::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .auto-hide-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
   }
 </style>

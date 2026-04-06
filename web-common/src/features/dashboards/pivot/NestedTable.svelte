@@ -202,64 +202,37 @@
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 </script>
 
-<div
-  class="absolute top-0 z-50 flex pointer-events-none"
-  style:width={fullWidth ? "100%" : "{totalLength + rowDimensionWidth}px"}
-  style:min-width={fullWidth
-    ? "{totalLength + rowDimensionWidth}px"
-    : undefined}
-  style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
->
-  <div style:width="{rowDimensionWidth}px" class="sticky left-0 flex-none flex">
-    <Resizer
-      side="right"
-      direction="EW"
-      min={WIDTHS.MIN_COL_WIDTH}
-      max={WIDTHS.MAX_COL_WIDTH}
-      dimension={rowDimensionWidth}
-      onUpdate={(d) => (rowDimensionWidth = d)}
-      onMouseDown={(e) => {
-        resizingMeasure = false;
-        onResizeStart(e);
-      }}
-      onMouseUp={() => {
-        resizingMeasure = false;
-      }}
-    >
-      <div class="resize-bar"></div>
-    </Resizer>
-  </div>
-
-  {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
-    <div
-      class="h-full z-50 flex"
-      style:width="{totalMeasureWidth}px"
-      style:flex={fullWidth ? "1 1 {totalMeasureWidth}px" : undefined}
-    >
-      {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
-        {@const length = $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
-        {@const last =
-          i === subHeaders.length - 1 &&
-          groupIndex === measureGroups.length - 1}
-        <div
-          style:width="{length}px"
-          style:flex={fullWidth ? "1 1 {length}px" : undefined}
-          class="h-full relative"
-        >
+{#if fullWidth}
+  <div
+    class="resizer-table absolute top-0 z-50 pointer-events-none"
+    style:width="100%"
+    style:min-width="{totalLength + rowDimensionWidth}px"
+    style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
+  >
+    <div class="resizer-colgroup">
+      {#if rowDimensionName && rowDimensionWidth}
+        <div class="resizer-col" style:width="{rowDimensionWidth}px"></div>
+      {/if}
+      {#each measureGroups as { subHeaders } (subHeaders)}
+        {#each subHeaders as { column: { columnDef: { name } } } (name)}
+          {@const length =
+            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
+          <div class="resizer-col" style:width="{length}px"></div>
+        {/each}
+      {/each}
+    </div>
+    <div class="resizer-row">
+      {#if rowDimensionName && rowDimensionWidth}
+        <div class="resizer-cell sticky left-0 z-50 relative">
           <Resizer
             side="right"
             direction="EW"
-            min={WIDTHS.MIN_MEASURE_WIDTH}
-            max={WIDTHS.MAX_MEASURE_WIDTH}
-            dimension={length}
-            justify={last ? "end" : "center"}
-            hang={!last}
-            onUpdate={(d) =>
-              measureLengths.update((measureLengths) => {
-                return measureLengths.set(name, d);
-              })}
+            min={WIDTHS.MIN_COL_WIDTH}
+            max={WIDTHS.MAX_COL_WIDTH}
+            dimension={rowDimensionWidth}
+            onUpdate={(d) => (rowDimensionWidth = d)}
             onMouseDown={(e) => {
-              resizingMeasure = true;
+              resizingMeasure = false;
               onResizeStart(e);
             }}
             onMouseUp={() => {
@@ -269,10 +242,108 @@
             <div class="resize-bar"></div>
           </Resizer>
         </div>
+      {/if}
+      {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
+        {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
+          {@const length =
+            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
+          {@const last =
+            i === subHeaders.length - 1 &&
+            groupIndex === measureGroups.length - 1}
+          <div class="resizer-cell relative">
+            <Resizer
+              side="right"
+              direction="EW"
+              min={WIDTHS.MIN_MEASURE_WIDTH}
+              max={WIDTHS.MAX_MEASURE_WIDTH}
+              dimension={length}
+              justify={last ? "end" : "center"}
+              hang={!last}
+              onUpdate={(d) =>
+                measureLengths.update((measureLengths) => {
+                  return measureLengths.set(name, d);
+                })}
+              onMouseDown={(e) => {
+                resizingMeasure = true;
+                onResizeStart(e);
+              }}
+              onMouseUp={() => {
+                resizingMeasure = false;
+              }}
+            >
+              <div class="resize-bar"></div>
+            </Resizer>
+          </div>
+        {/each}
       {/each}
     </div>
-  {/each}
-</div>
+  </div>
+{:else}
+  <div
+    class="absolute top-0 z-50 flex pointer-events-none"
+    style:width="{totalLength + rowDimensionWidth}px"
+    style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
+  >
+    <div
+      style:width="{rowDimensionWidth}px"
+      class="sticky left-0 flex-none flex"
+    >
+      <Resizer
+        side="right"
+        direction="EW"
+        min={WIDTHS.MIN_COL_WIDTH}
+        max={WIDTHS.MAX_COL_WIDTH}
+        dimension={rowDimensionWidth}
+        onUpdate={(d) => (rowDimensionWidth = d)}
+        onMouseDown={(e) => {
+          resizingMeasure = false;
+          onResizeStart(e);
+        }}
+        onMouseUp={() => {
+          resizingMeasure = false;
+        }}
+      >
+        <div class="resize-bar"></div>
+      </Resizer>
+    </div>
+
+    {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
+      <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
+        {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
+          {@const length =
+            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
+          {@const last =
+            i === subHeaders.length - 1 &&
+            groupIndex === measureGroups.length - 1}
+          <div style:width="{length}px" class="h-full relative">
+            <Resizer
+              side="right"
+              direction="EW"
+              min={WIDTHS.MIN_MEASURE_WIDTH}
+              max={WIDTHS.MAX_MEASURE_WIDTH}
+              dimension={length}
+              justify={last ? "end" : "center"}
+              hang={!last}
+              onUpdate={(d) =>
+                measureLengths.update((measureLengths) => {
+                  return measureLengths.set(name, d);
+                })}
+              onMouseDown={(e) => {
+                resizingMeasure = true;
+                onResizeStart(e);
+              }}
+              onMouseUp={() => {
+                resizingMeasure = false;
+              }}
+            >
+              <div class="resize-bar"></div>
+            </Resizer>
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
+{/if}
 
 <table
   class:with-row-dimension={hasRowDimension}
@@ -408,6 +479,30 @@
 
   .resize-bar {
     @apply bg-primary-500 w-1 h-full;
+  }
+
+  .resizer-table {
+    display: table;
+    table-layout: fixed;
+    border-spacing: 0;
+  }
+
+  .resizer-colgroup {
+    display: table-column-group;
+  }
+
+  .resizer-col {
+    display: table-column;
+  }
+
+  .resizer-row {
+    display: table-row;
+    height: 100%;
+  }
+
+  .resizer-cell {
+    display: table-cell;
+    height: inherit;
   }
 
   table {
