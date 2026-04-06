@@ -264,11 +264,15 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
+### `watermark_cache_ttl`
+
+_[string]_ - Duration for caching the base table watermark (min/max timestamps) used for rollup routing. Defaults to 5 minutes. Example: 10m, 1h 
+
 ### `rollups`
 
 _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table. 
 
-  - **`model`** - _[string]_ - Refers to the model powering the rollup table (required) _(required)_
+  - **`model`** - _[string]_ - Refers to the model or table powering the rollup (required) _(required)_
 
   - **`connector`** - _[string]_ - Refers to the connector to use for the rollup table 
 
@@ -282,7 +286,7 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
   - **`watermark_cache_ttl`** - _[string]_ - Duration for caching the rollup table watermark (min/max timestamps). Defaults to 5 minutes. Example: 10m, 1h 
 
-  - **`dimensions`** - _[oneOf]_ - (no description) 
+  - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included. 
 
     - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -296,7 +300,7 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
-  - **`measures`** - _[oneOf]_ - (no description) 
+  - **`measures`** - _[oneOf]_ - Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included. 
 
     - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 

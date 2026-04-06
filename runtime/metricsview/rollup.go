@@ -20,10 +20,8 @@ var grainOrder = map[runtimev1.TimeGrain]int{
 	runtimev1.TimeGrain_TIME_GRAIN_YEAR:        8,
 }
 
-// grainBranch assigns each grain to a branch.
-// Sub-day grains and day are on branch 0.
-// Week is on branch 1 (diverges from day).
-// Month, quarter, year are on branch 2 (diverges from day).
+// grainBranch assigns each grain to a branch. Sub-day grains and day are on branch 0.
+// Week is on branch 1 (diverges from day). Month, quarter, year are on branch 2 (diverges from day).
 const (
 	branchSubDay   = 0
 	branchWeek     = 1
@@ -42,8 +40,7 @@ var grainBranch = map[runtimev1.TimeGrain]int{
 	runtimev1.TimeGrain_TIME_GRAIN_YEAR:        branchCalendar,
 }
 
-// GrainDerivableFrom returns true if queryGrain can be computed by
-// re-aggregating data stored at rollupGrain.
+// GrainDerivableFrom returns true if queryGrain can be computed by re-aggregating data stored at rollupGrain.
 //
 // The grain hierarchy has two branches diverging from day:
 //
@@ -86,9 +83,8 @@ func GrainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 	return false
 }
 
-// TimeRangeAligned returns true if start and end are aligned to the boundaries
-// of the given grain. For sub-day grains, alignment is checked in UTC. For
-// day and coarser, alignment is checked in the given timezone.
+// TimeRangeAligned returns true if start and end are aligned to the boundaries of the given grain.
+// For sub-day grains, alignment is checked in UTC. For day and coarser, alignment is checked in the given timezone.
 // For week grain, firstDayOfWeek (1=Monday, 7=Sunday) is used.
 func TimeRangeAligned(start, end time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) bool {
 	if tz == nil {

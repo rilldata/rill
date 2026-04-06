@@ -364,6 +364,8 @@ message MetricsViewSpec {
     int64 watermark_cache_ttl_seconds = 12;
   }
   repeated RollupTable rollups = 34;
+  // TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+  int64 watermark_cache_ttl_seconds = 35;
 }
 
 message SecurityRule {

@@ -3437,6 +3437,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for WatermarkCacheTtlSeconds
+
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled
 	}

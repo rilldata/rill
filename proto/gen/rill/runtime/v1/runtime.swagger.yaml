@@ -6439,6 +6439,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecRollupTable'
+      watermarkCacheTtlSeconds:
+        type: string
+        format: int64
+        description: TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -7869,6 +7873,7 @@ definitions:
       - TIME_GRAIN_QUARTER
       - TIME_GRAIN_YEAR
     default: TIME_GRAIN_UNSPECIFIED
+    title: note - if adding new grain, also update it in executor_rewrite_rollup.go and rollup.go
   v1TimeRange:
     type: object
     properties:

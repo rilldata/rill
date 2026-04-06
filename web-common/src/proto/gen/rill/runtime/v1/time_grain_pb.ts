@@ -6,6 +6,8 @@
 import { proto3 } from "@bufbuild/protobuf";
 
 /**
+ * note - if adding new grain, also update it in executor_rewrite_rollup.go and rollup.go
+ *
  * @generated from enum rill.runtime.v1.TimeGrain
  */
 export enum TimeGrain {

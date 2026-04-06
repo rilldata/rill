@@ -298,10 +298,6 @@ func (e *Executor) validateRollupTables(ctx context.Context, mv *runtimev1.Metri
 			}
 		}
 
-		if rollup.Table == "" {
-			continue
-		}
-
 		t, err := e.olap.InformationSchema().Lookup(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table)
 		if err != nil {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: table %q does not exist", i, rollup.Table))

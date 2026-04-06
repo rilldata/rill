@@ -73,10 +73,17 @@ func (e *Executor) fetchRollupWatermark(ctx context.Context, rollup *runtimev1.M
 
 // fetchBaseWatermark returns the min/max time of the base table, using the shared watermark cache.
 // Returns ok=false on errors (caller should proceed without base timestamps).
+// Uses fetchTimestamps (not e.Timestamps) to avoid applying security row filters;
+// watermark comparison is about physical data coverage, not per-user visibility.
 // Prone to thundering herd issue but keeping it simple for now.
 func (e *Executor) fetchBaseWatermark(ctx context.Context) (minTime, maxTime time.Time, ok bool) {
+	ttl := defaultWatermarkCacheTTL
+	if e.metricsView.WatermarkCacheTtlSeconds > 0 {
+		ttl = time.Duration(e.metricsView.WatermarkCacheTtlSeconds) * time.Second
+	}
+
 	key := watermarkCacheKey(e.instanceID, e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
-	if wm, hit := getWatermark(key, defaultWatermarkCacheTTL); hit {
+	if wm, hit := getWatermark(key, ttl); hit {
 		return wm.min, wm.max, true
 	}
 
@@ -84,10 +91,10 @@ func (e *Executor) fetchBaseWatermark(ctx context.Context) (minTime, maxTime tim
 		return time.Time{}, time.Time{}, false
 	}
 
-	ts, err := e.Timestamps(ctx, "")
-	if err != nil || ts.Min.IsZero() {
+	mn, mx, err := e.fetchTimestamps(ctx, e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
+	if err != nil {
 		return time.Time{}, time.Time{}, false
 	}
-	setWatermark(key, ts.Min, ts.Max)
-	return ts.Min, ts.Max, true
+	setWatermark(key, mn, mx)
+	return mn, mx, true
 }

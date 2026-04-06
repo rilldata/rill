@@ -2247,6 +2247,9 @@ definitions:
                             required:
                               - name
                             additionalProperties: false
+          watermark_cache_ttl:
+            type: string
+            description: 'Duration for caching the base table watermark (min/max timestamps) used for rollup routing. Defaults to 5 minutes. Example: 10m, 1h'
           rollups:
             type: array
             description: Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table.
@@ -2255,7 +2258,7 @@ definitions:
               properties:
                 model:
                   type: string
-                  description: Refers to the model powering the rollup table (required)
+                  description: Refers to the model or table powering the rollup (required)
                 connector:
                   type: string
                   description: Refers to the connector to use for the rollup table
@@ -2276,8 +2279,10 @@ definitions:
                   description: 'Duration for caching the rollup table watermark (min/max timestamps). Defaults to 5 minutes. Example: 10m, 1h'
                 dimensions:
                   $ref: '#/definitions/field_selector_properties'
+                  description: Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included.
                 measures:
                   $ref: '#/definitions/field_selector_properties'
+                  description: Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
               required:
                 - model
           security:

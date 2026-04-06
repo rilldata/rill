@@ -1513,6 +1513,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   rollups: MetricsViewSpec_RollupTable[] = [];
 
+  /**
+   * TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+   *
+   * @generated from field: int64 watermark_cache_ttl_seconds = 35;
+   */
+  watermarkCacheTtlSeconds = protoInt64.zero;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1546,6 +1553,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_RollupTable, repeated: true },
+    { no: 35, name: "watermark_cache_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

@@ -921,3 +921,64 @@ func TestRewriteQueryForRollup_NoTimeRange_ChecksCoverage(t *testing.T) {
 		require.Equal(t, "daily_rollup", result.spec.Table)
 	})
 }
+
+func TestRewriteQueryForRollup_FirstDayOfWeek(t *testing.T) {
+	// Sunday-aligned query boundaries (2024-01-07 and 2024-01-14 are Sundays)
+	sundayStart := time.Date(2024, 1, 7, 0, 0, 0, 0, time.UTC)
+	sundayEnd := time.Date(2024, 1, 14, 0, 0, 0, 0, time.UTC)
+
+	baseMV := func(firstDayOfWeek uint32) *runtimev1.MetricsViewSpec {
+		return &runtimev1.MetricsViewSpec{
+			Table:          "base_table",
+			TimeDimension:  "timestamp",
+			FirstDayOfWeek: firstDayOfWeek,
+			Measures: []*runtimev1.MetricsViewSpec_Measure{
+				{Name: "total_impressions", Expression: `SUM("impressions")`},
+			},
+			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+				{
+					Table:     "weekly_rollup",
+					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
+					Measures:  []string{"total_impressions"},
+				},
+			},
+		}
+	}
+
+	t.Run("sunday_aligned_with_first_day_sunday_routes", func(t *testing.T) {
+		e := &Executor{instanceID: "fdow-sunday", metricsView: baseMV(7)}
+
+		setWatermark(watermarkCacheKey("fdow-sunday", "", "", "weekly_rollup"),
+			time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
+
+		qry := &metricsview.Query{
+			Measures: []metricsview.Measure{{Name: "total_impressions"}},
+			TimeRange: &metricsview.TimeRange{
+				Start: sundayStart,
+				End:   sundayEnd,
+			},
+		}
+
+		result := e.rewriteQueryForRollup(context.Background(), qry)
+		require.NotNil(t, result)
+		require.Equal(t, "weekly_rollup", result.spec.Table)
+	})
+
+	t.Run("sunday_aligned_with_first_day_monday_rejected", func(t *testing.T) {
+		e := &Executor{instanceID: "fdow-monday", metricsView: baseMV(1)}
+
+		setWatermark(watermarkCacheKey("fdow-monday", "", "", "weekly_rollup"),
+			time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
+
+		qry := &metricsview.Query{
+			Measures: []metricsview.Measure{{Name: "total_impressions"}},
+			TimeRange: &metricsview.TimeRange{
+				Start: sundayStart,
+				End:   sundayEnd,
+			},
+		}
+
+		result := e.rewriteQueryForRollup(context.Background(), qry)
+		require.Nil(t, result)
+	})
+}
