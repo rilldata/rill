@@ -4,7 +4,7 @@
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import type { PageData } from "./$types";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
 
   export let data: PageData;
 

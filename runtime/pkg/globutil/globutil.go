@@ -30,14 +30,31 @@ func (u *URL) String() string {
 
 // ParseBucketURL parses a URL while preserving glob patterns in the URL's path.
 // For example, url.Parse removes `?` as a query string, which is problematic because `?` is a valid character in glob patterns.
-func ParseBucketURL(path string) (*URL, error) {
-	scheme, path, ok := strings.Cut(path, "://")
+func ParseBucketURL(input string) (*URL, error) {
+	return parseBucketURL(input, false)
+}
+
+// ParseBucketURLLenient parses a URL similar to ParseBucketURL, but is tolerant of inputs
+// that do not include a scheme (i.e., missing "://").
+// In such cases, the entire input is treated as the path, and Scheme and Host are returned as empty strings.
+func ParseBucketURLLenient(input string) (*URL, error) {
+	return parseBucketURL(input, true)
+}
+
+func parseBucketURL(input string, lenient bool) (*URL, error) {
+	scheme, path, ok := strings.Cut(input, "://")
 	if !ok {
-		return nil, fmt.Errorf("failed to parse URL '%q'", path)
+		if lenient {
+			return &URL{Scheme: "", Host: "", Path: input}, nil
+		}
+		return nil, fmt.Errorf("failed to parse URL '%q'", input)
 	}
 
 	host, path, ok := strings.Cut(path, "/")
 	if !ok {
+		if lenient {
+			return &URL{Scheme: "", Host: "", Path: input}, nil
+		}
 		// This is actually a valid URL, just not a valid object storage URL.
 		return nil, fmt.Errorf("failed to parse URL '%q'", path)
 	}

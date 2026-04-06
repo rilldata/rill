@@ -157,6 +157,10 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 		qry.WriteString(" AND executed_on IS NULL")
 	}
 
+	if opts.WhereSuccessful {
+		qry.WriteString(" AND executed_on IS NOT NULL AND error == ''")
+	}
+
 	if !opts.BeforeExecutedOn.IsZero() || opts.AfterKey != "" {
 		qry.WriteString(" AND (executed_on < ? OR (executed_on = ? AND key > ?))")
 		args = append(args, opts.BeforeExecutedOn, opts.BeforeExecutedOn, opts.AfterKey)

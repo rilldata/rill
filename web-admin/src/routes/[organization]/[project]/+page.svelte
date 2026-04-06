@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import InlineChat from "@rilldata/web-common/features/chat/layouts/inline/InlineChat.svelte";
   import DelayedContent from "@rilldata/web-common/features/entity-management/DelayedContent.svelte";
@@ -35,7 +35,7 @@
       <div class="flex flex-col gap-y-4">
         {#if isLoadingDisplayName}
           <DelayedContent visible={isLoadingDisplayName}>
-            <div class="h-11 w-96 animate-pulse rounded bg-gray-200" />
+            <div class="h-11 w-96 animate-pulse rounded bg-gray-200"></div>
           </DelayedContent>
         {:else if isErrorDisplayName}
           <h1

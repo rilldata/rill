@@ -888,13 +888,12 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			return err
 		}
 	}
-
 	// Resolve partition rows
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.PartitionsResolver,
 		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
-		Args:               map[string]any{"state": incrementalState},
+		Args:               map[string]any{"state": incrementalState, "partitions_model_id": mdl.State.PartitionsModelId},
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {

@@ -358,7 +358,7 @@
           >
             {identifier}
             <button
-              on:click={() => removeSelected(identifier)}
+              onclick={() => removeSelected(identifier)}
               class="ml-1 rounded hover:bg-surface-hover transition-colors"
             >
               <Close size="12px" />
@@ -371,11 +371,11 @@
           bind:value={input}
           bind:this={inputElement}
           placeholder={selected.length === 0 ? placeholder : ""}
-          on:input={handleInput}
-          on:keydown={handleInputKeydown}
-          on:focus={handleFocus}
-          on:blur={handleBlur}
-          on:paste={handlePaste}
+          oninput={handleInput}
+          onkeydown={handleInputKeydown}
+          onfocus={handleFocus}
+          onblur={handleBlur}
+          onpaste={handlePaste}
           class:error={!!error}
           autocomplete="off"
           tabindex={autoFocusInput}
@@ -407,9 +407,11 @@
   {#if showDropdown && searchResults.length > 0}
     <div
       class="dropdown"
+      role="listbox"
+      tabindex="-1"
       bind:this={dropdownList}
       style="width: {dropdownPosition.width}px; top: {dropdownPosition.top}px; left: {dropdownPosition.left}px;"
-      on:pointermove={() => {
+      onpointermove={() => {
         keyboardNavigationActive = false;
       }}
     >

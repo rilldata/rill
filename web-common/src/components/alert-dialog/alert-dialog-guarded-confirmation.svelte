@@ -47,8 +47,8 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild let:builder>
-    <slot {builder} />
+  <AlertDialogTrigger>
+    <slot />
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>

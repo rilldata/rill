@@ -9,16 +9,17 @@ export function resolveSignalField(value: unknown, field: string) {
   return undefined;
 }
 
-export function resolveSignalTimeField(value: unknown) {
-  /**
-   * Time fields end with `_ts`
-   * We iterate over the keys of the object and return the first key that ends with `_ts`
-   * */
-  if (typeof value === "object" && value !== null) {
-    for (const key in value) {
-      if (key.endsWith("_ts")) {
-        const ts = resolveSignalField(value, key);
+export function resolveSignalTimeField(value: unknown, temporalField?: string) {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
 
+  // When a temporal field name is provided, look for an exact match or
+  // a timeUnit-prefixed match (e.g. "yearmonthdate_timestamp" for field "timestamp")
+  if (temporalField) {
+    for (const key in value) {
+      if (key === temporalField || key.endsWith(`_${temporalField}`)) {
+        const ts = resolveSignalField(value, key);
         if (ts !== undefined) {
           return new Date(ts);
         }
@@ -60,6 +61,13 @@ export function resolveSignalIntervalField(
         const timeRange = checkAndCreateTimeRange(value[key]);
         if (timeRange) return timeRange;
       }
+    }
+
+    // Fallback: check any key with a 2-element array (handles arbitrary field names
+    // from Vega-Lite brush selections where the key is the actual field name)
+    for (const key in value) {
+      const timeRange = checkAndCreateTimeRange(value[key]);
+      if (timeRange) return timeRange;
     }
   }
   return undefined;

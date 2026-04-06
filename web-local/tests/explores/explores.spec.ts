@@ -9,19 +9,20 @@ import {
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
 import {
+  clickPreviewButton,
   createExploreFromModel,
   createExploreFromSource,
 } from "../utils/exploreHelpers";
 import { assertLeaderboards } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
-import { createSource } from "../utils/sourceHelpers";
+import { createSourceV2 } from "../utils/sourceHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
   test.use({ project: "Blank" });
 
-  test("Autogenerate explore from source", async ({ page }) => {
-    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
+  test("Autogenerate explore from source nav file", async ({ page }) => {
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
     await createExploreFromSource(page);
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
@@ -50,7 +51,7 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
-    test.setTimeout(60_000); // Note: we should make this test smaller!
+    test.setTimeout(75_000); // Note: we should make this test smaller!
 
     // Enable to get logs in CI
     // page.on("console", async (msg) => {
@@ -101,9 +102,7 @@ time_ranges:
 
     await watcher.updateAndWaitForExplore(addAllTime);
 
-    await page.getByRole("button", { name: "Preview" }).click();
-
-    await page.waitForTimeout(1000);
+    await clickPreviewButton(page);
 
     // Check the total records are 100k
     await page
@@ -119,7 +118,7 @@ time_ranges:
       name: "Select reference time and grain",
     });
     await timeGrainSelector.click();
-    await page.getByRole("menuitem", { name: "day" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "day" }).click();
 
     // Change the time range
     await interactWithTimeRangeMenu(page, async () => {
@@ -234,7 +233,7 @@ time_ranges:
     await page.getByText("Publisher Facebook").click();
     await page.waitForTimeout(500); // wait for the filter bar to update
     await page.getByLabel("Include exclude toggle").click();
-    await page.getByText("Exclude Publisher Facebook").click();
+    await page.keyboard.press("Escape"); // close the dimension filter dropdown
 
     // Check number
     await expect(page.getByText("Total records 80,659")).toBeVisible();
@@ -299,7 +298,7 @@ time_ranges:
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Assert that name changed
     await expect(
@@ -350,7 +349,7 @@ time_ranges:
       .click();
 
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("as of latest week end");
@@ -426,9 +425,7 @@ dimensions:
     await expect(page.getByRole("button", { name: "Preview" })).toBeEnabled();
 
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
-
-    await page.waitForTimeout(500);
+    await clickPreviewButton(page);
 
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
@@ -445,7 +442,7 @@ dimensions:
 
     // Wait for and click the Avg Bid Price menu item
     const avgBidPriceMenuItem = page
-      .getByRole("menuitem", { name: "Avg Bid Price" })
+      .getByRole("menuitemcheckbox", { name: "Avg Bid Price" })
       .filter({ has: page.getByText("Avg Bid Price") });
     await avgBidPriceMenuItem.waitFor({ state: "visible" });
     await avgBidPriceMenuItem.click();
@@ -509,20 +506,22 @@ dimensions:
       .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.waitForTimeout(500);
-
-    await page.getByRole("cell", { name: "google.com", exact: true }).click();
     await page
-      .getByRole("cell", { name: "instagram.com", exact: true })
+      .getByRole("columnheader", { name: "google.com", exact: true })
       .click();
-    await page.getByRole("cell", { name: "msn.com", exact: true }).click();
+    await page
+      .getByRole("columnheader", { name: "instagram.com", exact: true })
+      .click();
+    await page
+      .getByRole("columnheader", { name: "msn.com", exact: true })
+      .click();
 
     await expect(page.getByText("Total rows 43,749")).toBeVisible();
 
-    await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
+    await page.getByRole("columnheader", { name: "Total rows" }).click();
 
     await page.getByLabel("Open Total rows").click();
-    await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Avg Bid Price" }).click();
 
     await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();
 
