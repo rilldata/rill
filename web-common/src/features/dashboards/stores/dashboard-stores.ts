@@ -606,6 +606,18 @@ const metricsViewReducers = {
       };
     });
   },
+
+  setDynamicYAxisScale(name: string, value: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.dynamicYAxisScale = value;
+    });
+  },
+
+  setForceLineChart(name: string, value: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.forceLineChart = value;
+    });
+  },
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &

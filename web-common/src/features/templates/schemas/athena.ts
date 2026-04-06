@@ -3,7 +3,7 @@ import type { MultiStepFormSchema } from "./types";
 export const athenaSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
-  title: "Amazon Athena",
+  title: "Athena",
   "x-category": "warehouse",
   properties: {
     aws_access_key_id: {

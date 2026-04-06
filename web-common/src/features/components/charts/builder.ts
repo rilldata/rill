@@ -34,18 +34,21 @@ import {
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
+import type { ExprRef, SignalRef } from "vega";
 import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
   MarkPropDef,
   PositionFieldDef,
-} from "vega-lite/build/src/channeldef";
-import type { Encoding } from "vega-lite/build/src/encoding";
-import type { SelectionParameter } from "vega-lite/build/src/selection";
-import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
-import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { ExprRef, SignalRef } from "vega-typings";
+} from "vega-lite/types_unstable/channeldef.js";
+import type { Encoding } from "vega-lite/types_unstable/encoding.js";
+import type { SelectionParameter } from "vega-lite/types_unstable/selection.js";
+import type {
+  TopLevelUnitSpec,
+  UnitSpec,
+} from "vega-lite/types_unstable/spec/index.js";
+import type { TopLevelParameter } from "vega-lite/types_unstable/spec/toplevel.js";
 
 export function createMultiLayerBaseSpec() {
   const baseSpec: VisualizationSpec = {
