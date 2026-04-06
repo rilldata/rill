@@ -1,6 +1,9 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
+
+  let { children }: { children: Snippet } = $props();
 
   const navItems = [
     { label: "Overview", route: "/settings" },
@@ -27,7 +30,7 @@
       {/each}
     </nav>
     <div class="flex flex-col gap-y-6 w-full overflow-hidden">
-      <slot />
+      {@render children()}
     </div>
   </div>
 </ContentContainer>

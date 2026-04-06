@@ -9,13 +9,13 @@
   const runtimeClient = useRuntimeClient();
 
   // rill.yaml query
-  $: rillYamlQuery = createRuntimeServiceGetFile(
+  const rillYamlQuery = createRuntimeServiceGetFile(
     runtimeClient,
     { path: "/rill.yaml" },
     { query: { refetchOnWindowFocus: true } },
   );
 
-  $: rillYaml = (() => {
+  let rillYaml = $derived.by(() => {
     try {
       return (
         parse(($rillYamlQuery.data?.blob as string) ?? "", {
@@ -25,10 +25,10 @@
     } catch {
       return {};
     }
-  })();
+  });
 
-  $: savedFeatures = (rillYaml.features ?? {}) as Record<string, boolean>;
-  $: hasFeaturesKey = "features" in rillYaml;
+  let savedFeatures = $derived((rillYaml.features ?? {}) as Record<string, boolean>);
+  let hasFeaturesKey = $derived("features" in rillYaml);
 
   // Feature flag definitions with snake_case keys matching rill.yaml/runtime
   const featureFlagDefs = [
@@ -119,25 +119,27 @@
   ];
 
   // Local draft state
-  let featuresEnabled = false;
-  let draftFeatures: Record<string, boolean> = {};
+  let featuresEnabled = $state(false);
+  let draftFeatures: Record<string, boolean> = $state({});
 
   // Sync draft from rill.yaml when it changes
-  $: if ($rillYamlQuery.isSuccess) {
-    featuresEnabled = hasFeaturesKey;
-    draftFeatures = hasFeaturesKey
-      ? { ...allDefaults(), ...savedFeatures }
-      : {};
-  }
+  $effect(() => {
+    if ($rillYamlQuery.isSuccess) {
+      featuresEnabled = hasFeaturesKey;
+      draftFeatures = hasFeaturesKey
+        ? { ...allDefaults(), ...savedFeatures }
+        : {};
+    }
+  });
 
-  $: hasChanges = (() => {
+  let hasChanges = $derived.by(() => {
     if (featuresEnabled !== hasFeaturesKey) return true;
     if (!featuresEnabled) return false;
     const savedKeys = Object.keys(savedFeatures);
     const draftKeys = Object.keys(draftFeatures);
     if (savedKeys.length !== draftKeys.length) return true;
     return draftKeys.some((k) => savedFeatures[k] !== draftFeatures[k]);
-  })();
+  });
 
   function getDraftValue(key: string): boolean {
     return draftFeatures[key] ?? false;
@@ -285,7 +287,7 @@
 
   {#if hasChanges}
     <div class="save-bar">
-      <button class="save-button" on:click={save}>Save</button>
+      <button class="save-button" onclick={save}>Save</button>
     </div>
   {/if}
 </div>
@@ -340,7 +342,10 @@
   .save-button {
     @apply px-4 py-2 text-sm font-medium rounded-md;
     @apply bg-primary-500 text-white;
-    @apply hover:bg-primary-600 transition-colors;
+  }
+
+  .save-button:hover {
+    @apply bg-primary-600 transition-colors;
   }
 
   code {

@@ -24,13 +24,13 @@
   const runtimeClient = useRuntimeClient();
 
   // rill.yaml query
-  $: rillYamlQuery = createRuntimeServiceGetFile(
+  const rillYamlQuery = createRuntimeServiceGetFile(
     runtimeClient,
     { path: "/rill.yaml" },
     { query: { refetchOnWindowFocus: true } },
   );
 
-  $: rillYaml = (() => {
+  let rillYaml = $derived.by(() => {
     try {
       return (
         parse(($rillYamlQuery.data?.blob as string) ?? "", {
@@ -40,21 +40,23 @@
     } catch {
       return {};
     }
-  })();
+  });
 
-  $: displayName = (rillYaml.display_name ?? rillYaml.title ?? "") as string;
-  $: description = (rillYaml.description ?? "") as string;
-  $: aiInstructions = (rillYaml.ai_instructions ?? "") as string;
+  let displayName = $derived((rillYaml.display_name ?? rillYaml.title ?? "") as string);
+  let description = $derived((rillYaml.description ?? "") as string);
+  let aiInstructions = $derived((rillYaml.ai_instructions ?? "") as string);
 
-  let editDisplayName = "";
-  let editDescription = "";
-  let editAiInstructions = "";
+  let editDisplayName = $state("");
+  let editDescription = $state("");
+  let editAiInstructions = $state("");
 
-  $: if ($rillYamlQuery.isSuccess) {
-    editDisplayName = displayName;
-    editDescription = description;
-    editAiInstructions = aiInstructions;
-  }
+  $effect(() => {
+    if ($rillYamlQuery.isSuccess) {
+      editDisplayName = displayName;
+      editDescription = description;
+      editAiInstructions = aiInstructions;
+    }
+  });
 
   // Add blank lines between top-level YAML blocks (key or comment-then-key)
   function spacedYaml(yaml: string): string {
@@ -131,12 +133,12 @@
   }
 
   // Resources for overview
-  $: resourcesQuery = createRuntimeServiceListResources(runtimeClient, {});
-  $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
-  $: resourceCounts = countByKind(allResources);
+  const resourcesQuery = createRuntimeServiceListResources(runtimeClient, {});
+  let allResources = $derived(($resourcesQuery.data?.resources ?? []) as V1Resource[]);
+  let resourceCounts = $derived(countByKind(allResources));
 
   // Parse errors
-  $: projectParserQuery = createRuntimeServiceGetResource(
+  const projectParserQuery = createRuntimeServiceGetResource(
     runtimeClient,
     {
       name: {
@@ -146,15 +148,18 @@
     },
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );
-  $: parseErrors =
-    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
-
-  $: erroredResources = allResources.filter(
-    (r) =>
-      !!r.meta?.reconcileError && r.meta?.name?.kind !== ResourceKind.Component,
+  let parseErrors = $derived(
+    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [],
   );
-  $: errorsByKind = groupErrorsByKind(erroredResources);
-  $: totalErrors = parseErrors.length + erroredResources.length;
+
+  let erroredResources = $derived(
+    allResources.filter(
+      (r) =>
+        !!r.meta?.reconcileError && r.meta?.name?.kind !== ResourceKind.Component,
+    ),
+  );
+  let errorsByKind = $derived(groupErrorsByKind(erroredResources));
+  let totalErrors = $derived(parseErrors.length + erroredResources.length);
 
   function goToResources(
     statusFilter: string[] = [],
@@ -185,11 +190,11 @@
         type="text"
         bind:value={editDisplayName}
         placeholder="Untitled Rill Project"
-        on:blur={() => {
+        onblur={() => {
           if (editDisplayName !== displayName)
             updateField("display_name", editDisplayName);
         }}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
         }}
       />
@@ -202,7 +207,7 @@
         bind:value={editDescription}
         placeholder="Project description"
         rows="2"
-        on:blur={() => {
+        onblur={() => {
           if (editDescription !== description)
             updateField("description", editDescription);
         }}
@@ -216,7 +221,7 @@
         bind:value={editAiInstructions}
         placeholder="Extra instructions for AI features..."
         rows="3"
-        on:blur={() => {
+        onblur={() => {
           if (editAiInstructions !== aiInstructions)
             updateField("ai_instructions", editAiInstructions);
         }}

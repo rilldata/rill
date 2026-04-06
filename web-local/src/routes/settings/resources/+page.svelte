@@ -30,44 +30,50 @@
   ]);
   filterSync.init($page.url);
 
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-  let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-  let mounted = false;
+  let searchText = $state(parseStringParam($page.url.searchParams.get("q")));
+  let selectedTypes = $state(parseArrayParam($page.url.searchParams.get("kind")));
+  let selectedStatuses = $state(parseArrayParam($page.url.searchParams.get("status")));
+  let mounted = $state(false);
 
-  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
-    filterSync.markSynced($page.url);
-    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-    searchText = parseStringParam($page.url.searchParams.get("q"));
-  }
+  $effect(() => {
+    if (mounted && filterSync.hasExternalNavigation($page.url)) {
+      filterSync.markSynced($page.url);
+      selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+      selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+      searchText = parseStringParam($page.url.searchParams.get("q"));
+    }
+  });
 
-  $: if (mounted) {
-    filterSync.syncToUrl({
-      kind: selectedTypes,
-      status: selectedStatuses,
-      q: searchText,
-    });
-  }
+  $effect(() => {
+    if (mounted) {
+      filterSync.syncToUrl({
+        kind: selectedTypes,
+        status: selectedStatuses,
+        q: searchText,
+      });
+    }
+  });
 
   onMount(() => {
     mounted = true;
   });
 
-  $: resourcesQuery = createRuntimeServiceListResources(
+  const resourcesQuery = createRuntimeServiceListResources(
     runtimeClient,
     {},
     { query: { refetchInterval: 5000 } },
   );
 
-  $: resources = $resourcesQuery.data?.resources ?? [];
+  let resources = $derived($resourcesQuery.data?.resources ?? []);
 
-  $: hasReconcilingSourcesOrModels = resources.some(
-    (r) =>
-      (r.meta?.name?.kind === ResourceKind.Source ||
-        r.meta?.name?.kind === ResourceKind.Model) &&
-      (r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-        r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_RUNNING),
+  let hasReconcilingSourcesOrModels = $derived(
+    resources.some(
+      (r) =>
+        (r.meta?.name?.kind === ResourceKind.Source ||
+          r.meta?.name?.kind === ResourceKind.Model) &&
+        (r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+          r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_RUNNING),
+    ),
   );
 
   function refreshAllSourcesAndModels() {
