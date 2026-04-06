@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
@@ -11,11 +10,10 @@
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
-  export let type: "init" | "home" | "modal";
+  export let type: "home" | "modal";
   export let open = false;
 
   const runtimeClient = useRuntimeClient();
-  const initializeProject = type === "init";
 
   const { developerChat } = featureFlags;
 
@@ -36,7 +34,7 @@
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
-      void generateSampleData(runtimeClient, initializeProject, values.prompt);
+      void generateSampleData(runtimeClient, false, values.prompt);
       open = false;
     },
     invalidateAll: false,
@@ -53,31 +51,25 @@
 
 {#if $developerChat}
   <Dialog.Root bind:open>
-    <Dialog.Trigger asChild let:builder>
-      {#if type === "init"}
-        <Button builders={[builder]} type="secondary" large>
-          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-          <span>Generate sample data</span>
-        </Button>
-      {:else if type === "home"}
-        <Button
-          class="button-home"
-          type="tertiary"
-          builders={[builder]}
-          large
-          forcedStyle="height: 3rem;"
-        >
-          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-          <span>Generate sample data</span>
-        </Button>
-      {:else}
-        <div class="hidden"></div>
-      {/if}
+    <Dialog.Trigger>
+      {#snippet child({ props })}
+        {#if type === "home"}
+          <button class="button-home" {...props}>
+            <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
+            <span>Generate sample data</span>
+          </button>
+        {:else}
+          <div class="hidden"></div>
+        {/if}
+      {/snippet}
     </Dialog.Trigger>
     <Dialog.Content>
       <form
         id={FORM_ID}
-        on:submit|preventDefault={submit}
+        onsubmit={(e) => {
+          e.preventDefault();
+          submit(e);
+        }}
         use:enhance
         class="relative"
       >
@@ -99,10 +91,10 @@
           class="prompt-input"
           bind:value={$form.prompt}
           class:empty={$form.prompt.length === 0}
-          on:keydown={handleKeydown}
-        />
+          onkeydown={handleKeydown}
+        ></textarea>
         <div class="absolute right-3 bottom-8">
-          <IconButton ariaLabel="Send message" on:click={submit}>
+          <IconButton ariaLabel="Send message" onclick={submit}>
             <SendIcon size="1.3em" />
           </IconButton>
         </div>
@@ -128,5 +120,13 @@
 
   .error {
     @apply text-xs text-red-600 font-normal pb-2;
+  }
+
+  .button-home {
+    @apply flex flex-row gap-2 items-center justify-center p-2;
+    @apply text-sm bg-surface-overlay rounded-md border;
+  }
+  .button-home:hover {
+    @apply bg-surface-hover;
   }
 </style>

@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { Command as CommandPrimitive } from "cmdk-sv";
+  import { Command as CommandPrimitive } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
-  type $$Props = CommandPrimitive.CommandProps;
+  type $$Props = {
+    value?: string;
+    class?: string | null;
+  } & Record<string, unknown>;
 
-  export let value: $$Props["value"] = undefined;
+  export let value: $$Props["value"] = "";
 
   let className: string | undefined | null = undefined;
   export { className as class };

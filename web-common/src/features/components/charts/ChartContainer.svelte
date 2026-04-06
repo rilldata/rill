@@ -16,6 +16,7 @@
     THEME_STORE_CONTEXT_KEY,
   } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { getContext, hasContext } from "svelte";
+  import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
   import { derived, readable } from "svelte/store";
   import { Theme } from "../../themes/theme";
@@ -38,6 +39,7 @@
   export let project: string | undefined = undefined;
 
   const client = useRuntimeClient();
+  let view: View;
 
   let chartProvider: ChartProvider;
   $: {
@@ -175,6 +177,7 @@
           {themeMode}
           theme={currentTheme}
           isCanvas={true}
+          bind:view
         />
       </div>
     </div>

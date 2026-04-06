@@ -50,7 +50,6 @@
 
   $: options = createEmbedOptions({
     client: runtimeClient,
-    canvasDashboard,
     width,
     height,
     config,
@@ -67,8 +66,8 @@
     colorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
   $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
-  const onError = (e: CustomEvent<{ error: Error }>) => {
-    error = e.detail.error.message;
+  const onError = (e: Error) => {
+    error = e.message;
   };
 
   const handleMouseLeave = () => {
@@ -90,7 +89,7 @@
   role="presentation"
   class:px-2={canvasDashboard}
   class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
-  on:mouseleave={handleMouseLeave}
+  onmouseleave={handleMouseLeave}
 >
   {#if error}
     <div
@@ -107,7 +106,7 @@
         {signalListeners}
         {options}
         bind:view={viewVL}
-        on:onError={onError}
+        {onError}
       />
     {/key}
   {/if}

@@ -96,9 +96,9 @@
   }
 </script>
 
-<Header borderBottom={!onDeployPage}>
+<Header borderBottom={!onDeployPage && mode !== "Preview"}>
   {#if !onDeployPage}
-    <HeaderLogo href="/" />
+    <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
 
     <Tag text={mode} color="gray"></Tag>
 

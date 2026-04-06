@@ -11,7 +11,7 @@
 
 <button
   disabled={direction === "left" ? !canPanLeft : !canPanRight}
-  on:click={() => onPan(direction)}
+  onclick={() => onPan(direction)}
 >
   <Tooltip distance={8} location="top">
     <span class={direction}>

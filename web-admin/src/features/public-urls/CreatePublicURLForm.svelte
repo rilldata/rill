@@ -141,7 +141,14 @@
 </script>
 
 {#if !url}
-  <form id={formId} on:submit|preventDefault={submit} use:enhance>
+  <form
+    id={formId}
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
+    use:enhance
+  >
     <h3 class="text-xs text-fg-primary font-normal">
       Create a shareable public URL for this view.
     </h3>

@@ -60,6 +60,8 @@ export function compileSourceYAML(
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out file types. These should be uploaded and converted to paths.
+      if (value instanceof File || value instanceof FileList) return false;
       return true;
     })
     .map((key) => {
@@ -222,15 +224,12 @@ export function maybeRewriteToDuckDb(
     case "gcs":
     case "azure":
       // Ensure DuckDB creates a temporary secret for the original connector.
-      if (secretConnectorName) {
-        if (connectorInstanceName) {
-          if (!formValues.create_secrets_from_connectors) {
-            formValues.create_secrets_from_connectors = secretConnectorName;
-          }
-        } else {
-          // When skipping connector creation, force the default driver name.
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -243,10 +242,12 @@ export function maybeRewriteToDuckDb(
     case "https": {
       // HTTP sources are typically public; avoid surfacing secret wiring unless
       // the user is explicitly targeting a configured connector instance.
-      if (connectorInstanceName && secretConnectorName) {
-        if (!formValues.create_secrets_from_connectors) {
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
 
       connectorCopy.name = "duckdb";
@@ -333,6 +334,32 @@ export function maybeRewriteToDuckDb(
         scanParams.push(`version = '${icebergVersion.trim()}'`);
       }
 
+      const versionNameFormat = formValues.version_name_format as string;
+      if (versionNameFormat?.trim()) {
+        scanParams.push(`version_name_format = '${versionNameFormat.trim()}'`);
+      }
+
+      const metadataCompression =
+        formValues.metadata_compression_codec as string;
+      if (metadataCompression?.trim()) {
+        scanParams.push(
+          `metadata_compression_codec = '${metadataCompression.trim()}'`,
+        );
+      }
+
+      const snapshotFromId = formValues.snapshot_from_id as string;
+      if (snapshotFromId?.trim()) {
+        scanParams.push(`snapshot_from_id = ${snapshotFromId.trim()}`);
+      }
+
+      const snapshotFromTimestamp =
+        formValues.snapshot_from_timestamp as string;
+      if (snapshotFromTimestamp?.trim()) {
+        scanParams.push(
+          `snapshot_from_timestamp = '${snapshotFromTimestamp.trim()}'`,
+        );
+      }
+
       const paramsStr = scanParams.length
         ? `,\n  ${scanParams.join(",\n  ")}`
         : "";
@@ -351,6 +378,10 @@ export function maybeRewriteToDuckDb(
       delete formValues.azure_info;
       delete formValues.allow_moved_paths;
       delete formValues.version;
+      delete formValues.version_name_format;
+      delete formValues.metadata_compression_codec;
+      delete formValues.snapshot_from_id;
+      delete formValues.snapshot_from_timestamp;
 
       break;
     }

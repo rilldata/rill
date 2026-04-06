@@ -29,7 +29,7 @@
     {placeholder}
     {rows}
     {disabled}
-  />
+  ></textarea>
 
   {#if errors}
     {#if typeof errors === "string"}
