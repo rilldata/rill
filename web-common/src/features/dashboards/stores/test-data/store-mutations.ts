@@ -531,3 +531,9 @@ export async function applyMutationsToDashboard(
     await asyncWait(1);
   }
 }
+
+export const AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE: TestDashboardMutation = () =>
+  metricsExplorerStore.setDynamicYAxisScale(AD_BIDS_EXPLORE_NAME, true);
+
+export const AD_BIDS_SET_FORCE_LINE_CHART: TestDashboardMutation = () =>
+  metricsExplorerStore.setForceLineChart(AD_BIDS_EXPLORE_NAME, true);

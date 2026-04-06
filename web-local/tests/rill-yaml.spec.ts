@@ -1,6 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { uploadFile } from "./utils/sourceHelpers";
-import { waitForFileNavEntry } from "./utils/waitHelpers";
+import { createSourceV2 } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
 
 async function expectRillYAMLToContainOlapConnector(page: Page, text: string) {
@@ -17,8 +16,10 @@ test.describe("Default olap_connector behavior", () => {
   test("Should set default olap_connector to duckdb for empty project", async ({
     page,
   }) => {
-    await page.getByRole("link", { name: "Empty Project" }).click();
-    await expect(page.getByText("Import data", { exact: true })).toBeVisible();
+    await page.getByLabel("Start a blank project").click();
+    await expect(
+      page.getByText("Connect your data", { exact: true }),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
     // Wait for navigation to complete
@@ -29,15 +30,12 @@ test.describe("Default olap_connector behavior", () => {
   test("Should set default olap_connector to duckdb for local file upload", async ({
     page,
   }) => {
-    await page.getByRole("link", { name: "Empty Project" }).click();
-    await expect(page.getByText("Import data", { exact: true })).toBeVisible();
+    await page.getByLabel("Start a blank project").click();
+    await expect(
+      page.getByText("Connect your data", { exact: true }),
+    ).toBeVisible();
 
-    await uploadFile(page, "AdBids.csv");
-
-    // Wait for the source file to be created in the file nav
-    await waitForFileNavEntry(page, "/models/AdBids.yaml", false);
-
-    await page.getByText("View this source").click();
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
     // Wait for navigation to complete

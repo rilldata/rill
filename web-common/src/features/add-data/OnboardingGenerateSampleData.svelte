@@ -1,0 +1,116 @@
+<script lang="ts">
+  import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
+  import { SparklesIcon, ArrowUpIcon } from "lucide-svelte";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string } from "yup";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { Button } from "@rilldata/web-common/components/button";
+
+  export let open = false;
+
+  const runtimeClient = useRuntimeClient();
+
+  const FORM_ID = "generate-sample-data-form";
+
+  const schema = yup(
+    object({
+      prompt: string()
+        .required("Please describe your data")
+        .min(10, "Please provide more detail (at least 10 characters)"),
+    }),
+  );
+  const initialValues = { prompt: "Generate a model with mock data for: " };
+  const superFormInstance = superForm(defaults(initialValues, schema), {
+    SPA: true,
+    validators: schema,
+    dataType: "json",
+    onUpdate({ form }) {
+      if (!form.valid) return;
+      const values = form.data;
+      void generateSampleData(runtimeClient, true, values.prompt);
+      open = false;
+    },
+    invalidateAll: false,
+  });
+  $: ({ form, errors, enhance, submit } = superFormInstance);
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
+  }
+</script>
+
+<div class="container">
+  <div class="header">
+    <SparklesIcon size="16px" class="rotate-90" />
+    <span>Generate sample data</span>
+  </div>
+
+  <form
+    id={FORM_ID}
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
+    use:enhance
+    class="relative h-full"
+  >
+    <textarea
+      class="prompt-input"
+      bind:value={$form.prompt}
+      class:empty={$form.prompt.length === 0}
+      placeholder={`E.g. "e-commerce transactions"`}
+      onkeydown={handleKeydown}
+    ></textarea>
+    <div class="absolute right-3 bottom-3">
+      <Button type="ghost" ariaLabel="Send message" onClick={submit} compact>
+        <ArrowUpIcon class="h-4 w-4 text-accent-secondary-action" />
+      </Button>
+    </div>
+    {#if $errors.prompt}
+      <div class="error">{$errors.prompt?.[0]}</div>
+    {/if}
+  </form>
+</div>
+
+<style lang="postcss">
+  .container {
+    @apply flex flex-col p-6 gap-4 w-96 min-w-96 h-[246px];
+    @apply border border-primary-200 rounded-lg;
+    background: radial-gradient(
+      302.11% 152.07% at 111.07% 104.65%,
+      #f7fffd 0%,
+      #ddf3ff 100%
+    );
+  }
+  :global(.dark) .container {
+    background: radial-gradient(
+      302.11% 152.07% at 111.07% 104.65%,
+      #103a5a 0%,
+      #384346 100%
+    );
+  }
+
+  .header {
+    @apply flex flex-row items-center gap-2;
+    @apply text-lg text-fg-primary font-semibold;
+  }
+
+  .prompt-input {
+    @apply w-full p-2 min-h-28 h-full;
+    @apply border border-gray-300 rounded-[2px];
+    @apply text-sm leading-relaxed resize-none;
+  }
+
+  .prompt-input.empty::before {
+    content: attr(data-placeholder);
+    @apply text-fg-secondary pointer-events-none absolute;
+  }
+
+  .error {
+    @apply text-xs text-red-600 font-normal pb-2;
+  }
+</style>
