@@ -32,6 +32,9 @@ export enum ExploreStateURLParams {
   PivotTableMode = "table_mode",
   PivotRowLimit = "row_limit",
 
+  DynamicYAxisScale = "dyn_y",
+  ForceLineChart = "line_chart",
+
   GzippedParams = "gzipped_state",
   TemporaryFilters = "temp",
   TimeDimension = "td",
@@ -54,4 +57,7 @@ export const ExploreStateKeyToURLParamMap: Partial<
   leaderboardMeasureNames: ExploreStateURLParams.LeaderboardMeasures,
   leaderboardShowContextForAllMeasures:
     ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+
+  dynamicYAxisScale: ExploreStateURLParams.DynamicYAxisScale,
+  forceLineChart: ExploreStateURLParams.ForceLineChart,
 };

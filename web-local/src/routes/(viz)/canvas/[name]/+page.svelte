@@ -13,7 +13,7 @@
   $: ({ canvasName } = data);
 </script>
 
-{#key runtimeClient.instanceId}
+{#key `${runtimeClient.instanceId}::${canvasName}`}
   <div class="flex h-full overflow-hidden">
     <div class="flex-1 overflow-hidden">
       <CanvasProvider

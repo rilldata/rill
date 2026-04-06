@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -76,33 +77,37 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	// Validate all refs
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
 
-	// Check metrics view refs specifically (even if validateErr != nil)
-	validMetrics, dataRefreshedOn, err := r.checkMetricsViews(ctx, self.Meta.Refs)
+	// Get valid metrics view refs.
+	// NOTE: The validateErr may be non-nil if a metrics view has a reconcile error, but the same metrics view may still be returned here if its ValidSpec is non-nil (e.g. it might be serving previously valid state).
+	mvs, allMetricsValid, dataRefreshedOn, err := r.referencedMetricsViews(ctx, self.Meta.Refs)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// Capture the valid spec in the state
-	if validateErr == nil {
-		c.State.ValidSpec = c.Spec
-		c.State.DataRefreshedOn = dataRefreshedOn
-	} else if cfg.StageChanges && validMetrics {
-		// When StageChanges is enabled, we want to make a best effort to serve the canvas anyway.
-		// If all the metrics view(s) referenced by the spec have a ValidSpec, we'll consider the component valid.
-		c.State.ValidSpec = c.Spec
-		c.State.DataRefreshedOn = dataRefreshedOn
+	// Validate the renderer properties (only if all metrics view refs have a ValidSpec).
+	var rendererErr error
+	if allMetricsValid {
+		rendererErr = canvas.ValidateRendererProperties(c.Spec.Renderer, c.Spec.RendererProperties.AsMap(), mvs)
 	} else {
-		c.State.ValidSpec = nil
-		c.State.DataRefreshedOn = nil
+		rendererErr = errors.New("one or more referenced metrics views are invalid")
+	}
+	if validateErr == nil { // Gives precedence to refs errors over renderer errors, since the ref error may have caused the renderer error.
+		validateErr = rendererErr
 	}
 
-	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
-	err = r.C.UpdateState(ctx, self.Meta.Name, self)
-	if err != nil {
+	// Update the state according to the validation result.
+	// Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
+	// When StageChanges is enabled, we want to make a best effort to serve the canvas anyway.
+	// Specifically, if the renderer properties are valid (which also implies the metrics view(s) referenced by the component have a ValidSpec), we'll serve a ValidSpec (but still return the validation error so it gets surfaced).
+	if validateErr == nil || (cfg.StageChanges && rendererErr == nil) {
+		err = r.updateState(ctx, self, c.Spec, dataRefreshedOn, validateErr)
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	return runtime.ReconcileResult{Err: validateErr}
+	// Validation failed and we can't serve valid state.
+	// So we clear out the ValidSpec.
+	err = r.updateState(ctx, self, nil, nil, validateErr)
+	return runtime.ReconcileResult{Err: err}
 }
 
 func (r *ComponentReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -112,11 +117,32 @@ func (r *ComponentReconciler) ResolveTransitiveAccess(ctx context.Context, claim
 	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 
-// checkMetricsViews returns true if all the metrics views referenced by the component have a valid spec.
-// If all metrics views are valid, it also returns the most recent DataRefreshedOn timestamp across all referenced metrics views.
-// Note that it returns false if no metrics views are referenced.
-func (r *ComponentReconciler) checkMetricsViews(ctx context.Context, refs []*runtimev1.ResourceName) (bool, *timestamppb.Timestamp, error) {
-	var n int
+// updateState is a helper for updating a component's state.
+// If an error is provided, it will be returned after the state update, allowing simple returns.
+func (r *ComponentReconciler) updateState(ctx context.Context, self *runtimev1.Resource, validSpec *runtimev1.ComponentSpec, dataRefreshedOn *timestamppb.Timestamp, basedOnErr error) error {
+	// Don't update state for ctx errors.
+	if basedOnErr != nil && errors.Is(basedOnErr, ctx.Err()) {
+		return basedOnErr
+	}
+
+	// Update the state.
+	c := self.GetComponent()
+	c.State.ValidSpec = validSpec
+	c.State.DataRefreshedOn = dataRefreshedOn
+	err := r.C.UpdateState(ctx, self.Meta.Name, self)
+	if err != nil {
+		return err
+	}
+
+	// Return the original error (if any) as per the docstring.
+	return basedOnErr
+}
+
+// referencedMetricsViews returns the valid metrics view specs for the given refs. If any referenced metrics view is invalid, it is not included in the result, and the returned boolean will be false.
+// It only returns an error if there was an issue checking the refs, not if a ref was simply invalid.
+func (r *ComponentReconciler) referencedMetricsViews(ctx context.Context, refs []*runtimev1.ResourceName) (map[string]*runtimev1.MetricsViewSpec, bool, *timestamppb.Timestamp, error) {
+	mvs := make(map[string]*runtimev1.MetricsViewSpec)
+	allMetricsValid := true
 	var dataRefreshedOn *timestamppb.Timestamp
 	for _, ref := range refs {
 		if ref.Kind != runtime.ResourceKindMetricsView {
@@ -126,15 +152,18 @@ func (r *ComponentReconciler) checkMetricsViews(ctx context.Context, refs []*run
 		res, err := r.C.Get(ctx, ref, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return false, nil, nil
+				allMetricsValid = false
+				continue
 			}
-			return false, nil, err
-		}
-		if res.GetMetricsView().State.ValidSpec == nil {
-			return false, nil, nil
+			return nil, false, nil, err
 		}
 
-		n++
+		mv := res.GetMetricsView()
+		if mv.State.ValidSpec != nil {
+			mvs[ref.Name] = mv.State.ValidSpec
+		} else {
+			allMetricsValid = false
+		}
 
 		t := res.GetMetricsView().State.DataRefreshedOn
 		if dataRefreshedOn == nil {
@@ -143,5 +172,5 @@ func (r *ComponentReconciler) checkMetricsViews(ctx context.Context, refs []*run
 			dataRefreshedOn = t
 		}
 	}
-	return n > 0, dataRefreshedOn, nil
+	return mvs, allMetricsValid, dataRefreshedOn, nil
 }

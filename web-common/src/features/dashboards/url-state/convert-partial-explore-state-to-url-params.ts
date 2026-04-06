@@ -293,6 +293,17 @@ function toExploreUrlParams(
     (value) => (value ? "true" : "false"),
   );
 
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "dynamicYAxisScale",
+    (value) => (value ? "true" : "false"),
+  );
+
+  maybeSetParam(searchParams, partialExploreState, "forceLineChart", (value) =>
+    value ? "true" : "false",
+  );
+
   return searchParams;
 }
 
@@ -362,6 +373,18 @@ function toTimeDimensionUrlParams(partialExploreState: Partial<ExploreState>) {
 
   // TODO: pin
   // TODO: what should be done when chartType is set but expandedMeasureName is not
+
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "dynamicYAxisScale",
+    (value) => (value ? "true" : "false"),
+  );
+
+  maybeSetParam(searchParams, partialExploreState, "forceLineChart", (value) =>
+    value ? "true" : "false",
+  );
+
   return searchParams;
 }
 
