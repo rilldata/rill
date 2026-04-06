@@ -125,6 +125,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			Connector:  model.State.ResultConnector,
 			Properties: model.State.ResultProperties.AsMap(),
 			Table:      model.State.ResultTable,
+			Warnings:   nil,
 		}
 	}
 
@@ -281,19 +282,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if !trigger.any() {
 		// Re-run tests if the test config has changed
 		if model.State.TestHash != testHash {
-			var testErrs []string
-			var err error
-			testErrs, err = r.runModelTests(ctx, self)
+			testErrs, testWarnings, err := r.runModelTests(ctx, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
 			}
 			model.State.TestHash = testHash
 			model.State.TestErrors = testErrs
-			err = appendTestWarnings(&cfg, model)
-			if err != nil {
-				return runtime.ReconcileResult{Err: err, Warnings: reconcileWarnings(model), Retrigger: refreshOn}
-			}
-
+			model.State.TestWarnings = testWarnings
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
@@ -301,13 +296,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 		// Show if any partitions errored
 		if model.State.PartitionsHaveErrors && !cfg.ModelPartitionsWarnOnFailure {
-			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model), Retrigger: refreshOn}
+			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
 		}
 		// Show if any model tests failed
 		if len(model.State.TestErrors) > 0 && !cfg.ModelTestsWarnOnFailure {
-			return runtime.ReconcileResult{Err: errors.New(newTestsWarning(model.State.TestErrors)), Warnings: reconcileWarnings(model), Retrigger: refreshOn}
+			return runtime.ReconcileResult{Err: errors.New(newTestsErrorMsg(model.State.TestErrors)), Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
 		}
-		return runtime.ReconcileResult{Warnings: reconcileWarnings(model), Retrigger: refreshOn}
+		return runtime.ReconcileResult{Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
 	}
 	// Acquire the execution semaphore for the remainder of the function.
 	err = r.execSem.Acquire(ctx, 1)
@@ -363,10 +358,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			r.C.Logger.Warn("failed to query output table stats", zap.String("model", n.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
 		}
 
-		warnings, err := buildWarnings(&cfg, model, execRes.Warnings, incrementalStateWarnings)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err, Warnings: reconcileWarnings(model), Retrigger: refreshOn}
-		}
+		var warnings []string
+		warnings = append(warnings, incrementalStateWarnings...)
+		warnings = append(warnings, execRes.Warnings...)
 		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes, warnings, newRowsTotal, newBytesTotal)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -432,19 +426,14 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// If the build succeeded, re-run the model tests.
 	// We do this after updating other state to ensure we preserve the successful execution state.
 	if execErr == nil && len(model.Spec.Tests) != 0 {
-		var testErrs []string
-		var err error
-		testErrs, err = r.runModelTests(ctx, self)
+		testErrs, testWarnings, err := r.runModelTests(ctx, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
 		}
 
 		model.State.TestHash = testHash
 		model.State.TestErrors = testErrs
-		err = appendTestWarnings(&cfg, model)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err, Warnings: reconcileWarnings(model)}
-		}
+		model.State.TestWarnings = testWarnings
 		err = r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -462,7 +451,17 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	return runtime.ReconcileResult{Warnings: reconcileWarnings(model), Retrigger: refreshOn}
+	// Show if any partitions errored
+	if model.State.PartitionsHaveErrors && !cfg.ModelPartitionsWarnOnFailure {
+		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, false, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
+	}
+
+	// Show if the model has tests that failed
+	if len(model.State.TestErrors) > 0 && !cfg.ModelTestsWarnOnFailure {
+		return runtime.ReconcileResult{Err: errors.New(newTestsErrorMsg(model.State.TestErrors)), Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, false), Retrigger: refreshOn}
+	}
+
+	return runtime.ReconcileResult{Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -1957,26 +1956,30 @@ func (r *ModelReconciler) resolveTrigger(ctx context.Context, self *runtimev1.Re
 
 // runModelTests executes the user defined model-level tests for the model (global, not partition-level).
 // It returns an array of test error messages.
-func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) ([]string, error) {
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) ([]string, []string, error) {
 	tests := self.GetModel().Spec.Tests
 	if len(tests) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	var msgs []string
+	var warnings []string
 	for _, test := range tests {
-		msg, err := r.execModelTest(ctx, test)
+		msg, testWarnings, err := r.execModelTest(ctx, test)
 		if err != nil {
-			return nil, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
+			return nil, nil, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
 		}
 		if msg != "" {
 			msgs = append(msgs, msg)
 		}
+		if len(testWarnings) > 0 {
+			warnings = append(warnings, testWarnings...)
+		}
 	}
-	return msgs, nil
+	return msgs, warnings, nil
 }
 
 // execModelTest runs a single model test and returns an error if it fails.
-func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, error) {
+func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, []string, error) {
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           test.Resolver,
@@ -1986,87 +1989,53 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	})
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return "", err
+			return "", nil, err
 		}
-		return fmt.Sprintf("%s: %v", test.Name, err), nil
+		return fmt.Sprintf("%s: %v", test.Name, err), nil, nil
 	}
 	defer result.Close()
 
-	var warnings string
+	var warnings []string
 	if info != nil {
-		warnings = strings.Join(info.Warnings, ";")
+		warnings = info.Warnings
 	}
 
 	row, err := result.Next()
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return "", err
+			return "", nil, err
 		}
 		if errors.Is(err, io.EOF) {
-			return warnings, nil // Test passed
+			return "", warnings, nil // Test passed
 		}
-		if warnings != "" {
-			return fmt.Sprintf("%s: %v; Warnings: %v", test.Name, err, warnings), nil
-		}
-		return fmt.Sprintf("%s: %v", test.Name, err), nil
+		return fmt.Sprintf("%s: %v", test.Name, err), warnings, nil
 	}
 
 	if res, ok := row["result"]; ok && res != nil {
-		if warnings != "" {
-			return fmt.Sprintf("%s: %v; Warnings: %v", test.Name, res, warnings), nil
-		}
-		return fmt.Sprintf("%s: %v", test.Name, res), nil
+		return fmt.Sprintf("%s: %v", test.Name, res), warnings, nil
 	}
 
-	if warnings != "" {
-		return fmt.Sprintf("%s: test did not pass; Warnings: %v", test.Name, warnings), nil
-	}
-	return fmt.Sprintf("%s: test did not pass;", test.Name), nil
-}
-
-// buildWarnings builds the execution warnings to be stored in model state.
-// It returns an error if partition failures should be surfaced as errors based on the instance config.
-func buildWarnings(cfg *drivers.InstanceConfig, model *runtimev1.Model, execWarnings, incrementalStateWarnings []string) ([]string, error) {
-	var warnings []string
-	warnings = append(warnings, incrementalStateWarnings...)
-	warnings = append(warnings, execWarnings...)
-	if model.State.PartitionsHaveErrors {
-		if !cfg.ModelPartitionsWarnOnFailure {
-			return nil, errPartitionsHaveErrors
-		}
-		warnings = append(warnings, errPartitionsHaveErrors.Error())
-	}
-	return warnings, nil
+	return fmt.Sprintf("%s: test did not pass", test.Name), warnings, nil
 }
 
 // reconcileWarnings combines execution and test warnings for a ReconcileResult.
-func reconcileWarnings(model *runtimev1.Model) []string {
+func reconcileWarnings(model *runtimev1.Model, partitionWarnOnFailure, testsWarnOnFailure bool) []string {
 	warnings := make([]string, 0, len(model.State.Warnings)+len(model.State.TestWarnings))
 	warnings = append(warnings, model.State.Warnings...)
 	warnings = append(warnings, model.State.TestWarnings...)
+	if model.State.PartitionsHaveErrors && partitionWarnOnFailure {
+		warnings = append(warnings, errPartitionsHaveErrors.Error())
+	}
+	if len(model.State.TestErrors) > 0 && testsWarnOnFailure {
+		warnings = append(warnings, newTestsErrorMsg(model.State.TestErrors))
+	}
 	return warnings
 }
 
-// appendTestWarnings replaces TestWarnings with a summary of the current test errors.
-// It always replaces (never accumulates) to avoid stale warnings on repeated test-config changes.
-func appendTestWarnings(cfg *drivers.InstanceConfig, model *runtimev1.Model) error {
-	model.State.TestWarnings = nil // always replace, never accumulate
-	if len(model.State.TestErrors) == 0 {
-		return nil
-	}
-
-	msg := newTestsWarning(model.State.TestErrors)
-	if !cfg.ModelTestsWarnOnFailure {
-		return errors.New(msg)
-	}
-	model.State.TestWarnings = []string{msg}
-	return nil
-}
-
-// newTestsWarning creates a warning message that summarizes the messages returned from runModelTests.
-func newTestsWarning(msgs []string) string {
+// newTestsErrorMsg creates an error message that summarizes the messages returned from runModelTests.
+func newTestsErrorMsg(msgs []string) string {
 	if len(msgs) == 0 {
-		panic("newTestsWarning should not be called with an empty array")
+		panic("newTestsErrorMsg should not be called with an empty array")
 	}
 	return fmt.Sprintf("tests failed:\n%s", strings.Join(msgs, "\n"))
 }

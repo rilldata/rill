@@ -157,6 +157,8 @@ message ModelState {
   string test_hash = 27;
   // test_errors contains the results of the model's tests.
   repeated string test_errors = 28;
+  // test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+  repeated string test_warnings = 30;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
@@ -169,8 +171,6 @@ message ModelState {
   bool partitions_have_errors = 11;
   // warnings contains any warnings generated during the model's execution.
   repeated string warnings = 29;
-  // test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
-  repeated string test_warnings = 30;
   // total_execution_duration_ms is the time user queries took to execute while refreshing the model.
   // In case of incremental models it is the sum of all successful executions so far.
   // This is not the time it took to refresh the model which also includes other stuff like taking a write lock.

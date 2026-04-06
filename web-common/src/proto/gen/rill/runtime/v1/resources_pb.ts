@@ -1144,6 +1144,13 @@ export class ModelState extends Message<ModelState> {
   testErrors: string[] = [];
 
   /**
+   * test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+   *
+   * @generated from field: repeated string test_warnings = 30;
+   */
+  testWarnings: string[] = [];
+
+  /**
    * refreshed_on is the time the model was last executed.
    *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
@@ -1184,13 +1191,6 @@ export class ModelState extends Message<ModelState> {
    * @generated from field: repeated string warnings = 29;
    */
   warnings: string[] = [];
-
-  /**
-   * test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
-   *
-   * @generated from field: repeated string test_warnings = 30;
-   */
-  testWarnings: string[] = [];
 
   /**
    * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
@@ -1238,13 +1238,13 @@ export class ModelState extends Message<ModelState> {
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "test_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 28, name: "test_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 30, name: "test_warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
     { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 29, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 30, name: "test_warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 14, name: "rows_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

@@ -683,7 +683,7 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	}
 
 	// Check the alert and get the result
-	res, warnings, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
+	res, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
 
 	// If the error is a cancellation/timeout, return (will be retried)
 	if errors.Is(executeErr, context.Canceled) || errors.Is(executeErr, context.DeadlineExceeded) {
@@ -703,7 +703,6 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	// Finalize and pop current execution.
 	a.State.CurrentExecution.Result = res
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
-	a.State.CurrentExecution.Result.Warnings = warnings
 	err = r.popCurrentExecution(ctx, self, a, adminMeta)
 	if err != nil {
 		return err
@@ -712,12 +711,12 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 }
 
 // checkAlert runs the alert query and returns the result.
-func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, []string, error) {
+func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
 	// Log
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	if a.Spec.Resolver == "" {
-		return nil, nil, fmt.Errorf("alert has no resolver")
+		return nil, fmt.Errorf("alert has no resolver")
 	}
 
 	// Evaluate query attributes
@@ -742,7 +741,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		Claims: &runtime.SecurityClaims{UserAttributes: queryForAttrs},
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to resolve alert: %w", err)
+		return nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}
 	defer res.Close()
 
@@ -755,9 +754,9 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, warnings, nil
+			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil
 		}
-		return nil, nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
+		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 	}
 
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
@@ -765,9 +764,13 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	// Return fail row
 	failRow, err := structpb.NewStruct(row)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
-	return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, warnings, nil
+	return &runtimev1.AssertionResult{
+		Status:   runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+		FailRow:  failRow,
+		Warnings: warnings,
+	}, nil
 }
 
 // popCurrentExecution moves the current execution into the execution history and sends notifications if the execution matched the notification criteria.
