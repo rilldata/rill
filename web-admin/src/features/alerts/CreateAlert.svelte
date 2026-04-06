@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/components/dialog/index";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
+  import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -65,7 +65,7 @@
       onEscapeKeydown={preventClose}
       onInteractOutside={preventClose}
     >
-      <AlertForm
+      <AlertFormDataWrapper
         props={{ mode: "create", exploreName: $exploreName }}
         {onCancel}
         {onClose}
