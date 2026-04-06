@@ -133,6 +133,9 @@ function getRillDefaultExploreViewState(
     leaderboardMeasureNames: defaultMeasure ? [defaultMeasure] : [],
     leaderboardShowContextForAllMeasures: false,
 
+    dynamicYAxisScale: false,
+    forceLineChart: false,
+
     selectedDimensionName: "",
   };
 }
