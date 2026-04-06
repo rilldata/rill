@@ -216,7 +216,7 @@
   .repo-link:hover {
     @apply underline;
   }
-.upgrade-link {
+  .upgrade-link {
     @apply text-xs text-primary-500 no-underline;
   }
   .upgrade-link:hover {
