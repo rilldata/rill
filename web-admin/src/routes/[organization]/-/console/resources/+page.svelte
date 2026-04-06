@@ -14,9 +14,7 @@
       projectName: r.projectName ?? "",
       kind: r.kind ?? "",
       name: r.name ?? "",
-      reconcileStatus: r.reconcileError
-        ? "ERROR"
-        : (r.reconcileStatus ?? ""),
+      reconcileStatus: r.reconcileError ? "ERROR" : (r.reconcileStatus ?? ""),
       reconcileError: r.reconcileError ?? "",
       stateUpdatedOn: r.stateUpdatedOn ?? "",
     })),

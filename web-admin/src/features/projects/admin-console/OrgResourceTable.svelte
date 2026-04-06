@@ -50,9 +50,7 @@
   ]);
   filterSync.init($page.url);
 
-  let searchText = $state(
-    parseStringParam($page.url.searchParams.get("q")),
-  );
+  let searchText = $state(parseStringParam($page.url.searchParams.get("q")));
   let selectedProjects: string[] = $state(
     parseArrayParam($page.url.searchParams.get("project")),
   );
@@ -77,13 +75,9 @@
   $effect(() => {
     if (mounted && filterSync.hasExternalNavigation($page.url)) {
       filterSync.markSynced($page.url);
-      selectedProjects = parseArrayParam(
-        $page.url.searchParams.get("project"),
-      );
+      selectedProjects = parseArrayParam($page.url.searchParams.get("project"));
       selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-      selectedStatuses = parseArrayParam(
-        $page.url.searchParams.get("status"),
-      );
+      selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
       searchText = parseStringParam($page.url.searchParams.get("q"));
     }
   });

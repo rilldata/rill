@@ -50,9 +50,7 @@
   ]);
   filterSync.init($page.url);
 
-  let searchText = $state(
-    parseStringParam($page.url.searchParams.get("q")),
-  );
+  let searchText = $state(parseStringParam($page.url.searchParams.get("q")));
   let selectedStatuses: string[] = $state(
     parseArrayParam($page.url.searchParams.get("status")),
   );
@@ -62,9 +60,7 @@
   $effect(() => {
     if (mounted && filterSync.hasExternalNavigation($page.url)) {
       filterSync.markSynced($page.url);
-      selectedStatuses = parseArrayParam(
-        $page.url.searchParams.get("status"),
-      );
+      selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
       searchText = parseStringParam($page.url.searchParams.get("q"));
     }
   });
@@ -109,9 +105,7 @@
       }
       if (
         searchText &&
-        !(p.projectName ?? "")
-          .toLowerCase()
-          .includes(searchText.toLowerCase())
+        !(p.projectName ?? "").toLowerCase().includes(searchText.toLowerCase())
       )
         return false;
       return true;
