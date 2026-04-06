@@ -3,6 +3,9 @@ import { derived } from "svelte/store";
 import {
   type V1TableInfo,
   type V1GetResourceResponse,
+  createRuntimeServiceAnalyzeConnectors,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
+  runtimeServiceAnalyzeConnectors,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { isNotFoundError } from "../../lib/errors";
@@ -15,6 +18,7 @@ import {
   createConnectorServiceListTablesInfinite,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 /**
  * Creates query options for checking modeling support of a connector
@@ -213,4 +217,66 @@ export function useGetTable(
       },
     },
   );
+}
+
+export function getAnalyzedConnectors(
+  client: RuntimeClient,
+  olapOnly: boolean,
+) {
+  return createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        // Retry transient errors during runtime resets (e.g. project initialization)
+        retry: (failureCount) => failureCount < 3,
+        retryDelay: 1000,
+        // sort alphabetically
+        select: (data) => {
+          if (!data?.connectors) return;
+
+          const filtered = (
+            olapOnly
+              ? data.connectors.filter((c) => c?.driver?.implementsOlap)
+              : data.connectors
+          ).sort((a, b) =>
+            (a?.name as string).localeCompare(b?.name as string),
+          );
+          return { connectors: filtered };
+        },
+      },
+    },
+  );
+}
+
+export function getAnalyzedConnectorByName(
+  client: RuntimeClient,
+  connectorName: string,
+) {
+  return createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        // Retry transient errors during runtime resets (e.g. project initialization)
+        retry: (failureCount) => failureCount < 3,
+        retryDelay: 1000,
+        // sort alphabetically
+        select: (data) => {
+          return data.connectors?.find((c) => c?.name === connectorName);
+        },
+      },
+    },
+  );
+}
+
+export async function fetchAnalyzeConnectors(client: RuntimeClient) {
+  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+  );
+  const resp = await queryClient.fetchQuery({
+    queryKey,
+    queryFn: () => runtimeServiceAnalyzeConnectors(client, {}),
+  });
+  return resp?.connectors ?? [];
 }

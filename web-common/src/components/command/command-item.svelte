@@ -8,7 +8,7 @@
 
 <CommandPrimitive.Item
   class={cn(
-    "data-[selected=true]:bg-popover-accent data-[selected=true]:text-fg-accent relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+    "hover:bg-popover-accent hover:text-fg-accent data-[selected=true]:bg-popover-accent data-[selected=true]:text-fg-accent relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
     className,
   )}
   {...$$restProps}

@@ -4,7 +4,6 @@
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
@@ -18,10 +17,7 @@
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeploymentCredentials,
-  } from "../../client";
+  import { createAdminServiceGetCurrentUser } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
@@ -71,40 +67,6 @@
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-
-  // When "View As" is active, fetch deployment credentials for the mocked user.
-  $: mockedUserId = $viewAsUserStore?.id;
-
-  $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
-    organization,
-    project,
-    { userId: mockedUserId },
-    {
-      query: {
-        enabled: !!mockedUserId && !!organization && !!project,
-      },
-    },
-  );
-
-  $: mockedProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    $mockedCredentialsQuery.data?.accessToken ?? "",
-    undefined,
-    {
-      query: {
-        enabled: !!$mockedCredentialsQuery.data?.accessToken,
-      },
-    },
-  );
-
-  // Use effective permissions when "View As" is active (from server)
-  $: effectiveManageProjectMembers =
-    $mockedProjectQuery.data?.projectPermissions?.manageProjectMembers ??
-    projectPermissions.manageProjectMembers;
-  $: effectiveCreateMagicAuthTokens =
-    $mockedProjectQuery.data?.projectPermissions?.createMagicAuthTokens ??
-    projectPermissions.createMagicAuthTokens;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -213,7 +175,7 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if onProjectPage && effectiveManageProjectMembers}
+    {#if onProjectPage && projectPermissions.manageProjectMembers}
       <ShareProjectPopover
         {organization}
         {project}
@@ -249,7 +211,7 @@
                 <CreateAlert />
               {/if}
               <ShareDashboardPopover
-                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+                createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
               />
             {/if}
           </StateManagersProvider>
@@ -257,14 +219,16 @@
       {/if}
     {/if}
 
-    {#if onCanvasDashboardPage && hasUserAccess}
+    {#if onCanvasDashboardPage}
       {#if $dashboardChat && !onPublicURLPage}
         <ChatToggle />
       {/if}
-      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-      <ShareDashboardPopover
-        createMagicAuthTokens={effectiveCreateMagicAuthTokens}
-      />
+      {#if hasUserAccess}
+        <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+        <ShareDashboardPopover
+          createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
+        />
+      {/if}
     {/if}
 
     {#if $user.isSuccess}
