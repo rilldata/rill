@@ -1,12 +1,16 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
-  import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    isFreePlan,
+    isGrowthPlan,
+    isTeamPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
@@ -57,9 +61,16 @@
   $: instance = $instanceQuery.data?.instance;
   $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
 
-  // Plan-based storage cap (from root layout data)
+  // Billing plan detection
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
+  $: showSlots = isFreePlan(planName) || isGrowthPlan(planName);
+
+  // Slots
+  $: currentSlots = Number(projectData?.prodSlots) || 0;
+
+  // Plan-based storage cap: only Team plan has a 10GB cap
   const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
-  $: planName = $page.data?.organization?.billingPlanName ?? "";
   $: storageCap = isTeamPlan(planName) ? TEAM_STORAGE_CAP : 0;
 
   // Fill percentage for the usage pill (0–100)
@@ -179,28 +190,42 @@
         <span class="info-label">Data usage</span>
         <span class="info-value flex items-center gap-2">
           {#if dataSizeBytes}
-            <a
-              href="/{organization}/{project}/-/status/tables"
-              class="usage-pill-link"
-              aria-label="Data usage"
-            >
-              <span class="usage-pill">
-                <span
-                  class="usage-pill-fill"
-                  class:over-cap={isOverCap}
-                  style:width="{usagePercent}%"
-                ></span>
+            {#if storageCap}
+              <a
+                href="/{organization}/{project}/-/status/tables"
+                class="usage-pill-link"
+                aria-label="Data usage"
+              >
+                <span class="usage-pill">
+                  <span
+                    class="usage-pill-fill"
+                    class:over-cap={isOverCap}
+                    style:width="{usagePercent}%"
+                  ></span>
+                </span>
+              </a>
+              <span class="text-xs text-fg-secondary whitespace-nowrap">
+                {formatMemorySize(Number(dataSizeBytes))} / {formatMemorySize(
+                  storageCap,
+                )}
               </span>
-            </a>
-            <span class="text-xs text-fg-secondary whitespace-nowrap">
-              {formatMemorySize(Number(dataSizeBytes))}{#if storageCap}
-                / {formatMemorySize(storageCap)}{/if}
-            </span>
+            {:else}
+              <span class="text-sm">
+                {formatMemorySize(Number(dataSizeBytes))}
+              </span>
+            {/if}
           {:else}
             —
           {/if}
         </span>
       </div>
+
+      {#if !$subscriptionQuery?.isLoading && showSlots}
+        <div class="info-row">
+          <span class="info-label">Rill Slots</span>
+          <span class="slots-count">{currentSlots}</span>
+        </div>
+      {/if}
     {/if}
   </div>
 </OverviewCard>
@@ -232,6 +257,9 @@
   }
   .usage-pill-fill {
     @apply h-full rounded-full bg-primary-500 block transition-all;
+  }
+  .slots-count {
+    @apply text-sm text-fg-primary font-medium tabular-nums;
   }
   .repo-link {
     @apply text-primary-500 text-sm;
