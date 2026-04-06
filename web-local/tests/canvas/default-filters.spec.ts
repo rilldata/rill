@@ -83,7 +83,13 @@ test.describe("canvas time filters", () => {
 
     await page.goto(`${currentUrl}`);
 
-    await page.waitForTimeout(1000);
+    await page.waitForURL(
+      (url) =>
+        url.search.includes(
+          "f.AdBids_metrics=domain+IN+%28%27facebook.com%27%2C%27google.com%27%2C%27msn.com%27%29",
+        ),
+      { timeout: 10000 },
+    );
     expect(page.url()).toContain(
       "?tr=PT24H&compare_tr=rill-PP&f.AdBids_metrics=domain+IN+%28%27facebook.com%27%2C%27google.com%27%2C%27msn.com%27%29",
     );
