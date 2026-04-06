@@ -61,29 +61,27 @@
   const updateProject = createAdminServiceUpdateProject();
 
   // Filter tiers to only show slots >= minimum
-  let availableTiers = $derived(
-    SLOT_TIERS.filter((t) => t.slots >= minSlots),
-  );
+  let availableTiers = $derived(SLOT_TIERS.filter((t) => t.slots >= minSlots));
 
   // Ensure the current slot count always appears in the popular list
-  let popularSlotsWithExtras = $derived((() => {
-    let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
-    if (
-      currentSlots >= minSlots &&
-      !slots.includes(currentSlots) &&
-      ALL_SLOTS.includes(currentSlots)
-    ) {
-      slots.push(currentSlots);
-    }
-    return slots.sort((a, b) => a - b);
-  })());
+  let popularSlotsWithExtras = $derived(
+    (() => {
+      let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
+      if (
+        currentSlots >= minSlots &&
+        !slots.includes(currentSlots) &&
+        ALL_SLOTS.includes(currentSlots)
+      ) {
+        slots.push(currentSlots);
+      }
+      return slots.sort((a, b) => a - b);
+    })(),
+  );
 
   let visibleTiers = $derived(
     showAllSizes
       ? availableTiers
-      : availableTiers.filter((t) =>
-          popularSlotsWithExtras.includes(t.slots),
-        ),
+      : availableTiers.filter((t) => popularSlotsWithExtras.includes(t.slots)),
   );
 
   let hasChanged = $derived(selectedSlots !== currentSlots);
@@ -173,10 +171,7 @@
         {/each}
       </div>
     </div>
-    <button
-      class="show-all-btn"
-      onclick={() => (showAllSizes = !showAllSizes)}
-    >
+    <button class="show-all-btn" onclick={() => (showAllSizes = !showAllSizes)}>
       {showAllSizes ? "Show popular sizes" : "Show all sizes"}
     </button>
 

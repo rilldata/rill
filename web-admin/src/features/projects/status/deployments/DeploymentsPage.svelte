@@ -26,9 +26,7 @@
   } = $props();
 
   // Deployment
-  let projectDeployment = $derived(
-    useProjectDeployment(organization, project),
-  );
+  let projectDeployment = $derived(useProjectDeployment(organization, project));
   let deployment = $derived($projectDeployment.data);
   let deploymentStatus = $derived(
     deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
@@ -82,12 +80,8 @@
   );
 
   // Bar percentages
-  let prodPct = $derived(
-    totalSlots > 0 ? (prodSlots / totalSlots) * 100 : 50,
-  );
-  let devPct = $derived(
-    totalSlots > 0 ? (devSlots / totalSlots) * 100 : 50,
-  );
+  let prodPct = $derived(totalSlots > 0 ? (prodSlots / totalSlots) * 100 : 50);
+  let devPct = $derived(totalSlots > 0 ? (devSlots / totalSlots) * 100 : 50);
 </script>
 
 {#if !isEnterprise}
