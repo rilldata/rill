@@ -2,7 +2,9 @@
   import type { V1BillingPlan } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
 
   let {
     organization,
@@ -11,12 +13,14 @@
     organization: string;
     plan: V1BillingPlan;
   } = $props();
+
+  let open = $state(false);
 </script>
 
 <SettingsContainer title={plan?.displayName ?? "Free Plan"}>
   <div slot="body">
     <div>
-      You're on the Free plan.
+      You're on the Free plan. Ready to get started with Rill?
       <a
         href="https://www.rilldata.com/pricing"
         target="_blank"
@@ -29,4 +33,10 @@
     <span>For any questions,</span>
     <ContactUs />
   </svelte:fragment>
+
+  <Button type="primary" slot="action" onClick={() => (open = true)}>
+    Upgrade to Team plan
+  </Button>
 </SettingsContainer>
+
+<StartTeamPlanDialog bind:open {organization} type="base" />
