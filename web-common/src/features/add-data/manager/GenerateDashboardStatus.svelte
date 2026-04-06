@@ -18,6 +18,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import FeatherCheckCircle from "@rilldata/web-common/components/icons/FeatherCheckCircle.svelte";
 
   export let importAddDataStep: ImportAddDataStep;
@@ -52,7 +53,7 @@
   );
 
   let importStep = ImportDataStep.Init;
-  $: currentFileRoute = "/";
+  $: currentFileRoute = $previewModeStore ? "/dashboards" : "/";
   let error: string | null = null;
   $: hasErrored = !!error;
 
@@ -67,7 +68,21 @@
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
-            currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            if ($previewModeStore) {
+              // In preview mode, derive the dashboard route from the file path
+              const name = currentFilePath
+                .replace(/^\/dashboards\//, "")
+                .replace(/\.yaml$/, "");
+              if (currentFilePath.includes("_canvas")) {
+                currentFileRoute = `/canvas/${name}`;
+              } else if (currentFilePath.startsWith("/dashboards/")) {
+                currentFileRoute = `/explore/${name}`;
+              } else {
+                currentFileRoute = "/dashboards";
+              }
+            } else {
+              currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            }
           }
         },
       );

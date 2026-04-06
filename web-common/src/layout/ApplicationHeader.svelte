@@ -65,7 +65,7 @@
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: "/",
+    href: mode === "Preview" ? "/dashboards" : "/",
   };
 
   $: pathParts = [
