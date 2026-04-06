@@ -37,7 +37,6 @@
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     runtimeClient,
-    instanceId,
     connector,
     "",
     "",

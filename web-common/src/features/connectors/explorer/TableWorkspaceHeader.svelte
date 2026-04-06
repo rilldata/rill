@@ -25,7 +25,6 @@
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     client,
-    client.instanceId,
     connector,
     database,
     databaseSchema,

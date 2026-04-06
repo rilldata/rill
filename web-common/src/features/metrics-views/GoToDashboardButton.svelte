@@ -62,7 +62,6 @@
           await createAndPreviewExplore(
             runtimeClient,
             queryClient,
-            instanceId,
             resource,
           );
       }}
@@ -119,7 +118,6 @@
               await createAndPreviewExplore(
                 runtimeClient,
                 queryClient,
-                instanceId,
                 resource,
               );
           }}

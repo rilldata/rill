@@ -78,7 +78,6 @@
   async function handleGenerateMetrics() {
     await generateMetricsFromTable(
       client,
-      instanceId,
       connector,
       database,
       databaseSchema,
@@ -91,7 +90,6 @@
   async function handleGenerateDashboard() {
     await generateMetricsFromTable(
       client,
-      instanceId,
       connector,
       database,
       databaseSchema,
