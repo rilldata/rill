@@ -22,27 +22,36 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { capitalize, formatOrgRole, formatServiceDateTime } from "./utils";
 
-  export let open = false;
-  export let serviceName: string;
-
-  let newlyIssuedToken = "";
-  let confirmRevokeId = "";
-
-  $: organization = $page.params.organization;
-  $: serviceQuery = createAdminServiceGetService(organization, serviceName, {
-    query: { enabled: open },
-  });
-  $: service = $serviceQuery.data?.service;
-  $: projectMemberships = $serviceQuery.data?.projectMemberships ?? [];
-  $: attributes = Object.entries(
-    (service?.attributes as Record<string, unknown>) ?? {},
-  );
-  $: tokensQuery = createAdminServiceListServiceAuthTokens(
-    organization,
+  let {
+    open = $bindable(false),
     serviceName,
-    { query: { enabled: open } },
+  }: {
+    open: boolean;
+    serviceName: string;
+  } = $props();
+
+  let newlyIssuedToken = $state("");
+  let confirmRevokeId = $state("");
+
+  let organization = $derived($page.params.organization);
+  let serviceQuery = $derived(
+    createAdminServiceGetService(organization, serviceName, {
+      query: { enabled: open },
+    }),
   );
-  $: tokens = $tokensQuery.data?.tokens ?? [];
+  let service = $derived($serviceQuery.data?.service);
+  let projectMemberships = $derived(
+    $serviceQuery.data?.projectMemberships ?? [],
+  );
+  let attributes = $derived(
+    Object.entries((service?.attributes as Record<string, unknown>) ?? {}),
+  );
+  let tokensQuery = $derived(
+    createAdminServiceListServiceAuthTokens(organization, serviceName, {
+      query: { enabled: open },
+    }),
+  );
+  let tokens = $derived($tokensQuery.data?.tokens ?? []);
 
   const queryClient = useQueryClient();
   const issueToken = createAdminServiceIssueServiceAuthToken();
@@ -185,7 +194,7 @@
             >
               {newlyIssuedToken}
             </code>
-            <IconButton on:click={() => copyToClipboard(newlyIssuedToken)}>
+            <IconButton onclick={() => copyToClipboard(newlyIssuedToken)}>
               <CopyIcon size="14px" />
             </IconButton>
           </div>
@@ -247,7 +256,7 @@
                   </div>
                 {:else}
                   <IconButton
-                    on:click={() => {
+                    onclick={() => {
                       confirmRevokeId = token.id ?? "";
                     }}
                   >

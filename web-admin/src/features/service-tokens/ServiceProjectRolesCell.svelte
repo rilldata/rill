@@ -5,20 +5,29 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { createAdminServiceGetService } from "@rilldata/web-admin/client";
 
-  export let serviceName: string;
-  export let hasProjectRoles: boolean;
+  let {
+    serviceName,
+    hasProjectRoles,
+  }: {
+    serviceName: string;
+    hasProjectRoles: boolean;
+  } = $props();
 
-  let isDropdownOpen = false;
-  let hasOpened = false;
+  let isDropdownOpen = $state(false);
+  let hasOpened = $state(false);
 
-  $: if (isDropdownOpen) hasOpened = true;
-
-  $: organization = $page.params.organization;
-  $: serviceQuery = createAdminServiceGetService(organization, serviceName, {
-    query: { enabled: hasProjectRoles && hasOpened },
+  $effect(() => {
+    if (isDropdownOpen) hasOpened = true;
   });
-  $: memberships = $serviceQuery.data?.projectMemberships ?? [];
-  $: projectCount = memberships.length;
+
+  let organization = $derived($page.params.organization);
+  let serviceQuery = $derived(
+    createAdminServiceGetService(organization, serviceName, {
+      query: { enabled: hasProjectRoles && hasOpened },
+    }),
+  );
+  let memberships = $derived($serviceQuery.data?.projectMemberships ?? []);
+  let projectCount = $derived(memberships.length);
 </script>
 
 {#if hasProjectRoles}

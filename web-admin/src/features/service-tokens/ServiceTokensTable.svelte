@@ -7,8 +7,13 @@
   import ServiceProjectRolesCell from "./ServiceProjectRolesCell.svelte";
   import { formatServiceDate, formatOrgRole } from "./utils";
 
-  export let data: V1OrganizationMemberService[];
-  export let onSelectService: (name: string) => void;
+  let {
+    data,
+    onSelectService,
+  }: {
+    data: V1OrganizationMemberService[];
+    onSelectService: (name: string) => void;
+  } = $props();
 
   const columns: ColumnDef<V1OrganizationMemberService, any>[] = [
     {

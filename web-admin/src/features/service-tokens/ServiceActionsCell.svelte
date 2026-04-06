@@ -6,12 +6,17 @@
   import EditServiceDialog from "./EditServiceDialog.svelte";
   import DeleteServiceDialog from "./DeleteServiceDialog.svelte";
 
-  export let name: string;
-  export let onManageTokens: (name: string) => void;
+  let {
+    name,
+    onManageTokens,
+  }: {
+    name: string;
+    onManageTokens: (name: string) => void;
+  } = $props();
 
-  let isDropdownOpen = false;
-  let isEditDialogOpen = false;
-  let isDeleteDialogOpen = false;
+  let isDropdownOpen = $state(false);
+  let isEditDialogOpen = $state(false);
+  let isDeleteDialogOpen = $state(false);
 </script>
 
 <div class="flex items-center">

@@ -7,21 +7,35 @@
   import type { V1Project } from "@rilldata/web-admin/client";
   import { ORG_ROLES, PROJECT_ROLES, capitalize, formatOrgRole } from "./utils";
 
-  export let name: string;
-  export let orgRole: string;
-  export let projectAssignments: { project: string; role: string }[];
-  export let attributes: { key: string; value: string }[];
-  export let nameError: string;
-  export let allProjects: V1Project[];
-  export let formId: string;
-  export let namePlaceholder = "my-service";
-  export let showOptionalLabels = false;
+  let {
+    name = $bindable(),
+    orgRole = $bindable(),
+    projectAssignments = $bindable(),
+    attributes = $bindable(),
+    nameError,
+    allProjects,
+    formId,
+    namePlaceholder = "my-service",
+    showOptionalLabels = false,
+    onSubmit,
+  }: {
+    name: string;
+    orgRole: string;
+    projectAssignments: { project: string; role: string }[];
+    attributes: { key: string; value: string }[];
+    nameError: string;
+    allProjects: V1Project[];
+    formId: string;
+    namePlaceholder?: string;
+    showOptionalLabels?: boolean;
+    onSubmit: () => void;
+  } = $props();
 
-  export let onSubmit: () => void;
-
-  $: assignedProjectNames = new Set(projectAssignments.map((p) => p.project));
-  $: availableProjects = allProjects.filter(
-    (p) => !assignedProjectNames.has(p.name ?? ""),
+  let assignedProjectNames = $derived(
+    new Set(projectAssignments.map((p) => p.project)),
+  );
+  let availableProjects = $derived(
+    allProjects.filter((p) => !assignedProjectNames.has(p.name ?? "")),
   );
 
   function addProjectAssignment() {
@@ -40,7 +54,10 @@
 <form
   id={formId}
   class="w-full flex flex-col gap-y-4 max-h-[50vh] overflow-y-auto"
-  on:submit|preventDefault={onSubmit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    onSubmit();
+  }}
 >
   <Input
     bind:value={name}
@@ -135,7 +152,7 @@
             </Select.Content>
           </Select.Root>
         </div>
-        <IconButton on:click={() => removeProjectAssignment(index)}>
+        <IconButton onclick={() => removeProjectAssignment(index)}>
           <Trash2Icon size="14px" class="text-fg-secondary" />
         </IconButton>
       </div>
@@ -179,7 +196,7 @@
           placeholder="Value"
         />
         <IconButton
-          on:click={() => {
+          onclick={() => {
             attributes = attributes.filter((_, i) => i !== index);
           }}
         >

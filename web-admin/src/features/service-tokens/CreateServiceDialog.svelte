@@ -25,24 +25,29 @@
   import { validateServiceName } from "./utils";
   import ServiceForm from "./ServiceForm.svelte";
 
-  export let open = false;
+  let { open = $bindable(false) }: { open: boolean } = $props();
 
-  let name = "";
-  let orgRole = "";
-  let projectAssignments: { project: string; role: string }[] = [];
-  let attributes: { key: string; value: string }[] = [];
-  let issuedToken = "";
-  let tokenCopied = false;
-  let step: "form" | "token" = "form";
+  let name = $state("");
+  let orgRole = $state("");
+  let projectAssignments: { project: string; role: string }[] = $state([]);
+  let attributes: { key: string; value: string }[] = $state([]);
+  let issuedToken = $state("");
+  let tokenCopied = $state(false);
+  let step: "form" | "token" = $state("form");
 
-  $: organization = $page.params.organization;
-  $: projectsQuery =
-    createAdminServiceListProjectsForOrganization(organization);
-  $: allProjects = $projectsQuery.data?.projects ?? [];
+  let organization = $derived($page.params.organization);
+  let projectsQuery = $derived(
+    createAdminServiceListProjectsForOrganization(organization),
+  );
+  let allProjects = $derived($projectsQuery.data?.projects ?? []);
 
-  $: nameError = name ? validateServiceName(name) : "";
-  $: hasAtLeastOneAssignment = orgRole !== "" || projectAssignments.length > 0;
-  $: isValid = name.trim() !== "" && !nameError && hasAtLeastOneAssignment;
+  let nameError = $derived(name ? validateServiceName(name) : "");
+  let hasAtLeastOneAssignment = $derived(
+    orgRole !== "" || projectAssignments.length > 0,
+  );
+  let isValid = $derived(
+    name.trim() !== "" && !nameError && hasAtLeastOneAssignment,
+  );
 
   const queryClient = useQueryClient();
   const createService = createAdminServiceCreateService();
@@ -179,7 +184,7 @@
             {issuedToken}
           </code>
           <IconButton
-            on:click={() => {
+            onclick={() => {
               copyToClipboard(issuedToken);
               tokenCopied = true;
             }}

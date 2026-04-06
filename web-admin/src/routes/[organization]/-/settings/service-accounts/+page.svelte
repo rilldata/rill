@@ -9,13 +9,13 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
-  let isCreateDialogOpen = false;
-  let selectedServiceName = "";
-  let isDetailDialogOpen = false;
+  let isCreateDialogOpen = $state(false);
+  let selectedServiceName = $state("");
+  let isDetailDialogOpen = $state(false);
 
-  $: organization = $page.params.organization;
-  $: servicesQuery = createAdminServiceListServices(organization);
-  $: services = $servicesQuery.data?.services ?? [];
+  let organization = $derived($page.params.organization);
+  let servicesQuery = $derived(createAdminServiceListServices(organization));
+  let services = $derived($servicesQuery.data?.services ?? []);
 
   function handleSelectService(name: string) {
     selectedServiceName = name;
@@ -24,7 +24,7 @@
 </script>
 
 <SettingsContainer title="Service Accounts">
-  <svelte:fragment slot="body">
+  {#snippet body()}
     <div class="flex flex-col gap-y-4">
       <div class="flex items-center justify-between">
         <p class="text-sm text-fg-tertiary">
@@ -57,7 +57,7 @@
         />
       {/if}
     </div>
-  </svelte:fragment>
+  {/snippet}
 </SettingsContainer>
 
 <CreateServiceDialog bind:open={isCreateDialogOpen} />

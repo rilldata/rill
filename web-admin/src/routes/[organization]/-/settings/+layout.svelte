@@ -6,25 +6,33 @@
   import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { PageData } from "./$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
+  import type { Snippet } from "svelte";
 
-  export let data: PageData;
+  let {
+    data,
+    children,
+  }: {
+    data: PageData;
+    children: Snippet;
+  } = $props();
 
-  $: ({
+  let {
     subscription,
     neverSubscribed,
     billingPortalUrl,
     organizationPermissions,
-  } = data);
+  } = $derived(data);
 
-  $: organization = $page.params.organization;
-  $: basePage = `/${organization}/-/settings`;
-  $: onEnterprisePlan =
-    subscription?.plan?.name && isEnterprisePlan(subscription.plan.name);
-  $: hideBillingSettings = neverSubscribed;
-  $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
-  $: canManageOrg = !!organizationPermissions?.manageOrg;
+  let organization = $derived($page.params.organization);
+  let basePage = $derived(`/${organization}/-/settings`);
+  let onEnterprisePlan = $derived(
+    subscription?.plan?.name && isEnterprisePlan(subscription.plan.name),
+  );
+  let hideBillingSettings = $derived(neverSubscribed);
+  let hideUsageSettings = $derived(onEnterprisePlan || !billingPortalUrl);
+  let canManageOrg = $derived(!!organizationPermissions?.manageOrg);
 
-  $: navItems = [
+  let navItems = $derived([
     { label: "General", route: "", hasPermission: true },
     {
       label: "Service Accounts",
@@ -41,7 +49,7 @@
       route: "/usage",
       hasPermission: !hideBillingSettings && !hideUsageSettings,
     },
-  ];
+  ]);
 </script>
 
 <ContentContainer title="Organization settings" maxWidth={1100}>
@@ -53,7 +61,7 @@
       minWidth="180px"
     />
     <div class="flex flex-col gap-y-6 w-full">
-      <slot />
+      {@render children()}
     </div>
   </div>
 </ContentContainer>

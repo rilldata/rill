@@ -25,56 +25,61 @@
   import { validateServiceName } from "./utils";
   import ServiceForm from "./ServiceForm.svelte";
 
-  export let open = false;
-  export let name: string;
+  let {
+    open = $bindable(false),
+    name,
+  }: {
+    open: boolean;
+    name: string;
+  } = $props();
 
-  let newName = "";
-  let orgRole = "";
-  let projectAssignments: { project: string; role: string }[] = [];
-  let initialProjectAssignments: { project: string; role: string }[] = [];
-  let attributes: { key: string; value: string }[] = [];
-  let initialAttributes: { key: string; value: string }[] = [];
-  let saving = false;
-  let nameError = "";
-  let initialized = false;
+  let newName = $state("");
+  let orgRole = $state("");
+  let projectAssignments: { project: string; role: string }[] = $state([]);
+  let initialProjectAssignments: { project: string; role: string }[] = $state(
+    [],
+  );
+  let attributes: { key: string; value: string }[] = $state([]);
+  let initialAttributes: { key: string; value: string }[] = $state([]);
+  let saving = $state(false);
+  let initialized = $state(false);
 
-  $: organization = $page.params.organization;
-  $: serviceQuery = createAdminServiceGetService(organization, name, {
-    query: { enabled: open },
-  });
-  $: projectsQuery =
-    createAdminServiceListProjectsForOrganization(organization);
-  $: allProjects = $projectsQuery.data?.projects ?? [];
+  let organization = $derived($page.params.organization);
+  let serviceQuery = $derived(
+    createAdminServiceGetService(organization, name, {
+      query: { enabled: open },
+    }),
+  );
+  let projectsQuery = $derived(
+    createAdminServiceListProjectsForOrganization(organization),
+  );
+  let allProjects = $derived($projectsQuery.data?.projects ?? []);
 
   // Initialize form when service data loads
-  $: if ($serviceQuery.data?.service && open && !initialized) {
-    const svc = $serviceQuery.data.service;
-    const memberships = $serviceQuery.data.projectMemberships ?? [];
-    initialized = true;
-    newName = svc.name ?? "";
-    orgRole = svc.roleName ?? "";
-    projectAssignments = memberships.map((pm: V1ProjectMemberService) => ({
-      project: pm.projectName ?? "",
-      role: pm.projectRoleName ?? "viewer",
-    }));
-    initialProjectAssignments = projectAssignments.map((pa) => ({ ...pa }));
-    const svcAttrs = (svc.attributes as Record<string, unknown>) ?? {};
-    attributes = Object.entries(svcAttrs).map(([key, value]) => ({
-      key,
-      value: String(value ?? ""),
-    }));
-    initialAttributes = attributes.map((a) => ({ ...a }));
-  }
+  $effect(() => {
+    if ($serviceQuery.data?.service && open && !initialized) {
+      const svc = $serviceQuery.data.service;
+      const memberships = $serviceQuery.data.projectMemberships ?? [];
+      initialized = true;
+      newName = svc.name ?? "";
+      orgRole = svc.roleName ?? "";
+      projectAssignments = memberships.map((pm: V1ProjectMemberService) => ({
+        project: pm.projectName ?? "",
+        role: pm.projectRoleName ?? "viewer",
+      }));
+      initialProjectAssignments = projectAssignments.map((pa) => ({ ...pa }));
+      const svcAttrs = (svc.attributes as Record<string, unknown>) ?? {};
+      attributes = Object.entries(svcAttrs).map(([key, value]) => ({
+        key,
+        value: String(value ?? ""),
+      }));
+      initialAttributes = attributes.map((a) => ({ ...a }));
+    }
+  });
 
-  $: nameError = newName ? validateServiceName(newName) : "";
+  let nameError = $derived(newName ? validateServiceName(newName) : "");
 
-  $: hasChanges =
-    (newName.trim() !== name && !nameError) ||
-    orgRole !== ($serviceQuery.data?.service?.roleName ?? "") ||
-    projectAssignmentsChanged ||
-    attributesChanged;
-
-  $: projectAssignmentsChanged = (() => {
+  let projectAssignmentsChanged = $derived.by(() => {
     if (projectAssignments.length !== initialProjectAssignments.length)
       return true;
     return projectAssignments.some((pa, i) => {
@@ -83,9 +88,9 @@
         !initial || pa.project !== initial.project || pa.role !== initial.role
       );
     });
-  })();
+  });
 
-  $: attributesChanged = (() => {
+  let attributesChanged = $derived.by(() => {
     const current = new Map(
       attributes
         .filter((a) => a.key.trim())
@@ -101,7 +106,14 @@
       if (initial.get(k) !== v) return true;
     }
     return false;
-  })();
+  });
+
+  let hasChanges = $derived(
+    (newName.trim() !== name && !nameError) ||
+      orgRole !== ($serviceQuery.data?.service?.roleName ?? "") ||
+      projectAssignmentsChanged ||
+      attributesChanged,
+  );
 
   const queryClient = useQueryClient();
   const updateService = createAdminServiceUpdateService();
@@ -117,7 +129,6 @@
     attributes = [];
     initialAttributes = [];
     saving = false;
-    nameError = "";
     initialized = false;
   }
 

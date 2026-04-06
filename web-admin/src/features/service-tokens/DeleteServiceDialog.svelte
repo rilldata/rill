@@ -17,10 +17,15 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
 
-  export let open = false;
-  export let name: string;
+  let {
+    open = $bindable(false),
+    name,
+  }: {
+    open: boolean;
+    name: string;
+  } = $props();
 
-  $: organization = $page.params.organization;
+  let organization = $derived($page.params.organization);
 
   const queryClient = useQueryClient();
   const deleteService = createAdminServiceDeleteService();
