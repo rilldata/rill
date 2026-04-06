@@ -288,9 +288,6 @@ test.describe.serial("Alerts", () => {
   test.describe.serial("Alerts with schedule", () => {
     test("Should create alert with schedule", async ({ adminPage }) => {
       await adminPage.goto("/e2e/openrtb/explore/auction_explore");
-      // Wait for the page to settle before opening the alert form to avoid a race
-      // condition where the form's superFormInstance gets recreated mid-interaction.
-      await adminPage.waitForURL(/tr=P7D/);
 
       await adminPage.getByRole("button", { name: "Create alert" }).click();
 
