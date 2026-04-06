@@ -3,6 +3,8 @@ In svelte.config.js, the "adapter-static" option makes the application a single-
 app in production. Here, we are setting server-side rendering (SSR) to false to 
 ensure the same single-page app behavior in development.
 */
+import { getSingleUseUrlParam } from "@rilldata/web-admin/features/navigation/getSingleUseUrlParam.ts";
+
 export const ssr = false;
 
 import { dev } from "$app/environment";
@@ -12,7 +14,6 @@ import {
   type RpcStatus,
   type V1GetCurrentUserResponse,
   type V1GetOrganizationResponse,
-  type V1OrganizationPermissions,
   type V1ProjectPermissions,
   type V1User,
 } from "@rilldata/web-admin/client";
@@ -75,15 +76,9 @@ export const load = async ({ params, url, route, depends }) => {
     }
   }
 
-  // If no organization or project, return empty permissions
-  if (!organization) {
-    return {
-      user,
-      organizationPermissions: <V1OrganizationPermissions>{},
-      projectPermissions: <V1ProjectPermissions>{},
-      token,
-      organization: undefined,
-    };
+  const isNewUser = getSingleUseUrlParam(url, "new_user", "rill:cloud:newUser");
+  if (isNewUser && !organization) {
+    throw redirect(307, "/-/welcome/theme");
   }
 
   // Get organization
@@ -104,7 +99,7 @@ export const load = async ({ params, url, route, depends }) => {
     if (shouldRedirectToRequestAccess) {
       // The redirect is handled below after the call to `GetProject`
     } else {
-      throw error(e.response.status, e.response.data.message);
+      // throw error(e.response.status, e.response.data.message);
     }
   }
 

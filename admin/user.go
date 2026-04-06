@@ -128,17 +128,17 @@ func (s *Service) UpdateOrganizationMemberUserRole(ctx context.Context, orgID, u
 
 // CreateOrUpdateUser creates or updates a user with the given email, name, and photo URL.
 // If the user doesn't exist, it creates a new user and simultaneously adds them to any orgs and projects they have been invited to.
-func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
+func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, bool, error) {
 	// Validate email address
 	_, err := mail.ParseAddress(email)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user email address %q", email)
+		return nil, false, fmt.Errorf("invalid user email address %q", email)
 	}
 
 	// Update user if exists
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
-		return s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+		user, err = s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
 			DisplayName:          name,
 			PhotoURL:             photoURL,
 			GithubUsername:       user.GithubUsername,
@@ -149,8 +149,9 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			QuotaTrialOrgs:       user.QuotaTrialOrgs,
 			PreferenceTimeZone:   user.PreferenceTimeZone,
 		})
+		return user, false, err
 	} else if !errors.Is(err, database.ErrNotFound) {
-		return nil, err
+		return nil, false, err
 	}
 
 	// User does not exist. Creating a new user.
@@ -158,22 +159,22 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	// Get user invites if exists
 	orgInvites, err := s.DB.FindOrganizationInvitesByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	projectInvites, err := s.DB.FindProjectInvitesByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	ctx, tx, err := s.DB.NewTx(ctx, false)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
 	isFirstUser, err := s.DB.CheckUsersEmpty(ctx)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	opts := &database.InsertUserOptions{
@@ -188,7 +189,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	// Create user
 	user, err = s.DB.InsertUser(ctx, opts)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// handle org invites
@@ -197,18 +198,18 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	for _, invite := range orgInvites {
 		org, err := s.DB.FindOrganization(ctx, invite.OrgID)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, nil, false)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		for _, usergroupID := range invite.UsergroupIDs {
 			// check if the user group exists, need to check explicitly as tx is not completed yet
 			exists, err := s.DB.CheckUsergroupExists(ctx, usergroupID)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			if !exists {
@@ -218,7 +219,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 
 			err = s.DB.InsertUsergroupMemberUser(ctx, usergroupID, user.ID)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 
@@ -226,7 +227,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		// That's alright because we already loaded the project invites to apply, but we must not reference them in the database after this.
 		err = s.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		addedToOrgIDs[invite.OrgID] = true
@@ -237,7 +238,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	domain := email[strings.LastIndex(email, "@")+1:]
 	organizationWhitelistedDomains, err := s.DB.FindOrganizationWhitelistedDomainsForDomain(ctx, domain)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	for _, whitelist := range organizationWhitelistedDomains {
 		// if user is already a member of the org then skip, prefer explicit invite to whitelist
@@ -246,11 +247,11 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		}
 		org, err := s.DB.FindOrganization(ctx, whitelist.OrgID)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		err = s.InsertOrganizationMemberUser(ctx, whitelist.OrgID, user.ID, whitelist.OrgRoleID, nil, false)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		addedToOrgIDs[org.ID] = true
 		addedToOrgNames = append(addedToOrgNames, org.Name)
@@ -262,11 +263,11 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	for _, invite := range projectInvites {
 		project, err := s.DB.FindProject(ctx, invite.ProjectID)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, invite.ProjectID, user.ID, invite.ProjectRoleID, nil, invite.RestrictResources, invite.Resources)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		addedToProjectIDs[project.ID] = true
 		addedToProjectNames = append(addedToProjectNames, project.Name)
@@ -281,7 +282,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	// check if users email domain is whitelisted for some projects
 	projectWhitelistedDomains, err := s.DB.FindProjectWhitelistedDomainsForDomain(ctx, domain)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	for _, whitelist := range projectWhitelistedDomains {
 		// if user is already a member of the project then skip, prefer explicit invite to whitelist
@@ -290,11 +291,11 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		}
 		project, err := s.DB.FindProject(ctx, whitelist.ProjectID)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID, nil, false, nil)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		addedToProjectIDs[project.ID] = true
 		addedToProjectNames = append(addedToProjectNames, project.Name)
@@ -302,7 +303,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	s.Logger.Info("created user",
@@ -313,7 +314,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		zap.String("projects", strings.Join(addedToProjectNames, ",")),
 	)
 
-	return user, nil
+	return user, true, nil
 }
 
 // CreateOrganizationForUser creates a new organization with the given name and description, and adds the user as an admin.
