@@ -37,7 +37,10 @@
     return "";
   });
 
-  let open = $state(showUpgradeDialog);
+  let open = $state(false);
+  $effect(() => {
+    if (showUpgradeDialog) open = true;
+  });
 </script>
 
 <SettingsContainer title={plan?.displayName || "Team plan"}>
