@@ -8,7 +8,7 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
-import { mount, unmount } from "svelte";
+import { mount, unmount, getAllContexts } from "svelte";
 import {
   convertContextToInlinePrompt,
   INLINE_CHAT_CONTEXT_TAG,
@@ -16,19 +16,13 @@ import {
   normalizeInlineContext,
   parseInlineAttr,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import {
-  RUNTIME_CONTEXT_KEY,
-  RuntimeClient,
-} from "@rilldata/web-common/runtime-client/v2";
 
 export function getEditorPlugins({
   placeholder,
   onSubmit,
-  runtimeClient,
 }: {
   placeholder: string;
   onSubmit: () => void;
-  runtimeClient: RuntimeClient;
 }) {
   const sharedEditorStore = new SharedEditorStore();
 
@@ -40,7 +34,7 @@ export function getEditorPlugins({
       placeholder,
     }),
     EditorSubmitExtension.configure({ onSubmit, sharedEditorStore }),
-    configureInlineContextTipTapExtension(sharedEditorStore, runtimeClient),
+    configureInlineContextTipTapExtension(sharedEditorStore),
     UndoRedo,
   ];
 
@@ -103,7 +97,7 @@ const EditorSubmitExtension = Extension.create(() => {
 
 type InlineContextOptions = MentionOptions<never, InlineContext> & {
   sharedEditorStore: SharedEditorStore;
-  runtimeClient: RuntimeClient;
+  allParentContexts: Map<any, any>;
 };
 
 // Add the startMention command to the Commands type.
@@ -127,7 +121,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       // These have to be configured for the extension to work
       manager: {} as ConversationManager,
       sharedEditorStore: {} as SharedEditorStore,
-      runtimeClient: {} as RuntimeClient,
+      allParentContexts: new Map(),
     };
   },
 
@@ -188,7 +182,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       // We need this here to make sure the component is rendered inline.
       target.className = "inline-block";
 
-      const { sharedEditorStore, runtimeClient } = this.options;
+      const { sharedEditorStore, allParentContexts } = this.options;
 
       // Create the inline chat context component. Pass the wrapper as the target.
       const comp = mount(InlineContextComponent, {
@@ -216,7 +210,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
               }
             : { mode: "readonly" },
         },
-        context: new Map([[RUNTIME_CONTEXT_KEY, runtimeClient]]),
+        context: allParentContexts,
       }) as InlineContextExports;
       sharedEditorStore.componentAdded(comp);
 
@@ -237,15 +231,16 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
  */
 export function configureInlineContextTipTapExtension(
   sharedEditorStore: SharedEditorStore,
-  runtimeClient: RuntimeClient,
 ) {
   let comp: Record<string, unknown> | null = null;
   const pickerProps: Record<string, unknown> = $state({});
   let selected = false;
 
+  const allParentContexts = getAllContexts();
+
   return InlineContextExtension.configure({
     sharedEditorStore,
-    runtimeClient,
+    allParentContexts,
     suggestion: {
       char: "@",
       allowSpaces: true,
@@ -264,7 +259,7 @@ export function configureInlineContextTipTapExtension(
           comp = mount(InlineContextPicker, {
             target: document.body,
             props: pickerProps,
-            context: new Map([[RUNTIME_CONTEXT_KEY, runtimeClient]]),
+            context: allParentContexts,
           });
           sharedEditorStore.contextOpen = true;
         },

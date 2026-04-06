@@ -29,7 +29,7 @@
     $selectedMockUserStore && isNotFoundError($canvasQuery.error);
 </script>
 
-{#key runtimeClient.instanceId}
+{#key `${runtimeClient.instanceId}::${canvasName}`}
   {#if mockUserHasNoAccess}
     <ErrorPage
       statusCode={extractErrorStatusCode($canvasQuery.error)}

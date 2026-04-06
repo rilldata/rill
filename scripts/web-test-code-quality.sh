@@ -70,7 +70,7 @@ echo "filters: admin=$ADMIN local=$LOCAL common=$COMMON"
 echo ""
 echo "== NPM Install =="
 # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-HUSKY=0 npm install
+HUSKY=0 npm ci
 
 if [[ "$COMMON" == "true" ]]; then
   echo ""

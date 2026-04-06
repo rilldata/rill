@@ -1,13 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -65,16 +65,7 @@
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = resource?.meta?.reconcileError;
-  $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient,
-    resource,
-    reconcileError,
-  );
-  $: rootCauseReconcileError = reconcileError
-    ? ($rootCauseQuery?.data ?? reconcileError)
-    : undefined;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -113,11 +104,15 @@
     </div>
   </WorkspaceHeader>
 
-  <svelte:fragment slot="body">
+  <WorkspaceEditorContainer
+    slot="body"
+    {resource}
+    {parseError}
+    remoteContent={$remoteContent}
+  >
     {#if $selectedView === "code"}
       <MetricsEditor
         bind:autoSave={$autoSave}
-        {rootCauseReconcileError}
         {fileArtifact}
         {filePath}
         {parseError}
@@ -126,7 +121,6 @@
     {:else}
       {#key fileArtifact}
         <VisualMetrics
-          {parseError}
           {fileArtifact}
           switchView={() => {
             $selectedView = "code";
@@ -134,7 +128,7 @@
         />
       {/key}
     {/if}
-  </svelte:fragment>
+  </WorkspaceEditorContainer>
 
   <MetricsInspector
     {filePath}

@@ -4,6 +4,7 @@
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -24,6 +25,8 @@
   export let exploreName: string;
   export let expandedMeasureName: string;
   export let hideStartPivotButton = false;
+
+  $: isEmbedded = EmbedStore.isEmbedded();
 
   const stateManagers = getStateManagers();
   const {
@@ -218,13 +221,15 @@
           We encountered an error while loading the data. Please try refreshing
           the page.
         </div>
-        <div class="text-fg-secondary">
-          If the issue persists, please contact us on <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://discord.gg/2ubRfjC7Rh">Discord</a
-          >.
-        </div>
+        {#if !isEmbedded}
+          <div class="text-fg-secondary">
+            If the issue persists, please contact us on <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://discord.gg/2ubRfjC7Rh">Discord</a
+            >.
+          </div>
+        {/if}
       </div>
     </div>
   {:else if formattedData && comparisonCopy && measure}

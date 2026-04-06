@@ -19,8 +19,13 @@ func Credentials(ctx context.Context, jsonData string, allowHostAccess bool, sco
 		}
 	}
 	if jsonData != "" {
-		// google_application_credentials is set, use credentials from json string provided by user
-		return google.CredentialsFromJSON(ctx, []byte(jsonData), scopes...)
+		// google_application_credentials is set, use credentials from json string provided by user.
+		// Parse the credential type first so we can use the type-specific, non-deprecated API.
+		var f credentialsFile
+		if err := json.Unmarshal([]byte(jsonData), &f); err != nil {
+			return nil, fmt.Errorf("invalid credentials JSON: %w", err)
+		}
+		return google.CredentialsFromJSONWithTypeAndParams(ctx, []byte(jsonData), google.CredentialsType(f.Type), google.CredentialsParams{Scopes: scopes})
 	}
 	// google_application_credentials is not set
 	if allowHostAccess {

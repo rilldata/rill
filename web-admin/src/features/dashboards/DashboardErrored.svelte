@@ -1,10 +1,13 @@
 <script lang="ts">
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;
+
+  $: isEmbedded = EmbedStore.isEmbedded();
 </script>
 
 <div class="flex flex-col justify-center items-center h-3/5 space-y-6 m-auto">
@@ -38,9 +41,11 @@
       </CtaButton>
     </svelte:fragment>
   </ProjectAccessControls>
-  <p class="text-fg-secondary">
-    Need help? Reach out to us on <a href="https://discord.gg/2ubRfjC7Rh"
-      >Discord</a
-    >
-  </p>
+  {#if !isEmbedded}
+    <p class="text-fg-secondary">
+      Need help? Reach out to us on <a href="https://discord.gg/2ubRfjC7Rh"
+        >Discord</a
+      >
+    </p>
+  {/if}
 </div>
