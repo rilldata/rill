@@ -115,6 +115,15 @@
       </span>
     </div>
 
+    {#if !$subscriptionQuery?.isLoading && showSlots}
+      <div class="info-row">
+        <span class="info-label">Cluster Size</span>
+        <span class="info-value"
+          >{currentSlots} vCPU, {currentSlots * 4} GiB RAM</span
+        >
+      </div>
+    {/if}
+
     {#if isGithubConnected}
       <div class="info-row">
         <span class="info-label">Repo</span>
@@ -179,13 +188,6 @@
         {/if}
       </span>
     </div>
-
-    {#if !$subscriptionQuery?.isLoading && showSlots}
-      <div class="info-row">
-        <span class="info-label">Rill Slots</span>
-        <span class="slots-count">{currentSlots}</span>
-      </div>
-    {/if}
   </div>
 </OverviewCard>
 
