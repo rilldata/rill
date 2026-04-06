@@ -22,6 +22,8 @@ import {
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
+import { WelcomeStatus } from "@rilldata/web-common/features/welcome/status.ts";
+import { get } from "svelte/store";
 
 // =============================================================================
 // RENDER MODES
@@ -133,7 +135,7 @@ export function isHiddenTool(toolName: string | undefined): boolean {
 }
 
 function handleNavigateToolCall(callMessage: V1Message) {
-  if (!callMessage.contentData) return;
+  if (get(WelcomeStatus) || !callMessage.contentData) return;
   try {
     const content = JSON.parse(callMessage.contentData);
     if (!content.kind || !content.name) return;

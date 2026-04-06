@@ -86,7 +86,6 @@
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     runtimeClient,
-    instanceId,
     connector as string,
     "",
     "",
@@ -98,7 +97,6 @@
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
     runtimeClient,
-    instanceId,
     connector as string,
     "",
     "",
@@ -110,7 +108,6 @@
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
     runtimeClient,
-    instanceId,
     connector as string,
     "",
     "",

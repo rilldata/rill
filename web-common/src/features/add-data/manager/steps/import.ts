@@ -31,6 +31,10 @@ import { getName } from "@rilldata/web-common/features/entity-management/name-ut
 import type { QueryClient } from "@tanstack/svelte-query";
 import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+import {
+  createCanvasDashboardFromMetricsViewWithAgent,
+  createMetricsViewFromTableWithAgent,
+} from "@rilldata/web-common/features/metrics-views/ai-generation/generateMetricsView.ts";
 
 export async function runImportSteps(
   runtimeClient: RuntimeClient,
@@ -301,15 +305,28 @@ async function runCreateMetricsViewStep(
     );
   }
 
-  // Call GenerateMetricsViewFile with the generated file path
-  await runtimeServiceGenerateMetricsViewFile(runtimeClient, {
-    connector,
-    table,
-    database,
-    databaseSchema,
-    path: importToConfig.metricsViewPath,
-    useAi: get(featureFlags.ai),
-  });
+  if (get(featureFlags.dashboardChat)) {
+    await createMetricsViewFromTableWithAgent({
+      client: runtimeClient,
+      connector,
+      database,
+      databaseSchema,
+      tableName: table,
+      metricsViewName: importToConfig.metricsViewName,
+      metricsViewFilePath: importToConfig.metricsViewPath,
+      directSubmission: true,
+    });
+  } else {
+    // Call GenerateMetricsViewFile with the generated file path
+    await runtimeServiceGenerateMetricsViewFile(runtimeClient, {
+      connector,
+      table,
+      database,
+      databaseSchema,
+      path: importToConfig.metricsViewPath,
+      useAi: get(featureFlags.ai),
+    });
+  }
   // Wait for the metrics view to successfully reconcile
   await waitForResourceReconciliation(
     runtimeClient,
@@ -366,15 +383,29 @@ async function runCreateCanvasStep(
 ) {
   // Validate canvas name and path are generated upstream
   const importToConfig = config.importTo;
-  if (!importToConfig.canvasName || !importToConfig.canvasPath) {
+  if (
+    !importToConfig.canvasName ||
+    !importToConfig.canvasPath ||
+    !importToConfig.metricsViewName
+  ) {
     throw new Error("Canvas name and path must be generated upstream.");
   }
 
-  await runtimeServiceGenerateCanvasFile(runtimeClient, {
-    metricsViewName: importToConfig.metricsViewName,
-    path: importToConfig.canvasPath,
-    useAi: get(featureFlags.ai),
-  });
+  if (get(featureFlags.dashboardChat)) {
+    await createCanvasDashboardFromMetricsViewWithAgent(
+      runtimeClient,
+      importToConfig.metricsViewName,
+      importToConfig.canvasName,
+      importToConfig.canvasPath,
+      true,
+    );
+  } else {
+    await runtimeServiceGenerateCanvasFile(runtimeClient, {
+      metricsViewName: importToConfig.metricsViewName,
+      path: importToConfig.canvasPath,
+      useAi: get(featureFlags.ai),
+    });
+  }
 
   // Wait for canvas to reconcile
   await waitForResourceReconciliation(

@@ -125,7 +125,6 @@
         createAndPreviewExplore(
           runtimeClient,
           queryClient,
-          instanceId,
           resource,
         )}
     >

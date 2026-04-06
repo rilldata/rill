@@ -1,5 +1,11 @@
 import { goto } from "$app/navigation";
-import { createCanvasDashboardWithoutNavigation } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
+import {
+  createCanvasDashboardFromMetricsViewWithAgent,
+  createCanvasDashboardWithoutNavigation,
+} from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
+import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
+import { ToolName } from "@rilldata/web-common/features/chat/core/types";
+import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import {
@@ -12,7 +18,7 @@ import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explor
 import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 import { waitUntil } from "../../../lib/waitUtils";
@@ -68,7 +74,6 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
  */
 export function useCreateMetricsViewFromTableUIAction(
   client: RuntimeClient,
-  instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -77,108 +82,30 @@ export function useCreateMetricsViewFromTableUIAction(
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
-  const isAiEnabled = get(featureFlags.ai);
-
   // Return a function that can be called to create a dashboard from a table
   return async () => {
-    const abortController = new AbortController();
-
-    overlay.set({
-      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your ${createExplore ? "dashboard" : "metrics"}`,
-      detail: {
-        component: OptionToCancelAIGeneration,
-        props: {
-          onCancel: () => {
-            abortController.abort("AI generation cancelled by user");
-          },
-        },
-      },
-    });
-
-    // Get a unique name
-    const newMetricsViewName = getName(
-      `${tableName}_metrics`,
-      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
-    );
-    const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
-
-    try {
-      // First, request an AI-generated metrics view
-      void runtimeServiceGenerateMetricsViewFileWithSignal(
+    // ai will be disabled in CI, so use legacy path until we have tests in place
+    if (!get(featureFlags.dashboardChat) || !get(featureFlags.ai)) {
+      await createMetricsViewFromTableWithoutAgent(
         client,
-        {
-          connector: connector,
-          database: database,
-          databaseSchema: databaseSchema,
-          table: tableName,
-          path: newMetricsViewFilePath,
-          useAi: isAiEnabled, // AI isn't enabled during e2e tests
-        },
-        abortController.signal,
+        connector,
+        database,
+        databaseSchema,
+        tableName,
+        createExplore,
+        behaviourEventMedium,
+        metricsEventSpace,
       );
-
-      // Poll until file creation is complete or canceled
-      const fileCreated = await pollForFileCreation(
-        client,
-        newMetricsViewFilePath,
-        abortController.signal,
-      );
-
-      // If the user canceled the AI request, submit another request with `useAi=false`
-      if (!fileCreated) {
-        await runtimeServiceGenerateMetricsViewFile(client, {
-          connector: connector,
-          database: database,
-          databaseSchema: databaseSchema,
-          table: tableName,
-          path: newMetricsViewFilePath,
-          useAi: false,
-        });
-      }
-
-      const previousScreenName = getScreenNameFromPage();
-
-      // If we're not creating an Explore, navigate to the Metrics View file
-      if (!createExplore) {
-        await goto(`/files${newMetricsViewFilePath}`);
-        void behaviourEvent?.fireNavigationEvent(
-          newMetricsViewName,
-          behaviourEventMedium,
-          metricsEventSpace,
-          previousScreenName,
-          MetricsEventScreenName.MetricsDefinition,
-        );
-        overlay.set(null);
-        return;
-      }
-
-      // If we are creating an Explore...
-
-      // Get the Metrics View to use as a base for the Explore
-      const metricsViewResource = fileArtifacts
-        .getFileArtifact(newMetricsViewFilePath)
-        .getResource(queryClient);
-
-      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
-
-      const resource = get(metricsViewResource).data;
-      if (!resource) {
-        throw new Error("Failed to create a Metrics View resource");
-      }
-
-      // Create the Explore file, and navigate to it
-      await createAndPreviewExplore(client, queryClient, instanceId, resource);
-    } catch (err) {
-      eventBus.emit("notification", {
-        message:
-          `Failed to create ${createExplore ? "a dashboard" : "metrics"} for ` +
-          tableName,
-        detail: extractErrorMessage(err),
-      });
+      return;
     }
 
-    // Done, remove the overlay
-    overlay.set(null);
+    await createMetricsViewFromTableWithAgent({
+      client,
+      connector,
+      database,
+      databaseSchema,
+      tableName,
+    });
   };
 }
 
@@ -265,7 +192,6 @@ export async function createDashboardFromTableInMetricsEditor(
  */
 export async function generateMetricsFromTable(
   client: RuntimeClient,
-  instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -279,7 +205,6 @@ export async function generateMetricsFromTable(
     // For OLAP connectors, use direct metrics view generation
     const createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
       client,
-      instanceId,
       connector,
       database,
       databaseSchema,
@@ -293,7 +218,6 @@ export async function generateMetricsFromTable(
     // For non-OLAP connectors, follow Rill architecture: Model → Metrics → (Optional) Explore
     await createModelAndMetricsAndExplore(
       client,
-      instanceId,
       connector,
       database,
       databaseSchema,
@@ -310,9 +234,8 @@ export async function generateMetricsFromTable(
  * 2. Create metrics view (on top of model)
  * 3. Optionally create explore dashboard (on top of metrics view)
  */
-export async function createModelAndMetricsAndExplore(
+async function createModelAndMetricsAndExplore(
   client: RuntimeClient,
-  instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -468,7 +391,7 @@ export async function createModelAndMetricsAndExplore(
     });
 
     // Step 5: Create explore dashboard
-    await createAndPreviewExplore(client, queryClient, instanceId, resource);
+    await createAndPreviewExplore(client, queryClient, resource);
   } catch (err) {
     console.error("Failed to create model and metrics view:", err);
     throw err;
@@ -608,7 +531,6 @@ export async function createExploreWithoutNavigation(
  */
 export function useCreateMetricsViewWithCanvasUIAction(
   client: RuntimeClient,
-  instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -616,95 +538,34 @@ export function useCreateMetricsViewWithCanvasUIAction(
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
-  const isAiEnabled = get(featureFlags.ai);
-
   return async () => {
-    const abortController = new AbortController();
-
-    overlay.set({
-      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} building your Canvas dashboard`,
-      detail: {
-        component: OptionToCancelAIGeneration,
-        props: {
-          onCancel: () => {
-            abortController.abort("AI generation cancelled by user");
-          },
-        },
-      },
-    });
-
-    try {
-      // Step 1: Create metrics view
-      const resource = await createMetricsViewFromTable(
+    // ai will be disabled in CI, so use legacy path until we have tests in place
+    if (!get(featureFlags.dashboardChat) || !get(featureFlags.ai)) {
+      await createMetricsViewWithCanvasWithoutAgent(
         client,
         connector,
         database,
         databaseSchema,
         tableName,
-        abortController,
+        behaviourEventMedium,
+        metricsEventSpace,
       );
+      return;
+    }
 
-      const metricsViewName = resource.meta?.name?.name;
-      if (!metricsViewName) {
-        throw new Error("Failed to get metrics view name");
-      }
-
-      // Step 2: Wait a bit for metrics view to fully reconcile
-      // This ensures the metrics view is ready before we generate the canvas
-      overlay.set({
-        title: `Preparing metrics view...`,
-        detail: {
-          component: OptionToCancelAIGeneration,
-          props: {
-            onCancel: () => {
-              abortController.abort("Canvas creation cancelled by user");
-            },
-          },
-        },
-      });
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Step 3: Create Canvas dashboard
-      overlay.set({
-        title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
-        detail: {
-          component: OptionToCancelAIGeneration,
-          props: {
-            onCancel: () => {
-              abortController.abort("Canvas creation cancelled by user");
-            },
-          },
-        },
-      });
-
-      const canvasFilePath = await createCanvasDashboardWithoutNavigation(
+    const metricsViewName = await createMetricsViewFromTableWithAgent({
+      client,
+      connector,
+      database,
+      databaseSchema,
+      tableName,
+    });
+    if (metricsViewName) {
+      await createCanvasDashboardFromMetricsViewWithAgent(
         client,
         metricsViewName,
       );
-
-      // Step 4: Navigate to Canvas dashboard
-      if (canvasFilePath) {
-        await goto(`/files${canvasFilePath}`);
-        void behaviourEvent?.fireNavigationEvent(
-          metricsViewName,
-          behaviourEventMedium,
-          metricsEventSpace,
-          MetricsEventScreenName.Source,
-          MetricsEventScreenName.Canvas,
-        );
-      } else {
-        throw new Error("Failed to create Canvas dashboard");
-      }
-    } catch (err) {
-      eventBus.emit("notification", {
-        message: "Failed to create Canvas dashboard for " + tableName,
-        detail: extractErrorMessage(err),
-      });
     }
-
-    // Done, remove the overlay
-    overlay.set(null);
   };
 }
 
@@ -860,6 +721,300 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
     // Done, remove the overlay
     overlay.set(null);
   };
+}
+
+export const generatingMetricsView = writable(false);
+
+/**
+ * Creates a metrics view (and optionally an explore dashboard) from a table using the API.
+ */
+async function createMetricsViewFromTableWithoutAgent(
+  client: RuntimeClient,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  tableName: string,
+  createExplore: boolean,
+  behaviourEventMedium: BehaviourEventMedium,
+  metricsEventSpace: MetricsEventSpace,
+) {
+  const isAiEnabled = get(featureFlags.ai);
+  const abortController = new AbortController();
+
+  overlay.set({
+    title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your ${createExplore ? "dashboard" : "metrics"}`,
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort("AI generation cancelled by user");
+        },
+      },
+    },
+  });
+
+  // Get a unique name
+  const newMetricsViewName = getName(
+    `${tableName}_metrics`,
+    fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
+  );
+  const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
+
+  try {
+    // First, request an AI-generated metrics view
+    void runtimeServiceGenerateMetricsViewFileWithSignal(
+      client,
+      {
+        connector: connector,
+        database: database,
+        databaseSchema: databaseSchema,
+        table: tableName,
+        path: newMetricsViewFilePath,
+        useAi: isAiEnabled, // AI isn't enabled during e2e tests
+      },
+      abortController.signal,
+    );
+
+    // Poll until file creation is complete or canceled
+    const fileCreated = await pollForFileCreation(
+      client,
+      newMetricsViewFilePath,
+      abortController.signal,
+    );
+
+    // If the user canceled the AI request, submit another request with `useAi=false`
+    if (!fileCreated) {
+      await runtimeServiceGenerateMetricsViewFile(client, {
+        connector: connector,
+        database: database,
+        databaseSchema: databaseSchema,
+        table: tableName,
+        path: newMetricsViewFilePath,
+        useAi: false,
+      });
+    }
+
+    const previousScreenName = getScreenNameFromPage();
+
+    // If we're not creating an Explore, navigate to the Metrics View file
+    if (!createExplore) {
+      await goto(`/files${newMetricsViewFilePath}`);
+      void behaviourEvent?.fireNavigationEvent(
+        newMetricsViewName,
+        behaviourEventMedium,
+        metricsEventSpace,
+        previousScreenName,
+        MetricsEventScreenName.MetricsDefinition,
+      );
+      overlay.set(null);
+      return;
+    }
+
+    // If we are creating an Explore...
+
+    // Get the Metrics View to use as a base for the Explore
+    const metricsViewResource = fileArtifacts
+      .getFileArtifact(newMetricsViewFilePath)
+      .getResource(queryClient);
+
+    await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
+
+    const resource = get(metricsViewResource).data;
+    if (!resource) {
+      throw new Error("Failed to create a Metrics View resource");
+    }
+
+    // Create the Explore file, and navigate to it
+    await createAndPreviewExplore(client, queryClient, resource);
+  } catch (err) {
+    eventBus.emit("notification", {
+      message:
+        `Failed to create ${createExplore ? "a dashboard" : "metrics"} for ` +
+        tableName,
+      detail: extractErrorMessage(err),
+    });
+  }
+
+  // Done, remove the overlay
+  overlay.set(null);
+}
+
+/**
+ * Creates a metrics view and canvas dashboard from a table using the API.
+ */
+async function createMetricsViewWithCanvasWithoutAgent(
+  client: RuntimeClient,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  tableName: string,
+  behaviourEventMedium: BehaviourEventMedium,
+  metricsEventSpace: MetricsEventSpace,
+) {
+  const isAiEnabled = get(featureFlags.ai);
+  const abortController = new AbortController();
+
+  overlay.set({
+    title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} building your Canvas dashboard`,
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort("AI generation cancelled by user");
+        },
+      },
+    },
+  });
+
+  try {
+    // Step 1: Create metrics view
+    const resource = await createMetricsViewFromTable(
+      client,
+      connector,
+      database,
+      databaseSchema,
+      tableName,
+      abortController,
+    );
+
+    const metricsViewName = resource.meta?.name?.name;
+    if (!metricsViewName) {
+      throw new Error("Failed to get metrics view name");
+    }
+
+    // Step 2: Wait a bit for metrics view to fully reconcile
+    // This ensures the metrics view is ready before we generate the canvas
+    overlay.set({
+      title: `Preparing metrics view...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("Canvas creation cancelled by user");
+          },
+        },
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Step 3: Create Canvas dashboard
+    overlay.set({
+      title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("Canvas creation cancelled by user");
+          },
+        },
+      },
+    });
+
+    const canvasFilePath = await createCanvasDashboardWithoutNavigation(
+      client,
+      metricsViewName,
+    );
+
+    // Step 4: Navigate to Canvas dashboard
+    if (canvasFilePath) {
+      await goto(`/files${canvasFilePath}`);
+      void behaviourEvent?.fireNavigationEvent(
+        metricsViewName,
+        behaviourEventMedium,
+        metricsEventSpace,
+        MetricsEventScreenName.Source,
+        MetricsEventScreenName.Canvas,
+      );
+    } else {
+      throw new Error("Failed to create Canvas dashboard");
+    }
+  } catch (err) {
+    eventBus.emit("notification", {
+      message: "Failed to create Canvas dashboard for " + tableName,
+      detail: extractErrorMessage(err),
+    });
+  }
+
+  // Done, remove the overlay
+  overlay.set(null);
+}
+
+/**
+ * Creates a metrics view from a table using the developer agent.
+ * Opens the developer agent sidebar, sends a generation prompt, and lets the agent create the file.
+ */
+export async function createMetricsViewFromTableWithAgent({
+  client,
+  connector,
+  database,
+  databaseSchema,
+  tableName,
+  metricsViewName,
+  metricsViewFilePath,
+  directSubmission,
+}: {
+  client: RuntimeClient;
+  connector: string;
+  database: string;
+  databaseSchema: string;
+  tableName: string;
+  metricsViewName?: string;
+  metricsViewFilePath?: string;
+  directSubmission?: boolean;
+}): Promise<string | null> {
+  // 1. Generate unique metrics view name if not already provided
+  metricsViewName ??= getName(
+    `${tableName}_metrics`,
+    fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
+  );
+  metricsViewFilePath ??= `/metrics/${metricsViewName}.yaml`;
+
+  // 2. Construct prompt for developer agent
+  const prompt = `Create a metrics view at ${metricsViewFilePath} based on the "${tableName}" table from the "${connector}" connector (database: "${database}", schema: "${databaseSchema}"). Include appropriate dimensions and measures based on the table's columns.`;
+
+  try {
+    // 3. Get conversation manager and start a new conversation
+    const conversationManager = getConversationManager(client, {
+      conversationState: "browserStorage",
+      agent: ToolName.DEVELOPER_AGENT,
+    });
+
+    conversationManager.enterNewConversationMode();
+
+    const currentConversation = get(
+      conversationManager.getCurrentConversation(),
+    );
+
+    generatingMetricsView.set(true);
+
+    // 4. Start the chat with the generation prompt
+    if (directSubmission) {
+      currentConversation.draftMessage.set(prompt);
+      void currentConversation.sendMessage({});
+    } else {
+      sidebarActions.startChat(prompt);
+    }
+
+    // Wait for the stream to start async through the sidebar action
+    await waitUntil(() => get(currentConversation.isStreaming));
+
+    // Then wait for the stream to end
+    await waitUntil(() => !get(currentConversation.isStreaming), -1);
+
+    return metricsViewName;
+  } catch (err) {
+    console.error("Error generating metrics view with agent:", err);
+    if (!directSubmission) {
+      eventBus.emit("notification", {
+        message: "Failed to generate metrics view",
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    }
+    return null;
+  } finally {
+    generatingMetricsView.set(false);
+  }
 }
 
 // Re-export canvas generation functions for backward compatibility

@@ -80,7 +80,6 @@
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     runtimeClient,
-    instanceId,
     sinkConnector as string,
     database,
     databaseSchema,
@@ -92,7 +91,6 @@
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
     runtimeClient,
-    instanceId,
     sinkConnector as string,
     database,
     databaseSchema,
@@ -104,7 +102,6 @@
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
     runtimeClient,
-    instanceId,
     sinkConnector as string,
     database,
     databaseSchema,

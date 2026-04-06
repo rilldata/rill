@@ -11,7 +11,6 @@ import { createResourceFile } from "../entity-management/add/new-files.ts";
 export async function createAndPreviewExplore(
   client: RuntimeClient,
   queryClient: QueryClient,
-  instanceId: string,
   metricsViewResource: V1Resource,
 ) {
   // Create the Explore file

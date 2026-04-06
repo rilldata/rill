@@ -161,13 +161,16 @@ export async function createCanvasDashboardFromMetricsView(
 export async function createCanvasDashboardFromMetricsViewWithAgent(
   client: RuntimeClient,
   metricsViewName: string,
+  canvasName?: string,
+  canvasFilePath?: string,
+  directSubmission?: boolean,
 ): Promise<void> {
-  // 1. Generate unique canvas name
-  const canvasName = getName(
+  // 1. Generate unique canvas name if not already provided
+  canvasName ??= getName(
     `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
-  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
+  canvasFilePath ??= `/dashboards/${canvasName}.yaml`;
 
   // 2. Construct prompt for developer agent
   const prompt = `Create a canvas dashboard at ${canvasFilePath} based on the "${metricsViewName}" metrics view. Include appropriate visualizations like KPI grids, charts, and leaderboards based on the available measures and dimensions.`;
@@ -191,7 +194,12 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     generatingCanvas.set(true);
 
     // 4. Start the chat with the generation prompt
-    sidebarActions.startChat(prompt);
+    if (directSubmission) {
+      currentConversation.draftMessage.set(prompt);
+      void currentConversation.sendMessage({});
+    } else {
+      sidebarActions.startChat(prompt);
+    }
 
     // Wait for the stream to start async through the sidebar action.
     await waitUntil(() => get(currentConversation.isStreaming));
@@ -200,10 +208,12 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     await waitUntil(() => !get(currentConversation.isStreaming), -1);
   } catch (err) {
     console.error("Error generating canvas with agent:", err);
-    eventBus.emit("notification", {
-      message: "Failed to generate canvas dashboard",
-      detail: err instanceof Error ? err.message : String(err),
-    });
+    if (!directSubmission) {
+      eventBus.emit("notification", {
+        message: "Failed to generate canvas dashboard",
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    }
   } finally {
     generatingCanvas.set(false);
   }
