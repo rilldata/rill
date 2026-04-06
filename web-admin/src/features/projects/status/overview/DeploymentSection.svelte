@@ -216,19 +216,7 @@
   .repo-link:hover {
     @apply underline;
   }
-  .slots-link {
-    @apply flex items-center gap-2 no-underline;
-  }
-  .slots-link:hover .slots-detail {
-    @apply text-primary-600;
-  }
-  .slots-count {
-    @apply text-sm text-fg-primary font-medium tabular-nums;
-  }
-  .slots-detail {
-    @apply text-xs text-primary-500;
-  }
-  .upgrade-link {
+.upgrade-link {
     @apply text-xs text-primary-500 no-underline;
   }
   .upgrade-link:hover {
