@@ -64,7 +64,7 @@ export class ClickHouseTestContainer {
   /**
    * Seeds the ClickHouse server with an AdBids table.
    */
-  async seed(): Promise<void> {
+  async seedAdBids(): Promise<void> {
     const client = this.getClient();
 
     try {
@@ -95,7 +95,46 @@ export class ClickHouseTestContainer {
     'id UInt32, timestamp String, publisher String, domain String, bid_price Float64');`,
       });
     } catch (error) {
-      console.error("Failed to seed ClickHouse server:", error);
+      console.error("Failed to seed AdBids into ClickHouse server:", error);
+      throw error;
+    }
+  }
+
+  async seedAdImpressions(): Promise<void> {
+    const client = this.getClient();
+
+    try {
+      await client.command({
+        query: "DROP TABLE IF EXISTS ad_impressions",
+      });
+
+      // id	city	country	user_id
+
+      await client.command({
+        query: `CREATE TABLE ad_impressions (
+        id UInt32,
+        city String,
+        country String,
+        user_id UInt32
+      ) ENGINE = MergeTree()
+      ORDER BY id`,
+      });
+
+      await client.command({
+        query: `INSERT INTO ad_impressions
+  SELECT
+    id,
+    city,
+    country,
+    user_id
+  FROM file('/var/lib/clickhouse/user_files/AdImpressions.tsv', 'CSVWithNames',
+    'id UInt32, city String, country String, user_id UInt32');`,
+      });
+    } catch (error) {
+      console.error(
+        "Failed to seed AdImpressions into ClickHouse server:",
+        error,
+      );
       throw error;
     }
   }

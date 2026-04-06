@@ -103,6 +103,8 @@
 
   $: shouldShowPreviewNav =
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
+
+  $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
 </script>
 
 <Tooltip.Provider>
@@ -112,7 +114,7 @@
         <div
           class="body h-screen w-screen overflow-hidden absolute flex flex-col"
         >
-          {#if data.initialized}
+          {#if data.initialized && !onWelcomePage}
             <BannerCenter />
             <RepresentingUserBanner />
             <ApplicationHeader {mode} />
