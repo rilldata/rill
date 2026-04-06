@@ -158,7 +158,7 @@ export async function invalidateCanvasQueries(
   queryClient: QueryClient,
   instanceId: string,
 ) {
-  return queryClient.resetQueries({
+  return queryClient.invalidateQueries({
     predicate: (query: Query) => {
       const key = query.queryKey;
       // Format: ["QueryService", "resolveCanvas" | "resolveComponent", instanceId, ...]
