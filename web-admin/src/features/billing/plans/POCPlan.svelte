@@ -6,29 +6,37 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
 
-  export let organization: string;
-  export let hasPayment: boolean;
-  export let plan: V1BillingPlan;
+  let {
+    organization,
+    hasPayment,
+    plan,
+  }: {
+    organization: string;
+    hasPayment: boolean;
+    plan: V1BillingPlan;
+  } = $props();
 
-  let open = false;
+  let open = $state(false);
 </script>
 
 <SettingsContainer title={plan?.displayName}>
-  <div slot="body">
-    <div>You're currently on a custom contract.</div>
-    <PlanQuotas {organization} />
-  </div>
-  <svelte:fragment slot="contact">
+  {#snippet body()}
+    <div>
+      <div>You're currently on a custom contract.</div>
+      <PlanQuotas {organization} />
+    </div>
+  {/snippet}
+  {#snippet contact()}
     <span>To make changes to your contract,</span>
     <ContactUs variant="enterprise" />
-  </svelte:fragment>
-  <svelte:fragment slot="action">
+  {/snippet}
+  {#snippet action()}
     {#if hasPayment}
       <Button type="primary" onClick={() => (open = true)}>
         Start Team plan
       </Button>
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </SettingsContainer>
 
 <StartTeamPlanDialog bind:open {organization} type="base" />

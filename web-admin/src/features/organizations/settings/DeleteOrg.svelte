@@ -12,12 +12,12 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
 
-  export let organization: string;
+  let { organization }: { organization: string } = $props();
 
   const user = createAdminServiceGetCurrentUser();
   const deleteOrgMutation = createAdminServiceDeleteOrganization();
 
-  $: deleteOrgResult = $deleteOrgMutation;
+  let deleteOrgResult = $derived($deleteOrgMutation);
 
   async function deleteOrg() {
     await $deleteOrgMutation.mutateAsync({
@@ -42,24 +42,25 @@
 </script>
 
 <SettingsContainer title="Delete Organization">
-  <svelte:fragment slot="body">
+  {#snippet body()}
     Permanently delete this organization and all of its contents from the Rill
     platform. This action is not reversible — please continue with caution.
-  </svelte:fragment>
+  {/snippet}
 
-  <AlertDialogGuardedConfirmation
-    slot="action"
-    title="Delete this organization?"
-    description={`The organization "${organization}" will be permanently deleted along with all its projects, data, and settings. This action cannot be undone.`}
-    confirmText={`delete ${organization}`}
-    confirmButtonText="Delete"
-    confirmButtonType="destructive"
-    loading={deleteOrgResult.isPending}
-    error={deleteOrgResult.error?.message}
-    onConfirm={deleteOrg}
-  >
-    <svelte:fragment>
-      <Button type="destructive">Delete Organization</Button>
-    </svelte:fragment>
-  </AlertDialogGuardedConfirmation>
+  {#snippet action()}
+    <AlertDialogGuardedConfirmation
+      title="Delete this organization?"
+      description={`The organization "${organization}" will be permanently deleted along with all its projects, data, and settings. This action cannot be undone.`}
+      confirmText={`delete ${organization}`}
+      confirmButtonText="Delete"
+      confirmButtonType="destructive"
+      loading={deleteOrgResult.isPending}
+      error={deleteOrgResult.error?.message}
+      onConfirm={deleteOrg}
+    >
+      <svelte:fragment>
+        <Button type="destructive">Delete Organization</Button>
+      </svelte:fragment>
+    </AlertDialogGuardedConfirmation>
+  {/snippet}
 </SettingsContainer>

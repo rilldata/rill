@@ -20,17 +20,19 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
 
-  export let organization: string;
-  export let project: string;
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
-  let dialogOpen = false;
+  let dialogOpen = $state(false);
 
   const hibernateProjectMutation = createAdminServiceHibernateProject();
 
-  $: projectResp = createAdminServiceGetProject(organization, project);
-  $: isHibernated = !$projectResp.data?.deployment;
+  let projectResp = $derived(
+    createAdminServiceGetProject(organization, project),
+  );
+  let isHibernated = $derived(!$projectResp.data?.deployment);
 
-  $: hibernateResult = $hibernateProjectMutation;
+  let hibernateResult = $derived($hibernateProjectMutation);
 
   async function hibernateProject() {
     try {
@@ -60,12 +62,12 @@
 </script>
 
 <SettingsContainer title="Hibernate Project">
-  <svelte:fragment slot="body">
+  {#snippet body()}
     Put this project into hibernation mode. Hibernated projects are paused and
     do not consume resources. The project can be woken up at any time.
-  </svelte:fragment>
+  {/snippet}
 
-  <svelte:fragment slot="action">
+  {#snippet action()}
     <AlertDialog bind:open={dialogOpen}>
       <AlertDialogTrigger>
         {#snippet child({ props })}
@@ -100,5 +102,5 @@
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  </svelte:fragment>
+  {/snippet}
 </SettingsContainer>

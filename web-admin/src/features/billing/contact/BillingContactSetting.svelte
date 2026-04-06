@@ -5,32 +5,37 @@
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
 
-  export let organization: string;
+  let { organization }: { organization: string } = $props();
 
-  $: billingContactUser = getOrganizationBillingContactUser(organization);
+  let billingContactUser = $derived(
+    getOrganizationBillingContactUser(organization),
+  );
 
-  let isUpdateBillingContactDialogOpen = false;
+  let isUpdateBillingContactDialogOpen = $state(false);
 </script>
 
 <SettingsContainer title="Billing Contact">
-  <div slot="body" class="flex flex-row items-center gap-x-1">
-    {#if $billingContactUser}
-      <AvatarListItem
-        name={$billingContactUser.displayName}
-        email={$billingContactUser.email}
-        photoUrl={$billingContactUser.photoUrl}
-      />
-    {:else}
-      This org has no billing contact.
-    {/if}
-  </div>
-  <Button
-    slot="action"
-    type="secondary"
-    onClick={() => (isUpdateBillingContactDialogOpen = true)}
-  >
-    Change billing contact
-  </Button>
+  {#snippet body()}
+    <div class="flex flex-row items-center gap-x-1">
+      {#if $billingContactUser}
+        <AvatarListItem
+          name={$billingContactUser.displayName}
+          email={$billingContactUser.email}
+          photoUrl={$billingContactUser.photoUrl}
+        />
+      {:else}
+        This org has no billing contact.
+      {/if}
+    </div>
+  {/snippet}
+  {#snippet action()}
+    <Button
+      type="secondary"
+      onClick={() => (isUpdateBillingContactDialogOpen = true)}
+    >
+      Change billing contact
+    </Button>
+  {/snippet}
 </SettingsContainer>
 
 <ChangeBillingContactDialog

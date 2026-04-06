@@ -14,24 +14,29 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
 
-  export let organization: string;
+  let { organization }: { organization: string } = $props();
 
-  $: org = createAdminServiceGetOrganization(organization);
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: plan = $subscriptionQuery?.data?.subscription?.plan;
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-  $: paymentIssues = $categorisedIssues.data?.payment;
-  $: neverSubscribed = !!$categorisedIssues.data?.neverSubscribed;
-  $: onTrial = !!$categorisedIssues.data?.trial;
-  $: onManagedPlan = plan && isManagedPlan(plan.name);
-  $: onEnterprisePlan = plan && isEnterprisePlan(plan.name);
+  let org = $derived(createAdminServiceGetOrganization(organization));
+  let subscriptionQuery = $derived(
+    createAdminServiceGetBillingSubscription(organization),
+  );
+  let plan = $derived($subscriptionQuery?.data?.subscription?.plan);
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
+  let paymentIssues = $derived($categorisedIssues.data?.payment);
+  let neverSubscribed = $derived(!!$categorisedIssues.data?.neverSubscribed);
+  let onTrial = $derived(!!$categorisedIssues.data?.trial);
+  let onManagedPlan = $derived(plan && isManagedPlan(plan.name));
+  let onEnterprisePlan = $derived(plan && isEnterprisePlan(plan.name));
   // For enterprise and managed orgs, hide when payment details haven't been
   // entered yet (setup done via CLI). Once set up, show the Manage button.
   // neverSubscribed orgs are always hidden since the billing page is not shown.
-  $: pendingSetup =
+  let pendingSetup = $derived(
     neverSubscribed ||
-    ((onManagedPlan || onEnterprisePlan) &&
-      needsPaymentSetup(paymentIssues ?? []));
+      ((onManagedPlan || onEnterprisePlan) &&
+        needsPaymentSetup(paymentIssues ?? [])),
+  );
 
   async function handleManagePayment() {
     const setup = paymentIssues?.length
@@ -47,16 +52,19 @@
 <!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
 {#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !onTrial && !pendingSetup}
   <SettingsContainer title="Payment Method">
-    <div slot="body" class="flex flex-row items-center gap-x-1">
-      {#if paymentIssues?.length}
-        <CancelCircle className="text-red-600" size="14px" />
-        {getPaymentIssueErrorText(paymentIssues)} Please click Manage below to correct.
-      {:else}
-        Your payment method is valid and good to go.
-      {/if}
-    </div>
-    <Button slot="action" type="secondary" onClick={handleManagePayment}>
-      Manage
-    </Button>
+    {#snippet body()}
+      <div class="flex flex-row items-center gap-x-1">
+        {#if paymentIssues?.length}
+          <CancelCircle className="text-red-600" size="14px" />
+          {getPaymentIssueErrorText(paymentIssues)} Please click Manage below to
+          correct.
+        {:else}
+          Your payment method is valid and good to go.
+        {/if}
+      </div>
+    {/snippet}
+    {#snippet action()}
+      <Button type="secondary" onClick={handleManagePayment}>Manage</Button>
+    {/snippet}
   </SettingsContainer>
 {/if}

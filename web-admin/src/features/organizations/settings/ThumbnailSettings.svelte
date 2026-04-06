@@ -10,11 +10,16 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  export let organization: string;
-  export let organizationThumbnailUrl: string | undefined;
+  let {
+    organization,
+    organizationThumbnailUrl,
+  }: {
+    organization: string;
+    organizationThumbnailUrl: string | undefined;
+  } = $props();
 
   const orgUpdater = createAdminServiceUpdateOrganization();
-  $: ({ error, isPending: isLoading, mutateAsync } = $orgUpdater);
+  let { error, isPending: isLoading, mutateAsync } = $derived($orgUpdater);
 
   async function onSave(assetId: string) {
     await mutateAsync({
@@ -43,30 +48,32 @@
   }
 </script>
 
-<SettingsContainer title="Thumbnail" suppressFooter={!organizationThumbnailUrl}>
-  <div slot="body" class="flex flex-col gap-y-2">
-    <div>
-      Click to upload your thumbnail. The thumbnail will be used when sharing
-      links to Rill in applications like Slack.
+<SettingsContainer title="Thumbnail">
+  {#snippet body()}
+    <div class="flex flex-col gap-y-2">
+      <div>
+        Click to upload your thumbnail. The thumbnail will be used when sharing
+        links to Rill in applications like Slack.
+      </div>
+      <UploadImagePopover
+        imageUrl={organizationThumbnailUrl}
+        accept="image/png, image/jpeg, image/gif, image/svg+xml"
+        label="thumbnail"
+        {organization}
+        loading={isLoading}
+        error={getRpcErrorMessage(error)}
+        {onSave}
+        {onRemove}
+      >
+        <img
+          src="https://cdn.rilldata.com/images/rill-admin.png"
+          alt="thumbnail"
+          class="h-10"
+        />
+      </UploadImagePopover>
     </div>
-    <UploadImagePopover
-      imageUrl={organizationThumbnailUrl}
-      accept="image/png, image/jpeg, image/gif, image/svg+xml"
-      label="thumbnail"
-      {organization}
-      loading={isLoading}
-      error={getRpcErrorMessage(error)}
-      {onSave}
-      {onRemove}
-    >
-      <img
-        src="https://cdn.rilldata.com/images/rill-admin.png"
-        alt="thumbnail"
-        class="h-10"
-      />
-    </UploadImagePopover>
-  </div>
-  <svelte:fragment slot="action">
+  {/snippet}
+  {#snippet action()}
     {#if organizationThumbnailUrl}
       <Button
         type="secondary"
@@ -77,5 +84,5 @@
         Remove
       </Button>
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </SettingsContainer>

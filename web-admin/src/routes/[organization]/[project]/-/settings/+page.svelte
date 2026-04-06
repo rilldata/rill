@@ -10,23 +10,30 @@
   import ProjectNameSettings from "@rilldata/web-admin/features/projects/settings/ProjectNameSettings.svelte";
   import ProjectVisibilitySettings from "@rilldata/web-admin/features/projects/settings/ProjectVisibilitySettings.svelte";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  let organization = $derived($page.params.organization);
+  let project = $derived($page.params.project);
 
-  $: proj = createAdminServiceGetProject(organization, project);
-  $: isGithubConnected =
-    !!$proj.data?.project?.gitRemote && !$proj.data?.project?.managedGitId;
+  let proj = $derived(createAdminServiceGetProject(organization, project));
+  let isGithubConnected = $derived(
+    !!$proj.data?.project?.gitRemote && !$proj.data?.project?.managedGitId,
+  );
 </script>
 
 <ProjectNameSettings {organization} {project} />
 
-<SettingsContainer title="GitHub" suppressFooter={isGithubConnected}>
-  <div slot="body">
-    <ProjectGithubConnection {organization} {project} />
-  </div>
-  <div slot="action">
-    <GithubConnectionDialog {organization} {project} />
-  </div>
+<SettingsContainer title="GitHub">
+  {#snippet body()}
+    <div>
+      <ProjectGithubConnection {organization} {project} />
+    </div>
+  {/snippet}
+  {#if !isGithubConnected}
+    {#snippet action()}
+      <div>
+        <GithubConnectionDialog {organization} {project} />
+      </div>
+    {/snippet}
+  {/if}
 </SettingsContainer>
 
 <div class="danger-zone-section">

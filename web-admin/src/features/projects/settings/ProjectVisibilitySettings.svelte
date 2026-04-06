@@ -11,13 +11,15 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
 
-  export let organization: string;
-  export let project: string;
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
   const updateProjectMutation = createAdminServiceUpdateProject();
 
-  $: projectResp = createAdminServiceGetProject(organization, project);
-  $: isPublic = $projectResp.data?.project?.public ?? false;
+  let projectResp = $derived(
+    createAdminServiceGetProject(organization, project),
+  );
+  let isPublic = $derived($projectResp.data?.project?.public ?? false);
 
   async function toggleVisibility() {
     const newVisibility = !isPublic;
@@ -51,7 +53,7 @@
 </script>
 
 <SettingsContainer title="Project Visibility">
-  <svelte:fragment slot="body">
+  {#snippet body()}
     {#if isPublic}
       This project is currently <strong>Public</strong>. Anyone with the URL can
       view this project.
@@ -59,14 +61,15 @@
       This project is currently <strong>Private</strong>. Only members of the
       organization can access this project.
     {/if}
-  </svelte:fragment>
+  {/snippet}
 
-  <Button
-    slot="action"
-    onClick={toggleVisibility}
-    type="secondary-destructive"
-    loading={$updateProjectMutation.isPending}
-  >
-    {isPublic ? "Make private" : "Make public"}
-  </Button>
+  {#snippet action()}
+    <Button
+      onClick={toggleVisibility}
+      type="secondary-destructive"
+      loading={$updateProjectMutation.isPending}
+    >
+      {isPublic ? "Make private" : "Make public"}
+    </Button>
+  {/snippet}
 </SettingsContainer>

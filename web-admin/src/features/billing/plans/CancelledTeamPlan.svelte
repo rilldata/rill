@@ -9,51 +9,68 @@
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
   import { DateTime } from "luxon";
 
-  export let organization: string;
-  export let plan: V1BillingPlan;
-  export let showUpgradeDialog: boolean;
+  let {
+    organization,
+    plan,
+    showUpgradeDialog,
+  }: {
+    organization: string;
+    plan: V1BillingPlan;
+    showUpgradeDialog: boolean;
+  } = $props();
 
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-  $: cancelledSubIssue = $categorisedIssues.data?.cancelled;
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
+  let cancelledSubIssue = $derived($categorisedIssues.data?.cancelled);
 
-  let willEndOnText = "";
-  $: if (cancelledSubIssue?.metadata.subscriptionCancelled?.endDate) {
-    const endDate = DateTime.fromJSDate(
-      new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
-    );
-    if (endDate.isValid && endDate.toMillis() > Date.now())
-      willEndOnText = endDate.toLocaleString(DateTime.DATE_MED);
-  }
+  let willEndOnText = $derived.by(() => {
+    if (cancelledSubIssue?.metadata.subscriptionCancelled?.endDate) {
+      const endDate = DateTime.fromJSDate(
+        new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
+      );
+      if (endDate.isValid && endDate.toMillis() > Date.now())
+        return endDate.toLocaleString(DateTime.DATE_MED);
+    }
+    return "";
+  });
 
-  let open = showUpgradeDialog;
+  let open = $state(false);
+  $effect(() => {
+    if (showUpgradeDialog) open = true;
+  });
 </script>
 
 <SettingsContainer title={plan?.displayName || "Team plan"}>
-  <div slot="body">
+  {#snippet body()}
     <div>
-      <div class="flex flex-row items-center gap-x-1 text-sm">
-        <InfoCircleFilled className="text-yellow-500" size="14px" />
-        Your plan is cancelled
-        {#if willEndOnText}
-          but you still have access until <b>{willEndOnText}.</b>
-        {:else}
-          and your subscription has ended.
+      <div>
+        <div class="flex flex-row items-center gap-x-1 text-sm">
+          <InfoCircleFilled className="text-yellow-500" size="14px" />
+          Your plan is cancelled
+          {#if willEndOnText}
+            but you still have access until <b>{willEndOnText}.</b>
+          {:else}
+            and your subscription has ended.
+          {/if}
+        </div>
+        {#if plan}
+          <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
+          <PlanQuotas {organization} />
         {/if}
       </div>
-      {#if plan}
-        <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
-        <PlanQuotas {organization} />
-      {/if}
     </div>
-  </div>
-  <svelte:fragment slot="contact">
+  {/snippet}
+  {#snippet contact()}
     <span>For custom enterprise needs,</span>
     <ContactUs />
-  </svelte:fragment>
+  {/snippet}
 
-  <Button type="primary" slot="action" onClick={() => (open = true)}>
-    Renew Team plan
-  </Button>
+  {#snippet action()}
+    <Button type="primary" onClick={() => (open = true)}>
+      Renew Team plan
+    </Button>
+  {/snippet}
 </SettingsContainer>
 
 {#if !$categorisedIssues.isLoading}

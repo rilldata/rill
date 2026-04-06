@@ -19,8 +19,8 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  export let organization: string;
-  export let project: string;
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
   // Track if form has been initialized to prevent overwriting user edits
   let formInitialized = false;
@@ -94,69 +94,78 @@
     },
   );
 
-  $: projectResp = createAdminServiceGetProject(organization, project);
+  let projectResp = $derived(
+    createAdminServiceGetProject(organization, project),
+  );
 
   // Only sync server data to form on initial load or when form hasn't been modified
-  $: if ($projectResp.data?.project && !formInitialized) {
-    $form.name = $projectResp.data.project.name ?? "";
-    $form.description = $projectResp.data.project.description ?? "";
-    formInitialized = true;
-  }
+  $effect(() => {
+    if ($projectResp.data?.project && !formInitialized) {
+      $form.name = $projectResp.data.project.name ?? "";
+      $form.description = $projectResp.data.project.description ?? "";
+      formInitialized = true;
+    }
+  });
 
-  $: changed =
+  let changed = $derived(
     $projectResp.data?.project?.name !== $form.name ||
-    $projectResp.data?.project?.description !== $form.description;
+      $projectResp.data?.project?.description !== $form.description,
+  );
 
-  $: error = parseUpdateProjectError(
-    $updateProjectMutation.error as unknown as AxiosError<RpcStatus>,
+  let error = $derived(
+    parseUpdateProjectError(
+      $updateProjectMutation.error as unknown as AxiosError<RpcStatus>,
+    ),
   );
 </script>
 
 <SettingsContainer title="Project">
-  <form
-    slot="body"
-    id="project-update-form"
-    onsubmit={(e) => {
-      e.preventDefault();
-      submit(e);
-    }}
-    class="update-project-form"
-    use:enhance
-  >
-    <Input
-      bind:value={$form.name}
-      errors={$errors?.name}
-      id="name"
-      label="Name"
-      description={`Your project will be available at https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}.`}
-      textClass="text-sm"
-      alwaysShowError
-      additionalClass="max-w-[520px]"
-    />
-    <Input
-      bind:value={$form.description}
-      errors={$errors?.description}
-      id="description"
-      label="Description"
-      placeholder="Describe your project"
-      textClass="text-sm"
-      additionalClass="max-w-[520px]"
-    />
-  </form>
-  {#if error?.message}
-    <div class="text-red-500 text-sm py-px">
-      {error.message}
-    </div>
-  {/if}
-  <Button
-    onClick={submit}
-    type="primary"
-    loading={$updateProjectMutation.isPending}
-    disabled={!changed}
-    slot="action"
-  >
-    Save
-  </Button>
+  {#snippet body()}
+    <form
+      id="project-update-form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
+      class="update-project-form"
+      use:enhance
+    >
+      <Input
+        bind:value={$form.name}
+        errors={$errors?.name}
+        id="name"
+        label="Name"
+        description={`Your project will be available at https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}.`}
+        textClass="text-sm"
+        alwaysShowError
+        additionalClass="max-w-[520px]"
+      />
+      <Input
+        bind:value={$form.description}
+        errors={$errors?.description}
+        id="description"
+        label="Description"
+        placeholder="Describe your project"
+        textClass="text-sm"
+        additionalClass="max-w-[520px]"
+      />
+    </form>
+    {#if error?.message}
+      <div class="text-red-500 text-sm py-px">
+        {error.message}
+      </div>
+    {/if}
+  {/snippet}
+  {#snippet action()}
+    <Button
+      onClick={submit}
+      type="primary"
+      loading={$updateProjectMutation.isPending}
+      disabled={!changed}
+    >
+      Save
+    </Button>
+  {/snippet}
 </SettingsContainer>
 
 <style lang="postcss">
