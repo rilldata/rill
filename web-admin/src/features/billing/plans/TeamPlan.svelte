@@ -36,9 +36,7 @@
     billingPortalUrl: string | undefined;
   } = $props();
 
-  let planCanceller = $derived(
-    createAdminServiceCancelBillingSubscription(),
-  );
+  let planCanceller = $derived(createAdminServiceCancelBillingSubscription());
   async function handleCancelPlan() {
     await $planCanceller.mutateAsync({
       org: organization,
