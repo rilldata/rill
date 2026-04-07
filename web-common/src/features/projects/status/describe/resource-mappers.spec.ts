@@ -25,7 +25,8 @@ function findGrouped(
   return entries.filter((e) => e.section === section && e.group === group);
 }
 
-function makeResource(overrides: Partial<V1Resource>): V1Resource {
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
+function makeResource(overrides: Record<string, any>): V1Resource {
   return {
     meta: {
       name: { kind: "rill.runtime.v1.Source", name: "test" },
@@ -37,6 +38,7 @@ function makeResource(overrides: Partial<V1Resource>): V1Resource {
     ...overrides,
   } as V1Resource;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
 
 describe("resource-mappers", () => {
   describe("mapResource — basic structure", () => {
@@ -315,7 +317,6 @@ describe("resource-mappers", () => {
         },
       });
       const entries = mapResource(resource);
-      const specEntries = findAll(entries, "Spec");
 
       expect(find(entries, "Spec", "Source Connector")).toBeDefined();
       expect(find(entries, "Spec", "Sink Connector")).toBeUndefined();
