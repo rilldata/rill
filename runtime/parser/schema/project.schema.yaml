@@ -2259,9 +2259,6 @@ definitions:
                 model:
                   type: string
                   description: Refers to the model or table powering the rollup (required)
-                connector:
-                  type: string
-                  description: Refers to the connector to use for the rollup table
                 database:
                   type: string
                   description: Refers to the database to use in the OLAP engine

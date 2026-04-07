@@ -274,8 +274,6 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
   - **`model`** - _[string]_ - Refers to the model or table powering the rollup (required) _(required)_
 
-  - **`connector`** - _[string]_ - Refers to the connector to use for the rollup table 
-
   - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine 
 
   - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine 
