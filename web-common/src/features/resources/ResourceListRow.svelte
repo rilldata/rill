@@ -33,8 +33,7 @@
   <div
     class="shrink-0"
     on:click|preventDefault|stopPropagation={() => {}}
-    role="menu"
-    tabindex="-1"
+    role="presentation"
   >
     <slot name="actions" />
   </div>

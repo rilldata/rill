@@ -13,6 +13,7 @@
   import { Pencil, Trash2Icon } from "lucide-svelte";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import AlertOwnerBullet from "./AlertOwnerBullet.svelte";
+  import DeleteAlertConfirmDialog from "./DeleteAlertConfirmDialog.svelte";
 
   export let organization: string;
   export let project: string;
@@ -29,6 +30,7 @@
   $: isCreatedByCode = !ownerId;
 
   let isDropdownOpen = false;
+  let isDeleteConfirmOpen = false;
 
   function handleEdit() {
     goto(`/${organization}/${project}/-/alerts/${id}`);
@@ -88,7 +90,9 @@
           <DropdownMenu.Item
             class="font-normal flex items-center"
             type="destructive"
-            onclick={handleDelete}
+            onclick={() => {
+              isDeleteConfirmOpen = true;
+            }}
           >
             <Trash2Icon size="12px" />
             <span class="ml-2">Delete</span>
@@ -98,3 +102,9 @@
     {/if}
   </svelte:fragment>
 </ResourceListRow>
+
+<DeleteAlertConfirmDialog
+  bind:open={isDeleteConfirmOpen}
+  {title}
+  onDelete={handleDelete}
+/>

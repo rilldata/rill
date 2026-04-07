@@ -18,6 +18,7 @@
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import { formatRunDate } from "../tableUtils";
   import ReportOwnerBullet from "./ReportOwnerBullet.svelte";
+  import DeleteReportConfirmDialog from "./DeleteReportConfirmDialog.svelte";
 
   export let organization: string;
   export let project: string;
@@ -39,6 +40,7 @@
   $: isCreatedByCode = !ownerId;
 
   let isDropdownOpen = false;
+  let isDeleteConfirmOpen = false;
 
   async function handleRun() {
     await $triggerReport.mutateAsync({
@@ -124,7 +126,9 @@
           <DropdownMenu.Item
             class="font-normal flex items-center"
             type="destructive"
-            onclick={handleDelete}
+            onclick={() => {
+              isDeleteConfirmOpen = true;
+            }}
           >
             <Trash2Icon size="12px" />
             <span class="ml-2">Delete</span>
@@ -134,3 +138,9 @@
     </DropdownMenu.Root>
   </svelte:fragment>
 </ResourceListRow>
+
+<DeleteReportConfirmDialog
+  bind:open={isDeleteConfirmOpen}
+  {title}
+  onDelete={handleDelete}
+/>
