@@ -78,16 +78,8 @@ export function isExplorerType(connectorDriver: V1ConnectorDriver) {
   );
 }
 
-/**
- * A connector is "live" when it IS the active OLAP engine.
- * Live connectors create metrics views directly against their tables.
- * Non-live connectors ingest data into the OLAP engine first (e.g. into DuckDB).
- */
-export function isLiveConnectorType(
-  connectorDriver: V1ConnectorDriver,
-  activeOlapConnector: string,
-) {
-  return connectorDriver?.name === activeOlapConnector;
+export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {
+  return !!connectorDriver?.implementsOlap && !connectorDriver?.implementsWarehouse;
 }
 
 const NonModelSteps = [
@@ -99,11 +91,8 @@ const FullListOfSteps = [ImportDataStep.CreateModel, ...NonModelSteps];
 export function getImportStepsForConnector(
   config: AddDataConfig,
   driver: V1ConnectorDriver,
-  activeOlapConnector: string,
 ) {
-  const steps = isLiveConnectorType(driver, activeOlapConnector)
-    ? NonModelSteps
-    : FullListOfSteps;
+  const steps = isLiveConnectorType(driver) ? NonModelSteps : FullListOfSteps;
   return config.importOnly ? [steps[0]] : steps;
 }
 
