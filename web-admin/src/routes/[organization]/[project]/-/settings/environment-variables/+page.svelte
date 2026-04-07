@@ -149,7 +149,6 @@
           data={sortedVariables}
           emptyText={emptyTextWhenNoVariables}
           {variableNames}
-          {sortDirection}
         />
       </div>
     {/if}

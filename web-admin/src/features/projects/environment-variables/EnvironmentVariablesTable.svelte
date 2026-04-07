@@ -13,7 +13,6 @@
   export let data: V1ProjectVariable[];
   export let emptyText: string = "No environment variables";
   export let variableNames: VariableNames = [];
-  export let sortDirection: string | undefined = undefined;
 
   const columns: ColumnDef<V1ProjectVariable, any>[] = [
     {
@@ -65,5 +64,4 @@
   emptyIcon={KeyIcon}
   {emptyText}
   columnLayout="minmax(170px, 1.75fr) 2fr minmax(84px, 1fr) 56px"
-  externalSortKey={sortDirection}
 />

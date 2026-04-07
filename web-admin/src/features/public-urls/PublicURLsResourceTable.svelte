@@ -1,6 +1,5 @@
 <script lang="ts">
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
-  import type { SortDirection } from "@rilldata/web-common/components/table-toolbar/types";
   import { ExternalLinkIcon } from "lucide-svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
@@ -20,7 +19,6 @@
   export let onDelete: (deletedTokenId: string) => void;
 
   let searchText = "";
-  let sortDirection: SortDirection = "newest";
 
   $: filteredData = data.filter((row) => {
     if (!searchText) return true;
@@ -30,16 +28,6 @@
     const creator = String(row.attributes?.name || "").toLowerCase();
     return label.includes(q) || dashboard.includes(q) || creator.includes(q);
   });
-
-  $: sortedData = [...filteredData].sort((a, b) => {
-    const aTime = new Date(a.createdOn ?? 0).getTime();
-    const bTime = new Date(b.createdOn ?? 0).getTime();
-    return sortDirection === "newest" ? bTime - aTime : aTime - bTime;
-  });
-
-  function handleSortToggle() {
-    sortDirection = sortDirection === "newest" ? "oldest" : "newest";
-  }
 
   const columns: ColumnDef<PublicURLRow, any>[] = [
     {
@@ -103,12 +91,10 @@
     {searchText}
     onSearchChange={(text) => (searchText = text)}
     searchDisabled={data.length === 0}
-    {sortDirection}
-    onSortToggle={handleSortToggle}
     showSort={false}
   />
 
-  {#if sortedData.length === 0 && data.length === 0}
+  {#if filteredData.length === 0 && data.length === 0}
     <div class="border rounded-lg bg-surface-background">
       <div class="text-center py-16">
         <ResourceListEmptyState
@@ -121,7 +107,7 @@
         </ResourceListEmptyState>
       </div>
     </div>
-  {:else if sortedData.length === 0}
+  {:else if filteredData.length === 0}
     <div class="border rounded-lg bg-surface-background">
       <div class="text-center py-16 text-fg-secondary text-sm font-semibold">
         No public URLs match your search
@@ -129,7 +115,7 @@
     </div>
   {:else}
     <BasicTable
-      data={sortedData}
+      data={filteredData}
       {columns}
       columnLayout="minmax(150px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1.5fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) 56px"
     />
