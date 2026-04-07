@@ -60,6 +60,7 @@
     });
   }
 
+  // TODO: Consider adding ?edit=true query param to auto-open the edit dialog on the resource page
   function handleEdit() {
     goto(`/${organization}/${project}/-/reports/${id}`);
   }
