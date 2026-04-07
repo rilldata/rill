@@ -69,14 +69,15 @@
           importStep = step;
           if (currentFilePath) {
             if ($previewModeStore) {
-              // In preview mode, derive the dashboard route from the file path
-              const name = currentFilePath
-                .replace(/^\/dashboards\//, "")
-                .replace(/\.yaml$/, "");
-              if (currentFilePath.includes("_canvas")) {
-                currentFileRoute = `/canvas/${name}`;
-              } else if (currentFilePath.startsWith("/dashboards/")) {
-                currentFileRoute = `/explore/${name}`;
+              const { canvasName, exploreName } =
+                importAddDataStep.config.importTo;
+              if (step === ImportDataStep.CreateDashboard && canvasName) {
+                currentFileRoute = `/canvas/${canvasName}`;
+              } else if (
+                step === ImportDataStep.CreateDashboard &&
+                exploreName
+              ) {
+                currentFileRoute = `/explore/${exploreName}`;
               } else {
                 currentFileRoute = "/dashboards";
               }
