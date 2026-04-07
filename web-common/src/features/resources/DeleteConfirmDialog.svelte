@@ -11,15 +11,16 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
 
   export let open = false;
-  export let id: string;
-  export let onDelete: (id: string) => void;
+  export let title: string;
+  export let description: string;
+  export let onDelete: () => Promise<void>;
 
   async function handleDelete() {
     try {
-      onDelete(id);
+      await onDelete();
       open = false;
     } catch (error) {
-      console.error("Failed to delete public URL:", error);
+      console.error("Delete failed:", error);
     }
   }
 </script>
@@ -32,10 +33,10 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this public URL?</AlertDialogTitle>
+      <AlertDialogTitle>{title}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          Recipients of this URL will no longer be able to access it.
+          {@html description}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -44,8 +45,10 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}
       >
+        Cancel
+      </Button>
       <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
     </AlertDialogFooter>
   </AlertDialogContent>

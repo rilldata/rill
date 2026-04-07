@@ -4,11 +4,15 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { Trash2Icon, CopyIcon } from "lucide-svelte";
-  import DeletePublicURLConfirmDialog from "./DeletePublicURLConfirmDialog.svelte";
+  import DeleteConfirmDialog from "@rilldata/web-common/features/resources/DeleteConfirmDialog.svelte";
 
   export let id: string;
   export let url: string;
   export let onDelete: (deletedTokenId: string) => void;
+
+  async function handleDelete() {
+    onDelete(id);
+  }
 
   function handleCopy() {
     copyToClipboard(url, "Public URL copied to clipboard");
@@ -47,4 +51,9 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<DeletePublicURLConfirmDialog bind:open={isDeleteConfirmOpen} {id} {onDelete} />
+<DeleteConfirmDialog
+  bind:open={isDeleteConfirmOpen}
+  title="Delete this public URL?"
+  description="Recipients of this URL will no longer be able to access it."
+  onDelete={handleDelete}
+/>
