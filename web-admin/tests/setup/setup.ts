@@ -239,7 +239,7 @@ setup.describe("global setup", () => {
 
     // Wait for the project to be ready
     await expect(adminPage.getByLabel("Container title")).toHaveText(
-      "Project dashboards",
+      "Dashboards",
     );
 
     // Check that the dashboards are listed
@@ -316,7 +316,7 @@ setup.describe("global setup", () => {
 
     // Wait for the project to be ready
     await expect(adminPage.getByLabel("Container title")).toHaveText(
-      "Project dashboards",
+      "Dashboards",
     );
 
     // Check that the dashboards are listed
