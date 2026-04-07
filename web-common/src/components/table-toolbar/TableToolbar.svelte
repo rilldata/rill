@@ -64,8 +64,6 @@
   </div>
 
   {#if filterGroups.length > 0}
-    <hr class="border-t" />
-
     <TableToolbarAppliedFilters
       {filterGroups}
       {onFilterChange}

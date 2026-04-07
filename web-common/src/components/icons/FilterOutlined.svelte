@@ -1,7 +1,13 @@
 <script lang="ts">
-  export let size = "16";
-  export let color = "currentColor";
-  export let className = "";
+  let {
+    size = "16",
+    color = "currentColor",
+    className = "",
+  }: {
+    size?: string;
+    color?: string;
+    className?: string;
+  } = $props();
 </script>
 
 <svg

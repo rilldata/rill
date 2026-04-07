@@ -10,7 +10,6 @@
   import { getEnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/utils";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
-  import type { SortDirection } from "@rilldata/web-common/components/table-toolbar/types";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
@@ -18,7 +17,6 @@
   let open = false;
   let searchText = "";
   let filterByEnvironment: EnvironmentTypes = EnvironmentType.UNDEFINED;
-  let sortDirection: SortDirection = "newest";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -64,17 +62,11 @@
   });
 
   $: sortedVariables = [...filteredVariables].sort((a, b) => {
-    const aTime = new Date(a.updatedOn).getTime();
-    const bTime = new Date(b.updatedOn).getTime();
-    return sortDirection === "newest" ? bTime - aTime : aTime - bTime;
+    return new Date(b.updatedOn).getTime() - new Date(a.updatedOn).getTime();
   });
 
   function handleFilterChange(_key: string, value: string) {
     filterByEnvironment = value as EnvironmentTypes;
-  }
-
-  function handleSortToggle() {
-    sortDirection = sortDirection === "newest" ? "oldest" : "newest";
   }
 
   function handleClearAllFilters() {
@@ -137,8 +129,6 @@
           {filterGroups}
           onFilterChange={handleFilterChange}
           onClearAllFilters={handleClearAllFilters}
-          {sortDirection}
-          onSortToggle={handleSortToggle}
           showSort={false}
         >
           <Button type="primary" large onClick={() => (open = true)}>
