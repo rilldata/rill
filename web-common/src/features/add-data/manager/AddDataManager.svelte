@@ -45,6 +45,7 @@
 
   const stateManager = new AddDataStateManager();
   $effect(() => stateManager.setCallbacks(onDone, onClose, onStepChange));
+  $effect(() => stateManager.setConfig(config));
   $effect(() => void init(initConnector, initSchema));
 
   const runtimeClient = useRuntimeClient();
@@ -156,6 +157,7 @@
     <SourceSelector {config} onSelect={schemaSelected} {onBack} />
   {:else if stepState.step === AddDataStep.CreateConnector}
     <ConnectorFormWrapper
+      {config}
       step={stepState}
       onSubmit={(connectorName, connectorFormValues) =>
         void connectorSelected(connectorName, connectorFormValues)}
@@ -186,9 +188,10 @@
       stepState.config.importSteps[0] === ImportDataStep.CreateModel}
     {#if isImportOnlyStep}
       <!-- Special case for import only, we show additional options to handle success and failures. -->
-      <ImportDataStatus importAddDataStep={stepState} {onDone} />
+      <ImportDataStatus {config} importAddDataStep={stepState} {onDone} />
     {:else}
       <GenerateDashboardStatus
+        {config}
         importAddDataStep={stepState}
         {onBack}
         {onDone}

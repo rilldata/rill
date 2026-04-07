@@ -1,4 +1,5 @@
 import {
+  type AddDataConfig,
   type AddDataState,
   AddDataStep,
   ImportDataStep,
@@ -10,6 +11,11 @@ import {
 } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import { connectorFormCache } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+import {
+  type AddDataBehaviourEventFields,
+  BehaviourEventAction,
+} from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 
 export enum TransitionEventType {
   Init,
@@ -51,6 +57,7 @@ export class AddDataStateManager {
   private onDone: (() => void) | undefined = undefined;
   private onClose: (() => void) | undefined = undefined;
   private onStepChange: ((step: AddDataStep) => void) | undefined = undefined;
+  private config: AddDataConfig | undefined = undefined;
 
   public setCallbacks(
     onDone: (() => void) | undefined,
@@ -60,6 +67,10 @@ export class AddDataStateManager {
     this.onDone = onDone;
     this.onClose = onClose;
     this.onStepChange = onStepChange;
+  }
+
+  public setConfig(config: AddDataConfig) {
+    this.config = config;
   }
 
   public transition(event: TransitionEvent) {
@@ -99,6 +110,10 @@ export class AddDataStateManager {
       // CreateConnector =={ConnectorSelected event}=> CreateModel/ExploreConnector
       case AddDataStep.CreateConnector: {
         if (event.type === TransitionEventType.Back) {
+          this.fireBehaviourEvent(
+            BehaviourEventAction.ConnectorConfigurationCanceled,
+            { step: AddDataStep.CreateConnector, schema: this.state.schema },
+          );
           this.popState();
           return;
         }
@@ -118,6 +133,16 @@ export class AddDataStateManager {
         switch (event.type) {
           // CreateModel/ExploreConnector =={Back event}=> Init/SelectConnector/CreateConnector
           case TransitionEventType.Back:
+            this.fireBehaviourEvent(
+              this.state.step === AddDataStep.CreateModel
+                ? BehaviourEventAction.ModelConfigurationCanceled
+                : BehaviourEventAction.ConnectorExploreCanceled,
+              {
+                step: AddDataStep.CreateConnector,
+                schema: this.state.schema,
+                connector: this.state.connector,
+              },
+            );
             this.popState();
             return;
 
@@ -125,6 +150,7 @@ export class AddDataStateManager {
           case TransitionEventType.ImportConfigured:
             this.pushState({
               step: AddDataStep.Import,
+              schema: this.state.schema,
               importStep: ImportDataStep.Init,
               config: event.config,
             });
@@ -157,6 +183,11 @@ export class AddDataStateManager {
       // Import =={Imported event}=> Done
       case AddDataStep.Import:
         if (event.type === TransitionEventType.Back) {
+          this.fireBehaviourEvent(BehaviourEventAction.ImportCanceled, {
+            step: AddDataStep.CreateConnector,
+            schema: this.state.schema,
+            connector: this.state.config.connector,
+          });
           // Can be back to Init/CreateModel/ExploreConnector
           this.popState();
           return;
@@ -164,6 +195,45 @@ export class AddDataStateManager {
         if (event.type !== TransitionEventType.Imported) return;
         this.pushState({
           step: AddDataStep.Done,
+        });
+        break;
+    }
+
+    switch (this.state.step) {
+      case AddDataStep.CreateConnector:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ConnectorConfigurationStarted,
+          {
+            step: AddDataStep.CreateConnector,
+            schema: this.state.schema,
+          },
+        );
+        break;
+
+      case AddDataStep.CreateModel:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ModelConfigurationStarted,
+          {
+            step: AddDataStep.CreateModel,
+            schema: this.state.schema,
+            connector: this.state.connector,
+          },
+        );
+        break;
+
+      case AddDataStep.ExploreConnector:
+        this.fireBehaviourEvent(BehaviourEventAction.ConnectorExploreStarted, {
+          step: AddDataStep.Import,
+          schema: this.state.schema,
+          connector: this.state.connector,
+        });
+        break;
+
+      case AddDataStep.Import:
+        this.fireBehaviourEvent(BehaviourEventAction.ImportStarted, {
+          step: AddDataStep.Import,
+          schema: this.state.schema,
+          connector: this.state.config.connector,
         });
         break;
     }
@@ -188,6 +258,20 @@ export class AddDataStateManager {
   // So we need to clear the stack.
   private clearStack() {
     this.stateStack = [];
+  }
+
+  private fireBehaviourEvent(
+    action: BehaviourEventAction,
+    fields: AddDataBehaviourEventFields,
+  ) {
+    if (!this.config) return;
+    void behaviourEvent?.fireAddDataStepEvent(
+      action,
+      this.config.medium,
+      this.config.space,
+      this.config.screen,
+      fields,
+    );
   }
 }
 

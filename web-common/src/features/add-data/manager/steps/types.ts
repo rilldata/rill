@@ -1,27 +1,45 @@
+import {
+  type MetricsEventScreenName,
+  MetricsEventSpace,
+} from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+
 export enum AddDataStep {
   // Used purely to transition from Init to one of the other steps.
   // This is used to start the import flow from the middle by selecting schema/connector directly.
-  Init,
-  SelectConnector,
-  CreateConnector,
-  CreateModel,
-  ExploreConnector,
-  Import,
-  Done,
+  Init = "init",
+  SelectConnector = "select-connector",
+  CreateConnector = "create-connector",
+  CreateModel = "create-model",
+  ExploreConnector = "explore-connector",
+  Import = "import",
+  Done = "done",
 }
 
 export type AddDataConfig = {
   welcomeScreen?: boolean;
   importOnly?: boolean;
+
+  // Telemetry related config
+  medium: BehaviourEventMedium;
+  space: MetricsEventSpace;
+  screen: MetricsEventScreenName;
 };
 
 export enum ImportDataStep {
-  Init,
-  CreateModel,
-  CreateMetricsView,
-  CreateDashboard,
-  Done,
+  Init = "init",
+  CreateModel = "create-model",
+  CreateMetricsView = "create-metrics-view",
+  CreateDashboard = "create-dashboard",
+  Done = "done",
 }
+export const ImportDataStepsOrder: Record<ImportDataStep, number> = {
+  [ImportDataStep.Init]: 0,
+  [ImportDataStep.CreateModel]: 1,
+  [ImportDataStep.CreateMetricsView]: 2,
+  [ImportDataStep.CreateDashboard]: 3,
+  [ImportDataStep.Done]: 4,
+};
 
 export type AddDataState =
   | InitConnectorStep
@@ -114,6 +132,8 @@ export type ImportToConfig = {
 
 export type ImportAddDataStep = {
   step: AddDataStep.Import;
+  // Used only for firing telemetry events
+  schema: string;
   importStep: ImportDataStep;
   currentFilePath?: string;
   config: ImportStepConfig;

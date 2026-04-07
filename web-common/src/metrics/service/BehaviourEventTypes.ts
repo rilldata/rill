@@ -31,6 +31,18 @@ export enum BehaviourEventAction {
   GithubConnectOverwritePrompt = "ghconnected-overwrite-prompt",
   GithubConnectFailure = "ghconnected-failure",
   GithubDisconnect = "ghconnected-disconnect",
+
+  // Welcome/Connector actions
+  WelcomePageViewed = "welcome-page-viewed",
+  ConnectorConfigurationStarted = "connector-configuration-started",
+  ConnectorConfigurationCanceled = "connector-configuration-canceled",
+  ModelConfigurationStarted = "model-configuration-started",
+  ModelConfigurationCanceled = "model-configuration-canceled",
+  ConnectorExploreStarted = "connector-explore-started",
+  ConnectorExploreCanceled = "connector-explore-canceled",
+  ImportStarted = "import-started",
+  ImportStep = "import-step",
+  ImportCanceled = "import-canceled",
 }
 
 export enum BehaviourEventMedium {
@@ -45,7 +57,8 @@ export enum BehaviourEventMedium {
 export interface BehaviourEvent
   extends MetricsEvent,
     SourceEventFields,
-    GithubEventFields {
+    GithubEventFields,
+    AddDataBehaviourEventFields {
   action: BehaviourEventAction;
   medium: BehaviourEventMedium;
   entity_id: string;
@@ -53,4 +66,11 @@ export interface BehaviourEvent
   screen_name: MetricsEventScreenName;
   source_screen: MetricsEventScreenName;
   count: number;
+}
+
+export interface AddDataBehaviourEventFields {
+  step?: string;
+  schema?: string;
+  connector?: string;
+  duration?: number;
 }

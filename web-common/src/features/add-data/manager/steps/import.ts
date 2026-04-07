@@ -1,4 +1,6 @@
 import {
+  type AddDataConfig,
+  type ImportAddDataStep,
   ImportDataStep,
   type ImportFromConfig,
   type ImportStepConfig,
@@ -31,30 +33,34 @@ import { getName } from "@rilldata/web-common/features/entity-management/name-ut
 import type { QueryClient } from "@tanstack/svelte-query";
 import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 
 export async function runImportSteps(
   runtimeClient: RuntimeClient,
-  config: ImportStepConfig,
+  addDataConfig: AddDataConfig,
+  addDataStep: ImportAddDataStep,
   onProgress: (
     step: ImportDataStep,
     currentFilePath: string | undefined,
   ) => void,
 ) {
-  for (const step of config.importSteps) {
+  for (const step of addDataStep.config.importSteps) {
+    fireImportStepEvent(addDataConfig, addDataStep, step);
     switch (step) {
       case ImportDataStep.CreateModel:
-        onProgress(step, config.importTo.modelPath);
-        await runCreateModelStep(runtimeClient, config);
+        onProgress(step, addDataStep.config.importTo.modelPath);
+        await runCreateModelStep(runtimeClient, addDataStep.config);
         break;
       case ImportDataStep.CreateMetricsView:
-        onProgress(step, config.importTo.metricsViewPath);
-        await runCreateMetricsViewStep(runtimeClient, config);
+        onProgress(step, addDataStep.config.importTo.metricsViewPath);
+        await runCreateMetricsViewStep(runtimeClient, addDataStep.config);
         break;
       case ImportDataStep.CreateDashboard:
-        onProgress(step, config.importTo.explorePath);
-        await runCreateExploreStep(runtimeClient, config);
-        onProgress(step, config.importTo.canvasPath);
-        await runCreateCanvasStep(runtimeClient, config);
+        onProgress(step, addDataStep.config.importTo.explorePath);
+        await runCreateExploreStep(runtimeClient, addDataStep.config);
+        onProgress(step, addDataStep.config.importTo.canvasPath);
+        await runCreateCanvasStep(runtimeClient, addDataStep.config);
         break;
     }
   }
@@ -381,5 +387,23 @@ async function runCreateCanvasStep(
     runtimeClient,
     importToConfig.canvasName,
     ResourceKind.Canvas,
+  );
+}
+
+function fireImportStepEvent(
+  addDataConfig: AddDataConfig,
+  addDataStep: ImportAddDataStep,
+  step: ImportDataStep,
+) {
+  void behaviourEvent?.fireAddDataStepEvent(
+    BehaviourEventAction.ImportStep,
+    addDataConfig.medium,
+    addDataConfig.space,
+    addDataConfig.screen,
+    {
+      step,
+      schema: addDataStep.schema,
+      connector: addDataStep.config.connector,
+    },
   );
 }

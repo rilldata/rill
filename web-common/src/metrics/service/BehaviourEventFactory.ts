@@ -1,5 +1,6 @@
 import type { GithubEventFields } from "@rilldata/web-common/metrics/service/GithubEventTypes";
 import {
+  type AddDataBehaviourEventFields,
   type BehaviourEvent,
   BehaviourEventAction,
   BehaviourEventMedium,
@@ -144,6 +145,33 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     if (githubFields) {
       for (const key in githubFields) {
         event[key] = githubFields[key];
+      }
+    }
+    return event;
+  }
+
+  public addDataStepEvent(
+    commonFields: CommonFields,
+    commonUserFields: CommonUserFields,
+    action: BehaviourEventAction,
+    medium: BehaviourEventMedium,
+    space: MetricsEventSpace,
+    screen_name: MetricsEventScreenName,
+    addDataFields: AddDataBehaviourEventFields,
+  ) {
+    const event = this.getBaseMetricsEvent(
+      "behavioral",
+      BehaviourEventAction.DeployIntent,
+      commonFields,
+      commonUserFields,
+    ) as BehaviourEvent;
+    event.action = action;
+    event.medium = medium;
+    event.space = space;
+    event.screen_name = screen_name;
+    if (addDataFields) {
+      for (const key in addDataFields) {
+        event[key] = addDataFields[key];
       }
     }
     return event;

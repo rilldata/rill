@@ -14,6 +14,7 @@ import type {
 
 export enum ErrorEventAction {
   SourceError = "source-error",
+  ConnectorError = "connector-error",
   ErrorBoundary = "error-boundary",
 }
 
@@ -44,6 +45,15 @@ export interface JavascriptErrorEvent extends MetricsEvent {
   page_url: string;
 }
 
+export interface AddDataErrorEvent extends MetricsEvent {
+  action: ErrorEventAction;
+  error_code: SourceErrorCodes;
+  space: MetricsEventSpace;
+  screen_name: MetricsEventScreenName;
+  step: string;
+  schema: string;
+}
+
 export class ErrorEventFactory extends MetricsEventFactory {
   public sourceErrorEvent(
     commonFields: CommonFields,
@@ -68,6 +78,30 @@ export class ErrorEventFactory extends MetricsEventFactory {
     event.connection_type = connection_type;
     event.file_type = file_type;
     event.glob = glob;
+    return event;
+  }
+
+  public addDataErrorEvent(
+    commonFields: CommonFields,
+    commonUserFields: CommonUserFields,
+    space: MetricsEventSpace,
+    screen_name: MetricsEventScreenName,
+    error_code: SourceErrorCodes,
+    step: string,
+    schema: string,
+  ) {
+    const event = this.getBaseMetricsEvent(
+      "error",
+      ErrorEventAction.SourceError,
+      commonFields,
+      commonUserFields,
+    ) as AddDataErrorEvent;
+    event.action = ErrorEventAction.SourceError;
+    event.space = space;
+    event.screen_name = screen_name;
+    event.error_code = error_code;
+    event.step = step;
+    event.schema = schema;
     return event;
   }
 

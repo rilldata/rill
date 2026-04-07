@@ -20,7 +20,10 @@
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes.ts";
-  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes.ts";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes.ts";
   import {
     createRuntimeServiceCreateDirectoryMutation,
     createRuntimeServicePutFileMutation,
@@ -49,6 +52,8 @@
   let showAiConnectorDialog = false;
   let addDataModalOpen = false;
   let addDataConnector = "";
+
+  let screenName = MetricsEventScreenName.Home;
 
   const runtimeClient = useRuntimeClient();
 
@@ -85,16 +90,10 @@
   /**
    * Open the Add Data modal
    */
-  async function handleAddData() {
+  function handleAddData() {
     addDataModalOpen = true;
     addDataConnector = "";
-
-    await behaviourEvent?.fireSourceTriggerEvent(
-      BehaviourEventAction.SourceAdd,
-      BehaviourEventMedium.Button,
-      getScreenNameFromPage(),
-      MetricsEventSpace.LeftPanel,
-    );
+    screenName = getScreenNameFromPage();
   }
 
   /**
@@ -325,4 +324,12 @@
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />
 
-<AddDataModal bind:open={addDataModalOpen} connector={addDataConnector} />
+<AddDataModal
+  config={{
+    medium: BehaviourEventMedium.Menu,
+    space: MetricsEventSpace.LeftPanel,
+    screen: screenName,
+  }}
+  bind:open={addDataModalOpen}
+  connector={addDataConnector}
+/>
