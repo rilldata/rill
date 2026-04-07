@@ -227,7 +227,7 @@
           <span class="text-sm text-fg-tertiary">No tokens issued</span>
         {:else}
           <div class="flex flex-col border rounded divide-y">
-            {#each tokens as token}
+            {#each tokens as token (token.id)}
               <div class="flex items-center justify-between px-3 py-2 text-sm">
                 <div class="flex flex-col gap-y-0.5">
                   <span class="font-mono text-xs text-fg-primary"

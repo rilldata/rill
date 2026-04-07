@@ -110,7 +110,7 @@
         designated role.</span
       >
     </div>
-    {#each projectAssignments as assignment, index}
+    {#each projectAssignments as assignment, index (assignment.project)}
       <div class="flex items-center gap-x-2">
         <div class="flex-1">
           <Select.Root
@@ -187,7 +187,7 @@
         control.</span
       >
     </div>
-    {#each attributes as attr, index}
+    {#each attributes as attr, index (index)}
       <div class="flex items-center gap-x-2">
         <Input
           bind:value={attr.key}
