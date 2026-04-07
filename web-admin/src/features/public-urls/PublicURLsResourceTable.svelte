@@ -131,8 +131,6 @@
     <BasicTable
       data={sortedData}
       {columns}
-      emptyIcon={ExternalLinkIcon}
-      emptyText="No public URLs"
       columnLayout="minmax(150px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1.5fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) 56px"
     />
   {/if}
