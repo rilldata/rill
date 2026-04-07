@@ -21,6 +21,11 @@
     subtitle?: Snippet;
     actions?: Snippet;
   } = $props();
+
+  const GAP_PX = 8; // gap-x-2
+  const subtitlePadding = $derived(
+    Icon ? `${parseInt(iconSize) + GAP_PX}px` : "0",
+  );
 </script>
 
 <a {href} class="flex items-center group px-4 py-2.5 w-full h-full">
@@ -39,10 +44,9 @@
         <Tag color="red">Error</Tag>
       {/if}
     </div>
-    <!-- 22px = 14px icon + 8px gap-x-2; only indent when icon is present -->
     <div
       class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"
-      class:pl-[22px]={!!Icon}
+      style:padding-left={subtitlePadding}
     >
       {#if subtitle}{@render subtitle()}{/if}
     </div>
