@@ -1125,7 +1125,7 @@ func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_ENTERPRISE
 	case billing.FreePlanType:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_FREE
-	case billing.GrowthPlanType:
+	case billing.ProPlanType:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_GROWTH
 	default:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
