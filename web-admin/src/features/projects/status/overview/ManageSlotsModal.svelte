@@ -38,7 +38,7 @@
 
   let minSlots = DEFAULT_MANAGED_SLOTS;
 
-  let selectedSlots = $state(currentSlots);
+  let selectedSlots = $state(0);
   let showAllSizes = $state(false);
 
   $effect(() => {
