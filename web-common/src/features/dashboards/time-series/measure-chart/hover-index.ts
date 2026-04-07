@@ -1,6 +1,11 @@
 import { writable } from "svelte/store";
 import type { ScaleLinear } from "d3-scale";
 
+export interface ChartHoverState {
+  dimensionValue: string | undefined | null;
+  time: Date | undefined;
+}
+
 export interface HoverRange {
   start: number;
   end: number;
@@ -39,3 +44,9 @@ function createHoverIndex() {
 }
 
 export const hoverIndex = createHoverIndex();
+
+/** Shared hover state across TDD Vega charts (explore and TDD view). */
+export const chartHoverStore = writable<ChartHoverState>({
+  dimensionValue: undefined,
+  time: undefined,
+});

@@ -9,7 +9,7 @@
   import type { ChartProvider } from "@rilldata/web-common/features/components/charts/types";
   import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import { chartHoverStore } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { DimensionSeriesData } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import type { Theme } from "@rilldata/web-common/features/themes/theme";
@@ -149,9 +149,9 @@
     isThemeModeDark: themeMode === "dark",
   });
 
-  // Bidirectional highlighting: table hover → chart highlight
-  $: hoveredTime = $tableInteractionStore.time;
-  $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
+  // Bidirectional highlighting: table/chart hover → chart highlight
+  $: hoveredTime = $chartHoverStore.time;
+  $: hoveredDimensionValue = $chartHoverStore.dimensionValue;
 
   $: {
     if (chartView) {

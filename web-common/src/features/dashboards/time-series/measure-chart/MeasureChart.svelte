@@ -17,6 +17,7 @@
   import { createAnnotationsQuery } from "../annotations-selectors";
   import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
   import { hoverIndex } from "./hover-index";
+  import { chartHoverStore } from "./hover-index";
   import { createVisibilityObserver } from "./interactions";
   import MeasureChartBody from "./MeasureChartBody.svelte";
   import { ScrubController } from "./ScrubController";
@@ -232,7 +233,7 @@
 
   // TDD handlers
   function handleTddHover(
-    _dimension: undefined | string | null,
+    dimension: undefined | string | null,
     ts: Date | undefined,
   ) {
     if (ts && !isNaN(ts.getTime())) {
@@ -242,8 +243,11 @@
       const adjustedTs = localToTimeZoneOffset(ts, timeZone);
       const idx = dateToIndex(data, adjustedTs.getTime());
       if (idx !== null) hoverIndex.set(idx, "tddChart");
+      // Propagate to sibling TDD Vega charts in Explore
+      chartHoverStore.set({ dimensionValue: dimension ?? undefined, time: ts });
     } else {
       hoverIndex.clear("tddChart");
+      chartHoverStore.set({ dimensionValue: undefined, time: undefined });
     }
   }
 
