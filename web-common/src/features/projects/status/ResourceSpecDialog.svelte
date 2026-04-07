@@ -101,7 +101,7 @@
       {#if !resource}
         <p class="text-sm text-fg-secondary">No resource data available</p>
       {:else}
-        <StructuredView {resource} {allResources} />
+        <StructuredView {resource} {allResources} {onviewcomponent} />
       {/if}
     </div>
   </Dialog.Content>
