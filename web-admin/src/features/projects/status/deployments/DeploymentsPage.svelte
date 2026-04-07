@@ -302,14 +302,14 @@
 
   <ManageSlotsModal
     bind:open={prodModalOpen}
-    title="Prod Cluster Size"
+    title="Manage Prod Cluster Size"
     {organization}
     {project}
     {currentSlots}
   />
   <ManageSlotsModal
     bind:open={devModalOpen}
-    title="Dev Cluster Size"
+    title="Manage Dev Cluster Size"
     {organization}
     {project}
     currentSlots={devSlots}
