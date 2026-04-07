@@ -277,6 +277,7 @@ test.describe.serial("Alerts", () => {
       // Delete the alert
       await adminPage.getByLabel("Alert context menu").click();
       await adminPage.getByRole("menuitem", { name: "Delete Alert" }).click();
+      await adminPage.getByRole("button", { name: "Yes, delete" }).click();
 
       // Back to listing page without any alerts
       await expect(
@@ -393,6 +394,7 @@ test.describe.serial("Alerts", () => {
       // Delete the alert
       await adminPage.getByLabel("Alert context menu").click();
       await adminPage.getByRole("menuitem", { name: "Delete Alert" }).click();
+      await adminPage.getByRole("button", { name: "Yes, delete" }).click();
 
       // Back to listing page without any alerts
       await expect(

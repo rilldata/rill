@@ -245,6 +245,7 @@ test.describe.serial("Reports", () => {
     // Delete the report
     await adminPage.getByLabel("Report context menu").click();
     await adminPage.getByRole("menuitem", { name: "Delete Report" }).click();
+    await adminPage.getByRole("button", { name: "Yes, delete" }).click();
 
     // Back to listing page without any reports
     await expect(
