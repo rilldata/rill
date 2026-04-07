@@ -101,7 +101,7 @@ var spec = drivers.Spec{
 		},
 	},
 	ImplementsWarehouse: true,
-	ImplementsOLAP:      false,
+	ImplementsOLAP:      true,
 }
 
 type driver struct{}

@@ -10,6 +10,7 @@
     getAnalyzedConnectorByName,
     getAnalyzedConnectors,
   } from "@rilldata/web-common/features/connectors/selectors.ts";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     type AddDataConfig,
@@ -46,8 +47,12 @@
     $connectorDriverQuery.data?.driver ??
     getConnectorDriverForSchema(step.schema);
 
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
+  $: activeOlapConnector =
+    $instanceQuery.data?.instance?.olapConnector ?? "duckdb";
+
   $: importSteps = connectorDriver
-    ? getImportStepsForConnector(config, connectorDriver)
+    ? getImportStepsForConnector(config, connectorDriver, activeOlapConnector)
     : [];
   $: supportsModeling = importSteps[0] === ImportDataStep.CreateModel;
 
