@@ -5160,3 +5160,111 @@ func testMetricsViewsAggregation_like_nullable(t *testing.T, rt *runtime.Runtime
 	require.True(t, publishers["Microsoft"])
 	require.True(t, publishers["null"])
 }
+
+func TestMetricsViewsAggregation_comparison_timestampNS_duckdb(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/ts_ns_data.sql": `
+SELECT *
+FROM (
+  VALUES
+    (TIMESTAMP_NS '2024-04-05 00:00:00.000000001', 'A'),
+    (TIMESTAMP_NS '2024-04-05 01:00:00.000000001', 'A'),
+    (TIMESTAMP_NS '2024-04-05 02:00:00.000000001', 'A'),
+    (TIMESTAMP_NS '2024-04-06 00:00:00.000000001', 'A'),
+    (TIMESTAMP_NS '2024-04-06 01:00:00.000000001', 'A')
+) AS t(event_time, category)
+`,
+			"metrics/ts_ns_metrics.yaml": `
+type: metrics_view
+model: ts_ns_data
+timeseries: event_time
+
+dimensions:
+  - column: category
+
+measures:
+  - name: record_count
+    expression: count(*)
+`,
+		},
+	})
+
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	limit := int64(8)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ts_ns_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "category"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "record_count"},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "record_count", Desc: true},
+		},
+		Limit: &limit,
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2024, 4, 6, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2024, 4, 7, 0, 0, 0, 0, time.UTC)),
+		},
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+
+	q1 := &queries.MetricsViewAggregation{
+		MetricsViewName: "ts_ns_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "category"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "record_count"},
+			{
+				Name: "record_count_prev",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "record_count",
+					},
+				},
+			},
+			{
+				Name: "record_count_delta",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonDelta{
+					ComparisonDelta: &runtimev1.MetricsViewAggregationMeasureComputeComparisonDelta{
+						Measure: "record_count",
+					},
+				},
+			},
+			{
+				Name: "record_count_delta_perc",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonRatio{
+					ComparisonRatio: &runtimev1.MetricsViewAggregationMeasureComputeComparisonRatio{
+						Measure: "record_count",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "record_count", Desc: true},
+		},
+		Limit: &limit,
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2024, 4, 6, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2024, 4, 7, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2024, 4, 5, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2024, 4, 6, 0, 0, 0, 0, time.UTC)),
+		},
+		SecurityClaims: testClaims(),
+	}
+
+	err = q1.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Len(t, q1.Result.Data, 1)
+	// Day 2: A=2; Day 1: A=3; sorted by record_count DESC; delta = base - comparison
+	require.Equal(t, "A,2,3,-1", fieldsToString(q1.Result.Data[0], "category", "record_count", "record_count_prev", "record_count_delta"))
+}

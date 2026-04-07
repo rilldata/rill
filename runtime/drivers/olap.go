@@ -526,7 +526,7 @@ func (d Dialect) MaxDimensionExpression(expr string) string {
 }
 
 func (d Dialect) GetTimeDimensionParameter() string {
-	if d == DialectPinot {
+	if d == DialectPinot || d == DialectDuckDB {
 		return "CAST(? AS TIMESTAMP)"
 	}
 	return "?"
