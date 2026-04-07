@@ -21,7 +21,10 @@
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
-  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import {
+    AppMode,
+    previewModeStore,
+  } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
@@ -99,7 +102,9 @@
 
   // Preview mode from store OR (viz) route group
   $: mode =
-    isPreviewMode || route.id?.includes("(viz)") ? "Preview" : "Developer";
+    isPreviewMode || route.id?.includes("(viz)")
+      ? AppMode.Preview
+      : AppMode.Developer;
 
   $: shouldShowPreviewNav =
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
