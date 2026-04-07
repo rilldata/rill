@@ -37,8 +37,7 @@
     route,
   } = $page);
 
-  $: onVizRoute =
-    route.id?.includes("explore") || route.id?.includes("canvas");
+  $: onVizRoute = route.id?.includes("explore") || route.id?.includes("canvas");
 
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
