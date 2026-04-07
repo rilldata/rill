@@ -15,7 +15,6 @@
     SLOT_RATE_PER_HR,
     HOURS_PER_MONTH,
     DEFAULT_MANAGED_SLOTS,
-    DEFAULT_SELF_MANAGED_SLOTS,
     type SlotTier,
   } from "./slots-utils";
 
@@ -28,25 +27,16 @@
     organization,
     project,
     currentSlots,
-    isRillManaged = true,
-    isTrial = false,
+    title = "Manage Cluster Size",
   }: {
     open?: boolean;
     organization: string;
     project: string;
     currentSlots: number;
-    isRillManaged?: boolean;
-    isTrial?: boolean;
+    title?: string;
   } = $props();
 
-  // Free trials have no minimum; Growth+: 2 for Rill-managed, 4 for self-managed
-  let minSlots = $derived(
-    isTrial && isRillManaged
-      ? 1
-      : isRillManaged
-        ? DEFAULT_MANAGED_SLOTS
-        : DEFAULT_SELF_MANAGED_SLOTS,
-  );
+  let minSlots = DEFAULT_MANAGED_SLOTS;
 
   let selectedSlots = $state(currentSlots);
   let showAllSizes = $state(false);
@@ -121,19 +111,11 @@
 >
   <Dialog.Content class="max-w-2xl">
     <Dialog.Header>
-      <Dialog.Title>Manage Cluster Size</Dialog.Title>
+      <Dialog.Title>{title}</Dialog.Title>
       <Dialog.Description>
         Choose the vCPU and memory allocation for your deployment. Monthly
         estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/slot/hr.
-        {#if !isTrial}
-          {#if isRillManaged}
-            Minimum {DEFAULT_MANAGED_SLOTS * 4}GiB / {DEFAULT_MANAGED_SLOTS}vCPU
-            for Rill-managed deployments.
-          {:else}
-            Minimum {DEFAULT_SELF_MANAGED_SLOTS * 4}GiB / {DEFAULT_SELF_MANAGED_SLOTS}vCPU
-            for self-managed OLAP deployments.
-          {/if}
-        {/if}
+        Minimum {DEFAULT_MANAGED_SLOTS * 4}GiB / {DEFAULT_MANAGED_SLOTS}vCPU.
       </Dialog.Description>
     </Dialog.Header>
 

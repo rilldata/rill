@@ -21,7 +21,6 @@
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
-  import { SLOT_TIERS } from "./slots-utils";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
@@ -81,11 +80,6 @@
     (c) => c.name === instance?.aiConnector,
   );
 
-  // Slots / Cluster size
-  $: currentSlots = Number(projectData?.prodSlots) || 0;
-  $: currentTier = SLOT_TIERS.find((t) => t.slots === currentSlots);
-  $: clusterLabel =
-    currentTier?.instance ?? `${currentSlots * 4}GiB / ${currentSlots}vCPU`;
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
 
   // Billing plan detection
@@ -197,24 +191,6 @@
         {/if}
       </span>
     </div>
-
-    {#if !$subscriptionQuery?.isLoading && !isEnterprise}
-      <div class="info-row">
-        <span class="info-label">Cluster Size</span>
-        <span class="info-value flex items-center gap-3">
-          <a
-            href="/{organization}/{project}/-/status/deployments"
-            class="slots-link"
-          >
-            <span class="slots-count">{clusterLabel}</span>
-            <span class="slots-secondary"
-              >({currentSlots} {currentSlots === 1 ? "slot" : "slots"})</span
-            >
-            <span class="slots-detail">View details</span>
-          </a>
-        </span>
-      </div>
-    {/if}
   </div>
 </OverviewCard>
 
@@ -243,21 +219,7 @@
   .repo-link:hover {
     @apply underline;
   }
-  .slots-link {
-    @apply flex items-center gap-2 no-underline;
-  }
-  .slots-link:hover .slots-detail {
-    @apply text-primary-600;
-  }
-  .slots-count {
-    @apply text-sm text-fg-primary font-medium tabular-nums;
-  }
-  .slots-secondary {
-    @apply text-xs text-fg-tertiary;
-  }
-  .slots-detail {
-    @apply text-xs text-primary-500;
-  }
+
   .upgrade-link {
     @apply text-xs text-primary-500 no-underline;
   }
