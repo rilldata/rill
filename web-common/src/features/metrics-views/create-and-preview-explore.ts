@@ -2,6 +2,7 @@ import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { previewModeStore } from "../../layout/preview-mode-store";
+import { getExploreRoute } from "../../layout/preview-route-utils";
 import { waitUntil } from "../../lib/waitUtils";
 import type { V1Resource } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
@@ -34,5 +35,5 @@ export async function createAndPreviewExplore(
   if (!name) throw new Error("Failed to create an Explore resource");
 
   const isPreview = get(previewModeStore);
-  await goto(isPreview ? `/explore/${name}` : `/files${filePath}`);
+  await goto(getExploreRoute(isPreview, name, filePath));
 }

@@ -16,9 +16,14 @@
   } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import {
+    getHomeRoute,
+    getCanvasRoute,
+    getExploreRoute,
+    getFileRoute,
+  } from "@rilldata/web-common/layout/preview-route-utils";
   import FeatherCheckCircle from "@rilldata/web-common/components/icons/FeatherCheckCircle.svelte";
 
   export let importAddDataStep: ImportAddDataStep;
@@ -53,7 +58,7 @@
   );
 
   let importStep = ImportDataStep.Init;
-  $: currentFileRoute = $previewModeStore ? "/dashboards" : "/";
+  $: currentFileRoute = getHomeRoute($previewModeStore);
   let error: string | null = null;
   $: hasErrored = !!error;
 
@@ -68,21 +73,26 @@
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
-            if ($previewModeStore) {
-              const { canvasName, exploreName } =
-                importAddDataStep.config.importTo;
-              if (step === ImportDataStep.CreateDashboard && canvasName) {
-                currentFileRoute = `/canvas/${canvasName}`;
-              } else if (
-                step === ImportDataStep.CreateDashboard &&
-                exploreName
-              ) {
-                currentFileRoute = `/explore/${exploreName}`;
-              } else {
-                currentFileRoute = "/dashboards";
-              }
+            const isPreview = $previewModeStore;
+            const { canvasName, exploreName } =
+              importAddDataStep.config.importTo;
+            if (step === ImportDataStep.CreateDashboard && canvasName) {
+              currentFileRoute = getCanvasRoute(
+                isPreview,
+                canvasName,
+                currentFilePath,
+              );
+            } else if (
+              step === ImportDataStep.CreateDashboard &&
+              exploreName
+            ) {
+              currentFileRoute = getExploreRoute(
+                isPreview,
+                exploreName,
+                currentFilePath,
+              );
             } else {
-              currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+              currentFileRoute = getFileRoute(isPreview, currentFilePath);
             }
           }
         },

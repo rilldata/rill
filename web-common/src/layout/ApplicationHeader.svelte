@@ -20,6 +20,8 @@
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { AppMode } from "@rilldata/web-common/layout/preview-mode-store";
+  import { getHomeRoute } from "@rilldata/web-common/layout/preview-route-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
@@ -30,7 +32,7 @@
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
   const runtimeClient = useRuntimeClient();
 
-  export let mode: string;
+  export let mode: AppMode;
 
   $: ({
     params: { name: dashboardName },
@@ -65,7 +67,7 @@
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: mode === "Preview" ? "/dashboards" : "/",
+    href: getHomeRoute(mode === AppMode.Preview),
   };
 
   $: pathParts = [
@@ -96,17 +98,17 @@
   }
 </script>
 
-<Header borderBottom={!onDeployPage && mode !== "Preview"}>
+<Header borderBottom={!onDeployPage && mode !== AppMode.Preview}>
   {#if !onDeployPage}
-    <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
+    <HeaderLogo href={getHomeRoute(mode === AppMode.Preview)} />
 
     <Tag text={mode} color="gray"></Tag>
 
-    {#if mode === "Preview"}
+    {#if mode === AppMode.Preview}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
-    {:else if mode === "Developer"}
+    {:else if mode === AppMode.Developer}
       <InputWithConfirm
         size="md"
         bumpDown
@@ -120,7 +122,7 @@
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if mode === "Preview"}
+    {#if mode === AppMode.Preview}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
       {:else if route.id?.includes("canvas")}

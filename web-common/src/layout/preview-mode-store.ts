@@ -7,3 +7,8 @@ import { writable } from "svelte/store";
  * closing the browser and returning always defaults to developer mode.
  */
 export const previewModeStore = writable<boolean>(false);
+
+export enum AppMode {
+  Preview = "Preview",
+  Developer = "Developer",
+}
