@@ -20,7 +20,10 @@
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
-  import { getHomeRoute, getFileRoute } from "@rilldata/web-common/layout/preview-route-utils";
+  import {
+    getHomeRoute,
+    getFileRoute,
+  } from "@rilldata/web-common/layout/preview-route-utils";
   import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
 
   export let importAddDataStep: ImportAddDataStep;
@@ -55,10 +58,7 @@
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
-            currentFileRoute = getFileRoute(
-              $previewModeStore,
-              currentFilePath,
-            );
+            currentFileRoute = getFileRoute($previewModeStore, currentFilePath);
           }
         },
       );

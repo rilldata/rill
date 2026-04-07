@@ -147,9 +147,7 @@ export function useCreateMetricsViewFromTableUIAction(
       // If we're not creating an Explore, navigate to the Metrics View file
       if (!createExplore) {
         const isPreview = get(previewModeStore);
-        await goto(
-          getFileRoute(isPreview, newMetricsViewFilePath),
-        );
+        await goto(getFileRoute(isPreview, newMetricsViewFilePath));
         void behaviourEvent?.fireNavigationEvent(
           newMetricsViewName,
           behaviourEventMedium,

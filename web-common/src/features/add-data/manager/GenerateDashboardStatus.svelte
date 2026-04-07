@@ -82,10 +82,7 @@
                 canvasName,
                 currentFilePath,
               );
-            } else if (
-              step === ImportDataStep.CreateDashboard &&
-              exploreName
-            ) {
+            } else if (step === ImportDataStep.CreateDashboard && exploreName) {
               currentFileRoute = getExploreRoute(
                 isPreview,
                 exploreName,

@@ -19,9 +19,9 @@ describe("preview-route-utils", () => {
 
   describe("getExploreRoute", () => {
     it("returns /explore/{name} in preview mode", () => {
-      expect(getExploreRoute(true, "my_explore", "/dashboards/my_explore.yaml")).toBe(
-        "/explore/my_explore",
-      );
+      expect(
+        getExploreRoute(true, "my_explore", "/dashboards/my_explore.yaml"),
+      ).toBe("/explore/my_explore");
     });
 
     it("returns /files/{path} in developer mode", () => {
