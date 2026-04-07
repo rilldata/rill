@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
@@ -10,26 +9,34 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import StructuredView from "./describe/StructuredView.svelte";
 
-  export let open = false;
-  export let resourceName = "";
-  export let resourceKind = "";
-  export let resource: V1Resource | undefined = undefined;
+  let {
+    open = $bindable(false),
+    resourceName = "",
+    resourceKind = "",
+    resource = undefined,
+    parentResourceKind = "",
+    parentResource = undefined,
+    allResources = [],
+    onback,
+    onviewcomponent,
+  }: {
+    open?: boolean;
+    resourceName?: string;
+    resourceKind?: string;
+    resource?: V1Resource;
+    parentResourceKind?: string;
+    parentResource?: V1Resource;
+    allResources?: V1Resource[];
+    onback?: () => void;
+    onviewcomponent?: (componentName: string) => void;
+  } = $props();
 
-  // Track parent resource for back-navigation (e.g. canvas -> component)
-  export let parentResourceKind = "";
-  export let parentResource: V1Resource | undefined = undefined;
-  export let allResources: V1Resource[] = [];
+  let hasParent = $derived(!!parentResource);
 
-  const dispatch = createEventDispatcher<{
-    back: void;
-  }>();
-
-  $: hasParent = !!parentResource;
-
-  $: kind = resourceKind as ResourceKind;
-  $: icon = resourceIconMapping[kind];
-  $: label = resourceLabelMapping[kind];
-  $: filePath = resource?.meta?.filePaths?.[0];
+  let kind = $derived(resourceKind as ResourceKind);
+  let icon = $derived(resourceIconMapping[kind]);
+  let label = $derived(resourceLabelMapping[kind]);
+  let filePath = $derived(resource?.meta?.filePaths?.[0]);
 
   function getDisplayName(
     k: ResourceKind,
@@ -47,7 +54,7 @@
     }
   }
 
-  $: displayName = getDisplayName(kind, resource);
+  let displayName = $derived(getDisplayName(kind, resource));
 </script>
 
 <Dialog.Root bind:open>
@@ -57,7 +64,8 @@
       {#if hasParent}
         <button
           class="flex items-center gap-x-1 text-xs text-fg-muted hover:text-fg-secondary mb-1 transition-colors"
-          on:click={() => dispatch("back")}
+          aria-label="Back to parent resource"
+          onclick={() => onback?.()}
         >
           <span>&larr;</span>
           <span
@@ -68,7 +76,8 @@
       {/if}
       <div class="flex items-center gap-x-2">
         {#if icon}
-          <svelte:component this={icon} size="16px" />
+          {@const Icon = icon}
+          <Icon size="16px" />
         {/if}
         <Dialog.Title class="flex items-center gap-x-1.5">
           {#if label}

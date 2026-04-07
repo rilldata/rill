@@ -46,7 +46,9 @@ const SKIP_KEYS = new Set([
 // Fields that contain code and should render as multiline blocks
 const MULTILINE_KEYS = new Set(["sql", "watermarkExpression"]);
 
-// Array fields that should stay flat in the parent section (not promoted to cards)
+// Array fields that should stay flat in the parent section (not promoted to cards).
+// Currently empty; add field names here to keep specific arrays inline rather than
+// promoting them to collapsible card sections.
 const FLAT_ARRAY_KEYS = new Set<string>([]);
 
 // Human-readable labels for common proto field names
@@ -73,12 +75,6 @@ const LABEL_MAP: Record<string, string> = {
   securityRules: "Security Rules",
   rendererProperties: "Renderer Properties",
   filtersEnabled: "Filters Enabled",
-  refreshedOn: "Last Refreshed",
-  reconcileError: "Reconcile Error",
-  reconcileStatus: "Reconcile Status",
-  reconcileOn: "Next Reconcile",
-  specUpdatedOn: "Spec Updated",
-  stateUpdatedOn: "State Updated",
   resultConnector: "Result Connector",
   resultTable: "Result Table",
   executorConnector: "Executor Connector",
@@ -333,16 +329,16 @@ function flatten(
       for (let i = 0; i < val.length; i++) {
         const item = val[i];
         if (typeof item === "object" && item !== null) {
-          const obj = item as Record<string, unknown>;
+          const record = item as Record<string, unknown>;
           const groupName =
-            (typeof obj.name === "string" && obj.name) ||
-            (typeof obj.displayName === "string" && obj.displayName) ||
+            (typeof record.name === "string" && record.name) ||
+            (typeof record.displayName === "string" && record.displayName) ||
             "";
           if (groupName) {
-            flattenGrouped(entries, arraySection, obj, groupName);
+            flattenGrouped(entries, arraySection, record, groupName);
           } else {
             // No name — flatten directly into the section (no collapsible wrapper)
-            flatten(entries, arraySection, obj);
+            flatten(entries, arraySection, record);
           }
         } else {
           push(entries, arraySection, `${i + 1}`, String(item), true);
@@ -548,7 +544,8 @@ function formatValue(key: string, val: unknown): string | null {
   }
   if (key === "firstMonthOfYear") {
     const idx = Number(val);
-    return MONTH_NAMES[idx] ?? s;
+    // Proto uses 1-indexed months (1 = January)
+    return MONTH_NAMES[idx - 1] ?? s;
   }
   // Clean up proto enum values
   if (typeof val === "string" && /^[A-Z_]{2,}_[A-Z_]+$/.test(val)) {

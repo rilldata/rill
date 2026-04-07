@@ -289,18 +289,17 @@
   {parentResourceKind}
   {parentResource}
   allResources={data}
-  on:view-component={async (e) => {
-    const name = e.detail.componentName;
+  onviewcomponent={async (componentName) => {
     try {
       const resp = await runtimeServiceGetResource(runtimeClient, {
-        name: { kind: ResourceKind.Component, name },
+        name: { kind: ResourceKind.Component, name: componentName },
       });
       if (resp.resource) {
         // Save current canvas as parent before navigating to component
         parentResourceName = specResourceName;
         parentResourceKind = specResourceKind;
         parentResource = specResource;
-        specResourceName = name;
+        specResourceName = componentName;
         specResourceKind = ResourceKind.Component;
         specResource = resp.resource;
       }
@@ -308,7 +307,7 @@
       console.error("Failed to load component:", err);
     }
   }}
-  on:back={() => {
+  onback={() => {
     // Restore parent resource
     if (parentResource) {
       specResourceName = parentResourceName;

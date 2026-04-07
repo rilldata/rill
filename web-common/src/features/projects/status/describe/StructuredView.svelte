@@ -4,19 +4,25 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { mapResource, type DescribeEntry } from "./resource-mappers";
 
-  export let resource: V1Resource;
-  export let allResources: V1Resource[] = [];
+  interface Props {
+    resource: V1Resource;
+    allResources?: V1Resource[];
+  }
+
+  let { resource, allResources = [] }: Props = $props();
 
   const runtimeClient = useRuntimeClient();
 
   // For canvas resources, fetch component resources from refs
-  let componentResources: V1Resource[] = [];
+  let componentResources: V1Resource[] = $state([]);
 
-  $: if (resource.canvas) {
-    fetchComponentResources(resource);
-  } else {
-    componentResources = [];
-  }
+  $effect(() => {
+    if (resource.canvas) {
+      fetchComponentResources(resource);
+    } else {
+      componentResources = [];
+    }
+  });
 
   async function fetchComponentResources(res: V1Resource) {
     const refs = res.meta?.refs ?? [];
@@ -56,37 +62,42 @@
     groups: GroupedItems[];
   }
 
-  $: effectiveResources =
-    componentResources.length > 0 ? componentResources : allResources;
-  $: entries = mapResource(resource, effectiveResources);
+  let effectiveResources = $derived(
+    componentResources.length > 0 ? componentResources : allResources,
+  );
+  let entries = $derived(mapResource(resource, effectiveResources));
 
   // Group entries by section, then by group within each section
-  $: sections = entries.reduce<Section[]>((acc, entry) => {
-    let section = acc.find((s) => s.name === entry.section);
-    if (!section) {
-      section = { name: entry.section, ungrouped: [], groups: [] };
-      acc.push(section);
-    }
-
-    if (entry.group) {
-      let group = section.groups.find((g) => g.group === entry.group);
-      if (!group) {
-        group = { group: entry.group, items: [] };
-        section.groups.push(group);
+  let sections = $derived(
+    entries.reduce<Section[]>((acc, entry) => {
+      let section = acc.find((s) => s.name === entry.section);
+      if (!section) {
+        section = { name: entry.section, ungrouped: [], groups: [] };
+        acc.push(section);
       }
-      group.items.push(entry);
-    } else {
-      section.ungrouped.push(entry);
-    }
 
-    return acc;
-  }, []);
+      if (entry.group) {
+        let group = section.groups.find((g) => g.group === entry.group);
+        if (!group) {
+          group = { group: entry.group, items: [] };
+          section.groups.push(group);
+        }
+        group.items.push(entry);
+      } else {
+        section.ungrouped.push(entry);
+      }
 
-  $: hasGroups = (section: Section) => section.groups.length > 0;
+      return acc;
+    }, []),
+  );
+
+  function hasGroups(section: Section): boolean {
+    return section.groups.length > 0;
+  }
 </script>
 
 <div class="flex flex-col gap-3">
-  {#each sections as section}
+  {#each sections as section (section.name)}
     {#if hasGroups(section)}
       <!-- Collapsible section for grouped items (measures, dimensions, etc.) -->
       <details class="border rounded-md overflow-hidden group" open>
@@ -100,13 +111,14 @@
         </summary>
 
         <div class="px-3 py-2 flex flex-col gap-y-0.5">
-          {#each section.groups as group}
-            <details class="border border-border-muted rounded group">
+          {#each section.groups as group (group.group)}
+            <details class="border rounded group">
               <summary
                 class="px-2.5 py-1.5 text-xs font-medium text-fg-primary cursor-pointer select-none list-none flex items-center justify-between"
               >
                 <span>{group.group}</span>
                 <svg
+                  aria-hidden="true"
                   class="w-3 h-3 text-fg-muted transition-transform group-open:rotate-90"
                   viewBox="0 0 16 16"
                   fill="currentColor"
@@ -116,10 +128,8 @@
                   />
                 </svg>
               </summary>
-              <div
-                class="px-2.5 py-1.5 border-t border-border-muted flex flex-col gap-y-0.5"
-              >
-                {#each group.items as item}
+              <div class="px-2.5 py-1.5 border-t flex flex-col gap-y-0.5">
+                {#each group.items as item (item.label)}
                   {#if item.label === "Name" || item.label === "Display Name"}
                     <!-- Already shown as summary -->
                   {:else if item.multiline}
@@ -129,9 +139,9 @@
                         class="bg-surface-subtle rounded p-2 text-xs font-mono overflow-x-auto whitespace-pre-wrap max-h-40">{item.value}</pre>
                     </div>
                   {:else}
-                    <div class="flex gap-x-3 min-h-[18px] text-xs">
+                    <div class="flex gap-x-4 min-h-[20px] text-xs">
                       <span
-                        class="shrink-0 text-fg-secondary w-28 truncate"
+                        class="shrink-0 text-fg-secondary w-36 truncate"
                         title={item.label}
                       >
                         {item.label}
@@ -160,7 +170,7 @@
           {section.name}
         </div>
         <div class="px-3 py-2 flex flex-col gap-y-1.5">
-          {#each section.ungrouped as item}
+          {#each section.ungrouped as item (item.label)}
             {#if item.multiline}
               <div class="flex flex-col gap-1 text-xs">
                 <span class="text-fg-secondary">{item.label}</span>
