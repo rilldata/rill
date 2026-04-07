@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import ResourceListRow from "@rilldata/web-common/features/resources/ResourceListRow.svelte";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
 
   export let name: string;
@@ -21,21 +21,16 @@
     : ResourceKind.Canvas;
 </script>
 
-<a class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full" {href}>
-  <div class="flex gap-x-2 items-center min-h-[20px]">
+<ResourceListRow
+  {href}
+  title={title !== "" ? title : name}
+  errorMessage={error || undefined}
+>
+  {#snippet tags()}
     <ResourceTypeBadge kind={resourceKind} />
-    <span
-      class="text-fg-secondary text-sm font-semibold group-hover:text-accent-primary-action truncate"
-    >
-      {title !== "" ? title : name}
-    </span>
-    {#if error !== ""}
-      <Tag color="red">Error</Tag>
-    {/if}
-  </div>
-  <div
-    class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"
-  >
+  {/snippet}
+
+  {#snippet subtitle()}
     <span class="shrink-0">{name}</span>
     {#if lastRefreshedDate}
       <span class="shrink-0">•</span>
@@ -51,5 +46,5 @@
       <span class="shrink-0">•</span>
       <span class="truncate">{description}</span>
     {/if}
-  </div>
-</a>
+  {/snippet}
+</ResourceListRow>

@@ -8,6 +8,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+  import DeleteResourceConfirmDialog from "@rilldata/web-common/features/resources/DeleteResourceConfirmDialog.svelte";
   import ResourceListRow from "@rilldata/web-common/features/resources/ResourceListRow.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
@@ -18,7 +19,6 @@
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import { formatRunDate } from "../tableUtils";
   import ReportOwnerBullet from "./ReportOwnerBullet.svelte";
-  import DeleteReportConfirmDialog from "./DeleteReportConfirmDialog.svelte";
 
   export let organization: string;
   export let project: string;
@@ -43,21 +43,28 @@
   let isDeleteConfirmOpen = false;
 
   async function handleRun() {
-    await $triggerReport.mutateAsync({
-      org: organization,
-      project,
-      name: id,
-      data: undefined,
-    });
-    eventBus.emit("notification", {
-      message: "Triggered an ad-hoc run of this report.",
-      type: "success",
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        runtimeClient.instanceId,
-      ),
-    });
+    try {
+      await $triggerReport.mutateAsync({
+        org: organization,
+        project,
+        name: id,
+        data: undefined,
+      });
+      eventBus.emit("notification", {
+        message: "Triggered an ad-hoc run of this report.",
+        type: "success",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+        ),
+      });
+    } catch {
+      eventBus.emit("notification", {
+        message: "Failed to trigger report",
+        type: "error",
+      });
+    }
   }
 
   // TODO: Consider adding ?edit=true query param to auto-open the edit dialog on the resource page
@@ -66,16 +73,23 @@
   }
 
   async function handleDelete() {
-    await $deleteReport.mutateAsync({
-      org: organization,
-      project,
-      name: id,
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        runtimeClient.instanceId,
-      ),
-    });
+    try {
+      await $deleteReport.mutateAsync({
+        org: organization,
+        project,
+        name: id,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+        ),
+      });
+    } catch {
+      eventBus.emit("notification", {
+        message: "Failed to delete report",
+        type: "error",
+      });
+    }
   }
 </script>
 
@@ -83,9 +97,9 @@
   href={`reports/${id}`}
   {title}
   icon={ReportIcon}
-  errorMessage={lastRunErrorMessage}
+  errorMessage={lastRun ? lastRunErrorMessage : undefined}
 >
-  <svelte:fragment slot="subtitle">
+  {#snippet subtitle()}
     {#if !lastRun}
       <span class="shrink-0">Hasn't run yet</span>
     {:else}
@@ -99,24 +113,24 @@
         <ReportOwnerBullet {organization} {project} {ownerId} />
       </svelte:fragment>
     </ProjectAccessControls>
-  </svelte:fragment>
+  {/snippet}
 
-  <svelte:fragment slot="actions">
-    <DropdownMenu.Root bind:open={isDropdownOpen}>
-      <DropdownMenu.Trigger class="flex-none">
-        <IconButton rounded active={isDropdownOpen}>
-          <ThreeDot size="16px" />
-        </IconButton>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="min-w-[95px]">
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          onclick={handleRun}
-        >
-          <PlayIcon size="12px" />
-          <span class="ml-2">Run</span>
-        </DropdownMenu.Item>
-        {#if !isCreatedByCode}
+  {#snippet actions()}
+    {#if !isCreatedByCode}
+      <DropdownMenu.Root bind:open={isDropdownOpen}>
+        <DropdownMenu.Trigger class="flex-none">
+          <IconButton rounded active={isDropdownOpen}>
+            <ThreeDot size="16px" />
+          </IconButton>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start" class="min-w-[95px]">
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            onclick={handleRun}
+          >
+            <PlayIcon size="12px" />
+            <span class="ml-2">Run</span>
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             class="font-normal flex items-center"
             onclick={handleEdit}
@@ -134,14 +148,16 @@
             <Trash2Icon size="12px" />
             <span class="ml-2">Delete</span>
           </DropdownMenu.Item>
-        {/if}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-  </svelte:fragment>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    {/if}
+  {/snippet}
 </ResourceListRow>
 
-<DeleteReportConfirmDialog
+<DeleteResourceConfirmDialog
   bind:open={isDeleteConfirmOpen}
+  resourceKind="report"
   {title}
+  description="and will no longer send scheduled emails"
   onDelete={handleDelete}
 />

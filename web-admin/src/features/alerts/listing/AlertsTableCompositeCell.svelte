@@ -5,7 +5,9 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import DeleteResourceConfirmDialog from "@rilldata/web-common/features/resources/DeleteResourceConfirmDialog.svelte";
   import ResourceListRow from "@rilldata/web-common/features/resources/ResourceListRow.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -13,7 +15,6 @@
   import { Pencil, Trash2Icon } from "lucide-svelte";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import AlertOwnerBullet from "./AlertOwnerBullet.svelte";
-  import DeleteAlertConfirmDialog from "./DeleteAlertConfirmDialog.svelte";
 
   export let organization: string;
   export let project: string;
@@ -38,16 +39,23 @@
   }
 
   async function handleDelete() {
-    await $deleteAlert.mutateAsync({
-      org: organization,
-      project,
-      name: id,
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        runtimeClient.instanceId,
-      ),
-    });
+    try {
+      await $deleteAlert.mutateAsync({
+        org: organization,
+        project,
+        name: id,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+        ),
+      });
+    } catch {
+      eventBus.emit("notification", {
+        message: "Failed to delete alert",
+        type: "error",
+      });
+    }
   }
 </script>
 
@@ -55,9 +63,9 @@
   href={`alerts/${id}`}
   {title}
   icon={AlertIcon}
-  errorMessage={lastTriggerErrorMessage}
+  errorMessage={lastTrigger ? lastTriggerErrorMessage : undefined}
 >
-  <svelte:fragment slot="subtitle">
+  {#snippet subtitle()}
     {#if !lastTrigger}
       <span class="shrink-0">Hasn't been checked yet</span>
     {:else}
@@ -70,9 +78,9 @@
         <AlertOwnerBullet {organization} {project} {ownerId} />
       </svelte:fragment>
     </ProjectAccessControls>
-  </svelte:fragment>
+  {/snippet}
 
-  <svelte:fragment slot="actions">
+  {#snippet actions()}
     {#if !isCreatedByCode}
       <DropdownMenu.Root bind:open={isDropdownOpen}>
         <DropdownMenu.Trigger class="flex-none">
@@ -101,11 +109,13 @@
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </ResourceListRow>
 
-<DeleteAlertConfirmDialog
+<DeleteResourceConfirmDialog
   bind:open={isDeleteConfirmOpen}
+  resourceKind="alert"
   {title}
+  description="and will no longer trigger notifications"
   onDelete={handleDelete}
 />

@@ -10,16 +10,26 @@
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
 
-  export let open = false;
-  export let title: string;
-  export let onDelete: () => Promise<void>;
+  let {
+    open = $bindable(false),
+    resourceKind,
+    title,
+    description,
+    onDelete,
+  }: {
+    open: boolean;
+    resourceKind: string;
+    title: string;
+    description: string;
+    onDelete: () => Promise<void>;
+  } = $props();
 
   async function handleDelete() {
     try {
       await onDelete();
       open = false;
     } catch (error) {
-      console.error("Failed to delete report:", error);
+      console.error(`Failed to delete ${resourceKind}:`, error);
     }
   }
 </script>
@@ -32,11 +42,11 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this report?</AlertDialogTitle>
+      <AlertDialogTitle>Delete this {resourceKind}?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          The report "<strong>{title}</strong>" will be permanently deleted and
-          will no longer send scheduled emails.
+          The {resourceKind} "<strong>{title}</strong>" will be permanently
+          deleted {description}.
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
