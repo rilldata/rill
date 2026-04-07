@@ -109,8 +109,15 @@ export class CanvasEntity {
     public instanceId: string,
     private spec: CanvasResponse,
     readonly client: RuntimeClient,
+    public allowUnvalidatedSpec = false,
   ) {
-    this.specStore = useCanvas(client, name, {}, queryClient);
+    this.specStore = useCanvas(
+      client,
+      name,
+      {},
+      queryClient,
+      allowUnvalidatedSpec,
+    );
 
     // This will be deprecated soon - bgh
     const searchParamsStore: SearchParamsStore = (() => {
@@ -643,7 +650,9 @@ export class CanvasEntity {
         }
 
         const newType = (newResource.component?.state?.validSpec?.renderer ??
-          newResource.component?.spec?.renderer) as CanvasComponentType;
+          (this.allowUnvalidatedSpec
+            ? newResource.component?.spec?.renderer
+            : undefined)) as CanvasComponentType;
         const existingClass =
           this.componentsStore.getNonReactive(componentName);
         const path = constructPath(rowIndex, columnIndex, newType);

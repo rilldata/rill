@@ -16,7 +16,7 @@ type ResolveCanvasResult struct {
 	ReferencedMetricsViews map[string]*runtimev1.Resource
 }
 
-func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, claims *SecurityClaims) (*ResolveCanvasResult, error) {
+func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, claims *SecurityClaims, unsafe bool) (*ResolveCanvasResult, error) {
 	// Find the canvas resource
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
@@ -36,10 +36,11 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		return nil, ErrForbidden
 	}
 
-	// Use the valid spec if available, otherwise fall back to the unvalidated spec.
-	// Falling back allows Rill Developer to keep the canvas accessible while the user is mid-edit.
+	// Use the valid spec if available. If unsafe is set, fall back to the unvalidated spec.
+	// unsafe is only sent by the visual editor in Rill Developer; it must never be set by Rill Cloud,
+	// read-only previews, shared token access, or embedded viewers.
 	spec := res.GetCanvas().State.ValidSpec
-	if spec == nil {
+	if spec == nil && unsafe {
 		spec = res.GetCanvas().Spec
 	}
 	if spec == nil {
@@ -76,7 +77,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 	metricsViews := make(map[string]bool)
 	for _, cmp := range components {
 		validSpec := cmp.GetComponent().State.ValidSpec
-		if validSpec == nil {
+		if validSpec == nil && unsafe {
 			validSpec = cmp.GetComponent().Spec
 		}
 		if validSpec == nil || validSpec.RendererProperties == nil {

@@ -57,7 +57,9 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const type = (resource.component?.state?.validSpec?.renderer ??
-      resource.component?.spec?.renderer) as CanvasComponentType;
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as CanvasComponentType;
 
     if (type !== "table" && type !== "pivot") {
       throw new Error(
