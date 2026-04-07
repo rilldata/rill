@@ -79,7 +79,9 @@ export function isExplorerType(connectorDriver: V1ConnectorDriver) {
 }
 
 export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {
-  return !!connectorDriver?.implementsOlap;
+  return (
+    !!connectorDriver?.implementsOlap && !connectorDriver?.implementsWarehouse
+  );
 }
 
 const NonModelSteps = [
@@ -92,8 +94,6 @@ export function getImportStepsForConnector(
   config: AddDataConfig,
   driver: V1ConnectorDriver,
 ) {
-  // Live connectors cannot create models as of now.
-  // They will create metrics views directly.
   const steps = isLiveConnectorType(driver) ? NonModelSteps : FullListOfSteps;
   return config.importOnly ? [steps[0]] : steps;
 }
