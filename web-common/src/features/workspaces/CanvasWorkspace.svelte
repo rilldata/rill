@@ -82,6 +82,7 @@
   <CanvasInitialization
     {canvasName}
     instanceId={runtimeClient.instanceId}
+    allowUnvalidatedSpec={true}
     let:ready
     let:isReconciling
     let:isLoading
