@@ -139,6 +139,7 @@
           onClearAllFilters={handleClearAllFilters}
           {sortDirection}
           onSortToggle={handleSortToggle}
+          showSort={false}
         >
           <Button type="primary" large onClick={() => (open = true)}>
             <Plus size="16px" /> New key
