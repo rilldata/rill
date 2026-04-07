@@ -4,11 +4,13 @@
   import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
   import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
   import {
+    createAdminServiceCreateProject,
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
   import ProjectCards from "../../features/projects/ProjectCards.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
 
   export let data;
   $: ({ organizationPermissions } = data);
@@ -23,6 +25,19 @@
   $: allProjectsHibernating = areAllProjectsHibernating(orgName);
 
   $: title = $org.data?.organization?.displayName || orgName;
+
+  const createProjectMutation = createAdminServiceCreateProject();
+  async function createProject() {
+    const createProjectResp = await $createProjectMutation.mutateAsync({
+      org: orgName,
+      data: {
+        project: `${orgName}_project`,
+        generateManagedGit: true,
+        prodSlots: "4",
+      },
+    });
+    console.log(createProjectResp);
+  }
 </script>
 
 <svelte:head>
@@ -40,6 +55,7 @@
           rel="noreferrer noopener">See docs</a
         >
       </span>
+      <Button type="primary" onClick={createProject}>Create new</Button>
     {:else if $allProjectsHibernating.data}
       <OrganizationHibernating
         organization={orgName}

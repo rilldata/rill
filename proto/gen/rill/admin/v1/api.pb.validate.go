@@ -9633,6 +9633,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ArchiveAssetId
 
+	// no validation rules for GenerateManagedGit
+
 	// no validation rules for ProdVersion
 
 	// no validation rules for SkipDeploy

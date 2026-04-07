@@ -1019,6 +1019,9 @@ paths:
               archiveAssetId:
                 type: string
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+              generateManagedGit:
+                type: boolean
+                description: When generate_managed_git is set a new managed git repo is create and set for the project.
               prodVersion:
                 type: string
               skipDeploy:

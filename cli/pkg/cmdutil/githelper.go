@@ -107,7 +107,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context, primaryBranch stri
 		ManagedRepo:       true,
 	}
 
-	err = gitutil.CommitAndPush(ctx, g.localPath, config, "", author)
+	err = gitutil.CommitAndPush(ctx, g.localPath, config, "", author, false)
 	if err != nil {
 		return nil, err
 	}
