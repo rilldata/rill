@@ -89,14 +89,27 @@
         },
       });
 
-      for (let i = 1; i < projectAssignments.length; i++) {
-        const pa = projectAssignments[i];
-        await $setProjectRole.mutateAsync({
-          org: organization,
-          project: pa.project,
-          name: name.trim(),
-          data: { role: pa.role },
-        });
+      // Assign remaining project roles in parallel; the first project is
+      // included in the create call above. These are not atomic: partial
+      // assignments are possible if one fails.
+      if (projectAssignments.length > 1) {
+        const results = await Promise.allSettled(
+          projectAssignments.slice(1).map((pa) =>
+            $setProjectRole.mutateAsync({
+              org: organization,
+              project: pa.project,
+              name: name.trim(),
+              data: { role: pa.role },
+            }),
+          ),
+        );
+        const failed = results.filter((r) => r.status === "rejected");
+        if (failed.length > 0) {
+          console.warn(
+            `${failed.length} project role assignment(s) failed`,
+            failed,
+          );
+        }
       }
 
       const result = await $issueToken.mutateAsync({

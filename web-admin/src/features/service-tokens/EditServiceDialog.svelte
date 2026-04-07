@@ -21,6 +21,8 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { isAxiosError } from "axios";
   import { DEFAULT_PROJECT_ROLE, validateServiceName } from "./utils";
@@ -171,7 +173,8 @@
         });
       }
 
-      // Handle project role changes
+      // Handle project role changes in parallel. These are not atomic:
+      // partial updates are possible if individual calls fail.
       const initialMap = new Map(
         initialProjectAssignments.map((pa) => [pa.project, pa.role]),
       );
@@ -179,26 +182,31 @@
         projectAssignments.map((pa) => [pa.project, pa.role]),
       );
 
-      for (const [project] of initialMap) {
-        if (!currentMap.has(project)) {
-          await $removeProjectMember.mutateAsync({
+      const removals = [...initialMap.keys()]
+        .filter((project) => !currentMap.has(project))
+        .map((project) =>
+          $removeProjectMember.mutateAsync({
             org: organization,
             project,
             name: effectiveName,
-          });
-        }
-      }
+          }),
+        );
 
-      for (const [project, role] of currentMap) {
-        const initialRole = initialMap.get(project);
-        if (initialRole !== role) {
-          await $setProjectRole.mutateAsync({
+      const upserts = [...currentMap.entries()]
+        .filter(([project, role]) => initialMap.get(project) !== role)
+        .map(([project, role]) =>
+          $setProjectRole.mutateAsync({
             org: organization,
             project,
             name: effectiveName,
             data: { role },
-          });
-        }
+          }),
+        );
+
+      const results = await Promise.allSettled([...removals, ...upserts]);
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        console.warn(`${failed.length} project role update(s) failed`, failed);
       }
 
       await queryClient.invalidateQueries({
@@ -242,35 +250,41 @@
     <DialogHeader>
       <DialogTitle>Edit service</DialogTitle>
     </DialogHeader>
-    <ServiceForm
-      bind:name={newName}
-      bind:orgRole
-      bind:projectAssignments
-      bind:attributes
-      {nameError}
-      {allProjects}
-      formId="edit-service-form"
-      namePlaceholder="Service name"
-      onSubmit={handleSubmit}
-    />
-    <DialogFooter>
-      <Button
-        type="tertiary"
-        onClick={() => {
-          open = false;
-          handleReset();
-        }}
-      >
-        Cancel
-      </Button>
-      <Button
-        type="primary"
-        form="edit-service-form"
-        disabled={!hasChanges || saving || !!nameError}
-        submitForm
-      >
-        Save
-      </Button>
-    </DialogFooter>
+    {#if $serviceQuery.isPending}
+      <div class="flex items-center justify-center py-8">
+        <Spinner status={EntityStatus.Running} size="24px" />
+      </div>
+    {:else}
+      <ServiceForm
+        bind:name={newName}
+        bind:orgRole
+        bind:projectAssignments
+        bind:attributes
+        {nameError}
+        {allProjects}
+        formId="edit-service-form"
+        namePlaceholder="Service name"
+        onSubmit={handleSubmit}
+      />
+      <DialogFooter>
+        <Button
+          type="tertiary"
+          onClick={() => {
+            open = false;
+            handleReset();
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="primary"
+          form="edit-service-form"
+          disabled={!hasChanges || saving || !!nameError}
+          submitForm
+        >
+          Save
+        </Button>
+      </DialogFooter>
+    {/if}
   </DialogContent>
 </Dialog>
