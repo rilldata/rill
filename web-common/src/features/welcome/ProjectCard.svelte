@@ -18,7 +18,7 @@
 
 <style lang="postcss">
   button {
-    @apply flex flex-row items-center justify-center gap-2 px-4 py-2 h-fit;
+    @apply flex flex-row items-center justify-center gap-2 px-4 py-2 h-fit min-w-fit;
     @apply text-sm bg-surface-overlay rounded-md border text-fg-secondary;
   }
   button:hover {

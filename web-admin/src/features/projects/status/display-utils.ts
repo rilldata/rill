@@ -76,33 +76,13 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
     isDuckDB &&
     (String(connector.config?.path ?? "").startsWith("md:") ||
       !!connector.config?.token);
-  const chcHostFields = ["host", "resolved_host", "dsn"];
-  const isClickHouseCloud =
-    connector.type === "clickhouse" &&
-    chcHostFields.some((field) =>
-      String((connector.config as Record<string, unknown>)?.[field] ?? "")
-        .toLowerCase()
-        .includes(".clickhouse.cloud"),
-    );
+  const name = formatConnectorName(
+    isMotherDuck ? "motherduck" : connector.type,
+  );
 
-  let connectorTypeName = connector.type;
-  if (isMotherDuck) connectorTypeName = "motherduck";
-  const name = formatConnectorName(connectorTypeName);
-
-  // Show management suffix for non-default-DuckDB connectors
-  const showSuffix =
-    connector.provision || isMotherDuck || isClickHouseCloud || !isDuckDB;
-  if (!showSuffix) return name;
-
-  let suffix: string;
-  if (connector.provision) {
-    suffix = "Rill-managed";
-  } else if (isClickHouseCloud) {
-    suffix = "Cloud";
-  } else {
-    suffix = "Self-managed";
-  }
-  return `${name} (${suffix})`;
+  // Show management suffix for Rill-managed connectors
+  if (connector.provision) return `${name} (Rill-managed)`;
+  return name;
 }
 
 /**
