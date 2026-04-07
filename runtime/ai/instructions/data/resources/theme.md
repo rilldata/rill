@@ -63,6 +63,10 @@ light:
   surface: "#ffffff"     # Elevated surfaces, panels
   card: "#f1f5f9"        # Card backgrounds
 
+  # KPI delta colors (optional - controls comparison/change value colors)
+  # kpi-positive: "#16a34a"  # Green for positive deltas (defaults to gray)
+  # kpi-negative: "#dc2626"  # Red for negative deltas (defaults to red)
+
   # Qualitative palette for categorical data (optional, 24 colors)
   # Used for bar charts, pie charts, legend colors by category
   color-qualitative-1: "#6366f1"   # Indigo
@@ -126,6 +130,10 @@ dark:
   background: "#0f172a"  # Deep slate background
   surface: "#1e293b"     # Elevated surfaces
   card: "#334155"        # Card backgrounds
+
+  # KPI delta colors (optional)
+  # kpi-positive: "#4ade80"  # Green for positive deltas (brighter for dark mode)
+  # kpi-negative: "#f87171"  # Red for negative deltas (brighter for dark mode)
 
   # Qualitative palette (adjusted for dark mode visibility)
   color-qualitative-1: "#818cf8"

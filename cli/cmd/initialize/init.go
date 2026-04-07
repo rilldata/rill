@@ -235,6 +235,7 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 			if ch.Interactive {
 				ch.Printf("\nSuccess! Run the following command to start the project:\n\n")
 				ch.Printf("  rill start %s\n\n", escaped)
+				ch.Printf("Tip: Use `rill start --preview` to launch in preview mode for a dashboard-only experience.\n\n")
 			} else {
 				ch.Printf("Run `rill validate %s` to build and validate the project, or `rill start %s` to build and serve the project on localhost\n", escaped, escaped)
 			}

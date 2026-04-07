@@ -232,6 +232,10 @@ type Colors = {
   destructive?: Color;
   "destructive-foreground"?: Color;
 
+  // KPI delta coloring
+  "kpi-positive"?: Color;
+  "kpi-negative"?: Color;
+
   // Popover
   popover?: Color;
   "popover-accent"?: Color;

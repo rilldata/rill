@@ -66,6 +66,8 @@ import {
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES,
   AD_BIDS_TOGGLE_PIVOT,
+  AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE,
+  AD_BIDS_SET_FORCE_LINE_CHART,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -519,6 +521,26 @@ const TestCases: {
       AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
     ],
     expectedSearch: "",
+    legacyNotSupported: true,
+  },
+
+  // Chart settings tests
+  {
+    title: "Dynamic Y-axis scale enabled",
+    mutations: [AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE],
+    expectedSearch: "dyn_y=true",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Force line chart enabled",
+    mutations: [AD_BIDS_SET_FORCE_LINE_CHART],
+    expectedSearch: "line_chart=true",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Both chart settings enabled",
+    mutations: [AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE, AD_BIDS_SET_FORCE_LINE_CHART],
+    expectedSearch: "dyn_y=true&line_chart=true",
     legacyNotSupported: true,
   },
 ];
