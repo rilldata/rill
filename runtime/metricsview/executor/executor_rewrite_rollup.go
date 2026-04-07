@@ -302,12 +302,9 @@ func collectWhereDimensionsRec(expr *metricsview.Expression, dims map[string]boo
 func BuildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.MetricsViewSpec_RollupTable) *runtimev1.MetricsViewSpec {
 	synth := proto.Clone(original).(*runtimev1.MetricsViewSpec)
 
-	// Point to rollup table
+	// Point to rollup table (connector stays the same as base)
 	synth.Table = rollup.Table
 	synth.Model = ""
-	if rollup.Connector != "" {
-		synth.Connector = rollup.Connector
-	}
 	if rollup.Database != "" {
 		synth.Database = rollup.Database
 	}

@@ -13540,8 +13540,6 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Connector
-
 	// no validation rules for Database
 
 	// no validation rules for DatabaseSchema

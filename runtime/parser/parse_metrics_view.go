@@ -84,7 +84,6 @@ type MetricsViewYAML struct {
 	} `yaml:"annotations"`
 	Rollups []*struct {
 		Model          string             `yaml:"model"`
-		Connector      string             `yaml:"connector"`
 		Database       string             `yaml:"database"`
 		DatabaseSchema string             `yaml:"database_schema"`
 		TimeGrain      string             `yaml:"time_grain"`
@@ -905,7 +904,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		spec.Rollups = append(spec.Rollups, &runtimev1.MetricsViewSpec_RollupTable{
-			Connector:          rollup.Connector,
 			Database:           rollup.Database,
 			DatabaseSchema:     rollup.DatabaseSchema,
 			Model:              rollup.Model,

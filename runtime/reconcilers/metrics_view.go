@@ -94,9 +94,6 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 			res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: rollup.Model, Kind: runtime.ResourceKindModel}, false)
 			if err == nil && res.GetModel().State.ResultTable != "" {
 				rollup.Table = res.GetModel().State.ResultTable
-				if rollup.Connector == "" {
-					rollup.Connector = res.GetModel().State.ResultConnector
-				}
 			} else {
 				rollup.Table = rollup.Model
 			}

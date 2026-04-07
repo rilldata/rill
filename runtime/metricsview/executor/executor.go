@@ -44,7 +44,7 @@ type Executor struct {
 }
 
 // New creates a new Executor for the provided metrics view.
-// mvName is the resource name of the metrics view (used for resolver-based caching); it may be empty when unavailable.
+// mvName is the resource name of the metrics view (used for resolver-based caching and rollup watermark resolution).
 func New(ctx context.Context, rt *runtime.Runtime, instanceID, mvName string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
 	if mvName == "" {
 		return nil, errors.New("metrics view name is required")

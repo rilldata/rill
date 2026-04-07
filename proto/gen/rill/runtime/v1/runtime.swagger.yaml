@@ -3781,8 +3781,6 @@ definitions:
   MetricsViewSpecRollupTable:
     type: object
     properties:
-      connector:
-        type: string
       database:
         type: string
       databaseSchema:

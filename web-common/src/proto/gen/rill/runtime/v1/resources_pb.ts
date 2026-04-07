@@ -2135,11 +2135,6 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
  */
 export class MetricsViewSpec_RollupTable extends Message<MetricsViewSpec_RollupTable> {
   /**
-   * @generated from field: string connector = 1;
-   */
-  connector = "";
-
-  /**
    * @generated from field: string database = 2;
    */
   database = "";
@@ -2209,7 +2204,6 @@ export class MetricsViewSpec_RollupTable extends Message<MetricsViewSpec_RollupT
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.RollupTable";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
