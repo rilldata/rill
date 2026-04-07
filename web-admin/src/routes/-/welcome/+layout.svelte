@@ -1,6 +1,6 @@
 <div class="flex size-full overflow-x-hidden overflow-y-auto">
   <div class="background">
-    <div class="h-fit my-auto">
+    <div class="h-fit pt-48">
       <slot />
     </div>
   </div>

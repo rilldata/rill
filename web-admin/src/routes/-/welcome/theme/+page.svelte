@@ -2,16 +2,20 @@
   import { goto } from "$app/navigation";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.ts";
-  import { themeControl } from "@rilldata/web-common/features/themes/theme-control.ts";
+  import {
+    themeControl,
+    type ThemeMode,
+  } from "@rilldata/web-common/features/themes/theme-control.ts";
   import LightModeIcon from "@rilldata/web-admin/features/welcome/theme/icons/LightModeIcon.svelte";
   import DarkModeIcon from "@rilldata/web-admin/features/welcome/theme/icons/DarkModeIcon.svelte";
   import SystemModeIcon from "@rilldata/web-admin/features/welcome/theme/icons/SystemModeIcon.svelte";
 
-  let selectedTheme: keyof (typeof themeControl)["set"] = "light";
+  const { preference } = themeControl;
+  $: selectedPreference = $preference;
 
   const ThemeOptions: {
     label: string;
-    value: keyof (typeof themeControl)["set"];
+    value: ThemeMode;
     icon: typeof LightModeIcon | typeof DarkModeIcon | typeof SystemModeIcon;
   }[] = [
     { label: "Light", value: "light", icon: LightModeIcon },
@@ -19,8 +23,11 @@
     { label: "System", value: "system", icon: SystemModeIcon },
   ];
 
+  function handleThemeChange(theme: ThemeMode) {
+    themeControl.set[theme]();
+  }
+
   function handleContinue() {
-    themeControl.set[selectedTheme]();
     return goto("/-/welcome/organization");
   }
 </script>
@@ -32,10 +39,10 @@
   </div>
   <div class="flex flex-row gap-8 pt-6 mx-auto">
     {#each ThemeOptions as themeOption (themeOption.value)}
-      {@const isSelected = selectedTheme === themeOption.value}
+      {@const isSelected = selectedPreference === themeOption.value}
       <button
         class="flex flex-col gap-2"
-        on:click={() => (selectedTheme = themeOption.value)}
+        onclick={() => handleThemeChange(themeOption.value)}
       >
         <div
           class="border rounded-md"

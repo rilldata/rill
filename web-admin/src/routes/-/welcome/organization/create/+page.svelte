@@ -28,7 +28,9 @@
     Create an organization
   </div>
 
-  <div class="flex flex-col gap-6 text-left p-6 border rounded-md">
+  <div
+    class="flex flex-col gap-6 text-left p-6 border rounded-md bg-surface-overlay"
+  >
     <div>
       <div class="text-base font-semibold">Name your organization</div>
       <div class="text-sm text-fg-muted">
